@@ -3,6 +3,7 @@
 // ------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
 {
+    using System;
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
@@ -12,13 +13,35 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
     {
         private sealed class SdkAggregateDocumentQueryExecutionComponent : AggregateDocumentQueryExecutionComponent
         {
-            public SdkAggregateDocumentQueryExecutionComponent(
+            private SdkAggregateDocumentQueryExecutionComponent(
                 IDocumentQueryExecutionComponent source,
                 SingleGroupAggregator singleGroupAggregator,
                 bool isValueAggregateQuery)
                 : base(source, singleGroupAggregator, isValueAggregateQuery)
             {
                 // all the work is done in the base constructor.
+            }
+
+            public static async Task<SdkAggregateDocumentQueryExecutionComponent> CreateAsync(
+                CosmosQueryClient queryClient,
+                AggregateOperator[] aggregates,
+                IReadOnlyDictionary<string, AggregateOperator?> aliasToAggregateType,
+                bool hasSelectValue,
+                string requestContinuation,
+                Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback)
+            {
+                IDocumentQueryExecutionComponent source = await createSourceCallback(requestContinuation);
+                SingleGroupAggregator singleGroupAggregator = SingleGroupAggregator.Create(
+                    queryClient,
+                    aggregates,
+                    aliasToAggregateType,
+                    hasSelectValue,
+                    continuationToken: null);
+
+                return new SdkAggregateDocumentQueryExecutionComponent(
+                    source,
+                    singleGroupAggregator,
+                    hasSelectValue);
             }
 
             public override async Task<QueryResponseCore> DrainAsync(
@@ -32,9 +55,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                 double requestCharge = 0;
                 long responseLengthBytes = 0;
                 List<QueryPageDiagnostics> diagnosticsPages = new List<QueryPageDiagnostics>();
-                while (!this.IsDone)
+                while (!this.Source.IsDone)
                 {
-                    QueryResponseCore sourceResponse = await base.DrainAsync(int.MaxValue, cancellationToken);
+                    QueryResponseCore sourceResponse = await this.Source.DrainAsync(int.MaxValue, cancellationToken);
                     if (!sourceResponse.IsSuccess)
                     {
                         return sourceResponse;

@@ -15,13 +15,53 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
 
         private sealed class ComputeAggregateDocumentQueryExecutionComponent : AggregateDocumentQueryExecutionComponent
         {
-            public ComputeAggregateDocumentQueryExecutionComponent(
+            private ComputeAggregateDocumentQueryExecutionComponent(
                 IDocumentQueryExecutionComponent source,
                 SingleGroupAggregator singleGroupAggregator,
                 bool isValueAggregateQuery)
                 : base(source, singleGroupAggregator, isValueAggregateQuery)
             {
                 // all the work is done in the base constructor.
+            }
+
+            public static async Task<ComputeAggregateDocumentQueryExecutionComponent> CreateAsync(
+                CosmosQueryClient queryClient,
+                AggregateOperator[] aggregates,
+                IReadOnlyDictionary<string, AggregateOperator?> aliasToAggregateType,
+                bool hasSelectValue,
+                string requestContinuation,
+                Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback)
+            {
+                string sourceContinuationToken;
+                string singleGroupAggregatorContinuationToken;
+                if (requestContinuation != null)
+                {
+                    if (!AggregateContinuationToken.TryParse(requestContinuation, out AggregateContinuationToken aggregateContinuationToken))
+                    {
+                        throw queryClient.CreateBadRequestException($"Malfomed {nameof(AggregateContinuationToken)}: '{requestContinuation}'");
+                    }
+
+                    sourceContinuationToken = aggregateContinuationToken.SourceContinuationToken;
+                    singleGroupAggregatorContinuationToken = aggregateContinuationToken.SingleGroupAggregatorContinuationToken;
+                }
+                else
+                {
+                    sourceContinuationToken = null;
+                    singleGroupAggregatorContinuationToken = null;
+                }
+
+                IDocumentQueryExecutionComponent source = await createSourceCallback(sourceContinuationToken);
+                SingleGroupAggregator singleGroupAggregator = SingleGroupAggregator.Create(
+                    queryClient,
+                    aggregates,
+                    aliasToAggregateType,
+                    hasSelectValue,
+                    singleGroupAggregatorContinuationToken);
+
+                return new ComputeAggregateDocumentQueryExecutionComponent(
+                    source,
+                    singleGroupAggregator,
+                    hasSelectValue);
             }
 
             public override async Task<QueryResponseCore> DrainAsync(
@@ -88,7 +128,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                 disallowContinuationTokenMessage: null,
                 continuationToken: null,
                 diagnostics: QueryResponseCore.EmptyDiagnostics);
-            this.isDone = true;
 
             return response;
         }
@@ -109,8 +148,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                 disallowContinuationTokenMessage: null,
                 continuationToken: updatedContinuationToken,
                 diagnostics: sourceResponse.Diagnostics);
-
-            this.isDone = false;
 
             return response;
         }

@@ -37,8 +37,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
         /// </summary>
         private readonly bool isValueAggregateQuery;
 
-        private bool isDone;
-
         /// <summary>
         /// Initializes a new instance of the AggregateDocumentQueryExecutionComponent class.
         /// </summary>
@@ -61,8 +59,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
             this.isValueAggregateQuery = isValueAggregateQuery;
         }
 
-        public override bool IsDone => this.isDone;
-
         /// <summary>
         /// Creates a AggregateDocumentQueryExecutionComponent.
         /// </summary>
@@ -83,46 +79,26 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
             string requestContinuation,
             Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback)
         {
-            string sourceContinuationToken;
-            string singleGroupAggregatorContinuationToken;
-            if (requestContinuation != null)
-            {
-                if (!AggregateContinuationToken.TryParse(requestContinuation, out AggregateContinuationToken aggregateContinuationToken))
-                {
-                    throw queryClient.CreateBadRequestException($"Malfomed {nameof(AggregateContinuationToken)}: '{requestContinuation}'");
-                }
-
-                sourceContinuationToken = aggregateContinuationToken.SourceContinuationToken;
-                singleGroupAggregatorContinuationToken = aggregateContinuationToken.SingleGroupAggregatorContinuationToken;
-            }
-            else
-            {
-                sourceContinuationToken = null;
-                singleGroupAggregatorContinuationToken = null;
-            }
-
-            IDocumentQueryExecutionComponent source = await createSourceCallback(sourceContinuationToken);
-            SingleGroupAggregator singleGroupAggregator = SingleGroupAggregator.Create(
-                queryClient,
-                aggregates,
-                aliasToAggregateType,
-                hasSelectValue,
-                singleGroupAggregatorContinuationToken);
-
             AggregateDocumentQueryExecutionComponent aggregateDocumentQueryExecutionComponent;
             if (isComputeGateway)
             {
-                aggregateDocumentQueryExecutionComponent = new ComputeAggregateDocumentQueryExecutionComponent(
-                    source,
-                    singleGroupAggregator,
-                    hasSelectValue);
+                aggregateDocumentQueryExecutionComponent = await ComputeAggregateDocumentQueryExecutionComponent.CreateAsync(
+                    queryClient,
+                    aggregates,
+                    aliasToAggregateType,
+                    hasSelectValue,
+                    requestContinuation,
+                    createSourceCallback);
             }
             else
             {
-                aggregateDocumentQueryExecutionComponent = new ComputeAggregateDocumentQueryExecutionComponent(
-                    source,
-                    singleGroupAggregator,
-                    hasSelectValue);
+                aggregateDocumentQueryExecutionComponent = await SdkAggregateDocumentQueryExecutionComponent.CreateAsync(
+                    queryClient,
+                    aggregates,
+                    aliasToAggregateType,
+                    hasSelectValue,
+                    requestContinuation,
+                    createSourceCallback);
             }
 
             return aggregateDocumentQueryExecutionComponent;
