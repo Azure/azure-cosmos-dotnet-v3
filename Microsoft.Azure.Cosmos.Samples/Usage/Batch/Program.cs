@@ -125,24 +125,24 @@
                 .CreateItem<GameParticipant>(GameParticipant.Create(gameId, "carla"))
                 .ExecuteAsync();
 
-            // Batch requests do not throw exceptions on execution failures as long as the request is valid, so we need to check the response status explicitly.
-            // A HTTP 200 (OK) StatusCode on the BatchResponse indicates that all operations succeeded.
-            // If one or more operations within the batch have failed, HTTP 207 (Multistatus) status code may be returned (example later).
-            // Other status codes such as HTTP 429 (Too Many Requests) and HTTP 5xx on server errors may also be returned.
-            // Given a batch request is atomic, in case any operation within a batch fails, no changes from the batch will be committed.
-            if (gameStartResponse.StatusCode != HttpStatusCode.OK)
-            {
-                // log exception and handle failure
-            }
-
-
-            // Refresh in-memory state from response
             GameBall[] balls = new GameBall[ballCount];
             GameParticipant alice, bob, carla;
             GameBall blueBall, secondRedBall;
 
             using (gameStartResponse)
             {
+                // Batch requests do not throw exceptions on execution failures as long as the request is valid, so we need to check the response status explicitly.
+                // A HTTP 200 (OK) StatusCode on the BatchResponse indicates that all operations succeeded.
+                // If one or more operations within the batch have failed, HTTP 207 (Multistatus) status code may be returned (example later).
+                // Other status codes such as HTTP 429 (Too Many Requests) and HTTP 5xx on server errors may also be returned.
+                // Given a batch request is atomic, in case any operation within a batch fails, no changes from the batch will be committed.
+                if (gameStartResponse.StatusCode != HttpStatusCode.OK)
+                {
+                    // log exception and handle failure
+                }
+
+
+                // Refresh in-memory state from response
                 // The BatchResponse has a list of BatchOperationResult, one for each operation within the batch request in the order of operations.
                 for (int index = 0; index < ballCount; index++)
                 {
@@ -178,14 +178,14 @@
                 .ReplaceItem<GameParticipant>(alice.Nickname, alice)
                 .ExecuteAsync();
 
-            if (aliceFoundBallResponse.StatusCode != HttpStatusCode.OK)
-            {
-                // log exception and handle failure
-            }
-
-            // Refresh in-memory state
             using (aliceFoundBallResponse)
             {
+                if (aliceFoundBallResponse.StatusCode != HttpStatusCode.OK)
+                {
+                    // log exception and handle failure
+                }
+
+                // Refresh in-memory state
                 // We only update the etag as we have the rest of the state we care about here already as needed.
                 blueBall.ETag = aliceFoundBallResponse[1].ETag;
                 alice.ETag = aliceFoundBallResponse[2].ETag;
@@ -204,14 +204,14 @@
                 .ReplaceItemStream(bob.Nickname, Program.AsStream(bob))
                 .ExecuteAsync();
 
-            if (bobFoundBallResponse.StatusCode != HttpStatusCode.OK)
-            {
-                // log exception and handle failure
-            }
-
-            // Refresh in-memory state
             using (bobFoundBallResponse)
             {
+                if (bobFoundBallResponse.StatusCode != HttpStatusCode.OK)
+                {
+                    // log exception and handle failure
+                }
+
+                // Refresh in-memory state
                 // The resultant item for the operations is also available as a Stream that can be used for example if the response is just
                 // going to be transferred to some other system.
                 Stream updatedBallAsStream = bobFoundBallResponse[1].ResourceStream;
@@ -228,11 +228,13 @@
                .DeleteItem(blueBall.Id)
                .ExecuteAsync();
 
-            if (deleteBallResponse.StatusCode != HttpStatusCode.OK)
+            using (deleteBallResponse)
             {
-                // log exception and handle failure
+                if (deleteBallResponse.StatusCode != HttpStatusCode.OK)
+                {
+                    // log exception and handle failure
+                }
             }
-
 
             // =========== Add a golden ball near each of the players to see if any of them pick it up ==============================================
             BatchResponse goldenBallResponse = await gamesContainer.CreateBatch(new PartitionKey(gameId))
@@ -242,28 +244,31 @@
                .CreateItem<GameBall>(GameBall.Create(gameId, Color.Gold, 8, 7))
                .ExecuteAsync();
 
-            // If one or more operations within the batch have failed, a HTTP Status Code of 207 MultiStatus could be returned 
-            // as the StatusCode of the BatchResponse that indicates that 
-            // the response needs to be examined to understand details of the execution and failure. 
-            // The first operation to fail (for example if we have a conflict because we are trying to create an item 
-            // that already exists) will have the StatusCode on its corresponding BatchOperationResult set with the actual failure reason
-            // (HttpStatusCode.Conflict in this example).
-            // All other operations will be aborted - these would return a status code of HTTP 424 Failed Dependency.
-            //
-            // Other status codes such as HTTP 429 (Too Many Requests) and HTTP 5xx on server errors may also be returned for the BatchResponse.
-            // Given a batch request is atomic, in case any operation within a batch fails, no changes from the batch will be committed.
-            if(goldenBallResponse.StatusCode != HttpStatusCode.OK)
+            using (goldenBallResponse)
             {
-                foreach(BatchOperationResult operationResult in goldenBallResponse)
+                // If one or more operations within the batch have failed, a HTTP Status Code of 207 MultiStatus could be returned 
+                // as the StatusCode of the BatchResponse that indicates that 
+                // the response needs to be examined to understand details of the execution and failure. 
+                // The first operation to fail (for example if we have a conflict because we are trying to create an item 
+                // that already exists) will have the StatusCode on its corresponding BatchOperationResult set with the actual failure reason
+                // (HttpStatusCode.Conflict in this example).
+                // All other operations will be aborted - these would return a status code of HTTP 424 Failed Dependency.
+                //
+                // Other status codes such as HTTP 429 (Too Many Requests) and HTTP 5xx on server errors may also be returned for the BatchResponse.
+                // Given a batch request is atomic, in case any operation within a batch fails, no changes from the batch will be committed.
+                if (goldenBallResponse.StatusCode != HttpStatusCode.OK)
                 {
-                    if((int)operationResult.StatusCode == 424)
+                    foreach (BatchOperationResult operationResult in goldenBallResponse)
                     {
-                        // This operation failed because it was batched along with another operation where the latter
-                        // was the actual cause of failure.
-                        continue;
-                    }
+                        if ((int)operationResult.StatusCode == 424)
+                        {
+                            // This operation failed because it was batched along with another operation where the latter
+                            // was the actual cause of failure.
+                            continue;
+                        }
 
-                    // Log and handle failure
+                        // Log and handle failure
+                    }
                 }
             }
 
@@ -274,14 +279,15 @@
                 .ReadItem(carla.Nickname)
                 .ExecuteAsync();
 
-            if (playersResponse.StatusCode != HttpStatusCode.OK)
-            {
-                // log exception and handle failure
-            }
-
             GameParticipant winner = null;
+
             using (playersResponse)
             {
+                if (playersResponse.StatusCode != HttpStatusCode.OK)
+                {
+                    // log exception and handle failure
+                }
+
                 for (int index = 0; index < playerCount; index++)
                 {
                     GameParticipant current = playersResponse.GetOperationResultAtIndex<GameParticipant>(index).Resource;
