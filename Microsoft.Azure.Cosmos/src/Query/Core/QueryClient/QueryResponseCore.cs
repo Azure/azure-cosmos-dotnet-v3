@@ -7,12 +7,13 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Collections.Generic;
     using System.Net;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using ClientSideRequestStatistics = Documents.ClientSideRequestStatistics;
+    using IClientSideRequestStatistics = Documents.IClientSideRequestStatistics;
     using SubStatusCodes = Documents.SubStatusCodes;
 
     internal struct QueryResponseCore
     {
         private static readonly IReadOnlyList<CosmosElement> EmptyList = new List<CosmosElement>();
+        internal static readonly IReadOnlyCollection<QueryPageDiagnostics> EmptyDiagnostics = new List<QueryPageDiagnostics>();
 
         private QueryResponseCore(
             IReadOnlyList<CosmosElement> result,
@@ -20,9 +21,7 @@ namespace Microsoft.Azure.Cosmos.Query
             HttpStatusCode statusCode,
             double requestCharge,
             string activityId,
-            string queryMetricsText,
-            IReadOnlyDictionary<string, QueryMetrics> queryMetrics,
-            ClientSideRequestStatistics requestStatistics,
+            IReadOnlyCollection<QueryPageDiagnostics> diagnostics,
             long responseLengthBytes,
             string disallowContinuationTokenMessage,
             string continuationToken,
@@ -33,15 +32,13 @@ namespace Microsoft.Azure.Cosmos.Query
             this.CosmosElements = result;
             this.StatusCode = statusCode;
             this.ActivityId = activityId;
-            this.QueryMetricsText = queryMetricsText;
-            this.QueryMetrics = queryMetrics;
+            this.diagnostics = diagnostics ?? throw new ArgumentNullException(nameof(diagnostics));
             this.ResponseLengthBytes = responseLengthBytes;
             this.RequestCharge = requestCharge;
             this.DisallowContinuationTokenMessage = disallowContinuationTokenMessage;
             this.ContinuationToken = continuationToken;
             this.ErrorMessage = errorMessage;
             this.SubStatusCode = subStatusCode;
-            this.RequestStatistics = requestStatistics;
         }
 
         internal IReadOnlyList<CosmosElement> CosmosElements { get; }
@@ -60,11 +57,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         internal string ActivityId { get; }
 
-        internal ClientSideRequestStatistics RequestStatistics { get; }
-
-        internal string QueryMetricsText { get; }
-
-        internal IReadOnlyDictionary<string, QueryMetrics> QueryMetrics { get; set; }
+        internal IReadOnlyCollection<QueryPageDiagnostics> diagnostics { get; }
 
         internal long ResponseLengthBytes { get; }
 
@@ -74,12 +67,10 @@ namespace Microsoft.Azure.Cosmos.Query
             IReadOnlyList<CosmosElement> result,
             double requestCharge,
             string activityId,
-            string queryMetricsText,
-            IReadOnlyDictionary<string, QueryMetrics> queryMetrics,
-            ClientSideRequestStatistics requestStatistics,
             long responseLengthBytes,
             string disallowContinuationTokenMessage,
-            string continuationToken)
+            string continuationToken,
+            IReadOnlyCollection<QueryPageDiagnostics> diagnostics)
         {
             QueryResponseCore cosmosQueryResponse = new QueryResponseCore(
                result: result,
@@ -87,9 +78,7 @@ namespace Microsoft.Azure.Cosmos.Query
                statusCode: HttpStatusCode.OK,
                requestCharge: requestCharge,
                activityId: activityId,
-               queryMetricsText: queryMetricsText,
-               queryMetrics: queryMetrics,
-               requestStatistics: requestStatistics,
+               diagnostics: diagnostics,
                responseLengthBytes: responseLengthBytes,
                disallowContinuationTokenMessage: disallowContinuationTokenMessage,
                continuationToken: continuationToken,
@@ -105,8 +94,7 @@ namespace Microsoft.Azure.Cosmos.Query
             string errorMessage,
             double requestCharge,
             string activityId,
-            string queryMetricsText,
-            IReadOnlyDictionary<string, QueryMetrics> queryMetrics)
+            IReadOnlyCollection<QueryPageDiagnostics> diagnostics)
         {
             QueryResponseCore cosmosQueryResponse = new QueryResponseCore(
                 result: QueryResponseCore.EmptyList,
@@ -114,9 +102,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 statusCode: statusCode,
                 requestCharge: requestCharge,
                 activityId: activityId,
-                queryMetricsText: queryMetricsText,
-                queryMetrics: queryMetrics,
-                requestStatistics: null,
+                diagnostics: diagnostics,
                 responseLengthBytes: 0,
                 disallowContinuationTokenMessage: null,
                 continuationToken: null,

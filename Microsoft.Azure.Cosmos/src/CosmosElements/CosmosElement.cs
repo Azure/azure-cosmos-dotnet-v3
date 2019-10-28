@@ -142,7 +142,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             byte[] buffer = Encoding.UTF8.GetBytes(serializedCosmosElement);
             try
             {
-                cosmosElement = CosmosElement.Create(buffer);
+                cosmosElement = CosmosElement.CreateFromBuffer(buffer);
                 return true;
             }
             catch (JsonParseException)

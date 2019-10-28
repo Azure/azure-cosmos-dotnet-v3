@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
     using System.Text;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Json.Interop;
+    using Microsoft.Azure.Cosmos.Query;
 
     internal static class JsonPerfMeasurement
     {

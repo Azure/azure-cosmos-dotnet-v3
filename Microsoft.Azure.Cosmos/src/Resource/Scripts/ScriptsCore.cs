@@ -96,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
 
             return new FeedIteratorCore<T>(
                 databaseStreamIterator,
-                this.clientContext.ResponseFactory.CreateQueryFeedResponse<T>);
+                this.clientContext.ResponseFactory.CreateQueryFeedResponseWithPropertySerializer<T>);
         }
 
         public override Task<StoredProcedureResponse> ReadStoredProcedureAsync(
@@ -288,7 +288,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
 
             return new FeedIteratorCore<T>(
                 databaseStreamIterator,
-                this.clientContext.ResponseFactory.CreateQueryFeedResponse<T>);
+                this.clientContext.ResponseFactory.CreateQueryFeedResponseWithPropertySerializer<T>);
         }
 
         public override Task<TriggerResponse> ReadTriggerAsync(
@@ -443,7 +443,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
 
             return new FeedIteratorCore<T>(
                 databaseStreamIterator,
-                this.clientContext.ResponseFactory.CreateQueryFeedResponse<T>);
+                this.clientContext.ResponseFactory.CreateQueryFeedResponseWithPropertySerializer<T>);
         }
 
         public override Task<UserDefinedFunctionResponse> ReadUserDefinedFunctionAsync(
