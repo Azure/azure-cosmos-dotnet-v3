@@ -48,6 +48,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                 int maxElements,
                 CancellationToken cancellationToken)
             {
+                cancellationToken.ThrowIfCancellationRequested();
+
                 // Note-2016-10-25-felixfan: Given what we support now, we should expect to return only 1 document.
                 // Note-2019-07-11-brchon: We can return empty pages until all the documents are drained,
                 // but then we will have to design a continuation token.
