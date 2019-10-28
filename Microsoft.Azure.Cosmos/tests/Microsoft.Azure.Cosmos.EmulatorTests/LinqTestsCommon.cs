@@ -15,7 +15,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
     using System.Runtime.CompilerServices;
     using System.Text;
     using System.Text.RegularExpressions;
-    using System.Transactions;
     using System.Xml;
     using Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest;
     using Microsoft.Azure.Documents;

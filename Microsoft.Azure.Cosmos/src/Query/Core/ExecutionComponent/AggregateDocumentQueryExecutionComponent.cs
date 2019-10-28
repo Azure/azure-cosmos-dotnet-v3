@@ -102,10 +102,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
 
             double requestCharge = 0;
             long responseLengthBytes = 0;
-            List<Uri> replicaUris = new List<Uri>();
-            ClientSideRequestStatistics requestStatistics = new ClientSideRequestStatistics();
-            PartitionedQueryMetrics partitionedQueryMetrics = new PartitionedQueryMetrics();
-
+            List<QueryPageDiagnostics> diagnosticsPages = new List<QueryPageDiagnostics>();
             while (!this.IsDone)
             {
                 QueryResponseCore result = await base.DrainAsync(int.MaxValue, token);
@@ -118,9 +115,9 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                 responseLengthBytes += result.ResponseLengthBytes;
                 // DEVNOTE: Add when query metrics is supported
                 // partitionedQueryMetrics += new PartitionedQueryMetrics(results.QueryMetrics);
-                if (result.RequestStatistics != null)
+                if (result.diagnostics != null)
                 {
-                    replicaUris.AddRange(result.RequestStatistics.ContactedReplicas);
+                    diagnosticsPages.AddRange(result.diagnostics);
                 }
 
                 foreach (CosmosElement element in result.CosmosElements)
@@ -139,19 +136,20 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                 finalResult.Add(aggregationResult);
             }
 
-            // The replicaUris may have duplicates.
-            requestStatistics.ContactedReplicas.AddRange(replicaUris);
-
             return QueryResponseCore.CreateSuccess(
                 result: finalResult,
                 continuationToken: null,
                 activityId: null,
                 disallowContinuationTokenMessage: null,
                 requestCharge: requestCharge,
-                queryMetricsText: null,
-                queryMetrics: this.GetQueryMetrics(),
-                requestStatistics: requestStatistics,
+                diagnostics: diagnosticsPages,
                 responseLengthBytes: responseLengthBytes);
+        }
+
+        public override bool TryGetContinuationToken(out string state)
+        {
+            state = null;
+            return true;
         }
 
         /// <summary>

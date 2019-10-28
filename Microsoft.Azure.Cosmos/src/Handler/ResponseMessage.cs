@@ -53,18 +53,21 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="errorMessage">The reason for failures if any.</param>
         /// <param name="error">The inner error object</param>
         /// <param name="headers">The headers for the response.</param>
+        /// <param name="diagnostics">The diagnostics for the request</param>
         internal ResponseMessage(
             HttpStatusCode statusCode,
             RequestMessage requestMessage,
             string errorMessage,
             Error error,
-            Headers headers)
+            Headers headers,
+            CosmosDiagnostics diagnostics)
         {
             this.StatusCode = statusCode;
             this.RequestMessage = requestMessage;
             this.ErrorMessage = errorMessage;
             this.Error = error;
             this.Headers = headers;
+            this.Diagnostics = diagnostics;
         }
 
         /// <summary>

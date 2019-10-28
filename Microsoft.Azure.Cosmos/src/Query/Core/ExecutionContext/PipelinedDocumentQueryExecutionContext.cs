@@ -124,6 +124,11 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
+        public override bool TryGetContinuationToken(out string state)
+        {
+            return this.component.TryGetContinuationToken(out state);
+        }
+
         /// <summary>
         /// Creates a CosmosPipelinedItemQueryExecutionContext.
         /// </summary>
@@ -313,8 +318,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 count: feedResponse.CosmosElements.Count,
                 responseHeaders: new DictionaryNameValueCollection(),
                 useETagAsContinuation: false,
-                queryMetrics: feedResponse.QueryMetrics,
-                requestStats: feedResponse.RequestStatistics,
+                queryMetrics: null,
+                requestStats: null,
                 disallowContinuationTokenMessage: feedResponse.DisallowContinuationTokenMessage,
                 responseLengthBytes: feedResponse.ResponseLengthBytes);
         }

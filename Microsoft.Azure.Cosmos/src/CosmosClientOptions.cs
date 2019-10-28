@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Data.Common;
     using System.Linq;
     using System.Net;
+    using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -68,7 +69,6 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public CosmosClientOptions()
         {
-            this.UserAgentContainer = new Cosmos.UserAgentContainer();
             this.GatewayModeMaxConnectionLimit = ConnectionPolicy.Default.MaxConnectionLimit;
             this.RequestTimeout = ConnectionPolicy.Default.RequestTimeout;
             this.ConnectionMode = CosmosClientOptions.DefaultConnectionMode;
@@ -83,11 +83,12 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// Setting this property after sending any request won't have any effect.
         /// </remarks>
-        public string ApplicationName
-        {
-            get => this.UserAgentContainer.Suffix;
-            set => this.UserAgentContainer.Suffix = value;
-        }
+        public string ApplicationName { get; set; }
+
+        /// <summary>
+        /// Get or set session container for the client
+        /// </summary>
+        internal ISessionContainer SessionContainer { get; set; }
 
         /// <summary>
         /// Get or set the preferred geo-replicated region to be used for Azure Cosmos DB service interaction.
@@ -398,8 +399,6 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal UserAgentContainer UserAgentContainer { get; private set; }
-
         /// <summary>
         /// The event handler to be invoked before the request is sent.
         /// </summary>
@@ -509,13 +508,15 @@ namespace Microsoft.Azure.Cosmos
         {
             this.ValidateDirectTCPSettings();
             this.ValidateLimitToEndpointSettings();
+            UserAgentContainer userAgent = this.BuildUserAgentContainer();
+            
             ConnectionPolicy connectionPolicy = new ConnectionPolicy()
             {
                 MaxConnectionLimit = this.GatewayModeMaxConnectionLimit,
                 RequestTimeout = this.RequestTimeout,
                 ConnectionMode = this.ConnectionMode,
                 ConnectionProtocol = this.ConnectionProtocol,
-                UserAgentContainer = this.UserAgentContainer,
+                UserAgentContainer = userAgent,
                 UseMultipleWriteLocations = true,
                 IdleTcpConnectionTimeout = this.IdleTcpConnectionTimeout,
                 OpenTcpConnectionTimeout = this.OpenTcpConnectionTimeout,
@@ -655,6 +656,40 @@ namespace Microsoft.Azure.Cosmos
             {
                 throw new ArgumentException($"{settingName} requires {nameof(this.ConnectionMode)} to be set to {nameof(ConnectionMode.Direct)}");
             }
+        }
+
+        internal UserAgentContainer BuildUserAgentContainer()
+        {
+            UserAgentContainer userAgent = new UserAgentContainer();
+            string features = this.GetUserAgentFeatures();
+
+            if (!string.IsNullOrEmpty(features))
+            {
+                userAgent.SetFeatures(features.ToString());
+            }
+            
+            if (!string.IsNullOrEmpty(this.ApplicationName))
+            {
+                userAgent.Suffix = this.ApplicationName;
+            }
+
+            return userAgent;
+        }
+
+        private string GetUserAgentFeatures()
+        {
+            CosmosClientOptionsFeatures features = CosmosClientOptionsFeatures.NoFeatures;
+            if (this.AllowBulkExecution)
+            {
+                features |= CosmosClientOptionsFeatures.AllowBulkExecution;
+            }
+
+            if (features == CosmosClientOptionsFeatures.NoFeatures)
+            {
+                return null;
+            }
+            
+            return Convert.ToString((int)features, 2).PadLeft(8, '0');
         }
 
         /// <summary>

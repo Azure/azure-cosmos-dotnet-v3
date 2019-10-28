@@ -216,7 +216,7 @@ namespace Microsoft.Azure.Cosmos
 
             return new FeedIteratorCore<T>(
                 permissionStreamIterator,
-                this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>);
+                this.ClientContext.ResponseFactory.CreateQueryFeedResponseWithPropertySerializer<T>);
         }
 
         public FeedIterator GetPermissionQueryStreamIterator(QueryDefinition queryDefinition,
@@ -330,7 +330,7 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ProcessResourceOperationStreamAsync(
+            return this.ProcessResourceOperationStreamAsync(
                 streamPayload: streamPayload,
                 operationType: operationType,
                 linkUri: this.LinkUri,

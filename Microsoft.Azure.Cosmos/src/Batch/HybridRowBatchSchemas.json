@@ -125,6 +125,13 @@
             "type": "uint32",
             "storage": "sparse"
           }
+        },
+        {
+          "path": "requestCharge",
+          "type": {
+            "type": "float64",
+            "storage": "sparse"
+          }
         }
       ]
     }
