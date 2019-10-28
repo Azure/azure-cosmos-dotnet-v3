@@ -128,7 +128,7 @@ namespace Microsoft.Azure.Cosmos
                                 || itemRequestOptions.PostTriggers != null
                                 || itemRequestOptions.SessionToken != null)
                 {
-                    throw new InvalidOperationException(ClientResources.UnsupportedBatchRequestOptions);
+                    throw new InvalidOperationException(ClientResources.UnsupportedBulkRequestOptions);
                 }
 
                 Debug.Assert(BatchAsyncContainerExecutor.ValidateOperationEPK(operation, itemRequestOptions));
