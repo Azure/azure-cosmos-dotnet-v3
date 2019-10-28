@@ -5,16 +5,22 @@
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
+    using System.Diagnostics.Contracts;
     using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Documents;
+    using HttpConstants = Documents.HttpConstants;
+    using OperationType = Documents.OperationType;
+    using PartitionKeyDefinition = Documents.PartitionKeyDefinition;
+    using ResourceType = Documents.ResourceType;
+    using RuntimeConstants = Documents.RuntimeConstants;
 
     internal static class QueryPlanRetriever
     {
         private static readonly QueryFeatures SupportedQueryFeatures =
             QueryFeatures.Aggregate
             | QueryFeatures.Distinct
+            | QueryFeatures.GroupBy
             | QueryFeatures.MultipleOrderBy
             | QueryFeatures.MultipleAggregates
             | QueryFeatures.OffsetAndLimit
@@ -29,14 +35,30 @@ namespace Microsoft.Azure.Cosmos.Query
             SqlQuerySpec sqlQuerySpec,
             PartitionKeyDefinition partitionKeyDefinition,
             bool hasLogicalPartitionKey,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken = default(CancellationToken))
         {
+            if (queryClient == null)
+            {
+                throw new ArgumentNullException(nameof(queryClient));
+            }
+
+            if (sqlQuerySpec == null)
+            {
+                throw new ArgumentNullException(nameof(sqlQuerySpec));
+            }
+
+            if (partitionKeyDefinition == null)
+            {
+                throw new ArgumentNullException(nameof(partitionKeyDefinition));
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
             QueryPlanHandler queryPlanHandler = new QueryPlanHandler(queryClient);
 
             return queryPlanHandler.GetQueryPlanAsync(
                     sqlQuerySpec,
                     partitionKeyDefinition,
-                    SupportedQueryFeatures,
+                    QueryPlanRetriever.SupportedQueryFeatures,
                     hasLogicalPartitionKey,
                     cancellationToken);
         }
@@ -45,8 +67,23 @@ namespace Microsoft.Azure.Cosmos.Query
             CosmosQueryClient client,
             SqlQuerySpec sqlQuerySpec,
             Uri resourceLink,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken = default(CancellationToken))
         {
+            if (client == null)
+            {
+                throw new ArgumentNullException(nameof(client));
+            }
+
+            if (sqlQuerySpec == null)
+            {
+                throw new ArgumentNullException(nameof(sqlQuerySpec));
+            }
+
+            if (resourceLink == null)
+            {
+                throw new ArgumentNullException(nameof(resourceLink));
+            }
+
             cancellationToken.ThrowIfCancellationRequested();
 
             return client.ExecuteQueryPlanRequestAsync(

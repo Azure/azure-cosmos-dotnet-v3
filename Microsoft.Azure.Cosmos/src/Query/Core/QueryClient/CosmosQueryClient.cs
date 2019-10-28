@@ -50,6 +50,7 @@ namespace Microsoft.Azure.Cosmos.Query
             Documents.PartitionKeyRangeIdentity partitionKeyRange,
             bool isContinuationExpected,
             int pageSize,
+            SchedulingStopwatch schedulingStopwatch,
             CancellationToken cancellationToken);
 
         internal abstract Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
@@ -77,5 +78,7 @@ namespace Microsoft.Azure.Cosmos.Query
         internal abstract Task ForceRefreshCollectionCacheAsync(
             string collectionLink,
             CancellationToken cancellationToken);
+
+        internal abstract Exception CreateBadRequestException(string message);
     }
 }

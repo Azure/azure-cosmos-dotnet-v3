@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Collections.Generic;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Routing;
 
     /// <summary>
     /// This class is responsible for fetching documents from a partition and all it's descendants, which is modeled as a tree of document producers.
@@ -120,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 queryContext,
                 querySpecForInit,
                 partitionKeyRange,
-                (itemsBuffered, resourceUnitUsage, queryMetrics, requestLength, token) => produceAsyncCompleteCallback(this, itemsBuffered, resourceUnitUsage, queryMetrics, requestLength, token),
+                (itemsBuffered, resourceUnitUsage, diagnostics, requestLength, token) => produceAsyncCompleteCallback(this, itemsBuffered, resourceUnitUsage, diagnostics, requestLength, token),
                 equalityComparer,
                 initialPageSize,
                 initialContinuationToken);
@@ -145,7 +144,7 @@ namespace Microsoft.Azure.Cosmos.Query
             ItemProducerTree itemProducerTree,
             int numberOfDocuments,
             double requestCharge,
-            QueryMetrics queryMetrics,
+            IReadOnlyCollection<QueryPageDiagnostics> diagnostics,
             long responseLengthInBytes,
             CancellationToken token);
 

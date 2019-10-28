@@ -7,14 +7,15 @@ namespace Microsoft.Azure.Cosmos.Query
     using System;
     using System.Collections.Generic;
     using System.Globalization;
+    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.ExecutionComponent;
-    using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
+    using PartitionKeyRange = Documents.PartitionKeyRange;
 
     /// <summary>
     /// You can imagine the pipeline to be a directed acyclic graph where documents flow from multiple sources (the partitions) to a single sink (the client who calls on ExecuteNextAsync()).
@@ -122,6 +123,11 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
+        public override bool TryGetContinuationToken(out string state)
+        {
+            return this.component.TryGetContinuationToken(out state);
+        }
+
         /// <summary>
         /// Creates a CosmosPipelinedItemQueryExecutionContext.
         /// </summary>
@@ -145,18 +151,17 @@ namespace Microsoft.Azure.Cosmos.Query
 
             QueryInfo queryInfo = initParams.PartitionedQueryExecutionInfo.QueryInfo;
 
-            int actualPageSize = initParams.InitialPageSize;
             int initialPageSize = initParams.InitialPageSize;
             CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams parameters = initParams;
             if (queryInfo.HasGroupBy)
             {
-                initialPageSize = int.MaxValue;
+                // The query will block until all groupings are gathered so we might as well speed up the process.
                 initParams = new CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams(
                     sqlQuerySpec: initParams.SqlQuerySpec,
                     collectionRid: initParams.CollectionRid,
                     partitionedQueryExecutionInfo: initParams.PartitionedQueryExecutionInfo,
                     partitionKeyRanges: initParams.PartitionKeyRanges,
-                    initialPageSize: initialPageSize,
+                    initialPageSize: int.MaxValue,
                     maxConcurrency: initParams.MaxConcurrency,
                     maxItemCount: int.MaxValue,
                     maxBufferedItemCount: initParams.MaxBufferedItemCount);
@@ -181,14 +186,16 @@ namespace Microsoft.Azure.Cosmos.Query
             };
 
             return (CosmosQueryExecutionContext)await PipelinedDocumentQueryExecutionContext.CreateHelperAsync(
-               initParams.PartitionedQueryExecutionInfo.QueryInfo,
-               initialPageSize,
-               requestContinuationToken,
-               createOrderByComponentFunc,
-               createParallelComponentFunc);
+                queryContext.QueryClient,
+                initParams.PartitionedQueryExecutionInfo.QueryInfo,
+                initialPageSize,
+                requestContinuationToken,
+                createOrderByComponentFunc,
+                createParallelComponentFunc);
         }
 
         private static async Task<PipelinedDocumentQueryExecutionContext> CreateHelperAsync(
+            CosmosQueryClient queryClient,
             QueryInfo queryInfo,
             int initialPageSize,
             string requestContinuation,
@@ -225,6 +232,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 createComponentFunc = async (continuationToken) =>
                 {
                     return await DistinctDocumentQueryExecutionComponent.CreateAsync(
+                        queryClient,
                         continuationToken,
                         createSourceCallback,
                         queryInfo.DistinctType);
@@ -262,6 +270,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 createComponentFunc = async (continuationToken) =>
                 {
                     return await TakeDocumentQueryExecutionComponent.CreateLimitDocumentQueryExecutionComponentAsync(
+                        queryClient,
                         queryInfo.Limit.Value,
                         continuationToken,
                         createSourceCallback);
@@ -274,6 +283,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 createComponentFunc = async (continuationToken) =>
                 {
                     return await TakeDocumentQueryExecutionComponent.CreateTopDocumentQueryExecutionComponentAsync(
+                        queryClient,
                         queryInfo.Top.Value,
                         continuationToken,
                         createSourceCallback);
@@ -305,8 +315,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 count: feedResponse.CosmosElements.Count,
                 responseHeaders: new DictionaryNameValueCollection(),
                 useETagAsContinuation: false,
-                queryMetrics: feedResponse.QueryMetrics,
-                requestStats: feedResponse.RequestStatistics,
+                queryMetrics: null,
+                requestStats: null,
                 disallowContinuationTokenMessage: feedResponse.DisallowContinuationTokenMessage,
                 responseLengthBytes: feedResponse.ResponseLengthBytes);
         }

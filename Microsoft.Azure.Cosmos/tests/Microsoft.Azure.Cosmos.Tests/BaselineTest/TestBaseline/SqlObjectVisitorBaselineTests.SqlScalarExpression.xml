@@ -1,0 +1,581 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description>SqlArrayCreateScalarExpressionEmpty</Description>
+      <SqlObject><![CDATA[{
+  "Items": [],
+  "Kind": "ArrayCreateScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[[]]]></TextOutput>
+      <PrettyPrint><![CDATA[
+[]
+]]></PrettyPrint>
+      <HashCode>1760950661</HashCode>
+      <ObfusctedQuery><![CDATA[[]]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>SqlArrayCreateScalarExpressionOneItem</Description>
+      <SqlObject><![CDATA[{
+  "Items": [
+    {
+      "Literal": {
+        "Kind": "NullLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "Kind": "ArrayCreateScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[[null]]]></TextOutput>
+      <PrettyPrint><![CDATA[
+[null]
+]]></PrettyPrint>
+      <HashCode>-1342139367</HashCode>
+      <ObfusctedQuery><![CDATA[[null]]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>SqlArrayCreateScalarExpressionMultItems</Description>
+      <SqlObject><![CDATA[{
+  "Items": [
+    {
+      "Literal": {
+        "Kind": "NullLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    },
+    {
+      "Literal": {
+        "Kind": "NullLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    },
+    {
+      "Literal": {
+        "Kind": "NullLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "Kind": "ArrayCreateScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[[null, null, null]]]></TextOutput>
+      <PrettyPrint><![CDATA[
+[
+    null, 
+    null, 
+    null
+]
+]]></PrettyPrint>
+      <HashCode>222446089</HashCode>
+      <ObfusctedQuery><![CDATA[[null, null, null]]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>SqlBetweenScalarExpression</Description>
+      <SqlObject><![CDATA[{
+  "Expression": {
+    "MemberExpression": {
+      "MemberExpression": {
+        "MemberExpression": {
+          "Literal": {
+            "Value": "some",
+            "Kind": "StringLiteral"
+          },
+          "Kind": "LiteralScalarExpression"
+        },
+        "IndexExpression": {
+          "Literal": {
+            "Value": "random",
+            "Kind": "StringLiteral"
+          },
+          "Kind": "LiteralScalarExpression"
+        },
+        "Kind": "MemberIndexerScalarExpression"
+      },
+      "IndexExpression": {
+        "Literal": {
+          "Value": "path",
+          "Kind": "StringLiteral"
+        },
+        "Kind": "LiteralScalarExpression"
+      },
+      "Kind": "MemberIndexerScalarExpression"
+    },
+    "IndexExpression": {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    },
+    "Kind": "MemberIndexerScalarExpression"
+  },
+  "LeftExpression": {
+    "Literal": {
+      "Value": 42,
+      "Kind": "NumberLiteral"
+    },
+    "Kind": "LiteralScalarExpression"
+  },
+  "RightExpression": {
+    "Literal": {
+      "Value": 1337,
+      "Kind": "NumberLiteral"
+    },
+    "Kind": "LiteralScalarExpression"
+  },
+  "IsNot": false,
+  "Kind": "BetweenScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[("some"["random"]["path"][42] BETWEEN 42 AND 1337)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+("some"["random"]["path"][42] BETWEEN 42 AND 1337)
+]]></PrettyPrint>
+      <HashCode>1906236414</HashCode>
+      <ObfusctedQuery><![CDATA[("str1"["str2"]["str3"][42] BETWEEN 42 AND 1337.1)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>SqlBinaryScalarExpression</Description>
+      <SqlObject><![CDATA[{
+  "OperatorKind": "Add",
+  "LeftExpression": {
+    "Literal": {
+      "Value": 5,
+      "Kind": "NumberLiteral"
+    },
+    "Kind": "LiteralScalarExpression"
+  },
+  "RightExpression": {
+    "Literal": {
+      "Value": 3,
+      "Kind": "NumberLiteral"
+    },
+    "Kind": "LiteralScalarExpression"
+  },
+  "Kind": "BinaryScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[(5 + 3)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+(5 + 3)
+]]></PrettyPrint>
+      <HashCode>-899058695</HashCode>
+      <ObfusctedQuery><![CDATA[(5 + 3)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>SqlCoalesceScalarExpression</Description>
+      <SqlObject><![CDATA[{
+  "LeftExpression": {
+    "Literal": {
+      "Value": "if this is null",
+      "Kind": "StringLiteral"
+    },
+    "Kind": "LiteralScalarExpression"
+  },
+  "RightExpression": {
+    "Literal": {
+      "Value": "then return this",
+      "Kind": "StringLiteral"
+    },
+    "Kind": "LiteralScalarExpression"
+  },
+  "Kind": "CoalesceScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[("if this is null" ?? "then return this")]]></TextOutput>
+      <PrettyPrint><![CDATA[
+("if this is null" ?? "then return this")
+]]></PrettyPrint>
+      <HashCode>1756680122</HashCode>
+      <ObfusctedQuery><![CDATA[("str1__15" ?? "str2__16")]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>SqlConditionalScalarExpression</Description>
+      <SqlObject><![CDATA[{
+  "ConditionExpression": {
+    "Literal": {
+      "Value": "if true",
+      "Kind": "StringLiteral"
+    },
+    "Kind": "LiteralScalarExpression"
+  },
+  "FirstExpression": {
+    "Literal": {
+      "Value": "then this",
+      "Kind": "StringLiteral"
+    },
+    "Kind": "LiteralScalarExpression"
+  },
+  "SecondExpression": {
+    "Literal": {
+      "Value": "else this",
+      "Kind": "StringLiteral"
+    },
+    "Kind": "LiteralScalarExpression"
+  },
+  "Kind": "ConditionalScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[("if true" ? "then this" : "else this")]]></TextOutput>
+      <PrettyPrint><![CDATA[
+("if true" ? "then this" : "else this")
+]]></PrettyPrint>
+      <HashCode>1077584788</HashCode>
+      <ObfusctedQuery><![CDATA[("str1" ? "str2" : "str3")]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>SqlInScalarExpression Not: True</Description>
+      <SqlObject><![CDATA[{
+  "Not": true,
+  "Expression": {
+    "Literal": {
+      "Value": "is this",
+      "Kind": "StringLiteral"
+    },
+    "Kind": "LiteralScalarExpression"
+  },
+  "Items": [
+    {
+      "Literal": {
+        "Value": "this",
+        "Kind": "StringLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    },
+    {
+      "Literal": {
+        "Value": "set",
+        "Kind": "StringLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    },
+    {
+      "Literal": {
+        "Value": "of",
+        "Kind": "StringLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    },
+    {
+      "Literal": {
+        "Value": "values",
+        "Kind": "StringLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "Kind": "InScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[("is this" NOT IN ("this", "set", "of", "values"))]]></TextOutput>
+      <PrettyPrint><![CDATA[
+("is this" NOT IN (
+    "this", 
+    "set", 
+    "of", 
+    "values"
+))
+]]></PrettyPrint>
+      <HashCode>147301321</HashCode>
+      <ObfusctedQuery><![CDATA[("str5" NOT IN ("str1", "str2", "str3", "str4"))]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>SqlInScalarExpression Not: False</Description>
+      <SqlObject><![CDATA[{
+  "Not": false,
+  "Expression": {
+    "Literal": {
+      "Value": "is this",
+      "Kind": "StringLiteral"
+    },
+    "Kind": "LiteralScalarExpression"
+  },
+  "Items": [
+    {
+      "Literal": {
+        "Value": "this",
+        "Kind": "StringLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    },
+    {
+      "Literal": {
+        "Value": "set",
+        "Kind": "StringLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    },
+    {
+      "Literal": {
+        "Value": "of",
+        "Kind": "StringLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    },
+    {
+      "Literal": {
+        "Value": "values",
+        "Kind": "StringLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "Kind": "InScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[("is this" IN ("this", "set", "of", "values"))]]></TextOutput>
+      <PrettyPrint><![CDATA[
+("is this" IN (
+    "this", 
+    "set", 
+    "of", 
+    "values"
+))
+]]></PrettyPrint>
+      <HashCode>-328882539</HashCode>
+      <ObfusctedQuery><![CDATA[("str5" IN ("str1", "str2", "str3", "str4"))]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>SqlObjectCreateScalarExpression Empty</Description>
+      <SqlObject><![CDATA[{
+  "Properties": [],
+  "Kind": "ObjectCreateScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[{}]]></TextOutput>
+      <PrettyPrint><![CDATA[
+{}
+]]></PrettyPrint>
+      <HashCode>-131129165</HashCode>
+      <ObfusctedQuery><![CDATA[{}]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>SqlObjectCreateScalarExpression OneProperty</Description>
+      <SqlObject><![CDATA[{
+  "Properties": [
+    {
+      "Name": {
+        "Value": "Hello",
+        "Kind": "PropertyName"
+      },
+      "Expression": {
+        "Literal": {
+          "Value": "World",
+          "Kind": "StringLiteral"
+        },
+        "Kind": "LiteralScalarExpression"
+      },
+      "Kind": "ObjectProperty"
+    }
+  ],
+  "Kind": "ObjectCreateScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[{"Hello": "World"}]]></TextOutput>
+      <PrettyPrint><![CDATA[
+{"Hello": "World"}
+]]></PrettyPrint>
+      <HashCode>-494089085</HashCode>
+      <ObfusctedQuery><![CDATA[{"p1": "str1"}]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>SqlObjectCreateScalarExpression MultiProperty</Description>
+      <SqlObject><![CDATA[{
+  "Properties": [
+    {
+      "Name": {
+        "Value": "Hello",
+        "Kind": "PropertyName"
+      },
+      "Expression": {
+        "Literal": {
+          "Value": "World",
+          "Kind": "StringLiteral"
+        },
+        "Kind": "LiteralScalarExpression"
+      },
+      "Kind": "ObjectProperty"
+    },
+    {
+      "Name": {
+        "Value": "Hello",
+        "Kind": "PropertyName"
+      },
+      "Expression": {
+        "Literal": {
+          "Value": "World",
+          "Kind": "StringLiteral"
+        },
+        "Kind": "LiteralScalarExpression"
+      },
+      "Kind": "ObjectProperty"
+    },
+    {
+      "Name": {
+        "Value": "Hello",
+        "Kind": "PropertyName"
+      },
+      "Expression": {
+        "Literal": {
+          "Value": "World",
+          "Kind": "StringLiteral"
+        },
+        "Kind": "LiteralScalarExpression"
+      },
+      "Kind": "ObjectProperty"
+    }
+  ],
+  "Kind": "ObjectCreateScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[{"Hello": "World", "Hello": "World", "Hello": "World"}]]></TextOutput>
+      <PrettyPrint><![CDATA[
+{
+    "Hello": "World", 
+    "Hello": "World", 
+    "Hello": "World"
+}
+]]></PrettyPrint>
+      <HashCode>-522844854</HashCode>
+      <ObfusctedQuery><![CDATA[{"p1": "str1", "p1": "str1", "p1": "str1"}]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>SqlParameterRefScalarExpression</Description>
+      <SqlObject><![CDATA[{
+  "Parameter": {
+    "Name": "@param0",
+    "Kind": "Parameter"
+  },
+  "Kind": "ParameterRefScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[@param0]]></TextOutput>
+      <PrettyPrint><![CDATA[
+@param0
+]]></PrettyPrint>
+      <HashCode>-1212109403</HashCode>
+      <ObfusctedQuery><![CDATA[param1]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>SqlPropertyRefScalarExpression</Description>
+      <SqlObject><![CDATA[{
+  "PropertyIdentifier": {
+    "Value": "path",
+    "Kind": "Identifier"
+  },
+  "MemberExpression": {
+    "Literal": {
+      "Value": "some",
+      "Kind": "StringLiteral"
+    },
+    "Kind": "LiteralScalarExpression"
+  },
+  "Kind": "PropertyRefScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA["some".path]]></TextOutput>
+      <PrettyPrint><![CDATA[
+"some".path
+]]></PrettyPrint>
+      <HashCode>-1027122709</HashCode>
+      <ObfusctedQuery><![CDATA["str1".ident1]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>SqlUnaryScalarExpression</Description>
+      <SqlObject><![CDATA[{
+  "OperatorKind": "BitwiseNot",
+  "Expression": {
+    "Literal": {
+      "Value": 42,
+      "Kind": "NumberLiteral"
+    },
+    "Kind": "LiteralScalarExpression"
+  },
+  "Kind": "UnaryScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[(~ 42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+(~ 42)
+]]></PrettyPrint>
+      <HashCode>1104241993</HashCode>
+      <ObfusctedQuery><![CDATA[(~ 42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>SqlFunctionCallScalarExpression</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "ABS",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": -42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[ABS(-42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+ABS(-42)
+]]></PrettyPrint>
+      <HashCode>-1199382626</HashCode>
+      <ObfusctedQuery><![CDATA[ABS(-42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+</Results>

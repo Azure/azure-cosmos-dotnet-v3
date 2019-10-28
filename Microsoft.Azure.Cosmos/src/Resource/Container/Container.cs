@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Query;
 
     /// <summary>
     /// Operations for reading, replacing, or deleting a specific, existing container or item in a container by id.
@@ -580,6 +581,10 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Replaces a item in the Azure Cosmos service as an asynchronous operation.
         /// </summary>
+        /// <remarks>
+        /// The item's partition key value is immutable. 
+        /// To change an item's partition key value you must delete the original item and insert a new item.
+        /// </remarks>
         /// <param name="streamPayload">A <see cref="Stream"/> containing the payload.</param>
         /// <param name="id">The cosmos item id</param>
         /// <param name="partitionKey">The partition key for the item. <see cref="PartitionKey"/></param>
@@ -626,7 +631,11 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Replaces a item in the Azure Cosmos service as an asynchronous operation.
-        /// </summary>        
+        /// </summary>
+        /// <remarks>
+        /// The item's partition key value is immutable. 
+        /// To change an item's partition key value you must delete the original item and insert a new item.
+        /// </remarks>
         /// <param name="item">A JSON serializable object that must contain an id property. <see cref="CosmosSerializer"/> to implement a custom serializer.</param>
         /// <param name="id">The cosmos item id, which is expected to match the value within T.</param>
         /// <param name="partitionKey">Partition key for the item. If not specified will be populated by extracting from {T}</param>
@@ -1052,7 +1061,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <remarks>
-        /// The Azure Cosmos DB LINQ provider compiles LINQ to SQL statements. Refer to http://azure.microsoft.com/documentation/articles/documentdb-sql-query/#linq-to-documentdb-sql for the list of expressions supported by the Azure Cosmos DB LINQ provider. ToString() on the generated IQueryable returns the translated SQL statement. The Azure Cosmos DB provider translates JSON.NET and DataContract serialization attributes for members to their JSON property names.
+        /// The Azure Cosmos DB LINQ provider compiles LINQ to SQL statements. Refer to https://docs.microsoft.com/azure/cosmos-db/sql-query-linq-to-sql for the list of expressions supported by the Azure Cosmos DB LINQ provider. ToString() on the generated IQueryable returns the translated SQL statement. The Azure Cosmos DB provider translates JSON.NET and DataContract serialization attributes for members to their JSON property names.
         /// </remarks>
         public abstract IOrderedQueryable<T> GetItemLinqQueryable<T>(
             bool allowSynchronousQueryExecution = false,

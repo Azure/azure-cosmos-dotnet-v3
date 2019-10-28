@@ -163,13 +163,13 @@ FROM root ]]></SqlQuery>
     <Input>
       <Description><![CDATA[Select const array index]]></Description>
       <Expression><![CDATA[query.Where(x => ((x.x >= 0) AndAlso (x.x < 3))).Select(x => new [] {1, 2, 3}[x.x])]]></Expression>
-      <ErrorMessage><![CDATA[The specified query includes 'member indexer' which is currently not supported.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE [1, 2, 3][root["x"]] 
 FROM root 
 WHERE ((root["x"] >= 0) AND (root["x"] < 3)) ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":13,"end":33},"code":"SC2990","message":"The specified query includes 'member indexer' which is currently not supported."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -220,33 +220,33 @@ FROM root ]]></SqlQuery>
     <Input>
       <Description><![CDATA[Select indexer x]]></Description>
       <Expression><![CDATA[query.Where(x => ((x.x >= 0) AndAlso (x.x < ArrayLength(DisplayClass.array)))).Select(x => DisplayClass.array[x.x])]]></Expression>
-      <ErrorMessage><![CDATA[The specified query includes 'member indexer' which is currently not supported.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE [1, 2, 3][root["x"]] 
 FROM root 
 WHERE ((root["x"] >= 0) AND (root["x"] < 3)) ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":13,"end":33},"code":"SC2990","message":"The specified query includes 'member indexer' which is currently not supported."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[Select new constructor]]></Description>
       <Expression><![CDATA[query.Select(x => new TimeSpan(Convert(x.x, Int64)))]]></Expression>
-      <ErrorMessage><![CDATA[Constructor invocation is not supported.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Constructor invocation is not supported.]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[Select method id]]></Description>
       <Expression><![CDATA[query.Select(x => id(x))]]></Expression>
-      <ErrorMessage><![CDATA[Method 'id' is not supported.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Method 'id' is not supported.]]></ErrorMessage>
     </Output>
   </Result>
   <Result>

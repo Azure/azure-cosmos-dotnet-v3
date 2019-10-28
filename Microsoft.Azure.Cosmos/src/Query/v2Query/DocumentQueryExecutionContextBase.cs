@@ -166,6 +166,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             QueryPartitionProvider queryPartitionProvider = await this.client.GetQueryPartitionProviderAsync(cancellationToken);
             return queryPartitionProvider.GetPartitionedQueryExecutionInfo(
+                (errorMessage) => new BadRequestException(errorMessage),
                 this.QuerySpec,
                 partitionKeyDefinition,
                 requireFormattableOrderByQuery,
@@ -672,7 +673,7 @@ namespace Microsoft.Azure.Cosmos.Query
             }
             else
             {
-                jsonNavigator = JsonNavigator.Create(content);
+                jsonNavigator = JsonNavigator.Create(new ArraySegment<byte>(content));
             }
 
             string resourceName = this.GetRootNodeName(documentServiceRequest.ResourceType);

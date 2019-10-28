@@ -1,0 +1,459 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description>SqlStringLiteral</Description>
+      <SqlObject><![CDATA[{
+  "Value": "Hello",
+  "Kind": "StringLiteral"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA["Hello"]]></TextOutput>
+      <PrettyPrint><![CDATA[
+"Hello"
+]]></PrettyPrint>
+      <HashCode>853962162</HashCode>
+      <ObfusctedQuery><![CDATA["str1"]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>SqlNumberLiteral</Description>
+      <SqlObject><![CDATA[{
+  "Value": 1597463007,
+  "Kind": "NumberLiteral"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[1597463007]]></TextOutput>
+      <PrettyPrint><![CDATA[
+1597463007
+]]></PrettyPrint>
+      <HashCode>837668449</HashCode>
+      <ObfusctedQuery><![CDATA[1597563007]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>SqlNullLiteral</Description>
+      <SqlObject><![CDATA[{
+  "Kind": "NullLiteral"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[null]]></TextOutput>
+      <PrettyPrint><![CDATA[
+null
+]]></PrettyPrint>
+      <HashCode>-709456592</HashCode>
+      <ObfusctedQuery><![CDATA[null]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>SqlBooleanLiteralTrue</Description>
+      <SqlObject><![CDATA[{
+  "Value": true,
+  "Kind": "BooleanLiteral"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[true]]></TextOutput>
+      <PrettyPrint><![CDATA[
+true
+]]></PrettyPrint>
+      <HashCode>621296811</HashCode>
+      <ObfusctedQuery><![CDATA[true]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>SqlBooleanLiteralFalse</Description>
+      <SqlObject><![CDATA[{
+  "Value": false,
+  "Kind": "BooleanLiteral"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[false]]></TextOutput>
+      <PrettyPrint><![CDATA[
+false
+]]></PrettyPrint>
+      <HashCode>492154155</HashCode>
+      <ObfusctedQuery><![CDATA[false]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>SqlUndefinedLiteral</Description>
+      <SqlObject><![CDATA[{
+  "Kind": "UndefinedLiteral"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[undefined]]></TextOutput>
+      <PrettyPrint><![CDATA[
+undefined
+]]></PrettyPrint>
+      <HashCode>1290712518</HashCode>
+      <ObfusctedQuery><![CDATA[undefined]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Zero</Description>
+      <SqlObject><![CDATA[{
+  "Value": 0,
+  "Kind": "NumberLiteral"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[0]]></TextOutput>
+      <PrettyPrint><![CDATA[
+0
+]]></PrettyPrint>
+      <HashCode>198553995</HashCode>
+      <ObfusctedQuery><![CDATA[0]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Positive Number</Description>
+      <SqlObject><![CDATA[{
+  "Value": 1,
+  "Kind": "NumberLiteral"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[1]]></TextOutput>
+      <PrettyPrint><![CDATA[
+1
+]]></PrettyPrint>
+      <HashCode>1271247243</HashCode>
+      <ObfusctedQuery><![CDATA[1]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Negative Number</Description>
+      <SqlObject><![CDATA[{
+  "Value": -1,
+  "Kind": "NumberLiteral"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[-1]]></TextOutput>
+      <PrettyPrint><![CDATA[
+-1
+]]></PrettyPrint>
+      <HashCode>-876236405</HashCode>
+      <ObfusctedQuery><![CDATA[-1]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Double</Description>
+      <SqlObject><![CDATA[{
+  "Value": 1337.1337,
+  "Kind": "NumberLiteral"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[1337.1337]]></TextOutput>
+      <PrettyPrint><![CDATA[
+1337.1337
+]]></PrettyPrint>
+      <HashCode>-1560167912</HashCode>
+      <ObfusctedQuery><![CDATA[1337.23]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>E</Description>
+      <SqlObject><![CDATA[{
+  "Value": 2.7182818284590451,
+  "Kind": "NumberLiteral"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[2.7182818284590451]]></TextOutput>
+      <PrettyPrint><![CDATA[
+2.7182818284590451
+]]></PrettyPrint>
+      <HashCode>-991713004</HashCode>
+      <ObfusctedQuery><![CDATA[2.7201000000000004]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Pi</Description>
+      <SqlObject><![CDATA[{
+  "Value": 3.1415926535897931,
+  "Kind": "NumberLiteral"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[3.1415926535897931]]></TextOutput>
+      <PrettyPrint><![CDATA[
+3.1415926535897931
+]]></PrettyPrint>
+      <HashCode>522620564</HashCode>
+      <ObfusctedQuery><![CDATA[3.1401000000000003]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>1/3</Description>
+      <SqlObject><![CDATA[{
+  "Value": 0.33333333333333331,
+  "Kind": "NumberLiteral"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[0.33333333333333331]]></TextOutput>
+      <PrettyPrint><![CDATA[
+0.33333333333333331
+]]></PrettyPrint>
+      <HashCode>1700114827</HashCode>
+      <ObfusctedQuery><![CDATA[0.33001]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Max Safe Integer 9007199254740991</Description>
+      <SqlObject><![CDATA[{
+  "Value": 9007199254740991,
+  "Kind": "NumberLiteral"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[9007199254740991]]></TextOutput>
+      <PrettyPrint><![CDATA[
+9007199254740991
+]]></PrettyPrint>
+      <HashCode>-1231703669</HashCode>
+      <ObfusctedQuery><![CDATA[9007299254740992]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Max Safe Integer 9007199254740991 Plus One</Description>
+      <SqlObject><![CDATA[{
+  "Value": 9007199254740992,
+  "Kind": "NumberLiteral"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[9007199254740992]]></TextOutput>
+      <PrettyPrint><![CDATA[
+9007199254740992
+]]></PrettyPrint>
+      <HashCode>1276490123</HashCode>
+      <ObfusctedQuery><![CDATA[9007299254740992]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Max Safe Integer 9007199254740991 Minus One</Description>
+      <SqlObject><![CDATA[{
+  "Value": 9007199254740990,
+  "Kind": "NumberLiteral"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[9007199254740990]]></TextOutput>
+      <PrettyPrint><![CDATA[
+9007199254740990
+]]></PrettyPrint>
+      <HashCode>-1231703670</HashCode>
+      <ObfusctedQuery><![CDATA[9007299254740988]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Min Safe Integer: -9007199254740991</Description>
+      <SqlObject><![CDATA[{
+  "Value": -9007199254740991,
+  "Kind": "NumberLiteral"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[-9007199254740991]]></TextOutput>
+      <PrettyPrint><![CDATA[
+-9007199254740991
+]]></PrettyPrint>
+      <HashCode>915779979</HashCode>
+      <ObfusctedQuery><![CDATA[-9007099254740991]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Min Safe Integer: -9007199254740991 Plus One</Description>
+      <SqlObject><![CDATA[{
+  "Value": -9007199254740990,
+  "Kind": "NumberLiteral"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[-9007199254740990]]></TextOutput>
+      <PrettyPrint><![CDATA[
+-9007199254740990
+]]></PrettyPrint>
+      <HashCode>915779978</HashCode>
+      <ObfusctedQuery><![CDATA[-9007099254740989]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Min Safe Integer: -9007199254740991 Minus One</Description>
+      <SqlObject><![CDATA[{
+  "Value": -9007199254740992,
+  "Kind": "NumberLiteral"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[-9007199254740992]]></TextOutput>
+      <PrettyPrint><![CDATA[
+-9007199254740992
+]]></PrettyPrint>
+      <HashCode>-870993525</HashCode>
+      <ObfusctedQuery><![CDATA[-9007099254740992]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>PositiveInfinity ∞</Description>
+      <SqlObject><![CDATA[{
+  "Value": "Infinity",
+  "Kind": "NumberLiteral"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[Infinity]]></TextOutput>
+      <PrettyPrint><![CDATA[
+Infinity
+]]></PrettyPrint>
+      <HashCode>-1949978229</HashCode>
+      <ObfusctedQuery><![CDATA[Infinity]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>NegativeInfinity -∞</Description>
+      <SqlObject><![CDATA[{
+  "Value": "-Infinity",
+  "Kind": "NumberLiteral"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[-Infinity]]></TextOutput>
+      <PrettyPrint><![CDATA[
+-Infinity
+]]></PrettyPrint>
+      <HashCode>197505419</HashCode>
+      <ObfusctedQuery><![CDATA[-Infinity]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>NaN NaN</Description>
+      <SqlObject><![CDATA[{
+  "Value": "NaN",
+  "Kind": "NumberLiteral"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[NaN]]></TextOutput>
+      <PrettyPrint><![CDATA[
+NaN
+]]></PrettyPrint>
+      <HashCode>198029707</HashCode>
+      <ObfusctedQuery><![CDATA[NaN]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Epsilon 4.94065645841247E-324</Description>
+      <SqlObject><![CDATA[{
+  "Value": 4.94065645841247E-324,
+  "Kind": "NumberLiteral"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[4.9406564584124654E-324]]></TextOutput>
+      <PrettyPrint><![CDATA[
+4.9406564584124654E-324
+]]></PrettyPrint>
+      <HashCode>198553994</HashCode>
+      <ObfusctedQuery><![CDATA[4.9406564584124654E-324]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>MaxValue 1.79769313486232E+308</Description>
+      <SqlObject><![CDATA[{
+  "Value": 1.7976931348623157E+308,
+  "Kind": "NumberLiteral"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[1.7976931348623157E+308]]></TextOutput>
+      <PrettyPrint><![CDATA[
+1.7976931348623157E+308
+]]></PrettyPrint>
+      <HashCode>-1947881077</HashCode>
+      <ObfusctedQuery><![CDATA[Infinity]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>MinValue -1.79769313486232E+308</Description>
+      <SqlObject><![CDATA[{
+  "Value": -1.7976931348623157E+308,
+  "Kind": "NumberLiteral"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[-1.7976931348623157E+308]]></TextOutput>
+      <PrettyPrint><![CDATA[
+-1.7976931348623157E+308
+]]></PrettyPrint>
+      <HashCode>199602571</HashCode>
+      <ObfusctedQuery><![CDATA[-1.7975931348623158E+308]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>MinValue -9223372036854775808</Description>
+      <SqlObject><![CDATA[{
+  "Value": -9223372036854775808,
+  "Kind": "NumberLiteral"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[-9223372036854775808]]></TextOutput>
+      <PrettyPrint><![CDATA[
+-9223372036854775808
+]]></PrettyPrint>
+      <HashCode>-810176117</HashCode>
+      <ObfusctedQuery><![CDATA[-9.2233720368547758E+18]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>MaxValue 9223372036854775807</Description>
+      <SqlObject><![CDATA[{
+  "Value": 9223372036854775807,
+  "Kind": "NumberLiteral"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[9223372036854775807]]></TextOutput>
+      <PrettyPrint><![CDATA[
+9223372036854775807
+]]></PrettyPrint>
+      <HashCode>-1208831925</HashCode>
+      <ObfusctedQuery><![CDATA[9.2234720368547758E+18]]></ObfusctedQuery>
+    </Output>
+  </Result>
+</Results>

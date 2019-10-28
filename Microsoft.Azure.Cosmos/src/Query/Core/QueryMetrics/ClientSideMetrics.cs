@@ -1,7 +1,7 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
     using System.Collections.Generic;
@@ -16,13 +16,12 @@ namespace Microsoft.Azure.Cosmos
         public static readonly ClientSideMetrics Zero = new ClientSideMetrics(
             retries: 0,
             requestCharge: 0,
-            fetchExecutionRanges: new List<FetchExecutionRange>(),
-            partitionSchedulingTimeSpans: new List<Tuple<string, SchedulingTimeSpan>>());
+            fetchExecutionRanges: new List<FetchExecutionRange>());
 
+        private static readonly IEnumerable<Tuple<string, SchedulingTimeSpan>> partitionSchedulingTimeSpans = new List<Tuple<string, SchedulingTimeSpan>>();
         private readonly long retries;
         private readonly double requestCharge;
         private readonly IEnumerable<FetchExecutionRange> fetchExecutionRanges;
-        private readonly IEnumerable<Tuple<string, SchedulingTimeSpan>> partitionSchedulingTimeSpans;
 
         /// <summary>
         /// Initializes a new instance of the ClientSideMetrics class.
@@ -30,28 +29,20 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="retries">The number of retries required to execute the query.</param>
         /// <param name="requestCharge">The request charge incurred from executing the query.</param>
         /// <param name="fetchExecutionRanges">The fetch execution ranges from executing the query.</param>
-        /// <param name="partitionSchedulingTimeSpans">The partition scheduling timespans from the query.</param>
         [JsonConstructor]
         public ClientSideMetrics(
             long retries,
             double requestCharge,
-            IEnumerable<FetchExecutionRange> fetchExecutionRanges,
-            IEnumerable<Tuple<string, SchedulingTimeSpan>> partitionSchedulingTimeSpans)
+            IEnumerable<FetchExecutionRange> fetchExecutionRanges)
         {
             if (fetchExecutionRanges == null)
             {
                 throw new ArgumentNullException("fetchExecutionRanges");
             }
 
-            if (partitionSchedulingTimeSpans == null)
-            {
-                throw new ArgumentNullException("partitionSchedulingTimeSpans");
-            }
-
             this.retries = retries;
             this.requestCharge = requestCharge;
             this.fetchExecutionRanges = fetchExecutionRanges;
-            this.partitionSchedulingTimeSpans = partitionSchedulingTimeSpans;
         }
 
         /// <summary>
@@ -94,7 +85,7 @@ namespace Microsoft.Azure.Cosmos
         {
             get
             {
-                return this.partitionSchedulingTimeSpans;
+                return ClientSideMetrics.partitionSchedulingTimeSpans;
             }
         }
 
@@ -108,7 +99,6 @@ namespace Microsoft.Azure.Cosmos
             long retries = 0;
             double requestCharge = 0;
             IEnumerable<FetchExecutionRange> fetchExecutionRanges = new List<FetchExecutionRange>();
-            IEnumerable<Tuple<string, SchedulingTimeSpan>> schedulingTimeSpans = new List<Tuple<string, SchedulingTimeSpan>>();
 
             if (clientSideMetricsList == null)
             {
@@ -120,10 +110,9 @@ namespace Microsoft.Azure.Cosmos
                 retries += clientSideQueryMetrics.retries;
                 requestCharge += clientSideQueryMetrics.requestCharge;
                 fetchExecutionRanges = fetchExecutionRanges.Concat(clientSideQueryMetrics.fetchExecutionRanges);
-                schedulingTimeSpans = schedulingTimeSpans.Concat(clientSideQueryMetrics.partitionSchedulingTimeSpans);
             }
 
-            return new ClientSideMetrics(retries, requestCharge, fetchExecutionRanges, schedulingTimeSpans);
+            return new ClientSideMetrics(retries, requestCharge, fetchExecutionRanges);
         }
     }
 }

@@ -128,6 +128,11 @@
                 int count = 0;
                 using (ResponseMessage response = await setIterator.ReadNextAsync())
                 {
+                    if (response.Diagnostics != null)
+                    {
+                        Console.WriteLine($"ItemStreamFeed Diagnostics: {response.Diagnostics.ToString()}");
+                    }
+
                     response.EnsureSuccessStatusCode();
                     count++;
                     using (StreamReader sr = new StreamReader(response.Content))
@@ -194,7 +199,12 @@
             FeedIterator<Family> resultSetIterator = container.GetItemQueryIterator<Family>(query, requestOptions: new QueryRequestOptions() { PartitionKey = new PartitionKey("Anderson")});
             while (resultSetIterator.HasMoreResults)
             {
-                results.AddRange((await resultSetIterator.ReadNextAsync()));
+                FeedResponse<Family> response = await resultSetIterator.ReadNextAsync();
+                results.AddRange(response);
+                if (response.Diagnostics != null)
+                {
+                    Console.WriteLine($"\nQueryWithSqlParameters Diagnostics: {response.Diagnostics.ToString()}");
+                }
             }
 
             Assert("Expected only 1 family", results.Count == 1);

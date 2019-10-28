@@ -609,6 +609,12 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
+        /// <remarks>
+        /// Refer to https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.
+        /// <para>
+        /// <see cref="Container.ReadContainerAsync(ContainerRequestOptions, CancellationToken)" /> is recommended for single container look-up.
+        /// </para>
+        /// </remarks>
         public abstract FeedIterator<T> GetContainerQueryIterator<T>(
             QueryDefinition queryDefinition,
             string continuationToken = null,
@@ -643,6 +649,12 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
+        /// <remarks>
+        /// Refer to https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.
+        /// <para>
+        /// <see cref="Container.ReadContainerStreamAsync(ContainerRequestOptions, CancellationToken)" /> is recommended for single container look-up.
+        /// </para>
+        /// </remarks>
         public abstract FeedIterator GetContainerQueryStreamIterator(
             QueryDefinition queryDefinition,
             string continuationToken = null,
@@ -683,6 +695,12 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
+        /// <remarks>
+        /// Refer to https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.
+        /// <para>
+        /// <see cref="Container.ReadContainerAsync(ContainerRequestOptions, CancellationToken)" /> is recommended for single container look-up.
+        /// </para>
+        /// </remarks>
         public abstract FeedIterator<T> GetContainerQueryIterator<T>(
             string queryText = null,
             string continuationToken = null,
@@ -723,6 +741,12 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
+        /// <remarks>
+        /// Refer to https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.
+        /// <para>
+        /// <see cref="Container.ReadContainerStreamAsync(ContainerRequestOptions, CancellationToken)" /> is recommended for single container look-up.
+        /// </para>
+        /// </remarks>
         public abstract FeedIterator GetContainerQueryStreamIterator(
             string queryText = null,
             string continuationToken = null,

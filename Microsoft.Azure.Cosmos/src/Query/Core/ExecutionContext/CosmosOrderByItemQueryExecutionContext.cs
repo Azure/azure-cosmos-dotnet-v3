@@ -7,15 +7,15 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
-    using System.Net;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Collections.Generic;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using ParallelQuery;
+    using PartitionKeyRange = Documents.PartitionKeyRange;
+    using ResourceId = Documents.ResourceId;
 
     /// <summary>
     /// CosmosOrderByItemQueryExecutionContext is a concrete implementation for CrossPartitionQueryExecutionContext.
@@ -119,6 +119,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     OrderByQueryResult orderByQueryResult = new OrderByQueryResult(itemProducer.Current);
                     string filter = itemProducer.Filter;
                     return new OrderByContinuationToken(
+                        this.queryClient,
                         new CompositeContinuationToken
                         {
                             Token = itemProducer.PreviousContinuationToken,
@@ -208,7 +209,8 @@ namespace Microsoft.Azure.Cosmos.Query
             ////  2) <i, j> always come before <i, k> where j < k
 
             List<CosmosElement> results = new List<CosmosElement>();
-            while (!this.IsDone && results.Count < maxElements)
+            bool isSuccessToMoveNext = true;
+            while (!this.IsDone && results.Count < maxElements && isSuccessToMoveNext)
             {
                 // Only drain from the highest priority document producer 
                 // We need to pop and push back the document producer tree, since the priority changes according to the sort order.
@@ -233,10 +235,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 this.previousRid = orderByQueryResult.Rid;
 
-                if (await this.MoveNextHelperAsync(currentItemProducerTree, cancellationToken))
-                {
-                    break;
-                }
+                isSuccessToMoveNext = await this.MoveNextHelperAsync(currentItemProducerTree, cancellationToken);
 
                 this.PushCurrentItemProducerTree(currentItemProducerTree);
             }
@@ -304,14 +303,13 @@ namespace Microsoft.Azure.Cosmos.Query
                     requestContinuation,
                     sortOrders,
                     orderByExpressions);
-                Dictionary<string, OrderByContinuationToken> targetRangeToOrderByContinuationMap = null;
 
                 RangeFilterInitializationInfo[] orderByInfos = this.GetPartitionKeyRangesInitializationInfo(
                     suppliedContinuationTokens,
                     partitionKeyRanges,
                     sortOrders,
                     orderByExpressions,
-                    out targetRangeToOrderByContinuationMap);
+                    out Dictionary<string, OrderByContinuationToken> targetRangeToOrderByContinuationMap);
 
                 Debug.Assert(targetRangeToOrderByContinuationMap != null, "If targetRangeToOrderByContinuationMap can't be null is valid continuation is supplied");
 
@@ -342,8 +340,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         info.Filter,
                         async (itemProducerTree) =>
                         {
-                            OrderByContinuationToken continuationToken;
-                            if (targetRangeToOrderByContinuationMap.TryGetValue(itemProducerTree.Root.PartitionKeyRange.Id, out continuationToken))
+                            if (targetRangeToOrderByContinuationMap.TryGetValue(itemProducerTree.Root.PartitionKeyRange.Id, out OrderByContinuationToken continuationToken))
                             {
                                 await this.FilterAsync(
                                     itemProducerTree,
@@ -388,18 +385,16 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 if (suppliedOrderByContinuationTokens.Length == 0)
                 {
-                    throw new CosmosException(
-                        statusCode: HttpStatusCode.BadRequest,
-                        message: $"Order by continuation token can not be empty: {requestContinuation}.");
+                    throw this.queryClient.CreateBadRequestException(
+                        $"Order by continuation token can not be empty: {requestContinuation}.");
                 }
 
                 foreach (OrderByContinuationToken suppliedOrderByContinuationToken in suppliedOrderByContinuationTokens)
                 {
                     if (suppliedOrderByContinuationToken.OrderByItems.Count != sortOrders.Length)
                     {
-                        throw new CosmosException(
-                            statusCode: HttpStatusCode.BadRequest,
-                            message: $"Invalid order-by items in continuation token {requestContinuation} for OrderBy~Context.");
+                        throw this.queryClient.CreateBadRequestException(
+                            $"Invalid order-by items in continuation token {requestContinuation} for OrderBy~Context.");
                     }
                 }
 
@@ -407,9 +402,8 @@ namespace Microsoft.Azure.Cosmos.Query
             }
             catch (JsonException ex)
             {
-                throw new CosmosException(
-                    statusCode: HttpStatusCode.BadRequest,
-                    message: $"Invalid JSON in continuation token {requestContinuation} for OrderBy~Context, exception: {ex.Message}");
+                throw this.queryClient.CreateBadRequestException(
+                    $"Invalid JSON in continuation token {requestContinuation} for OrderBy~Context, exception: {ex.Message}");
             }
         }
 
@@ -438,9 +432,8 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 if (!ResourceId.TryParse(continuationToken.Rid, out ResourceId continuationRid))
                 {
-                    throw new CosmosException(
-                        statusCode: HttpStatusCode.BadRequest,
-                        message: $"Invalid Rid in the continuation token {continuationToken.CompositeContinuationToken.Token} for OrderBy~Context.");
+                    throw this.queryClient.CreateBadRequestException(
+                        $"Invalid Rid in the continuation token {continuationToken.CompositeContinuationToken.Token} for OrderBy~Context.");
                 }
 
                 Dictionary<string, ResourceId> resourceIds = new Dictionary<string, ResourceId>();
@@ -473,13 +466,11 @@ namespace Microsoft.Azure.Cosmos.Query
 
                     if (cmp == 0)
                     {
-                        ResourceId rid;
-                        if (!resourceIds.TryGetValue(orderByResult.Rid, out rid))
+                        if (!resourceIds.TryGetValue(orderByResult.Rid, out ResourceId rid))
                         {
                             if (!ResourceId.TryParse(orderByResult.Rid, out rid))
                             {
-                                throw new CosmosException(
-                                    statusCode: HttpStatusCode.BadRequest,
+                                throw this.queryClient.CreateBadRequestException(
                                     message: $"Invalid Rid in the continuation token {continuationToken.CompositeContinuationToken.Token} for OrderBy~Context~TryParse.");
                             }
 
@@ -490,8 +481,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         {
                             if (continuationRid.Database != rid.Database || continuationRid.DocumentCollection != rid.DocumentCollection)
                             {
-                                throw new CosmosException(
-                                    statusCode: HttpStatusCode.BadRequest,
+                                throw this.queryClient.CreateBadRequestException(
                                     message: $"Invalid Rid in the continuation token {continuationToken.CompositeContinuationToken.Token} for OrderBy~Context.");
                             }
 

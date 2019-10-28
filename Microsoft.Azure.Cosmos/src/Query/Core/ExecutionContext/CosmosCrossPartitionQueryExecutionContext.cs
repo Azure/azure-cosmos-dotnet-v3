@@ -14,9 +14,10 @@ namespace Microsoft.Azure.Cosmos.Query
     using Collections.Generic;
     using ExecutionComponent;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Routing;
     using ParallelQuery;
+    using PartitionKeyRange = Documents.PartitionKeyRange;
+    using RequestChargeTracker = Documents.RequestChargeTracker;
+    using RMResources = Documents.RMResources;
 
     /// <summary>
     /// This class is responsible for maintaining a forest of <see cref="ItemProducerTree"/>.
@@ -70,12 +71,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         private CosmosQueryContext queryContext;
 
-        /// <summary>
-        /// This stores all the query metrics which have been grouped by partition id.
-        /// When a feed response is returned (which includes multiple partitions and potentially multiple continuations)
-        /// we take a snapshot of partitionedQueryMetrics and store it in grouped query metrics.
-        /// </summary>
-        private IReadOnlyDictionary<string, QueryMetrics> groupedQueryMetrics;
+        protected CosmosQueryClient queryClient;
 
         /// <summary>
         /// This stores the running query metrics.
@@ -91,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// but we eventually used the whole page for the next continuation; which continuation reports the cost?
         /// Basically the only thing we can ensure is if you drain a query fully you should get back the same query metrics by the end.
         /// </remarks>
-        private ConcurrentBag<Tuple<string, QueryMetrics>> partitionedQueryMetrics;
+        private ConcurrentBag<QueryPageDiagnostics> diagnosticsPages;
 
         /// <summary>
         /// Total number of buffered items to determine if we can go for another prefetch while still honoring the MaxBufferedItemCount.
@@ -137,13 +133,14 @@ namespace Microsoft.Azure.Cosmos.Query
                 throw new ArgumentNullException(nameof(equalityComparer));
             }
 
-            this.queryContext = queryContext;
+            this.queryContext = queryContext ?? throw new ArgumentNullException(nameof(queryContext));
+            this.queryClient = queryContext.QueryClient ?? throw new ArgumentNullException(nameof(queryContext.QueryClient));
             this.itemProducerForest = new PriorityQueue<ItemProducerTree>(moveNextComparer, isSynchronized: true);
             this.fetchPrioirtyFunction = fetchPrioirtyFunction;
             this.comparableTaskScheduler = new ComparableTaskScheduler(maxConcurrency.GetValueOrDefault(0));
             this.equalityComparer = equalityComparer;
             this.requestChargeTracker = new RequestChargeTracker();
-            this.partitionedQueryMetrics = new ConcurrentBag<Tuple<string, QueryMetrics>>();
+            this.diagnosticsPages = new ConcurrentBag<QueryPageDiagnostics>();
             this.actualMaxPageSize = maxItemCount.GetValueOrDefault(ParallelQueryConfig.GetConfig().ClientInternalMaxItemCount);
 
             if (this.actualMaxPageSize < 0)
@@ -214,21 +211,12 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Gets a value indicating whether the context still has more results.
         /// </summary>
-        private bool HasMoreResults => this.itemProducerForest.Count != 0 && this.CurrentItemProducerTree().HasMoreResults;
+        private bool HasMoreResults => this.FailureResponse != null || (this.itemProducerForest.Count != 0 && this.CurrentItemProducerTree().HasMoreResults);
 
         /// <summary>
         /// Gets the number of documents we can still buffer.
         /// </summary>
         private long FreeItemSpace => this.actualMaxBufferedItemCount - Interlocked.Read(ref this.totalBufferedItems);
-
-        /// <summary>
-        /// Gets the query metrics that are set in SetQueryMetrics
-        /// </summary>
-        /// <returns>The grouped query metrics.</returns>
-        public override IReadOnlyDictionary<string, QueryMetrics> GetQueryMetrics()
-        {
-            return new PartitionedQueryMetrics(this.groupedQueryMetrics);
-        }
 
         /// <summary>
         /// After a split you need to maintain the continuation tokens for all the child document producers until a condition is met.
@@ -332,7 +320,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 this.FailureResponse = moveNextResponse.failureResponse;
             }
 
-            return !moveNextResponse.successfullyMovedNext;
+            return moveNextResponse.successfullyMovedNext;
         }
 
         /// <summary>
@@ -349,7 +337,10 @@ namespace Microsoft.Azure.Cosmos.Query
             if (this.FailureResponse != null)
             {
                 this.Stop();
-                return this.FailureResponse.Value;
+
+                QueryResponseCore failure = this.FailureResponse.Value;
+                this.FailureResponse = null;
+                return failure;
             }
 
             // Drain the results. If there is no results and a failure then return the failure.
@@ -357,7 +348,10 @@ namespace Microsoft.Azure.Cosmos.Query
             if ((results == null || results.Count == 0) && this.FailureResponse != null)
             {
                 this.Stop();
-                return this.FailureResponse.Value;
+                QueryResponseCore failure = this.FailureResponse.Value;
+                this.FailureResponse = null;
+                return failure;
+                    
             }
 
             string continuation = this.ContinuationToken;
@@ -366,17 +360,15 @@ namespace Microsoft.Azure.Cosmos.Query
                 throw new InvalidOperationException("Somehow a document query execution context returned an empty array of continuations.");
             }
 
-            this.SetQueryMetrics();
+            IReadOnlyCollection<QueryPageDiagnostics> diagnostics = this.GetAndResetDiagnostics();
 
             return QueryResponseCore.CreateSuccess(
                 result: results,
                 requestCharge: this.requestChargeTracker.GetAndResetCharge(),
                 activityId: null,
-                queryMetricsText: null,
+                diagnostics: diagnostics,
                 disallowContinuationTokenMessage: null,
                 continuationToken: continuation,
-                queryMetrics: this.GetQueryMetrics(),
-                requestStatistics: null,
                 responseLengthBytes: this.GetAndResetResponseLengthBytes());
         }
 
@@ -492,7 +484,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <returns>The index of the partition whose MinInclusive is equal to the suppliedContinuationTokens</returns>
         protected int FindTargetRangeAndExtractContinuationTokens<TContinuationToken>(
             List<PartitionKeyRange> partitionKeyRanges,
-            IEnumerable<Tuple<TContinuationToken, Range<string>>> suppliedContinuationTokens,
+            IEnumerable<Tuple<TContinuationToken, Documents.Routing.Range<string>>> suppliedContinuationTokens,
             out Dictionary<string, TContinuationToken> targetRangeToContinuationTokenMap)
         {
             if (partitionKeyRanges == null)
@@ -531,7 +523,7 @@ namespace Microsoft.Azure.Cosmos.Query
             targetRangeToContinuationTokenMap = new Dictionary<string, TContinuationToken>();
 
             // Find the minimum index.
-            Tuple<TContinuationToken, Range<string>> firstContinuationTokenAndRange = suppliedContinuationTokens
+            Tuple<TContinuationToken, Documents.Routing.Range<string>> firstContinuationTokenAndRange = suppliedContinuationTokens
                 .OrderBy((tuple) => tuple.Item2.Min)
                 .First();
             TContinuationToken firstContinuationToken = firstContinuationTokenAndRange.Item1;
@@ -546,16 +538,14 @@ namespace Microsoft.Azure.Cosmos.Query
                 Comparer<PartitionKeyRange>.Create((range1, range2) => string.CompareOrdinal(range1.MinInclusive, range2.MinInclusive)));
             if (minIndex < 0)
             {
-                throw new CosmosException(
-                    statusCode: HttpStatusCode.BadRequest,
-                    message: $"{RMResources.InvalidContinuationToken} - Could not find continuation token: {firstContinuationToken}");
+                throw new ArgumentException($"{RMResources.InvalidContinuationToken} - Could not find continuation token: {firstContinuationToken}");
             }
 
-            foreach (Tuple<TContinuationToken, Range<string>> suppledContinuationToken in suppliedContinuationTokens)
+            foreach (Tuple<TContinuationToken, Documents.Routing.Range<string>> suppledContinuationToken in suppliedContinuationTokens)
             {
                 // find what ranges make up the supplied continuation token
                 TContinuationToken continuationToken = suppledContinuationToken.Item1;
-                Range<string> range = suppledContinuationToken.Item2;
+                Documents.Routing.Range<string> range = suppledContinuationToken.Item2;
 
                 IEnumerable<PartitionKeyRange> replacementRanges = partitionKeyRanges
                     .Where((partitionKeyRange) =>
@@ -566,9 +556,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 // Could not find the child ranges
                 if (replacementRanges.Count() == 0)
                 {
-                    throw new CosmosException(
-                    statusCode: HttpStatusCode.BadRequest,
-                    message: $"{RMResources.InvalidContinuationToken} - Could not find continuation token: {continuationToken}");
+                   throw this.queryClient.CreateBadRequestException(
+                       $"{RMResources.InvalidContinuationToken} - Could not find continuation token: {continuationToken}");
                 }
 
                 // PMax = C2Max > C2Min > C1Max > C1Min = PMin.
@@ -585,9 +574,8 @@ namespace Microsoft.Azure.Cosmos.Query
                     string.CompareOrdinal(child1Max, child1Min) >= 0 &&
                     child1Min == parentMin))
                 {
-                    throw new CosmosException(
-                    statusCode: HttpStatusCode.BadRequest,
-                    message: $"{RMResources.InvalidContinuationToken} - PMax = C2Max > C2Min > C1Max > C1Min = PMin: {continuationToken}");
+                    throw this.queryClient.CreateBadRequestException(
+                        $"{RMResources.InvalidContinuationToken} - PMax = C2Max > C2Min > C1Max > C1Min = PMin: {continuationToken}");
                 }
 
                 foreach (PartitionKeyRange partitionKeyRange in replacementRanges)
@@ -613,11 +601,14 @@ namespace Microsoft.Azure.Cosmos.Query
         /// Since query metrics are being aggregated asynchronously to the feed responses as explained in the member documentation,
         /// this function allows us to take a snapshot of the query metrics.
         /// </summary>
-        private void SetQueryMetrics()
+        private IReadOnlyCollection<QueryPageDiagnostics> GetAndResetDiagnostics()
         {
-            this.groupedQueryMetrics = Interlocked.Exchange(ref this.partitionedQueryMetrics, new ConcurrentBag<Tuple<string, QueryMetrics>>())
-                .GroupBy(tuple => tuple.Item1, tuple => tuple.Item2)
-                .ToDictionary(group => group.Key, group => QueryMetrics.CreateFromIEnumerable(group));
+            // Safely swap the current ConcurrentBag<QueryPageDiagnostics> for a new instance. 
+            ConcurrentBag<QueryPageDiagnostics> queryPageDiagnostics = Interlocked.Exchange(
+                ref this.diagnosticsPages,
+                new ConcurrentBag<QueryPageDiagnostics>());
+
+            return queryPageDiagnostics;
         }
 
         /// <summary>
@@ -641,7 +632,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="producer">The document producer that just finished fetching.</param>
         /// <param name="itemsBuffered">The number of items that the producer just fetched.</param>
         /// <param name="resourceUnitUsage">The amount of RUs that the producer just consumed.</param>
-        /// <param name="queryMetrics">The query metrics that the producer just got back from the backend.</param>
+        /// <param name="diagnostics">The query metrics that the producer just got back from the backend.</param>
         /// <param name="responseLengthBytes">The length of the response the producer just got back in bytes.</param>
         /// <param name="token">The cancellation token.</param>
         /// <remarks>
@@ -652,7 +643,7 @@ namespace Microsoft.Azure.Cosmos.Query
             ItemProducerTree producer,
             int itemsBuffered,
             double resourceUnitUsage,
-            QueryMetrics queryMetrics,
+            IReadOnlyCollection<QueryPageDiagnostics> diagnostics,
             long responseLengthBytes,
             CancellationToken token)
         {
@@ -660,8 +651,13 @@ namespace Microsoft.Azure.Cosmos.Query
             this.requestChargeTracker.AddCharge(resourceUnitUsage);
             Interlocked.Add(ref this.totalBufferedItems, itemsBuffered);
             this.IncrementResponseLengthBytes(responseLengthBytes);
-            this.partitionedQueryMetrics.Add(Tuple.Create(producer.PartitionKeyRange.Id, queryMetrics));
 
+            // Add the pages to the concurrent bag to safely merge all the list together.
+            foreach (QueryPageDiagnostics diagnosticPage in diagnostics)
+            {
+                this.diagnosticsPages.Add(diagnosticPage);
+            }
+            
             // Adjust the producer page size so that we reach the optimal page size.
             producer.PageSize = Math.Min((long)(producer.PageSize * DynamicPageSizeAdjustmentFactor), this.actualMaxPageSize);
 
@@ -680,26 +676,10 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        /// <summary>
-        /// Gets the formatting for a trace.
-        /// </summary>
-        /// <param name="message">The message to format</param>
-        /// <returns>The formatted message ready for a trace.</returns>
-        private string GetTrace(string message)
+        public bool TryGetContinuationToken(out string state)
         {
-            const string TracePrefixFormat = "{0}, CorrelatedActivityId: {1}, ActivityId: {2} | {3}";
-            return string.Format(
-                CultureInfo.InvariantCulture,
-                TracePrefixFormat,
-                DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
-                this.queryContext.CorrelatedActivityId,
-                this.itemProducerForest.Count != 0 ? this.CurrentItemProducerTree().ActivityId : Guid.Empty,
-                message);
-        }
-
-        private static bool IsMaxBufferedItemCountSet(int maxBufferedItemCount)
-        {
-            return maxBufferedItemCount != default(int);
+            state = this.ContinuationToken;
+            return true;
         }
 
         /// <summary>

@@ -12,8 +12,8 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Threading.Tasks;
     using Collections.Generic;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
+    using PartitionKeyRange = Documents.PartitionKeyRange;
 
     /// <summary>
     /// CosmosParallelItemQueryExecutionContext is a concrete implementation for CrossPartitionQueryExecutionContext.
@@ -155,7 +155,7 @@ namespace Microsoft.Azure.Cosmos.Query
             for (int i = 0; i < Math.Min(itemsLeftInCurrentPage, maxElements); i++)
             {
                 results.Add(currentItemProducerTree.Current);
-                if (await this.MoveNextHelperAsync(currentItemProducerTree, cancellationToken))
+                if (!await this.MoveNextHelperAsync(currentItemProducerTree, cancellationToken))
                 {
                     break;
                 }
@@ -207,23 +207,20 @@ namespace Microsoft.Azure.Cosmos.Query
                     {
                         if (suppliedCompositeContinuationToken.Range == null || suppliedCompositeContinuationToken.Range.IsEmpty)
                         {
-                            throw new CosmosException(
-                                statusCode: HttpStatusCode.BadRequest,
+                            throw this.queryClient.CreateBadRequestException(
                                 message: $"Invalid Range in the continuation token {requestContinuation} for Parallel~Context.");
                         }
                     }
 
                     if (suppliedCompositeContinuationTokens.Length == 0)
                     {
-                        throw new CosmosException(
-                            statusCode: HttpStatusCode.BadRequest,
+                        throw this.queryClient.CreateBadRequestException(
                             message: $"Invalid format for continuation token {requestContinuation} for Parallel~Context.");
                     }
                 }
                 catch (JsonException ex)
                 {
-                    throw new CosmosException(
-                        statusCode: HttpStatusCode.BadRequest,
+                    throw this.queryClient.CreateBadRequestException(
                         message: $"Invalid JSON in continuation token {requestContinuation} for Parallel~Context, exception: {ex.Message}");
                 }
 

@@ -54,6 +54,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Task<ResponseMessage> task = tasks[i];
                 ResponseMessage result = await task;
                 Assert.AreEqual(HttpStatusCode.Created, result.StatusCode);
+                Assert.IsTrue(result.Headers.RequestCharge > 0);
                 Assert.IsFalse(string.IsNullOrEmpty(result.Diagnostics.ToString()));
                 MyDocument document = cosmosDefaultJsonSerializer.FromStream<MyDocument>(result.Content);
                 Assert.AreEqual(i.ToString(), document.id);
@@ -75,6 +76,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Task<ItemResponse<MyDocument>> task = tasks[i];
                 ItemResponse<MyDocument> result = await task;
+                Assert.IsTrue(result.Headers.RequestCharge > 0);
                 Assert.IsFalse(string.IsNullOrEmpty(result.Diagnostics.ToString()));
                 Assert.AreEqual(HttpStatusCode.Created, result.StatusCode);
             }
@@ -96,6 +98,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Task<ResponseMessage> task = tasks[i];
                 ResponseMessage result = await task;
                 Assert.AreEqual(HttpStatusCode.Created, result.StatusCode);
+                Assert.IsTrue(result.Headers.RequestCharge > 0);
                 Assert.IsFalse(string.IsNullOrEmpty(result.Diagnostics.ToString()));
                 MyDocument document = cosmosDefaultJsonSerializer.FromStream<MyDocument>(result.Content);
                 Assert.AreEqual(i.ToString(), document.id);
@@ -117,6 +120,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Task<ItemResponse<MyDocument>> task = tasks[i];
                 ItemResponse<MyDocument> result = await task;
+                Assert.IsTrue(result.Headers.RequestCharge > 0);
                 Assert.IsFalse(string.IsNullOrEmpty(result.Diagnostics.ToString()));
                 Assert.AreEqual(HttpStatusCode.Created, result.StatusCode);
             }
@@ -149,6 +153,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Task<ResponseMessage> task = deleteTasks[i];
                 ResponseMessage result = await task;
+                Assert.IsTrue(result.Headers.RequestCharge > 0);
                 Assert.IsFalse(string.IsNullOrEmpty(result.Diagnostics.ToString()));
                 Assert.AreEqual(HttpStatusCode.NoContent, result.StatusCode);
             }
@@ -181,6 +186,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Task<ItemResponse<MyDocument>> task = deleteTasks[i];
                 ItemResponse<MyDocument> result = await task;
+                Assert.IsTrue(result.Headers.RequestCharge > 0);
                 Assert.IsFalse(string.IsNullOrEmpty(result.Diagnostics.ToString()));
                 Assert.AreEqual(HttpStatusCode.NoContent, result.StatusCode);
             }
@@ -213,6 +219,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Task<ResponseMessage> task = readTasks[i];
                 ResponseMessage result = await task;
+                Assert.IsTrue(result.Headers.RequestCharge > 0);
                 Assert.IsFalse(string.IsNullOrEmpty(result.Diagnostics.ToString()));
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
             }
@@ -245,6 +252,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Task<ItemResponse<MyDocument>> task = readTasks[i];
                 ItemResponse<MyDocument> result = await task;
+                Assert.IsTrue(result.Headers.RequestCharge > 0);
                 Assert.IsFalse(string.IsNullOrEmpty(result.Diagnostics.ToString()));
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
             }
@@ -277,6 +285,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Task<ResponseMessage> task = replaceTasks[i];
                 ResponseMessage result = await task;
+                Assert.IsTrue(result.Headers.RequestCharge > 0);
                 Assert.IsFalse(string.IsNullOrEmpty(result.Diagnostics.ToString()));
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
             }
@@ -309,6 +318,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Task<ItemResponse<MyDocument>> task = replaceTasks[i];
                 ItemResponse<MyDocument> result = await task;
+                Assert.IsTrue(result.Headers.RequestCharge > 0);
                 Assert.IsFalse(string.IsNullOrEmpty(result.Diagnostics.ToString()));
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
             }

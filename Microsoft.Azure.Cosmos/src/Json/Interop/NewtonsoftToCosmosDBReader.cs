@@ -18,22 +18,17 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         private NewtonsoftToCosmosDBReader(Newtonsoft.Json.JsonReader reader)
             : base(true)
         {
-            if (reader == null)
-            {
-                throw new ArgumentNullException(nameof(reader));
-            }
-
-            this.reader = reader;
+            this.reader = reader ?? throw new ArgumentNullException(nameof(reader));
         }
 
         public override JsonSerializationFormat SerializationFormat => JsonSerializationFormat.Text;
 
-        public override IReadOnlyList<byte> GetBinaryValue()
+        public override ReadOnlyMemory<byte> GetBinaryValue()
         {
             throw new NotImplementedException();
         }
 
-        public override IReadOnlyList<byte> GetBufferedRawJsonToken()
+        public override ReadOnlyMemory<byte> GetBufferedRawJsonToken()
         {
             throw new NotImplementedException();
         }

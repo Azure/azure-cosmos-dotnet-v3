@@ -102,16 +102,11 @@ namespace Microsoft.Azure.Cosmos.Query
                                     partitionIdentifier,
                                     QueryMetrics.CreateFromDelimitedStringAndClientSideMetrics(
                                         response.ResponseHeaders[HttpConstants.HttpHeaders.QueryMetrics],
+                                        response.ResponseHeaders[HttpConstants.HttpHeaders.IndexUtilization],
                                         new ClientSideMetrics(
                                             this.retries,
                                             response.RequestCharge,
-                                            this.fetchExecutionRangeAccumulator.GetExecutionRanges(),
-                                            string.IsNullOrEmpty(response.ResponseContinuation) ?
-                                            new List<Tuple<string, SchedulingTimeSpan>>()
-                                                {
-                                                    new Tuple<string, SchedulingTimeSpan>(partitionIdentifier, this.fetchSchedulingMetrics.Elapsed)
-                                                }
-                                            : new List<Tuple<string, SchedulingTimeSpan>>()))
+                                            this.fetchExecutionRangeAccumulator.GetExecutionRanges()))
                                 }
                             },
                             response.RequestStatistics,
@@ -306,6 +301,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
                     QueryInfo queryInfo;
                     providedRanges = PartitionRoutingHelper.GetProvidedPartitionKeyRanges(
+                        (errorMessage) => new BadRequestException(errorMessage),
                         this.QuerySpec,
                         enableCrossPartitionQuery,
                         false,

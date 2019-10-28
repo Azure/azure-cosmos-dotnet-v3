@@ -6,6 +6,8 @@ namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
+    using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query;
@@ -17,6 +19,42 @@ namespace Microsoft.Azure.Cosmos.Tests
     [TestClass]
     public class CosmosQueryUnitTests
     {
+        [TestMethod]
+        public void VerifyCosmosQueryResponseStream()
+        {
+            string contianerRid = "mockContainerRid";
+            (QueryResponseCore response, IList<ToDoItem> items) factoryResponse = QueryResponseMessageFactory.Create(
+                       itemIdPrefix: $"TestPage",
+                       continuationToken: "SomeContinuationToken",
+                       collectionRid: contianerRid,
+                       itemCount: 100);
+
+            QueryResponseCore responseCore = factoryResponse.response;
+
+            QueryResponse queryResponse = QueryResponse.CreateSuccess(
+                        result: responseCore.CosmosElements,
+                        count: responseCore.CosmosElements.Count,
+                        responseLengthBytes: responseCore.ResponseLengthBytes,
+                        responseHeaders: new CosmosQueryResponseMessageHeaders(
+                            responseCore.ContinuationToken,
+                            responseCore.DisallowContinuationTokenMessage,
+                            ResourceType.Document,
+                            contianerRid)
+                        {
+                            RequestCharge = responseCore.RequestCharge,
+                            ActivityId = responseCore.ActivityId
+                        },
+                        diagnostics: null);
+
+            using (Stream stream = queryResponse.Content)
+            {
+                using(Stream innerStream = queryResponse.Content)
+                {
+                    Assert.IsTrue(object.ReferenceEquals(stream, innerStream), "Content should return the same stream");
+                }
+            }
+        }
+
         [TestMethod]
         public async Task TestCosmosQueryExecutionComponentOnFailure()
         {
@@ -125,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
 
             components.Add(await AggregateDocumentQueryExecutionComponent.CreateAsync(
-               operators.ToArray(),
+                operators.ToArray(),
                 new Dictionary<string, AggregateOperator?>()
                 {
                     { "test", AggregateOperator.Count }
@@ -135,38 +173,57 @@ namespace Microsoft.Azure.Cosmos.Tests
                 setupContext.func));
 
             components.Add(await DistinctDocumentQueryExecutionComponent.CreateAsync(
-                     null,
-                     setupContext.func,
-                     DistinctQueryType.Ordered));
+                new Mock<CosmosQueryClient>().Object,
+                null,
+                setupContext.func,
+                DistinctQueryType.Ordered));
 
             components.Add(await SkipDocumentQueryExecutionComponent.CreateAsync(
-                       5,
-                       null,
-                       setupContext.func));
+                5,
+                null,
+                setupContext.func));
 
             components.Add(await TakeDocumentQueryExecutionComponent.CreateLimitDocumentQueryExecutionComponentAsync(
-                      5,
-                      null,
-                      setupContext.func));
+                new Mock<CosmosQueryClient>().Object,
+                5,
+                null,
+                setupContext.func));
 
             components.Add(await TakeDocumentQueryExecutionComponent.CreateTopDocumentQueryExecutionComponentAsync(
-                       5,
-                       null,
-                       setupContext.func));
+                new Mock<CosmosQueryClient>().Object,
+                5,
+                null,
+                setupContext.func));
 
             return (components, setupContext.response);
         }
 
         private (Func<string, Task<IDocumentQueryExecutionComponent>>, QueryResponseCore) SetupBaseContextToVerifyFailureScenario()
         {
+            IReadOnlyCollection<QueryPageDiagnostics> diagnostics = new List<QueryPageDiagnostics>()
+            {
+                new QueryPageDiagnostics("0",
+                "SomeQueryMetricText",
+                "SomeIndexUtilText",
+                new PointOperationStatistics(
+                    Guid.NewGuid().ToString(),
+                    System.Net.HttpStatusCode.Unauthorized,
+                    subStatusCode: SubStatusCodes.PartitionKeyMismatch,
+                    requestCharge: 4,
+                    errorMessage: null,
+                    method: HttpMethod.Post,
+                    requestUri: new Uri("http://localhost.com"),
+                    clientSideRequestStatistics: null),
+                new SchedulingStopwatch())
+            };
+
             QueryResponseCore failure = QueryResponseCore.CreateFailure(
                 System.Net.HttpStatusCode.Unauthorized,
                 SubStatusCodes.PartitionKeyMismatch,
                 "Random error message",
                 42.89,
                 "TestActivityId",
-                null,
-                null);
+                diagnostics);
 
             Mock<IDocumentQueryExecutionComponent> baseContext = new Mock<IDocumentQueryExecutionComponent>();
             baseContext.Setup(x => x.DrainAsync(It.IsAny<int>(), It.IsAny<CancellationToken>())).Returns(Task.FromResult<QueryResponseCore>(failure));

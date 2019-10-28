@@ -106,11 +106,19 @@ namespace Microsoft.Azure.Cosmos.Routing
             int batchSize = GatewayAddressCache.DefaultBatchSize;
 
 #if !(NETSTANDARD15 || NETSTANDARD16)
-            int userSpecifiedBatchSize = 0;
-            if (int.TryParse(System.Configuration.ConfigurationManager.AppSettings[GatewayAddressCache.AddressResolutionBatchSize], out userSpecifiedBatchSize))
+#if NETSTANDARD20
+            // GetEntryAssembly returns null when loaded from native netstandard2.0
+            if (System.Reflection.Assembly.GetEntryAssembly() != null)
             {
-                batchSize = userSpecifiedBatchSize;
+#endif
+                int userSpecifiedBatchSize = 0;
+                if (int.TryParse(System.Configuration.ConfigurationManager.AppSettings[GatewayAddressCache.AddressResolutionBatchSize], out userSpecifiedBatchSize))
+                {
+                    batchSize = userSpecifiedBatchSize;
+                }
+#if NETSTANDARD20
             }
+#endif  
 #endif
 
             string collectionAltLink = string.Format(CultureInfo.InvariantCulture, "{0}/{1}/{2}/{3}", Paths.DatabasesPathSegment, Uri.EscapeUriString(databaseName),

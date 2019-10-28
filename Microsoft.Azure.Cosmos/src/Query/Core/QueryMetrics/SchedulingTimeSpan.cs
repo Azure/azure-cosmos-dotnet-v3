@@ -1,12 +1,13 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
     using System.Collections.Generic;
     using System.Globalization;
     using System.Linq;
+    using System.Text;
 
     /// <summary>
     /// This struct is the TimeSpan equivalent to Stopwatch for SchedulingStopwatch.cs.
@@ -172,6 +173,29 @@ namespace Microsoft.Azure.Cosmos
             return totalRunTimeTicksDouble / maxTurnaroundTime;
         }
         #endregion
+
+        /// <summary>
+        /// Appends a JSON version of this SchedulingMetricsResult
+        /// </summary>
+        public void AppendJsonToBuilder(StringBuilder stringBuilder)
+        {
+            if (stringBuilder == null)
+            {
+                throw new ArgumentNullException(nameof(stringBuilder));
+            }
+
+            stringBuilder.Append("{\"TurnaroundTimeInMs\":\"");
+            stringBuilder.Append(this.TurnaroundTime.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            stringBuilder.Append("\",\"ResponseTimeInMs\":\"");
+            stringBuilder.Append(this.ResponseTime.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            stringBuilder.Append("\",\"RunTimeInMs\":\"");
+            stringBuilder.Append(this.RunTime.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            stringBuilder.Append("\",\"WaitTimeInMs\":\"");
+            stringBuilder.Append(this.WaitTime.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            stringBuilder.Append("\",\"NumberOfPreemptions\":\"");
+            stringBuilder.Append(this.NumPreemptions.ToString(CultureInfo.InvariantCulture));
+            stringBuilder.Append("\"}");
+        }
 
         /// <summary>
         /// Returns a string version of this SchedulingMetricsResult

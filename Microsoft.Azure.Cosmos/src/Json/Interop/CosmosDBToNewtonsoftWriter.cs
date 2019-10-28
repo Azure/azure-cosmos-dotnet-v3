@@ -372,7 +372,7 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         /// Gets the result of all the tokens written so far.
         /// </summary>
         /// <returns>The result of all the tokens written so far.</returns>
-        public byte[] GetResult()
+        public ReadOnlyMemory<byte> GetResult()
         {
             return this.jsonWriter.GetResult();
         }

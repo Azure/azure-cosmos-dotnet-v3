@@ -5,8 +5,8 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Globalization;
-    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
+    using BitUtils = Documents.BitUtils;
 
     /// <summary>
     /// Struct that represents either a double or 64 bit int
@@ -446,7 +446,7 @@ namespace Microsoft.Azure.Cosmos
                 ushort extraBits;
 
                 long absValue = Math.Abs(value);
-                int msbIndex = BitUtils.GetMostSignificantBitIndex((ulong)absValue);
+                int msbIndex = Documents.BitUtils.GetMostSignificantBitIndex((ulong)absValue);
 
                 // Check if the integer value spans more than 52 bits (meaning it won't fit in a double's mantissa at full precision)
                 if ((msbIndex > 52) && ((msbIndex - BitUtils.GetLeastSignificantBitIndex((long)absValue)) > 52))
@@ -507,7 +507,7 @@ namespace Microsoft.Azure.Cosmos
                     integerValue = (integerValue | 0x4000000000000000) & 0x7FFFFFFFFFFFFFFF;
 
                     // Set the extra bits
-                    integerValue = integerValue | ((long)value.ExtraBits) >> 6;
+                    integerValue = integerValue | (((long)value.ExtraBits) >> 6);
 
                     // Adjust for the exponent
                     integerValue = integerValue >> (62 - exponentValue);
@@ -571,7 +571,9 @@ namespace Microsoft.Azure.Cosmos
             public override int GetHashCode()
             {
                 int hashCode = 0;
-                hashCode ^= this.DoubleValue.GetHashCode();
+                // Need to use bit converter here, since there was a bug in get hash code for NaN
+                // https://github.com/dotnet/coreclr/issues/6237
+                hashCode ^= BitConverter.DoubleToInt64Bits(this.DoubleValue).GetHashCode();
                 hashCode ^= this.ExtraBits.GetHashCode();
                 return hashCode;
             }
@@ -594,7 +596,14 @@ namespace Microsoft.Azure.Cosmos
             public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
             {
                 Number64 number64 = (Number64)value;
-                writer.WriteValue(number64.IsDouble ? Number64.ToDouble(number64) : Number64.ToLong(number64));
+                if (number64.IsDouble)
+                {
+                    writer.WriteValue(Number64.ToDouble(number64));
+                }
+                else
+                {
+                    writer.WriteValue(Number64.ToLong(number64));
+                }
             }
 
             public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
@@ -615,7 +624,17 @@ namespace Microsoft.Azure.Cosmos
 
             public override bool CanConvert(Type objectType)
             {
-                return objectType == typeof(User);
+                return (objectType == typeof(Number64))
+                    || (objectType == typeof(sbyte))
+                    || (objectType == typeof(byte))
+                    || (objectType == typeof(short))
+                    || (objectType == typeof(ushort))
+                    || (objectType == typeof(int))
+                    || (objectType == typeof(uint))
+                    || (objectType == typeof(long))
+                    || (objectType == typeof(ulong))
+                    || (objectType == typeof(float))
+                    || (objectType == typeof(double));
             }
         }
     }

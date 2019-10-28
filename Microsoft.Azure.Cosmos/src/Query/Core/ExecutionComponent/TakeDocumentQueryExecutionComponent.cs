@@ -8,12 +8,12 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
     using System.Globalization;
     using System.Linq;
     using System.Net;
+    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
     internal sealed class TakeDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase
@@ -21,7 +21,10 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         private readonly TakeEnum takeEnum;
         private int takeCount;
 
-        private TakeDocumentQueryExecutionComponent(IDocumentQueryExecutionComponent source, int takeCount, TakeEnum takeEnum)
+        private TakeDocumentQueryExecutionComponent(
+            IDocumentQueryExecutionComponent source,
+            int takeCount,
+            TakeEnum takeEnum)
             : base(source)
         {
             if (takeCount < 0)
@@ -34,14 +37,20 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         }
 
         public static async Task<TakeDocumentQueryExecutionComponent> CreateLimitDocumentQueryExecutionComponentAsync(
+            CosmosQueryClient queryClient,
             int limitCount,
             string continuationToken,
             Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback)
         {
+            if (queryClient == null)
+            {
+                throw new ArgumentNullException(nameof(queryClient));
+            }
+
             LimitContinuationToken limitContinuationToken;
             if (continuationToken != null)
             {
-                limitContinuationToken = LimitContinuationToken.Parse(continuationToken);
+                limitContinuationToken = LimitContinuationToken.Parse(queryClient, continuationToken);
             }
             else
             {
@@ -50,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
 
             if (limitContinuationToken.Limit > limitCount)
             {
-                throw new CosmosException(HttpStatusCode.BadRequest, $"limit count in continuation token: {limitContinuationToken.Limit} can not be greater than the limit count in the query: {limitCount}.");
+                throw queryClient.CreateBadRequestException($"limit count in continuation token: {limitContinuationToken.Limit} can not be greater than the limit count in the query: {limitCount}.");
             }
 
             return new TakeDocumentQueryExecutionComponent(
@@ -60,14 +69,20 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         }
 
         public static async Task<TakeDocumentQueryExecutionComponent> CreateTopDocumentQueryExecutionComponentAsync(
+            CosmosQueryClient queryClient,
             int topCount,
             string continuationToken,
             Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback)
         {
+            if (queryClient == null)
+            {
+                throw new ArgumentNullException(nameof(queryClient));
+            }
+
             TopContinuationToken topContinuationToken;
             if (continuationToken != null)
             {
-                topContinuationToken = TopContinuationToken.Parse(continuationToken);
+                topContinuationToken = TopContinuationToken.Parse(queryClient, continuationToken);
             }
             else
             {
@@ -76,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
 
             if (topContinuationToken.Top > topCount)
             {
-                throw new CosmosException(HttpStatusCode.BadRequest, $"top count in continuation token: {topContinuationToken.Top} can not be greater than the top count in the query: {topCount}.");
+                throw queryClient.CreateBadRequestException($"top count in continuation token: {topContinuationToken.Top} can not be greater than the top count in the query: {topCount}.");
             }
 
             return new TakeDocumentQueryExecutionComponent(
@@ -103,35 +118,14 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             }
 
             List<CosmosElement> takedDocuments = results.CosmosElements.Take(this.takeCount).ToList();
-
             this.takeCount -= takedDocuments.Count;
-            string updatedContinuationToken = null;
 
+            string updatedContinuationToken = null;
             if (results.DisallowContinuationTokenMessage == null)
             {
-                if (!this.IsDone)
+                if (!this.TryGetContinuationToken(out updatedContinuationToken))
                 {
-                    string sourceContinuation = results.ContinuationToken;
-                    TakeContinuationToken takeContinuationToken;
-                    switch (this.takeEnum)
-                    {
-                        case TakeEnum.Limit:
-                            takeContinuationToken = new LimitContinuationToken(
-                                this.takeCount,
-                                sourceContinuation);
-                            break;
-
-                        case TakeEnum.Top:
-                            takeContinuationToken = new TopContinuationToken(
-                                this.takeCount,
-                                sourceContinuation);
-                            break;
-
-                        default:
-                            throw new ArgumentException($"Unknown {nameof(TakeEnum)}: {this.takeEnum}");
-                    }
-
-                    updatedContinuationToken = takeContinuationToken.ToString();
+                    throw new InvalidOperationException($"Failed to get state for {nameof(TakeDocumentQueryExecutionComponent)}.");
                 }
             }
 
@@ -141,10 +135,49 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                     disallowContinuationTokenMessage: results.DisallowContinuationTokenMessage,
                     activityId: results.ActivityId,
                     requestCharge: results.RequestCharge,
-                    queryMetricsText: results.QueryMetricsText,
-                    queryMetrics: results.QueryMetrics,
-                    requestStatistics: results.RequestStatistics,
+                    diagnostics: results.diagnostics,
                     responseLengthBytes: results.ResponseLengthBytes);
+        }
+
+        public override bool TryGetContinuationToken(out string state)
+        {
+            if (!this.IsDone)
+            {
+                if (this.Source.TryGetContinuationToken(out string sourceState))
+                {
+                    TakeContinuationToken takeContinuationToken;
+                    switch (this.takeEnum)
+                    {
+                        case TakeEnum.Limit:
+                            takeContinuationToken = new LimitContinuationToken(
+                                this.takeCount,
+                                sourceState);
+                            break;
+
+                        case TakeEnum.Top:
+                            takeContinuationToken = new TopContinuationToken(
+                                this.takeCount,
+                                sourceState);
+                            break;
+
+                        default:
+                            throw new ArgumentException($"Unknown {nameof(TakeEnum)}: {this.takeEnum}");
+                    }
+
+                    state = takeContinuationToken.ToString();
+                    return true;
+                }
+                else
+                {
+                    state = default(string);
+                    return false;
+                }
+            }
+            else
+            {
+                state = default(string);
+                return true;
+            }
         }
 
         private enum TakeEnum
@@ -199,14 +232,15 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             /// <summary>
             /// Parses the LimitContinuationToken from it's string form.
             /// </summary>
+            /// <param name="queryClient">The query client</param>
             /// <param name="value">The string form to parse from.</param>
             /// <returns>The parsed LimitContinuationToken.</returns>
-            public static LimitContinuationToken Parse(string value)
+            public static LimitContinuationToken Parse(CosmosQueryClient queryClient, string value)
             {
                 LimitContinuationToken result;
                 if (!TryParse(value, out result))
                 {
-                    throw new BadRequestException($"Invalid LimitContinuationToken: {value}");
+                    throw queryClient.CreateBadRequestException($"Invalid LimitContinuationToken: {value}");
                 }
                 else
                 {
@@ -292,14 +326,15 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             /// <summary>
             /// Parses the TopContinuationToken from it's string form.
             /// </summary>
+            /// <param name="queryClient">The query client</param>
             /// <param name="value">The string form to parse from.</param>
             /// <returns>The parsed TopContinuationToken.</returns>
-            public static TopContinuationToken Parse(string value)
+            public static TopContinuationToken Parse(CosmosQueryClient queryClient, string value)
             {
                 TopContinuationToken result;
                 if (!TryParse(value, out result))
                 {
-                    throw new BadRequestException($"Invalid TopContinuationToken: {value}");
+                    throw queryClient.CreateBadRequestException($"Invalid TopContinuationToken: {value}");
                 }
                 else
                 {

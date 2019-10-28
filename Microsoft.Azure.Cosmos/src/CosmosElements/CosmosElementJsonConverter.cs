@@ -7,6 +7,9 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     using System;
     using System.Collections.Generic;
     using System.Linq;
+#if NETSTANDARD15 || NETSTANDARD16
+    using System.Reflection;
+#endif
     using System.Text;
     using Microsoft.Azure.Cosmos.Json.Interop;
     using Newtonsoft.Json;
@@ -72,7 +75,11 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public override bool CanConvert(Type objectType)
         {
+#if NETSTANDARD15 || NETSTANDARD16
+            return ConvertableTypes.Contains(objectType) || ConvertableTypes.Contains(objectType.GetTypeInfo().BaseType) || objectType == typeof(CosmosElement);
+#else
             return ConvertableTypes.Contains(objectType) || ConvertableTypes.Contains(objectType.BaseType) || objectType == typeof(CosmosElement);
+#endif
         }
 
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
@@ -80,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             JToken token = JToken.Load(reader);
             string json = JsonConvert.SerializeObject(token);
             byte[] buffer = Encoding.UTF8.GetBytes(json);
-            return CosmosElement.Create(buffer);
+            return CosmosElement.CreateFromBuffer(buffer);
         }
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)

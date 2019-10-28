@@ -1,0 +1,2717 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description>_COMPARE_BSON_BINARYDATA</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "_COMPARE_BSON_BINARYDATA",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    },
+    {
+      "Literal": {
+        "Value": 1337,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[_COMPARE_BSON_BINARYDATA(42, 1337)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+_COMPARE_BSON_BINARYDATA(
+    42, 
+    1337
+)
+]]></PrettyPrint>
+      <HashCode>-1302450251</HashCode>
+      <ObfusctedQuery><![CDATA[_COMPARE_BSON_BINARYDATA(42, 1337.1)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>_COMPARE_OBJECTS</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "_COMPARE_OBJECTS",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    },
+    {
+      "Literal": {
+        "Value": 1337,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[_COMPARE_OBJECTS(42, 1337)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+_COMPARE_OBJECTS(
+    42, 
+    1337
+)
+]]></PrettyPrint>
+      <HashCode>1834671385</HashCode>
+      <ObfusctedQuery><![CDATA[_COMPARE_OBJECTS(42, 1337.1)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>_ObjectToArray</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "_ObjectToArray",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Kind": "NullLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[_ObjectToArray(null)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+_ObjectToArray(null)
+]]></PrettyPrint>
+      <HashCode>-236268680</HashCode>
+      <ObfusctedQuery><![CDATA[_ObjectToArray(null)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>_PROXY_PROJECTION</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "_PROXY_PROJECTION",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    },
+    {
+      "Literal": {
+        "Value": 1337,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    },
+    {
+      "Literal": {
+        "Value": 1234,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[_PROXY_PROJECTION(42, 1337, 1234)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+_PROXY_PROJECTION(
+    42, 
+    1337, 
+    1234
+)
+]]></PrettyPrint>
+      <HashCode>610013180</HashCode>
+      <ObfusctedQuery><![CDATA[_PROXY_PROJECTION(42, 1337.1, 1234.2)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>_REGEX_MATCH</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "_REGEX_MATCH",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    },
+    {
+      "Literal": {
+        "Value": 1337,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[_REGEX_MATCH(42, 1337)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+_REGEX_MATCH(
+    42, 
+    1337
+)
+]]></PrettyPrint>
+      <HashCode>-962904190</HashCode>
+      <ObfusctedQuery><![CDATA[_REGEX_MATCH(42, 1337.1)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>_ST_DISTANCE</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "_ST_DISTANCE",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    },
+    {
+      "Literal": {
+        "Value": 1337,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[_ST_DISTANCE(42, 1337)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+_ST_DISTANCE(
+    42, 
+    1337
+)
+]]></PrettyPrint>
+      <HashCode>-1605852852</HashCode>
+      <ObfusctedQuery><![CDATA[_ST_DISTANCE(42, 1337.1)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>_ST_INTERSECTS</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "_ST_INTERSECTS",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    },
+    {
+      "Literal": {
+        "Value": 1337,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[_ST_INTERSECTS(42, 1337)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+_ST_INTERSECTS(
+    42, 
+    1337
+)
+]]></PrettyPrint>
+      <HashCode>-652359528</HashCode>
+      <ObfusctedQuery><![CDATA[_ST_INTERSECTS(42, 1337.1)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>_ST_WITHIN</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "_ST_WITHIN",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    },
+    {
+      "Literal": {
+        "Value": 1337,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[_ST_WITHIN(42, 1337)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+_ST_WITHIN(
+    42, 
+    1337
+)
+]]></PrettyPrint>
+      <HashCode>172593400</HashCode>
+      <ObfusctedQuery><![CDATA[_ST_WITHIN(42, 1337.1)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>_TRY_ARRAY_CONTAINS</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "_TRY_ARRAY_CONTAINS",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    },
+    {
+      "Literal": {
+        "Value": 1337,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[_TRY_ARRAY_CONTAINS(42, 1337)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+_TRY_ARRAY_CONTAINS(
+    42, 
+    1337
+)
+]]></PrettyPrint>
+      <HashCode>1151335009</HashCode>
+      <ObfusctedQuery><![CDATA[_TRY_ARRAY_CONTAINS(42, 1337.1)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>ABS</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "ABS",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[ABS(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+ABS(42)
+]]></PrettyPrint>
+      <HashCode>948101022</HashCode>
+      <ObfusctedQuery><![CDATA[ABS(42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>ACOS</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "ACOS",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[ACOS(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+ACOS(42)
+]]></PrettyPrint>
+      <HashCode>1660875890</HashCode>
+      <ObfusctedQuery><![CDATA[ACOS(42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>ALL</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "ALL",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[ALL(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+ALL(42)
+]]></PrettyPrint>
+      <HashCode>948025334</HashCode>
+      <ObfusctedQuery><![CDATA[ALL(42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>ANY</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "ANY",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[ANY(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+ANY(42)
+]]></PrettyPrint>
+      <HashCode>948017723</HashCode>
+      <ObfusctedQuery><![CDATA[ANY(42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>ARRAY</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "ARRAY",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[ARRAY(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+ARRAY(42)
+]]></PrettyPrint>
+      <HashCode>1424287333</HashCode>
+      <ObfusctedQuery><![CDATA[ARRAY(42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>ARRAY_CONCAT</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "ARRAY_CONCAT",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Items": [
+        {
+          "Literal": {
+            "Value": 1,
+            "Kind": "NumberLiteral"
+          },
+          "Kind": "LiteralScalarExpression"
+        },
+        {
+          "Literal": {
+            "Value": 2,
+            "Kind": "NumberLiteral"
+          },
+          "Kind": "LiteralScalarExpression"
+        },
+        {
+          "Literal": {
+            "Value": 3,
+            "Kind": "NumberLiteral"
+          },
+          "Kind": "LiteralScalarExpression"
+        }
+      ],
+      "Kind": "ArrayCreateScalarExpression"
+    },
+    {
+      "Items": [
+        {
+          "Literal": {
+            "Value": 4,
+            "Kind": "NumberLiteral"
+          },
+          "Kind": "LiteralScalarExpression"
+        },
+        {
+          "Literal": {
+            "Value": 5,
+            "Kind": "NumberLiteral"
+          },
+          "Kind": "LiteralScalarExpression"
+        },
+        {
+          "Literal": {
+            "Value": 6,
+            "Kind": "NumberLiteral"
+          },
+          "Kind": "LiteralScalarExpression"
+        }
+      ],
+      "Kind": "ArrayCreateScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[ARRAY_CONCAT([1, 2, 3], [4, 5, 6])]]></TextOutput>
+      <PrettyPrint><![CDATA[
+ARRAY_CONCAT(
+    [
+        1, 
+        2, 
+        3
+    ], 
+    [
+        4, 
+        5, 
+        6
+    ]
+)
+]]></PrettyPrint>
+      <HashCode>-1615943767</HashCode>
+      <ObfusctedQuery><![CDATA[ARRAY_CONCAT([1, 2, 3], [4, 5, 6])]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>ARRAY_CONTAINS</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "ARRAY_CONTAINS",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Items": [
+        {
+          "Literal": {
+            "Value": 1,
+            "Kind": "NumberLiteral"
+          },
+          "Kind": "LiteralScalarExpression"
+        },
+        {
+          "Literal": {
+            "Value": 2,
+            "Kind": "NumberLiteral"
+          },
+          "Kind": "LiteralScalarExpression"
+        },
+        {
+          "Literal": {
+            "Value": 3,
+            "Kind": "NumberLiteral"
+          },
+          "Kind": "LiteralScalarExpression"
+        }
+      ],
+      "Kind": "ArrayCreateScalarExpression"
+    },
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    },
+    {
+      "Literal": {
+        "Value": true,
+        "Kind": "BooleanLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[ARRAY_CONTAINS([1, 2, 3], 42, true)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+ARRAY_CONTAINS(
+    [
+        1, 
+        2, 
+        3
+    ], 
+    42, 
+    true
+)
+]]></PrettyPrint>
+      <HashCode>-854810616</HashCode>
+      <ObfusctedQuery><![CDATA[ARRAY_CONTAINS([1, 2, 3], 42, true)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>ARRAY_LENGTH</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "ARRAY_LENGTH",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Items": [
+        {
+          "Literal": {
+            "Value": 1,
+            "Kind": "NumberLiteral"
+          },
+          "Kind": "LiteralScalarExpression"
+        },
+        {
+          "Literal": {
+            "Value": 2,
+            "Kind": "NumberLiteral"
+          },
+          "Kind": "LiteralScalarExpression"
+        },
+        {
+          "Literal": {
+            "Value": 3,
+            "Kind": "NumberLiteral"
+          },
+          "Kind": "LiteralScalarExpression"
+        }
+      ],
+      "Kind": "ArrayCreateScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[ARRAY_LENGTH([1, 2, 3])]]></TextOutput>
+      <PrettyPrint><![CDATA[
+ARRAY_LENGTH([
+    1, 
+    2, 
+    3
+])
+]]></PrettyPrint>
+      <HashCode>-2104916661</HashCode>
+      <ObfusctedQuery><![CDATA[ARRAY_LENGTH([1, 2, 3])]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>ARRAY_SLICE</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "ARRAY_SLICE",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Items": [
+        {
+          "Literal": {
+            "Value": 1,
+            "Kind": "NumberLiteral"
+          },
+          "Kind": "LiteralScalarExpression"
+        },
+        {
+          "Literal": {
+            "Value": 2,
+            "Kind": "NumberLiteral"
+          },
+          "Kind": "LiteralScalarExpression"
+        },
+        {
+          "Literal": {
+            "Value": 3,
+            "Kind": "NumberLiteral"
+          },
+          "Kind": "LiteralScalarExpression"
+        }
+      ],
+      "Kind": "ArrayCreateScalarExpression"
+    },
+    {
+      "Literal": {
+        "Value": 4,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    },
+    {
+      "Literal": {
+        "Value": 5,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[ARRAY_SLICE([1, 2, 3], 4, 5)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+ARRAY_SLICE(
+    [
+        1, 
+        2, 
+        3
+    ], 
+    4, 
+    5
+)
+]]></PrettyPrint>
+      <HashCode>-1823352982</HashCode>
+      <ObfusctedQuery><![CDATA[ARRAY_SLICE([1, 2, 3], 4, 5)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>ASIN</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "ASIN",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[ASIN(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+ASIN(42)
+]]></PrettyPrint>
+      <HashCode>1734029734</HashCode>
+      <ObfusctedQuery><![CDATA[ASIN(42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>ATAN</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "ATAN",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[ATAN(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+ATAN(42)
+]]></PrettyPrint>
+      <HashCode>1730393998</HashCode>
+      <ObfusctedQuery><![CDATA[ATAN(42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>ATN2</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "ATN2",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[ATN2(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+ATN2(42)
+]]></PrettyPrint>
+      <HashCode>1730444475</HashCode>
+      <ObfusctedQuery><![CDATA[ATN2(42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>AVG</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "AVG",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[AVG(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+AVG(42)
+]]></PrettyPrint>
+      <HashCode>950772724</HashCode>
+      <ObfusctedQuery><![CDATA[AVG(42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>CEILING</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "CEILING",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[CEILING(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+CEILING(42)
+]]></PrettyPrint>
+      <HashCode>326203514</HashCode>
+      <ObfusctedQuery><![CDATA[CEILING(42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>CONCAT</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "CONCAT",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": "Hello",
+        "Kind": "StringLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    },
+    {
+      "Literal": {
+        "Value": "World",
+        "Kind": "StringLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[CONCAT("Hello", "World")]]></TextOutput>
+      <PrettyPrint><![CDATA[
+CONCAT(
+    "Hello", 
+    "World"
+)
+]]></PrettyPrint>
+      <HashCode>-551258348</HashCode>
+      <ObfusctedQuery><![CDATA[CONCAT("str1", "str2")]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>CONTAINS</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "CONTAINS",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": "strstr",
+        "Kind": "StringLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    },
+    {
+      "Literal": {
+        "Value": "str",
+        "Kind": "StringLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[CONTAINS("strstr", "str")]]></TextOutput>
+      <PrettyPrint><![CDATA[
+CONTAINS(
+    "strstr", 
+    "str"
+)
+]]></PrettyPrint>
+      <HashCode>-1074519824</HashCode>
+      <ObfusctedQuery><![CDATA[CONTAINS("str1", "str2")]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>COS</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "COS",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[COS(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+COS(42)
+]]></PrettyPrint>
+      <HashCode>950901151</HashCode>
+      <ObfusctedQuery><![CDATA[COS(42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>COT</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "COT",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[COT(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+COT(42)
+]]></PrettyPrint>
+      <HashCode>950887618</HashCode>
+      <ObfusctedQuery><![CDATA[COT(42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>COUNT</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "COUNT",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[COUNT(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+COUNT(42)
+]]></PrettyPrint>
+      <HashCode>1275248890</HashCode>
+      <ObfusctedQuery><![CDATA[COUNT(42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>DEGREES</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "DEGREES",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[DEGREES(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+DEGREES(42)
+]]></PrettyPrint>
+      <HashCode>-1010818131</HashCode>
+      <ObfusctedQuery><![CDATA[DEGREES(42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>DOCUMENTID</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "DOCUMENTID",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[DOCUMENTID(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+DOCUMENTID(42)
+]]></PrettyPrint>
+      <HashCode>-1119491048</HashCode>
+      <ObfusctedQuery><![CDATA[DOCUMENTID(42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>ENDSWITH</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "ENDSWITH",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": "Does this string endswith endswith",
+        "Kind": "StringLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    },
+    {
+      "Literal": {
+        "Value": "endswith",
+        "Kind": "StringLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[ENDSWITH("Does this string endswith endswith", "endswith")]]></TextOutput>
+      <PrettyPrint><![CDATA[
+ENDSWITH(
+    "Does this string endswith endswith", 
+    "endswith"
+)
+]]></PrettyPrint>
+      <HashCode>1310545128</HashCode>
+      <ObfusctedQuery><![CDATA[ENDSWITH("str1__34", "str2")]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>EXP</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "EXP",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[EXP(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+EXP(42)
+]]></PrettyPrint>
+      <HashCode>1188489945</HashCode>
+      <ObfusctedQuery><![CDATA[EXP(42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>FLOOR</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "FLOOR",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[FLOOR(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+FLOOR(42)
+]]></PrettyPrint>
+      <HashCode>1595010801</HashCode>
+      <ObfusctedQuery><![CDATA[FLOOR(42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>INDEX_OF</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "INDEX_OF",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": "banana",
+        "Kind": "StringLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    },
+    {
+      "Literal": {
+        "Value": "ana",
+        "Kind": "StringLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[INDEX_OF("banana", "ana")]]></TextOutput>
+      <PrettyPrint><![CDATA[
+INDEX_OF(
+    "banana", 
+    "ana"
+)
+]]></PrettyPrint>
+      <HashCode>-490611053</HashCode>
+      <ObfusctedQuery><![CDATA[INDEX_OF("str1", "str2")]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>IS_ARRAY</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "IS_ARRAY",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[IS_ARRAY(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+IS_ARRAY(42)
+]]></PrettyPrint>
+      <HashCode>-605857869</HashCode>
+      <ObfusctedQuery><![CDATA[IS_ARRAY(42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>IS_BOOL</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "IS_BOOL",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": true,
+        "Kind": "BooleanLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[IS_BOOL(true)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+IS_BOOL(true)
+]]></PrettyPrint>
+      <HashCode>-1031205701</HashCode>
+      <ObfusctedQuery><![CDATA[IS_BOOL(true)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>IS_DEFINED</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "IS_DEFINED",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[IS_DEFINED(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+IS_DEFINED(42)
+]]></PrettyPrint>
+      <HashCode>-673974177</HashCode>
+      <ObfusctedQuery><![CDATA[IS_DEFINED(42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>IS_FINITE_NUMBER</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "IS_FINITE_NUMBER",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[IS_FINITE_NUMBER(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+IS_FINITE_NUMBER(42)
+]]></PrettyPrint>
+      <HashCode>1858549009</HashCode>
+      <ObfusctedQuery><![CDATA[IS_FINITE_NUMBER(42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>IS_NULL</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "IS_NULL",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Kind": "NullLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[IS_NULL(null)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+IS_NULL(null)
+]]></PrettyPrint>
+      <HashCode>1695544283</HashCode>
+      <ObfusctedQuery><![CDATA[IS_NULL(null)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>IS_NUMBER</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "IS_NUMBER",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[IS_NUMBER(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+IS_NUMBER(42)
+]]></PrettyPrint>
+      <HashCode>499272998</HashCode>
+      <ObfusctedQuery><![CDATA[IS_NUMBER(42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>IS_OBJECT</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "IS_OBJECT",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[IS_OBJECT(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+IS_OBJECT(42)
+]]></PrettyPrint>
+      <HashCode>1190524845</HashCode>
+      <ObfusctedQuery><![CDATA[IS_OBJECT(42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>IS_PRIMITIVE</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "IS_PRIMITIVE",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[IS_PRIMITIVE(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+IS_PRIMITIVE(42)
+]]></PrettyPrint>
+      <HashCode>-25700510</HashCode>
+      <ObfusctedQuery><![CDATA[IS_PRIMITIVE(42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>IS_STRING</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "IS_STRING",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": "hello",
+        "Kind": "StringLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[IS_STRING("hello")]]></TextOutput>
+      <PrettyPrint><![CDATA[
+IS_STRING("hello")
+]]></PrettyPrint>
+      <HashCode>197369964</HashCode>
+      <ObfusctedQuery><![CDATA[IS_STRING("str1")]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>LEFT</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "LEFT",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": "Hello",
+        "Kind": "StringLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    },
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[LEFT("Hello", 42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+LEFT(
+    "Hello", 
+    42
+)
+]]></PrettyPrint>
+      <HashCode>677167842</HashCode>
+      <ObfusctedQuery><![CDATA[LEFT("str1", 42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>LENGTH</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "LENGTH",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[LENGTH(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+LENGTH(42)
+]]></PrettyPrint>
+      <HashCode>189371521</HashCode>
+      <ObfusctedQuery><![CDATA[LENGTH(42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>LIKE</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "LIKE",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": "blah",
+        "Kind": "StringLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    },
+    {
+      "Literal": {
+        "Value": "blah",
+        "Kind": "StringLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    },
+    {
+      "Literal": {
+        "Value": "blah",
+        "Kind": "StringLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[LIKE("blah", "blah", "blah")]]></TextOutput>
+      <PrettyPrint><![CDATA[
+LIKE(
+    "blah", 
+    "blah", 
+    "blah"
+)
+]]></PrettyPrint>
+      <HashCode>-535385742</HashCode>
+      <ObfusctedQuery><![CDATA[LIKE("str1", "str1", "str1")]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>LOG</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "LOG",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[LOG(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+LOG(42)
+]]></PrettyPrint>
+      <HashCode>951983273</HashCode>
+      <ObfusctedQuery><![CDATA[LOG(42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>LOG10</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "LOG10",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[LOG10(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+LOG10(42)
+]]></PrettyPrint>
+      <HashCode>-1007856584</HashCode>
+      <ObfusctedQuery><![CDATA[LOG10(42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>LOWER</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "LOWER",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[LOWER(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+LOWER(42)
+]]></PrettyPrint>
+      <HashCode>-1008756110</HashCode>
+      <ObfusctedQuery><![CDATA[LOWER(42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>LTRIM</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "LTRIM",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[LTRIM(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+LTRIM(42)
+]]></PrettyPrint>
+      <HashCode>-1298153349</HashCode>
+      <ObfusctedQuery><![CDATA[LTRIM(42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>MAX</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "MAX",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[MAX(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+MAX(42)
+]]></PrettyPrint>
+      <HashCode>951557458</HashCode>
+      <ObfusctedQuery><![CDATA[MAX(42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>MIN</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "MIN",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[MIN(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+MIN(42)
+]]></PrettyPrint>
+      <HashCode>951572494</HashCode>
+      <ObfusctedQuery><![CDATA[MIN(42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>PI</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "PI",
+    "Kind": "Identifier"
+  },
+  "Arguments": [],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[PI()]]></TextOutput>
+      <PrettyPrint><![CDATA[
+PI()
+]]></PrettyPrint>
+      <HashCode>759877112</HashCode>
+      <ObfusctedQuery><![CDATA[PI()]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>POWER</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "POWER",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    },
+    {
+      "Literal": {
+        "Value": 1337,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[POWER(42, 1337)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+POWER(
+    42, 
+    1337
+)
+]]></PrettyPrint>
+      <HashCode>-2065410283</HashCode>
+      <ObfusctedQuery><![CDATA[POWER(42, 1337.1)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>RADIANS</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "RADIANS",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[RADIANS(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+RADIANS(42)
+]]></PrettyPrint>
+      <HashCode>2096097273</HashCode>
+      <ObfusctedQuery><![CDATA[RADIANS(42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>RAND</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "RAND",
+    "Kind": "Identifier"
+  },
+  "Arguments": [],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[RAND()]]></TextOutput>
+      <PrettyPrint><![CDATA[
+RAND()
+]]></PrettyPrint>
+      <HashCode>-1422123156</HashCode>
+      <ObfusctedQuery><![CDATA[RAND()]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>REPLACE</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "REPLACE",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": "banana",
+        "Kind": "StringLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    },
+    {
+      "Literal": {
+        "Value": "ana",
+        "Kind": "StringLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    },
+    {
+      "Literal": {
+        "Value": "banana",
+        "Kind": "StringLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[REPLACE("banana", "ana", "banana")]]></TextOutput>
+      <PrettyPrint><![CDATA[
+REPLACE(
+    "banana", 
+    "ana", 
+    "banana"
+)
+]]></PrettyPrint>
+      <HashCode>611232669</HashCode>
+      <ObfusctedQuery><![CDATA[REPLACE("str1", "str2", "str1")]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>REPLICATE</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "REPLICATE",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": "hello",
+        "Kind": "StringLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    },
+    {
+      "Literal": {
+        "Value": 5,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[REPLICATE("hello", 5)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+REPLICATE(
+    "hello", 
+    5
+)
+]]></PrettyPrint>
+      <HashCode>-1759231678</HashCode>
+      <ObfusctedQuery><![CDATA[REPLICATE("str1", 5)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>REVERSE</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "REVERSE",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[REVERSE(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+REVERSE(42)
+]]></PrettyPrint>
+      <HashCode>-716026956</HashCode>
+      <ObfusctedQuery><![CDATA[REVERSE(42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>RIGHT</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "RIGHT",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": "hello",
+        "Kind": "StringLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    },
+    {
+      "Literal": {
+        "Value": 2,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[RIGHT("hello", 2)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+RIGHT(
+    "hello", 
+    2
+)
+]]></PrettyPrint>
+      <HashCode>891700551</HashCode>
+      <ObfusctedQuery><![CDATA[RIGHT("str1", 2)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>ROUND</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "ROUND",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[ROUND(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+ROUND(42)
+]]></PrettyPrint>
+      <HashCode>1845634331</HashCode>
+      <ObfusctedQuery><![CDATA[ROUND(42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>RTRIM</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "RTRIM",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[RTRIM(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+RTRIM(42)
+]]></PrettyPrint>
+      <HashCode>-1534507744</HashCode>
+      <ObfusctedQuery><![CDATA[RTRIM(42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>SIGN</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "SIGN",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[SIGN(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+SIGN(42)
+]]></PrettyPrint>
+      <HashCode>1835961124</HashCode>
+      <ObfusctedQuery><![CDATA[SIGN(42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>SIN</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "SIN",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[SIN(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+SIN(42)
+]]></PrettyPrint>
+      <HashCode>951887607</HashCode>
+      <ObfusctedQuery><![CDATA[SIN(42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>SQRT</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "SQRT",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[SQRT(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+SQRT(42)
+]]></PrettyPrint>
+      <HashCode>2142163143</HashCode>
+      <ObfusctedQuery><![CDATA[SQRT(42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>SQUARE</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "SQUARE",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[SQUARE(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+SQUARE(42)
+]]></PrettyPrint>
+      <HashCode>-67058548</HashCode>
+      <ObfusctedQuery><![CDATA[SQUARE(42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>STARTSWITH</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "STARTSWITH",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": "does this string startswith does",
+        "Kind": "StringLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    },
+    {
+      "Literal": {
+        "Value": "does",
+        "Kind": "StringLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[STARTSWITH("does this string startswith does", "does")]]></TextOutput>
+      <PrettyPrint><![CDATA[
+STARTSWITH(
+    "does this string startswith does", 
+    "does"
+)
+]]></PrettyPrint>
+      <HashCode>820442350</HashCode>
+      <ObfusctedQuery><![CDATA[STARTSWITH("str1__32", "str2")]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>ST_DISTANCE</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "ST_DISTANCE",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    },
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[ST_DISTANCE(42, 42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+ST_DISTANCE(
+    42, 
+    42
+)
+]]></PrettyPrint>
+      <HashCode>1233749487</HashCode>
+      <ObfusctedQuery><![CDATA[ST_DISTANCE(42, 42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>ST_INTERSECTS</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "ST_INTERSECTS",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    },
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[ST_INTERSECTS(42, 42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+ST_INTERSECTS(
+    42, 
+    42
+)
+]]></PrettyPrint>
+      <HashCode>1992127418</HashCode>
+      <ObfusctedQuery><![CDATA[ST_INTERSECTS(42, 42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>ST_ISVALID</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "ST_ISVALID",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[ST_ISVALID(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+ST_ISVALID(42)
+]]></PrettyPrint>
+      <HashCode>-488760339</HashCode>
+      <ObfusctedQuery><![CDATA[ST_ISVALID(42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>ST_ISVALIDDETAILED</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "ST_ISVALIDDETAILED",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[ST_ISVALIDDETAILED(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+ST_ISVALIDDETAILED(42)
+]]></PrettyPrint>
+      <HashCode>202371336</HashCode>
+      <ObfusctedQuery><![CDATA[ST_ISVALIDDETAILED(42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>ST_WITHIN</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "ST_WITHIN",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    },
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[ST_WITHIN(42, 42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+ST_WITHIN(
+    42, 
+    42
+)
+]]></PrettyPrint>
+      <HashCode>1288817159</HashCode>
+      <ObfusctedQuery><![CDATA[ST_WITHIN(42, 42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>SUBSTRING</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "SUBSTRING",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": "Hello",
+        "Kind": "StringLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    },
+    {
+      "Literal": {
+        "Value": 1,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    },
+    {
+      "Literal": {
+        "Value": 2,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[SUBSTRING("Hello", 1, 2)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+SUBSTRING(
+    "Hello", 
+    1, 
+    2
+)
+]]></PrettyPrint>
+      <HashCode>-1893316890</HashCode>
+      <ObfusctedQuery><![CDATA[SUBSTRING("str1", 1, 2)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>SUM</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "SUM",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[SUM(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+SUM(42)
+]]></PrettyPrint>
+      <HashCode>1189519259</HashCode>
+      <ObfusctedQuery><![CDATA[SUM(42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>TAN</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "TAN",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[TAN(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+TAN(42)
+]]></PrettyPrint>
+      <HashCode>1189160248</HashCode>
+      <ObfusctedQuery><![CDATA[TAN(42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>TRUNC</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "TRUNC",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[TRUNC(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+TRUNC(42)
+]]></PrettyPrint>
+      <HashCode>-1614924416</HashCode>
+      <ObfusctedQuery><![CDATA[TRUNC(42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>UPPER</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "UPPER",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[UPPER(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+UPPER(42)
+]]></PrettyPrint>
+      <HashCode>2018810216</HashCode>
+      <ObfusctedQuery><![CDATA[UPPER(42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+</Results>

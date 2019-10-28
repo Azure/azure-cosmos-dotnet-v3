@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class EnvironmentInformation
     {
-        private static readonly string clientId;
         private static readonly string clientSDKVersion;
         private static readonly string directPackageVersion;
         private static readonly string framework;
@@ -25,14 +24,18 @@ namespace Microsoft.Azure.Cosmos
             EnvironmentInformation.framework = RuntimeInformation.FrameworkDescription;
             EnvironmentInformation.architecture = RuntimeInformation.ProcessArchitecture.ToString();
             EnvironmentInformation.os = RuntimeInformation.OSDescription;
+        }
+
+        public EnvironmentInformation()
+        {
             string now = DateTime.UtcNow.Ticks.ToString();
-            EnvironmentInformation.clientId = now.Substring(now.Length - 5); // 5 most significative digits
+            this.ClientId = now.Substring(now.Length - 5); // 5 most significative digits
         }
 
         /// <summary>
         /// Unique identifier of a client
         /// </summary>
-        public string ClientId => EnvironmentInformation.clientId;
+        public string ClientId { get; }
 
         /// <summary>
         /// Version of the current direct package.
@@ -61,10 +64,5 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <seealso cref="RuntimeInformation.ProcessArchitecture"/>
         public string ProcessArchitecture => EnvironmentInformation.architecture;
-
-        public override string ToString()
-        {
-            return $"{this.OperatingSystem}/{this.ProcessArchitecture} {this.ClientVersion}/{this.DirectVersion}-{this.RuntimeFramework} {this.ClientId}";
-        }
     }
 }

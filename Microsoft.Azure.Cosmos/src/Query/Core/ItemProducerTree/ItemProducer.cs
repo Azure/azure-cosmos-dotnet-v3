@@ -10,7 +10,8 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Collections.Generic;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Documents;
+    using PartitionKeyRange = Documents.PartitionKeyRange;
+    using PartitionKeyRangeIdentity = Documents.PartitionKeyRangeIdentity;
 
     /// <summary>
     /// The ItemProducer is the base unit of buffering and iterating through documents.
@@ -45,11 +46,6 @@ namespace Microsoft.Azure.Cosmos.Query
         /// Keeps track of when a fetch happens and ends to calculate scheduling metrics.
         /// </summary>
         private readonly SchedulingStopwatch fetchSchedulingMetrics;
-
-        /// <summary>
-        /// Keeps track of fetch ranges.
-        /// </summary>
-        private readonly FetchExecutionRangeAccumulator fetchExecutionRangeAccumulator;
 
         /// <summary>
         /// Equality comparer to determine if you have come across a distinct document according to the sort order.
@@ -152,7 +148,6 @@ namespace Microsoft.Azure.Cosmos.Query
 
             this.fetchSchedulingMetrics = new SchedulingStopwatch();
             this.fetchSchedulingMetrics.Ready();
-            this.fetchExecutionRangeAccumulator = new FetchExecutionRangeAccumulator();
 
             this.HasMoreResults = true;
         }
@@ -160,7 +155,7 @@ namespace Microsoft.Azure.Cosmos.Query
         public delegate void ProduceAsyncCompleteDelegate(
             int numberOfDocuments,
             double requestCharge,
-            QueryMetrics queryMetrics,
+            IReadOnlyCollection<QueryPageDiagnostics> diagnostics,
             long responseLengthInBytes,
             CancellationToken token);
 
@@ -296,8 +291,6 @@ namespace Microsoft.Azure.Cosmos.Query
                     return;
                 }
 
-                this.fetchSchedulingMetrics.Start();
-                this.fetchExecutionRangeAccumulator.BeginFetchRange();
                 int pageSize = (int)Math.Min(this.pageSize, int.MaxValue);
 
                 QueryResponseCore feedResponse = await this.queryContext.ExecuteQueryAsync(
@@ -308,17 +301,10 @@ namespace Microsoft.Azure.Cosmos.Query
                             this.PartitionKeyRange.Id),
                     isContinuationExpected: this.queryContext.IsContinuationExpected,
                     pageSize: pageSize,
+                    schedulingStopwatch: this.fetchSchedulingMetrics,
                     cancellationToken: token);
 
-                this.fetchExecutionRangeAccumulator.EndFetchRange(
-                    partitionIdentifier: this.PartitionKeyRange.Id,
-                    activityId: feedResponse.ActivityId,
-                    numberOfDocuments: feedResponse.CosmosElements.Count,
-                    retryCount: -1);
-
-                this.fetchSchedulingMetrics.Stop();
                 this.hasStartedFetching = true;
-
                 this.ActivityId = Guid.Parse(feedResponse.ActivityId);
                 await this.bufferedPages.AddAsync(feedResponse);
                 if (!feedResponse.IsSuccess)
@@ -333,35 +319,11 @@ namespace Microsoft.Azure.Cosmos.Query
                 this.BackendContinuationToken = feedResponse.ContinuationToken;
 
                 Interlocked.Add(ref this.bufferedItemCount, feedResponse.CosmosElements.Count);
-                QueryMetrics queryMetrics = QueryMetrics.Zero;
-
-                if (feedResponse.QueryMetricsText != null)
-                {
-                    queryMetrics = QueryMetrics.CreateFromDelimitedStringAndClientSideMetrics(
-                        feedResponse.QueryMetricsText,
-                        new ClientSideMetrics(
-                            -1,
-                            feedResponse.RequestCharge,
-                            this.fetchExecutionRangeAccumulator.GetExecutionRanges(),
-                            new List<Tuple<string, SchedulingTimeSpan>>()));
-                }
-
-                if (!this.HasMoreBackendResults)
-                {
-                    queryMetrics = QueryMetrics.CreateWithSchedulingMetrics(
-                        queryMetrics: queryMetrics,
-                        partitionSchedulingTimeSpans: new List<Tuple<string, SchedulingTimeSpan>>
-                        {
-                                        new Tuple<string, SchedulingTimeSpan>(
-                                            this.PartitionKeyRange.Id,
-                                            this.fetchSchedulingMetrics.Elapsed)
-                        });
-                }
 
                 this.produceAsyncCompleteCallback(
                     feedResponse.CosmosElements.Count,
                     feedResponse.RequestCharge,
-                    queryMetrics,
+                    feedResponse.diagnostics,
                     feedResponse.ResponseLengthBytes,
                     token);
 
