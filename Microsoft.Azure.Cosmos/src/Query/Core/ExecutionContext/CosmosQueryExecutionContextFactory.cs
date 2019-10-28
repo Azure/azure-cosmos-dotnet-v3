@@ -41,12 +41,6 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         private PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
 
-        /// <summary>
-        /// Test flag for making the query use the opposite code path for query plan retrieval.
-        /// If the SDK would have went to Gateway, then it will use ServiceInterop and visa versa.
-        /// </summary>
-        public static bool TestFlag = true;
-
         public CosmosQueryExecutionContextFactory(
             CosmosQueryContext cosmosQueryContext,
             InputParameters inputParameters)
@@ -161,9 +155,7 @@ namespace Microsoft.Azure.Cosmos.Query
                             disallowContinuationTokenMessage: response.DisallowContinuationTokenMessage,
                             activityId: response.ActivityId,
                             requestCharge: response.RequestCharge,
-                            queryMetricsText: response.QueryMetricsText,
-                            queryMetrics: response.QueryMetrics,
-                            requestStatistics: response.RequestStatistics,
+                            diagnostics: response.diagnostics,
                             responseLengthBytes: response.ResponseLengthBytes);
                     }
                 }
@@ -246,6 +238,8 @@ namespace Microsoft.Azure.Cosmos.Query
                         cancellationToken);
                 }
             }
+
+            this.partitionedQueryExecutionInfo = partitionedQueryExecutionInfo;
 
             return await this.CreateFromPartitionedQuerExecutionInfoAsync(
                 partitionedQueryExecutionInfo,
@@ -372,81 +366,6 @@ namespace Microsoft.Azure.Cosmos.Query
                 initParams,
                 inputParameters.InitialUserContinuationToken,
                 cancellationToken);
-        }
-
-        private async Task<PartitionedQueryExecutionInfo> GetQueryPlanAsync(
-            ContainerQueryProperties containerQueryProperties,
-            CancellationToken cancellationToken = default(CancellationToken))
-        {
-            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = null;
-            if (this.inputParameters.InitialUserContinuationToken != null)
-            {
-                // If the continuation token != null,
-                // then try to parse out the continuation token
-                if (!QueryPlanContinuationToken.TryParse(
-                    this.inputParameters.InitialUserContinuationToken,
-                    out QueryPlanContinuationToken queryPlanContinuationToken))
-                {
-                    throw new Microsoft.Azure.Documents.BadRequestException($"Invalid {nameof(QueryPlanContinuationToken)}: {this.inputParameters.InitialUserContinuationToken}");
-                }
-
-                this.inputParameters.InitialUserContinuationToken = queryPlanContinuationToken.SourceContinuationToken;
-
-                if (queryPlanContinuationToken.PartitionedQueryExecutionInfo != null)
-                {
-                    partitionedQueryExecutionInfo = queryPlanContinuationToken.PartitionedQueryExecutionInfo;
-                }
-            }
-
-            if (partitionedQueryExecutionInfo == null)
-            {
-                if (this.CosmosQueryContext.QueryClient.ByPassQueryParsing() && TestFlag)
-                {
-                    // For non-Windows platforms(like Linux and OSX) in .NET Core SDK, we cannot use ServiceInterop, so need to bypass in that case.
-                    // We are also now bypassing this for 32 bit host process running even on Windows as there are many 32 bit apps that will not work without this
-                    partitionedQueryExecutionInfo = await QueryPlanRetriever.GetQueryPlanThroughGatewayAsync(
-                        this.CosmosQueryContext.QueryClient,
-                        this.inputParameters.SqlQuerySpec,
-                        this.CosmosQueryContext.ResourceLink,
-                        cancellationToken);
-                }
-                else
-                {
-                    //todo:elasticcollections this may rely on information from collection cache which is outdated
-                    //if collection is deleted/created with same name.
-                    //need to make it not rely on information from collection cache.
-                    Documents.PartitionKeyDefinition partitionKeyDefinition;
-                    if ((this.inputParameters.Properties != null)
-                        && this.inputParameters.Properties.TryGetValue(
-                            InternalPartitionKeyDefinitionProperty,
-                            out object partitionKeyDefinitionObject))
-                    {
-                        if (partitionKeyDefinitionObject is Documents.PartitionKeyDefinition definition)
-                        {
-                            partitionKeyDefinition = definition;
-                        }
-                        else
-                        {
-                            throw new ArgumentException(
-                                "partitionkeydefinition has invalid type",
-                                nameof(partitionKeyDefinitionObject));
-                        }
-                    }
-                    else
-                    {
-                        partitionKeyDefinition = containerQueryProperties.PartitionKeyDefinition;
-                    }
-
-                    partitionedQueryExecutionInfo = await QueryPlanRetriever.GetQueryPlanWithServiceInteropAsync(
-                        this.CosmosQueryContext.QueryClient,
-                        this.inputParameters.SqlQuerySpec,
-                        partitionKeyDefinition,
-                        this.inputParameters.PartitionKey != null,
-                        cancellationToken);
-                }
-            }
-
-            return partitionedQueryExecutionInfo;
         }
 
         /// <summary>
