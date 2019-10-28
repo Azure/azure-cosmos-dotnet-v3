@@ -248,7 +248,25 @@ namespace Microsoft.Azure.Cosmos.Tests
                 null,
                 FailToCreateSource);
 
+            Assert.IsFalse(tryCreateWhenInvalidContinuationToken.Succeeded);
+        }
+
+        [TestMethod]
+        public async Task TestNegativeDistinctComponentCreation()
+        {
+            TryCatch<DistinctDocumentQueryExecutionComponent> tryCreateWhenSourceFails = await DistinctDocumentQueryExecutionComponent.TryCreateAsync(
+                null,
+                FailToCreateSource,
+                DistinctQueryType.Ordered);
+
             Assert.IsFalse(tryCreateWhenSourceFails.Succeeded);
+
+            TryCatch<DistinctDocumentQueryExecutionComponent> tryCreateWhenInvalidContinuationToken = await DistinctDocumentQueryExecutionComponent.TryCreateAsync(
+                "This is not a valid continuation token",
+                CreateSource,
+                DistinctQueryType.Unordered);
+
+            Assert.IsFalse(tryCreateWhenInvalidContinuationToken.Succeeded);
         }
 
         private static Task<TryCatch<IDocumentQueryExecutionComponent>> FailToCreateSource(string continuationToken)
