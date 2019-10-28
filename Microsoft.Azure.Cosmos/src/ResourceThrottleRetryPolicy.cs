@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos
         {
             TimeSpan retryDelay = TimeSpan.Zero;
             if (this.currentAttemptCount < this.maxAttemptCount &&
-                (this.CheckIfRetryNeeded(retryAfter, out retryDelay)))
+                this.CheckIfRetryNeeded(retryAfter, out retryDelay))
             {
                 this.currentAttemptCount++;
                 DefaultTrace.TraceWarning(
@@ -111,8 +111,8 @@ namespace Microsoft.Azure.Cosmos
             else
             {
                 DefaultTrace.TraceError(
-                    "Operation will NOT be retried. Current attempt {0}",
-                    this.currentAttemptCount);
+                    "Operation will NOT be retried. Current attempt {0} maxAttempts {1} Cumulative delay {2} requested retryAfter {3} maxWaitTime {4}",
+                    this.currentAttemptCount, this.maxAttemptCount, this.cumulativeRetryDelay, retryAfter, this.maxWaitTimeInMilliseconds);
                 return Task.FromResult(ShouldRetryResult.NoRetry());
             }
         }

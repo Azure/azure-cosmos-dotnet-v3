@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos
@@ -22,6 +22,8 @@ namespace Microsoft.Azure.Cosmos
     /// AddressCache internally maintains CollectionCache, CollectionRoutingMapCache and BackendAddressCache.
     /// Logic in this class mainly joins these 3 caches and deals with potential staleness of the caches.
     /// 
+    /// More details are available here:
+    /// https://microsoft.sharepoint.com/teams/DocumentDB/Design%20Documents/Manageability/Elastic%20Collections%20Routing.docx?d=w3356bd9ad32746b280c0bcb8f9905986
     /// </summary>
     internal sealed class AddressResolver : IAddressResolver
     {
@@ -79,7 +81,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 throw new ArgumentException("parent");
             }
-
+            
             if (newlyResolved == null)
             {
                 return false;
@@ -168,6 +170,30 @@ namespace Microsoft.Azure.Cosmos
 
             if (request.ServiceIdentity != null)
             {
+                if (request.ServiceIdentity.IsMasterService &&
+                    request.ForceMasterRefresh &&
+                    this.masterServiceIdentityProvider != null)
+                {
+                    await this.masterServiceIdentityProvider.RefreshAsync(request.ServiceIdentity, cancellationToken);
+
+                    ServiceIdentity newMasterServiceIdentity = this.masterServiceIdentityProvider.MasterServiceIdentity;
+
+                    bool masterServiceIdentityChanged = newMasterServiceIdentity != null &&
+                        !newMasterServiceIdentity.Equals(request.ServiceIdentity);
+
+                    DefaultTrace.TraceInformation(
+                        "Refreshed master service identity. masterServiceIdentityChanged = {0}, " +
+                        "previousRequestServiceIdentity = {1}, newMasterServiceIdentity = {2}",
+                        masterServiceIdentityChanged,
+                        request.ServiceIdentity,
+                        newMasterServiceIdentity);
+
+                    if (masterServiceIdentityChanged)
+                    {
+                        request.RouteTo(newMasterServiceIdentity);
+                    }
+                }
+
                 // In this case we don't populate request.RequestContext.ResolvedPartitionKeyRangeId,
                 // which is needed for session token.
                 // The assumption is that:
@@ -177,6 +203,15 @@ namespace Microsoft.Azure.Cosmos
                 //        to send request to specific partition and will not set request.ServiceIdentity
                 ServiceIdentity identity = request.ServiceIdentity;
                 PartitionAddressInformation addresses = await this.addressCache.TryGetAddressesAsync(request, null, identity, forceRefreshPartitionAddresses, cancellationToken);
+
+                if (addresses == null && identity.IsMasterService && this.masterServiceIdentityProvider != null)
+                {
+                    DefaultTrace.TraceWarning("Could not get addresses for MasterServiceIdentity {0}. will refresh masterServiceIdentity and retry", identity);
+                    await this.masterServiceIdentityProvider.RefreshAsync(identity, cancellationToken);
+                    identity = this.masterServiceIdentityProvider.MasterServiceIdentity;
+                    addresses = await this.addressCache.TryGetAddressesAsync(request, null, identity, forceRefreshPartitionAddresses, cancellationToken);
+                }
+
                 if (addresses == null)
                 {
                     DefaultTrace.TraceInformation("Could not get addresses for explicitly specified ServiceIdentity {0}", identity);
@@ -208,6 +243,27 @@ namespace Microsoft.Azure.Cosmos
                     serviceIdentity,
                     forceRefreshPartitionAddresses,
                     cancellationToken);
+
+                if (addresses == null && this.masterServiceIdentityProvider != null)
+                {
+                    DefaultTrace.TraceWarning(
+                        "Could not get addresses for master partition {0} on first attempt, will refresh masterServiceIdentity and retry",
+                        serviceIdentity);
+
+                    await this.masterServiceIdentityProvider.RefreshAsync(
+                        this.masterServiceIdentityProvider.MasterServiceIdentity,
+                        cancellationToken);
+
+                    serviceIdentity = this.masterServiceIdentityProvider.MasterServiceIdentity;
+
+                    addresses = await this.addressCache.TryGetAddressesAsync(
+                        request,
+                        partitionKeyRangeIdentity,
+                        serviceIdentity,
+                        forceRefreshPartitionAddresses,
+                        cancellationToken);
+                }
+
                 if (addresses == null)
                 {
                     // This shouldn't really happen.
@@ -395,7 +451,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (!request.ResourceType.IsPartitioned() &&
                !(request.ResourceType == ResourceType.StoredProcedure && request.OperationType == OperationType.ExecuteJavaScript) &&
-               // Collection head is sent internally for strong consistency given routing hints from original requst, which is for partitioned resource.
+                // Collection head is sent internally for strong consistency given routing hints from original requst, which is for partitioned resource.
                !(request.ResourceType == ResourceType.Collection && request.OperationType == OperationType.Head))
             {
                 DefaultTrace.TraceCritical(
@@ -439,7 +495,7 @@ namespace Microsoft.Azure.Cosmos
             }
             else
             {
-                range = this.TryResolveSinglePartitionCollection(request, routingMap, collectionCacheIsUptodate);
+                range = this.TryResolveSinglePartitionCollection(request, collection, routingMap, collectionCacheIsUptodate);
             }
 
             if (range == null)
@@ -472,6 +528,7 @@ namespace Microsoft.Azure.Cosmos
 
         private PartitionKeyRange TryResolveSinglePartitionCollection(
             DocumentServiceRequest request,
+            ContainerProperties collection,
             CollectionRoutingMap routingMap,
             bool collectionCacheIsUptoDate)
         {
@@ -495,7 +552,34 @@ namespace Microsoft.Azure.Cosmos
 
             if (collectionCacheIsUptoDate)
             {
-                throw new BadRequestException(RMResources.MissingPartitionKeyValue) { ResourceAddress = request.ResourceAddress };
+                // If the current collection is user-partitioned collection
+                if (collection.PartitionKey.Paths.Count >= 1 &&
+                    !collection.PartitionKey.IsSystemKey.GetValueOrDefault(false))
+                {
+                    throw new BadRequestException(RMResources.MissingPartitionKeyValue) { ResourceAddress = request.ResourceAddress };
+                }
+                else if (routingMap.OrderedPartitionKeyRanges.Count > 1)
+                {
+                    // With migrated-fixed-collection, it is possible to have multiple partition key ranges
+                    // due to parallel usage of V3 SDK and a possible storage or throughput split
+                    // The current client might be legacy and not aware of this.
+                    // In such case route the request to the first partition
+                    return this.TryResolveServerPartitionByPartitionKey(
+                                        request,
+                                        "[]", // This corresponds to first partition
+                                        collectionCacheIsUptoDate,
+                                        collection,
+                                        routingMap);
+                }
+                else 
+                {
+                    // routingMap.OrderedPartitionKeyRanges.Count == 0
+                    // Should never come here.
+                    DefaultTrace.TraceCritical(
+                        "No Partition Key ranges present for the collection {0}", collection.ResourceId);
+                    throw new InternalServerErrorException(RMResources.InternalServerError) { ResourceAddress = request.ResourceAddress };
+
+                }
             }
             else
             {
@@ -598,8 +682,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 throw new BadRequestException(
                     string.Format(CultureInfo.InvariantCulture, RMResources.InvalidPartitionKey, partitionKeyString),
-                    ex)
-                { ResourceAddress = request.ResourceAddress };
+                    ex) { ResourceAddress = request.ResourceAddress };
             }
 
             if (partitionKey == null)

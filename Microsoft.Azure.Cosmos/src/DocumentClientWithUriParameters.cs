@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -1001,6 +1001,57 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("userDefinedTypeUri");
             }
             return this.ReadUserDefinedTypeAsync(userDefinedTypeUri.OriginalString, options);
+        }
+
+        /// <summary>
+        /// Reads a <see cref="Microsoft.Azure.Documents.Snapshot"/> as an asynchronous operation from the Azure Cosmos DB service.
+        /// </summary>
+        /// <param name="snapshotUri">A URI to the Snapshot resource to be read.</param>
+        /// <param name="options">The request options for the request.</param>
+        /// <returns>
+        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/> which wraps a <see cref="Microsoft.Azure.Documents.Snapshot"/> containing the read resource record.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">If <paramref name="snapshotUri"/> is not set.</exception>
+        /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when reading a Snapshot are:
+        /// <list type="table">
+        ///     <listheader>
+        ///         <term>StatusCode</term><description>Reason for exception</description>
+        ///     </listheader>
+        ///     <item>
+        ///         <term>404</term><description>NotFound - This means the resource you tried to read did not exist.</description>
+        ///     </item>
+        ///     <item>
+        ///         <term>429</term><description>TooManyRequests - This means you have exceeded the number of request units per second. Consult the DocumentClientException.RetryAfter value to see how long you should wait before retrying this operation.</description>
+        ///     </item>
+        /// </list>
+        /// </exception>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// //Reads a Snapshot resource where 
+        /// // - snapshot_id is the ID property of the Snapshot you wish to read. 
+        /// var snapshotLink = UriFactory.CreateSnapshotUri("snapshot_id");
+        /// Snapshot snapshot = await client.ReadSnapshotAsync(snapshotLink);
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <remarks>
+        /// <para>
+        /// Doing a read of a resource is the most efficient way to get a resource from the service. If you know the resource's ID, do a read instead of a query by ID.
+        /// </para>
+        /// </remarks>
+        /// <seealso cref="Microsoft.Azure.Documents.Snapshot"/> 
+        /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
+        /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
+        /// <seealso cref="System.Threading.Tasks.Task"/>
+        internal Task<ResourceResponse<Snapshot>> ReadSnapshotAsync(Uri snapshotUri, Documents.Client.RequestOptions options = null)
+        {
+            if (snapshotUri == null)
+            {
+                throw new ArgumentNullException("snapshotUri");
+            }
+
+            return this.ReadSnapshotAsync(snapshotUri.OriginalString, options);
         }
 
         #endregion

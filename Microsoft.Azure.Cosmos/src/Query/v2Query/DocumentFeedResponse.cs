@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
+    using System.Text;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
@@ -60,18 +61,17 @@ namespace Microsoft.Azure.Cosmos
             : this(result)
         {
             this.Count = count;
-            this.responseHeaders = responseHeaders.Clone();
+            this.responseHeaders = (INameValueCollection)responseHeaders.Clone();
             this.usageHeaders = new Dictionary<string, long>();
             this.quotaHeaders = new Dictionary<string, long>();
             this.useETagAsContinuation = useETagAsContinuation;
             this.queryMetrics = queryMetrics;
-            this.RequestStatistics = requestStats;
             this.disallowContinuationTokenMessage = disallowContinuationTokenMessage;
             this.ResponseLengthBytes = responseLengthBytes;
         }
 
         internal DocumentFeedResponse(IEnumerable<T> result, int count, INameValueCollection responseHeaders, long responseLengthBytes)
-            : this(result, count, responseHeaders)
+    : this(result, count, responseHeaders)
         {
             this.ResponseLengthBytes = responseLengthBytes;
         }
@@ -360,6 +360,41 @@ namespace Microsoft.Azure.Cosmos
                     this.ETag :
                     this.responseHeaders[HttpConstants.HttpHeaders.Continuation];
 
+        /// <summary>
+        /// Gets the flag associated with the response from the Azure Cosmos DB service whether this feed request is served from Request Units(RUs)/minute capacity or not.
+        /// </summary>
+        /// <value>
+        /// True if this request is served from RUs/minute capacity. Otherwise, false.
+        /// </value>
+        public bool IsRUPerMinuteUsed
+        {
+            get
+            {
+                if (Helpers.GetHeaderValueByte(this.responseHeaders, HttpConstants.HttpHeaders.IsRUPerMinuteUsed, 0) != 0)
+                {
+                    return true;
+                }
+
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Gets a dump for troubleshooting the request.
+        /// </summary>
+        public string RequestDiagnosticsString
+        {
+            get
+            {
+                StringBuilder requestDiagnosticsStringBuilder = new StringBuilder();
+                requestDiagnosticsStringBuilder.AppendFormat("QueryMetrics: {0}", this.QueryMetrics);
+                requestDiagnosticsStringBuilder.AppendLine();
+                requestDiagnosticsStringBuilder.AppendFormat("ClientSideRequestStatistics: {0}", this.RequestStatistics);
+                requestDiagnosticsStringBuilder.AppendLine();
+                return requestDiagnosticsStringBuilder.ToString();
+            }
+        }
+
         // This is used by FeedResponseBinder.
         internal bool UseETagAsContinuation => this.useETagAsContinuation;
 
@@ -439,6 +474,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     this.quotaHeaders.Add(Constants.Quota.Collection, long.Parse(headerMaxQuotaWords[i + 1], CultureInfo.InvariantCulture));
                     this.usageHeaders.Add(Constants.Quota.Collection, long.Parse(headerCurrentUsageWords[i + 1], CultureInfo.InvariantCulture));
+
                 }
                 else if (string.Equals(
                     headerMaxQuotaWords[i],
