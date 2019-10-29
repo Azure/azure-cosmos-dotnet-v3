@@ -7,12 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+
+## <a name="3.3.3"/> [3.3.3](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.3.3) - 2019-10-29
+
+- [#837](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/837) Fixed group by bug for non-Windows platforms
+- [#927](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/927) Fixed query returning partial results instead of error
+
 ## <a name="3.3.2"/> [3.3.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.3.2) - 2019-10-16
 
 ### Fixed
 
 - [#905](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/909) Fixed linq camel case bug
-- [#927](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/927) Fixed query returning partial results instead of error
 
 ## <a name="3.3.1"/> [3.3.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.3.1) - 2019-10-11
 
