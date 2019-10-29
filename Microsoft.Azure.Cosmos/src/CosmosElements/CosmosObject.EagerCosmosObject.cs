@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 {
                     if (!this.TryGetValue(key, out CosmosElement value))
                     {
-                        value = null;
+                        value = default;
                     }
 
                     return value;

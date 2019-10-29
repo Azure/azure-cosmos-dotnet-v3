@@ -30,15 +30,6 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 }
 
                 this.properties = new List<KeyValuePair<string, CosmosElement>>(properties.Count);
-                foreach (KeyValuePair<string, CosmosElement> kvp in properties)
-                {
-                    if (this.properties.Any((property) => property.Key == kvp.Key))
-                    {
-                        throw new ArgumentException($"Duplicate key: {kvp.Key}");
-                    }
-
-                    this.properties.Add(kvp);
-                }
             }
 
             public override CosmosElement this[string key]
