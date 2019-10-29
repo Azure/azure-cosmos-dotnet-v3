@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos.Query.Aggregation
 {
     using System;
+    using System.Globalization;
     using Microsoft.Azure.Cosmos.CosmosElements;
 
     /// <summary>
@@ -68,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
 
         public string GetContinuationToken()
         {
-            return this.globalSum.ToString("G17");
+            return this.globalSum.ToString("G17", CultureInfo.InvariantCulture);
         }
 
         public static SumAggregator Create(string continuationToken)
@@ -76,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
             double partialSum;
             if (continuationToken != null)
             {
-                partialSum = double.Parse(continuationToken);
+                partialSum = double.Parse(continuationToken, CultureInfo.InvariantCulture);
             }
             else
             {

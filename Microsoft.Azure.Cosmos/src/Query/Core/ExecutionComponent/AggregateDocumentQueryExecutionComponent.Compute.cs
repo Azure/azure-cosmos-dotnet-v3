@@ -187,6 +187,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
 
             private AggregateContinuationToken(CosmosObject rawCosmosObject)
             {
+                if (rawCosmosObject == null)
+                {
+                    throw new ArgumentNullException(nameof(rawCosmosObject));
+                }
+
+                CosmosElement rawSingleGroupAggregatorContinuationToken = rawCosmosObject[AggregateContinuationToken.SingleGroupAggregatorContinuationTokenName];
+                if (!(rawSingleGroupAggregatorContinuationToken is CosmosString singleGroupAggregatorContinuationToken))
+                {
+                    throw new ArgumentException($"{nameof(rawCosmosObject)} had a property that was not a string.");
+                }
+
+                CosmosElement rawSourceContinuationToken = rawCosmosObject[AggregateContinuationToken.SourceContinuationTokenName];
+                if (!(rawSourceContinuationToken is CosmosString sourceContinuationToken))
+                {
+                    throw new ArgumentException($"{nameof(rawCosmosObject)} had a property that was not a string.");
+                }
+
                 this.rawCosmosObject = rawCosmosObject;
             }
 
