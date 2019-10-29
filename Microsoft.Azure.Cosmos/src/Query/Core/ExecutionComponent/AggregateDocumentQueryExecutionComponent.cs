@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
 
     /// <summary>
     /// Execution component that is able to aggregate local aggregates from multiple continuations and partitions.
@@ -62,43 +63,48 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
         /// <summary>
         /// Creates a AggregateDocumentQueryExecutionComponent.
         /// </summary>
+        /// <param name="executionEnvironment">The environment to execute on.</param>
         /// <param name="queryClient">The query client.</param>
         /// <param name="aggregates">The aggregates.</param>
         /// <param name="aliasToAggregateType">The alias to aggregate type.</param>
         /// <param name="hasSelectValue">Whether or not the query has the 'VALUE' keyword.</param>
-        /// <param name="isComputeGateway">Whether or not this is meant to run in the compute gateway.</param>
         /// <param name="requestContinuation">The continuation token to resume from.</param>
         /// <param name="createSourceCallback">The callback to create the source component that supplies the local aggregates.</param>
         /// <returns>The AggregateDocumentQueryExecutionComponent.</returns>
-        public static async Task<AggregateDocumentQueryExecutionComponent> CreateAsync(
+        public static async Task<IDocumentQueryExecutionComponent> CreateAsync(
+            ExecutionEnvironment executionEnvironment,
             CosmosQueryClient queryClient,
             AggregateOperator[] aggregates,
             IReadOnlyDictionary<string, AggregateOperator?> aliasToAggregateType,
             bool hasSelectValue,
-            bool isComputeGateway,
             string requestContinuation,
             Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback)
         {
-            AggregateDocumentQueryExecutionComponent aggregateDocumentQueryExecutionComponent;
-            if (isComputeGateway)
+            IDocumentQueryExecutionComponent aggregateDocumentQueryExecutionComponent;
+            switch (executionEnvironment)
             {
-                aggregateDocumentQueryExecutionComponent = await ComputeAggregateDocumentQueryExecutionComponent.CreateAsync(
-                    queryClient,
-                    aggregates,
-                    aliasToAggregateType,
-                    hasSelectValue,
-                    requestContinuation,
-                    createSourceCallback);
-            }
-            else
-            {
-                aggregateDocumentQueryExecutionComponent = await SdkAggregateDocumentQueryExecutionComponent.CreateAsync(
-                    queryClient,
-                    aggregates,
-                    aliasToAggregateType,
-                    hasSelectValue,
-                    requestContinuation,
-                    createSourceCallback);
+                case ExecutionEnvironment.Client:
+                    aggregateDocumentQueryExecutionComponent = await ClientAggregateDocumentQueryExecutionComponent.CreateAsync(
+                        queryClient,
+                        aggregates,
+                        aliasToAggregateType,
+                        hasSelectValue,
+                        requestContinuation,
+                        createSourceCallback);
+                    break;
+
+                case ExecutionEnvironment.Compute:
+                    aggregateDocumentQueryExecutionComponent = await ComputeAggregateDocumentQueryExecutionComponent.CreateAsync(
+                        queryClient,
+                        aggregates,
+                        aliasToAggregateType,
+                        hasSelectValue,
+                        requestContinuation,
+                        createSourceCallback);
+                    break;
+
+                default:
+                    throw new ArgumentException($"Unknown {nameof(ExecutionEnvironment)}: {executionEnvironment}.");
             }
 
             return aggregateDocumentQueryExecutionComponent;

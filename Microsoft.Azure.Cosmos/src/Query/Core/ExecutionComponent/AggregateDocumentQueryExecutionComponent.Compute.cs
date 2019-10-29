@@ -5,13 +5,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
 
     internal abstract partial class AggregateDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase
     {
-        private static readonly List<CosmosElement> EmptyResults = new List<CosmosElement>();
+        private static readonly IReadOnlyList<CosmosElement> EmptyResults = new List<CosmosElement>().AsReadOnly();
 
         private sealed class ComputeAggregateDocumentQueryExecutionComponent : AggregateDocumentQueryExecutionComponent
         {
@@ -24,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                 // all the work is done in the base constructor.
             }
 
-            public static async Task<ComputeAggregateDocumentQueryExecutionComponent> CreateAsync(
+            public static async Task<IDocumentQueryExecutionComponent> CreateAsync(
                 CosmosQueryClient queryClient,
                 AggregateOperator[] aggregates,
                 IReadOnlyDictionary<string, AggregateOperator?> aliasToAggregateType,

@@ -11,9 +11,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
 
     internal abstract partial class AggregateDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase
     {
-        private sealed class SdkAggregateDocumentQueryExecutionComponent : AggregateDocumentQueryExecutionComponent
+        private sealed class ClientAggregateDocumentQueryExecutionComponent : AggregateDocumentQueryExecutionComponent
         {
-            private SdkAggregateDocumentQueryExecutionComponent(
+            private ClientAggregateDocumentQueryExecutionComponent(
                 IDocumentQueryExecutionComponent source,
                 SingleGroupAggregator singleGroupAggregator,
                 bool isValueAggregateQuery)
@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                 // all the work is done in the base constructor.
             }
 
-            public static async Task<SdkAggregateDocumentQueryExecutionComponent> CreateAsync(
+            public static async Task<IDocumentQueryExecutionComponent> CreateAsync(
                 CosmosQueryClient queryClient,
                 AggregateOperator[] aggregates,
                 IReadOnlyDictionary<string, AggregateOperator?> aliasToAggregateType,
@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                     hasSelectValue,
                     continuationToken: null);
 
-                return new SdkAggregateDocumentQueryExecutionComponent(
+                return new ClientAggregateDocumentQueryExecutionComponent(
                     source,
                     singleGroupAggregator,
                     hasSelectValue);

@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Documents.Collections;
 
     /// <summary>
@@ -128,17 +129,17 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Creates a CosmosPipelinedItemQueryExecutionContext.
         /// </summary>
+        /// <param name="executionEnvironment">The environment to execute on.</param>
         /// <param name="queryContext">The parameters for constructing the base class.</param>
         /// <param name="initParams">The initial parameters</param>
         /// <param name="requestContinuationToken">The request continuation.</param>
-        /// <param name="isComputeQuery">Whether or not the query is suppposed to run on the compute gateway.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task to await on, which in turn returns a CosmosPipelinedItemQueryExecutionContext.</returns>
         public static async Task<CosmosQueryExecutionContext> CreateAsync(
+            ExecutionEnvironment executionEnvironment,
             CosmosQueryContext queryContext,
             CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams,
             string requestContinuationToken,
-            bool isComputeQuery,
             CancellationToken cancellationToken)
         {
             DefaultTrace.TraceInformation(
@@ -185,7 +186,7 @@ namespace Microsoft.Azure.Cosmos.Query
             };
 
             return (CosmosQueryExecutionContext)await PipelinedDocumentQueryExecutionContext.CreateHelperAsync(
-                isComputeQuery,
+                executionEnvironment,
                 queryContext.QueryClient,
                 initParams.PartitionedQueryExecutionInfo.QueryInfo,
                 initialPageSize,
@@ -195,7 +196,7 @@ namespace Microsoft.Azure.Cosmos.Query
         }
 
         private static async Task<PipelinedDocumentQueryExecutionContext> CreateHelperAsync(
-            bool isComputeQuery,
+            ExecutionEnvironment executionEnvironment,
             CosmosQueryClient queryClient,
             QueryInfo queryInfo,
             int initialPageSize,
@@ -219,11 +220,11 @@ namespace Microsoft.Azure.Cosmos.Query
                 createComponentFunc = async (continuationToken) =>
                 {
                     return await AggregateDocumentQueryExecutionComponent.CreateAsync(
+                        executionEnvironment,
                         queryClient,
                         queryInfo.Aggregates,
                         queryInfo.GroupByAliasToAggregateType,
                         queryInfo.HasSelectValue,
-                        isComputeQuery,
                         continuationToken,
                         createSourceCallback);
                 };

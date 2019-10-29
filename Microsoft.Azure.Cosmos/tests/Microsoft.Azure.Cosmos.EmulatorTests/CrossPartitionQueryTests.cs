@@ -632,7 +632,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             do
             {
                 QueryRequestOptions computeRequestOptions = queryRequestOptions.Clone();
-                computeRequestOptions.IsComputeQuery = true;
+                computeRequestOptions.ExecutionEnvironment = Cosmos.Query.Core.ExecutionContext.ExecutionEnvironment.Compute;
 
                 FeedIterator<T> itemQuery = container.GetItemQueryIterator<T>(
                    queryText: query,

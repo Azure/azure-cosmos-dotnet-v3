@@ -66,9 +66,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
             }
 
             // skip the documents but keep all the other headers
-            List<CosmosElement> documentsAfterSkip = sourcePage.CosmosElements.Skip(this.skipCount).ToList();
+            IReadOnlyList<CosmosElement> documentsAfterSkip = sourcePage.CosmosElements.Skip(this.skipCount).ToList();
 
-            int numberOfDocumentsSkipped = sourcePage.CosmosElements.Count - documentsAfterSkip.Count;
+            int numberOfDocumentsSkipped = sourcePage.CosmosElements.Count() - documentsAfterSkip.Count();
             this.skipCount -= numberOfDocumentsSkipped;
             string updatedContinuationToken = null;
 
