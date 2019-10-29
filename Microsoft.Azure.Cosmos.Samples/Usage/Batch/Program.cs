@@ -106,13 +106,13 @@
             // In this fictional game, players move about the 10x10 map and try to find balls. 
             // The objective is to collect 2 balls of the same color, or a golden ball if one appears.
             // After 5 minutes, if the game is not complete, the player with highest number of balls wins.
-
-            Console.WriteLine("At the start of the game, the balls are added on the map, and the players are added ...");
             int gameId = 420;
             int playerCount = 3;
             int ballCount = 3;
             List<GameBall> balls = new List<GameBall>();
             List<GameParticipant> players = new List<GameParticipant>();
+
+            Console.WriteLine("At the start of the game, the balls are added on the map, and the players are added ...");
 
             // The below batch request is used to create the game balls and participants in an atomic fashion
             BatchResponse gameStartResponse = await gamesContainer.CreateBatch(new PartitionKey(gameId))
@@ -168,9 +168,9 @@
             alice.BlueCount++;
 
             // Upserts maybe used to replace items or create them if they are not already present.
-            // Existing entities maybe replaced along with concurrency checks using ETags returned in the responses of earlier requests on the item
+            // An existing item maybe replaced along with concurrency checks the ETag returned in the responses of earlier requests on the item
             // or without these checks if they are not required.
-            // Delets may also be a part of
+            // Item deletes may also be a part of batch requests.
             BatchResponse aliceFoundBallResponse = await gamesContainer.CreateBatch(new PartitionKey(gameId))
                 .UpsertItem<ParticipantLastActive>(ParticipantLastActive.Create(gameId, "alice"))
                 .ReplaceItem<GameParticipant>(alice.Nickname, alice, new BatchItemRequestOptions { IfMatchEtag = alice.ETag })
@@ -215,6 +215,7 @@
                 // The resultant item for each operation is also available as a Stream that can be used for example if the response is just
                 // going to be transferred to some other system.
                 Stream updatedPlayerAsStream = bobFoundBallResponse[1].ResourceStream;
+
                 bob = Program.FromStream<GameParticipant>(updatedPlayerAsStream);
             }
 
@@ -231,9 +232,8 @@
             using (goldenBallResponse)
             {
                 // If one or more operations within the batch have failed, a HTTP Status Code of 207 MultiStatus could be returned 
-                // as the StatusCode of the BatchResponse that indicates that 
-                // the response needs to be examined to understand details of the execution and failure. 
-                // The first operation to fail (for example if we have a conflict because we are trying to create an item 
+                // as the StatusCode of the BatchResponse that indicates that the response needs to be examined to understand details of the 
+                // execution and failure. The first operation to fail (for example if we have a conflict because we are trying to create an item 
                 // that already exists) will have the StatusCode on its corresponding BatchOperationResult set with the actual failure reason
                 // (HttpStatusCode.Conflict in this example).
                 // All other operations will be aborted - these would return a status code of HTTP 424 Failed Dependency.
@@ -247,8 +247,7 @@
                         BatchOperationResult operationResult = goldenBallResponse[index];
                         if ((int)operationResult.StatusCode == 424)
                         {
-                            // This operation failed because it was batched along with another operation where the latter
-                            // was the actual cause of failure.
+                            // This operation failed because it was batched along with another operation where the latter was the actual cause of failure.
                             continue;
                         }
 
@@ -290,11 +289,12 @@
                     if (index == 0)
                     {
                         // The item returned can be made available as the required POCO type using GetOperationResultAtIndex.
+                        // A single batch request can be used to read items that can be deserialized to different POCOs as well.
                         current = playersResponse.GetOperationResultAtIndex<GameParticipant>(index).Resource;
                     }
                     else
                     {
-                        // The item returned can also instead be accessed directly as a Stream for example to pass as-is to another component.
+                        // The item returned can also instead be accessed directly as a Stream (for example to pass as-is to another component).
                         Stream aliceInfo = playersResponse[index].ResourceStream;
 
                         current = Program.FromStream<GameParticipant>(aliceInfo);
