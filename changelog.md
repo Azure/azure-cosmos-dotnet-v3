@@ -145,7 +145,7 @@ Any requests to Azure Cosmos DB using a retired SDK are rejected by the service.
 
 | Version | Release Date | Retirement Date |
 | --- | --- | --- |
-| [3.3.2](#3.3.3) |October 29, 2019 |--- |
+| [3.3.3](#3.3.3) |October 29, 2019 |--- |
 | [3.3.2](#3.3.2) |October 16, 2019 |--- |
 | [3.3.1](#3.3.1) |October 11, 2019 |--- |
 | [3.3.0](#3.3.0) |October 8, 2019 |--- |
