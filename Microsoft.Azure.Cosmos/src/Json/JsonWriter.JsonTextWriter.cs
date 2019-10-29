@@ -398,11 +398,20 @@ namespace Microsoft.Azure.Cosmos.Json
 
             private bool RequiresEscapeSequence(char value)
             {
-                const char DoubleQuote = '"';
-                const char ReverseSolidus = '\\';
-                const char Space = ' ';
-
-                return (value == DoubleQuote) || (value == ReverseSolidus) || (value < Space);
+                switch (value)
+                {
+                    case '\\':
+                    case '"':
+                    case '/':
+                    case '\b':
+                    case '\f':
+                    case '\n':
+                    case '\r':
+                    case '\t':
+                        return true;
+                    default:
+                        return value < ' ';
+                }
             }
 
             private void WriteEscapedString(string value)
