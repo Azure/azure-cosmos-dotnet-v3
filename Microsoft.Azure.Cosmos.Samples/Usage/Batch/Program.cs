@@ -203,31 +203,36 @@
 
             // Stream variants for all batch operations that accept an item are also available for use when the item is available as a Stream.
             Stream bobIsActiveStream = ParticipantLastActive.CreateStream(gameId, "bob");
+            Stream bobAsStream = Program.AsStream(bob);
 
-            BatchResponse bobFoundBallResponse = await gamesContainer.CreateBatch(new PartitionKey(gameId))
-                .UpsertItemStream(bobIsActiveStream)
-                .ReplaceItemStream(bob.Nickname, Program.AsStream(bob), new BatchItemRequestOptions { IfMatchEtag = bob.ETag })
-                .DeleteItem(secondRedBall.Id)
-                .ExecuteAsync();
-
-            using (bobFoundBallResponse)
+            using (bobIsActiveStream)
+            using (bobAsStream)
             {
-                if (bobFoundBallResponse.StatusCode != HttpStatusCode.OK)
+                BatchResponse bobFoundBallResponse = await gamesContainer.CreateBatch(new PartitionKey(gameId))
+                    .UpsertItemStream(bobIsActiveStream)
+                    .ReplaceItemStream(bob.Nickname, bobAsStream, new BatchItemRequestOptions { IfMatchEtag = bob.ETag })
+                    .DeleteItem(secondRedBall.Id)
+                    .ExecuteAsync();
+
+                using (bobFoundBallResponse)
                 {
-                    // Log and handle failure
-                    bob.RedCount--;
-                    LogFailure(bobFoundBallResponse);
-                    return;
+                    if (bobFoundBallResponse.StatusCode != HttpStatusCode.OK)
+                    {
+                        // Log and handle failure
+                        bob.RedCount--;
+                        LogFailure(bobFoundBallResponse);
+                        return;
+                    }
+
+                    // Refresh in-memory state from response
+                    balls.Remove(secondRedBall);
+
+                    // The resultant item for each operation is also available as a Stream that can be used for example if the response is just
+                    // going to be transferred to some other system.
+                    Stream updatedPlayerAsStream = bobFoundBallResponse[1].ResourceStream;
+
+                    bob = Program.FromStream<GameParticipant>(updatedPlayerAsStream);
                 }
-
-                // Refresh in-memory state from response
-                balls.Remove(secondRedBall);
-
-                // The resultant item for each operation is also available as a Stream that can be used for example if the response is just
-                // going to be transferred to some other system.
-                Stream updatedPlayerAsStream = bobFoundBallResponse[1].ResourceStream;
-
-                bob = Program.FromStream<GameParticipant>(updatedPlayerAsStream);
             }
 
             PrintState(players, balls);
@@ -267,7 +272,6 @@
                         }
                         else
                         {
-
                             // Log and handle other failures
                             LogFailure(goldenBallResponse);
                             return;
@@ -280,7 +284,7 @@
 
             Console.WriteLine("We need to end the game now; determining the winner as the player with highest balls ...");
 
-            // Batch requests may also be used to atomically read the state of multiple items within a partition key.
+            // Batch requests may also be used to atomically read multiple items within a partition key.
             BatchResponse playersResponse = await gamesContainer.CreateBatch(new PartitionKey(gameId))
                 .ReadItem(alice.Nickname)
                 .ReadItem(bob.Nickname)
