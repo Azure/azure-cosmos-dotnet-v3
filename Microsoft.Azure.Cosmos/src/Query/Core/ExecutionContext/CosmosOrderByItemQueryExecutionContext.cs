@@ -181,7 +181,9 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="maxElements">The maximum number of elements.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task that when awaited on return a page of documents.</returns>
-        public override async Task<IReadOnlyList<CosmosElement>> InternalDrainAsync(int maxElements, CancellationToken cancellationToken)
+        public override async Task<IReadOnlyList<CosmosElement>> InternalDrainAsync(
+            int maxElements,
+            CancellationToken cancellationToken)
         {
             //// In order to maintain the continuation token for the user we must drain with a few constraints
             //// 1) We always drain from the partition, which has the highest priority item first
@@ -209,8 +211,8 @@ namespace Microsoft.Azure.Cosmos.Query
             ////  2) <i, j> always come before <i, k> where j < k
 
             List<CosmosElement> results = new List<CosmosElement>();
-            bool isSuccessToMoveNext = true;
-            while (!this.IsDone && results.Count < maxElements && isSuccessToMoveNext)
+            bool movedNext = true;
+            while (!this.IsDone && (results.Count < maxElements) && movedNext)
             {
                 // Only drain from the highest priority document producer 
                 // We need to pop and push back the document producer tree, since the priority changes according to the sort order.
@@ -235,7 +237,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 this.previousRid = orderByQueryResult.Rid;
 
-                isSuccessToMoveNext = await this.MoveNextHelperAsync(currentItemProducerTree, cancellationToken);
+                movedNext = await this.MoveNextHelperAsync(currentItemProducerTree, cancellationToken);
 
                 this.PushCurrentItemProducerTree(currentItemProducerTree);
             }

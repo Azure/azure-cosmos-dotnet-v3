@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.Query
             try
             {
                 QueryResponseCore responseCore = await this.cosmosQueryExecutionContext.ExecuteNextAsync(cancellationToken);
-                CosmosQueryContext cosmosQueryContext = this.cosmosQueryExecutionContext.CosmosQueryContext;
+                CosmosQueryContext cosmosQueryContext = this.cosmosQueryExecutionContext.cosmosQueryContext;
                 QueryAggregateDiagnostics diagnostics = new QueryAggregateDiagnostics(responseCore.diagnostics);
                 QueryResponse queryResponse;
                 if (responseCore.IsSuccess)

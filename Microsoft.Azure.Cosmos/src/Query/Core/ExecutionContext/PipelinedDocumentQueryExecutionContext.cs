@@ -150,8 +150,6 @@ namespace Microsoft.Azure.Cosmos.Query
                     queryContext.CorrelatedActivityId));
 
             QueryInfo queryInfo = initParams.PartitionedQueryExecutionInfo.QueryInfo;
-
-            int initialPageSize = initParams.InitialPageSize;
             CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams parameters = initParams;
             if (queryInfo.HasGroupBy)
             {
@@ -185,10 +183,12 @@ namespace Microsoft.Azure.Cosmos.Query
                     cancellationToken);
             };
 
+            int actualPageSize = initParams.MaxItemCount.GetValueOrDefault(1000);
+
             return (CosmosQueryExecutionContext)await PipelinedDocumentQueryExecutionContext.CreateHelperAsync(
                 queryContext.QueryClient,
                 initParams.PartitionedQueryExecutionInfo.QueryInfo,
-                initialPageSize,
+                actualPageSize,
                 requestContinuationToken,
                 createOrderByComponentFunc,
                 createParallelComponentFunc);
@@ -197,7 +197,7 @@ namespace Microsoft.Azure.Cosmos.Query
         private static async Task<PipelinedDocumentQueryExecutionContext> CreateHelperAsync(
             CosmosQueryClient queryClient,
             QueryInfo queryInfo,
-            int initialPageSize,
+            int actualPageSize,
             string requestContinuation,
             Func<string, Task<IDocumentQueryExecutionComponent>> createOrderByQueryExecutionContext,
             Func<string, Task<IDocumentQueryExecutionComponent>> createParallelQueryExecutionContext)
@@ -291,7 +291,8 @@ namespace Microsoft.Azure.Cosmos.Query
             }
 
             return new PipelinedDocumentQueryExecutionContext(
-                await createComponentFunc(requestContinuation), initialPageSize);
+                await createComponentFunc(requestContinuation),
+                actualPageSize);
         }
 
         /// <summary>
