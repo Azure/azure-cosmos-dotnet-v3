@@ -137,7 +137,9 @@
                 // Given a batch request is atomic, in case any operation within a batch fails, no changes from the batch will be committed.
                 if (gameStartResponse.StatusCode != HttpStatusCode.OK)
                 {
-                    // log exception and handle failure
+                    // Log and handle failure
+                    LogFailure(gameStartResponse);
+                    return;
                 }
 
                 // Refresh in-memory state from response
@@ -165,7 +167,6 @@
             PrintState(players, balls);
 
             Console.WriteLine("Alice goes to 6, 4 and finds a blue ball ...");
-            balls.Remove(firstBlueBall);
             alice.BlueCount++;
 
             // Upserts maybe used to replace items or create them if they are not already present.
@@ -182,10 +183,15 @@
             {
                 if (aliceFoundBallResponse.StatusCode != HttpStatusCode.OK)
                 {
-                    // log exception and handle failure
+                    // Log and handle failure
+                    alice.BlueCount--;
+                    LogFailure(aliceFoundBallResponse);
+                    return;
                 }
 
                 // Refresh in-memory state from response
+                balls.Remove(firstBlueBall);
+
                 // We only update the etag as we have the rest of the state we care about here already as needed.
                 alice.ETag = aliceFoundBallResponse[1].ETag;
             }
@@ -193,7 +199,6 @@
             PrintState(players, balls);
 
             Console.WriteLine("Bob goes to 8, 8 and finds a red ball ...");
-            balls.Remove(secondRedBall);
             bob.RedCount++;
 
             // Stream variants for all batch operations that accept an item are also available for use when the item is available as a Stream.
@@ -209,10 +214,15 @@
             {
                 if (bobFoundBallResponse.StatusCode != HttpStatusCode.OK)
                 {
-                    // log exception and handle failure
+                    // Log and handle failure
+                    bob.RedCount--;
+                    LogFailure(bobFoundBallResponse);
+                    return;
                 }
 
                 // Refresh in-memory state from response
+                balls.Remove(secondRedBall);
+
                 // The resultant item for each operation is also available as a Stream that can be used for example if the response is just
                 // going to be transferred to some other system.
                 Stream updatedPlayerAsStream = bobFoundBallResponse[1].ResourceStream;
@@ -251,13 +261,17 @@
                             // This operation failed because it was batched along with another operation where the latter was the actual cause of failure.
                             continue;
                         }
-
-                        if (operationResult.StatusCode == HttpStatusCode.Conflict)
+                        else if (operationResult.StatusCode == HttpStatusCode.Conflict)
                         {
                             Console.WriteLine("Creation of the {0}rd golden ball failed because there was already an existing ball at that position.", index + 1);
                         }
+                        else
+                        {
 
-                        // Log and handle other failures
+                            // Log and handle other failures
+                            LogFailure(goldenBallResponse);
+                            return;
+                        }
                     }
                 }
             }
@@ -280,7 +294,9 @@
             {
                 if (playersResponse.StatusCode != HttpStatusCode.OK)
                 {
-                    // log exception and handle failure
+                    // Log and handle failure
+                    LogFailure(playersResponse);
+                    return;
                 }
 
                 for (int index = 0; index < playerCount; index++)
@@ -338,6 +354,18 @@
             }
 
             Console.WriteLine("\n===================================================================================\n");
+        }
+
+        private static void LogFailure(BatchResponse batchResponse)
+        {
+            Console.WriteLine("Unexpected error in executing batch requests in the sample. Please retry the sample.");
+
+            // Note: Please log batchResponse.Diagnostics along with Timestamp once available in the SDK.
+            Console.WriteLine("Timestamp={0} Status={1}, ErrorMessage={2}, ActivityId={3}",
+                DateTime.UtcNow,
+                batchResponse.StatusCode,
+                batchResponse.ErrorMessage,
+                batchResponse.ActivityId);
         }
 
         private static async Task CleanupAsync()
