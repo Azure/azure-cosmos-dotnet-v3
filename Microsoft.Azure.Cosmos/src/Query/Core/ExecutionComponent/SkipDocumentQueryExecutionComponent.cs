@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         public override async Task<QueryResponseCore> DrainAsync(int maxElements, CancellationToken token)
         {
             token.ThrowIfCancellationRequested();
-            QueryResponseCore sourcePage = await base.DrainAsync(maxElements, token);
+            QueryResponseCore sourcePage = await base.DrainAsync(maxElements + this.skipCount, token);
             if (!sourcePage.IsSuccess)
             {
                 return sourcePage;

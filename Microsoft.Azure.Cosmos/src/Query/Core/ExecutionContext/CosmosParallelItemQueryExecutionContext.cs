@@ -139,31 +139,42 @@ namespace Microsoft.Azure.Cosmos.Query
             // 2) We drain only full pages from the document producer so we aren't left with a partial page
             //  otherwise we would need to add to the continuation token how many items to skip over on that page.
 
-            // Only drain from the leftmost (current) document producer tree
-            ItemProducerTree currentItemProducerTree = this.PopCurrentItemProducerTree();
-
-            // This might be the first time we have seen this document producer tree so we need to buffer documents
-            if (currentItemProducerTree.Current == null)
-            {
-                await this.MoveNextHelperAsync(currentItemProducerTree, cancellationToken);
-            }
-
-            int itemsLeftInCurrentPage = currentItemProducerTree.ItemsLeftInCurrentPage;
-
-            // Only drain full pages or less if this is a top query.
             List<CosmosElement> results = new List<CosmosElement>();
-            for (int i = 0; i < Math.Min(itemsLeftInCurrentPage, maxElements); i++)
+
+            bool maxedOutUserPageSize = false;
+            bool movedNext = true;
+            while (!this.IsDone && !maxedOutUserPageSize && movedNext)
             {
-                results.Add(currentItemProducerTree.Current);
-                if (!await this.MoveNextHelperAsync(currentItemProducerTree, cancellationToken))
+                // Only drain from the leftmost (current) document producer tree
+                ItemProducerTree currentItemProducerTree = this.PopCurrentItemProducerTree();
+
+                // This might be the first time we have seen this document producer tree so we need to buffer documents
+                if (currentItemProducerTree.Current == null)
                 {
-                    break;
+                    await this.MoveNextHelperAsync(currentItemProducerTree, cancellationToken);
                 }
+
+                int itemsLeftInCurrentPage = currentItemProducerTree.ItemsLeftInCurrentPage;
+
+                if (results.Count + itemsLeftInCurrentPage <= maxElements)
+                {
+                    // Only drain full pages or less if this is a top query.
+                    for (int i = 0; (i < Math.Min(itemsLeftInCurrentPage, maxElements)) && movedNext; i++)
+                    {
+                        results.Add(currentItemProducerTree.Current);
+                        movedNext = await this.MoveNextHelperAsync(currentItemProducerTree, cancellationToken);
+                    }
+                }
+                else
+                {
+                    maxedOutUserPageSize = true;
+                }
+
+                this.PushCurrentItemProducerTree(currentItemProducerTree);
+
+                // At this point the document producer tree should have internally called MoveNextPage, since we fully drained a page.
             }
 
-            this.PushCurrentItemProducerTree(currentItemProducerTree);
-
-            // At this point the document producer tree should have internally called MoveNextPage, since we fully drained a page.
             return results;
         }
 
