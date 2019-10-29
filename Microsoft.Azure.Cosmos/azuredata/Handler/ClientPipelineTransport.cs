@@ -6,7 +6,7 @@ namespace Azure.Cosmos
 {
     using System;
     using System.Threading.Tasks;
-    using Azure.Core.Http;
+    using Azure.Core;
     using Azure.Core.Pipeline;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Handlers;
@@ -25,14 +25,14 @@ namespace Azure.Cosmos
             throw new NotImplementedException();
         }
 
-        public override void Process(HttpPipelineMessage message)
+        public override void Process(HttpMessage message)
         {
 #pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
             this.ProcessAsync(message).GetAwaiter().GetResult();
 #pragma warning restore VSTHRD002 // Avoid problematic synchronous waits
         }
 
-        public override async ValueTask ProcessAsync(HttpPipelineMessage message)
+        public override async ValueTask ProcessAsync(HttpMessage message)
         {
             RequestMessage requestMessage = message.Request as RequestMessage;
             if (requestMessage == null)

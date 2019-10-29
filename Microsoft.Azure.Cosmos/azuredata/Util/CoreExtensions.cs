@@ -8,14 +8,13 @@ namespace Azure.Cosmos
     using System.Globalization;
     using System.IO;
     using Azure;
-    using Azure.Core.Http;
-    using Azure.Core.Pipeline;
+    using Azure.Core;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Documents;
 
     internal static class CoreExtensions
     {
-        internal static Stream GetStream(this HttpPipelineRequestContent content)
+        internal static Stream GetStream(this RequestContent content)
         {
             if (content == null)
             {

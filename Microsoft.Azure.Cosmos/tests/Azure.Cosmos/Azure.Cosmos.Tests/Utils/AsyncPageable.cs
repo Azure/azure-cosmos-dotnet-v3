@@ -14,7 +14,7 @@
 
         public MockAsyncPageable(IReadOnlyList<T> items)
         {
-            this.pages = new List<Page<T>>() { new Page<T>(items, string.Empty, new ResponseMessage(HttpStatusCode.OK)) };
+            this.pages = new List<Page<T>>() { new CosmosPage<T>(items, new ResponseMessage(HttpStatusCode.OK)) };
         }
 
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously

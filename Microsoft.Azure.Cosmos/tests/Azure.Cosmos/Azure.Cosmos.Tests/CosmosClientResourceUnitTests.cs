@@ -7,7 +7,7 @@ namespace Azure.Cosmos.Tests
     using System;
     using System.Collections.Generic;
     using System.Net.Http;
-    using Azure.Core.Pipeline;
+    using Azure.Core;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;

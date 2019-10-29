@@ -9,7 +9,7 @@ namespace Azure.Cosmos
     using System.Data.Common;
     using System.Linq;
     using System.Net;
-    using Azure.Core.Pipeline;
+    using Azure.Core;
     using Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos;    
     using Microsoft.Azure.Documents;

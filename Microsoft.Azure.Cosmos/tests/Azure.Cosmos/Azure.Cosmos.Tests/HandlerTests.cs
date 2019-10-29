@@ -16,7 +16,7 @@ namespace Azure.Cosmos.Tests
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Azure.Core.Pipeline;
+    using Azure.Core;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Documents;

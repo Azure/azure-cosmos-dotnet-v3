@@ -30,8 +30,7 @@ namespace Azure.Cosmos
 
             Response response = await this.feedIterator.ReadNextAsync(cancellationToken);
             
-            // TODO: Once Page<T> is abstract, we need to override so the ContinuationToken is Lazy to avoid requesting it when its not needed or for DISTINCT queries
-            return (new Page<T>(this.responseCreator(response), response.Headers.GetContinuationToken(), response), this.feedIterator.HasMoreResults);
+            return (new CosmosPage<T>(this.responseCreator(response), response), this.feedIterator.HasMoreResults);
         }
     }
 }

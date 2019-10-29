@@ -11,7 +11,7 @@ namespace Azure.Cosmos.EmulatorTests
     using System.Linq;
     using System.Net;
     using System.Threading.Tasks;
-    using Azure.Core.Http;
+    using Azure.Core;
     using Azure.Cosmos;
     using Microsoft.Azure.Cosmos;
     using Microsoft.VisualStudio.TestTools.UnitTesting;

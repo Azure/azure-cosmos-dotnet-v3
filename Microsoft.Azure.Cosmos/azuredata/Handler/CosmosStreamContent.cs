@@ -9,9 +9,9 @@ namespace Azure.Cosmos
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
-    using Azure.Core.Pipeline;
+    using Azure.Core;
 
-    internal sealed class CosmosStreamContent : HttpPipelineRequestContent
+    internal sealed class CosmosStreamContent : RequestContent
     {
         private const int CopyToBufferSize = 81920;
         private readonly long Origin;

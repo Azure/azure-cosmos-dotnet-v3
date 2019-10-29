@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Net;
     using global::Azure;
-    using global::Azure.Core.Http;
+    using global::Azure.Core;
     using global::Azure.Cosmos;
     using Microsoft.Azure.Documents;
 

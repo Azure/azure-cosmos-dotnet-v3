@@ -12,8 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using global::Azure.Core.Http;
-    using global::Azure.Core.Pipeline;
+    using global::Azure.Core;
     using global::Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Routing;

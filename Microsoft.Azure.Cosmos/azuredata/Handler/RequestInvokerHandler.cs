@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
-    using global::Azure.Core.Pipeline;
+    using global::Azure.Core;
     using global::Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;

@@ -124,18 +124,18 @@ namespace Azure.Cosmos
             Action<RequestMessage> requestEnricher,
             CancellationToken cancellationToken)
         {
-            DiagnosticScope scope = this.pipeline.Diagnostics.CreateScope(DiagnosticProperty.ResourceOperationActivityName(resourceType, operationType));
+            //using DiagnosticScope scope = this.pipeline.Diagnostics.CreateScope(DiagnosticProperty.ResourceOperationActivityName(resourceType, operationType));
             try
             {
-                scope.AddAttribute(DiagnosticProperty.ResourceUri, resourceUri);
-                scope.AddAttribute(DiagnosticProperty.ResourceType, resourceType);
-                scope.AddAttribute(DiagnosticProperty.OperationType, operationType);
-                if (cosmosContainerCore != null)
-                {
-                    scope.AddAttribute(DiagnosticProperty.Container, cosmosContainerCore.LinkUri);
-                }
+                //scope.AddAttribute(DiagnosticProperty.ResourceUri, resourceUri);
+                //scope.AddAttribute(DiagnosticProperty.ResourceType, resourceType);
+                //scope.AddAttribute(DiagnosticProperty.OperationType, operationType);
+                //if (cosmosContainerCore != null)
+                //{
+                //    scope.AddAttribute(DiagnosticProperty.Container, cosmosContainerCore.LinkUri);
+                //}
 
-                scope.Start();
+                //scope.Start();
                 (RequestMessage requestMessage, ResponseMessage errorResponse) = await this.RequestHandler.TryCreateRequestMessageAsync(resourceUri, resourceType, operationType, requestOptions, cosmosContainerCore, partitionKey, streamPayload, requestEnricher, cancellationToken);
                 if (errorResponse != null)
                 {
@@ -149,22 +149,22 @@ namespace Azure.Cosmos
                     Response response = await this.pipeline.SendRequestAsync(requestMessage, cancellationToken);
                     ResponseMessage responseMessage = response as ResponseMessage;
                     Debug.Assert(responseMessage != null, "Pipeline did not deliver a ResponseMessage");
-                    if (scope.IsEnabled && responseMessage != null)
-                    {
-                        scope.AddAttribute(DiagnosticProperty.Diagnostics, responseMessage.Diagnostics);
-                    }
+                    //if (scope.IsEnabled && responseMessage != null)
+                    //{
+                    //    scope.AddAttribute(DiagnosticProperty.Diagnostics, responseMessage.Diagnostics);
+                    //}
 
                     return responseMessage;
                 }
             }
-            catch (Exception exception)
+            catch
             {
-                scope.Failed(exception);
+                //scope.Failed(exception);
                 throw;
             }
             finally
             {
-                scope.Dispose();
+                //scope.Dispose();
             }
         }
 

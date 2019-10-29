@@ -616,7 +616,7 @@ namespace Azure.Cosmos.EmulatorTests
                    requestOptions: queryRequestOptions,
                    continuationToken: continuationToken).AsPages();
 
-                Page<T> cosmosQueryResponse;
+                Page<T> cosmosQueryResponse = null;
                 await foreach (Page<T> page in itemQuery)
                 {
                     cosmosQueryResponse = page;
