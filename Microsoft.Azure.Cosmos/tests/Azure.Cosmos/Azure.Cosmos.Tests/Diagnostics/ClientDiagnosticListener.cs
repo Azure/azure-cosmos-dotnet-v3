@@ -16,7 +16,7 @@
 
         public ClientDiagnosticListener()
         {
-            this._diagnosticSourceName = "Azure.Clients";
+            this._diagnosticSourceName = "Azure.Cosmos";
             DiagnosticListener.AllListeners.Subscribe(this);
         }
 
