@@ -108,7 +108,7 @@
             // After 5 minutes, if the game is not complete, the player with highest number of balls wins.
             int gameId = 420;
             int playerCount = 3;
-            int ballCount = 3;
+            int ballCount = 4;
             List<GameBall> balls = new List<GameBall>();
             List<GameParticipant> players = new List<GameParticipant>();
 
@@ -118,6 +118,7 @@
             BatchResponse gameStartResponse = await gamesContainer.CreateBatch(new PartitionKey(gameId))
                 .CreateItem<GameBall>(GameBall.Create(gameId, Color.Red, 4, 2))
                 .CreateItem<GameBall>(GameBall.Create(gameId, Color.Blue, 6, 4))
+                .CreateItem<GameBall>(GameBall.Create(gameId, Color.Blue, 8, 7))
                 .CreateItem<GameBall>(GameBall.Create(gameId, Color.Red, 8, 8))
                 .CreateItem<GameParticipant>(GameParticipant.Create(gameId, "alice"))
                 .CreateItem<GameParticipant>(GameParticipant.Create(gameId, "bob"))
@@ -125,7 +126,7 @@
                 .ExecuteAsync();
 
             GameParticipant alice, bob, carla;
-            GameBall blueBall, secondRedBall;
+            GameBall firstBlueBall, secondRedBall;
 
             using (gameStartResponse)
             {
@@ -148,8 +149,8 @@
                     balls.Add(gameBallResult.Resource);
                 }
 
-                blueBall = balls[1];
-                secondRedBall = balls[2];
+                firstBlueBall = balls[1];
+                secondRedBall = balls[3];
 
                 for (int index = ballCount; index < gameStartResponse.Count; index++)
                 {
@@ -164,7 +165,7 @@
             PrintState(players, balls);
 
             Console.WriteLine("Alice goes to 6, 4 and finds a blue ball ...");
-            balls.Remove(blueBall);
+            balls.Remove(firstBlueBall);
             alice.BlueCount++;
 
             // Upserts maybe used to replace items or create them if they are not already present.
@@ -174,7 +175,7 @@
             BatchResponse aliceFoundBallResponse = await gamesContainer.CreateBatch(new PartitionKey(gameId))
                 .UpsertItem<ParticipantLastActive>(ParticipantLastActive.Create(gameId, "alice"))
                 .ReplaceItem<GameParticipant>(alice.Nickname, alice, new BatchItemRequestOptions { IfMatchEtag = alice.ETag })
-                .DeleteItem(blueBall.Id)
+                .DeleteItem(firstBlueBall.Id)
                 .ExecuteAsync();
 
             using (aliceFoundBallResponse)
