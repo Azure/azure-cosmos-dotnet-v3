@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     [TestClass]
     public class QueryPipelineMockTests
     {
-        private CancellationToken cancellationToken = new CancellationTokenSource().Token;
+        private readonly CancellationToken cancellationToken = new CancellationTokenSource().Token;
 
         [TestMethod]
         [DataRow(true)]
@@ -449,6 +449,107 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.AreEqual(allItems.Count, itemsRead.Count);
 
                 CollectionAssert.AreEqual(allItems.ToList(), itemsRead, new ToDoItemComparer());
+            }
+        }
+
+        [TestMethod]
+        public async Task TestQueryDrainsExactItemCountAsync()
+        {
+            int maxPageSize = 5;
+            Mock<CosmosQueryClient> mockQueryClient = new Mock<CosmosQueryClient>();
+            MockPartitionResponse[] mockResponse = MockQueryFactory.CreateDefaultResponse(
+                new List<int[]>()
+                {
+                    new int[] { 0, 2, 4, 6, 8 },
+                    MockQueryFactory.EmptyPage,
+                    new int[] { 1, 3, 5, 7, 9 },
+                    MockQueryFactory.EmptyPage,
+                    new int[] { 10, 11 },
+                    MockQueryFactory.EmptyPage,
+                    new int[] { 12, 13, 14 },
+                    MockQueryFactory.EmptyPage,
+                    new int[] { 15 }
+                });
+            IList<ToDoItem> allItems = MockQueryFactory.GenerateAndMockResponse(
+                mockQueryClient,
+                isOrderByQuery: true,
+                sqlQuerySpec: MockQueryFactory.DefaultQuerySpec,
+                containerRid: MockQueryFactory.DefaultCollectionRid,
+                initContinuationToken: null,
+                maxPageSize: maxPageSize,
+                mockResponseForSinglePartition: mockResponse,
+                cancellationTokenForMocks: default(CancellationToken));
+
+            CosmosQueryContext context = MockQueryFactory.CreateContext(
+                mockQueryClient.Object);
+
+            QueryInfo queryInfo = new QueryInfo()
+            {
+                OrderBy = new SortOrder[] { SortOrder.Ascending },
+                OrderByExpressions = new string[] { "id" }
+            };
+
+            CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams = new CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams(
+                sqlQuerySpec: MockQueryFactory.DefaultQuerySpec,
+                collectionRid: MockQueryFactory.DefaultCollectionRid,
+                partitionedQueryExecutionInfo: new PartitionedQueryExecutionInfo() { QueryInfo = queryInfo },
+                partitionKeyRanges: new List<PartitionKeyRange>() { MockQueryFactory.DefaultPartitionKeyRange },
+                initialPageSize: maxPageSize,
+                maxConcurrency: null,
+                maxItemCount: maxPageSize,
+                maxBufferedItemCount: null);
+
+            CosmosOrderByItemQueryExecutionContext orderByExecutionContext = await CosmosOrderByItemQueryExecutionContext.CreateAsync(
+                context,
+                initParams,
+                null,
+                default(CancellationToken));
+
+            initParams = new CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams(
+                sqlQuerySpec: MockQueryFactory.DefaultQuerySpec,
+                collectionRid: MockQueryFactory.DefaultCollectionRid,
+                partitionedQueryExecutionInfo: new PartitionedQueryExecutionInfo()
+                {
+                    QueryInfo = new QueryInfo()
+                    {
+                    }
+                },
+                partitionKeyRanges: new List<PartitionKeyRange>() { MockQueryFactory.DefaultPartitionKeyRange },
+                initialPageSize: maxPageSize,
+                maxConcurrency: null,
+                maxItemCount: maxPageSize,
+                maxBufferedItemCount: null);
+
+            CosmosParallelItemQueryExecutionContext parallelExecutionContext = await CosmosParallelItemQueryExecutionContext.CreateAsync(
+                context,
+                initParams,
+                null,
+                default(CancellationToken));
+
+            foreach (CosmosCrossPartitionQueryExecutionContext crossPartitionContext in new CosmosCrossPartitionQueryExecutionContext[]
+            {
+                    orderByExecutionContext,
+                    parallelExecutionContext
+            })
+            {
+                Assert.IsTrue(!crossPartitionContext.IsDone);
+                while (!crossPartitionContext.IsDone)
+                {
+                    QueryResponseCore queryResponse = await crossPartitionContext.DrainAsync(
+                        maxPageSize,
+                        default(CancellationToken));
+                    Assert.IsTrue(queryResponse.IsSuccess);
+                    if (!crossPartitionContext.IsDone)
+                    {
+                        // Query is not done so we expect an exact item count
+                        Assert.AreEqual(maxPageSize, queryResponse.CosmosElements.Count);
+                    }
+                    else
+                    {
+                        // Query is done so the last page can be partially full
+                        Assert.IsTrue(queryResponse.CosmosElements.Count <= maxPageSize);
+                    }
+                }
             }
         }
     }
