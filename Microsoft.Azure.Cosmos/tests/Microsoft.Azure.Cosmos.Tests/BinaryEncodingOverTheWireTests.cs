@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     /// Tests for CrossPartitionQueryTests.
     /// </summary>
     [TestClass]
+    [Ignore]
     public class BinaryEncodingOverTheWireTests
     {
         private static readonly string[] NoDocuments = new string[] { };
