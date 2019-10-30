@@ -155,27 +155,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
 
         public override bool TryGetContinuationToken(out string state)
         {
-            if (!this.IsDone)
-            {
-                if (this.Source.TryGetContinuationToken(out string sourceState))
-                {
-                    AggregateContinuationToken aggregateContinuationToken = AggregateContinuationToken.Create(
-                        this.singleGroupAggregator.GetContinuationToken(),
-                        sourceState);
-                    state = aggregateContinuationToken.ToString();
-                    return true;
-                }
-                else
-                {
-                    state = null;
-                    return false;
-                }
-            }
-            else
+            if (this.IsDone)
             {
                 state = null;
                 return true;
             }
+
+            if (this.Source.TryGetContinuationToken(out string sourceState))
+            {
+                AggregateContinuationToken aggregateContinuationToken = AggregateContinuationToken.Create(
+                    this.singleGroupAggregator.GetContinuationToken(),
+                    sourceState);
+                state = aggregateContinuationToken.ToString();
+                return true;
+            }
+
+            state = null;
+            return false;
         }
 
         private struct AggregateContinuationToken
