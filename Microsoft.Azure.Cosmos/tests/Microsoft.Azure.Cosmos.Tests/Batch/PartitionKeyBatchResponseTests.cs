@@ -18,16 +18,6 @@ namespace Microsoft.Azure.Cosmos.Tests
     public class PartitionKeyBatchResponseTests
     {
         [TestMethod]
-        public void StatusCodesAreSet()
-        {
-            const string errorMessage = "some error";
-            PartitionKeyRangeBatchResponse response = new PartitionKeyRangeBatchResponse(1, new BatchResponse(HttpStatusCode.NotFound, SubStatusCodes.ClientTcpChannelFull, errorMessage, null), null);
-            Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
-            Assert.AreEqual(SubStatusCodes.ClientTcpChannelFull, response.SubStatusCode);
-            Assert.AreEqual(errorMessage, response.ErrorMessage);
-        }
-
-        [TestMethod]
         public async Task StatusCodesAreSetThroughResponseAsync()
         {
             List<BatchOperationResult> results = new List<BatchOperationResult>();
