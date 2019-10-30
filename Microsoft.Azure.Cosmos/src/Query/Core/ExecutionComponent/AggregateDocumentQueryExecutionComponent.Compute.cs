@@ -161,19 +161,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                 return true;
             }
 
-            if (this.Source.TryGetContinuationToken(out string sourceState))
-            {
-                AggregateContinuationToken aggregateContinuationToken = AggregateContinuationToken.Create(
-                    this.singleGroupAggregator.GetContinuationToken(),
-                    sourceState);
-                state = aggregateContinuationToken.ToString();
-            }
-            else
+            if (!this.Source.TryGetContinuationToken(out string sourceState))
             {
                 state = null;
+                return false;
             }
-            
-            return state != null;
+
+            AggregateContinuationToken aggregateContinuationToken = AggregateContinuationToken.Create(
+                this.singleGroupAggregator.GetContinuationToken(),
+                sourceState);
+            state = aggregateContinuationToken.ToString();
+            return true;
         }
 
         private struct AggregateContinuationToken
