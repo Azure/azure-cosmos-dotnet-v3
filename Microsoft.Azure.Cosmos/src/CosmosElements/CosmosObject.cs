@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 {
     using System.Collections;
     using System.Collections.Generic;
+    using System.Linq;
     using Microsoft.Azure.Cosmos.Json;
 
 #if INTERNAL
@@ -49,19 +50,38 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return new LazyCosmosObject(jsonNavigator, jsonNavigatorNode);
         }
 
-        public static CosmosObject Create(IReadOnlyDictionary<string, CosmosElement> dictionary)
+        public static CosmosObject Create(Dictionary<string, CosmosElement> dictionary)
         {
-            return new EagerCosmosObject(dictionary);
+            return new EagerCosmosObject(dictionary.ToList());
         }
 
         public static CosmosObject Create(IReadOnlyList<KeyValuePair<string, CosmosElement>> properties)
         {
-            return new OrderedCosmosObject(properties);
+            return new EagerCosmosObject(properties);
         }
 
         public abstract bool ContainsKey(string key);
 
         public abstract bool TryGetValue(string key, out CosmosElement value);
+
+        public bool TryGetValue<TCosmosElement>(string key, out TCosmosElement value)
+            where TCosmosElement : CosmosElement
+        {
+            if (!this.TryGetValue(key, out CosmosElement untypedCosmosElement))
+            {
+                value = default;
+                return false;
+            }
+
+            if (!(untypedCosmosElement is TCosmosElement typedCosmosElement))
+            {
+                value = default;
+                return false;
+            }
+
+            value = typedCosmosElement;
+            return true;
+        }
 
         public abstract IEnumerator<KeyValuePair<string, CosmosElement>> GetEnumerator();
 

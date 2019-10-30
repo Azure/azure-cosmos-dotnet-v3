@@ -2911,7 +2911,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     return CosmosBoolean.Create((random.Next() % 2) == 0);
                 // Object
                 case 4:
-                    return CosmosObject.Create(new Dictionary<string, CosmosElement>());
+                    return CosmosObject.Create(new List<KeyValuePair<string, CosmosElement>>());
                 // Array
                 case 5:
                     return CosmosArray.Create(new List<CosmosElement>());

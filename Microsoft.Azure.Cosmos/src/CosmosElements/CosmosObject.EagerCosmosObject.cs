@@ -5,8 +5,8 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using Microsoft.Azure.Cosmos.Json;
-    using Newtonsoft.Json;
 
 #if INTERNAL
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
@@ -19,27 +19,17 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     {
         private sealed class EagerCosmosObject : CosmosObject
         {
-            private readonly Dictionary<string, CosmosElement> dictionary;
+            private readonly List<KeyValuePair<string, CosmosElement>> properties;
 
-            public EagerCosmosObject(IReadOnlyDictionary<string, CosmosElement> dictionary)
+            public EagerCosmosObject(IReadOnlyList<KeyValuePair<string, CosmosElement>> properties)
             {
-                if (dictionary == null)
+                if (properties == null)
                 {
-                    throw new ArgumentNullException($"{nameof(dictionary)}");
+                    throw new ArgumentNullException(nameof(properties));
                 }
 
-                this.dictionary = new Dictionary<string, CosmosElement>();
-                foreach (KeyValuePair<string, CosmosElement> kvp in dictionary)
-                {
-                    this.dictionary[kvp.Key] = kvp.Value;
-                }
+                this.properties = new List<KeyValuePair<string, CosmosElement>>(properties);
             }
-
-            public override IEnumerable<string> Keys => this.dictionary.Keys;
-
-            public override IEnumerable<CosmosElement> Values => this.dictionary.Values;
-
-            public override int Count => this.dictionary.Count;
 
             public override CosmosElement this[string key]
             {
@@ -47,25 +37,42 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 {
                     if (!this.TryGetValue(key, out CosmosElement value))
                     {
-                        value = default;
+                        throw new KeyNotFoundException($"Failed to find key: {key}");
                     }
 
                     return value;
                 }
             }
 
-            public override bool ContainsKey(string key) => this.dictionary.ContainsKey(key);
+            public override IEnumerable<string> Keys => this.properties.Select(kvp => kvp.Key);
 
-            public override IEnumerator<KeyValuePair<string, CosmosElement>> GetEnumerator() => this.dictionary.GetEnumerator();
+            public override IEnumerable<CosmosElement> Values => this.properties.Select(kvp => kvp.Value);
+
+            public override int Count => this.properties.Count;
+
+            public override bool ContainsKey(string key)
+            {
+                return this.TryGetValue(key, out CosmosElement unused);
+            }
+
+            public override IEnumerator<KeyValuePair<string, CosmosElement>> GetEnumerator()
+            {
+                return this.properties.GetEnumerator();
+            }
 
             public override bool TryGetValue(string key, out CosmosElement value)
             {
-                return this.dictionary.TryGetValue(key, out value);
-            }
+                foreach (KeyValuePair<string, CosmosElement> property in this.properties)
+                {
+                    if (property.Key == key)
+                    {
+                        value = property.Value;
+                        return true;
+                    }
+                }
 
-            public override string ToString()
-            {
-                return JsonConvert.SerializeObject(this.dictionary);
+                value = null;
+                return false;
             }
 
             public override void WriteTo(IJsonWriter jsonWriter)
@@ -77,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
                 jsonWriter.WriteObjectStart();
 
-                foreach (KeyValuePair<string, CosmosElement> kvp in this)
+                foreach (KeyValuePair<string, CosmosElement> kvp in this.properties)
                 {
                     jsonWriter.WriteFieldName(kvp.Key);
                     kvp.Value.WriteTo(jsonWriter);

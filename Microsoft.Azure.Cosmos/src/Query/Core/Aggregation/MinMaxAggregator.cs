@@ -29,11 +29,11 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
             this.isMinAggregation = isMinAggregation;
             if (this.isMinAggregation)
             {
-                globalMinMax = ItemComparer.MaxValue;
+                this.globalMinMax = ItemComparer.MaxValue;
             }
             else
             {
-                globalMinMax = ItemComparer.MinValue;
+                this.globalMinMax = ItemComparer.MinValue;
             }
         }
 
@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
             // and unwrap the object to get the actual item of interest
             if (localMinMax is CosmosObject cosmosObject)
             {
-                if (cosmosObject["count"] is CosmosNumber countToken)
+                if (cosmosObject.TryGetValue("count", out CosmosNumber countToken))
                 {
                     // We know the object looks like: {"min": MIN(c.blah), "count": COUNT(c.blah)}
                     long count;
@@ -75,11 +75,16 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
                         return;
                     }
 
-                    CosmosElement min = cosmosObject["min"];
-                    CosmosElement max = cosmosObject["max"];
+                    if (!cosmosObject.TryGetValue("min", out CosmosElement min))
+                    {
+                        min = null;
+                    }
 
-                    // Note that JToken won't equal null as long as a value is there
-                    // even if that value is a JSON null.
+                    if (!cosmosObject.TryGetValue("max", out CosmosElement max))
+                    {
+                        max = null;
+                    }
+                    
                     if (min != null)
                     {
                         localMinMax = min;
