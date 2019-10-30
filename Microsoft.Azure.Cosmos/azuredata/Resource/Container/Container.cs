@@ -86,7 +86,7 @@ namespace Azure.Cosmos
         /// <code language="c#">
         /// <![CDATA[
         /// Container container = this.database.GetContainer("containerId");
-        /// ResponseMessage response = await container.ReadContainerStreamAsync();
+        /// Response response = await container.ReadContainerStreamAsync();
         /// ]]>
         /// </code>
         /// </example>
@@ -147,7 +147,7 @@ namespace Azure.Cosmos
         /// <![CDATA[
         /// ContainerProperties containerProperties = containerReadResponse;
         /// containerProperties.IndexingPolicy.Automatic = false;
-        /// ResponseMessage response = await container.ReplaceContainerStreamAsync(containerProperties);
+        /// Response response = await container.ReplaceContainerStreamAsync(containerProperties);
         /// ]]>
         /// </code>
         /// </example>
@@ -193,7 +193,7 @@ namespace Azure.Cosmos
         /// <code language="c#">
         /// <![CDATA[
         /// Container container = this.database.GetContainer("containerId");
-        /// ResponseMessage response = await container.DeleteContainerStreamAsync();
+        /// Response response = await container.DeleteContainerStreamAsync();
         /// ]]>
         /// </code>
         /// </example>
@@ -310,15 +310,10 @@ namespace Azure.Cosmos
         /// <code language="c#">
         /// <![CDATA[
         /// //Create the object in Cosmos
-        /// using (ResponseMessage response = await this.Container.CreateItemStreamAsync(partitionKey: new PartitionKey("streamPartitionKey"), streamPayload: stream))
+        /// using (Response response = await this.Container.CreateItemStreamAsync(partitionKey: new PartitionKey("streamPartitionKey"), streamPayload: stream))
         /// {
-        ///     if (!response.IsSuccessStatusCode)
-        ///     {
-        ///         //Handle and log exception
-        ///         return;
-        ///     }
         ///     
-        ///     using (Stream responseStream = await response.ReadBodyAsync())
+        ///     using (Stream responseStream = await response.ContentStream)
         ///     {
         ///         //Read or do other operations with the stream
         ///         using (StreamReader streamReader = new StreamReader(responseStream))
@@ -408,15 +403,9 @@ namespace Azure.Cosmos
         /// Read a response as a stream.
         /// <code language="c#">
         /// <![CDATA[
-        /// using(ResponseMessage response = await this.container.ReadItemStreamAsync("id", new PartitionKey("partitionKey")))
+        /// using(Response response = await this.container.ReadItemStreamAsync("id", new PartitionKey("partitionKey")))
         /// {
-        ///     if (!response.IsSuccessStatusCode)
-        ///     {
-        ///         //Handle and log exception
-        ///         return;
-        ///     }
-        ///     
-        ///     using(Stream stream = response.ReadBodyAsync())
+        ///     using(Stream stream = response.ContentStream)
         ///     {
         ///         //Read or do other operations with the stream
         ///         using (StreamReader streamReader = new StreamReader(stream))
@@ -499,15 +488,10 @@ namespace Azure.Cosmos
         /// Upsert a Stream containing the item to Cosmos
         /// <code language="c#">
         /// <![CDATA[
-        /// using(ResponseMessage response = await this.container.UpsertItemStreamAsync(stream, new PartitionKey("itemPartitionKey")))
+        /// using(Response response = await this.container.UpsertItemStreamAsync(stream, new PartitionKey("itemPartitionKey")))
         /// {
-        ///     if (!response.IsSuccessStatusCode)
-        ///     {
-        ///         //Handle and log exception
-        ///         return;
-        ///     }
         ///     
-        ///     using(Stream stream = response.ReadBodyAsync())
+        ///     using(Stream stream = response.ContentStream)
         ///     {
         ///         //Read or do other operations with the stream
         ///         using (StreamReader  streamReader = new StreamReader(stream))
@@ -597,15 +581,10 @@ namespace Azure.Cosmos
         /// Replace an item in Cosmos
         /// <code language="c#">
         /// <![CDATA[
-        /// using(ResponseMessage response = await this.container.ReplaceItemStreamAsync(stream, "itemId", new PartitionKey("itemPartitionKey"))
+        /// using(Response response = await this.container.ReplaceItemStreamAsync(stream, "itemId", new PartitionKey("itemPartitionKey"))
         /// {
-        ///     if (!response.IsSuccessStatusCode)
-        ///     {
-        ///         //Handle and log exception
-        ///         return;
-        ///     }
         ///     
-        ///     using(Stream stream = response.ReadBodyAsync())
+        ///     using(Stream stream = response.ContentStream)
         ///     {
         ///         //Read or do other operations with the stream
         ///         using (StreamReader streamReader = new StreamReader(stream))
@@ -670,7 +649,7 @@ namespace Azure.Cosmos
         ///    status = "InProgress"
         /// };
         ///
-        /// ItemResponse item = await this.container.ReplaceItemAsync<ToDoActivity>(test, test.id, new PartitionKey(test.status));
+        /// ItemResponse<ToDoActivity> item = await this.container.ReplaceItemAsync<ToDoActivity>(test, test.id, new PartitionKey(test.status));
         /// ]]>
         /// </code>
         /// </example>
@@ -698,13 +677,8 @@ namespace Azure.Cosmos
         /// Delete an item from Cosmos
         /// <code language="c#">
         /// <![CDATA[
-        /// using(ResponseMessage response = await this.container.DeleteItemStreamAsync("itemId", new PartitionKey("itemPartitionKey")))
+        /// using(Response response = await this.container.DeleteItemStreamAsync("itemId", new PartitionKey("itemPartitionKey")))
         /// {
-        ///     if (!response.IsSuccessStatusCode)
-        ///     {
-        ///         //Handle and log exception
-        ///         return;
-        ///     }
         /// }
         /// ]]>
         /// </code>

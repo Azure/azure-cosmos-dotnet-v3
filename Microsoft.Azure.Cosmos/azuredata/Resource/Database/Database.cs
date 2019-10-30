@@ -207,7 +207,7 @@ namespace Azure.Cosmos
         /// //Reads a Database resource where
         /// // - database_id is the ID property of the Database resource you wish to read.
         /// Database database = this.cosmosClient.GetDatabase(database_id);
-        /// ResponseMessage response = await database.ReadContainerStreamAsync();
+        /// Response response = await database.ReadContainerStreamAsync();
         /// ]]>
         /// </code>
         /// </example>
@@ -483,7 +483,7 @@ namespace Azure.Cosmos
         ///     PartitionKeyPath = "/pk",
         /// };
         ///
-        /// using(ResponseMessage response = await this.cosmosDatabase.CreateContainerStreamAsync(containerProperties))
+        /// using(Response response = await this.cosmosDatabase.CreateContainerStreamAsync(containerProperties))
         /// {
         /// }
         /// ]]>

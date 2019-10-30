@@ -404,12 +404,12 @@ namespace Azure.Cosmos.Scripts
         ///         sprocBody);
         /// 
         /// // Execute the stored procedure
-        /// ResponseMessage sprocResponse = await scripts.ExecuteStoredProcedureStreamAsync(
+        /// Response sprocResponse = await scripts.ExecuteStoredProcedureStreamAsync(
         ///                         sprocId,
         ///                         new PartitionKey(testPartitionId),
         ///                         new dynamic[] {"myPrefixString", "myPostfixString"});
         ///                         
-        /// using (StreamReader sr = new StreamReader(sprocResponse.Content))
+        /// using (StreamReader sr = new StreamReader(sprocResponse.ContentStream))
         /// {
         ///     string stringResponse = await sr.ReadToEndAsync();
         ///     Console.WriteLine(stringResponse);
@@ -739,12 +739,9 @@ namespace Azure.Cosmos.Scripts
         ///     sqlQueryDefinition: sqlQuery,
         ///     partitionKey: "Done");
         ///
-        /// while (setIterator.HasMoreResults)
+        /// await foreach (double tax in setIterator)
         /// {
-        ///     foreach (var tax in await setIterator.ReadNextAsync())
-        ///     {
-        ///         Console.WriteLine(tax);
-        ///     }
+        ///     Console.WriteLine(tax);
         /// }
         /// ]]>
         /// </code>

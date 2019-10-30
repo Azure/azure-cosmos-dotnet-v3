@@ -220,10 +220,8 @@ namespace Azure.Cosmos
         /// <![CDATA[
         /// string queryText = "SELECT * FROM c where c.id like '%testId%'";
         /// FeedIterator<PermissionProperties> resultSet = this.users.GetPermissionQueryIterator<PermissionProperties>(queryText);
-        /// while (feedIterator.HasMoreResults)
+        /// await foreach (PermissionProperties permissions in resultSet)
         /// {
-        ///     FeedResponse<PermissionProperties> iterator =
-        ///     await feedIterator.ReadNextAsync(this.cancellationToken);
         /// }
         /// ]]>
         /// </code>
@@ -233,10 +231,8 @@ namespace Azure.Cosmos
         /// <code language="c#">
         /// <![CDATA[
         /// FeedIterator<PermissionProperties> resultSet = this.user.GetPermissionQueryIterator<PermissionProperties>();
-        /// while (feedIterator.HasMoreResults)
+        /// await foreach (PermissionProperties permissions in resultSet)
         /// {
-        ///     FeedResponse<PermissionProperties> iterator =
-        ///     await feedIterator.ReadNextAsync(this.cancellationToken);
         /// }
         /// ]]>
         /// </code>
@@ -267,12 +263,8 @@ namespace Azure.Cosmos
         /// QueryDefinition queryDefinition = new QueryDefinition(queryText);
         /// queryDefinition.WithParameter("@testId", "testPermissionId");
         /// FeedIterator<PermissionProperties> resultSet = this.user.GetPermissionQueryIterator<PermissionProperties>(queryDefinition);
-        /// while (feedIterator.HasMoreResults)
+        /// await foreach (PermissionProperties permissions in resultSet)
         /// {
-        ///     foreach (PermissionProperties properties in await feedIterator.ReadNextAsync())
-        ///     {
-        ///         Console.WriteLine(properties.Id);
-        ///     }
         /// }
         /// ]]>
         /// </code>
