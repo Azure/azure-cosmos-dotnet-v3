@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     /// Tests for CrossPartitionQueryTests.
     /// </summary>
     [TestClass]
-    [Ignore]
+    [TestCategory("Quarantine") /* Used to filter out quarantined tests in gated runs */]
     public class BinaryEncodingOverTheWireTests
     {
         private static readonly string[] NoDocuments = new string[] { };
