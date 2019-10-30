@@ -143,12 +143,7 @@ namespace Microsoft.Azure.Cosmos.Query
             string requestContinuationToken,
             CancellationToken cancellationToken)
         {
-            DefaultTrace.TraceInformation(
-                string.Format(
-                    CultureInfo.InvariantCulture,
-                    "{0}, CorrelatedActivityId: {1} | Pipelined~Context.CreateAsync",
-                    DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
-                    queryContext.CorrelatedActivityId));
+            cancellationToken.ThrowIfCancellationRequested();
 
             if (requestContinuationToken != null)
             {
@@ -171,7 +166,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     out PipelineContinuationTokenV1_1 latestVersionPipelineContinuationToken))
                 {
                     throw queryContext.QueryClient.CreateBadRequestException(
-                        $"Failed to convert {nameof(PipelineContinuationToken)}: {requestContinuationToken}.");
+                        $"{nameof(PipelineContinuationToken)}: '{requestContinuationToken}' is no longer supported.");
                 }
 
                 requestContinuationToken = latestVersionPipelineContinuationToken.SourceContinuationToken;

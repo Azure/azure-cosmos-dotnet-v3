@@ -15,8 +15,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
     {
         public static readonly Version VersionNumber = new Version(major: 1, minor: 1);
 
-        private static readonly string SourceContinuationTokenPropertyName = "SourceContinuationToken";
-        private static readonly string QueryPlanPropertyName = "QueryPlan";
+        private const string SourceContinuationTokenPropertyName = "SourceContinuationToken";
+        private const string QueryPlanPropertyName = "QueryPlan";
 
         public PipelineContinuationTokenV1_1(
             PartitionedQueryExecutionInfo queryPlan,
@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
 
         public static bool TryParse(
             CosmosObject parsedContinuationToken,
-            out PipelineContinuationTokenV1_1 pipelinedContinuationTokenV2)
+            out PipelineContinuationTokenV1_1 pipelinedContinuationToken)
         {
             if (parsedContinuationToken == null)
             {
@@ -69,13 +69,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
                 parsedContinuationToken,
                 out Version version))
             {
-                pipelinedContinuationTokenV2 = default(PipelineContinuationTokenV1_1);
+                pipelinedContinuationToken = default(PipelineContinuationTokenV1_1);
                 return false;
             }
 
             if (version != PipelineContinuationTokenV1_1.VersionNumber)
             {
-                pipelinedContinuationTokenV2 = default(PipelineContinuationTokenV1_1);
+                pipelinedContinuationToken = default(PipelineContinuationTokenV1_1);
                 return false;
             }
 
@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
                 parsedContinuationToken,
                 out PartitionedQueryExecutionInfo queryPlan))
             {
-                pipelinedContinuationTokenV2 = default(PipelineContinuationTokenV1_1);
+                pipelinedContinuationToken = default(PipelineContinuationTokenV1_1);
                 return false;
             }
 
@@ -91,11 +91,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
                 parsedContinuationToken,
                 out string sourceContinuationToken))
             {
-                pipelinedContinuationTokenV2 = default(PipelineContinuationTokenV1_1);
+                pipelinedContinuationToken = default(PipelineContinuationTokenV1_1);
                 return false;
             }
 
-            pipelinedContinuationTokenV2 = new PipelineContinuationTokenV1_1(queryPlan, sourceContinuationToken);
+            pipelinedContinuationToken = new PipelineContinuationTokenV1_1(queryPlan, sourceContinuationToken);
             return true;
         }
 

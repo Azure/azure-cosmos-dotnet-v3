@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
     internal abstract class PipelineContinuationToken
     {
         protected const string VersionPropertyName = "Version";
+
         private static readonly Version CurrentVersion = new Version(major: 1, minor: 0);
 
         protected PipelineContinuationToken(Version version)
@@ -100,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
 
         public static bool TryConvertToLatest(
             PipelineContinuationToken pipelinedContinuationToken,
-            out PipelineContinuationTokenV1_1 pipelineContinuationTokenV2)
+            out PipelineContinuationTokenV1_1 pipelineContinuationTokenV1_1)
         {
             if (pipelinedContinuationToken == null)
             {
@@ -119,14 +120,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
                     sourceContinuationToken: pipelineContinuationTokenV1.SourceContinuationToken);
             }
 
-            if (!(pipelinedContinuationToken is PipelineContinuationTokenV1_1 convertedPipelineContinuationTokenV2))
+            if (!(pipelinedContinuationToken is PipelineContinuationTokenV1_1 convertedPipelineContinuationTokenV1_1))
             {
-                pipelineContinuationTokenV2 = default(PipelineContinuationTokenV1_1);
+                pipelineContinuationTokenV1_1 = default(PipelineContinuationTokenV1_1);
                 return false;
             }
             else
             {
-                pipelineContinuationTokenV2 = convertedPipelineContinuationTokenV2;
+                pipelineContinuationTokenV1_1 = convertedPipelineContinuationTokenV1_1;
             }
 
             return true;
@@ -154,20 +155,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
                 // then the token was generated before we started versioning.
                 // If that is the case, then just use the default version.
                 version = PipelineContinuationTokenV0.VersionNumber;
-            }
-            else
-            {
-                if (!Version.TryParse(versionString.Value, out Version parsedVersion))
-                {
-                    version = default(Version);
-                    return false;
-                }
-                else
-                {
-                    version = parsedVersion;
-                }
+                return true;
             }
 
+            if (!Version.TryParse(versionString.Value, out Version parsedVersion))
+            {
+                version = default;
+                return false;
+            }
+
+            version = parsedVersion;
             return true;
         }
     }
