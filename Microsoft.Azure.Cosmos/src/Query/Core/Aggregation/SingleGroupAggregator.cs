@@ -164,7 +164,12 @@ namespace Microsoft.Azure.Cosmos.Query
                 {
                     string alias = aliasAndValue.Key;
                     AggregateValue aggregateValue = aliasAndValue.Value;
-                    aggregateValue.AddValue(payload[alias]);
+                    if (!payload.TryGetValue(alias, out CosmosElement payloadValue))
+                    {
+                        payloadValue = null;
+                    }
+
+                    aggregateValue.AddValue(payloadValue);
                 }
             }
 

@@ -3047,7 +3047,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 #endif
 
                         IEnumerable<CosmosElement> insertedDocs = documents
-                            .Select(document => (CosmosElement.CreateFromBuffer(Encoding.UTF8.GetBytes(document.ToString())) as CosmosObject)[nameof(MixedTypedDocument.MixedTypeField)])
+                            .Select(document =>
+                            {
+                                CosmosElement element = CosmosElement.Parse(document.ToString());
+                                CosmosObject objectElement = element as CosmosObject;
+                                if (!objectElement.TryGetValue(nameof(MixedTypedDocument.MixedTypeField), out CosmosElement value))
+                                {
+                                    value = null;
+                                }
+
+                                return value;
+                            })
                             .Where(document => document != null);
 
                         // Build the expected results using LINQ
