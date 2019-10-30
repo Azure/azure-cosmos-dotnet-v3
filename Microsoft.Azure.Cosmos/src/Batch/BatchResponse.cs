@@ -53,6 +53,7 @@ namespace Microsoft.Azure.Cosmos
                   operations: operations,
                   serializer: null)
         {
+            this.CreateAndPopulateResults(operations);
         }
 
         /// <summary>
@@ -296,19 +297,24 @@ namespace Microsoft.Azure.Cosmos
                         }
                     }
 
-                    response.results = new List<BatchOperationResult>();
-                    for (int i = 0; i < serverRequest.Operations.Count; i++)
-                    {
-                        response.results.Add(
-                            new BatchOperationResult(response.StatusCode)
-                            {
-                                SubStatusCode = response.SubStatusCode,
-                                RetryAfter = TimeSpan.FromMilliseconds(retryAfterMilliseconds),
-                            });
-                    }
+                    response.CreateAndPopulateResults(serverRequest.Operations, retryAfterMilliseconds);
                 }
 
                 return response;
+            }
+        }
+
+        private void CreateAndPopulateResults(IReadOnlyList<ItemBatchOperation> operations, int retryAfterMilliseconds = 0)
+        {
+            this.results = new List<BatchOperationResult>();
+            for (int i = 0; i < operations.Count; i++)
+            {
+                this.results.Add(
+                    new BatchOperationResult(this.StatusCode)
+                    {
+                        SubStatusCode = this.SubStatusCode,
+                        RetryAfter = TimeSpan.FromMilliseconds(retryAfterMilliseconds),
+                    });
             }
         }
 
