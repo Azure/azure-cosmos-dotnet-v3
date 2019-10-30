@@ -152,6 +152,8 @@ namespace Microsoft.Azure.Cosmos.Query
             string requestContinuationToken,
             CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             return (await CosmosOrderByItemQueryExecutionContext.TryCreateAsync(
                 queryContext,
                 initParams,

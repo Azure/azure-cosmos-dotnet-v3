@@ -106,6 +106,8 @@ namespace Microsoft.Azure.Cosmos.Query
             string requestContinuationToken,
             CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             return (await TryCreateAsync(
                 queryContext,
                 initParams,
@@ -122,6 +124,8 @@ namespace Microsoft.Azure.Cosmos.Query
             Debug.Assert(
                 !initParams.PartitionedQueryExecutionInfo.QueryInfo.HasOrderBy,
                 "Parallel~Context must not have order by query info.");
+
+            cancellationToken.ThrowIfCancellationRequested();
 
             CosmosParallelItemQueryExecutionContext context = new CosmosParallelItemQueryExecutionContext(
                 queryContext: queryContext,
