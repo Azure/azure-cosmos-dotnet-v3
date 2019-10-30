@@ -58,6 +58,25 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public abstract bool TryGetValue(string key, out CosmosElement value);
 
+        public bool TryGetValue<TCosmosElement>(string key, out TCosmosElement typedCosmosElement)
+            where TCosmosElement : CosmosElement
+        {
+            if (!this.TryGetValue(key, out CosmosElement cosmosElement))
+            {
+                typedCosmosElement = default(TCosmosElement);
+                return false;
+            }
+
+            if (!(cosmosElement is TCosmosElement tCosmosElement))
+            {
+                typedCosmosElement = default(TCosmosElement);
+                return false;
+            }
+
+            typedCosmosElement = tCosmosElement;
+            return true;
+        }
+
         public abstract IEnumerator<KeyValuePair<string, CosmosElement>> GetEnumerator();
 
         IEnumerator IEnumerable.GetEnumerator()
