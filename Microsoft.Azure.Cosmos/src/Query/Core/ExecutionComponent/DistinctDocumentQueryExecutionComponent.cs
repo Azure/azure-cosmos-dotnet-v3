@@ -244,9 +244,8 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                     distinctContinuationToken = JsonConvert.DeserializeObject<DistinctContinuationToken>(value);
                     return true;
                 }
-                catch (JsonException ex)
+                catch (JsonException)
                 {
-                    DefaultTrace.TraceWarning($"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)} Invalid continuation token {value} for Distinct~Component: {ex.Message}");
                     return false;
                 }
             }

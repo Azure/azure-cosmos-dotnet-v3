@@ -352,8 +352,8 @@ namespace Microsoft.Azure.Cosmos.Query
                         orderByExpressions)
                         .TryAsync<object>(async (initiaizationInfo) =>
                         {
-                            RangeFilterInitializationInfo[] orderByInfos = initiaizationInfo.Item1;
-                            Dictionary<string, OrderByContinuationToken> targetRangeToOrderByContinuationMap = initiaizationInfo.Item2;
+                            RangeFilterInitializationInfo[] orderByInfos = initiaizationInfo.Filters;
+                            IReadOnlyDictionary<string, OrderByContinuationToken> targetRangeToOrderByContinuationMap = initiaizationInfo.ContinuationTokens;
                             Debug.Assert(
                                 targetRangeToOrderByContinuationMap != null,
                                 "If targetRangeToOrderByContinuationMap can't be null is valid continuation is supplied");
@@ -568,21 +568,21 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Gets the filters for every partition.
         /// </summary>
-        private static TryCatch<Tuple<RangeFilterInitializationInfo[], Dictionary<string, OrderByContinuationToken>>> TryGetOrderByPartitionKeyRangesInitializationInfo(
+        private static TryCatch<OrderByInitInfo> TryGetOrderByPartitionKeyRangesInitializationInfo(
             OrderByContinuationToken[] suppliedContinuationTokens,
             List<PartitionKeyRange> partitionKeyRanges,
             SortOrder[] sortOrders,
             string[] orderByExpressions)
         {
-            TryCatch<Tuple<int, Dictionary<string, OrderByContinuationToken>>> tryFindRangeAndContinuationTokensMonad = CosmosCrossPartitionQueryExecutionContext.TryFindTargetRangeAndExtractContinuationTokens(
+            TryCatch<InitInfo<OrderByContinuationToken>> tryFindRangeAndContinuationTokensMonad = CosmosCrossPartitionQueryExecutionContext.TryFindTargetRangeAndExtractContinuationTokens(
                 partitionKeyRanges,
                 suppliedContinuationTokens
                     .Select(token => Tuple.Create(token, token.CompositeContinuationToken.Range)));
 
-            return tryFindRangeAndContinuationTokensMonad.Try<Tuple<RangeFilterInitializationInfo[], Dictionary<string, OrderByContinuationToken>>>((indexAndContinuationTokens) =>
+            return tryFindRangeAndContinuationTokensMonad.Try<OrderByInitInfo>((indexAndContinuationTokens) =>
             {
-                int minIndex = indexAndContinuationTokens.Item1;
-                Dictionary<string, OrderByContinuationToken> partitionKeyRangeToContinuationToken = indexAndContinuationTokens.Item2;
+                int minIndex = indexAndContinuationTokens.TargetIndex;
+                IReadOnlyDictionary<string, OrderByContinuationToken> partitionKeyRangeToContinuationToken = indexAndContinuationTokens.ContinuationTokens;
 
                 FormattedFilterInfo formattedFilterInfo = CosmosOrderByItemQueryExecutionContext.GetFormattedFilters(
                     orderByExpressions,
@@ -605,7 +605,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         endIndex: partitionKeyRanges.Count - 1),
                 };
 
-                return new Tuple<RangeFilterInitializationInfo[], Dictionary<string, OrderByContinuationToken>>(
+                return new OrderByInitInfo(
                     filters,
                     partitionKeyRangeToContinuationToken);
             });
@@ -792,10 +792,23 @@ namespace Microsoft.Azure.Cosmos.Query
             return new Tuple<string, string, string>(left.ToString(), target.ToString(), right.ToString());
         }
 
+        private readonly struct OrderByInitInfo
+        {
+            public OrderByInitInfo(RangeFilterInitializationInfo[] filters, IReadOnlyDictionary<string, OrderByContinuationToken> continuationTokens)
+            {
+                this.Filters = filters;
+                this.ContinuationTokens = continuationTokens;
+            }
+
+            public RangeFilterInitializationInfo[] Filters { get; }
+
+            public IReadOnlyDictionary<string, OrderByContinuationToken> ContinuationTokens { get; }
+        }
+
         /// <summary>
         /// Struct to hold all the filters for every partition.
         /// </summary>
-        private struct FormattedFilterInfo
+        private readonly struct FormattedFilterInfo
         {
             /// <summary>
             /// Filters for current partition.

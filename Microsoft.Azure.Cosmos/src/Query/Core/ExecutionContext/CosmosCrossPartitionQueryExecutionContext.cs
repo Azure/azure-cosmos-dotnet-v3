@@ -352,7 +352,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 QueryResponseCore failure = this.FailureResponse.Value;
                 this.FailureResponse = null;
                 return failure;
-                    
+
             }
 
             string continuation = this.ContinuationToken;
@@ -399,7 +399,7 @@ namespace Microsoft.Azure.Cosmos.Query
             IReadOnlyList<PartitionKeyRange> partitionKeyRanges,
             int initialPageSize,
             SqlQuerySpec querySpecForInit,
-            Dictionary<string, string> targetRangeToContinuationMap,
+            IReadOnlyDictionary<string, string> targetRangeToContinuationMap,
             bool deferFirstPage,
             string filter,
             Func<ItemProducerTree, Task> filterCallback,
@@ -408,7 +408,19 @@ namespace Microsoft.Azure.Cosmos.Query
             List<ItemProducerTree> itemProducerTrees = new List<ItemProducerTree>();
             foreach (PartitionKeyRange partitionKeyRange in partitionKeyRanges)
             {
-                string initialContinuationToken = (targetRangeToContinuationMap != null && targetRangeToContinuationMap.ContainsKey(partitionKeyRange.Id)) ? targetRangeToContinuationMap[partitionKeyRange.Id] : null;
+                string initialContinuationToken;
+                if (targetRangeToContinuationMap != null)
+                {
+                    if (!targetRangeToContinuationMap.TryGetValue(partitionKeyRange.Id, out initialContinuationToken))
+                    {
+                        initialContinuationToken = null;
+                    }
+                }
+                else
+                {
+                    initialContinuationToken = null;
+                }
+
                 ItemProducerTree itemProducerTree = new ItemProducerTree(
                     this.queryContext,
                     querySpecForInit,
@@ -438,11 +450,11 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 if (!deferFirstPage)
                 {
-                    (bool successfullyMovedNext, QueryResponseCore? failureResponse) response = await itemProducerTree.MoveNextIfNotSplitAsync(token);
-                    if (response.failureResponse != null)
+                    (bool successfullyMovedNext, QueryResponseCore? failureResponse) = await itemProducerTree.MoveNextIfNotSplitAsync(token);
+                    if (failureResponse != null)
                     {
                         // Set the failure so on drain it can be returned.
-                        this.FailureResponse = response.failureResponse;
+                        this.FailureResponse = failureResponse;
 
                         // No reason to enqueue the rest of the itemProducerTrees since there is a failure.
                         break;
@@ -482,7 +494,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// The code assumes that merge doesn't happen and 
         /// </Remarks>
         /// <returns>The index of the partition whose MinInclusive is equal to the suppliedContinuationTokens along with the continuation tokens.</returns>
-        public static TryCatch<Tuple<int, Dictionary<string, TContinuationToken>>> TryFindTargetRangeAndExtractContinuationTokens<TContinuationToken>(
+        public static TryCatch<InitInfo<TContinuationToken>> TryFindTargetRangeAndExtractContinuationTokens<TContinuationToken>(
             List<PartitionKeyRange> partitionKeyRanges,
             IEnumerable<Tuple<TContinuationToken, Documents.Routing.Range<string>>> suppliedContinuationTokens)
         {
@@ -537,7 +549,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 Comparer<PartitionKeyRange>.Create((range1, range2) => string.CompareOrdinal(range1.MinInclusive, range2.MinInclusive)));
             if (minIndex < 0)
             {
-                return TryCatch<Tuple<int, Dictionary<string, TContinuationToken>>>.FromException(
+                return TryCatch<InitInfo<TContinuationToken>>.FromException(
                     new ArgumentException(
                         $"{RMResources.InvalidContinuationToken} - Could not find continuation token: {firstContinuationToken}"));
             }
@@ -557,7 +569,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 // Could not find the child ranges
                 if (replacementRanges.Count() == 0)
                 {
-                    return TryCatch<Tuple<int, Dictionary<string, TContinuationToken>>>.FromException(
+                    return TryCatch<InitInfo<TContinuationToken>>.FromException(
                         new ArgumentException(
                             $"{RMResources.InvalidContinuationToken} - Could not find continuation token: {continuationToken}"));
                 }
@@ -576,7 +588,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     string.CompareOrdinal(child1Max, child1Min) >= 0 &&
                     child1Min == parentMin))
                 {
-                    return TryCatch<Tuple<int, Dictionary<string, TContinuationToken>>>.FromException(
+                    return TryCatch<InitInfo<TContinuationToken>>.FromException(
                         new ArgumentException(
                             $"{RMResources.InvalidContinuationToken} - PMax = C2Max > C2Min > C1Max > C1Min = PMin: {continuationToken}"));
                 }
@@ -587,8 +599,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 }
             }
 
-            return TryCatch<Tuple<int, Dictionary<string, TContinuationToken>>>.FromResult(
-                new Tuple<int, Dictionary<string, TContinuationToken>>(
+            return TryCatch<InitInfo<TContinuationToken>>.FromResult(
+                new InitInfo<TContinuationToken>(
                     minIndex,
                     targetRangeToContinuationTokenMap));
         }
@@ -663,7 +675,7 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 this.diagnosticsPages.Add(diagnosticPage);
             }
-            
+
             // Adjust the producer page size so that we reach the optimal page size.
             producer.PageSize = Math.Min((long)(producer.PageSize * DynamicPageSizeAdjustmentFactor), this.actualMaxPageSize);
 
@@ -686,6 +698,19 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             state = this.ContinuationToken;
             return true;
+        }
+
+        public readonly struct InitInfo<TContinuationToken>
+        {
+            public InitInfo(int targetIndex, IReadOnlyDictionary<string, TContinuationToken> continuationTokens)
+            {
+                this.TargetIndex = targetIndex;
+                this.ContinuationTokens = continuationTokens;
+            }
+
+            public int TargetIndex { get; }
+
+            public IReadOnlyDictionary<string, TContinuationToken> ContinuationTokens { get; }
         }
 
         /// <summary>

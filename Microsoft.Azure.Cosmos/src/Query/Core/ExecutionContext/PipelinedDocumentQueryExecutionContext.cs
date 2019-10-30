@@ -156,7 +156,12 @@ namespace Microsoft.Azure.Cosmos.Query
                 requestContinuationToken,
                 cancellationToken);
 
-            return tryCreateMonad.ThrowIfException;
+            if (!tryCreateMonad.Succeeded)
+            {
+                throw queryContext.QueryClient.CreateBadRequestException(tryCreateMonad.Exception.ToString());
+            }
+
+            return tryCreateMonad.Result;
         }
 
         public static async Task<TryCatch<PipelinedDocumentQueryExecutionContext>> TryCreateAsync(

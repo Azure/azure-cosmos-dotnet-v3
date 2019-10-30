@@ -206,8 +206,8 @@ namespace Microsoft.Azure.Cosmos.Query
             return await TryGetInitializationInfoFromContinuationToken(partitionKeyRanges, requestContinuation)
                 .TryAsync<CosmosParallelItemQueryExecutionContext>(async (initializationInfo) =>
                 {
-                    IReadOnlyList<PartitionKeyRange> filteredPartitionKeyRanges = initializationInfo.Item1;
-                    Dictionary<string, CompositeContinuationToken> targetIndicesForFullContinuation = initializationInfo.Item2;
+                    IReadOnlyList<PartitionKeyRange> filteredPartitionKeyRanges = initializationInfo.PartialRanges;
+                    IReadOnlyDictionary<string, CompositeContinuationToken> targetIndicesForFullContinuation = initializationInfo.ContinuationTokens;
                     await base.InitializeAsync(
                         collectionRid,
                         filteredPartitionKeyRanges,
@@ -218,7 +218,6 @@ namespace Microsoft.Azure.Cosmos.Query
                         null,
                         null,
                         cancellationToken);
-
                     return this;
                 });
         }
@@ -231,14 +230,14 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="partitionKeyRanges">The partition key ranges.</param>
         /// <param name="continuationToken">The continuation tokens that the user has supplied.</param>
         /// <returns>The subset of partition to actually target and continuation tokens.</returns>
-        private static TryCatch<Tuple<IReadOnlyList<PartitionKeyRange>, Dictionary<string, CompositeContinuationToken>>> TryGetInitializationInfoFromContinuationToken(
+        private static TryCatch<ParallelInitInfo> TryGetInitializationInfoFromContinuationToken(
             List<PartitionKeyRange> partitionKeyRanges,
             string continuationToken)
         {
             if (continuationToken == null)
             {
-                return TryCatch<Tuple<IReadOnlyList<PartitionKeyRange>, Dictionary<string, CompositeContinuationToken>>>.FromResult(
-                    new Tuple<IReadOnlyList<PartitionKeyRange>, Dictionary<string, CompositeContinuationToken>>(
+                return TryCatch<ParallelInitInfo>.FromResult(
+                    new ParallelInitInfo(
                         partitionKeyRanges,
                         null));
             }
@@ -246,17 +245,17 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 if (!TryParseContinuationToken(continuationToken, out CompositeContinuationToken[] tokens))
                 {
-                    return TryCatch<Tuple<IReadOnlyList<PartitionKeyRange>, Dictionary<string, CompositeContinuationToken>>>.FromException(
+                    return TryCatch<ParallelInitInfo>.FromException(
                         new Exception($"Invalid format for continuation token {continuationToken} for {nameof(CosmosParallelItemQueryExecutionContext)}"));
                 }
 
                 return CosmosCrossPartitionQueryExecutionContext.TryFindTargetRangeAndExtractContinuationTokens(
                     partitionKeyRanges,
                     tokens.Select(token => Tuple.Create(token, token.Range)))
-                    .Try<Tuple<IReadOnlyList<PartitionKeyRange>, Dictionary<string, CompositeContinuationToken>>>((indexAndTokens) =>
+                    .Try<ParallelInitInfo>((indexAndTokens) =>
                     {
-                        int minIndex = indexAndTokens.Item1;
-                        Dictionary<string, CompositeContinuationToken> rangeToToken = indexAndTokens.Item2;
+                        int minIndex = indexAndTokens.TargetIndex;
+                        IReadOnlyDictionary<string, CompositeContinuationToken> rangeToToken = indexAndTokens.ContinuationTokens;
 
                         // We know that all partitions to the left of the continuation token are fully drained so we can filter them out
                         IReadOnlyList<PartitionKeyRange> filteredRanges = new PartialReadOnlyList<PartitionKeyRange>(
@@ -264,7 +263,7 @@ namespace Microsoft.Azure.Cosmos.Query
                             minIndex,
                             partitionKeyRanges.Count - minIndex);
 
-                        return new Tuple<IReadOnlyList<PartitionKeyRange>, Dictionary<string, CompositeContinuationToken>>(
+                        return new ParallelInitInfo(
                             filteredRanges,
                             rangeToToken);
                     });
@@ -304,6 +303,19 @@ namespace Microsoft.Azure.Cosmos.Query
                 tokens = default;
                 return false;
             }
+        }
+
+        private readonly struct ParallelInitInfo
+        {
+            public ParallelInitInfo(IReadOnlyList<PartitionKeyRange> partialRanges, IReadOnlyDictionary<string, CompositeContinuationToken> continuationTokens)
+            {
+                this.PartialRanges = partialRanges;
+                this.ContinuationTokens = continuationTokens;
+            }
+
+            public IReadOnlyList<PartitionKeyRange> PartialRanges { get; }
+
+            public IReadOnlyDictionary<string, CompositeContinuationToken> ContinuationTokens { get; }
         }
 
         /// <summary>

@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.Monads
 {
     using System;
+    using System.Runtime.ExceptionServices;
     using System.Threading.Tasks;
 
     internal readonly struct TryCatch<TResult>
@@ -62,7 +63,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
                     return this.either.FromRight(default);
                 }
 
-                throw this.either.FromLeft(default);
+                ExceptionDispatchInfo.Capture(this.either.FromLeft(default)).Throw();
+                return default;
             }
         }
 

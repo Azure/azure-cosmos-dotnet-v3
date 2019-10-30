@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                     return new AggregateDocumentQueryExecutionComponent(
                         source,
                         SingleGroupAggregator.Create(aggregates, aliasToAggregateType, hasSelectValue),
-                        (aggregates != null) && (aggregates.Count() == 1));
+                        hasSelectValue);
                 });
         }
 
