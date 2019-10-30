@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 serializer: new CosmosJsonDotNetSerializer(),
             cancellationToken: default(CancellationToken));
 
-            BatchResponse batchresponse = await BatchResponse.PopulateFromContentAsync(
+            BatchResponse batchresponse = await BatchResponse.FromResponseMessageAsync(
                 new ResponseMessage(HttpStatusCode.OK) { Content = responseContent },
                 batchRequest,
                 new CosmosJsonDotNetSerializer());
@@ -120,7 +120,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ResponseMessage response = new ResponseMessage(statusCode) { Content = responseContent };
             response.Headers.SubStatusCode = subStatusCode;
 
-            BatchResponse batchresponse = await BatchResponse.PopulateFromContentAsync(
+            BatchResponse batchresponse = await BatchResponse.FromResponseMessageAsync(
                 response,
                 batchRequest,
                 new CosmosJsonDotNetSerializer());

@@ -32,7 +32,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestCleanup]
         public async Task CleanupAsync()
         {
-            await this.cosmosContainer.Database.DeleteAsync();
+            if (this.cosmosContainer != null)
+            {
+                await this.cosmosContainer.Database.DeleteAsync();
+            }
         }
 
         [TestMethod]

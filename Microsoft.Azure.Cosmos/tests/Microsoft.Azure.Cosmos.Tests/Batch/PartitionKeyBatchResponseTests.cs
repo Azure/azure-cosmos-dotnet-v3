@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void StatusCodesAreSet()
         {
             const string errorMessage = "some error";
-            PartitionKeyRangeBatchResponse response = new PartitionKeyRangeBatchResponse(HttpStatusCode.NotFound, SubStatusCodes.ClientTcpChannelFull, errorMessage, null);
+            PartitionKeyRangeBatchResponse response = new PartitionKeyRangeBatchResponse(1, new BatchResponse(HttpStatusCode.NotFound, SubStatusCodes.ClientTcpChannelFull, errorMessage, null), null);
             Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
             Assert.AreEqual(SubStatusCodes.ClientTcpChannelFull, response.SubStatusCode);
             Assert.AreEqual(errorMessage, response.ErrorMessage);
@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 serializer: new CosmosJsonDotNetSerializer(),
             cancellationToken: default(CancellationToken));
 
-            BatchResponse batchresponse = await BatchResponse.PopulateFromContentAsync(
+            BatchResponse batchresponse = await BatchResponse.FromResponseMessageAsync(
                 new ResponseMessage(HttpStatusCode.OK) { Content = responseContent },
                 batchRequest,
                 new CosmosJsonDotNetSerializer());
@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             CosmosDiagnostics diagnostics = new PointOperationStatistics(Guid.NewGuid().ToString(), HttpStatusCode.OK, SubStatusCodes.Unknown, 0, string.Empty, HttpMethod.Get, new Uri("http://localhost"), new CosmosClientSideRequestStatistics());
 
-            BatchResponse batchresponse = await BatchResponse.PopulateFromContentAsync(
+            BatchResponse batchresponse = await BatchResponse.FromResponseMessageAsync(
                 new ResponseMessage(HttpStatusCode.OK) { Content = responseContent, Diagnostics = diagnostics },
                 batchRequest,
                 new CosmosJsonDotNetSerializer());

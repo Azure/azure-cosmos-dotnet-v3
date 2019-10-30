@@ -162,7 +162,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 BatchSinglePartitionKeyTests.VerifyBatchProcessed(
                     batchResponse,
                     numberOfOperations: 1,
-                    expectedStatusCode: (HttpStatusCode)StatusCodes.MultiStatus);
+                    expectedStatusCode: HttpStatusCode.PreconditionFailed);
 
                 Assert.AreEqual(HttpStatusCode.PreconditionFailed, batchResponse[0].StatusCode);
 
@@ -249,7 +249,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             BatchSinglePartitionKeyTests.VerifyBatchProcessed(
                 batchResponse, 
                 numberOfOperations: operationCount,
-                expectedStatusCode: (HttpStatusCode)StatusCodes.MultiStatus);
+                expectedStatusCode: HttpStatusCode.RequestEntityTooLarge);
 
             Assert.AreEqual((int)StatusCodes.FailedDependency, (int)batchResponse[0].StatusCode);
             Assert.AreEqual(HttpStatusCode.RequestEntityTooLarge, batchResponse[operationCount - 1].StatusCode);
@@ -450,23 +450,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await this.RunBatchWithCreateConflictAsync(BatchTestBase.SharedThroughputContainer);
         }
 
-        private async Task RunBatchWithCreateConflictAsync(Container container)
-        {
-            await this.CreateJsonTestDocsAsync(container);
-
-            // try to create a doc with id that already exists (should return a Conflict)
-            TestDoc conflictingTestDocToCreate = this.GetTestDocCopy(this.TestDocPk1ExistingA);
-            conflictingTestDocToCreate.Cost++;
-
-            await this.RunWithErrorAsync(
-                container,
-                batch => batch.CreateItem(conflictingTestDocToCreate),
-                HttpStatusCode.Conflict);
-
-            // make sure the conflicted doc hasn't changed
-            await BatchTestBase.VerifyByReadAsync(container, this.TestDocPk1ExistingA);
-        }
-
         [TestMethod]
         [Owner("abpai")]
         [Description("Verify batch with an invalid create operation rolls back prior operations")]
@@ -529,6 +512,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 HttpStatusCode.NotFound);
         }
 
+        private async Task RunBatchWithCreateConflictAsync(Container container)
+        {
+            await this.CreateJsonTestDocsAsync(container);
+
+            // try to create a doc with id that already exists (should return a Conflict)
+            TestDoc conflictingTestDocToCreate = this.GetTestDocCopy(this.TestDocPk1ExistingA);
+            conflictingTestDocToCreate.Cost++;
+
+            await this.RunWithErrorAsync(
+                container,
+                batch => batch.CreateItem(conflictingTestDocToCreate),
+                HttpStatusCode.Conflict);
+
+            // make sure the conflicted doc hasn't changed
+            await BatchTestBase.VerifyByReadAsync(container, this.TestDocPk1ExistingA);
+        }
+
         private async Task<Container> RunWithErrorAsync(
             Container container,
             Action<Batch> appendOperation, 
@@ -549,7 +549,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             BatchSinglePartitionKeyTests.VerifyBatchProcessed(
                 batchResponse, 
                 numberOfOperations: 3,
-                expectedStatusCode: (HttpStatusCode)StatusCodes.MultiStatus);
+                expectedStatusCode: expectedFailedOperationStatusCode);
 
             Assert.AreEqual((HttpStatusCode)StatusCodes.FailedDependency, batchResponse[0].StatusCode);
             Assert.AreEqual(expectedFailedOperationStatusCode, batchResponse[1].StatusCode);
