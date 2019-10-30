@@ -167,11 +167,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                     this.singleGroupAggregator.GetContinuationToken(),
                     sourceState);
                 state = aggregateContinuationToken.ToString();
-                return true;
             }
-
-            state = null;
-            return false;
+            else
+            {
+                state = null;
+            }
+            
+            return state != null;
         }
 
         private struct AggregateContinuationToken
