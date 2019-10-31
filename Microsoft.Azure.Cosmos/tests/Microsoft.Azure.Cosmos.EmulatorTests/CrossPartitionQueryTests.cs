@@ -662,7 +662,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(
                 resultsFromContinuationTokenAsJTokens
                     .SequenceEqual(resultsFromStateAsJTokens, JsonTokenEqualityComparer.Value),
-                $"{query} returned different results with continuation tokens vs state.");
+                $"{query} returned different results with continuation tokens vs state. " +
+                $"continuation tokens : {JsonConvert.SerializeObject(resultsFromContinuationTokenAsJTokens)}" +
+                $"state: {JsonConvert.SerializeObject(resultsFromStateAsJTokens)}");
 
             return resultsFromContinuationToken;
         }
@@ -1271,7 +1273,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 "/" + partitionKey);
         }
 
-        private async Task TestQueryCrossPartitionWithLargeNumberOfKeysHelper(Container container, IEnumerable<Document> documents, QueryCrossPartitionWithLargeNumberOfKeysArgs args)
+        private async Task TestQueryCrossPartitionWithLargeNumberOfKeysHelper(
+            Container container,
+            IEnumerable<Document> documents,
+            QueryCrossPartitionWithLargeNumberOfKeysArgs args)
         {
             QueryDefinition query = new QueryDefinition(
                 $"SELECT VALUE r.{args.PartitionKey} FROM r WHERE ARRAY_CONTAINS(@keys, r.{args.PartitionKey})").WithParameter("@keys", args.ExpectedPartitionKeyValues);
@@ -2839,7 +2844,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     return CosmosBoolean.Create((random.Next() % 2) == 0);
                 // Object
                 case 4:
-                    return CosmosObject.Create(new Dictionary<string, CosmosElement>());
+                    return CosmosObject.Create(new List<KeyValuePair<string, CosmosElement>>());
                 // Array
                 case 5:
                     return CosmosArray.Create(new List<CosmosElement>());
