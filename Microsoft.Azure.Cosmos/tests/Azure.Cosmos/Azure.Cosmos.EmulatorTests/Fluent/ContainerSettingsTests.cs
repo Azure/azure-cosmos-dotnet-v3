@@ -91,11 +91,11 @@ namespace Azure.Cosmos.EmulatorTests
 
             ContainerResponse response = await this.database.CreateContainerAsync(containerProperties);
             Assert.IsNotNull(response);
-            Assert.IsNotNull(response.GetRawResponse().Headers);
-            Assert.IsNotNull(response.GetRawResponse().Headers.GetActivityId());
-            Assert.IsTrue(response.GetRawResponse().Headers.GetRequestCharge() > 0);
+            Assert.IsTrue(response.RequestCharge > 0);
+            Assert.IsNotNull(response.Headers);
+            Assert.IsNotNull(response.Headers.ActivityId);
 
-            ContainerProperties responseProperties = response.Value;
+            ContainerProperties responseProperties = response.Resource;
             Assert.IsNotNull(responseProperties.Id);
             Assert.IsNotNull(responseProperties.ResourceId);
             Assert.IsNotNull(responseProperties.ETag);
@@ -118,8 +118,7 @@ namespace Azure.Cosmos.EmulatorTests
             Assert.AreEqual(1, responseProperties.IndexingPolicy.SpatialIndexes.Count);
             SpatialPath spatialPath = responseProperties.IndexingPolicy.SpatialIndexes.First();
             Assert.AreEqual("/address/spatial/*", spatialPath.Path);
-            Assert.AreEqual(4, spatialPath.SpatialTypes.Count);
-            Assert.AreEqual(SpatialType.LineString, spatialPath.SpatialTypes.First());
+            Assert.AreEqual(4, spatialPath.SpatialTypes.Count); // All SpatialTypes are returned
         }
 
         [TestMethod]
