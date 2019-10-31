@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading.Tasks;
     using System.Xml;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Query.ExecutionComponent;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
@@ -631,9 +631,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string state = null;
             do
             {
+                QueryRequestOptions computeRequestOptions = queryRequestOptions.Clone();
+                computeRequestOptions.ExecutionEnvironment = Cosmos.Query.Core.ExecutionContext.ExecutionEnvironment.Compute;
+
                 FeedIterator<T> itemQuery = container.GetItemQueryIterator<T>(
                    queryText: query,
-                   requestOptions: queryRequestOptions,
+                   requestOptions: computeRequestOptions,
                    continuationToken: state);
 
                 FeedResponse<T> cosmosQueryResponse = await itemQuery.ReadNextAsync();
@@ -659,7 +662,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(
                 resultsFromContinuationTokenAsJTokens
                     .SequenceEqual(resultsFromStateAsJTokens, JsonTokenEqualityComparer.Value),
-                $"{query} returned different results with continuation tokens vs state.");
+                $"{query} returned different results with continuation tokens vs state. " +
+                $"continuation tokens : {JsonConvert.SerializeObject(resultsFromContinuationTokenAsJTokens)}" +
+                $"state: {JsonConvert.SerializeObject(resultsFromStateAsJTokens)}");
 
             return resultsFromContinuationToken;
         }
@@ -2050,7 +2055,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.CreateIngestQueryDelete(
                 ConnectionModes.Direct,
-                CollectionTypes.SinglePartition,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
                 this.TestNonValueAggregates);
         }
@@ -2249,7 +2254,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 foreach (int maxItemCount in new int[] { 1, 5, 10 })
                 {
-                    List<JToken> actual = await QueryWithoutContinuationTokens<JToken>(
+                    List<JToken> actual = await RunQuery<JToken>(
                         container: container,
                         query: query,
                         queryRequestOptions: new QueryRequestOptions()

@@ -13,6 +13,10 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
     /// </summary>
     internal sealed class MinMaxAggregator : IAggregator
     {
+        private const string MinValueContinuationToken = "MIN_VALUE";
+        private const string MaxValueContinuationToken = "MAX_VALUE";
+        private const string UndefinedContinuationToken = "UNDEFINED";
+
         private static readonly CosmosElement Undefined = null;
         /// <summary>
         /// Whether or not the aggregation is a min or a max.
@@ -24,17 +28,10 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
         /// </summary>
         private CosmosElement globalMinMax;
 
-        public MinMaxAggregator(bool isMinAggregation)
+        private MinMaxAggregator(bool isMinAggregation, CosmosElement globalMinMax)
         {
             this.isMinAggregation = isMinAggregation;
-            if (this.isMinAggregation)
-            {
-                this.globalMinMax = ItemComparer.MaxValue;
-            }
-            else
-            {
-                this.globalMinMax = ItemComparer.MinValue;
-            }
+            this.globalMinMax = globalMinMax;
         }
 
         public void Aggregate(CosmosElement localMinMax)
@@ -103,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
             if (!ItemComparer.IsMinOrMax(this.globalMinMax)
                 && (!CosmosElementIsPrimitive(localMinMax) || !CosmosElementIsPrimitive(this.globalMinMax)))
             {
-                // This means we are comparing non primitives with is undefined
+                // This means we are comparing non primitives which is undefined
                 this.globalMinMax = Undefined;
                 return;
             }
@@ -139,6 +136,72 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
             }
 
             return result;
+        }
+
+        public string GetContinuationToken()
+        {
+            string continuationToken;
+            if (this.globalMinMax == ItemComparer.MinValue)
+            {
+                continuationToken = MinMaxAggregator.MinValueContinuationToken;
+            }
+            else if (this.globalMinMax == ItemComparer.MaxValue)
+            {
+                continuationToken = MinMaxAggregator.MaxValueContinuationToken;
+            }
+            else if (this.globalMinMax == Undefined)
+            {
+                continuationToken = MinMaxAggregator.UndefinedContinuationToken;
+            }
+            else
+            {
+                continuationToken = this.globalMinMax.ToString();
+            }
+
+            return continuationToken;
+        }
+
+        public static MinMaxAggregator CreateMinAggregator(string continuationToken)
+        {
+            return MinMaxAggregator.Create(isMinAggregation: true, continuationToken: continuationToken);
+        }
+
+        public static MinMaxAggregator CreateMaxAggregator(string continuationToken)
+        {
+            return MinMaxAggregator.Create(isMinAggregation: false, continuationToken: continuationToken);
+        }
+
+        private static MinMaxAggregator Create(bool isMinAggregation, string continuationToken)
+        {
+            CosmosElement globalMinMax;
+            if (continuationToken != null)
+            {
+                if (continuationToken == MinMaxAggregator.MaxValueContinuationToken)
+                {
+                    globalMinMax = ItemComparer.MaxValue;
+                }
+                else if (continuationToken == MinMaxAggregator.MinValueContinuationToken)
+                {
+                    globalMinMax = ItemComparer.MinValue;
+                }
+                else if (continuationToken == MinMaxAggregator.UndefinedContinuationToken)
+                {
+                    globalMinMax = MinMaxAggregator.Undefined;
+                }
+                else
+                {
+                    if (!CosmosElement.TryParse(continuationToken, out globalMinMax))
+                    {
+                        throw new ArgumentException($"Malformed continuation token: {continuationToken}");
+                    }
+                }
+            }
+            else
+            {
+                globalMinMax = isMinAggregation ? (CosmosElement)ItemComparer.MaxValue : (CosmosElement)ItemComparer.MinValue;
+            }
+
+            return new MinMaxAggregator(isMinAggregation: isMinAggregation, globalMinMax: globalMinMax);
         }
 
         private static bool CosmosElementIsPrimitive(CosmosElement cosmosElement)
