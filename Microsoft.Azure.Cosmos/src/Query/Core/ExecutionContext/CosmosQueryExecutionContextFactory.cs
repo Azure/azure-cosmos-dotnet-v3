@@ -138,17 +138,6 @@ namespace Microsoft.Azure.Cosmos.Query
                 {
                     this.responseMessageException = response;
                 }
-                else
-                {
-                    response = QueryResponseCore.CreateSuccess(
-                        result: response.CosmosElements,
-                        continuationToken: response.ContinuationToken,
-                        disallowContinuationTokenMessage: response.DisallowContinuationTokenMessage,
-                        activityId: response.ActivityId,
-                        requestCharge: response.RequestCharge,
-                        diagnostics: response.Diagnostics,
-                        responseLengthBytes: response.ResponseLengthBytes);
-                }
 
                 return response;
             }
@@ -178,7 +167,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 this.partitionedQueryExecutionInfo,
                 innerContinuationToken);
 
-            continuationToken = pipelineContinuationToken.ToString();
+            continuationToken = pipelineContinuationToken.Serialize(this.inputParameters.ResponseContinuationTokenLimitInKb.GetValueOrDefault(12) * 1024);
             return true;
         }
 

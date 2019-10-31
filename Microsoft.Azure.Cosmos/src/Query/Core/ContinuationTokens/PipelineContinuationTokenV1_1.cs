@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
 
         public PartitionedQueryExecutionInfo QueryPlan { get; }
 
-        public override string ToString()
+        public string Serialize(int lengthLimitInBytes)
         {
             string queryPlanString = this.QueryPlan?.ToString();
             bool shouldSerializeQueryPlan;
@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
             }
             else
             {
-                shouldSerializeQueryPlan = queryPlanString.Length < 1024;
+                shouldSerializeQueryPlan = (queryPlanString.Length + this.SourceContinuationToken.Length) < lengthLimitInBytes;
             }
 
             return CosmosObject.Create(new Dictionary<string, CosmosElement>()
