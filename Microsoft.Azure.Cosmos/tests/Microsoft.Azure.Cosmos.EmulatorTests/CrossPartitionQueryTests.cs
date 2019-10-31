@@ -2772,6 +2772,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     new Cosmos.IncludedPath()
                     {
                         Path = "/*",
+                    },
+                    new Cosmos.IncludedPath()
+                    {
+                        Path = "/MixedTypeField/?",
                     }
                 },
 
@@ -2841,7 +2845,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     OrderByTypes.Number,
                     OrderByTypes.Object,
                     OrderByTypes.String,
-                    OrderByTypes.Undefined,
+                    // Undefined is not a thing with v1
+                    //OrderByTypes.Undefined,
                 }, null);
 
             // If you don't allow mixed types but you run a mixed type query then you should get an exception or the results are just wrong.
@@ -3008,7 +3013,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         string filter = mixedTypeFilters.Count() == 0 ? "true" : string.Join(" OR ", mixedTypeFilters);
 
                         string query = $@"
-                            SELECT VALUE c.{nameof(MixedTypedDocument.MixedTypeField)} 
+                            SELECT c.{nameof(MixedTypedDocument.MixedTypeField)}
                             FROM c
                             WHERE {filter}
                             ORDER BY c.{nameof(MixedTypedDocument.MixedTypeField)} {orderString}";
@@ -3020,8 +3025,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             MaxConcurrency = 10,
                         };
 
-                        List<CosmosElement> actualFromQueryWithoutContinutionTokens;
-                        actualFromQueryWithoutContinutionTokens = await CrossPartitionQueryTests.QueryWithoutContinuationTokens<CosmosElement>(
+                        List<CosmosObject> actualFromQueryWithoutContinutionTokens;
+                        actualFromQueryWithoutContinutionTokens = await CrossPartitionQueryTests.QueryWithoutContinuationTokens<CosmosObject>(
                             container,
                             query,
                             queryRequestOptions: feedOptions);
@@ -3046,52 +3051,82 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         and that is because comparision across types is undefined so "aaaaaaaaaaa" > 303093052 never got emitted
 #endif
 
-                        IEnumerable<CosmosElement> insertedDocs = documents
-                            .Select(document => (CosmosElement.CreateFromBuffer(Encoding.UTF8.GetBytes(document.ToString())) as CosmosObject)[nameof(MixedTypedDocument.MixedTypeField)])
-                            .Where(document => document != null);
+                        IEnumerable<CosmosObject> insertedDocs = documents
+                            .Select(document => CosmosElement.CreateFromBuffer(Encoding.UTF8.GetBytes(document.ToString())) as CosmosObject)
+                            .Select(document =>
+                            {
+                                Dictionary<string, CosmosElement> dictionary = new Dictionary<string, CosmosElement>();
+                                if (document.TryGetValue(nameof(MixedTypedDocument.MixedTypeField), out CosmosElement value))
+                                {
+                                    dictionary.Add(nameof(MixedTypedDocument.MixedTypeField), value);
+                                }
+
+                                return CosmosObject.Create(dictionary);
+                            });
 
                         // Build the expected results using LINQ
-                        IEnumerable<CosmosElement> expected = new List<CosmosElement>();
+                        IEnumerable<CosmosObject> expected = new List<CosmosObject>();
 
                         // Filter based on the mixedOrderByType enum
                         if (orderByTypes.HasFlag(OrderByTypes.Array))
                         {
-                            expected = expected.Concat(insertedDocs.Where(x => x?.Type == CosmosElementType.Array));
+                            expected = expected.Concat(insertedDocs.Where(x => x.TryGetValue(nameof(MixedTypedDocument.MixedTypeField), out CosmosArray value)));
                         }
 
                         if (orderByTypes.HasFlag(OrderByTypes.Bool))
                         {
-                            expected = expected.Concat(insertedDocs.Where(x => x?.Type == CosmosElementType.Boolean));
+                            expected = expected.Concat(insertedDocs.Where(x => x.TryGetValue(nameof(MixedTypedDocument.MixedTypeField), out CosmosBoolean value)));
                         }
 
                         if (orderByTypes.HasFlag(OrderByTypes.Null))
                         {
-                            expected = expected.Concat(insertedDocs.Where(x => x?.Type == CosmosElementType.Null));
+                            expected = expected.Concat(insertedDocs.Where(x => x.TryGetValue(nameof(MixedTypedDocument.MixedTypeField), out CosmosNull value)));
                         }
 
                         if (orderByTypes.HasFlag(OrderByTypes.Number))
                         {
-                            expected = expected.Concat(insertedDocs.Where(x => x?.Type == CosmosElementType.Number));
+                            expected = expected.Concat(insertedDocs.Where(x => x.TryGetValue(nameof(MixedTypedDocument.MixedTypeField), out CosmosNumber value)));
                         }
 
                         if (orderByTypes.HasFlag(OrderByTypes.Object))
                         {
-                            expected = expected.Concat(insertedDocs.Where(x => x?.Type == CosmosElementType.Object));
+                            expected = expected.Concat(insertedDocs.Where(x => x.TryGetValue(nameof(MixedTypedDocument.MixedTypeField), out CosmosObject value)));
                         }
 
                         if (orderByTypes.HasFlag(OrderByTypes.String))
                         {
-                            expected = expected.Concat(insertedDocs.Where(x => x?.Type == CosmosElementType.String));
+                            expected = expected.Concat(insertedDocs.Where(x => x.TryGetValue(nameof(MixedTypedDocument.MixedTypeField), out CosmosString value)));
+                        }
+
+                        if (orderByTypes.HasFlag(OrderByTypes.Undefined))
+                        {
+                            expected = expected.Concat(insertedDocs.Where(x => !x.TryGetValue(nameof(MixedTypedDocument.MixedTypeField), out CosmosElement value)));
                         }
 
                         // Order using the mock order by comparer
                         if (isDesc)
                         {
-                            expected = expected.OrderByDescending(x => x, MockOrderByComparer.Value);
+                            expected = expected.OrderByDescending(x =>
+                            {
+                                if (!x.TryGetValue(nameof(MixedTypedDocument.MixedTypeField), out CosmosElement cosmosElement))
+                                {
+                                    cosmosElement = null;
+                                }
+
+                                return cosmosElement;
+                            }, MockOrderByComparer.Value);
                         }
                         else
                         {
-                            expected = expected.OrderBy(x => x, MockOrderByComparer.Value);
+                            expected = expected.OrderBy(x =>
+                            {
+                                if (!x.TryGetValue(nameof(MixedTypedDocument.MixedTypeField), out CosmosElement cosmosElement))
+                                {
+                                    cosmosElement = null;
+                                }
+
+                                return cosmosElement;
+                            }, MockOrderByComparer.Value);
                         }
 
                         Assert.IsTrue(
