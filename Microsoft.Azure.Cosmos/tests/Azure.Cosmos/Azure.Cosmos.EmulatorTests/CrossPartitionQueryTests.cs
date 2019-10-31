@@ -2276,7 +2276,6 @@ namespace Azure.Cosmos.EmulatorTests
             }
         }
 
-        // This test will fail until Page<T> is abstract on the newwer Core SDK package
         [TestMethod]
         [TestCategory("Functional")]
         public async Task TestQueryDistinct()
@@ -2521,10 +2520,10 @@ namespace Azure.Cosmos.EmulatorTests
 
                     Assert.Fail("Expected an exception when using continuation tokens on an unordered distinct query.");
                 }
-                catch (ArgumentException ex)
+                catch (Exception ex)
                 {
                     string disallowContinuationErrorMessage = RMResources.UnorderedDistinctQueryContinuationToken;
-                    Assert.AreEqual(disallowContinuationErrorMessage, ex.Message);
+                    Assert.AreEqual(disallowContinuationErrorMessage, ex.InnerException.Message);
                 }
             }
             #endregion

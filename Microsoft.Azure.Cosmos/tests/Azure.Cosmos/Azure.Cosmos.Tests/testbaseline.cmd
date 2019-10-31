@@ -1,5 +1,3 @@
-@echo off
-
 set COMMAND=
 set TEST_OUTPUT_PATH=
 set TEST_BASELINE_PATH=

@@ -20,8 +20,8 @@
         public void ContractChanges()
         {
             Assert.IsFalse(
-                ContractEnforcement.DoesContractContainBreakingChanges("Microsoft.Azure.Cosmos.Client", BaselinePath, BreakingChangesPath),
-                $@"Public API has changed. If this is expected, then refresh {BaselinePath} with {Environment.NewLine} Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/testbaseline.cmd /update after this test is run locally. To see the differences run testbaselines.cmd /diff"
+                ContractEnforcement.DoesContractContainBreakingChanges("Azure.Cosmos", BaselinePath, BreakingChangesPath),
+                $@"Public API has changed. If this is expected, then refresh {BaselinePath} with {Environment.NewLine} Microsoft.Azure.Cosmos/tests/Azure.Cosmos/Azure.Cosmos.Tests/testbaseline.cmd /update after this test is run locally. To see the differences run testbaselines.cmd /diff"
             );
         }
 

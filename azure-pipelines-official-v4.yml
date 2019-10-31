@@ -16,6 +16,11 @@ stages:
       parameters:
         BuildConfiguration: $(BuildConfiguration)
         VmImage: $(VmImage)
+    - template:  templates/build-test-v4.yml
+      parameters:
+        BuildConfiguration: $(BuildConfiguration)
+        Arguments: $(ReleaseArguments)
+        VmImage: $(VmImage)
 
 - stage:
   displayName: Publish 
@@ -50,6 +55,16 @@ stages:
           projects: 'Microsoft.Azure.Cosmos\azuredata\Azure.Cosmos.csproj'
           custom: pack
           arguments: '-v detailed -c $(BuildConfiguration) --no-build --include-symbols /p:SymbolPackageFormat=snupkg --no-restore -o "$(Build.ArtifactStagingDirectory)\bin\AnyCPU\$(BuildConfiguration)\Azure.Cosmos"'
+
+      - task: AzureFileCopy@2
+        displayName: ' Copy Artifacts to Azure SDK Release blob storage'
+        inputs:
+          SourcePath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Azure.Cosmos'
+          azureSubscription: azuresdkpartnerdrops
+          Destination: AzureBlob
+          storage: azuresdkpartnerdrops
+          ContainerName: 'drops'
+          BlobPrefix: 'cosmosdb/csharp/$(Version)'
 
       - task: PublishBuildArtifacts@1
         displayName: 'Publish Artifacts: Azure.Cosmos'
