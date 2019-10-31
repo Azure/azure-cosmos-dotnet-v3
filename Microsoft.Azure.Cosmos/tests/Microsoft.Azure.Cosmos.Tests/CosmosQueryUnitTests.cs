@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query;
-    using Microsoft.Azure.Cosmos.Query.ExecutionComponent;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task TestCosmosQueryExecutionComponentOnFailure()
         {
-            (IList<DocumentQueryExecutionComponentBase> components, QueryResponseCore response) setupContext = await this.GetAllExecutionComponents();
+            (IList<IDocumentQueryExecutionComponent> components, QueryResponseCore response) setupContext = await this.GetAllExecutionComponents();
 
             foreach (DocumentQueryExecutionComponentBase component in setupContext.components)
             {
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task TestCosmosQueryExecutionComponentCancellation()
         {
-            (IList<DocumentQueryExecutionComponentBase> components, QueryResponseCore response) setupContext = await this.GetAllExecutionComponents();
+            (IList<IDocumentQueryExecutionComponent> components, QueryResponseCore response) setupContext = await this.GetAllExecutionComponents();
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
             cancellationTokenSource.Cancel();
 
@@ -148,11 +148,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             await factory.ExecuteNextAsync(cancellationtoken);
         }
 
-        private async Task<(IList<DocumentQueryExecutionComponentBase> components, QueryResponseCore response)> GetAllExecutionComponents()
+        private async Task<(IList<IDocumentQueryExecutionComponent> components, QueryResponseCore response)> GetAllExecutionComponents()
         {
             (Func<string, Task<IDocumentQueryExecutionComponent>> func, QueryResponseCore response) setupContext = this.SetupBaseContextToVerifyFailureScenario();
 
-            List<DocumentQueryExecutionComponentBase> components = new List<DocumentQueryExecutionComponentBase>();
+            List<IDocumentQueryExecutionComponent> components = new List<IDocumentQueryExecutionComponent>();
             List<AggregateOperator> operators = new List<AggregateOperator>()
             {
                 AggregateOperator.Average,
@@ -163,6 +163,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
 
             components.Add(await AggregateDocumentQueryExecutionComponent.CreateAsync(
+                Query.Core.ExecutionContext.ExecutionEnvironment.Client,
+                new Mock<CosmosQueryClient>().Object,
                 operators.ToArray(),
                 new Dictionary<string, AggregateOperator?>()
                 {
