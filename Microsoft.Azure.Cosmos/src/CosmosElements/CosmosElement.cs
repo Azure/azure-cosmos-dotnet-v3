@@ -45,12 +45,6 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return CosmosElement.Dispatch(jsonNavigator, jsonNavigatorNode);
         }
 
-        public static CosmosElement Parse(string json)
-        {
-            byte[] buffer = Encoding.UTF8.GetBytes(json);
-            return CosmosElement.CreateFromBuffer(buffer);
-        }
-
         public static CosmosElement Dispatch(
             IJsonNavigator jsonNavigator,
             IJsonNavigatorNode jsonNavigatorNode)
@@ -131,43 +125,55 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return item;
         }
 
-        public static bool TryParse(string serializedCosmosElement, out CosmosElement cosmosElement)
+        public static CosmosElement Parse(string json)
         {
-            cosmosElement = default(CosmosElement);
+            if (!CosmosElement.TryParse(json, out CosmosElement cosmosElement))
+            {
+                throw new ArgumentException($"Failed to parse json: {json}.");
+            }
+
+            return cosmosElement;
+        }
+
+        public static bool TryParse(
+            string serializedCosmosElement,
+            out CosmosElement cosmosElement)
+        {
             if (serializedCosmosElement == null)
             {
                 throw new ArgumentNullException(nameof(serializedCosmosElement));
             }
 
-            byte[] buffer = Encoding.UTF8.GetBytes(serializedCosmosElement);
             try
             {
+                byte[] buffer = Encoding.UTF8.GetBytes(serializedCosmosElement);
                 cosmosElement = CosmosElement.CreateFromBuffer(buffer);
-                return true;
             }
             catch (JsonParseException)
             {
-                cosmosElement = default(CosmosElement);
-                return false;
+                cosmosElement = default;
             }
+
+            return cosmosElement != default;
         }
 
-        public static bool TryParse<TCosmosElement>(string serializedCosmosElement, out TCosmosElement cosmosElement)
-            where TCosmosElement : CosmosElement
+        public static bool TryParse<TCosmosElement>(
+            string serializedCosmosElement,
+            out TCosmosElement typedCosmosElement)
         {
-            if (!CosmosElement.TryParse(serializedCosmosElement, out CosmosElement rawCosmosElement))
+            if (!CosmosElement.TryParse(serializedCosmosElement, out CosmosElement cosmosElement))
             {
-                cosmosElement = default(TCosmosElement);
+                typedCosmosElement = default;
                 return false;
             }
 
-            if (!(rawCosmosElement is TCosmosElement typedCosmosElement))
+            if (!(cosmosElement is TCosmosElement tempCosmosElement))
             {
-                cosmosElement = default(TCosmosElement);
+                typedCosmosElement = default;
                 return false;
             }
 
-            cosmosElement = typedCosmosElement;
+            typedCosmosElement = tempCosmosElement;
             return true;
         }
     }

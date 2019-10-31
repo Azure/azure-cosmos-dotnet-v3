@@ -4,6 +4,8 @@
 namespace Microsoft.Azure.Cosmos.Query.Aggregation
 {
     using System;
+    using System.Globalization;
+    using System.Net;
     using Microsoft.Azure.Cosmos.CosmosElements;
 
     /// <summary>
@@ -17,6 +19,16 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
         /// The global count.
         /// </summary>
         private long globalCount;
+
+        private CountAggregator(long initialCount)
+        {
+            if (initialCount < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(initialCount));
+            }
+
+            this.globalCount = initialCount;
+        }
 
         /// <summary>
         /// Adds a count to the running count.
@@ -46,6 +58,31 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
         public CosmosElement GetResult()
         {
             return CosmosNumber64.Create(this.globalCount);
+        }
+
+        public string GetContinuationToken()
+        {
+            return this.globalCount.ToString(CultureInfo.InvariantCulture);
+        }
+
+        public static CountAggregator Create(string continuationToken)
+        {
+            long partialCount;
+            if (continuationToken != null)
+            {
+                if (!long.TryParse(continuationToken, out partialCount))
+                {
+                    throw new CosmosException(
+                        HttpStatusCode.BadRequest,
+                        $@"Invalid count continuation token: ""{continuationToken}"".");
+                }
+            }
+            else
+            {
+                partialCount = 0;
+            }
+
+            return new CountAggregator(initialCount: partialCount);
         }
     }
 }

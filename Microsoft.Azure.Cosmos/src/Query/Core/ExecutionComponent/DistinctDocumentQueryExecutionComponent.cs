@@ -1,7 +1,7 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
+namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
 {
     using System;
     using System.Collections.Generic;
@@ -143,7 +143,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                 disallowContinuationTokenMessage: disallowContinuationTokenMessage,
                 activityId: cosmosQueryResponse.ActivityId,
                 requestCharge: cosmosQueryResponse.RequestCharge,
-                diagnostics: cosmosQueryResponse.diagnostics,
+                diagnostics: cosmosQueryResponse.Diagnostics,
                 responseLengthBytes: cosmosQueryResponse.ResponseLengthBytes);
         }
 
