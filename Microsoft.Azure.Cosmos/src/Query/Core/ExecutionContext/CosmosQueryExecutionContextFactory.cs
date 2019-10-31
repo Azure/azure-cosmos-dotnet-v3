@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.ParallelQuery;
 
@@ -139,25 +140,14 @@ namespace Microsoft.Azure.Cosmos.Query
                 }
                 else
                 {
-                    if (response.ContinuationToken != null)
-                    {
-                        QueryPlanContinuationToken queryPlanContinuationToken = new QueryPlanContinuationToken(
-                            this.partitionedQueryExecutionInfo,
-                            response.ContinuationToken);
-
-                        const int globalContinuationTokenLimitInKb = 16;
-                        string queryPlanContinuationTokenString = QueryPlanContinuationToken.Serialize(
-                            queryPlanContinuationToken,
-                            this.inputParameters.ResponseContinuationTokenLimitInKb.GetValueOrDefault(globalContinuationTokenLimitInKb) * 1024);
-                        response = QueryResponseCore.CreateSuccess(
-                            result: response.CosmosElements,
-                            continuationToken: queryPlanContinuationTokenString,
-                            disallowContinuationTokenMessage: response.DisallowContinuationTokenMessage,
-                            activityId: response.ActivityId,
-                            requestCharge: response.RequestCharge,
-                            diagnostics: response.diagnostics,
-                            responseLengthBytes: response.ResponseLengthBytes);
-                    }
+                    response = QueryResponseCore.CreateSuccess(
+                        result: response.CosmosElements,
+                        continuationToken: response.ContinuationToken,
+                        disallowContinuationTokenMessage: response.DisallowContinuationTokenMessage,
+                        activityId: response.ActivityId,
+                        requestCharge: response.RequestCharge,
+                        diagnostics: response.diagnostics,
+                        responseLengthBytes: response.ResponseLengthBytes);
                 }
 
                 return response;
@@ -170,15 +160,66 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        public override bool TryGetContinuationToken(out string state)
+        public override bool TryGetContinuationToken(out string continuationToken)
         {
-            return this.innerExecutionContext.TryGetContinuationToken(out state);
+            if (this.innerExecutionContext.IsDone)
+            {
+                continuationToken = null;
+                return true;
+            }
+
+            if (!this.innerExecutionContext.TryGetContinuationToken(out string innerContinuationToken))
+            {
+                continuationToken = null;
+                return false;
+            }
+
+            PipelineContinuationTokenV1_1 pipelineContinuationToken = new PipelineContinuationTokenV1_1(
+                this.partitionedQueryExecutionInfo,
+                innerContinuationToken);
+
+            continuationToken = pipelineContinuationToken.ToString();
+            return true;
         }
 
         private async Task<CosmosQueryExecutionContext> CreateItemQueryExecutionContextAsync(
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
+
+            string continuationToken = this.inputParameters.InitialUserContinuationToken;
+            if (this.inputParameters.InitialUserContinuationToken != null)
+            {
+                if (!PipelineContinuationToken.TryParse(
+                    continuationToken,
+                    out PipelineContinuationToken pipelineContinuationToken))
+                {
+                    throw this.CosmosQueryContext.QueryClient.CreateBadRequestException(
+                        $"Malformed {nameof(PipelineContinuationToken)}: {continuationToken}.");
+                }
+
+                if (PipelineContinuationToken.IsTokenFromTheFuture(pipelineContinuationToken))
+                {
+                    throw this.CosmosQueryContext.QueryClient.CreateBadRequestException(
+                        $"{nameof(PipelineContinuationToken)} Continuation token is from a newer version of the SDK. Upgrade the SDK to avoid this issue.\n {continuationToken}.");
+                }
+
+                if (!PipelineContinuationToken.TryConvertToLatest(
+                    pipelineContinuationToken,
+                    out PipelineContinuationTokenV1_1 latestVersionPipelineContinuationToken))
+                {
+                    throw this.CosmosQueryContext.QueryClient.CreateBadRequestException(
+                        $"{nameof(PipelineContinuationToken)}: '{continuationToken}' is no longer supported.");
+                }
+
+                continuationToken = latestVersionPipelineContinuationToken.SourceContinuationToken;
+
+                this.inputParameters.InitialUserContinuationToken = continuationToken;
+                if (latestVersionPipelineContinuationToken.QueryPlan != null)
+                {
+                    this.inputParameters.PartitionedQueryExecutionInfo = latestVersionPipelineContinuationToken.QueryPlan;
+                }
+            }
 
             CosmosQueryClient cosmosQueryClient = this.CosmosQueryContext.QueryClient;
             ContainerQueryProperties containerQueryProperties = await cosmosQueryClient.GetCachedContainerQueryPropertiesAsync(

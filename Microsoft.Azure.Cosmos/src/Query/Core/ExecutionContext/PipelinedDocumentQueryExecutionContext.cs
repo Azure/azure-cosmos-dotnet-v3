@@ -145,33 +145,6 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            if (requestContinuationToken != null)
-            {
-                if (!PipelineContinuationToken.TryParse(
-                    requestContinuationToken,
-                    out PipelineContinuationToken pipelineContinuationToken))
-                {
-                    throw queryContext.QueryClient.CreateBadRequestException(
-                        $"Malformed {nameof(PipelineContinuationToken)}: {requestContinuationToken}.");
-                }
-
-                if (PipelineContinuationToken.IsTokenFromTheFuture(pipelineContinuationToken))
-                {
-                    throw queryContext.QueryClient.CreateBadRequestException(
-                        $"{nameof(PipelineContinuationToken)} Continuation token is from a newer version of the SDK. Upgrade the SDK to avoid this issue.\n {requestContinuationToken}.");
-                }
-
-                if (!PipelineContinuationToken.TryConvertToLatest(
-                    pipelineContinuationToken,
-                    out PipelineContinuationTokenV1_1 latestVersionPipelineContinuationToken))
-                {
-                    throw queryContext.QueryClient.CreateBadRequestException(
-                        $"{nameof(PipelineContinuationToken)}: '{requestContinuationToken}' is no longer supported.");
-                }
-
-                requestContinuationToken = latestVersionPipelineContinuationToken.SourceContinuationToken;
-            }
-
             QueryInfo queryInfo = initParams.PartitionedQueryExecutionInfo.QueryInfo;
 
             int initialPageSize = initParams.InitialPageSize;
