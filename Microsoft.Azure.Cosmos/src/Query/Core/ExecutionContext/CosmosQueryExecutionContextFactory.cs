@@ -146,7 +146,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         disallowContinuationTokenMessage: response.DisallowContinuationTokenMessage,
                         activityId: response.ActivityId,
                         requestCharge: response.RequestCharge,
-                        diagnostics: response.diagnostics,
+                        diagnostics: response.Diagnostics,
                         responseLengthBytes: response.ResponseLengthBytes);
                 }
 
@@ -403,6 +403,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 maxBufferedItemCount: inputParameters.MaxBufferedItemCount);
 
             return await PipelinedDocumentQueryExecutionContext.CreateAsync(
+                inputParameters.ExecutionEnvironment,
                 cosmosQueryContext,
                 initParams,
                 inputParameters.InitialUserContinuationToken,
@@ -490,6 +491,7 @@ namespace Microsoft.Azure.Cosmos.Query
             internal int? ResponseContinuationTokenLimitInKb { get; set; }
             internal IDictionary<string, object> Properties { get; set; }
             internal PartitionedQueryExecutionInfo PartitionedQueryExecutionInfo { get; set; }
+            internal ExecutionEnvironment ExecutionEnvironment { get; set; }
         }
     }
 }

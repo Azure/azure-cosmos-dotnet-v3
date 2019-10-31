@@ -18,7 +18,12 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
         /// <summary>
         /// The running weighted average for this aggregator.
         /// </summary>
-        private AverageInfo globalAverage = new AverageInfo(0, 0);
+        private AverageInfo globalAverage;
+
+        private AverageAggregator(AverageInfo globalAverage)
+        {
+            this.globalAverage = globalAverage;
+        }
 
         /// <summary>
         /// Averages the supplied item with the previously supplied items.
@@ -38,6 +43,29 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
         public CosmosElement GetResult()
         {
             return this.globalAverage.GetAverage();
+        }
+
+        public string GetContinuationToken()
+        {
+            return this.globalAverage.ToString();
+        }
+
+        public static AverageAggregator Create(string continuationToken)
+        {
+            AverageInfo averageInfo;
+            if (continuationToken != null)
+            {
+                if (!AverageInfo.TryParse(continuationToken, out averageInfo))
+                {
+                    throw new ArgumentException($"Invalid continuation token: {continuationToken}");
+                }
+            }
+            else
+            {
+                averageInfo = new AverageInfo(0, 0);
+            }
+
+            return new AverageAggregator(averageInfo);
         }
 
         /// <summary>
@@ -165,6 +193,31 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
                 }
 
                 return CosmosNumber64.Create(this.Sum.Value / this.Count);
+            }
+
+            public override string ToString()
+            {
+                return $@"{{
+                    {(this.Sum.HasValue ? $@"""{SumName}"" : {this.Sum.Value}," : string.Empty)}
+                    ""{CountName}"" : {this.Count}
+                }}";
+            }
+
+            public static bool TryParse(string serializedAverageInfo, out AverageInfo averageInfo)
+            {
+                if (serializedAverageInfo == null)
+                {
+                    throw new ArgumentNullException(nameof(serializedAverageInfo));
+                }
+
+                if (!CosmosElement.TryParse(serializedAverageInfo, out CosmosElement cosmosElementAverageInfo))
+                {
+                    averageInfo = default(AverageInfo);
+                    return false;
+                }
+
+                averageInfo = AverageInfo.Create(cosmosElementAverageInfo);
+                return true;
             }
         }
     }
