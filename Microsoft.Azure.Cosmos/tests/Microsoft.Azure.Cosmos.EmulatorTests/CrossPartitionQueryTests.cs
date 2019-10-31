@@ -2747,23 +2747,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             }
 
-            // Just have range indexes
-            Cosmos.IndexingPolicy indexV1Policy = new Cosmos.IndexingPolicy()
-            {
-                IncludedPaths = new Collection<Cosmos.IncludedPath>()
-                {
-                    new Cosmos.IncludedPath()
-                    {
-                        Path = "/*",
-                        Indexes = new Collection<Cosmos.Index>()
-                        {
-                            Cosmos.Index.Range(Cosmos.DataType.String, -1),
-                            Cosmos.Index.Range(Cosmos.DataType.Number, -1),
-                        }
-                    }
-                }
-            };
-
             // Add a composite index to force an index v2 container to be made.
             Cosmos.IndexingPolicy indexV2Policy = new Cosmos.IndexingPolicy()
             {
@@ -2796,93 +2779,30 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             };
 
-            string indexV2Api = HttpConstants.Versions.v2018_09_17;
-            string indexV1Api = HttpConstants.Versions.v2017_11_15;
-
-            async Task runWithAllowMixedTypeOrderByFlag(bool allowMixedTypeOrderByTestFlag, OrderByTypes[] orderByTypes, Action<Exception> expectedExcpetionHandler)
-            {
-                bool allowMixedTypeOrderByTestFlagOriginalValue = OrderByConsumeComparer.AllowMixedTypeOrderByTestFlag;
-                string apiVersion = allowMixedTypeOrderByTestFlag ? indexV2Api : indexV1Api;
-                Cosmos.IndexingPolicy indexingPolicy = allowMixedTypeOrderByTestFlag ? indexV2Policy : indexV1Policy;
-                try
-                {
-                    OrderByConsumeComparer.AllowMixedTypeOrderByTestFlag = allowMixedTypeOrderByTestFlag;
-                    await this.RunWithApiVersion(
-                        apiVersion,
-                        async () =>
-                        {
-                            await this.CreateIngestQueryDelete<Tuple<OrderByTypes[], Action<Exception>>>(
-                                ConnectionModes.Direct,
-                                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
-                                documents,
-                                this.TestMixedTypeOrderByHelper,
-                                new Tuple<OrderByTypes[], Action<Exception>>(orderByTypes, expectedExcpetionHandler),
-                                "/id",
-                                indexingPolicy);
-                        });
-                }
-                finally
-                {
-                    OrderByConsumeComparer.AllowMixedTypeOrderByTestFlag = allowMixedTypeOrderByTestFlagOriginalValue;
-                }
-            }
-
-            bool dontAllowMixedTypes = false;
-            bool doAllowMixedTypes = true;
-
             OrderByTypes primitives = OrderByTypes.Bool | OrderByTypes.Null | OrderByTypes.Number | OrderByTypes.String;
             OrderByTypes nonPrimitives = OrderByTypes.Array | OrderByTypes.Object;
             OrderByTypes all = primitives | nonPrimitives | OrderByTypes.Undefined;
 
-            // Don't allow mixed types but single type order by should still work
-            await runWithAllowMixedTypeOrderByFlag(
-                dontAllowMixedTypes,
-                new OrderByTypes[]
-                {
-                    OrderByTypes.Array,
-                    OrderByTypes.Bool,
-                    OrderByTypes.Null,
-                    OrderByTypes.Number,
-                    OrderByTypes.Object,
-                    OrderByTypes.String,
-                    // Undefined is not a thing with v1
-                    //OrderByTypes.Undefined,
-                }, null);
-
-            // If you don't allow mixed types but you run a mixed type query then you should get an exception or the results are just wrong.
-            await runWithAllowMixedTypeOrderByFlag(
-                dontAllowMixedTypes,
-                new OrderByTypes[]
-                {
-                    all,
-                    primitives,
-                },
-                (exception) =>
-                {
-                    Assert.IsTrue(
-                        // Either we get the weird client exception for having mixed types
-                        exception.Message.Contains("Cannot execute cross partition order-by queries on mix types.")
-                        // Or the results are just messed up since the pages in isolation were not mixed typed.
-                        || exception.GetType() == typeof(AssertFailedException));
-                });
-
-            // Mixed type orderby should work for all scenarios,
-            // since for now the non primitives are accepted to not be served from the index.
-            await runWithAllowMixedTypeOrderByFlag(
-                doAllowMixedTypes,
-                new OrderByTypes[]
-                {
-                    OrderByTypes.Array,
-                    OrderByTypes.Bool,
-                    OrderByTypes.Null,
-                    OrderByTypes.Number,
-                    OrderByTypes.Object,
-                    OrderByTypes.String,
-                    OrderByTypes.Undefined,
-                    primitives,
-                    nonPrimitives,
-                    all,
-                }, null);
+            await this.CreateIngestQueryDelete<OrderByTypes[]>(
+                    ConnectionModes.Direct,
+                    CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
+                    documents,
+                    this.TestMixedTypeOrderByHelper,
+                    new OrderByTypes[]
+                    {
+                        OrderByTypes.Array,
+                        OrderByTypes.Bool,
+                        OrderByTypes.Null,
+                        OrderByTypes.Number,
+                        OrderByTypes.Object,
+                        OrderByTypes.String,
+                        OrderByTypes.Undefined,
+                        primitives,
+                        nonPrimitives,
+                        all,
+                    },
+                    "/id",
+                    indexV2Policy);
         }
 
         private sealed class MixedTypedDocument
@@ -2936,6 +2856,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 return ItemComparer.Instance.Compare(element1, element2);
             }
+
         }
 
         [Flags]
@@ -2953,73 +2874,70 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private async Task TestMixedTypeOrderByHelper(
             Container container,
             IEnumerable<Document> documents,
-            Tuple<OrderByTypes[], Action<Exception>> args)
+            OrderByTypes[] args)
         {
-            OrderByTypes[] orderByTypesList = args.Item1;
-            Action<Exception> expectedExceptionHandler = args.Item2;
-            try
+            OrderByTypes[] orderByTypesList = args;
+            foreach (bool isDesc in new bool[] { true, false })
             {
-                foreach (bool isDesc in new bool[] { true, false })
+                foreach (OrderByTypes orderByTypes in orderByTypesList)
                 {
-                    foreach (OrderByTypes orderByTypes in orderByTypesList)
+                    string orderString = isDesc ? "DESC" : "ASC";
+                    List<string> mixedTypeFilters = new List<string>();
+                    if (orderByTypes.HasFlag(OrderByTypes.Array))
                     {
-                        string orderString = isDesc ? "DESC" : "ASC";
-                        List<string> mixedTypeFilters = new List<string>();
-                        if (orderByTypes.HasFlag(OrderByTypes.Array))
-                        {
-                            mixedTypeFilters.Add($"IS_ARRAY(c.{nameof(MixedTypedDocument.MixedTypeField)})");
-                        }
+                        mixedTypeFilters.Add($"IS_ARRAY(c.{nameof(MixedTypedDocument.MixedTypeField)})");
+                    }
 
-                        if (orderByTypes.HasFlag(OrderByTypes.Bool))
-                        {
-                            mixedTypeFilters.Add($"IS_BOOL(c.{nameof(MixedTypedDocument.MixedTypeField)})");
-                        }
+                    if (orderByTypes.HasFlag(OrderByTypes.Bool))
+                    {
+                        mixedTypeFilters.Add($"IS_BOOL(c.{nameof(MixedTypedDocument.MixedTypeField)})");
+                    }
 
-                        if (orderByTypes.HasFlag(OrderByTypes.Null))
-                        {
-                            mixedTypeFilters.Add($"IS_NULL(c.{nameof(MixedTypedDocument.MixedTypeField)})");
-                        }
+                    if (orderByTypes.HasFlag(OrderByTypes.Null))
+                    {
+                        mixedTypeFilters.Add($"IS_NULL(c.{nameof(MixedTypedDocument.MixedTypeField)})");
+                    }
 
-                        if (orderByTypes.HasFlag(OrderByTypes.Number))
-                        {
-                            mixedTypeFilters.Add($"IS_NUMBER(c.{nameof(MixedTypedDocument.MixedTypeField)})");
-                        }
+                    if (orderByTypes.HasFlag(OrderByTypes.Number))
+                    {
+                        mixedTypeFilters.Add($"IS_NUMBER(c.{nameof(MixedTypedDocument.MixedTypeField)})");
+                    }
 
-                        if (orderByTypes.HasFlag(OrderByTypes.Object))
-                        {
-                            mixedTypeFilters.Add($"IS_OBJECT(c.{nameof(MixedTypedDocument.MixedTypeField)})");
-                        }
+                    if (orderByTypes.HasFlag(OrderByTypes.Object))
+                    {
+                        mixedTypeFilters.Add($"IS_OBJECT(c.{nameof(MixedTypedDocument.MixedTypeField)})");
+                    }
 
-                        if (orderByTypes.HasFlag(OrderByTypes.String))
-                        {
-                            mixedTypeFilters.Add($"IS_STRING(c.{nameof(MixedTypedDocument.MixedTypeField)})");
-                        }
+                    if (orderByTypes.HasFlag(OrderByTypes.String))
+                    {
+                        mixedTypeFilters.Add($"IS_STRING(c.{nameof(MixedTypedDocument.MixedTypeField)})");
+                    }
 
-                        if (orderByTypes.HasFlag(OrderByTypes.Undefined))
-                        {
-                            mixedTypeFilters.Add($"not IS_DEFINED(c.{nameof(MixedTypedDocument.MixedTypeField)})");
-                        }
+                    if (orderByTypes.HasFlag(OrderByTypes.Undefined))
+                    {
+                        mixedTypeFilters.Add($"not IS_DEFINED(c.{nameof(MixedTypedDocument.MixedTypeField)})");
+                    }
 
-                        string filter = mixedTypeFilters.Count() == 0 ? "true" : string.Join(" OR ", mixedTypeFilters);
+                    string filter = mixedTypeFilters.Count() == 0 ? "true" : string.Join(" OR ", mixedTypeFilters);
 
-                        string query = $@"
+                    string query = $@"
                             SELECT c.{nameof(MixedTypedDocument.MixedTypeField)}
                             FROM c
                             WHERE {filter}
                             ORDER BY c.{nameof(MixedTypedDocument.MixedTypeField)} {orderString}";
 
-                        QueryRequestOptions feedOptions = new QueryRequestOptions()
-                        {
-                            MaxBufferedItemCount = 1000,
-                            MaxItemCount = 16,
-                            MaxConcurrency = 10,
-                        };
+                    QueryRequestOptions feedOptions = new QueryRequestOptions()
+                    {
+                        MaxBufferedItemCount = 1000,
+                        MaxItemCount = 16,
+                        MaxConcurrency = 10,
+                    };
 
-                        List<CosmosObject> actualFromQueryWithoutContinutionTokens;
-                        actualFromQueryWithoutContinutionTokens = await CrossPartitionQueryTests.QueryWithoutContinuationTokens<CosmosObject>(
-                            container,
-                            query,
-                            queryRequestOptions: feedOptions);
+                    List<CosmosObject> actualFromQueryWithoutContinutionTokens;
+                    actualFromQueryWithoutContinutionTokens = await CrossPartitionQueryTests.QueryWithoutContinuationTokens<CosmosObject>(
+                        container,
+                        query,
+                        queryRequestOptions: feedOptions);
 #if false
                         For now we can not serve the query through continuation tokens correctly.
                         This is because we allow order by on mixed types but not comparisions across types
@@ -3041,109 +2959,97 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         and that is because comparision across types is undefined so "aaaaaaaaaaa" > 303093052 never got emitted
 #endif
 
-                        IEnumerable<CosmosObject> insertedDocs = documents
-                            .Select(document => CosmosElement.CreateFromBuffer(Encoding.UTF8.GetBytes(document.ToString())) as CosmosObject)
-                            .Select(document =>
+                    IEnumerable<CosmosObject> insertedDocs = documents
+                        .Select(document => CosmosElement.CreateFromBuffer(Encoding.UTF8.GetBytes(document.ToString())) as CosmosObject)
+                        .Select(document =>
+                        {
+                            Dictionary<string, CosmosElement> dictionary = new Dictionary<string, CosmosElement>();
+                            if (document.TryGetValue(nameof(MixedTypedDocument.MixedTypeField), out CosmosElement value))
                             {
-                                Dictionary<string, CosmosElement> dictionary = new Dictionary<string, CosmosElement>();
-                                if (document.TryGetValue(nameof(MixedTypedDocument.MixedTypeField), out CosmosElement value))
-                                {
-                                    dictionary.Add(nameof(MixedTypedDocument.MixedTypeField), value);
-                                }
+                                dictionary.Add(nameof(MixedTypedDocument.MixedTypeField), value);
+                            }
 
-                                return CosmosObject.Create(dictionary);
-                            });
+                            return CosmosObject.Create(dictionary);
+                        });
 
-                        // Build the expected results using LINQ
-                        IEnumerable<CosmosObject> expected = new List<CosmosObject>();
+                    // Build the expected results using LINQ
+                    IEnumerable<CosmosObject> expected = new List<CosmosObject>();
 
-                        // Filter based on the mixedOrderByType enum
+                    // Filter based on the mixedOrderByType enum
 
-                        if (orderByTypes.HasFlag(OrderByTypes.Undefined))
+                    if (orderByTypes.HasFlag(OrderByTypes.Undefined))
+                    {
+                        expected = expected.Concat(insertedDocs.Where(x => !x.TryGetValue(nameof(MixedTypedDocument.MixedTypeField), out CosmosElement value)));
+                    }
+
+                    if (orderByTypes.HasFlag(OrderByTypes.Null))
+                    {
+                        expected = expected.Concat(insertedDocs.Where(x => x.TryGetValue(nameof(MixedTypedDocument.MixedTypeField), out CosmosNull value)));
+                    }
+
+                    if (orderByTypes.HasFlag(OrderByTypes.Bool))
+                    {
+                        expected = expected.Concat(insertedDocs.Where(x => x.TryGetValue(nameof(MixedTypedDocument.MixedTypeField), out CosmosBoolean value)));
+                    }
+
+                    if (orderByTypes.HasFlag(OrderByTypes.Number))
+                    {
+                        expected = expected.Concat(insertedDocs.Where(x => x.TryGetValue(nameof(MixedTypedDocument.MixedTypeField), out CosmosNumber value)));
+                    }
+
+                    if (orderByTypes.HasFlag(OrderByTypes.String))
+                    {
+                        expected = expected.Concat(insertedDocs.Where(x => x.TryGetValue(nameof(MixedTypedDocument.MixedTypeField), out CosmosString value)));
+                    }
+
+                    if (orderByTypes.HasFlag(OrderByTypes.Array))
+                    {
+                        expected = expected.Concat(insertedDocs.Where(x => x.TryGetValue(nameof(MixedTypedDocument.MixedTypeField), out CosmosArray value)));
+                    }
+
+                    if (orderByTypes.HasFlag(OrderByTypes.Object))
+                    {
+                        expected = expected.Concat(insertedDocs.Where(x => x.TryGetValue(nameof(MixedTypedDocument.MixedTypeField), out CosmosObject value)));
+                    }
+
+                    // Order using the mock order by comparer
+                    if (isDesc)
+                    {
+                        expected = expected.OrderByDescending(x =>
                         {
-                            expected = expected.Concat(insertedDocs.Where(x => !x.TryGetValue(nameof(MixedTypedDocument.MixedTypeField), out CosmosElement value)));
-                        }
-
-                        if (orderByTypes.HasFlag(OrderByTypes.Null))
-                        {
-                            expected = expected.Concat(insertedDocs.Where(x => x.TryGetValue(nameof(MixedTypedDocument.MixedTypeField), out CosmosNull value)));
-                        }
-
-                        if (orderByTypes.HasFlag(OrderByTypes.Bool))
-                        {
-                            expected = expected.Concat(insertedDocs.Where(x => x.TryGetValue(nameof(MixedTypedDocument.MixedTypeField), out CosmosBoolean value)));
-                        }
-
-                        if (orderByTypes.HasFlag(OrderByTypes.Number))
-                        {
-                            expected = expected.Concat(insertedDocs.Where(x => x.TryGetValue(nameof(MixedTypedDocument.MixedTypeField), out CosmosNumber value)));
-                        }
-
-                        if (orderByTypes.HasFlag(OrderByTypes.String))
-                        {
-                            expected = expected.Concat(insertedDocs.Where(x => x.TryGetValue(nameof(MixedTypedDocument.MixedTypeField), out CosmosString value)));
-                        }
-
-                        if (orderByTypes.HasFlag(OrderByTypes.Array))
-                        {
-                            expected = expected.Concat(insertedDocs.Where(x => x.TryGetValue(nameof(MixedTypedDocument.MixedTypeField), out CosmosArray value)));
-                        }
-
-                        if (orderByTypes.HasFlag(OrderByTypes.Object))
-                        {
-                            expected = expected.Concat(insertedDocs.Where(x => x.TryGetValue(nameof(MixedTypedDocument.MixedTypeField), out CosmosObject value)));
-                        }
-
-                        // Order using the mock order by comparer
-                        if (isDesc)
-                        {
-                            expected = expected.OrderByDescending(x =>
+                            if (!x.TryGetValue(nameof(MixedTypedDocument.MixedTypeField), out CosmosElement cosmosElement))
                             {
-                                if (!x.TryGetValue(nameof(MixedTypedDocument.MixedTypeField), out CosmosElement cosmosElement))
-                                {
-                                    cosmosElement = null;
-                                }
+                                cosmosElement = null;
+                            }
 
-                                return cosmosElement;
-                            }, MockOrderByComparer.Value);
-                        }
-                        else
+                            return cosmosElement;
+                        }, MockOrderByComparer.Value);
+                    }
+                    else
+                    {
+                        expected = expected.OrderBy(x =>
                         {
-                            expected = expected.OrderBy(x =>
+                            if (!x.TryGetValue(nameof(MixedTypedDocument.MixedTypeField), out CosmosElement cosmosElement))
                             {
-                                if (!x.TryGetValue(nameof(MixedTypedDocument.MixedTypeField), out CosmosElement cosmosElement))
-                                {
-                                    cosmosElement = null;
-                                }
+                                cosmosElement = null;
+                            }
 
-                                return cosmosElement;
-                            }, MockOrderByComparer.Value);
-                        }
+                            return cosmosElement;
+                        }, MockOrderByComparer.Value);
+                    }
 
-                        Assert.IsTrue(
-                            expected.SequenceEqual(actualFromQueryWithoutContinutionTokens, CosmosElementEqualityComparer.Value),
-                            $@" queryWithoutContinuations: {query},
+                    Assert.IsTrue(
+                        expected.SequenceEqual(actualFromQueryWithoutContinutionTokens, CosmosElementEqualityComparer.Value),
+                        $@" queryWithoutContinuations: {query},
                             expected:{JsonConvert.SerializeObject(expected)},
                             actual: {JsonConvert.SerializeObject(actualFromQueryWithoutContinutionTokens)}");
 
-                        // Can't assert for reasons mentioned above
-                        //Assert.IsTrue(
-                        //    expected.SequenceEqual(actualFromQueryWithContinutionTokens, DistinctMapTests.JsonTokenEqualityComparer.Value),
-                        //    $@" queryWithContinuations: {query},
-                        //    expected:{JsonConvert.SerializeObject(expected)},
-                        //    actual: {JsonConvert.SerializeObject(actualFromQueryWithContinutionTokens)}");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                if (expectedExceptionHandler != null)
-                {
-                    expectedExceptionHandler(ex);
-                }
-                else
-                {
-                    throw;
+                    // Can't assert for reasons mentioned above
+                    //Assert.IsTrue(
+                    //    expected.SequenceEqual(actualFromQueryWithContinutionTokens, DistinctMapTests.JsonTokenEqualityComparer.Value),
+                    //    $@" queryWithContinuations: {query},
+                    //    expected:{JsonConvert.SerializeObject(expected)},
+                    //    actual: {JsonConvert.SerializeObject(actualFromQueryWithContinutionTokens)}");
                 }
             }
         }
