@@ -37,6 +37,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
 
         public PartitionedQueryExecutionInfo QueryPlan { get; }
 
+        public override string ToString()
+        {
+            return this.Serialize(16 * 1024);
+        }
+
         public string Serialize(int lengthLimitInBytes)
         {
             string queryPlanString = this.QueryPlan?.ToString();
