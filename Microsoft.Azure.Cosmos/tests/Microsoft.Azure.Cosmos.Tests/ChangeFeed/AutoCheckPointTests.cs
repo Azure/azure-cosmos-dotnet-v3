@@ -9,12 +9,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using System.Diagnostics;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
-    using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
-    using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
-    using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 

@@ -2,13 +2,12 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
+namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
     using System;
     using System.Net;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
     using Microsoft.Azure.Cosmos.Core.Trace;
 
     /// <summary>

@@ -2,12 +2,20 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
+#if AZURECORE
+namespace Azure.Cosmos.ChangeFeed
+#else
+namespace Microsoft.Azure.Cosmos.ChangeFeed
+#endif
 {
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
+#if AZURECORE
+    using static Azure.Cosmos.Container;
+#else
     using static Microsoft.Azure.Cosmos.Container;
+#endif
 
     internal sealed class ChangeFeedObserverBase<T> : ChangeFeedObserver<T>
     {

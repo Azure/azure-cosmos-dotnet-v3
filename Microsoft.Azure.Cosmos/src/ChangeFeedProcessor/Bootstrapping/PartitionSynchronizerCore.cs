@@ -2,20 +2,24 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
+#if AZURECORE
+namespace Azure.Cosmos.ChangeFeed
+#else
+namespace Microsoft.Azure.Cosmos.ChangeFeed
+#endif
 {
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Globalization;
     using System.Linq;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
-    using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Routing;
 
     internal sealed class PartitionSynchronizerCore : PartitionSynchronizer
     {
@@ -45,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
 
         public override async Task CreateMissingLeasesAsync()
         {
-            List<PartitionKeyRange> ranges = await this.EnumPartitionKeyRangesAsync().ConfigureAwait(false);
+            IReadOnlyList<PartitionKeyRange> ranges = await this.EnumPartitionKeyRangesAsync().ConfigureAwait(false);
             HashSet<string> partitionIds = new HashSet<string>(ranges.Select(range => range.Id));
             DefaultTrace.TraceInformation("Source collection: '{0}', {1} partition(s)", this.container.LinkUri.ToString(), partitionIds.Count);
             await this.CreateLeasesAsync(partitionIds).ConfigureAwait(false);
@@ -64,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
             DefaultTrace.TraceInformation("Partition {0} is gone due to split", partitionId);
 
             // After split the childs are either all or none available
-            List<PartitionKeyRange> ranges = await this.EnumPartitionKeyRangesAsync().ConfigureAwait(false);
+            IReadOnlyList<PartitionKeyRange> ranges = await this.EnumPartitionKeyRangesAsync().ConfigureAwait(false);
             List<string> addedPartitionIds = ranges.Where(range => range.Parents.Contains(partitionId)).Select(range => range.Id).ToList();
             if (addedPartitionIds.Count == 0)
             {
@@ -89,31 +93,17 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
             return newLeases;
         }
 
-        private async Task<List<PartitionKeyRange>> EnumPartitionKeyRangesAsync()
+        private async Task<IReadOnlyList<PartitionKeyRange>> EnumPartitionKeyRangesAsync()
         {
-            string containerUri = this.container.LinkUri.ToString();
-            string partitionKeyRangesPath = string.Format(CultureInfo.InvariantCulture, "{0}/pkranges", containerUri);
-
-            IDocumentFeedResponse<PartitionKeyRange> response = null;
-            List<PartitionKeyRange> partitionKeyRanges = new List<PartitionKeyRange>();
-            do
-            {
-                FeedOptions feedOptions = new FeedOptions
-                {
-                    MaxItemCount = this.maxBatchSize,
-                    RequestContinuationToken = response?.ResponseContinuation,
-                };
-
-                response = await this.container.ClientContext.DocumentClient.ReadPartitionKeyRangeFeedAsync(containerUri, feedOptions).ConfigureAwait(false);
-                IEnumerator<PartitionKeyRange> enumerator = response.GetEnumerator();
-                while (enumerator.MoveNext())
-                {
-                    partitionKeyRanges.Add(enumerator.Current);
-                }
-            }
-            while (!string.IsNullOrEmpty(response.ResponseContinuation));
-
-            return partitionKeyRanges;
+            PartitionKeyRangeCache pkRangeCache = await this.container.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
+            string containerRid = await this.container.GetRIDAsync(default(CancellationToken));
+            return await pkRangeCache.TryGetOverlappingRangesAsync(
+                containerRid,
+                new Range<string>(
+                    PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
+                    PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
+                    true,
+                    false));
         }
 
         /// <summary>

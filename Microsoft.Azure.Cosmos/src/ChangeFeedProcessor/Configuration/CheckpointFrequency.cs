@@ -2,10 +2,13 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.ChangeFeed.Configuration
+#if AZURECORE
+namespace Azure.Cosmos.ChangeFeed
+#else
+namespace Microsoft.Azure.Cosmos.ChangeFeed
+#endif
 {
     using System;
-    using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
 
     /// <summary>
     /// Specifies the frequency of lease event. The event will trigger when either of conditions is satisfied.

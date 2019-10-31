@@ -2,10 +2,12 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
+#if AZURECORE
+namespace Azure.Cosmos
+#else
 namespace Microsoft.Azure.Cosmos
+#endif
 {
-    using Newtonsoft.Json.Serialization;
-
     /// <summary>
     /// This class provides a way to configure basic
     /// serializer settings.

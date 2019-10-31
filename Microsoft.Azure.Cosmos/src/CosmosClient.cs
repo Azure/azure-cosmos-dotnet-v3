@@ -636,7 +636,7 @@ namespace Microsoft.Azure.Cosmos
 
             //Request pipeline 
             ClientPipelineBuilder clientPipelineBuilder = new ClientPipelineBuilder(
-                this,
+                new CosmosClientDriverContext(this),
                 this.ClientOptions.CustomHandlers);
 
             this.RequestHandler = clientPipelineBuilder.Build();

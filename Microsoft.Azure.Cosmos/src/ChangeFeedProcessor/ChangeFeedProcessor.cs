@@ -2,14 +2,23 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
+#if AZURECORE
+namespace Azure.Cosmos
+#else
 namespace Microsoft.Azure.Cosmos
+#endif
 {
     using System.Threading.Tasks;
 
     /// <summary>
     /// Provides an API to start and stop a <see cref="ChangeFeedProcessor"/> instance created by <see cref="ChangeFeedProcessorBuilder.Build"/>.
     /// </summary>
-    public abstract class ChangeFeedProcessor
+    #if AZURECORE
+    internal
+#else
+    public
+#endif
+    abstract class ChangeFeedProcessor
     {
         /// <summary>
         /// Start listening for changes.

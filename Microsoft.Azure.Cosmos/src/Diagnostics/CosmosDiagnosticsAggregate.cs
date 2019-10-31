@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Query
 {
     using System.Collections.Generic;
     using System.Text;
-    using Newtonsoft.Json;
 
     internal class CosmosDiagnosticsAggregate : CosmosDiagnostics
     {

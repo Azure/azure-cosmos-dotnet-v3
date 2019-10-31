@@ -2,7 +2,11 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
+#if AZURECORE
+namespace Azure.Cosmos
+#else
 namespace Microsoft.Azure.Cosmos
+#endif
 {
     /// <summary>
     /// The LocationNames class contains the names of Azure regions that

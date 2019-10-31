@@ -12,28 +12,34 @@ namespace Microsoft.Azure.Cosmos
 
     internal class ClientPipelineBuilder
     {
-        private readonly CosmosClient client;
         private readonly RequestHandler invalidPartitionExceptionRetryHandler;
         private readonly RequestHandler transportHandler;
         private readonly RequestHandler partitionKeyRangeGoneRetryHandler;
+        private readonly CosmosDriverContext clientPipelineBuilderContext;
         private IReadOnlyCollection<RequestHandler> customHandlers;
         private RequestHandler retryHandler;
 
         public ClientPipelineBuilder(
-            CosmosClient client,
+            CosmosDriverContext clientPipelineBuilderContext,
             IReadOnlyCollection<RequestHandler> customHandlers)
         {
-            this.client = client;
-            this.transportHandler = new TransportHandler(client);
+            if (clientPipelineBuilderContext == null)
+            {
+                throw new ArgumentNullException(nameof(clientPipelineBuilderContext));
+            }
+
+            this.clientPipelineBuilderContext = clientPipelineBuilderContext;
+
+            this.transportHandler = new TransportHandler(this.clientPipelineBuilderContext);
             Debug.Assert(this.transportHandler.InnerHandler == null, nameof(this.transportHandler));
 
-            this.partitionKeyRangeGoneRetryHandler = new PartitionKeyRangeGoneRetryHandler(this.client);
+            this.partitionKeyRangeGoneRetryHandler = new PartitionKeyRangeGoneRetryHandler(this.clientPipelineBuilderContext);
             Debug.Assert(this.partitionKeyRangeGoneRetryHandler.InnerHandler == null, "The partitionKeyRangeGoneRetryHandler.InnerHandler must be null to allow other handlers to be linked.");
 
             this.invalidPartitionExceptionRetryHandler = new NamedCacheRetryHandler();
             Debug.Assert(this.invalidPartitionExceptionRetryHandler.InnerHandler == null, "The invalidPartitionExceptionRetryHandler.InnerHandler must be null to allow other handlers to be linked.");
 
-            this.PartitionKeyRangeHandler = new PartitionKeyRangeHandler(client);
+            this.PartitionKeyRangeHandler = new PartitionKeyRangeHandler(this.clientPipelineBuilderContext);
             Debug.Assert(this.PartitionKeyRangeHandler.InnerHandler == null, "The PartitionKeyRangeHandler.InnerHandler must be null to allow other handlers to be linked.");
 
             this.UseRetryPolicy();
@@ -124,7 +130,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>The request invoker handler used to do calls to Cosmos DB</returns>
         public RequestInvokerHandler Build()
         {
-            RequestInvokerHandler root = new RequestInvokerHandler(this.client);
+            RequestInvokerHandler root = new RequestInvokerHandler(this.clientPipelineBuilderContext);
 
             RequestHandler current = root;
             if (this.CustomHandlers != null && this.CustomHandlers.Any())
@@ -179,7 +185,7 @@ namespace Microsoft.Azure.Cosmos
 
         private ClientPipelineBuilder UseRetryPolicy()
         {
-            this.retryHandler = new RetryHandler(this.client);
+            this.retryHandler = new RetryHandler(this.clientPipelineBuilderContext);
             Debug.Assert(this.retryHandler.InnerHandler == null, "The retryHandler.InnerHandler must be null to allow other handlers to be linked.");
             return this;
         }

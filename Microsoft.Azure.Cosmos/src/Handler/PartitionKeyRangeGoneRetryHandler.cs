@@ -6,6 +6,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
 {
     using System;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Common;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -13,22 +15,23 @@ namespace Microsoft.Azure.Cosmos.Handlers
     /// </summary>
     internal class PartitionKeyRangeGoneRetryHandler : AbstractRetryHandler
     {
-        private readonly CosmosClient client;
+        private readonly CosmosDriverContext clientPipelineBuilderContext;
 
-        public PartitionKeyRangeGoneRetryHandler(CosmosClient client)
+        public PartitionKeyRangeGoneRetryHandler(CosmosDriverContext clientPipelineBuilderContext)
         {
-            if (client == null)
+            if (clientPipelineBuilderContext == null)
             {
-                throw new ArgumentNullException(nameof(client));
+                throw new ArgumentNullException(nameof(clientPipelineBuilderContext));
             }
-            this.client = client;
+
+            this.clientPipelineBuilderContext = clientPipelineBuilderContext;
         }
 
         internal override async Task<IDocumentClientRetryPolicy> GetRetryPolicyAsync(RequestMessage request)
         {
             return new PartitionKeyRangeGoneRetryPolicy(
-                await this.client.DocumentClient.GetCollectionCacheAsync(),
-                await this.client.DocumentClient.GetPartitionKeyRangeCacheAsync(),
+                await this.clientPipelineBuilderContext.GetCollectionCacheAsync(),
+                await this.clientPipelineBuilderContext.GetPartitionKeyRangeCacheAsync(),
                 PathsHelper.GetCollectionPath(request.RequestUri.ToString()),
                 null);
         }

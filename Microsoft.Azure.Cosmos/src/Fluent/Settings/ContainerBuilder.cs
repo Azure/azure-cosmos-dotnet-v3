@@ -2,10 +2,15 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
+#if AZURECORE
+namespace Azure.Cosmos.Fluent
+#else
 namespace Microsoft.Azure.Cosmos.Fluent
+#endif
 {
     using System;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
 
     /// <summary>
     /// <see cref="Container"/> fluent definition for creation flows.

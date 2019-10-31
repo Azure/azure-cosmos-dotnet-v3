@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
 
@@ -19,14 +20,14 @@ namespace Microsoft.Azure.Cosmos.Handlers
     internal class RequestInvokerHandler : RequestHandler
     {
         private static (bool, ResponseMessage) clientIsValid = (false, null);
-        private readonly CosmosClient client;
-        private Cosmos.ConsistencyLevel? AccountConsistencyLevel = null;
-        private Cosmos.ConsistencyLevel? RequestedClientConsistencyLevel;
+        private readonly CosmosDriverContext clientPipelineBuilderContext;
+        private Documents.ConsistencyLevel? AccountConsistencyLevel = null;
+        private Documents.ConsistencyLevel? RequestedClientConsistencyLevel;
 
-        public RequestInvokerHandler(CosmosClient client)
+        public RequestInvokerHandler(CosmosDriverContext clientPipelineBuilderContext)
         {
-            this.client = client;
-            this.RequestedClientConsistencyLevel = this.client.ClientOptions.ConsistencyLevel;
+            this.clientPipelineBuilderContext = clientPipelineBuilderContext;
+            this.RequestedClientConsistencyLevel = clientPipelineBuilderContext.ConsistencyLevel;
         }
 
         public override async Task<ResponseMessage> SendAsync(
@@ -52,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 return errorResponse;
             }
 
-            await request.AssertPartitioningDetailsAsync(this.client, cancellationToken);
+            await request.AssertPartitioningDetailsAsync(this.clientPipelineBuilderContext.GetCollectionCacheAsync, cancellationToken);
             this.FillMultiMasterContext(request);
             return await base.SendAsync(request, cancellationToken);
         }
@@ -188,7 +189,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
         {
             try
             {
-                await this.client.DocumentClient.EnsureValidClientAsync();
+                await this.clientPipelineBuilderContext.EnsureClientIsValidAsync();
                 return RequestInvokerHandler.clientIsValid;
             }
             catch (DocumentClientException dce)
@@ -199,7 +200,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
         private void FillMultiMasterContext(RequestMessage request)
         {
-            if (this.client.DocumentClient.UseMultipleWriteLocations)
+            if (this.clientPipelineBuilderContext.UseMultipleWriteLocations)
             {
                 request.Headers.Set(HttpConstants.HttpHeaders.AllowTentativeWrites, bool.TrueString);
             }
@@ -209,11 +210,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
         {
             // Validate the request consistency compatibility with account consistency
             // Type based access context for requested consistency preferred for performance
-            Cosmos.ConsistencyLevel? consistencyLevel = null;
+            Documents.ConsistencyLevel? consistencyLevel = null;
             RequestOptions promotedRequestOptions = requestMessage.RequestOptions;
             if (promotedRequestOptions != null && promotedRequestOptions.BaseConsistencyLevel.HasValue)
             {
-                consistencyLevel = promotedRequestOptions.BaseConsistencyLevel;
+                consistencyLevel = (Documents.ConsistencyLevel)promotedRequestOptions.BaseConsistencyLevel;
             }
             else if (this.RequestedClientConsistencyLevel.HasValue)
             {
@@ -224,7 +225,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             {
                 if (!this.AccountConsistencyLevel.HasValue)
                 {
-                    this.AccountConsistencyLevel = await this.client.GetAccountConsistencyLevelAsync();
+                    this.AccountConsistencyLevel = await this.clientPipelineBuilderContext.GetAccountConsistencyLevelAsync();
                 }
 
                 if (ValidationHelpers.IsValidConsistencyLevelOverwrite(this.AccountConsistencyLevel.Value, consistencyLevel.Value))

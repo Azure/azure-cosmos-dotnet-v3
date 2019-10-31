@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 

@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Net;
     using System.Runtime.Serialization;
-    using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Newtonsoft.Json;
@@ -117,7 +116,6 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// Output from console.log() statements in a stored procedure.
         /// </value>
-        /// <seealso cref="StoredProcedureRequestOptions.EnableScriptLogging"/>
         public string ScriptLog
         {
             get

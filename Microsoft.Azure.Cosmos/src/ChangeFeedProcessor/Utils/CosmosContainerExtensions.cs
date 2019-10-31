@@ -2,14 +2,13 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
+namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
     using System.Globalization;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
 
     internal static class CosmosContainerExtensions
     {

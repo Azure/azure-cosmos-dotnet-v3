@@ -8,6 +8,9 @@ namespace Microsoft.Azure.Cosmos
     using System.Globalization;
     using System.Net.Http;
     using System.Threading.Tasks;
+#if AZURECORE
+    using global::Azure.Cosmos;
+#endif
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;

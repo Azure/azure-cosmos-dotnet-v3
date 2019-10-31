@@ -1,0 +1,274 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Company>Microsoft Corporation</Company>
+    <Product>Microsoft(R) Azure Cosmos</Product>
+    <Description>This client library enables client applications to connect to Azure Cosmos via the SQL API. Azure Cosmos is a globally distributed, multi-model database service. For more information, refer to http://azure.microsoft.com/services/cosmos-db/. </Description>
+    <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
+    <NeutralLanguage>en-US</NeutralLanguage>
+    <CurrentDate>$([System.DateTime]::Now.ToString(yyyyMMdd))</CurrentDate>
+    <AzureSDKClientVersion>4.0.0</AzureSDKClientVersion>
+    <VersionSuffix Condition=" '$(IsNightly)' == 'true' ">nightly-$(CurrentDate)</VersionSuffix>
+    <VersionSuffix Condition=" '$(IsPreview)' == 'true' ">preview</VersionSuffix>
+    <Version Condition=" '$(VersionSuffix)' == '' ">$(AzureSDKClientVersion)</Version>
+    <Version Condition=" '$(VersionSuffix)' != '' ">$(AzureSDKClientVersion)-$(VersionSuffix)</Version>
+    <FileVersion>$(AzureSDKClientVersion)</FileVersion>
+    <Authors>Microsoft</Authors>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AssemblyName>Azure.Cosmos</AssemblyName>
+    <Title>Microsoft Azure Cosmos DB Client library</Title>
+    <PackageId>Azure.Cosmos</PackageId>
+    <PackageTags>microsoft;azure;cosmos;cosmosdb;documentdb;docdb;nosql;azureofficial;dotnetcore;netcore;netstandard</PackageTags>
+    <PackageReleaseNotes>The change log for this SDK is made available at https://github.com/Azure/azure-cosmos-dotnet-v3/blob/v4/changelog.md at the time of release.</PackageReleaseNotes>
+    <PackageLicenseUrl>https://aka.ms/netcoregaeula</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/Azure/azure-cosmos-dotnet-v3</PackageProjectUrl>
+    <PackageIconUrl>http://go.microsoft.com/fwlink/?LinkID=288890</PackageIconUrl>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ShippingScope>External</ShippingScope>
+    <SigningType>Product</SigningType>
+    <DebugType>portable</DebugType>
+    <IncludeSymbols>false</IncludeSymbols>
+    <IncludeSource>false</IncludeSource>
+    <RootNamespace>Azure.Cosmos</RootNamespace>
+    <NoWarn>NU5125</NoWarn>
+    <LangVersion>8.0</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="..\src\stylecop.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="RuntimePerfCounters.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\src\GlobalSuppressions.cs" />
+  </ItemGroup>
+
+  <!--SDK V3 dependencies-->
+  <ItemGroup>
+    <Compile Include="..\src\Resource\Settings\Enums\*.cs">
+      <Link>Resource\Settings\Enums\%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\Handler\*.cs" Exclude="..\src\Handler\RequestMessage.cs;..\src\Handler\ResponseMessage.cs;..\src\Handler\RequestInvokerHandler.cs;..\src\Handler\PartitionKeyRangeHandler.cs;">
+      <Link>Handler\%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\Diagnostics\*.cs">
+      <Link>Diagnostics\%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\Routing\*.cs">
+      <Link>Routing\%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\SqlObjects\**\*.cs">
+      <Link>SqlObjects\%(RecursiveDir)\%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\Fluent\Settings\*.cs">
+      <Link>Fluent\Settings\%(RecursiveDir)\%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\Json\**\*.cs">
+      <Link>Json\%(RecursiveDir)\%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\Spatial\**\*.cs">
+      <Link>Spatial\%(RecursiveDir)\%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\Serializer\CosmosSerializationOptions.cs">
+      <Link>Serializer\%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\Serializer\CosmosSerializationFormatOptions.cs">
+      <Link>Serializer\%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\Serializer\CosmosPropertyNamingPolicy.cs">
+      <Link>Serializer\%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\MediaReadMode.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\RetryOptions.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\Regions.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\DocumentClientEventSource.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\ClientExtensions.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\CosmosElements\**\*.cs">
+      <Link>CosmosElements\%(RecursiveDir)\%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\ChangeFeedProcessor\**\*.cs" Exclude="..\src\ChangeFeedProcessor\FeedManagement\RemainingWorkEstimatorCore.cs;..\src\ChangeFeedProcessor\FeedProcessing\ChangeFeedObserverContextCore.cs;..\src\ChangeFeedProcessor\FeedProcessing\FeedProcessorCore.cs;..\src\ChangeFeedProcessor\Utils\CosmosContainerExtensions.cs;..\src\ChangeFeedProcessor\LeaseManagement\DocumentServiceLeaseContainerCosmos.cs;..\src\ChangeFeedProcessor\LeaseManagement\DocumentServiceLeaseUpdaterCosmos.cs">
+      <Link>ChangeFeedProcessor\%(RecursiveDir)\%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\Headers\*.cs" Exclude="..\src\Headers\Headers.cs;..\src\Headers\CosmosMessageHeadersInternal.cs">
+      <Link>Headers\%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\Query\Core\**\*.cs">
+      <Link>Query\Core\%(RecursiveDir)\%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\RetryPolicy.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\IComputeHash.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\AuthorizationHelper.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\SecureStringHMACSHA256Helper.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\StringHMACSHA256Hash.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\ResourceToken.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\TaskHelper.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\FeedOptions.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\SessionContainer.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\GatewayStoreClient.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\GatewayStoreModel.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\GatewayAccountReader.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\ActivityScope.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\UriFactory.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\PartitionKey.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\ChangeFeedOptions.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\IRequestSigner.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\NullRequestSigner.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\FeedResponseBinder.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\MediaStream.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\UserAgentContainer.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\SecureStringUtility.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\Base64Helper.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\ConnectionPolicy.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\ConnectionMode.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\EnvironmentInformation.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\IDocumentClientInternal.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+  </ItemGroup>
+  <!--SDK V3 dependencies-->
+  
+  <ItemGroup>
+    <EmbeddedResource Include="..\src\Batch\HybridRowBatchSchemas.json">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </EmbeddedResource> 
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="ClientResources.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>ClientResources.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  
+  <ItemGroup>
+    <EmbeddedResource Update="ClientResources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>ClientResources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+  
+  <ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
+    <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[$(DirectVersion)]" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.Azure.Cosmos.Serialization.HybridRow" Version="[$(HybridRowVersion)]" PrivateAssets="All" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="Azure.Core" Version="1.0.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="10.0.2" />
+    <PackageReference Include="StyleCop.Analyzers" Version="1.1.118" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="16.4.16" PrivateAssets="All" />
+
+    <!--Direct Dependencies-->
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.5.0" />
+    <PackageReference Include="System.ServiceModel.Primitives" Version="4.5.0" />
+    
+    <!--HybridRow & Azure.Core Dependencies-->
+    <PackageReference Include="System.Memory" Version="4.5.3" />
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="4.6.0" />
+    <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.2" />
+    <PackageReference Include="System.ValueTuple" Version="4.5.0" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
+    <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="ref/netstandard2.0" />
+    <None Include="$(OutputPath)\Cosmos.CRTCompat.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\win-x64\native" />
+    <None Include="$(OutputPath)\Microsoft.Azure.Cosmos.ServiceInterop.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\win-x64\native" />
+    <None Include="$(NugetPackageRoot)\Microsoft.Azure.Cosmos.Serialization.HybridRow\$(HybridRowVersion)\lib\netstandard2.0\Microsoft.Azure.Cosmos.Core.dll" Pack="true" IsAssembly="true" PackagePath="lib\netstandard2.0" />
+    <None Include="$(NugetPackageRoot)\Microsoft.Azure.Cosmos.Serialization.HybridRow\$(HybridRowVersion)\lib\netstandard2.0\Microsoft.Azure.Cosmos.Serialization.HybridRow.dll" Pack="true" IsAssembly="true" PackagePath="lib\netstandard2.0" />
+    <None Include="$(NugetPackageRoot)\Microsoft.Azure.Cosmos.Direct\$(DirectVersion)\lib\netstandard2.0\Microsoft.Azure.Cosmos.Direct.dll" Pack="true" IsAssembly="true" PackagePath="lib\netstandard2.0" />
+    <None Include="$(MSBuildThisFileDirectory)\Azure.Cosmos.targets" Pack="true" PackagePath="build\netstandard2.0">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Fluent\" />
+    <Folder Include="Policies\" />
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(ProjectRef)' != 'True' ">
+    <SignAssembly>true</SignAssembly>
+    <DelaySign>true</DelaySign>
+    <AssemblyOriginatorKeyFile>..\..\35MSSharedLib1024.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  
+  <PropertyGroup>
+    <DefineConstants Condition=" '$(IsNightly)' == 'true' or '$(IsPreview)' == 'true' ">$(DefineConstants);PREVIEW</DefineConstants>
+    <DefineConstants Condition=" '$(SignAssembly)' == 'true' ">$(DefineConstants);SignAssembly</DefineConstants>
+    <DefineConstants Condition=" '$(DelaySign)' == 'true' ">DelaySignKeys</DefineConstants>
+    <DefineConstants>$(DefineConstants);DOCDBCLIENT;COSMOSCLIENT;NETSTANDARD20;AZURECORE</DefineConstants>
+  </PropertyGroup>
+  
+</Project>

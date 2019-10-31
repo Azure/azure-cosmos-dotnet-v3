@@ -7,6 +7,9 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+#if AZURECORE
+    using global::Azure.Cosmos;
+#endif
 
     internal interface IDocumentClientInternal : IDocumentClient
     {

@@ -8,21 +8,24 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+#if AZURECORE
+    using global::Azure.Cosmos;
+#endif
     using Microsoft.Azure.Documents;
 
     //TODO: write unit test for this handler
     internal class TransportHandler : RequestHandler
     {
-        private readonly CosmosClient client;
+        private readonly CosmosDriverContext clientPipelineBuilderContext;
 
-        public TransportHandler(CosmosClient client)
+        public TransportHandler(CosmosDriverContext clientPipelineBuilderContext)
         {
-            if (client == null)
+            if (clientPipelineBuilderContext == null)
             {
-                throw new ArgumentNullException(nameof(client));
+                throw new ArgumentNullException(nameof(clientPipelineBuilderContext));
             }
 
-            this.client = client;
+            this.clientPipelineBuilderContext = clientPipelineBuilderContext;
         }
 
         public override async Task<ResponseMessage> SendAsync(
@@ -73,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             DocumentServiceRequest serviceRequest = request.ToDocumentServiceRequest();
 
             //TODO: extrace auth into a separate handler
-            string authorization = ((IAuthorizationTokenProvider)this.client.DocumentClient).GetUserAuthorizationToken(
+            string authorization = this.clientPipelineBuilderContext.AuthorizationTokenProvider.GetUserAuthorizationToken(
                 serviceRequest.ResourceAddress,
                 PathsHelper.GetResourcePath(request.ResourceType),
                 request.Method.ToString(),
@@ -83,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
             serviceRequest.Headers[HttpConstants.HttpHeaders.Authorization] = authorization;
 
-            IStoreModel storeProxy = this.client.DocumentClient.GetStoreProxy(serviceRequest);
+            IStoreModel storeProxy = this.clientPipelineBuilderContext.GetStoreModel(serviceRequest);
             if (request.OperationType == OperationType.Upsert)
             {
                 return this.ProcessUpsertAsync(storeProxy, serviceRequest, cancellationToken);
@@ -116,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
         private async Task<DocumentServiceResponse> ProcessUpsertAsync(IStoreModel storeProxy, DocumentServiceRequest serviceRequest, CancellationToken cancellationToken)
         {
             DocumentServiceResponse response = await storeProxy.ProcessMessageAsync(serviceRequest, cancellationToken);
-            this.client.DocumentClient.CaptureSessionToken(serviceRequest, response);
+            this.clientPipelineBuilderContext.CaptureSessionToken(serviceRequest, response);
             return response;
         }
     }

@@ -3,28 +3,9 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos
 {
-    using System.Runtime.Serialization;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
-
-    /// <summary>
-    /// Defines the target data type of an index path specification in the Azure Cosmos DB service.
-    /// </summary>
-    public enum CompositePathSortOrder
-    {
-        /// <summary>
-        /// Ascending sort order for composite paths.
-        /// </summary>
-        [EnumMember(Value = "ascending")]
-        Ascending,
-
-        /// <summary>
-        /// Descending sort order for composite paths.
-        /// </summary>
-        [EnumMember(Value = "descending")]
-        Descending
-    }
 
     /// <summary>
     /// DOM for a composite path.

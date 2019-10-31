@@ -55,7 +55,6 @@ namespace Microsoft.Azure.Cosmos
         /// PartitionKeyRangeId cannot be specified along with PartitionKey.
         /// </remarks>
         /// <see cref="Microsoft.Azure.Documents.PartitionKeyRange" />
-        /// <see cref="DocumentClient.ReadPartitionKeyRangeFeedAsync(string, FeedOptions)"/>
         public string PartitionKeyRangeId { get; set; }
 
         /// <summary>

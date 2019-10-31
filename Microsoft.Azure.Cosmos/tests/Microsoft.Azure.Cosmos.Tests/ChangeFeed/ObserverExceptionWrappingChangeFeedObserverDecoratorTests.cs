@@ -10,8 +10,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
-    using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -22,14 +20,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
         private readonly Mock<ChangeFeedObserver<MyDocument>> observer;
         private readonly ChangeFeedObserverContext changeFeedObserverContext;
-        private readonly FeedProcessing.ObserverExceptionWrappingChangeFeedObserverDecorator<MyDocument> observerWrapper;
+        private readonly ObserverExceptionWrappingChangeFeedObserverDecorator<MyDocument> observerWrapper;
         private readonly IReadOnlyList<MyDocument> documents;
 
         public ObserverExceptionWrappingChangeFeedObserverDecoratorTests()
         {
             this.observer = new Mock<ChangeFeedObserver<MyDocument>>();
             this.changeFeedObserverContext = Mock.Of<ChangeFeedObserverContext>();
-            this.observerWrapper = new FeedProcessing.ObserverExceptionWrappingChangeFeedObserverDecorator<MyDocument>(this.observer.Object);
+            this.observerWrapper = new ObserverExceptionWrappingChangeFeedObserverDecorator<MyDocument>(this.observer.Object);
 
             var document = new MyDocument();
             documents = new List<MyDocument> { document };

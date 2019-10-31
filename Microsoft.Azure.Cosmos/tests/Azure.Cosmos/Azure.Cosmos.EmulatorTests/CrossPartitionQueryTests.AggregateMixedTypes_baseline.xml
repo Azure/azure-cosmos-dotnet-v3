@@ -1,0 +1,536 @@
+﻿<Results>
+  <Result>
+    <Query><![CDATA[SELECT VALUE AVG (c.field)
+FROM c
+WHERE IS_ARRAY(c.field)]]></Query>
+    <Aggregation />
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE AVG (c.field)
+FROM c
+WHERE IS_BOOL(c.field)]]></Query>
+    <Aggregation />
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE AVG (c.field)
+FROM c
+WHERE IS_NULL(c.field)]]></Query>
+    <Aggregation />
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE AVG (c.field)
+FROM c
+WHERE IS_NUMBER(c.field)]]></Query>
+    <Aggregation><![CDATA[54638.45]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE AVG (c.field)
+FROM c
+WHERE IS_OBJECT(c.field)]]></Query>
+    <Aggregation />
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE AVG (c.field)
+FROM c
+WHERE IS_STRING(c.field)]]></Query>
+    <Aggregation />
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE AVG (c.field)
+FROM c
+WHERE IS_DEFINED(c.field)]]></Query>
+    <Aggregation />
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE AVG (c.field)
+FROM c
+WHERE IS_PRIMITIVE(c.field)]]></Query>
+    <Aggregation />
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE AVG (c.field)
+FROM c
+WHERE c.key = "doubleOnly"]]></Query>
+    <Aggregation><![CDATA[54638.45]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE AVG (c.field)
+FROM c
+WHERE c.key = "stringOnly"]]></Query>
+    <Aggregation />
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE AVG (c.field)
+FROM c
+WHERE c.key = "boolOnly"]]></Query>
+    <Aggregation />
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE AVG (c.field)
+FROM c
+WHERE c.key = "nullOnly"]]></Query>
+    <Aggregation />
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE AVG (c.field)
+FROM c
+WHERE c.key = "objectOnlyKey"]]></Query>
+    <Aggregation />
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE AVG (c.field)
+FROM c
+WHERE c.key = "arrayOnlyKey"]]></Query>
+    <Aggregation />
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE AVG (c.field)
+FROM c
+WHERE c.key = "oneArrayKey"]]></Query>
+    <Aggregation />
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE AVG (c.field)
+FROM c
+WHERE c.key = "oneObjectKey"]]></Query>
+    <Aggregation />
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE AVG (c.field)
+FROM c
+WHERE c.key = "undefinedKey"]]></Query>
+    <Aggregation />
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MIN (c.field)
+FROM c
+WHERE IS_ARRAY(c.field)]]></Query>
+    <Aggregation />
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MIN (c.field)
+FROM c
+WHERE IS_BOOL(c.field)]]></Query>
+    <Aggregation><![CDATA[false]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MIN (c.field)
+FROM c
+WHERE IS_NULL(c.field)]]></Query>
+    <Aggregation><![CDATA[null]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MIN (c.field)
+FROM c
+WHERE IS_NUMBER(c.field)]]></Query>
+    <Aggregation><![CDATA[8204]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MIN (c.field)
+FROM c
+WHERE IS_OBJECT(c.field)]]></Query>
+    <Aggregation />
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MIN (c.field)
+FROM c
+WHERE IS_STRING(c.field)]]></Query>
+    <Aggregation><![CDATA["0.125416678900559"]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MIN (c.field)
+FROM c
+WHERE IS_DEFINED(c.field)]]></Query>
+    <Aggregation />
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MIN (c.field)
+FROM c
+WHERE IS_PRIMITIVE(c.field)]]></Query>
+    <Aggregation><![CDATA[null]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MIN (c.field)
+FROM c
+WHERE c.key = "doubleOnly"]]></Query>
+    <Aggregation><![CDATA[8204]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MIN (c.field)
+FROM c
+WHERE c.key = "stringOnly"]]></Query>
+    <Aggregation><![CDATA["0.125416678900559"]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MIN (c.field)
+FROM c
+WHERE c.key = "boolOnly"]]></Query>
+    <Aggregation><![CDATA[false]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MIN (c.field)
+FROM c
+WHERE c.key = "nullOnly"]]></Query>
+    <Aggregation><![CDATA[null]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MIN (c.field)
+FROM c
+WHERE c.key = "objectOnlyKey"]]></Query>
+    <Aggregation />
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MIN (c.field)
+FROM c
+WHERE c.key = "arrayOnlyKey"]]></Query>
+    <Aggregation />
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MIN (c.field)
+FROM c
+WHERE c.key = "oneArrayKey"]]></Query>
+    <Aggregation />
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MIN (c.field)
+FROM c
+WHERE c.key = "oneObjectKey"]]></Query>
+    <Aggregation />
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MIN (c.field)
+FROM c
+WHERE c.key = "undefinedKey"]]></Query>
+    <Aggregation />
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAX (c.field)
+FROM c
+WHERE IS_ARRAY(c.field)]]></Query>
+    <Aggregation />
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAX (c.field)
+FROM c
+WHERE IS_BOOL(c.field)]]></Query>
+    <Aggregation><![CDATA[true]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAX (c.field)
+FROM c
+WHERE IS_NULL(c.field)]]></Query>
+    <Aggregation><![CDATA[null]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAX (c.field)
+FROM c
+WHERE IS_NUMBER(c.field)]]></Query>
+    <Aggregation><![CDATA[94726]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAX (c.field)
+FROM c
+WHERE IS_OBJECT(c.field)]]></Query>
+    <Aggregation />
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAX (c.field)
+FROM c
+WHERE IS_STRING(c.field)]]></Query>
+    <Aggregation><![CDATA["0.917828386145564"]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAX (c.field)
+FROM c
+WHERE IS_DEFINED(c.field)]]></Query>
+    <Aggregation />
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAX (c.field)
+FROM c
+WHERE IS_PRIMITIVE(c.field)]]></Query>
+    <Aggregation><![CDATA["0.917828386145564"]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAX (c.field)
+FROM c
+WHERE c.key = "doubleOnly"]]></Query>
+    <Aggregation><![CDATA[94726]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAX (c.field)
+FROM c
+WHERE c.key = "stringOnly"]]></Query>
+    <Aggregation><![CDATA["0.917828386145564"]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAX (c.field)
+FROM c
+WHERE c.key = "boolOnly"]]></Query>
+    <Aggregation><![CDATA[true]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAX (c.field)
+FROM c
+WHERE c.key = "nullOnly"]]></Query>
+    <Aggregation><![CDATA[null]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAX (c.field)
+FROM c
+WHERE c.key = "objectOnlyKey"]]></Query>
+    <Aggregation />
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAX (c.field)
+FROM c
+WHERE c.key = "arrayOnlyKey"]]></Query>
+    <Aggregation />
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAX (c.field)
+FROM c
+WHERE c.key = "oneArrayKey"]]></Query>
+    <Aggregation />
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAX (c.field)
+FROM c
+WHERE c.key = "oneObjectKey"]]></Query>
+    <Aggregation />
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAX (c.field)
+FROM c
+WHERE c.key = "undefinedKey"]]></Query>
+    <Aggregation />
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE SUM (c.field)
+FROM c
+WHERE IS_ARRAY(c.field)]]></Query>
+    <Aggregation />
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE SUM (c.field)
+FROM c
+WHERE IS_BOOL(c.field)]]></Query>
+    <Aggregation />
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE SUM (c.field)
+FROM c
+WHERE IS_NULL(c.field)]]></Query>
+    <Aggregation />
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE SUM (c.field)
+FROM c
+WHERE IS_NUMBER(c.field)]]></Query>
+    <Aggregation><![CDATA[2185538]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE SUM (c.field)
+FROM c
+WHERE IS_OBJECT(c.field)]]></Query>
+    <Aggregation />
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE SUM (c.field)
+FROM c
+WHERE IS_STRING(c.field)]]></Query>
+    <Aggregation />
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE SUM (c.field)
+FROM c
+WHERE IS_DEFINED(c.field)]]></Query>
+    <Aggregation />
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE SUM (c.field)
+FROM c
+WHERE IS_PRIMITIVE(c.field)]]></Query>
+    <Aggregation />
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE SUM (c.field)
+FROM c
+WHERE c.key = "doubleOnly"]]></Query>
+    <Aggregation><![CDATA[1092769]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE SUM (c.field)
+FROM c
+WHERE c.key = "stringOnly"]]></Query>
+    <Aggregation />
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE SUM (c.field)
+FROM c
+WHERE c.key = "boolOnly"]]></Query>
+    <Aggregation />
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE SUM (c.field)
+FROM c
+WHERE c.key = "nullOnly"]]></Query>
+    <Aggregation />
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE SUM (c.field)
+FROM c
+WHERE c.key = "objectOnlyKey"]]></Query>
+    <Aggregation />
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE SUM (c.field)
+FROM c
+WHERE c.key = "arrayOnlyKey"]]></Query>
+    <Aggregation />
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE SUM (c.field)
+FROM c
+WHERE c.key = "oneArrayKey"]]></Query>
+    <Aggregation />
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE SUM (c.field)
+FROM c
+WHERE c.key = "oneObjectKey"]]></Query>
+    <Aggregation />
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE SUM (c.field)
+FROM c
+WHERE c.key = "undefinedKey"]]></Query>
+    <Aggregation><![CDATA[0]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE COUNT (c.field)
+FROM c
+WHERE IS_ARRAY(c.field)]]></Query>
+    <Aggregation><![CDATA[41]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE COUNT (c.field)
+FROM c
+WHERE IS_BOOL(c.field)]]></Query>
+    <Aggregation><![CDATA[40]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE COUNT (c.field)
+FROM c
+WHERE IS_NULL(c.field)]]></Query>
+    <Aggregation><![CDATA[40]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE COUNT (c.field)
+FROM c
+WHERE IS_NUMBER(c.field)]]></Query>
+    <Aggregation><![CDATA[40]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE COUNT (c.field)
+FROM c
+WHERE IS_OBJECT(c.field)]]></Query>
+    <Aggregation><![CDATA[41]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE COUNT (c.field)
+FROM c
+WHERE IS_STRING(c.field)]]></Query>
+    <Aggregation><![CDATA[40]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE COUNT (c.field)
+FROM c
+WHERE IS_DEFINED(c.field)]]></Query>
+    <Aggregation><![CDATA[242]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE COUNT (c.field)
+FROM c
+WHERE IS_PRIMITIVE(c.field)]]></Query>
+    <Aggregation><![CDATA[160]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE COUNT (c.field)
+FROM c
+WHERE c.key = "doubleOnly"]]></Query>
+    <Aggregation><![CDATA[20]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE COUNT (c.field)
+FROM c
+WHERE c.key = "stringOnly"]]></Query>
+    <Aggregation><![CDATA[20]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE COUNT (c.field)
+FROM c
+WHERE c.key = "boolOnly"]]></Query>
+    <Aggregation><![CDATA[20]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE COUNT (c.field)
+FROM c
+WHERE c.key = "nullOnly"]]></Query>
+    <Aggregation><![CDATA[20]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE COUNT (c.field)
+FROM c
+WHERE c.key = "objectOnlyKey"]]></Query>
+    <Aggregation><![CDATA[20]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE COUNT (c.field)
+FROM c
+WHERE c.key = "arrayOnlyKey"]]></Query>
+    <Aggregation><![CDATA[20]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE COUNT (c.field)
+FROM c
+WHERE c.key = "oneArrayKey"]]></Query>
+    <Aggregation><![CDATA[1]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE COUNT (c.field)
+FROM c
+WHERE c.key = "oneObjectKey"]]></Query>
+    <Aggregation><![CDATA[1]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE COUNT (c.field)
+FROM c
+WHERE c.key = "undefinedKey"]]></Query>
+    <Aggregation><![CDATA[0]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MIN (c.field)
+FROM c
+WHERE c.key IN ("oneObjectKey", "doubleOnly")]]></Query>
+    <Aggregation />
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MIN (c.field)
+FROM c
+WHERE c.key IN ("oneArrayKey", "doubleOnly")]]></Query>
+    <Aggregation />
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAX (c.field)
+FROM c
+WHERE c.key IN ("oneObjectKey", "doubleOnly")]]></Query>
+    <Aggregation />
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAX (c.field)
+FROM c
+WHERE c.key IN ("oneArrayKey", "doubleOnly")]]></Query>
+    <Aggregation />
+  </Result>
+</Results>

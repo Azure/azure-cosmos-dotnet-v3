@@ -10,7 +10,9 @@ namespace Microsoft.Azure.Cosmos.Common
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
-
+#if AZURECORE
+    using global::Azure.Cosmos;
+#endif
 #if !NETSTANDARD16
     using System.Diagnostics;
     using Microsoft.Azure.Documents;

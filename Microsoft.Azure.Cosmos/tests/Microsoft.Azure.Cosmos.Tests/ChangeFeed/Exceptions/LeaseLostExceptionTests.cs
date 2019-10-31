@@ -7,8 +7,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using System;
     using System.IO;
     using System.Runtime.Serialization.Formatters.Binary;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
-    using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 

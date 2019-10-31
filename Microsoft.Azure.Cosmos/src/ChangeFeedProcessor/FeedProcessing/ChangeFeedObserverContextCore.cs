@@ -2,11 +2,10 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
+namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
 
     /// <summary>
     /// The context passed to <see cref="ChangeFeedObserver{T}"/> events.
@@ -37,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
         /// Once first N document processing was finished the client can call checkpoint on the last completed batches in the row.
         /// In case of automatic checkpointing this is method throws.
         /// </summary>
-        /// <exception cref="Exceptions.LeaseLostException">Thrown if other host acquired the lease or the lease was deleted</exception>
+        /// <exception cref="LeaseLostException">Thrown if other host acquired the lease or the lease was deleted</exception>
         public override Task CheckpointAsync()
         {
             return this.checkpointer.CheckpointPartitionAsync(this.DocumentFeedResponse.Headers.ContinuationToken);

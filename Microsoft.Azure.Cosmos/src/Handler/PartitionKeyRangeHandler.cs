@@ -27,15 +27,18 @@ namespace Microsoft.Azure.Cosmos.Handlers
     /// </summary>
     internal class PartitionKeyRangeHandler : RequestHandler
     {
-        private readonly CosmosClient client;
+        private readonly CosmosDriverContext clientPipelineBuilderContext;
         private PartitionRoutingHelper partitionRoutingHelper;
-        public PartitionKeyRangeHandler(CosmosClient client, PartitionRoutingHelper partitionRoutingHelper = null)
+        public PartitionKeyRangeHandler(
+            CosmosDriverContext clientPipelineBuilderContext,
+            PartitionRoutingHelper partitionRoutingHelper = null)
         {
-            if (client == null)
+            if (clientPipelineBuilderContext == null)
             {
-                throw new ArgumentNullException(nameof(client));
+                throw new ArgumentNullException(nameof(clientPipelineBuilderContext));
             }
-            this.client = client;
+
+            this.clientPipelineBuilderContext = clientPipelineBuilderContext;
             this.partitionRoutingHelper = partitionRoutingHelper ?? new PartitionRoutingHelper();
         }
 
@@ -80,8 +83,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
                 DocumentServiceRequest serviceRequest = request.ToDocumentServiceRequest();
 
-                PartitionKeyRangeCache routingMapProvider = await this.client.DocumentClient.GetPartitionKeyRangeCacheAsync();
-                CollectionCache collectionCache = await this.client.DocumentClient.GetCollectionCacheAsync();
+                PartitionKeyRangeCache routingMapProvider = await this.clientPipelineBuilderContext.GetPartitionKeyRangeCacheAsync();
+                CollectionCache collectionCache = await this.clientPipelineBuilderContext.GetCollectionCacheAsync();
                 ContainerProperties collectionFromCache =
                     await collectionCache.ResolveCollectionAsync(serviceRequest, CancellationToken.None);
 
