@@ -128,20 +128,13 @@ namespace Microsoft.Azure.Cosmos
                                 || itemRequestOptions.PostTriggers != null
                                 || itemRequestOptions.SessionToken != null)
                 {
-                    throw new InvalidOperationException(ClientResources.UnsupportedBatchRequestOptions);
+                    throw new InvalidOperationException(ClientResources.UnsupportedBulkRequestOptions);
                 }
 
                 Debug.Assert(BatchAsyncContainerExecutor.ValidateOperationEPK(operation, itemRequestOptions));
             }
 
             await operation.MaterializeResourceAsync(this.cosmosClientContext.CosmosSerializer, cancellationToken);
-
-            int itemByteSize = operation.GetApproximateSerializedLength();
-
-            if (itemByteSize > this.maxServerRequestBodyLength)
-            {
-                throw new ArgumentException(RMResources.RequestTooLarge);
-            }
         }
 
         private static IDocumentClientRetryPolicy GetRetryPolicy(RetryOptions retryOptions)
