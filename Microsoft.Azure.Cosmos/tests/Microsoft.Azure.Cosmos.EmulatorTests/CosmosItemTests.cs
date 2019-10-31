@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Routing;
@@ -1277,7 +1278,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 partitionKey: new Cosmos.PartitionKey(originalStatus),
                 item: testItem);
                 Assert.Fail("Replace changing partition key is not supported.");
-            }catch(CosmosException ce)
+            }
+            catch (CosmosException ce)
             {
                 Assert.AreEqual((HttpStatusCode)400, ce.StatusCode);
             }
@@ -1503,49 +1505,43 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
 
         [TestMethod]
-        [DataRow(false)]
-        [DataRow(true)]
         [TestCategory("Quarantine") /* Gated runs emulator as rate limiting disabled */]
-        public async Task VerifyToManyRequestTest(bool isQuery)
+        public void VerifyToManyRequestTest()
         {
-            CosmosClient client = TestCommon.CreateCosmosClient();
-            Cosmos.Database db = await client.CreateDatabaseIfNotExistsAsync("LoadTest");
-            Container container = await db.CreateContainerIfNotExistsAsync("LoadContainer", "/status");
+            CosmosClient client = TestCommon.CreateCosmosClient(builder => builder
+               .WithThrottlingRetryOptions(TimeSpan.FromMinutes(5), 400));
 
+            Container container = client.GetContainer("ThrottleTest", "Throttle");
+
+
+            Task[] createItems = new Task[4000];
+            for (int i = 0; i < createItems.Length; i++)
+            {
+                createItems[i] = this.CreateItem(container);
+            }
+
+            Task.WaitAll(createItems);
+
+            Console.WriteLine("done");
+
+        }
+
+        private async Task CreateItem(Container container)
+        {
+            ToDoActivity temp = ToDoActivity.CreateRandomToDoActivity();
             try
             {
-                Task[] createItems = new Task[300];
-                for (int i = 0; i < createItems.Length; i++)
-                {
-                    ToDoActivity temp = ToDoActivity.CreateRandomToDoActivity();
-                    createItems[i] = container.CreateItemStreamAsync(
-                        partitionKey: new Cosmos.PartitionKey(temp.status),
-                        streamPayload: TestCommon.Serializer.ToStream<ToDoActivity>(temp));
-                }
-
-                Task.WaitAll(createItems);
-
-                List<Task> createQuery = new List<Task>(500);
-                List<ResponseMessage> failedToManyRequests = new List<ResponseMessage>();
-                for (int i = 0; i < 500 && failedToManyRequests.Count == 0; i++)
-                {
-                    createQuery.Add(VerifyQueryToManyExceptionAsync(
-                        container,
-                        isQuery,
-                        failedToManyRequests));
-                }
-
-                Task[] tasks = createQuery.ToArray();
-                Task.WaitAll(tasks);
-
-                Assert.IsTrue(failedToManyRequests.Count > 0, "Rate limiting appears to be disabled");
-                ResponseMessage failedResponseMessage = failedToManyRequests.First();
-                Assert.AreEqual(failedResponseMessage.StatusCode, (HttpStatusCode)429);
-                Assert.IsNull(failedResponseMessage.ErrorMessage);
+                var response = await container.UpsertItemAsync<ToDoActivity>(
+                    item: temp,
+                    partitionKey: new Cosmos.PartitionKey(temp.status));
             }
-            finally
+            catch (Exception e)
             {
-                await db.DeleteAsync();
+                CosmosException cosmosException = e as CosmosException;
+                if (cosmosException != null && (int)cosmosException.StatusCode == 429)
+                {
+                    Assert.Fail("Should not get a 429" + e.ToString());
+                }
             }
         }
 
