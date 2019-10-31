@@ -42,7 +42,7 @@ namespace Azure.Cosmos.EmulatorTests
             await base.TestCleanup();
         }
 
-        [Timeout(5000)]
+        [Timeout(30000)]
         [TestMethod]
         [ExpectedException(typeof(OperationCanceledException))]
         public async Task IAsyncEnumerableCancels()
@@ -67,7 +67,7 @@ namespace Azure.Cosmos.EmulatorTests
             Assert.Fail("Should had thrown");
         }
 
-        [Timeout(5000)]
+        [Timeout(30000)]
         [TestMethod]
         [ExpectedException(typeof(OperationCanceledException))]
         public async Task AsyncPageableCancels()
@@ -91,7 +91,7 @@ namespace Azure.Cosmos.EmulatorTests
             Assert.Fail("Should had thrown");
         }
 
-        [Timeout(5000)]
+        [Timeout(30000)]
         [TestMethod]
         [ExpectedException(typeof(OperationCanceledException))]
         public async Task AsyncPageableAsPagesCancels()

@@ -43,7 +43,6 @@ jobs:
   - task: DotNetCoreCLI@2
     displayName: Azure.Cosmos.EmulatorTests
     condition: succeeded()
-    continueOnError: true
     inputs:
       command: test
       projects: 'Microsoft.Azure.Cosmos/tests/Azure.Cosmos/Azure.Cosmos.EmulatorTests/*.csproj'
