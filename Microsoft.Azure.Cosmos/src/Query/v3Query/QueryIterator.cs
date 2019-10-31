@@ -62,7 +62,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 MaxItemCount = queryRequestOptions.MaxItemCount,
                 PartitionKey = queryRequestOptions.PartitionKey,
                 Properties = queryRequestOptions.Properties,
-                PartitionedQueryExecutionInfo = partitionedQueryExecutionInfo
+                PartitionedQueryExecutionInfo = partitionedQueryExecutionInfo,
+                ExecutionEnvironment = queryRequestOptions.ExecutionEnvironment.GetValueOrDefault(Core.ExecutionContext.ExecutionEnvironment.Client),
             };
 
             return new QueryIterator(
@@ -82,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 QueryResponseCore responseCore = await this.cosmosQueryExecutionContext.ExecuteNextAsync(cancellationToken);
                 CosmosQueryContext cosmosQueryContext = this.cosmosQueryExecutionContext.CosmosQueryContext;
-                QueryAggregateDiagnostics diagnostics = new QueryAggregateDiagnostics(responseCore.diagnostics);
+                QueryAggregateDiagnostics diagnostics = new QueryAggregateDiagnostics(responseCore.Diagnostics);
                 QueryResponse queryResponse;
                 if (responseCore.IsSuccess)
                 {

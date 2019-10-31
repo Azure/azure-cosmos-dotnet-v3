@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using global::Azure.Cosmos;
 #endif
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.ParallelQuery;
 
     /// <summary>
@@ -336,6 +337,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 maxBufferedItemCount: inputParameters.MaxBufferedItemCount);
 
             return await PipelinedDocumentQueryExecutionContext.CreateAsync(
+                inputParameters.ExecutionEnvironment,
                 cosmosQueryContext,
                 initParams,
                 inputParameters.InitialUserContinuationToken,
@@ -444,6 +446,7 @@ namespace Microsoft.Azure.Cosmos.Query
             internal PartitionKey? PartitionKey { get; set; }
             internal IDictionary<string, object> Properties { get; set; }
             internal PartitionedQueryExecutionInfo PartitionedQueryExecutionInfo { get; set; }
+            internal ExecutionEnvironment ExecutionEnvironment { get; set; }
         }
     }
 }

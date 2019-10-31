@@ -5,18 +5,16 @@
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
-    using System.Collections.Generic;
     using System.Globalization;
-    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
-    using Microsoft.Azure.Cosmos.Query.ExecutionComponent;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Documents.Collections;
-    using PartitionKeyRange = Documents.PartitionKeyRange;
 
     /// <summary>
     /// You can imagine the pipeline to be a directed acyclic graph where documents flow from multiple sources (the partitions) to a single sink (the client who calls on ExecuteNextAsync()).
@@ -132,12 +130,14 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Creates a CosmosPipelinedItemQueryExecutionContext.
         /// </summary>
+        /// <param name="executionEnvironment">The environment to execute on.</param>
         /// <param name="queryContext">The parameters for constructing the base class.</param>
         /// <param name="initParams">The initial parameters</param>
         /// <param name="requestContinuationToken">The request continuation.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task to await on, which in turn returns a CosmosPipelinedItemQueryExecutionContext.</returns>
         public static async Task<CosmosQueryExecutionContext> CreateAsync(
+            ExecutionEnvironment executionEnvironment,
             CosmosQueryContext queryContext,
             CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams,
             string requestContinuationToken,
@@ -209,6 +209,7 @@ namespace Microsoft.Azure.Cosmos.Query
             };
 
             return (CosmosQueryExecutionContext)await PipelinedDocumentQueryExecutionContext.CreateHelperAsync(
+                executionEnvironment,
                 queryContext.QueryClient,
                 initParams.PartitionedQueryExecutionInfo.QueryInfo,
                 initialPageSize,
@@ -218,6 +219,7 @@ namespace Microsoft.Azure.Cosmos.Query
         }
 
         private static async Task<PipelinedDocumentQueryExecutionContext> CreateHelperAsync(
+            ExecutionEnvironment executionEnvironment,
             CosmosQueryClient queryClient,
             QueryInfo queryInfo,
             int initialPageSize,
@@ -241,6 +243,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 createComponentFunc = async (continuationToken) =>
                 {
                     return await AggregateDocumentQueryExecutionComponent.CreateAsync(
+                        executionEnvironment,
+                        queryClient,
                         queryInfo.Aggregates,
                         queryInfo.GroupByAliasToAggregateType,
                         queryInfo.HasSelectValue,
@@ -268,6 +272,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 createComponentFunc = async (continuationToken) =>
                 {
                     return await GroupByDocumentQueryExecutionComponent.CreateAsync(
+                        queryClient,
                         continuationToken,
                         createSourceCallback,
                         queryInfo.GroupByAliasToAggregateType,
@@ -383,7 +388,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     disallowContinuationTokenMessage: queryResponse.DisallowContinuationTokenMessage,
                     activityId: queryResponse.ActivityId,
                     requestCharge: queryResponse.RequestCharge,
-                    diagnostics: queryResponse.diagnostics,
+                    diagnostics: queryResponse.Diagnostics,
                     responseLengthBytes: queryResponse.ResponseLengthBytes);
             }
             catch (Exception)

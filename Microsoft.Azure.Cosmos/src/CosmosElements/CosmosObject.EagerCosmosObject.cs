@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     using System;
     using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Json;
-    using Newtonsoft.Json;
 
 #if INTERNAL
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
@@ -46,11 +45,6 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             public override bool TryGetValue(string key, out CosmosElement value)
             {
                 return this.dictionary.TryGetValue(key, out value);
-            }
-
-            public override string ToString()
-            {
-                return JsonConvert.SerializeObject(this.dictionary);
             }
 
             public override void WriteTo(IJsonWriter jsonWriter)

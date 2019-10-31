@@ -1,7 +1,7 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
+namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
 {
     using System;
     using System.Collections.Generic;
@@ -44,6 +44,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         private static readonly Dictionary<string, QueryMetrics> EmptyQueryMetrics = new Dictionary<string, QueryMetrics>();
         private static readonly AggregateOperator[] EmptyAggregateOperators = new AggregateOperator[] { };
 
+        private readonly CosmosQueryClient cosmosQueryClient;
         private readonly IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType;
         private readonly Dictionary<UInt192, SingleGroupAggregator> groupingTable;
         private readonly bool hasSelectValue;
@@ -52,16 +53,23 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         private bool isDone;
 
         private GroupByDocumentQueryExecutionComponent(
+            CosmosQueryClient cosmosQueryClient,
             IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
             bool hasSelectValue,
             IDocumentQueryExecutionComponent source)
             : base(source)
         {
+            if (cosmosQueryClient == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosQueryClient));
+            }
+
             if (groupByAliasToAggregateType == null)
             {
                 throw new ArgumentNullException(nameof(groupByAliasToAggregateType));
             }
 
+            this.cosmosQueryClient = cosmosQueryClient;
             this.groupingTable = new Dictionary<UInt192, SingleGroupAggregator>();
             this.groupByAliasToAggregateType = groupByAliasToAggregateType;
             this.hasSelectValue = hasSelectValue;
@@ -70,6 +78,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         public override bool IsDone => this.isDone;
 
         public static async Task<IDocumentQueryExecutionComponent> CreateAsync(
+            CosmosQueryClient cosmosQueryClient,
             string requestContinuation,
             Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback,
             IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
@@ -77,6 +86,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         {
             // We do not support continuation tokens for GROUP BY.
             return new GroupByDocumentQueryExecutionComponent(
+                cosmosQueryClient,
                 groupByAliasToAggregateType,
                 hasSelectValue,
                 await createSourceCallback(requestContinuation));
@@ -109,9 +119,11 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                     if (!this.groupingTable.TryGetValue(groupByKeysHash, out SingleGroupAggregator singleGroupAggregator))
                     {
                         singleGroupAggregator = SingleGroupAggregator.Create(
+                            this.cosmosQueryClient,
                             EmptyAggregateOperators,
                             this.groupByAliasToAggregateType,
-                            this.hasSelectValue);
+                            this.hasSelectValue,
+                            continuationToken: null);
                         this.groupingTable[groupByKeysHash] = singleGroupAggregator;
                     }
 
@@ -126,7 +138,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                     disallowContinuationTokenMessage: GroupByDocumentQueryExecutionComponent.ContinuationTokenNotSupportedWithGroupBy,
                     activityId: sourceResponse.ActivityId,
                     requestCharge: sourceResponse.RequestCharge,
-                    diagnostics: sourceResponse.diagnostics,
+                    diagnostics: sourceResponse.Diagnostics,
                     responseLengthBytes: sourceResponse.ResponseLengthBytes);
 
                 this.isDone = false;
