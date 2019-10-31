@@ -291,7 +291,7 @@
   <data name="ValueAndAnonymousTypesAndGeometryOnly" xml:space="preserve">
     <value>Instantiation of only value types, anonymous types and spatial types are supported.</value>
   </data>
-  <data name="UnsupportedBatchRequestOptions" xml:space="preserve">
-    <value>Consistency, Session, and Triggers are not allowed when using the Batch streaming feature.</value>
+  <data name="UnsupportedBulkRequestOptions" xml:space="preserve">
+    <value>Consistency, Session, and Triggers are not allowed when AllowBulkExecution is set to true.</value>
   </data>
 </root>

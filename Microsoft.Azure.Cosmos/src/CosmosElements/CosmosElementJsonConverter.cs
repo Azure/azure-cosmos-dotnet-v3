@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             JToken token = JToken.Load(reader);
             string json = JsonConvert.SerializeObject(token);
             byte[] buffer = Encoding.UTF8.GetBytes(json);
-            return CosmosElement.Create(buffer);
+            return CosmosElement.CreateFromBuffer(buffer);
         }
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)

@@ -293,7 +293,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (this.body.IsEmpty && this.ResourceStream != null)
             {
-                this.body = await BatchExecUtils.StreamToMemoryAsync(this.ResourceStream, Constants.MaxResourceSizeInBytes, cancellationToken);
+                this.body = await BatchExecUtils.StreamToMemoryAsync(this.ResourceStream, cancellationToken);
             }
         }
 

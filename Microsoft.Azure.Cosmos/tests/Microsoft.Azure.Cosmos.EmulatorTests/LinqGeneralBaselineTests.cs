@@ -32,9 +32,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         {
             cosmosClient = TestCommon.CreateCosmosClient(true);
             DocumentClientSwitchLinkExtension.Reset("LinqTests");
-            await CleanUp();
 
-            testDb = await cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            string dbName = $"{nameof(LinqGeneralBaselineTests)}-{Guid.NewGuid().ToString("N")}";
+            testDb = await cosmosClient.CreateDatabaseAsync(dbName);
+
             getQuery = LinqTestsCommon.GenerateFamilyCosmosData(testDb, out testContainer);
         }
 
@@ -89,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestMethod]
         public void TestSelectMany()
         {
-            var inputs = new List<LinqTestInput>();
+            List<LinqTestInput> inputs = new List<LinqTestInput>();
 
             inputs.Add(new LinqTestInput("SelectMany(SelectMany(Where -> Select))",
                 b => getQuery(b)
@@ -156,9 +157,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             inputs.Add(new LinqTestInput("SelectMany(Select -> Where)", b => getQuery(b).SelectMany(f => f.Parents.Select(p => p.FamilyName).Where(n => n.Count() > 10))));
 
-            inputs.Add(new LinqTestInput("SelectMany(Take -> Where)", b => getQuery(b).SelectMany(f => f.Children.Take(2).Where(c => c.FamilyName.Count() > 10)), ErrorMessages.TopInSubqueryNotSupported));
+            inputs.Add(new LinqTestInput("SelectMany(Take -> Where)", b => getQuery(b).SelectMany(f => f.Children.Take(2).Where(c => c.FamilyName.Count() > 10))));
 
-            inputs.Add(new LinqTestInput("SelectMany(OrderBy -> Take -> Where)", b => getQuery(b).SelectMany(f => f.Children.OrderBy(c => c.Grade).Take(2).Where(c => c.FamilyName.Count() > 10)), ErrorMessages.TopInSubqueryNotSupported));
+            inputs.Add(new LinqTestInput("SelectMany(OrderBy -> Take -> Where)", b => getQuery(b).SelectMany(f => f.Children.OrderBy(c => c.Grade).Take(2).Where(c => c.FamilyName.Count() > 10))));
 
             inputs.Add(new LinqTestInput("SelectMany(Distinct -> Where)", b => getQuery(b).SelectMany(f => f.Children.Distinct().Where(c => c.FamilyName.Count() > 10))));
 
@@ -168,25 +169,25 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestMethod]
         public void TestSimpleSubquery()
         {
-            var inputs = new List<LinqTestInput>();
+            List<LinqTestInput> inputs = new List<LinqTestInput>();
 
             inputs.Add(new LinqTestInput("Select -> Select", b => getQuery(b).Select(f => f.FamilyId).Select(n => n.Count())));
 
             inputs.Add(new LinqTestInput("Select -> Where", b => getQuery(b).Select(f => f.FamilyId).Where(id => id.Count() > 10)));
 
-            inputs.Add(new LinqTestInput("Select -> OrderBy -> Take -> Select -> Orderby -> Take", b => getQuery(b).Select(x => x).OrderBy(x => x).Take(10).Select(f => f.FamilyId).OrderBy(n => n.Count()).Take(5), ErrorMessages.OrderByInSubqueryNotSuppported));
+            inputs.Add(new LinqTestInput("Select -> OrderBy -> Take -> Select -> Orderby -> Take", b => getQuery(b).Select(x => x).OrderBy(x => x).Take(10).Select(f => f.FamilyId).OrderBy(n => n.Count()).Take(5)));
 
-            inputs.Add(new LinqTestInput("Select -> Orderby -> Take -> Select -> Orderby -> Take", b => getQuery(b).Select(f => f).OrderBy(f => f.Children.Count()).Take(3).Select(x => x).OrderBy(f => f.Parents.Count()).Take(2), ErrorMessages.OrderByInSubqueryNotSuppported));
+            inputs.Add(new LinqTestInput("Select -> Orderby -> Take -> Select -> Orderby -> Take", b => getQuery(b).Select(f => f).OrderBy(f => f.Children.Count()).Take(3).Select(x => x).OrderBy(f => f.Parents.Count()).Take(2)));
 
-            inputs.Add(new LinqTestInput("Orderby -> Take -> Orderby -> Take", b => getQuery(b).OrderBy(f => f.Children.Count()).Take(3).OrderBy(f => f.Parents.Count()).Take(2), ErrorMessages.OrderByInSubqueryNotSuppported));
+            inputs.Add(new LinqTestInput("Orderby -> Take -> Orderby -> Take", b => getQuery(b).OrderBy(f => f.Children.Count()).Take(3).OrderBy(f => f.Parents.Count()).Take(2)));
 
-            inputs.Add(new LinqTestInput("Take -> Orderby -> Take", b => getQuery(b).Take(10).OrderBy(f => f.FamilyId).Take(1), ErrorMessages.TopInSubqueryNotSupported));
+            inputs.Add(new LinqTestInput("Take -> Orderby -> Take", b => getQuery(b).Take(10).OrderBy(f => f.FamilyId).Take(1)));
 
-            inputs.Add(new LinqTestInput("Take -> Where -> Take -> Where -> Take -> Where", b => getQuery(b).Take(10).Where(f => f.Children.Count() > 0).Take(9).Where(f => f.Parents.Count() > 0).Take(8).Where(f => f.FamilyId.Count() > 10), ErrorMessages.TopInSubqueryNotSupported));
+            inputs.Add(new LinqTestInput("Take -> Where -> Take -> Where -> Take -> Where", b => getQuery(b).Take(10).Where(f => f.Children.Count() > 0).Take(9).Where(f => f.Parents.Count() > 0).Take(8).Where(f => f.FamilyId.Count() > 10)));
 
-            inputs.Add(new LinqTestInput("Take -> Where -> Distinct -> Select -> Take -> Where", b => getQuery(b).Take(10).Where(f => f.Children.Count() > 0).Distinct().Select(f => new { f }).Take(8).Where(f => f.f.FamilyId.Count() > 10), ErrorMessages.TopInSubqueryNotSupported));
+            inputs.Add(new LinqTestInput("Take -> Where -> Distinct -> Select -> Take -> Where", b => getQuery(b).Take(10).Where(f => f.Children.Count() > 0).Distinct().Select(f => new { f }).Take(8).Where(f => f.f.FamilyId.Count() > 10)));
 
-            inputs.Add(new LinqTestInput("Distinct -> Select -> Take -> Where -> Take -> Where", b => getQuery(b).Distinct().Select(f => new { f }).Take(10).Where(f => f.f.Children.Count() > 0).Take(9).Where(f => f.f.Parents.Count() > 0), ErrorMessages.TopInSubqueryNotSupported));
+            inputs.Add(new LinqTestInput("Distinct -> Select -> Take -> Where -> Take -> Where", b => getQuery(b).Distinct().Select(f => new { f }).Take(10).Where(f => f.f.Children.Count() > 0).Take(9).Where(f => f.f.Parents.Count() > 0)));
 
             this.ExecuteTestSuite(inputs);
         }
@@ -196,10 +197,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         {
             // these queries should make more sense when combined with where and orderby
             // these tests verify the flattening part
-            var inputs = new List<LinqTestInput>();
+            List<LinqTestInput> inputs = new List<LinqTestInput>();
             inputs.Add(new LinqTestInput("array create", b => getQuery(b).Select(f => f.Int).Select(i => new int[] { i })));
             inputs.Add(new LinqTestInput("unary operation", b => getQuery(b).Select(f => f.Int).Select(i => -i)));
-            inputs.Add(new LinqTestInput("binary operation", b => getQuery(b).Select(f => f).Select(i => (i.Int % 10) * i.Children.Count())));
+            inputs.Add(new LinqTestInput("binary operation", b => getQuery(b).Select(f => f).Select(i => i.Int % 10 * i.Children.Count())));
             inputs.Add(new LinqTestInput("literal", b => getQuery(b).Select(f => f.Int).Select(i => 0)));
             inputs.Add(new LinqTestInput("function call", b => getQuery(b).Select(f => f.Parents).Select(p => p.Count())));
             inputs.Add(new LinqTestInput("object create", b => getQuery(b).Select(f => f.Parents).Select(p => new { parentCount = p.Count() })));
@@ -212,7 +213,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             inputs.Add(new LinqTestInput("unary, indexer, property, function call -> function call", b => getQuery(b)
                 .Where(f => f.Children.Count() > 0)
                 .Select(f => -f.Children[0].Pets.Count()).Select(i => Math.Abs(i))));
-            inputs.Add(new LinqTestInput("binary operation, function call -> conditional", b => getQuery(b).Select(i => (i.Int % 10) * i.Children.Count()).Select(i => i > 0 ? new int[] { i } : new int[] { })));
+            inputs.Add(new LinqTestInput("binary operation, function call -> conditional", b => getQuery(b).Select(i => i.Int % 10 * i.Children.Count()).Select(i => i > 0 ? new int[] { i } : new int[] { })));
             inputs.Add(new LinqTestInput("object creation -> conditional", b => getQuery(b)
                 .Select(f => new { parentCount = f.Parents.Count(), childrenCount = f.Children.Count() })
                 .Select(r => r.parentCount > 0 ? Math.Floor((double)r.childrenCount / r.parentCount) : 0)));
@@ -226,7 +227,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestMethod]
         public void TestSubquery()
         {
-            var inputs = new List<LinqTestInput>();
+            List<LinqTestInput> inputs = new List<LinqTestInput>();
 
             // --------------------------------------
             // Subquery lambdas
@@ -238,13 +239,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             inputs.Add(new LinqTestInput(
                 "Select(OrderBy)", b => getQuery(b)
-                .Select(f => f.Children.OrderBy(c => c.Pets.Count())), 
-                ErrorMessages.OrderByInSubqueryNotSuppported));
+                .Select(f => f.Children.OrderBy(c => c.Pets.Count()))));
                 
             inputs.Add(new LinqTestInput(
                 "Select(Take)", b => getQuery(b)
-                .Select(f => f.Children.Take(2)), 
-                ErrorMessages.TopInSubqueryNotSupported));
+                .Select(f => f.Children.Take(2))));
                 
             inputs.Add(new LinqTestInput(
                 "Select(Where)", b => getQuery(b)
@@ -272,18 +271,15 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             inputs.Add(new LinqTestInput(
                 "OrderBy(Select)", b => getQuery(b)
-                .OrderBy(f => f.Children.Select(c => c.Pets.Count())), 
-                ErrorMessages.OrderbyItemExpressionCouldNotBeMapped));
+                .OrderBy(f => f.Children.Select(c => c.Pets.Count()))));
 
             inputs.Add(new LinqTestInput(
                 "OrderBy(Sum)", b => getQuery(b)
-                .OrderBy(f => f.Children.Sum(c => c.Grade)), 
-                ErrorMessages.OrderbyItemExpressionCouldNotBeMapped));
+                .OrderBy(f => f.Children.Sum(c => c.Grade))));
 
             inputs.Add(new LinqTestInput(
                 "OrderBy(Count)", b => getQuery(b)
-                .OrderBy(f => f.Children.Count(c => c.Grade > 90)), 
-                ErrorMessages.OrderbyItemExpressionCouldNotBeMapped));
+                .OrderBy(f => f.Children.Count(c => c.Grade > 90))));
 
             // -------------------------------------------------------------
             // Mutilpe-transformations subquery lambdas
@@ -299,8 +295,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             inputs.Add(new LinqTestInput(
                 "Select(Select -> OrderBy -> Take)", b => getQuery(b)
-                .Select(f => f.Children.Select(c => c.GivenName).OrderBy(n => n.Length).Take(1)),
-                ErrorMessages.OrderByInSubqueryNotSuppported));
+                .Select(f => f.Children.Select(c => c.GivenName).OrderBy(n => n.Length).Take(1))));
 
             inputs.Add(new LinqTestInput(
                 "Select(SelectMany -> Select)", b => getQuery(b)
@@ -312,18 +307,15 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             inputs.Add(new LinqTestInput(
                 "Select(Where -> OrderBy -> Take)", b => getQuery(b)
-                .Select(f => f.Children.Where(c => c.Grade > 50).OrderBy(c => c.Pets.Count()).Take(3)),
-                ErrorMessages.OrderByInSubqueryNotSuppported));
+                .Select(f => f.Children.Where(c => c.Grade > 50).OrderBy(c => c.Pets.Count()).Take(3))));
 
             inputs.Add(new LinqTestInput(
                 "Select(Where -> Select -> Take)", b => getQuery(b)
-                .Select(f => f.Children.Where(c => c.Grade > 50).Select(c => c.Pets.Count()).Take(3)),
-                ErrorMessages.TopInSubqueryNotSupported));
+                .Select(f => f.Children.Where(c => c.Grade > 50).Select(c => c.Pets.Count()).Take(3))));
 
             inputs.Add(new LinqTestInput(
                 "Select(Where -> Select(array) -> Take)", b => getQuery(b)
-                .Select(f => f.Children.Where(c => c.Grade > 50).Select(c => c.Pets).Take(3)),
-                ErrorMessages.TopInSubqueryNotSupported));
+                .Select(f => f.Children.Where(c => c.Grade > 50).Select(c => c.Pets).Take(3))));
 
             inputs.Add(new LinqTestInput(
                 "Select(where -> Select -> Distinct)", b => getQuery(b)
@@ -331,13 +323,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             inputs.Add(new LinqTestInput(
                 "Select(OrderBy -> Take -> Select)", b => getQuery(b)
-                .Select(f => f.Children.OrderBy(c => c.Grade).Take(1).Select(c => c.Gender)),
-                ErrorMessages.TopInSubqueryNotSupported));
+                .Select(f => f.Children.OrderBy(c => c.Grade).Take(1).Select(c => c.Gender))));
 
             inputs.Add(new LinqTestInput(
                 "Select(OrderBy -> Take -> Select -> Average)", b => getQuery(b)
-                .Select(f => f.Children.OrderBy(c => c.Pets.Count()).Take(2).Select(c => c.Grade).Average()),
-                ErrorMessages.OrderByInSubqueryNotSuppported));
+                .Select(f => f.Children.OrderBy(c => c.Pets.Count()).Take(2).Select(c => c.Grade).Average())));
 
             inputs.Add(new LinqTestInput(
                 "Where(Select -> Count)", b => getQuery(b)
@@ -353,28 +343,23 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             inputs.Add(new LinqTestInput(
                 "Where(Where -> OrderBy -> Take -> Select)", b => getQuery(b)
-                .Where(f => f.Children.Where(c => c.Pets.Count() > 0).OrderBy(c => c.Grade).Take(1).Where(c => c.Grade > 80).Count() > 0),
-                ErrorMessages.OrderByInSubqueryNotSuppported));
+                .Where(f => f.Children.Where(c => c.Pets.Count() > 0).OrderBy(c => c.Grade).Take(1).Where(c => c.Grade > 80).Count() > 0)));
 
             inputs.Add(new LinqTestInput(
                 "OrderBy(Select -> Where)", b => getQuery(b)
-                .OrderBy(f => f.Children.Select(c => c.Pets.Count()).Where(x => x > 1)), 
-                ErrorMessages.OrderbyItemExpressionCouldNotBeMapped));
+                .OrderBy(f => f.Children.Select(c => c.Pets.Count()).Where(x => x > 1))));
 
             inputs.Add(new LinqTestInput(
                 "OrderBy(Where -> Count)", b => getQuery(b)
-                .OrderBy(f => f.Children.Where(c => c.Pets.Count() > 3).Count()), 
-                ErrorMessages.OrderbyItemExpressionCouldNotBeMapped));
+                .OrderBy(f => f.Children.Where(c => c.Pets.Count() > 3).Count())));
 
             inputs.Add(new LinqTestInput(
                 "OrderBy(Select -> Sum)", b => getQuery(b)
-                .OrderBy(f => f.Children.Select(c => c.Grade).Sum()), 
-                ErrorMessages.OrderbyItemExpressionCouldNotBeMapped));
+                .OrderBy(f => f.Children.Select(c => c.Grade).Sum())));
 
             inputs.Add(new LinqTestInput(
                 "OrderBy(OrderBy -> Take -> Sum)", b => getQuery(b)
-                .OrderBy(f => f.Children.OrderBy(c => c.Pets.Count()).Take(2).Sum(c => c.Grade)), 
-                ErrorMessages.OrderByInSubqueryNotSuppported));
+                .OrderBy(f => f.Children.OrderBy(c => c.Pets.Count()).Take(2).Sum(c => c.Grade))));
 
             // ---------------------------------------------------------
             // Scalar and Built-in expressions with subquery lambdas
@@ -464,8 +449,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             inputs.Add(new LinqTestInput(
                 "Where -> Select(array indexer)", b => getQuery(b)
                 .Where(f => f.Children.Where(c => c.Grade > 20).Count() >= 2)
-                .Select(f => f.Children.Where(c => c.Grade > 20).ToArray()[f.Children.Count() % 2]),
-                ErrorMessages.MemberIndexerNotSupported));
+                .Select(f => f.Children.Where(c => c.Grade > 20).ToArray()[f.Children.Count() % 2])));
 
             // Math builtin functions
 
@@ -479,8 +463,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             inputs.Add(new LinqTestInput(
                 "OrderBy(Log(Where -> Count))", b => getQuery(b)
-                .OrderBy(f => Math.Log(f.Children.Where(c => c.Pets.Count() > 0).Count())),
-                ErrorMessages.OrderbyItemExpressionCouldNotBeMapped));
+                .OrderBy(f => Math.Log(f.Children.Where(c => c.Pets.Count() > 0).Count()))));
 
             // ------------------------------------------------------------------
             // Expression with subquery lambdas -> more transformations
@@ -495,8 +478,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 .Select(f => new { f.FamilyId, ChildrenCount = f.Children.Count(), SmartChildren = f.Children.Where(c => c.Grade > 90) })
                 .Where(f => f.FamilyId.CompareTo("ABC") > 0 && f.SmartChildren.Count() > 0)
                 .OrderBy(f => f.ChildrenCount)
-                .Take(10), 
-                ErrorMessages.OrderbyItemExpressionCouldNotBeMapped));
+                .Take(10)));
             // TODO https://github.com/Azure/azure-cosmos-dotnet-v3/issues/375
             //inputs.Add(new LinqTestInput(
             //    "Select(new w/ Where) -> Where -> OrderBy -> Take", b => getQuery(b)
@@ -514,8 +496,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                     FirstChild = f.Children.Count() > 0 ? f.Children.Take(1) : null
                 })
                 .Where(f => f.FirstChild != null)
-                .Select(f => f.ChildrenPetFirstChars.Select(chArray => chArray.Any(a => f.FamilyId.StartsWith(a)))),
-                ErrorMessages.TopInSubqueryNotSupported));
+                .Select(f => f.ChildrenPetFirstChars.Select(chArray => chArray.Any(a => f.FamilyId.StartsWith(a))))));
 
             inputs.Add(new LinqTestInput(
                 "Select(new (Select(new (Select, Select))))", b => getQuery(b)
@@ -555,8 +536,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 "Where(Any binary) -> OrderBy(Count(filter)) -> Select(Sum(map))", b => getQuery(b)
                 .Where(f => f.Children.Any(c => c.Grade > 90) && f.IsRegistered)
                 .OrderBy(f => f.Children.Count(c => c.Things.Count() > 3))
-                .Select(f => f.Children.Sum(c => c.Pets.Count())),
-                ErrorMessages.OrderbyItemExpressionCouldNotBeMapped));
+                .Select(f => f.Children.Sum(c => c.Pets.Count()))));
 
             // ------------------------------
             // Nested subquery lambdas
@@ -581,8 +561,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             inputs.Add(new LinqTestInput(
                 "Where -> Select(conditional ? Take : OrderBy -> Array indexer)", b => getQuery(b)
                 .Where(f => f.Children.Count() > 0)
-                .Select(f => f.Children.Count() == 1 ? f.Children.Take(1).ToArray()[0] : f.Children.OrderBy(c => c.Grade).ToArray()[1]),
-                ErrorMessages.OrderByInSubqueryNotSuppported));
+                .Select(f => f.Children.Count() == 1 ? f.Children.Take(1).ToArray()[0] : f.Children.OrderBy(c => c.Grade).ToArray()[1])));
 
             inputs.Add(new LinqTestInput(
                 "Select(Where(Where -> Count) -> Select(new Count))", b => getQuery(b)
@@ -657,7 +636,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             inputs.Add(new LinqTestInput(
                 "Select(Any w const array)", b => getQuery(b)
-                .Select(f => new int[] { 1, 2, 3 }.Any()), "Input is not of type IDocumentQuery."));
+                .Select(f => new int[] { 1, 2, 3 }.Any())));
                 
             inputs.Add(new LinqTestInput(
                 "Select(Any)", b => getQuery(b)
@@ -690,8 +669,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             inputs.Add(new LinqTestInput(
                 "OrderBy(Any)", b => getQuery(b)
-                .OrderBy(f => f.Children.Any(c => c.Pets.Count() > 3)), 
-                ErrorMessages.OrderbyItemExpressionCouldNotBeMapped));
+                .OrderBy(f => f.Children.Any(c => c.Pets.Count() > 3))));
             
             // ------------------------------------------------
             // SelectMany with Take and OrderBy in lambda
@@ -699,23 +677,19 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             inputs.Add(new LinqTestInput(
                 "SelectMany(Take)", b => getQuery(b)
-                .SelectMany(f => f.Children.Take(2)), 
-                ErrorMessages.TopInSubqueryNotSupported));
+                .SelectMany(f => f.Children.Take(2))));
 
             inputs.Add(new LinqTestInput(
                 "SelectMany(OrderBy)", b => getQuery(b)
-                .SelectMany(f => f.Children.OrderBy(c => c.Grade)), 
-                ErrorMessages.OrderByInSubqueryNotSuppported));
+                .SelectMany(f => f.Children.OrderBy(c => c.Grade))));
 
             inputs.Add(new LinqTestInput(
                 "SelectMany(Where -> Take)", b => getQuery(b)
-                .SelectMany(f => f.Children.Where(c => c.FamilyName.Count() > 10).Take(2)), 
-                ErrorMessages.TopInSubqueryNotSupported));
+                .SelectMany(f => f.Children.Where(c => c.FamilyName.Count() > 10).Take(2))));
 
             inputs.Add(new LinqTestInput(
                 "SelectMany(Where -> Take -> Select)", b => getQuery(b)
-                .SelectMany(f => f.Children.Where(c => c.FamilyName.Count() > 10).Take(2).Select(c => c.Grade)), 
-                ErrorMessages.TopInSubqueryNotSupported));
+                .SelectMany(f => f.Children.Where(c => c.FamilyName.Count() > 10).Take(2).Select(c => c.Grade))));
 
             this.ExecuteTestSuite(inputs);
         }
@@ -736,7 +710,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             //V2 using V3 pipeline causing issue on accessing Continuation in CosmosQueryResponseMessageHeaders
             //This will be fine once we convert these test cases to use V3 pipeline
 
-            var inputs = new List<LinqTestInput>();
+            List<LinqTestInput> inputs = new List<LinqTestInput>();
 
             // --------------------------------
             // Skip - Take combinations
@@ -752,13 +726,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             inputs.Add(new LinqTestInput(
                 "Skip(negative number) -> Take", b => getQuery(b)
-                .Skip(-1).Take(1),
-                ErrorMessages.ExpressionMustBeNonNegativeInteger));
+                .Skip(-1).Take(1)));
 
             inputs.Add(new LinqTestInput(
                 "Skip -> Take(negative number)", b => getQuery(b)
-                .Skip(1).Take(-2),
-                ErrorMessages.ExpressionMustBeNonNegativeInteger));
+                .Skip(1).Take(-2)));
 
             inputs.Add(new LinqTestInput(
                 "Skip -> Skip -> Take", b => getQuery(b)
@@ -770,13 +742,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             inputs.Add(new LinqTestInput(
                 "Skip -> Take -> Skip -> Take", b => getQuery(b)
-                .Skip(1).Take(2).Skip(3).Take(4),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Skip(1).Take(2).Skip(3).Take(4)));
 
             inputs.Add(new LinqTestInput(
                 "Skip -> Take -> Take -> Skip", b => getQuery(b)
-                .Skip(1).Take(2).Take(3).Skip(4),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Skip(1).Take(2).Take(3).Skip(4)));
 
             inputs.Add(new LinqTestInput(
                 "Skip -> Skip -> Take -> Take", b => getQuery(b)
@@ -784,33 +754,27 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             inputs.Add(new LinqTestInput(
                 "Take -> Skip", b => getQuery(b)
-                .Take(7).Skip(3),
-                ErrorMessages.TopInSubqueryNotSupported));
+                .Take(7).Skip(3)));
 
             inputs.Add(new LinqTestInput(
                 "Take -> Take -> Skip", b => getQuery(b)
-                .Take(2).Take(3).Skip(5),
-                ErrorMessages.TopInSubqueryNotSupported));
+                .Take(2).Take(3).Skip(5)));
 
             inputs.Add(new LinqTestInput(
                 "Take -> Skip -> Skip", b => getQuery(b)
-                .Take(3).Skip(1).Skip(2),
-                ErrorMessages.TopInSubqueryNotSupported));
+                .Take(3).Skip(1).Skip(2)));
 
             inputs.Add(new LinqTestInput(
                 "Take -> Take -> Skip -> Skip", b => getQuery(b)
-                .Take(5).Take(3).Skip(1).Skip(1),
-                ErrorMessages.TopInSubqueryNotSupported));
+                .Take(5).Take(3).Skip(1).Skip(1)));
 
             inputs.Add(new LinqTestInput(
                 "Take -> Skip -> Take -> Skip", b => getQuery(b)
-                .Take(10).Skip(2).Take(5).Skip(1),
-                ErrorMessages.TopInSubqueryNotSupported));
+                .Take(10).Skip(2).Take(5).Skip(1)));
 
             inputs.Add(new LinqTestInput(
                 "Take -> Skip -> Skip -> Take", b => getQuery(b)
-                .Take(10).Skip(4).Skip(2).Take(2),
-                ErrorMessages.TopInSubqueryNotSupported));
+                .Take(10).Skip(4).Skip(2).Take(2)));
 
             // --------------------------
             // Select + Skip & Take
@@ -822,8 +786,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             inputs.Add(new LinqTestInput(
                 "Select -> Take -> Skip", b => getQuery(b)
-                .Select(f => f.FamilyId).Take(2).Skip(1),
-                ErrorMessages.TopInSubqueryNotSupported));
+                .Select(f => f.FamilyId).Take(2).Skip(1)));
 
             inputs.Add(new LinqTestInput(
                 "Select -> Skip -> Take -> Select", b => getQuery(b)
@@ -831,8 +794,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             inputs.Add(new LinqTestInput(
                 "Skip -> Take -> Select -> Take -> Skip", b => getQuery(b)
-                .Skip(5).Take(11).Select(f => f.Children.Count()).Take(7).Skip(3),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Skip(5).Take(11).Select(f => f.Children.Count()).Take(7).Skip(3)));
 
             inputs.Add(new LinqTestInput(
                 "Skip -> Select -> Take", b => getQuery(b)
@@ -840,8 +802,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             inputs.Add(new LinqTestInput(
                 "Take -> Select -> Skip", b => getQuery(b)
-                .Take(7).Select(f => f.FamilyId).Skip(3),
-                ErrorMessages.TopInSubqueryNotSupported));
+                .Take(7).Select(f => f.FamilyId).Skip(3)));
 
             // ------------------------------
             // SelectMany + Skip & Take
@@ -853,13 +814,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             inputs.Add(new LinqTestInput(
                 "SelectMany -> Skip -> Take -> SelectMany", b => getQuery(b)
-                .SelectMany(f => f.Children).Skip(11).Take(3).SelectMany(c => c.Pets),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .SelectMany(f => f.Children).Skip(11).Take(3).SelectMany(c => c.Pets)));
 
             inputs.Add(new LinqTestInput(
                 "Skip -> SelectMany -> Take -> Skip -> SelectMany", b => getQuery(b)
-                .Skip(1).SelectMany(f => f.Children).Take(13).Skip(3).SelectMany(c => c.Pets),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Skip(1).SelectMany(f => f.Children).Take(13).Skip(3).SelectMany(c => c.Pets)));
 
             inputs.Add(new LinqTestInput(
                 "SelectMany -> SelectMany -> Skip -> Take", b => getQuery(b)
@@ -867,8 +826,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             inputs.Add(new LinqTestInput(
                 "Take -> Skip -> SelectMany -> Skip -> SelectMany", b => getQuery(b)
-                .Take(50).Skip(25).SelectMany(f => f.Children).Skip(10).SelectMany(c => c.Pets),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Take(50).Skip(25).SelectMany(f => f.Children).Skip(10).SelectMany(c => c.Pets)));
 
             // ---------------------------
             // Where + Skip & Take
@@ -880,23 +838,19 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             inputs.Add(new LinqTestInput(
                 "Where -> Skip -> Take -> Where -> Skip -> Take", b => getQuery(b)
-                .Where(f => f.Children.Count() > 0).Skip(7).Take(11).Where(f => f.Tags.Count() > 2).Skip(1).Take(3),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Where(f => f.Children.Count() > 0).Skip(7).Take(11).Where(f => f.Tags.Count() > 2).Skip(1).Take(3)));
 
             inputs.Add(new LinqTestInput(
                 "Skip -> Take -> Where -> Skip", b => getQuery(b)
-                .Skip(1).Take(25).Where(f => f.Int > 10).Skip(5),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Skip(1).Take(25).Where(f => f.Int > 10).Skip(5)));
 
             inputs.Add(new LinqTestInput(
                 "Take -> Where -> Skip", b => getQuery(b)
-                .Take(25).Where(f => f.FamilyId.Contains("A")).Skip(10),
-                ErrorMessages.TopInSubqueryNotSupported));
+                .Take(25).Where(f => f.FamilyId.Contains("A")).Skip(10)));
 
             inputs.Add(new LinqTestInput(
                 "Where -> Take -> Skip -> Where", b => getQuery(b)
-                .Where(f => f.Children.Count() > 1).Take(10).Skip(3).Where(f => f.Int > 0),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Where(f => f.Children.Count() > 1).Take(10).Skip(3).Where(f => f.Int > 0)));
 
             // ---------------------------
             // OrderBy + Skip & Take
@@ -908,23 +862,19 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             inputs.Add(new LinqTestInput(
                 "OrderBy -> Skip -> Take -> OrderBy -> Take -> Skip", b => getQuery(b)
-                .OrderBy(f => f.Int).Skip(3).Take(11).OrderBy(f => f.FamilyId).Take(7).Skip(1),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .OrderBy(f => f.Int).Skip(3).Take(11).OrderBy(f => f.FamilyId).Take(7).Skip(1)));
 
             inputs.Add(new LinqTestInput(
                 "Skip -> Take -> OrderBy", b => getQuery(b)
-                .Skip(3).Take(43).OrderBy(f => f.IsRegistered),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Skip(3).Take(43).OrderBy(f => f.IsRegistered)));
 
             inputs.Add(new LinqTestInput(
                 "Take -> OrderByDescending -> Skip", b => getQuery(b)
-                .Take(50).OrderByDescending(f => f.Int).Skip(13),
-                ErrorMessages.TopInSubqueryNotSupported));
+                .Take(50).OrderByDescending(f => f.Int).Skip(13)));
 
             inputs.Add(new LinqTestInput(
                 "Skip -> OrderByDescending -> Take", b => getQuery(b)
-                .Skip(7).OrderByDescending(f => f.Int).Take(17),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Skip(7).OrderByDescending(f => f.Int).Take(17)));
 
             // ---------------------------
             // Distinct + Skip & Take
@@ -936,23 +886,19 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             inputs.Add(new LinqTestInput(
                 "Skip -> Take -> Distinct", b => getQuery(b)
-                .Skip(3).Take(11).Distinct(),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Skip(3).Take(11).Distinct()));
 
             inputs.Add(new LinqTestInput(
                 "Skip -> Take -> Select -> Distinct -> Skip -> Take -> Distinct -> Skip", b => getQuery(b)
-                .Skip(10).Take(60).Select(f => f.Int).Distinct().Skip(15).Take(20).Distinct().Skip(7),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Skip(10).Take(60).Select(f => f.Int).Distinct().Skip(15).Take(20).Distinct().Skip(7)));
 
             inputs.Add(new LinqTestInput(
                 "Skip -> Distinct -> Skip -> Take", b => getQuery(b)
-                .Skip(7).Distinct().Skip(20).Take(10),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Skip(7).Distinct().Skip(20).Take(10)));
 
             inputs.Add(new LinqTestInput(
                 "Take -> Skip -> Distinct -> Skip", b => getQuery(b)
-                .Take(30).Skip(10).Distinct().Skip(7),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Take(30).Skip(10).Distinct().Skip(7)));
 
             // ---------------------------------------------------------------------------------
             // Select, SelectMany, Where, OrderBy, Distinct with Skip & Take in between
@@ -970,18 +916,15 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             inputs.Add(new LinqTestInput(
                 "Skip -> Take -> SelectMany -> Skip -> Select -> Take", b => getQuery(b)
-                .Skip(10).Take(20).SelectMany(f => f.Children).Skip(3).Select(c => c.GivenName).Take(5),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Skip(10).Take(20).SelectMany(f => f.Children).Skip(3).Select(c => c.GivenName).Take(5)));
 
             inputs.Add(new LinqTestInput(
                 "Skip -> SelectMany -> Take -> Skip -> Select -> Take", b => getQuery(b)
-                .Skip(10).SelectMany(f => f.Children).Take(10).Skip(1).Select(c => c.FamilyName).Take(7),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Skip(10).SelectMany(f => f.Children).Take(10).Skip(1).Select(c => c.FamilyName).Take(7)));
 
             inputs.Add(new LinqTestInput(
                 "Take -> SelectMany -> Skip -> Select -> Take", b => getQuery(b)
-                .Take(30).SelectMany(f => f.Children).Skip(10).Select(c => c.Grade).Take(3),
-                ErrorMessages.TopInSubqueryNotSupported));
+                .Take(30).SelectMany(f => f.Children).Skip(10).Select(c => c.Grade).Take(3)));
 
             // Select, Where
 
@@ -991,27 +934,23 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             inputs.Add(new LinqTestInput(
                 "Where -> Skip -> Take -> Select -> Skip", b => getQuery(b)
-                .Where(f => f.IsRegistered).Skip(7).Take(3).Select(f => f.FamilyId).Skip(2),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Where(f => f.IsRegistered).Skip(7).Take(3).Select(f => f.FamilyId).Skip(2)));
 
             // Select, OrderBy
 
             inputs.Add(new LinqTestInput(
                 "Select -> Skip -> Take -> OrderBy", b => getQuery(b)
-                .Select(f => f.FamilyId).Skip(1).Take(2).OrderBy(s => s),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Select(f => f.FamilyId).Skip(1).Take(2).OrderBy(s => s)));
 
             inputs.Add(new LinqTestInput(
                 "OrderByDescending -> Take -> Skip -> Select", b => getQuery(b)
-                .OrderByDescending(f => f.Int).Take(10).Skip(3).Select(f => f.Int + 1),
-                ErrorMessages.OrderByInSubqueryNotSuppported));
+                .OrderByDescending(f => f.Int).Take(10).Skip(3).Select(f => f.Int + 1)));
 
             // Select, Distinct
 
             inputs.Add(new LinqTestInput(
                 "Take -> Select -> Distinct -> Skip -> Take", b => getQuery(b)
-                .Take(7).Select(f => f.Int).Distinct().Skip(1).Take(5),
-                ErrorMessages.TopInSubqueryNotSupported));
+                .Take(7).Select(f => f.Int).Distinct().Skip(1).Take(5)));
 
             // SelectMany, Where
 
@@ -1021,20 +960,17 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             inputs.Add(new LinqTestInput(
                 "Where -> Skip -> SelectMany -> Take", b => getQuery(b)
-                .Where(f => f.IsRegistered).Skip(10).SelectMany(f => f.Children).Take(7),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Where(f => f.IsRegistered).Skip(10).SelectMany(f => f.Children).Take(7)));
 
             // SelectMany, OrderBy
 
             inputs.Add(new LinqTestInput(
                 "OrderBy -> Skip -> SelectMany -> SelectMany", b => getQuery(b)
-                .OrderBy(f => f.Int).Skip(10).SelectMany(f => f.Children).SelectMany(c => c.Pets),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .OrderBy(f => f.Int).Skip(10).SelectMany(f => f.Children).SelectMany(c => c.Pets)));
 
             inputs.Add(new LinqTestInput(
                 "SelectMany -> OrderBy -> Skip -> Take", b => getQuery(b)
-                .SelectMany(f => f.Children).OrderBy(c => c.Grade).Skip(10).Take(20),
-                ErrorMessages.OrderByCorrelatedCollectionNotSupported));
+                .SelectMany(f => f.Children).OrderBy(c => c.Grade).Skip(10).Take(20)));
 
             // SelectMany, Distinct
 
@@ -1044,8 +980,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             inputs.Add(new LinqTestInput(
                 "Distinct -> Skip -> SelectMany", b => getQuery(b)
-                .Distinct().Skip(3).SelectMany(f => f.Children),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Distinct().Skip(3).SelectMany(f => f.Children)));
 
             // Where, OrderBy
 
@@ -1055,20 +990,17 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             inputs.Add(new LinqTestInput(
                 "Skip -> Where -> Take -> OrderBy", b => getQuery(b)
-                .Skip(20).Where(f => f.Children.Count() > 0).Take(10).OrderBy(f => f.Int),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Skip(20).Where(f => f.Children.Count() > 0).Take(10).OrderBy(f => f.Int)));
 
             // Where, Distinct
 
             inputs.Add(new LinqTestInput(
                 "Where -> Skip -> Take -> Distinct", b => getQuery(b)
-                .Where(f => f.IsRegistered).Skip(3).Take(17).Distinct(),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Where(f => f.IsRegistered).Skip(3).Take(17).Distinct()));
 
             inputs.Add(new LinqTestInput(
                 "Skip -> Distinct -> Where -> Take", b => getQuery(b)
-                .Skip(22).Distinct().Where(f => f.Parents.Count() > 0).Take(7),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Skip(22).Distinct().Where(f => f.Parents.Count() > 0).Take(7)));
 
             // -----------------------------------------
             // All basic operations with Skip & Take
@@ -1083,13 +1015,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             inputs.Add(new LinqTestInput(
                 "Select -> Where -> OrderBy -> Skip -> Take -> Select -> Where -> Skip -> Take", b => getQuery(b)
                 .Select(f => f.FamilyId).Where(id => id.Count() > 10).OrderBy(id => id).Skip(1).Take(10)
-                .Select(id => id + "_suffix").Where(id => id.Count() > 12).Skip(2).Take(4),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Select(id => id + "_suffix").Where(id => id.Count() > 12).Skip(2).Take(4)));
 
             inputs.Add(new LinqTestInput(
                 "Select -> Skip -> OrderBy -> Skip -> Distinct -> Skip", b => getQuery(b)
-                .Select(f => f.Records).Skip(5).OrderBy(r => r.Transactions.Count()).Skip(1).Distinct().Skip(3),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Select(f => f.Records).Skip(5).OrderBy(r => r.Transactions.Count()).Skip(1).Distinct().Skip(3)));
 
             inputs.Add(new LinqTestInput(
                 "Select(new(new(new(new(new))))) -> (Skip -> Select) x 6 -> Skip -> Where -> Take", b => getQuery(b)
@@ -1101,8 +1031,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 .Skip(5).Select(f => f.Records)
                 .Skip(6).Select(f => f.Transactions)
                 .Skip(7).Where(t => t.Count() > 100)
-                .Take(20),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Take(20)));
 
             inputs.Add(new LinqTestInput(
                 "Select -> (Skip -> Select -> Where -> OrderBy -> Distinct -> Take) x 3 -> Skip -> Take", b => getQuery(b)
@@ -1110,8 +1039,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 .Skip(1).Select(f => f.L1).Where(f => f.Int > 10).OrderBy(f => f.FamilyId).Distinct().Take(100)
                 .Skip(2).Select(f => new { L2 = f }).Where(f => f.L2.FamilyId.CompareTo("A") > 0).OrderBy(f => f.L2.Int).Distinct().Take(50)
                 .Skip(3).Select(f => f.L2).Where(f => f.Children.Count() > 1).OrderBy(f => f.IsRegistered).Distinct().Take(40)
-                .Skip(4).Take(25),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Skip(4).Take(25)));
 
             // Start with Distinct
 
@@ -1128,29 +1056,25 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             inputs.Add(new LinqTestInput(
                 "Where -> OrderBy -> Skip -> Take -> Select -> Where -> Skip -> Take", b => getQuery(b)
                 .Where(f => f.Int > 10).OrderBy(f => f.FamilyId).Skip(1).Take(5)
-                .Select(f => f.Records).Where(r => r.Transactions != null).Skip(1).Take(3),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Select(f => f.Records).Where(r => r.Transactions != null).Skip(1).Take(3)));
 
             inputs.Add(new LinqTestInput(
                 "Where -> Skip -> Take -> SelectMany -> OrderBy -> Skip -> Take", b => getQuery(b)
                 .Where(f => f.Int > 20).Skip(5).Take(20)
-                .SelectMany(f => f.Children).OrderBy(c => c.Grade).Skip(5).Take(10),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .SelectMany(f => f.Children).OrderBy(c => c.Grade).Skip(5).Take(10)));
 
             // Start with OrderBy
 
             inputs.Add(new LinqTestInput(
                 "OrderBy -> Skip -> Take -> Select -> Where -> Skip -> Take", b => getQuery(b)
                 .OrderBy(f => f.Int).Skip(1).Take(10)
-                .Select(f => f.Records).Where(r => r.Transactions.Count() > 10).Skip(2).Take(3),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Select(f => f.Records).Where(r => r.Transactions.Count() > 10).Skip(2).Take(3)));
 
             // Start with Skip
 
             inputs.Add(new LinqTestInput(
                 "Skip -> Take -> Select -> Where -> Skip -> Take", b => getQuery(b)
-                .Skip(1).Take(10).Select(f => f.Children.Count()).Where(c => c > 1).Skip(1).Take(4),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Skip(1).Take(10).Select(f => f.Children.Count()).Where(c => c > 1).Skip(1).Take(4)));
 
             inputs.Add(new LinqTestInput(
                 "Skip -> Take -> Where -> Skip -> Take -> OrderBy -> Skip -> Take -> Select -> Skip -> Distinct -> Skip -> Take", b => getQuery(b)
@@ -1158,20 +1082,17 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 .Skip(1).Take(9).OrderBy(f => f.FamilyId)
                 .Skip(3).Take(5).Select(f => f.Children.Count())
                 .Skip(1).Distinct()
-                .Skip(1).Take(1),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Skip(1).Take(1)));
 
             // Start with Take
 
             inputs.Add(new LinqTestInput(
                 "Take -> Skip -> OrderBy -> Skip -> Take", b => getQuery(b)
-                .Take(10).Skip(2).Where(f => f.IsRegistered).OrderBy(f => f.Int).Skip(1).Take(9),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Take(10).Skip(2).Where(f => f.IsRegistered).OrderBy(f => f.Int).Skip(1).Take(9)));
 
             inputs.Add(new LinqTestInput(
                 "Take -> Distinct -> Select -> Where -> Skip -> Take", b => getQuery(b)
-                .Take(10).Distinct().Select(f => f.Children).Where(c => c.Count() > 0).Skip(2).Take(5),
-                ErrorMessages.TopInSubqueryNotSupported));
+                .Take(10).Distinct().Select(f => f.Children).Where(c => c.Count() > 0).Skip(2).Take(5)));
 
             // -----------------------------------------------------------------------------
             // All basic operations with Skip & Take with SelectMany in the middle
@@ -1182,16 +1103,14 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             inputs.Add(new LinqTestInput(
                 "Select -> Skip -> Take -> SelectMany -> Skip -> Take", b => getQuery(b)
                 .Select(f => f.Records).Skip(1).Take(10)
-                .SelectMany(r => r.Transactions).Skip(1).Take(9),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .SelectMany(r => r.Transactions).Skip(1).Take(9)));
 
             // SelectMany after Where
 
             inputs.Add(new LinqTestInput(
                 "Where -> SelectMany -> OrderBy -> Skip -> Take", b => getQuery(b)
                 .Where(f => f.IsRegistered)
-                .SelectMany(f => f.Children).OrderBy(c => c.Grade).Skip(10).Take(20),
-                ErrorMessages.OrderByCorrelatedCollectionNotSupported));
+                .SelectMany(f => f.Children).OrderBy(c => c.Grade).Skip(10).Take(20)));
 
             // Start with SelectMany
 
@@ -1199,8 +1118,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 "SelectMany -> Select -> Skip -> Take -> Select -> Where -> Skip -> Take", b => getQuery(b)
                 .SelectMany(f => f.Children)
                     .Select(c => c.FamilyName).Skip(1).Take(20)
-                    .Select(n => n.Count()).Where(l => l > 10).Skip(2).Take(50),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                    .Select(n => n.Count()).Where(l => l > 10).Skip(2).Take(50)));
 
             // -------------------------------------------------------------
             // Nested Skip & Take in Select, SelectMany, Where, OrderBy
@@ -1214,13 +1132,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                     id = f.FamilyId,
                     GoodChildren = f.Children.Where(c => c.Grade > 75).Skip(1)
                 })
-                .Where(f => f.GoodChildren.Count() > 0),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Where(f => f.GoodChildren.Count() > 0)));
 
             inputs.Add(new LinqTestInput(
                 "Select(Skip -> Take) -> Skip -> Take", b => getQuery(b)
-                .Select(f => f.Children.Skip(1).Take(1)).Skip(3).Take(10),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Select(f => f.Children.Skip(1).Take(1)).Skip(3).Take(10)));
 
             inputs.Add(new LinqTestInput(
                 "Select(new(Skip -> Take, Skip, Take) -> Skip -> Take -> Where", b => getQuery(b)
@@ -1229,8 +1145,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                     v1 = f.Parents.Skip(1),
                     v2 = f.Records.Transactions.Take(10)
                 })
-                .Skip(1).Take(20).Where(f => f.v0.Count() > 0).Take(10),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Skip(1).Take(20).Where(f => f.v0.Count() > 0).Take(10)));
 
             inputs.Add(new LinqTestInput(
                 "Select(new(SelectMany -> SelectMany -> Distinct, OrderByDescending -> Take -> SelectMany -> Skip, Select -> OrderBy -> Skip -> Take -> Sum) -> Where -> Skip -> Take -> SelectMany -> Skip -> Take", b => getQuery(b)
@@ -1240,50 +1155,42 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                     v2 = f.Records.Transactions.Select(t => t.Amount).OrderBy(a => a).Skip(10).Take(20).Sum()
                 })
                 .Where(f => f.v2 > 100).Skip(5).Take(20)
-                .SelectMany(f => f.v1).Distinct().Skip(3).Take(22),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .SelectMany(f => f.v1).Distinct().Skip(3).Take(22)));
 
             inputs.Add(new LinqTestInput(
                 "Select -> Skip -> SelectMany(Skip -> OrderBy)", b => getQuery(b)
-                .Select(f => f.Records).Skip(1).SelectMany(r => r.Transactions.Skip(10).OrderBy(t => t.Date)),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Select(f => f.Records).Skip(1).SelectMany(r => r.Transactions.Skip(10).OrderBy(t => t.Date))));
 
             // Nested with Where
 
             inputs.Add(new LinqTestInput(
                 "Where -> Where(Skip -> Take -> Count) - > Skip -> Take", b => getQuery(b)
-                .Where(f => f.Children.Count() > 2).Where(f => f.Children.Skip(1).Take(10).Count() > 1).Skip(1).Take(10),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Where(f => f.Children.Count() > 2).Where(f => f.Children.Skip(1).Take(10).Count() > 1).Skip(1).Take(10)));
 
             // Nested with OrderBy
 
             inputs.Add(new LinqTestInput(
                 "OrderBy(Skip -> Take -> Count) -> Skip -> Take", b => getQuery(b)
-                .OrderBy(f => f.Children.Skip(1).Take(5).Count()),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .OrderBy(f => f.Children.Skip(1).Take(5).Count())));
 
             // Nested with SelectMany
 
             inputs.Add(new LinqTestInput(
                 "SelectMany(Skip -> Take) -> Skip -> Take", b => getQuery(b)
-                .SelectMany(f => f.Children.Skip(1).Take(2)).Skip(3).Take(20),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .SelectMany(f => f.Children.Skip(1).Take(2)).Skip(3).Take(20)));
 
             inputs.Add(new LinqTestInput(
                 "SelectMany(Skip -> Take) -> Skip -> Take -> SelectMany(Skip -> Take) -> Skip -> Take", b => getQuery(b)
                 .SelectMany(f => f.Children.Skip(1).Take(2)).Skip(3).Take(20)
-                .SelectMany(c => c.Pets.Skip(1).Take(2)).Skip(1).Take(10),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .SelectMany(c => c.Pets.Skip(1).Take(2)).Skip(1).Take(10)));
 
             inputs.Add(new LinqTestInput(
                 "SelectMany(Where -> OrderBy -> Skip -> Distinct)", b => getQuery(b)
-                .SelectMany(f => f.Children.Where(c => c.Grade > 10).OrderBy(c => c.Grade).Skip(1).Distinct()),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .SelectMany(f => f.Children.Where(c => c.Grade > 10).OrderBy(c => c.Grade).Skip(1).Distinct())));
 
             inputs.Add(new LinqTestInput(
                 "SelectMany(Skip -> SelectMany(Skip -> Select) -> Take)", b => getQuery(b)
-                .SelectMany(f => f.Children.Skip(1).SelectMany(c => c.Pets.Skip(1).Select(p => p.GivenName)).Take(10)),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .SelectMany(f => f.Children.Skip(1).SelectMany(c => c.Pets.Skip(1).Select(p => p.GivenName)).Take(10))));
 
             this.ExecuteTestSuite(inputs);
         }
@@ -1292,7 +1199,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [Ignore]
         public void TestUnsupportedScenarios()
         {
-            var inputs = new List<LinqTestInput>();
+            List<LinqTestInput> inputs = new List<LinqTestInput>();
 
             // --------------------
             // Dictionary type
@@ -1310,7 +1217,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestMethod]
         public void TestOrderByTranslation()
         {
-            var inputs = new List<LinqTestInput>();
+            List<LinqTestInput> inputs = new List<LinqTestInput>();
 
             // Ascending
             inputs.Add(new LinqTestInput("Select -> order by", b => getQuery(b).Select(family => family.FamilyId).OrderBy(id => id)));
@@ -1355,11 +1262,313 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             inputs.Add(new LinqTestInput("OrderBy Desc -> Select", b => getQuery(b).OrderByDescending(f => f.FamilyId).Select(f => f.FamilyId)));
             inputs.Add(new LinqTestInput("OrderBy -> Select -> Take", b => getQuery(b).OrderByDescending(f => f.FamilyId).Select(f => f.FamilyId).Take(10)));
             inputs.Add(new LinqTestInput("OrderBy -> Select -> Select", b => getQuery(b).OrderByDescending(f => f.FamilyId).Select(f => f.FamilyId).Select(x => x)));
-            // orderby multiple expression is not supported yet
             inputs.Add(new LinqTestInput("OrderBy multiple expressions",
                 b => from f in getQuery(b)
                      orderby f.FamilyId, f.Int
-                     select f.FamilyId, "Method 'ThenBy' is not supported."));
+                     select f.FamilyId));
+
+            this.ExecuteTestSuite(inputs);
+        }
+
+        [TestMethod]
+        public void TestThenByTranslation()
+        {
+            List<LinqTestInput> inputs = new List<LinqTestInput>();
+
+            // Ascending and descending
+
+            inputs.Add(new LinqTestInput(
+                "OrderBy -> ThenBy", b => getQuery(b)
+                .OrderBy(f => f.FamilyId)
+                .ThenBy(f => f.Int)));
+
+            inputs.Add(new LinqTestInput(
+                "OrderBy -> ThenByDescending", b => getQuery(b)
+                .OrderBy(f => f.FamilyId)
+                .ThenByDescending(f => f.Int)));
+
+            inputs.Add(new LinqTestInput(
+                "OrderByDescending -> ThenBy", b => getQuery(b)
+                .OrderByDescending(f => f.FamilyId)
+                .ThenBy(f => f.Int)));
+
+            inputs.Add(new LinqTestInput(
+                "OrderByDescending -> ThenByDescending", b => getQuery(b)
+                .OrderByDescending(f => f.FamilyId)
+                .ThenByDescending(f => f.Int)));
+
+            // Subquery in OrderBy or in ThenBy
+
+            inputs.Add(new LinqTestInput(
+                "OrderBy subquery -> ThenBy", b => getQuery(b)
+                .OrderBy(f => f.Children.Where(c => c.Grade > 100).Count())
+                .ThenByDescending(f => f.Int)));
+
+            inputs.Add(new LinqTestInput(
+                "OrderBy -> ThenBy subquery", b => getQuery(b)
+                .OrderBy(f => f.FamilyId)
+                .ThenByDescending(f => f.Parents.Where(p => p.GivenName.Length > 10).Count())));
+
+            inputs.Add(new LinqTestInput(
+                "OrderBy subquery -> ThenBy subquery", b => getQuery(b)
+                .OrderByDescending(f => f.Children.Where(c => c.Grade > 100).Count())
+                .ThenBy(f => f.Parents.Where(p => p.GivenName.Length > 10).Count())));
+
+            // OrderBy and ThenBy by the same property (not a realistic scenario)
+
+            inputs.Add(new LinqTestInput(
+                "OrderBy -> ThenBy", b => getQuery(b)
+                .OrderBy(f => f.FamilyId)
+                .ThenBy(f => f.FamilyId)));
+
+            inputs.Add(new LinqTestInput(
+                "OrderBy -> ThenByDescending", b => getQuery(b)
+                .OrderBy(f => f.FamilyId)
+                .ThenByDescending(f => f.FamilyId)));
+
+            inputs.Add(new LinqTestInput(
+                "OrderByDescending subquery -> ThenBy subquery", b => getQuery(b)
+                .OrderByDescending(f => f.Children.Where(c => c.Grade > 100).Count())
+                .ThenBy(f => f.Children.Where(c => c.Grade > 100).Count())));
+
+            // OrderBy and ThenBy with epxressions
+
+            inputs.Add(new LinqTestInput(
+                "OrderBy -> ThenBy", b => getQuery(b)
+                .OrderBy(f => f.Int * 2)
+                .ThenBy(f => f.FamilyId.Substring(2, 3))));
+
+            inputs.Add(new LinqTestInput(
+                "OrderBy -> ThenBy", b => getQuery(b)
+                .OrderBy(f => !f.NullableInt.IsDefined())
+                .ThenByDescending(f => f.Tags.Count() % 2)));
+
+            inputs.Add(new LinqTestInput(
+                "OrderBy -> ThenBy", b => getQuery(b)
+                .OrderByDescending(f => f.IsRegistered ? f.FamilyId : f.Int.ToString())
+                .ThenBy(f => f.Records.Transactions.Max(t => t.Amount) % 1000)));
+
+            // Multiple OrderBy and ThenBy
+
+            inputs.Add(new LinqTestInput(
+                "OrderBy -> OrderBy -> ThenBy", b => getQuery(b)
+                .OrderByDescending(f => f.FamilyId)
+                .OrderBy(f => f.Int)
+                .ThenByDescending(f => f.IsRegistered)));
+
+            inputs.Add(new LinqTestInput(
+                "OrderBy -> ThenBy -> ThenBy", b => getQuery(b)
+                .OrderBy(f => f.FamilyId)
+                .ThenBy(f => f.Int)
+                .ThenByDescending(f => f.IsRegistered)));
+
+            inputs.Add(new LinqTestInput(
+                "OrderBy -> Orderby subquery -> ThenBy subquery", b => getQuery(b)
+                .OrderBy(f => f.FamilyId)
+                .OrderBy(f => f.Children.Where(c => c.Grade > 100).Count())
+                .ThenBy(f => f.Parents.Where(p => p.GivenName.Length > 10).Count())));
+
+            inputs.Add(new LinqTestInput(
+                "OrderBy -> ThenBy subquery -> ThenBy subquery", b => getQuery(b)
+                .OrderBy(f => f.FamilyId)
+                .ThenByDescending(f => f.Parents.Where(p => p.GivenName.Length > 10).Count())
+                .ThenBy(f => f.Children.Where(c => c.Grade > 100).Count())));
+
+            // Nested ThenBy
+
+            inputs.Add(new LinqTestInput(
+                "OrderBy -> ThenBy(OrderBy -> ThenBy -> Select)", b => getQuery(b)
+                .OrderBy(f => f.FamilyId)
+                .ThenByDescending(f => f.Parents
+                    .OrderBy(p => p.FamilyName)
+                    .ThenByDescending(p => p.GivenName)
+                    .Select(p => p.FamilyName + p.GivenName))));
+
+            inputs.Add(new LinqTestInput(
+                "OrderBy(OrderBy -> ThenBy) -> ThenBy(OrderBy -> ThenBy)", b => getQuery(b)
+                .OrderBy(f => f.Children
+                    .OrderBy(c => c.Grade)
+                    .ThenBy(c => c.Pets.Count))
+                .ThenByDescending(f => f.Parents
+                    .OrderBy(p => p.FamilyName)
+                    .ThenByDescending(p => p.GivenName)
+                    .Select(p => p.FamilyName + p.GivenName))));
+
+            // Nested expressions with ThenBy
+
+            inputs.Add(new LinqTestInput(
+                "OrderBy -> ThenBy(OrderBy -> ThenBy -> Take -> Select)", b => getQuery(b)
+                .OrderBy(f => f.FamilyId)
+                .ThenByDescending(f => f.Parents
+                    .OrderBy(p => p.FamilyName)
+                    .ThenByDescending(p => p.GivenName)
+                    .Take(1)
+                    .Select(p => p.FamilyName + p.GivenName))));
+
+            inputs.Add(new LinqTestInput(
+                "OrderBy(OrderBy -> ThenBy -> Take -> OrderBy -> ThenBy) -> ThenBy(OrderBy -> ThenBy)", b => getQuery(b)
+                .OrderBy(f => f.Children
+                    .OrderBy(c => c.Grade)
+                    .ThenByDescending(c => c.Pets.Count)
+                    .Take(10)
+                    .OrderByDescending(c => c.GivenName)
+                    .ThenBy(c => c.Gender))
+                .ThenByDescending(f => f.Parents
+                    .OrderBy(p => p.FamilyName)
+                    .ThenByDescending(p => p.GivenName)
+                    .Select(p => p.FamilyName + p.GivenName))));
+
+            // On a new object
+
+            inputs.Add(new LinqTestInput(
+                "Select -> OrderBy -> ThenBy", b => getQuery(b)
+                .Select(f => new
+                {
+                    f.FamilyId,
+                    FamilyNumber = f.Int,
+                    ChildrenCount = f.Children.Count(),
+                    ChildrenPetCount = f.Children.Select(c => c.Pets.Count()).Sum()
+                })
+                .OrderBy(r => r.FamilyId)
+                .ThenBy(r => r.FamilyNumber)));
+
+            inputs.Add(new LinqTestInput(
+                "SelectMany -> OrderBy -> ThenBy", b => getQuery(b)
+                .SelectMany(f => f.Children.Select(c => new
+                {
+                    f.FamilyId,
+                    FamilyNumber = f.Int,
+                    ChildrenCount = f.Children.Count(),
+                    Name = c.GivenName,
+                    SpecialPetCount = c.Pets.Where(p => p.GivenName.Length > 5).Count()
+                })
+                .OrderBy(r => r.FamilyId)
+                .ThenBy(r => r.FamilyNumber))));
+
+            inputs.Add(new LinqTestInput(
+                "SelectMany -> OrderBy -> ThenBy", b => getQuery(b)
+                .SelectMany(f => f.Children.Select(c => new
+                {
+                    f.FamilyId,
+                    FamilyNumber = f.Int,
+                    ChildrenCount = f.Children.Count(),
+                    Name = c.GivenName,
+                    SpecialPetCount = c.Pets.Where(p => p.GivenName.Length > 5).Count()
+                }))
+                .OrderBy(r => r.FamilyId)
+                .ThenBy(r => r.FamilyNumber)
+                .Select(r => r.FamilyId)));
+
+            inputs.Add(new LinqTestInput(
+                "Select(new(Where, Sum) -> OrderBy(Count) -> ThenBy)", b => getQuery(b)
+                .Select(f => new {
+                    ChildrenWithPets = f.Children.Where(c => c.Pets.Count() > 0),
+                    TotalExpenses = f.Records.Transactions.Sum(t => t.Amount)
+                })
+                .OrderByDescending(r => r.ChildrenWithPets.Count())
+                .ThenByDescending(r => r.TotalExpenses)));
+
+            inputs.Add(new LinqTestInput(
+                "Select(new(Min, Count, SelectMany->Select->Distinct->Count)) -> OrderByDescending -> ThenBy", b => getQuery(b)
+                .Select(f => new {
+                    ParentGivenName = f.Parents.Min(p => p.GivenName),
+                    ParentCount = f.Parents.Count(),
+                    GoodChildrenCount = f.Children.Where(c => c.Grade > 95).Count(),
+                    UniquePetsNameCount = f.Children.SelectMany(c => c.Pets).Select(p => p.GivenName).Distinct().Count()
+                })
+                .OrderByDescending(r => r.GoodChildrenCount)
+                .ThenBy(r => r.UniquePetsNameCount)));
+
+            // With other LINQ operators: Where, SelectMany, Distinct, Skip, Take, and aggregates
+
+            inputs.Add(new LinqTestInput(
+                "Where -> OrderBy -> ThenBy", b => getQuery(b)
+                .Where(f => f.Children.Count() > 0)
+                .OrderBy(f => f.IsRegistered)
+                .ThenByDescending(f => f.Int)));
+
+            inputs.Add(new LinqTestInput(
+                "Where -> SelectMany -> OrderBy -> ThenBy -> Take", b => getQuery(b)
+                .Where(f => f.Children.Count() > 0)
+                .SelectMany(f => f.Children)
+                .OrderBy(c => c.Grade)
+                .ThenByDescending(c => c.Pets.Count())
+                .Take(3)));
+
+            inputs.Add(new LinqTestInput(
+                "Where -> SelectMany -> OrderBy -> ThenBy -> Skip -> Take -> Where -> Select -> Distinct", b => getQuery(b)
+                .Where(f => f.Children.Count() > 0)
+                .SelectMany(f => f.Children)
+                .OrderByDescending(c => c.Grade)
+                .ThenBy(c => c.GivenName)
+                .Skip(2)
+                .Take(20)
+                .Where(c => c.Pets.Where(p => p.GivenName.Length > 10).Count() > 0)
+                .Select(c => c.GivenName)
+                .Distinct()));
+
+            inputs.Add(new LinqTestInput(
+                "Where -> SelectMany -> OrderBy -> ThenBy -> Select => Distinct => Take => OrderBy", b => getQuery(b)
+                .Where(f => f.Children.Count() > 0)
+                .SelectMany(f => f.Children)
+                .OrderBy(c => c.Grade)
+                .ThenByDescending(c => c.Pets.Count())
+                .Select(c => c.GivenName)
+                .Distinct()
+                .Take(10)
+                .Skip(5)
+                .OrderBy(n => n.Length)));
+
+            inputs.Add(new LinqTestInput(
+                "Where -> SelectMany -> OrderBy -> ThenBy -> Take", b => getQuery(b)
+                .Where(f => f.Children.Count() > 0)
+                .SelectMany(f => f.Records.Transactions)
+                .OrderBy(t => t.Type)
+                .ThenBy(t => t.Amount)
+                .Take(100)));
+
+            inputs.Add(new LinqTestInput(
+                "Take -> OrderBy -> ThenBy", b => getQuery(b)
+                .Take(100)
+                .OrderBy(f => f.IsRegistered)
+                .ThenByDescending(f => f.Int)));
+
+            inputs.Add(new LinqTestInput(
+                "Take -> OrderBy -> ThenBy -> Skip", b => getQuery(b)
+                .Take(100)
+                .OrderBy(f => f.IsRegistered)
+                .ThenByDescending(f => f.Int)
+                .Skip(5)));
+
+            inputs.Add(new LinqTestInput(
+                "Distinct -> OrderBy -> ThenBy", b => getQuery(b)
+                .Distinct()
+                .OrderBy(f => f.IsRegistered)
+                .ThenByDescending(f => f.Int)));
+
+            inputs.Add(new LinqTestInput(
+                "Where -> SelectMany(Select(new Where->Count)) -> Distinct -> OrderBy -> ThenBy", b => getQuery(b)
+                .Where(f => f.Children.Count() > 0)
+                .SelectMany(f => f.Children.Select(c => new {
+                    Name = c.GivenName,
+                    PetWithLongNames = c.Pets.Where(p => p.GivenName.Length > 8).Count()
+                }))
+                .Distinct()
+                .OrderByDescending(r => r.Name)
+                .ThenBy(r => r.PetWithLongNames)));
+
+            inputs.Add(new LinqTestInput(
+                "OrderBy(Any) -> ThenBy(Any)", b => getQuery(b)
+                .OrderBy(f => f.Children.Any(c => c.Grade > 90))
+                .ThenByDescending(f => f.Parents.Any(p => p.GivenName.Length > 10))));
+
+            inputs.Add(new LinqTestInput(
+                "OrderBy(Min) -> ThenBy(Max) -> ThenBy(Sum) -> ThenBy(Avg)", b => getQuery(b)
+                .OrderBy(f => f.Children.Min(c => c.GivenName))
+                .ThenByDescending(f => f.Parents.Max(p => p.GivenName))
+                .ThenBy(f => f.Records.Transactions.Sum(t => t.Amount))
+                .ThenByDescending(f => f.Records.Transactions.Average(t => t.Amount))));
+
             this.ExecuteTestSuite(inputs);
         }
 
@@ -1367,7 +1576,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [Ignore]
         public void TestDistinctSelectManyIssues()
         {
-            var inputs = new List<LinqTestInput>();
+            List<LinqTestInput> inputs = new List<LinqTestInput>();
 
             // these tests need a fix in the ServiceInterop
             inputs.Add(new LinqTestInput(
@@ -1384,7 +1593,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestMethod]
         public void TestDistinctTranslation()
         {
-            var inputs = new List<LinqTestInput>();
+            List<LinqTestInput> inputs = new List<LinqTestInput>();
 
             // Simple distinct
             // Select -> Distinct for all data types
@@ -1439,7 +1648,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             inputs.Add(new LinqTestInput(
                 "Take -> Distinct",
-                b => getQuery(b).Select(f => f.Int).Take(10).Distinct(), ErrorMessages.TopInSubqueryNotSupported));
+                b => getQuery(b).Select(f => f.Int).Take(10).Distinct()));
 
             // Distinct + Order By
             inputs.Add(new LinqTestInput(
@@ -1453,11 +1662,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             // Distinct + Order By + Take
             inputs.Add(new LinqTestInput(
                 "Distinct -> Take -> OrderBy",
-                b => getQuery(b).Select(f => f.Int).Distinct().Take(10).OrderBy(x => x), ErrorMessages.TopInSubqueryNotSupported));
+                b => getQuery(b).Select(f => f.Int).Distinct().Take(10).OrderBy(x => x)));
 
             inputs.Add(new LinqTestInput(
                 "OrderBy -> Take -> Distinct",
-                b => getQuery(b).Select(f => f.Int).OrderBy(x => x).Take(10).Distinct(), ErrorMessages.OrderByInSubqueryNotSuppported));
+                b => getQuery(b).Select(f => f.Int).OrderBy(x => x).Take(10).Distinct()));
 
             // Distinct + Where
             inputs.Add(new LinqTestInput(
@@ -1559,32 +1768,32 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             inputs.Add(new LinqTestInput(
                 "SelectMany(Distinct) -> Where -> Distinct -> OrderBy",
                 b => getQuery(b).SelectMany(f => f.Parents.Distinct()).Where(f => f.FamilyName.Count() > 10).Distinct()
-                    .OrderBy(f => f), ErrorMessages.OrderByCorrelatedCollectionNotSupported));
+                    .OrderBy(f => f)));
 
             inputs.Add(new LinqTestInput(
                 "SelectMany(Distinct) -> Where -> Distinct -> OrderBy -> Where",
                 b => getQuery(b).SelectMany(f => f.Parents.Distinct()).Where(f => f.FamilyName.Count() > 10).Distinct()
-                    .OrderBy(f => f).Where(f => f.FamilyName.Count() < 20), ErrorMessages.OrderByCorrelatedCollectionNotSupported));
+                    .OrderBy(f => f).Where(f => f.FamilyName.Count() < 20)));
 
             inputs.Add(new LinqTestInput(
                 "SelectMany(Distinct) -> Where -> Distinct -> OrderBy -> Where -> Take",
                 b => getQuery(b).SelectMany(f => f.Parents.Distinct()).Where(f => f.FamilyName.Count() > 10).Distinct()
-                    .OrderBy(f => f).Where(f => f.FamilyName.Count() < 20).Take(5), ErrorMessages.OrderByCorrelatedCollectionNotSupported));
+                    .OrderBy(f => f).Where(f => f.FamilyName.Count() < 20).Take(5)));
 
             inputs.Add(new LinqTestInput(
                 "SelectMany(Distinct) -> Where -> Distinct -> OrderBy -> Where -> Take -> Distinct",
                 b => getQuery(b).SelectMany(f => f.Parents.Distinct()).Where(f => f.FamilyName.Count() > 10).Distinct()
-                    .OrderBy(f => f).Where(f => f.FamilyName.Count() < 20).Take(5).Distinct(), ErrorMessages.OrderByInSubqueryNotSuppported));
+                    .OrderBy(f => f).Where(f => f.FamilyName.Count() < 20).Take(5).Distinct()));
 
             inputs.Add(new LinqTestInput(
                 "SelectMany(Distinct) -> Where -> Distinct -> OrderBy -> Take",
                 b => getQuery(b).SelectMany(f => f.Parents.Distinct()).Where(f => f.FamilyName.Count() > 10).Distinct()
-                    .OrderBy(f => f).Take(5), ErrorMessages.OrderByCorrelatedCollectionNotSupported));
+                    .OrderBy(f => f).Take(5)));
 
             inputs.Add(new LinqTestInput(
                 "SelectMany(Distinct) -> Where -> Distinct -> OrderBy -> Take -> Distinct",
                 b => getQuery(b).SelectMany(f => f.Parents.Distinct()).Where(f => f.FamilyName.Count() > 10).Distinct()
-                    .OrderBy(f => f).Take(5).Distinct(), ErrorMessages.OrderByInSubqueryNotSuppported));
+                    .OrderBy(f => f).Take(5).Distinct()));
 
             inputs.Add(new LinqTestInput(
                 "SelectMany(Distinct) -> Where -> Distinct -> Take",
@@ -1593,37 +1802,37 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             inputs.Add(new LinqTestInput(
                 "SelectMany(Distinct) -> Where -> Distinct -> Take -> Distinct",
                 b => getQuery(b).SelectMany(f => f.Parents.Distinct()).Where(f => f.FamilyName.Count() > 10).Distinct()
-                    .Take(5).Distinct(), ErrorMessages.TopInSubqueryNotSupported));
+                    .Take(5).Distinct()));
 
             inputs.Add(new LinqTestInput(
                 "SelectMany(Distinct) -> Where -> OrderBy",
                 b => getQuery(b).SelectMany(f => f.Parents.Distinct()).Where(f => f.FamilyName.Count() > 10)
-                    .OrderBy(f => f), ErrorMessages.OrderByCorrelatedCollectionNotSupported));
+                    .OrderBy(f => f)));
 
             inputs.Add(new LinqTestInput(
                 "SelectMany(Distinct) -> Where -> OrderBy -> Distinct",
                 b => getQuery(b).SelectMany(f => f.Parents.Distinct()).Where(f => f.FamilyName.Count() > 10)
-                    .OrderBy(f => f).Distinct(), ErrorMessages.OrderByCorrelatedCollectionNotSupported));
+                    .OrderBy(f => f).Distinct()));
 
             inputs.Add(new LinqTestInput(
                 "SelectMany(Distinct) -> Where -> OrderBy -> Distinct -> OrderBy",
                 b => getQuery(b).SelectMany(f => f.Parents.Distinct()).Where(f => f.FamilyName.Count() > 10)
-                    .OrderBy(f => f).Distinct().OrderBy(f => f.GivenName.Length), ErrorMessages.OrderByCorrelatedCollectionNotSupported));
+                    .OrderBy(f => f).Distinct().OrderBy(f => f.GivenName.Length)));
 
             inputs.Add(new LinqTestInput(
                 "SelectMany(Distinct) -> Where -> OrderBy -> Distinct -> OrderBy -> Take",
                 b => getQuery(b).SelectMany(f => f.Parents.Distinct()).Where(f => f.FamilyName.Count() > 10)
-                    .OrderBy(f => f).Distinct().OrderBy(f => f.GivenName.Length).Take(5), ErrorMessages.OrderByCorrelatedCollectionNotSupported));
+                    .OrderBy(f => f).Distinct().OrderBy(f => f.GivenName.Length).Take(5)));
 
             inputs.Add(new LinqTestInput(
                 "SelectMany(Distinct) -> Where -> OrderBy -> Distinct -> Take",
                 b => getQuery(b).SelectMany(f => f.Parents.Distinct()).Where(f => f.FamilyName.Count() > 10)
-                    .OrderBy(f => f).Take(5), ErrorMessages.OrderByCorrelatedCollectionNotSupported));
+                    .OrderBy(f => f).Take(5)));
 
             inputs.Add(new LinqTestInput(
                 "SelectMany(Distinct) -> Where -> OrderBy -> Take",
                 b => getQuery(b).SelectMany(f => f.Parents.Distinct()).Where(f => f.FamilyName.Count() > 10)
-                    .OrderBy(f => f).Take(5), ErrorMessages.OrderByCorrelatedCollectionNotSupported));
+                    .OrderBy(f => f).Take(5)));
 
             inputs.Add(new LinqTestInput(
                 "SelectMany(Distinct) -> Where -> Where",
@@ -1632,11 +1841,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             inputs.Add(new LinqTestInput(
                 "SelectMany(Distinct) -> OrderBy",
-                b => getQuery(b).SelectMany(f => f.Parents.Distinct()).OrderBy(f => f.FamilyName), ErrorMessages.OrderByCorrelatedCollectionNotSupported));
+                b => getQuery(b).SelectMany(f => f.Parents.Distinct()).OrderBy(f => f.FamilyName)));
 
             inputs.Add(new LinqTestInput(
                 "SelectMany(Distinct) -> OrderBy -> Take",
-                b => getQuery(b).SelectMany(f => f.Parents.Distinct()).OrderBy(f => f.FamilyName).Take(5), ErrorMessages.OrderByCorrelatedCollectionNotSupported));
+                b => getQuery(b).SelectMany(f => f.Parents.Distinct()).OrderBy(f => f.FamilyName).Take(5)));
 
             inputs.Add(new LinqTestInput(
                 "SelectMany(Distinct) -> Take",
@@ -1653,11 +1862,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             // SelectMany(Select -> Distinct)
             inputs.Add(new LinqTestInput(
                 "SelectMany(Select -> Distinct) -> OrderBy -> Take",
-                b => getQuery(b).SelectMany(f => f.Parents.Select(p => p.GivenName).Distinct()).OrderBy(n => n).Take(5), ErrorMessages.OrderByCorrelatedCollectionNotSupported));
+                b => getQuery(b).SelectMany(f => f.Parents.Select(p => p.GivenName).Distinct()).OrderBy(n => n).Take(5)));
 
             inputs.Add(new LinqTestInput(
                 "SelectMany(Select -> Distinct) -> Where -> OrderBy -> Take",
-                b => getQuery(b).SelectMany(f => f.Parents.Select(p => p.GivenName).Distinct()).Where(n => n.Count() > 10).OrderBy(n => n).Take(5), ErrorMessages.OrderByCorrelatedCollectionNotSupported));
+                b => getQuery(b).SelectMany(f => f.Parents.Select(p => p.GivenName).Distinct()).Where(n => n.Count() > 10).OrderBy(n => n).Take(5)));
 
             inputs.Add(new LinqTestInput(
                 "SelectMany(Select) -> Distinct",
@@ -1681,7 +1890,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestMethod]
         public void ValidateDynamicLinq()
         {
-            var inputs = new List<LinqTestInput>();
+            List<LinqTestInput> inputs = new List<LinqTestInput>();
             inputs.Add(new LinqTestInput("Select", b => getQuery(b).Select("FamilyId")));
             inputs.Add(new LinqTestInput("Where", b => getQuery(b).Where("FamilyId = \"some id\"")));
             inputs.Add(new LinqTestInput("Where longer", b => getQuery(b).Where("FamilyId = \"some id\" AND IsRegistered = True OR Int > 101")));
@@ -1761,9 +1970,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             GuidClass guidObject = new GuidClass() { Id = new Guid("098aa945-7ed8-4c50-b7b8-bd99eddb54bc") };
             container.CreateItemAsync(guidObject).Wait();
-            var guidData = new List<GuidClass>() { guidObject };
+            List<GuidClass> guidData = new List<GuidClass>() { guidObject };
 
-            var guid = container.GetItemLinqQueryable<GuidClass>(allowSynchronousQueryExecution: true);
+            IOrderedQueryable<GuidClass> guid = container.GetItemLinqQueryable<GuidClass>(allowSynchronousQueryExecution: true);
 
             IQueryable<GuidClass> q11 = guid.Where(g => g.Id == guidObject.Id);
             Assert.AreEqual(((IEnumerable<GuidClass>)q11).FirstOrDefault().Id, guidObject.Id);
@@ -1774,7 +1983,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             ListArrayClass arrayObject = new ListArrayClass() { Id = "arrayObject", ArrayField = new int[] { 1, 2, 3 } };
             container.CreateItemAsync(arrayObject).Wait();
 
-            var listArrayQuery = container.GetItemLinqQueryable<ListArrayClass>(allowSynchronousQueryExecution : true);
+            IOrderedQueryable<ListArrayClass> listArrayQuery = container.GetItemLinqQueryable<ListArrayClass>(allowSynchronousQueryExecution : true);
 
             IEnumerable<dynamic> q13 = listArrayQuery.Where(a => a.ArrayField == arrayObject.ArrayField);
             Assert.AreEqual(q13.FirstOrDefault().Id, arrayObject.Id);
@@ -1785,7 +1994,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             ListArrayClass listObject = new ListArrayClass() { Id = "listObject", ListField = new List<int> { 1, 2, 3 } };
             container.CreateItemAsync(listObject).Wait();
-            var listArrayObjectData = new List<ListArrayClass>() { arrayObject, listObject };
+            List<ListArrayClass> listArrayObjectData = new List<ListArrayClass>() { arrayObject, listObject };
 
             IEnumerable<dynamic> q14 = listArrayQuery.Where(a => a.ListField == listObject.ListField);
             Assert.AreEqual(q14.FirstOrDefault().Id, listObject.Id);
@@ -1818,7 +2027,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             q15 = query.Where(f => f.Int == nullInt);
             Assert.AreEqual(q15.ToList().Count, 0);
 
-            var v = fList.Where(f => f.Int > nullInt).ToList();
+            List<Family> v = fList.Where(f => f.Int > nullInt).ToList();
 
             q15 = query.Where(f => f.Int < nullInt);
 
@@ -1826,7 +2035,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             Document doubleQoutesDocument = new Document() { Id = doc1Id };
             container.CreateItemAsync(doubleQoutesDocument).Wait();
 
-            var docQuery = from book in container.GetItemLinqQueryable<Document>(allowSynchronousQueryExecution : true)
+            IQueryable<Document> docQuery = from book in container.GetItemLinqQueryable<Document>(allowSynchronousQueryExecution : true)
                            where book.Id == doc1Id
                            select book;
 
@@ -1835,7 +2044,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             GreatFamily greatFamily = new GreatFamily() { Family = family };
             GreatGreatFamily greatGreatFamily = new GreatGreatFamily() { GreatFamilyId = Guid.NewGuid().ToString(), GreatFamily = greatFamily };
             container.CreateItemAsync(greatGreatFamily).Wait();
-            var greatGreatFamilyData = new List<GreatGreatFamily>() { greatGreatFamily };
+            List<GreatGreatFamily> greatGreatFamilyData = new List<GreatGreatFamily>() { greatGreatFamily };
 
             IOrderedQueryable<GreatGreatFamily> queryable = container.GetItemLinqQueryable<GreatGreatFamily>(allowSynchronousQueryExecution : true);
 
@@ -1845,9 +2054,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             Sport sport = new Sport() { SportName = "Tennis", SportType = "Racquet" };
             container.CreateItemAsync(sport).Wait();
-            var sportData = new List<Sport>() { sport };
+            List<Sport> sportData = new List<Sport>() { sport };
 
-            var sportQuery = container.GetItemLinqQueryable<Sport>(allowSynchronousQueryExecution : true);
+            IOrderedQueryable<Sport> sportQuery = container.GetItemLinqQueryable<Sport>(allowSynchronousQueryExecution : true);
 
             IEnumerable<Sport> q17 = sportQuery.Where(s => s.SportName == "Tennis");
 
@@ -1855,9 +2064,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             Sport2 sport2 = new Sport2() { id = "json" };
             container.CreateItemAsync(sport2).Wait();
-            var sport2Data = new List<Sport2>() { sport2 };
+            List<Sport2> sport2Data = new List<Sport2>() { sport2 };
 
-            var sport2Query = container.GetItemLinqQueryable<Sport2>(allowSynchronousQueryExecution: true);
+            IOrderedQueryable<Sport2> sport2Query = container.GetItemLinqQueryable<Sport2>(allowSynchronousQueryExecution: true);
 
             Func<bool, IQueryable<GuidClass>> getGuidQuery = useQuery => useQuery ? guid : guidData.AsQueryable();
             Func<bool, IQueryable<ListArrayClass>> getListArrayQuery = useQuery => useQuery ? listArrayQuery : listArrayObjectData.AsQueryable();
@@ -1868,7 +2077,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             int? nullIntVal = null;
             int? nullableIntVal = 5;
 
-            var inputs = new List<LinqTestInput>();
+            List<LinqTestInput> inputs = new List<LinqTestInput>();
             inputs.Add(new LinqTestInput("Select 1st parent family name", b => getQuery(b).Where(f => f.Parents.Count() > 0).Select(f => f.Parents[0].FamilyName)));
             inputs.Add(new LinqTestInput("Select 1st children grade expr", b => getQuery(b).Where(f => f.Children.Count() > 0).Select(f => f.Children[0].Grade + 13)));
             inputs.Add(new LinqTestInput("Filter 1st children's 1st pet name", b => getQuery(b).Where(f => f.Children.Count() > 0 && f.Children[0].Pets.Count() > 0 && f.Children[0].Pets[0].GivenName == "Fluffy")));
@@ -2056,7 +2265,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             IOrderedQueryable<Book> bookDocQuery = testContainer.GetItemLinqQueryable<Book>(allowSynchronousQueryExecution : true);
             Func<bool, IQueryable<Book>> getBookQuery = useQuery => useQuery ? bookDocQuery : new List<Book>().AsQueryable();
 
-            var inputs = new List<LinqTestInput>();
+            List<LinqTestInput> inputs = new List<LinqTestInput>();
             inputs.Add(new LinqTestInput("Simple Equality on custom property",
                 b => from book in getBookQuery(b)
                       where book.Title == "My Book"
@@ -2100,10 +2309,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         public void ValidateDynamicAttachmentQuery() //Ensure query on custom property of attachment.
         {
             IOrderedQueryable<SpecialAttachment2> attachmentQuery = testContainer.GetItemLinqQueryable<SpecialAttachment2>(allowSynchronousQueryExecution : true);
-            var myDocument = new Document();
+            Document myDocument = new Document();
             Func<bool, IQueryable<SpecialAttachment2>> getAttachmentQuery = useQuery => useQuery ? attachmentQuery : new List<SpecialAttachment2>().AsQueryable();
 
-            var inputs = new List<LinqTestInput>();
+            List<LinqTestInput> inputs = new List<LinqTestInput>();
             inputs.Add(new LinqTestInput("Filter equality on custom property",
                 b => from attachment in getAttachmentQuery(b)
                      where attachment.Title == "My Book Title2"
@@ -2166,9 +2375,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             public IQueryable<T> Query<T>() where T : BaseDocument
             {
-                var query = this.container.GetItemLinqQueryable<T>(allowSynchronousQueryExecution : true)
+                IQueryable<T> query = this.container.GetItemLinqQueryable<T>(allowSynchronousQueryExecution : true)
                                        .Where(d => d.TypeName == "Hello");
-                var queryString = query.ToString();
+                string queryString = query.ToString();
                 return query;
             }
         }

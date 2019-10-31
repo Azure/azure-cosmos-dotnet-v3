@@ -1,7 +1,7 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
+namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
 {
     using System;
     using System.Collections.Generic;
@@ -32,10 +32,6 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         /// </summary>
         void Stop();
 
-        /// <summary>
-        /// Gets the QueryMetrics from this component.
-        /// </summary>
-        /// <returns>The QueryMetrics from this component.</returns>
-        IReadOnlyDictionary<string, QueryMetrics> GetQueryMetrics();
+        bool TryGetContinuationToken(out string state);
     }
 }

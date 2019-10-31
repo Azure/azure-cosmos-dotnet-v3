@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 {
     using System.Collections;
     using System.Collections.Generic;
+    using System.Linq;
     using Microsoft.Azure.Cosmos.Json;
 
 #if INTERNAL
@@ -79,9 +80,14 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return new LazyCosmosObject(jsonNavigator, jsonNavigatorNode);
         }
 
-        public static CosmosObject Create(IDictionary<string, CosmosElement> dictionary)
+        public static CosmosObject Create(IReadOnlyDictionary<string, CosmosElement> dictionary)
         {
-            return new EagerCosmosObject(dictionary);
+            return new EagerCosmosObject(dictionary.ToList());
+        }
+
+        public static CosmosObject Create(IReadOnlyList<KeyValuePair<string, CosmosElement>> properties)
+        {
+            return new EagerCosmosObject(properties);
         }
     }
 #if INTERNAL

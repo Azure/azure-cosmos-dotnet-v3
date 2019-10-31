@@ -1,17 +1,14 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
+namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
 {
     using System;
     using System.Collections.Generic;
     using System.Globalization;
     using System.Linq;
-    using System.Net;
-    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Newtonsoft.Json;
@@ -118,35 +115,14 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             }
 
             List<CosmosElement> takedDocuments = results.CosmosElements.Take(this.takeCount).ToList();
-
             this.takeCount -= takedDocuments.Count;
-            string updatedContinuationToken = null;
 
+            string updatedContinuationToken = null;
             if (results.DisallowContinuationTokenMessage == null)
             {
-                if (!this.IsDone)
+                if (!this.TryGetContinuationToken(out updatedContinuationToken))
                 {
-                    string sourceContinuation = results.ContinuationToken;
-                    TakeContinuationToken takeContinuationToken;
-                    switch (this.takeEnum)
-                    {
-                        case TakeEnum.Limit:
-                            takeContinuationToken = new LimitContinuationToken(
-                                this.takeCount,
-                                sourceContinuation);
-                            break;
-
-                        case TakeEnum.Top:
-                            takeContinuationToken = new TopContinuationToken(
-                                this.takeCount,
-                                sourceContinuation);
-                            break;
-
-                        default:
-                            throw new ArgumentException($"Unknown {nameof(TakeEnum)}: {this.takeEnum}");
-                    }
-
-                    updatedContinuationToken = takeContinuationToken.ToString();
+                    throw new InvalidOperationException($"Failed to get state for {nameof(TakeDocumentQueryExecutionComponent)}.");
                 }
             }
 
@@ -156,10 +132,49 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                     disallowContinuationTokenMessage: results.DisallowContinuationTokenMessage,
                     activityId: results.ActivityId,
                     requestCharge: results.RequestCharge,
-                    queryMetricsText: results.QueryMetricsText,
-                    queryMetrics: results.QueryMetrics,
-                    requestStatistics: results.RequestStatistics,
+                    diagnostics: results.Diagnostics,
                     responseLengthBytes: results.ResponseLengthBytes);
+        }
+
+        public override bool TryGetContinuationToken(out string state)
+        {
+            if (!this.IsDone)
+            {
+                if (this.Source.TryGetContinuationToken(out string sourceState))
+                {
+                    TakeContinuationToken takeContinuationToken;
+                    switch (this.takeEnum)
+                    {
+                        case TakeEnum.Limit:
+                            takeContinuationToken = new LimitContinuationToken(
+                                this.takeCount,
+                                sourceState);
+                            break;
+
+                        case TakeEnum.Top:
+                            takeContinuationToken = new TopContinuationToken(
+                                this.takeCount,
+                                sourceState);
+                            break;
+
+                        default:
+                            throw new ArgumentException($"Unknown {nameof(TakeEnum)}: {this.takeEnum}");
+                    }
+
+                    state = takeContinuationToken.ToString();
+                    return true;
+                }
+                else
+                {
+                    state = default(string);
+                    return false;
+                }
+            }
+            else
+            {
+                state = default(string);
+                return true;
+            }
         }
 
         private enum TakeEnum

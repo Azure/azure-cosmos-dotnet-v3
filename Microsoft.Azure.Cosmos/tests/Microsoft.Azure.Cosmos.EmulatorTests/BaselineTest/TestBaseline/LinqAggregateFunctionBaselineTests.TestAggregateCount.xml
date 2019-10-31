@@ -98,7 +98,6 @@ WHERE (root["Number"] < -13) ]]></SqlQuery>
     <Input>
       <Description><![CDATA[Select number -> Skip -> Count]]></Description>
       <Expression><![CDATA[query.Select(f => f.Int).Skip(90).Count(), Object)]]></Expression>
-      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -109,13 +108,13 @@ FROM (
     OFFSET 90 LIMIT 2147483647
 ) AS r0 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":63,"end":89},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[Select number -> Skip -> Take -> Count]]></Description>
       <Expression><![CDATA[query.Select(f => f.Int).Skip(90).Take(5).Count(), Object)]]></Expression>
-      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -126,13 +125,13 @@ FROM (
     OFFSET 90 LIMIT 5
 ) AS r0 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":63,"end":80},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[Skip -> Take -> Select number -> Count]]></Description>
       <Expression><![CDATA[query.Skip(5).Take(5).Select(f => f.Int).Count(), Object)]]></Expression>
-      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -143,13 +142,13 @@ FROM (
     OFFSET 5 LIMIT 5
 ) AS r0 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":63,"end":79},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[Skip -> Take -> SelectMany(Select) -> Skip -> Take -> Count]]></Description>
       <Expression><![CDATA[query.Skip(5).Take(5).SelectMany(f => f.Children.Select(c => c.Grade)).Skip(10).Take(20).Count(), Object)]]></Expression>
-      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -165,13 +164,13 @@ FROM (
     OFFSET 10 LIMIT 20
 ) AS r1 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":87,"end":103},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."},{"severity":"Error","location":{"start":138,"end":156},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[Skip -> Take -> Select(new(Skip -> Select -> Count, Skip -> Take -> Select -> Count, Take -> Skip -> Select -> Count) -> Skip -> Take)]]></Description>
       <Expression><![CDATA[query.Skip(1).Take(20).Select(f => new AnonymousType(v0 = f.Children.Skip(1).Select(c => c.Grade).Count(), v1 = f.Children.Skip(1).Take(3).Select(c => c.Grade).Count(), v2 = f.Children.Take(3).Skip(1).Select(c => c.Grade).Count())).Skip(1).Take(10).Count(), Object)]]></Expression>
-      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -216,13 +215,13 @@ FROM (
     OFFSET 1 LIMIT 10
 ) AS r5 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":202,"end":227},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."},{"severity":"Error","location":{"start":341,"end":357},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."},{"severity":"Error","location":{"start":446,"end":451},"code":"SC2203","message":"'TOP' is not supported in subqueries."},{"severity":"Error","location":{"start":507,"end":532},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."},{"severity":"Error","location":{"start":550,"end":567},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."},{"severity":"Error","location":{"start":576,"end":593},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[Skip -> Take -> Select(new() -> Skip -> Take)]]></Description>
       <Expression><![CDATA[query.Skip(1).Take(20).Select(f => new AnonymousType(v0 = f.Children.Skip(1).Count(c => (c.Grade > 50)), v1 = f.Children.Skip(1).Take(3).Count(c => (c.Grade > 50)), v2 = f.Children.Take(3).Skip(1).Count(c => (c.Grade > 50)), v3 = f.Records.Transactions.Select(t => t.Amount).OrderBy(a => a).Skip(10).Take(20).Count(), v4 = f.Children.Where(c => (c.Grade > 20)).OrderBy(c => c.Grade).Select(c => c.Grade).Skip(1).Count())).Skip(1).Take(10).Count(f => ((f.v0 + f.v1) > (f.v2 + f.v3))), Object)]]></Expression>
-      <ErrorMessage><![CDATA['OFFSET LIMIT' clause is not supported in subqueries.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -292,6 +291,7 @@ FROM (
 ) AS r8 
 WHERE ((r8["v0"] + r8["v1"]) > (r8["v2"] + r8["v3"])) 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":215,"end":240},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."},{"severity":"Error","location":{"start":370,"end":386},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."},{"severity":"Error","location":{"start":491,"end":496},"code":"SC2203","message":"'TOP' is not supported in subqueries."},{"severity":"Error","location":{"start":552,"end":577},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."},{"severity":"Error","location":{"start":733,"end":758},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":759,"end":777},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."},{"severity":"Error","location":{"start":917,"end":941},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":942,"end":967},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."},{"severity":"Error","location":{"start":985,"end":1002},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."},{"severity":"Error","location":{"start":1011,"end":1028},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."}]}).]]></ErrorMessage>
     </Output>
   </Result>
 </Results>

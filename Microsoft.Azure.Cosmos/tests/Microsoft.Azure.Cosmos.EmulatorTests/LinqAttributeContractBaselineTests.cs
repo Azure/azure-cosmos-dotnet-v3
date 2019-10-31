@@ -34,13 +34,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         {
             client = TestCommon.CreateCosmosClient(true);
 
-            var db = new Database() { Id = nameof(LinqTranslationBaselineTests) };
-            try
-            {
-                var response = await client.DocumentClient.DeleteDatabaseAsync(UriFactory.CreateDatabaseUri(db.Id));
-            }
-            catch { }
-            testDb = await client.CreateDatabaseAsync(nameof(LinqTranslationBaselineTests));
+            string dbName = $"{nameof(LinqAttributeContractBaselineTests)}-{Guid.NewGuid().ToString("N")}";
+            testDb = await client.CreateDatabaseAsync(dbName);
         }
 
         [ClassCleanup]
@@ -253,7 +248,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         public void TestNewAttributeContract()
         {
             var inputs = new List<LinqTestInput>();
-            inputs.Add(new LinqTestInput("New", b => getQuery(b).Select(doc => new Datum2(doc.JsonProperty, doc.DataMember, doc.Default, doc.JsonPropertyAndDataMember)), "Constructor invocation is not supported."));
+            inputs.Add(new LinqTestInput("New", b => getQuery(b).Select(doc => new Datum2(doc.JsonProperty, doc.DataMember, doc.Default, doc.JsonPropertyAndDataMember))));
             this.ExecuteTestSuite(inputs);
         }
 

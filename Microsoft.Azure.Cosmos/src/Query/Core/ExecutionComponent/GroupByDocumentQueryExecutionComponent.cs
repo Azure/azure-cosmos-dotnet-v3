@@ -1,7 +1,7 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
+namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
 {
     using System;
     using System.Collections.Generic;
@@ -48,8 +48,8 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
 
         private readonly CosmosQueryClient cosmosQueryClient;
         private readonly IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType;
+        private readonly IReadOnlyList<string> orderedAliases;
         private readonly Dictionary<UInt192, SingleGroupAggregator> groupingTable;
-        private readonly DistinctMap distinctMap;
         private readonly bool hasSelectValue;
 
         private int numPagesDrainedFromGroupingTable;
@@ -59,6 +59,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             IDocumentQueryExecutionComponent source,
             CosmosQueryClient cosmosQueryClient,
             IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
+            IReadOnlyList<string> orderedAliases,
             string groupingTableContinuationToken,
             bool hasSelectValue,
             int numPagesDrainedFromGroupingTable)
@@ -74,12 +75,12 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                 throw new ArgumentNullException(nameof(groupByAliasToAggregateType));
             }
 
-            this.cosmosQueryClient = cosmosQueryClient;
             this.groupingTable = new Dictionary<UInt192, SingleGroupAggregator>();
 
-            // Using an ordered distinct map to get hashes.
-            this.distinctMap = DistinctMap.Create(DistinctQueryType.Ordered, null);
+            this.cosmosQueryClient = cosmosQueryClient;
+            this.groupingTable = new Dictionary<UInt192, SingleGroupAggregator>();
             this.groupByAliasToAggregateType = groupByAliasToAggregateType;
+            this.orderedAliases = orderedAliases;
             this.hasSelectValue = hasSelectValue;
             this.numPagesDrainedFromGroupingTable = numPagesDrainedFromGroupingTable;
 
@@ -89,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                     groupingTableContinuationToken,
                     out CosmosObject parsedGroupingTableContinuations))
                 {
-                    throw cosmosQueryClient.CreateBadRequestException($"Invalid GroupingTableContinuationToken");
+                    throw this.cosmosQueryClient.CreateBadRequestException($"Invalid GroupingTableContinuationToken");
                 }
 
                 foreach (KeyValuePair<string, CosmosElement> kvp in parsedGroupingTableContinuations)
@@ -101,12 +102,13 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
 
                     if (!(value is CosmosString singleGroupAggregatorContinuationToken))
                     {
-                        throw cosmosQueryClient.CreateBadRequestException($"Invalid GroupingTableContinuationToken");
+                        throw this.cosmosQueryClient.CreateBadRequestException($"Invalid GroupingTableContinuationToken");
                     }
                     SingleGroupAggregator singleGroupAggregator = SingleGroupAggregator.Create(
                         this.cosmosQueryClient,
                         EmptyAggregateOperators,
                         this.groupByAliasToAggregateType,
+                        this.orderedAliases,
                         this.hasSelectValue,
                         singleGroupAggregatorContinuationToken.Value);
 
@@ -122,6 +124,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             string requestContinuation,
             Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback,
             IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
+            IReadOnlyList<string> orderedAliases,
             bool hasSelectValue)
         {
             GroupByContinuationToken groupByContinuationToken;
@@ -152,6 +155,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                 source,
                 cosmosQueryClient,
                 groupByAliasToAggregateType,
+                orderedAliases,
                 groupByContinuationToken.GroupingTableContinuationToken,
                 hasSelectValue,
                 groupByContinuationToken.NumPagesDrainedFromGroupingTable);
@@ -179,21 +183,18 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                 {
                     // Aggregate the values for all groupings across all continuations.
                     RewrittenGroupByProjection groupByItem = new RewrittenGroupByProjection(result);
-                    this.distinctMap.Add(groupByItem.GroupByItems, out UInt192? groupByKeysHash);
-                    if (!groupByKeysHash.HasValue)
-                    {
-                        throw new InvalidOperationException("hash invariant was broken");
-                    }
+                    UInt192 groupByKeysHash = DistinctHash.GetHash(groupByItem.GroupByItems);
 
-                    if (!this.groupingTable.TryGetValue(groupByKeysHash.Value, out SingleGroupAggregator singleGroupAggregator))
+                    if (!this.groupingTable.TryGetValue(groupByKeysHash, out SingleGroupAggregator singleGroupAggregator))
                     {
                         singleGroupAggregator = SingleGroupAggregator.Create(
                             this.cosmosQueryClient,
                             EmptyAggregateOperators,
                             this.groupByAliasToAggregateType,
+                            this.orderedAliases,
                             this.hasSelectValue,
                             continuationToken: null);
-                        this.groupingTable[groupByKeysHash.Value] = singleGroupAggregator;
+                        this.groupingTable[groupByKeysHash] = singleGroupAggregator;
                     }
 
                     CosmosElement payload = groupByItem.Payload;
@@ -223,9 +224,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                     disallowContinuationTokenMessage: null,
                     activityId: sourceResponse.ActivityId,
                     requestCharge: sourceResponse.RequestCharge,
-                    queryMetricsText: sourceResponse.QueryMetricsText,
-                    queryMetrics: sourceResponse.QueryMetrics,
-                    requestStatistics: sourceResponse.RequestStatistics,
+                    diagnostics: sourceResponse.Diagnostics,
                     responseLengthBytes: sourceResponse.ResponseLengthBytes);
 
                 this.isDone = false;
@@ -271,9 +270,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                    disallowContinuationTokenMessage: null,
                    activityId: null,
                    requestCharge: 0,
-                   queryMetricsText: null,
-                   queryMetrics: EmptyQueryMetrics,
-                   requestStatistics: null,
+                   diagnostics: QueryResponseCore.EmptyDiagnostics,
                    responseLengthBytes: 0);
             }
 
@@ -291,7 +288,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             }
             jsonWriter.WriteObjectEnd();
 
-            string result = Encoding.UTF8.GetString(jsonWriter.GetResult());
+            string result = Utf8StringHelpers.ToString(jsonWriter.GetResult());
             return result;
         }
 
@@ -327,31 +324,31 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             {
                 if (!CosmosElement.TryParse<CosmosObject>(value, out CosmosObject groupByContinuationTokenObject))
                 {
-                    groupByContinuationToken = default(GroupByContinuationToken);
+                    groupByContinuationToken = default;
                     return false;
                 }
 
-                if (!groupByContinuationTokenObject.TryGetValue<CosmosString>(
+                if (!groupByContinuationTokenObject.TryGetValue(
                     nameof(GroupByContinuationToken.GroupingTableContinuationToken),
                     out CosmosString groupingTableContinuationToken))
                 {
-                    groupByContinuationToken = default(GroupByContinuationToken);
+                    groupByContinuationToken = default;
                     return false;
                 }
 
-                if (!groupByContinuationTokenObject.TryGetValue<CosmosString>(
+                if (!groupByContinuationTokenObject.TryGetValue(
                     nameof(GroupByContinuationToken.SourceContinuationToken),
                     out CosmosString sourceContinuationToken))
                 {
-                    groupByContinuationToken = default(GroupByContinuationToken);
+                    groupByContinuationToken = default;
                     return false;
                 }
 
-                if (!groupByContinuationTokenObject.TryGetValue<CosmosNumber64>(
+                if (!groupByContinuationTokenObject.TryGetValue(
                     nameof(GroupByContinuationToken.NumPagesDrainedFromGroupingTable),
                     out CosmosNumber64 numPagesDrainedFromGroupingTable))
                 {
-                    groupByContinuationToken = default(GroupByContinuationToken);
+                    groupByContinuationToken = default;
                     return false;
                 }
 
@@ -361,6 +358,12 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                     (int)numPagesDrainedFromGroupingTable.AsInteger().Value);
                 return true;
             }
+        }
+
+        public override bool TryGetContinuationToken(out string state)
+        {
+            state = default(string);
+            return false;
         }
 
         /// <summary>
@@ -454,6 +457,12 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             public void Stop()
             {
                 throw new NotImplementedException();
+            }
+
+            public bool TryGetContinuationToken(out string state)
+            {
+                state = null;
+                return true;
             }
         }
     }

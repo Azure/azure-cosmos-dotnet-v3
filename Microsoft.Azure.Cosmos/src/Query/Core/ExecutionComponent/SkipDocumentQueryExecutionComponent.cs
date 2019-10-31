@@ -1,7 +1,7 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
+namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
 {
     using System;
     using System.Collections.Generic;
@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Newtonsoft.Json;
@@ -67,19 +66,17 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             }
 
             // skip the documents but keep all the other headers
-            List<CosmosElement> documentsAfterSkip = sourcePage.CosmosElements.Skip(this.skipCount).ToList();
+            IReadOnlyList<CosmosElement> documentsAfterSkip = sourcePage.CosmosElements.Skip(this.skipCount).ToList();
 
-            int numberOfDocumentsSkipped = sourcePage.CosmosElements.Count - documentsAfterSkip.Count;
+            int numberOfDocumentsSkipped = sourcePage.CosmosElements.Count() - documentsAfterSkip.Count();
             this.skipCount -= numberOfDocumentsSkipped;
             string updatedContinuationToken = null;
 
             if (sourcePage.DisallowContinuationTokenMessage == null)
             {
-                if (!this.IsDone)
+                if (!this.TryGetContinuationToken(out updatedContinuationToken))
                 {
-                    updatedContinuationToken = new OffsetContinuationToken(
-                        this.skipCount,
-                        sourcePage.ContinuationToken).ToString();
+                    throw new InvalidOperationException($"Failed to get state for {nameof(SkipDocumentQueryExecutionComponent)}.");
                 }
             }
 
@@ -89,10 +86,32 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                     disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,
                     activityId: sourcePage.ActivityId,
                     requestCharge: sourcePage.RequestCharge,
-                    queryMetricsText: sourcePage.QueryMetricsText,
-                    queryMetrics: sourcePage.QueryMetrics,
-                    requestStatistics: sourcePage.RequestStatistics,
+                    diagnostics: sourcePage.Diagnostics,
                     responseLengthBytes: sourcePage.ResponseLengthBytes);
+        }
+
+        public override bool TryGetContinuationToken(out string state)
+        {
+            if (!this.IsDone)
+            {
+                if (this.Source.TryGetContinuationToken(out string sourceState))
+                {
+                    state = new OffsetContinuationToken(
+                        this.skipCount,
+                        sourceState).ToString();
+                    return true;
+                }
+                else
+                {
+                    state = null;
+                    return false;
+                }
+            }
+            else
+            {
+                state = null;
+                return true;
+            }
         }
 
         /// <summary>

@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Documents;
@@ -228,7 +229,8 @@ namespace Microsoft.Azure.Cosmos
                 enableCpuMonitor: clientOptionsClone.EnableCpuMonitor,
                 storeClientFactory: clientOptionsClone.StoreClientFactory,
                 desiredConsistencyLevel: clientOptionsClone.GetDocumentsConsistencyLevel(),
-                handler: this.CreateHttpClientHandler(clientOptions));
+                handler: this.CreateHttpClientHandler(clientOptions),
+                sessionContainer: clientOptionsClone.SessionContainer);
 
             this.Init(
                 clientOptionsClone,
@@ -296,6 +298,7 @@ namespace Microsoft.Azure.Cosmos
         internal RequestInvokerHandler RequestHandler { get; private set; }
         internal CosmosResponseFactory ResponseFactory { get; private set; }
         internal CosmosClientContext ClientContext { get; private set; }
+        internal BatchAsyncContainerExecutorCache BatchExecutorCache { get; private set; } = new BatchAsyncContainerExecutorCache();
 
         /// <summary>
         /// Read Azure Cosmos DB account properties <see cref="Microsoft.Azure.Cosmos.AccountProperties"/>
@@ -468,6 +471,12 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <returns>An iterator to go through the databases.</returns>
+        /// <remarks>
+        /// Refer to https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.
+        /// <para>
+        /// <see cref="Database.ReadAsync(RequestOptions, CancellationToken)" /> is recommended for single database look-up.
+        /// </para>
+        /// </remarks>
         public virtual FeedIterator<T> GetDatabaseQueryIterator<T>(
             QueryDefinition queryDefinition,
             string continuationToken = null,
@@ -491,6 +500,12 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the query request <see cref="QueryRequestOptions"/></param>
         /// <returns>An iterator to go through the databases</returns>
+        /// <remarks>
+        /// Refer to https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.
+        /// <para>
+        /// <see cref="Database.ReadStreamAsync(RequestOptions, CancellationToken)" /> is recommended for single database look-up.
+        /// </para>
+        /// </remarks>
         public virtual FeedIterator GetDatabaseQueryStreamIterator(
             QueryDefinition queryDefinition,
             string continuationToken = null,
@@ -513,6 +528,12 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <returns>An iterator to go through the databases.</returns>
+        /// <remarks>
+        /// Refer to https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.
+        /// <para>
+        /// <see cref="Database.ReadAsync(RequestOptions, CancellationToken)" /> is recommended for single database look-up.
+        /// </para>
+        /// </remarks>
         public virtual FeedIterator<T> GetDatabaseQueryIterator<T>(
             string queryText = null,
             string continuationToken = null,
@@ -538,6 +559,12 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the query request <see cref="QueryRequestOptions"/></param>
         /// <returns>An iterator to go through the databases</returns>
+        /// <remarks>
+        /// Refer to https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.
+        /// <para>
+        /// <see cref="Database.ReadStreamAsync(RequestOptions, CancellationToken)" /> is recommended for single database look-up.
+        /// </para>
+        /// </remarks>
         public virtual FeedIterator GetDatabaseQueryStreamIterator(
             string queryText = null,
             string continuationToken = null,
@@ -742,6 +769,12 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.DocumentClient.Dispose();
                 this.DocumentClient = null;
+            }
+
+            if (this.BatchExecutorCache != null)
+            {
+                this.BatchExecutorCache.Dispose();
+                this.BatchExecutorCache = null;
             }
         }
     }

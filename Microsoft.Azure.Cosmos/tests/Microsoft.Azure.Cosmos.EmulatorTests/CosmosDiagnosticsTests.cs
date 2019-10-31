@@ -5,8 +5,10 @@
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json.Linq;
     using System;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.Linq;
     using System.Threading.Tasks;
 
@@ -58,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(deleteResponse.Diagnostics);
 
             //Checking point operation diagnostics on stream operations
-            ResponseMessage createStreamResponse =  await this.Container.CreateItemStreamAsync(
+            ResponseMessage createStreamResponse = await this.Container.CreateItemStreamAsync(
                 partitionKey: new PartitionKey(testItem.status),
                 streamPayload: TestCommon.Serializer.ToStream<ToDoActivity>(testItem));
             Assert.IsNotNull(createStreamResponse.Diagnostics);
@@ -83,70 +85,37 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task QueryOperationDiagnostic()
         {
-            IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(this.Container, 3, randomPartitionKey: true);
+            int totalItems = 3;
+            IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(
+                this.Container,
+                pkCount: totalItems,
+                perPKItemCount: 1,
+                randomPartitionKey: true);
 
             //Checking query metrics on typed query
-            ToDoActivity find = itemList.First();
-            QueryDefinition sql = new QueryDefinition("select * from ToDoActivity");
+            long totalOutputDocumentCount = await this.ExecuteQueryAndReturnOutputDocumentCount(
+                queryText: "select * from ToDoActivity",
+                expectedItemCount: totalItems);
 
-            QueryRequestOptions requestOptions = new QueryRequestOptions()
-            {
-                MaxItemCount = 1,
-                MaxConcurrency = 1,
-            };
+            Assert.AreEqual(totalItems, totalOutputDocumentCount);
 
-            FeedIterator<ToDoActivity> feedIterator = this.Container.GetItemQueryIterator<ToDoActivity>(
-                    sql,
-                    requestOptions: requestOptions);
+            totalOutputDocumentCount = await this.ExecuteQueryAndReturnOutputDocumentCount(
+                queryText: "select * from ToDoActivity t ORDER BY t.cost",
+                expectedItemCount: totalItems);
 
-            if (feedIterator.HasMoreResults)
-            {
-                FeedResponse<ToDoActivity> iter = await feedIterator.ReadNextAsync();
-                Assert.IsTrue(((QueryOperationStatistics)iter.Diagnostics).queryMetrics.Values.First().OutputDocumentCount > 0);
-            }
+            Assert.AreEqual(totalItems, totalOutputDocumentCount);
 
-            sql = new QueryDefinition("select * from ToDoActivity t ORDER BY t.cost");
-            feedIterator = this.Container.GetItemQueryIterator<ToDoActivity>(
-                   sql,
-                   requestOptions: requestOptions);
-            if (feedIterator.HasMoreResults)
-            {
-                FeedResponse<ToDoActivity> iter = await feedIterator.ReadNextAsync();
-                Assert.IsTrue(((QueryOperationStatistics)iter.Diagnostics).queryMetrics.Values.First().OutputDocumentCount > 0);
-            }
+            totalOutputDocumentCount = await this.ExecuteQueryAndReturnOutputDocumentCount(
+                queryText: "select DISTINCT t.cost from ToDoActivity t",
+                expectedItemCount: 1);
 
-            sql = new QueryDefinition("select DISTINCT t.cost from ToDoActivity t");
-            feedIterator = this.Container.GetItemQueryIterator<ToDoActivity>(
-                   sql,
-                   requestOptions: requestOptions);
-            if (feedIterator.HasMoreResults)
-            {
-                FeedResponse<ToDoActivity> iter = await feedIterator.ReadNextAsync();
-                Assert.IsNotNull((QueryOperationStatistics)iter.Diagnostics);
-                Assert.AreEqual(1, ((QueryOperationStatistics)iter.Diagnostics).queryMetrics.Values.First().OutputDocumentCount);
-            }
+            Assert.IsTrue(totalOutputDocumentCount >= 1);
 
-            sql = new QueryDefinition("select * from ToDoActivity OFFSET 1 LIMIT 1");
-            feedIterator = this.Container.GetItemQueryIterator<ToDoActivity>(
-                  sql,
-                  requestOptions: requestOptions);
-            if (feedIterator.HasMoreResults)
-            {
-                FeedResponse<ToDoActivity> iter = await feedIterator.ReadNextAsync();
-                Assert.IsTrue(((QueryOperationStatistics)iter.Diagnostics).queryMetrics.Values.First().OutputDocumentCount > 0);
-            }
+            totalOutputDocumentCount = await this.ExecuteQueryAndReturnOutputDocumentCount(
+                queryText: "select * from ToDoActivity OFFSET 1 LIMIT 1",
+                expectedItemCount: 1);
 
-            //Checking query metrics on stream query
-            sql = new QueryDefinition("select * from ToDoActivity");
-
-            FeedIterator iterator = this.Container.GetItemQueryStreamIterator(
-                sql,
-                requestOptions: requestOptions);
-            if (iterator.HasMoreResults)
-            {
-                ResponseMessage responseMessage = await iterator.ReadNextAsync();
-                Assert.IsTrue(((QueryOperationStatistics)responseMessage.Diagnostics).queryMetrics.Values.First().OutputDocumentCount > 0);
-            }
+            Assert.IsTrue(totalOutputDocumentCount >= 1);
         }
 
         [TestMethod]
@@ -160,6 +129,70 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(diagnostics.Contains("SubStatusCode"));
             Assert.IsTrue(diagnostics.Contains("RequestUri"));
             Assert.IsTrue(diagnostics.Contains("Method"));
+        }
+
+        public static void VerifyQueryDiagnostics(CosmosDiagnostics diagnostics)
+        {
+            string info = diagnostics.ToString();
+            Assert.IsNotNull(info);
+            JArray jArray = JArray.Parse(info);
+            foreach (JToken jObject in jArray)
+            {
+                string queryMetrics = jObject["QueryMetricText"].ToString();
+                Assert.IsNotNull(queryMetrics);
+                Assert.IsNotNull(jObject["IndexUtilizationText"].ToString());
+                Assert.IsNotNull(jObject["PartitionKeyRangeId"].ToString());
+                JObject requestDiagnostics = jObject["RequestDiagnostics"].Value<JObject>();
+                Assert.IsNotNull(requestDiagnostics);
+                Assert.IsNotNull(requestDiagnostics["ActivityId"].ToString());
+            }
+        }
+
+        private async Task<long> ExecuteQueryAndReturnOutputDocumentCount(string queryText, int expectedItemCount)
+        {
+            QueryDefinition sql = new QueryDefinition(queryText);
+
+            QueryRequestOptions requestOptions = new QueryRequestOptions()
+            {
+                MaxItemCount = 1,
+                MaxConcurrency = 1,
+            };
+
+            // Verify the typed query iterator
+            FeedIterator<ToDoActivity> feedIterator = this.Container.GetItemQueryIterator<ToDoActivity>(
+                    sql,
+                    requestOptions: requestOptions);
+
+            List<ToDoActivity> results = new List<ToDoActivity>();
+            long totalOutDocumentCount = 0;
+            while (feedIterator.HasMoreResults)
+            {
+                FeedResponse<ToDoActivity> response = await feedIterator.ReadNextAsync();
+                results.AddRange(response);
+                VerifyQueryDiagnostics(response.Diagnostics);
+            }
+
+            Assert.AreEqual(expectedItemCount, results.Count);
+
+            // Verify the stream query iterator
+            FeedIterator streamIterator = this.Container.GetItemQueryStreamIterator(
+                   sql,
+                   requestOptions: requestOptions);
+
+            List<ToDoActivity> streamResults = new List<ToDoActivity>();
+            long streamTotalOutDocumentCount = 0;
+            while (streamIterator.HasMoreResults)
+            {
+                ResponseMessage response = await streamIterator.ReadNextAsync();
+                Collection<ToDoActivity> result = TestCommon.Serializer.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(response.Content).Data;
+                streamResults.AddRange(result);
+                VerifyQueryDiagnostics(response.Diagnostics);
+            }
+
+            Assert.AreEqual(expectedItemCount, streamResults.Count);
+            Assert.AreEqual(totalOutDocumentCount, streamTotalOutDocumentCount);
+
+            return results.Count;
         }
     }
 }

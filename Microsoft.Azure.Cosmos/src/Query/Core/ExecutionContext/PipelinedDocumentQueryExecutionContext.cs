@@ -5,17 +5,16 @@
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
-    using System.Collections.Generic;
     using System.Globalization;
-    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Query.ExecutionComponent;
+    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Documents.Collections;
-    using PartitionKeyRange = Documents.PartitionKeyRange;
 
     /// <summary>
     /// You can imagine the pipeline to be a directed acyclic graph where documents flow from multiple sources (the partitions) to a single sink (the client who calls on ExecuteNextAsync()).
@@ -123,40 +122,69 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
+        public override bool TryGetContinuationToken(out string state)
+        {
+            return this.component.TryGetContinuationToken(out state);
+        }
+
         /// <summary>
         /// Creates a CosmosPipelinedItemQueryExecutionContext.
         /// </summary>
+        /// <param name="executionEnvironment">The environment to execute on.</param>
         /// <param name="queryContext">The parameters for constructing the base class.</param>
         /// <param name="initParams">The initial parameters</param>
         /// <param name="requestContinuationToken">The request continuation.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task to await on, which in turn returns a CosmosPipelinedItemQueryExecutionContext.</returns>
         public static async Task<CosmosQueryExecutionContext> CreateAsync(
+            ExecutionEnvironment executionEnvironment,
             CosmosQueryContext queryContext,
             CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams,
             string requestContinuationToken,
             CancellationToken cancellationToken)
         {
-            DefaultTrace.TraceInformation(
-                string.Format(
-                    CultureInfo.InvariantCulture,
-                    "{0}, CorrelatedActivityId: {1} | Pipelined~Context.CreateAsync",
-                    DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
-                    queryContext.CorrelatedActivityId));
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (requestContinuationToken != null)
+            {
+                if (!PipelineContinuationToken.TryParse(
+                    requestContinuationToken,
+                    out PipelineContinuationToken pipelineContinuationToken))
+                {
+                    throw queryContext.QueryClient.CreateBadRequestException(
+                        $"Malformed {nameof(PipelineContinuationToken)}: {requestContinuationToken}.");
+                }
+
+                if (PipelineContinuationToken.IsTokenFromTheFuture(pipelineContinuationToken))
+                {
+                    throw queryContext.QueryClient.CreateBadRequestException(
+                        $"{nameof(PipelineContinuationToken)} Continuation token is from a newer version of the SDK. Upgrade the SDK to avoid this issue.\n {requestContinuationToken}.");
+                }
+
+                if (!PipelineContinuationToken.TryConvertToLatest(
+                    pipelineContinuationToken,
+                    out PipelineContinuationTokenV1_1 latestVersionPipelineContinuationToken))
+                {
+                    throw queryContext.QueryClient.CreateBadRequestException(
+                        $"{nameof(PipelineContinuationToken)}: '{requestContinuationToken}' is no longer supported.");
+                }
+
+                requestContinuationToken = latestVersionPipelineContinuationToken.SourceContinuationToken;
+            }
 
             QueryInfo queryInfo = initParams.PartitionedQueryExecutionInfo.QueryInfo;
 
             int initialPageSize = initParams.InitialPageSize;
             if (queryInfo.HasGroupBy)
             {
-                // Optimization since the client will wait till it gets every grouping anyways.
+                // The query will block until all groupings are gathered so we might as well speed up the process.
                 initParams = new CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams(
                     sqlQuerySpec: initParams.SqlQuerySpec,
                     collectionRid: initParams.CollectionRid,
                     partitionedQueryExecutionInfo: initParams.PartitionedQueryExecutionInfo,
                     partitionKeyRanges: initParams.PartitionKeyRanges,
                     initialPageSize: int.MaxValue,
-                    maxConcurrency: int.MaxValue,
+                    maxConcurrency: initParams.MaxConcurrency,
                     maxItemCount: int.MaxValue,
                     maxBufferedItemCount: initParams.MaxBufferedItemCount);
             }
@@ -180,6 +208,7 @@ namespace Microsoft.Azure.Cosmos.Query
             };
 
             return (CosmosQueryExecutionContext)await PipelinedDocumentQueryExecutionContext.CreateHelperAsync(
+                executionEnvironment,
                 queryContext.QueryClient,
                 initParams.PartitionedQueryExecutionInfo.QueryInfo,
                 initialPageSize,
@@ -189,6 +218,7 @@ namespace Microsoft.Azure.Cosmos.Query
         }
 
         private static async Task<PipelinedDocumentQueryExecutionContext> CreateHelperAsync(
+            ExecutionEnvironment executionEnvironment,
             CosmosQueryClient queryClient,
             QueryInfo queryInfo,
             int initialPageSize,
@@ -212,9 +242,11 @@ namespace Microsoft.Azure.Cosmos.Query
                 createComponentFunc = async (continuationToken) =>
                 {
                     return await AggregateDocumentQueryExecutionComponent.CreateAsync(
+                        executionEnvironment,
                         queryClient,
                         queryInfo.Aggregates,
                         queryInfo.GroupByAliasToAggregateType,
+                        queryInfo.GroupByAliases,
                         queryInfo.HasSelectValue,
                         continuationToken,
                         createSourceCallback);
@@ -244,6 +276,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         continuationToken,
                         createSourceCallback,
                         queryInfo.GroupByAliasToAggregateType,
+                        queryInfo.GroupByAliases,
                         queryInfo.HasSelectValue);
                 };
             }
@@ -311,8 +344,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 count: feedResponse.CosmosElements.Count,
                 responseHeaders: new DictionaryNameValueCollection(),
                 useETagAsContinuation: false,
-                queryMetrics: feedResponse.QueryMetrics,
-                requestStats: feedResponse.RequestStatistics,
+                queryMetrics: null,
+                requestStats: null,
                 disallowContinuationTokenMessage: feedResponse.DisallowContinuationTokenMessage,
                 responseLengthBytes: feedResponse.ResponseLengthBytes);
         }
@@ -330,9 +363,34 @@ namespace Microsoft.Azure.Cosmos.Query
                 if (!queryResponse.IsSuccess)
                 {
                     this.component.Stop();
+                    return queryResponse;
                 }
 
-                return queryResponse;
+                string updatedContinuationToken;
+                if (queryResponse.DisallowContinuationTokenMessage == null)
+                {
+                    if (queryResponse.ContinuationToken != null)
+                    {
+                        updatedContinuationToken = new PipelineContinuationTokenV0(queryResponse.ContinuationToken).ToString();
+                    }
+                    else
+                    {
+                        updatedContinuationToken = null;
+                    }
+                }
+                else
+                {
+                    updatedContinuationToken = null;
+                }
+
+                return QueryResponseCore.CreateSuccess(
+                    result: queryResponse.CosmosElements,
+                    continuationToken: updatedContinuationToken,
+                    disallowContinuationTokenMessage: queryResponse.DisallowContinuationTokenMessage,
+                    activityId: queryResponse.ActivityId,
+                    requestCharge: queryResponse.RequestCharge,
+                    diagnostics: queryResponse.Diagnostics,
+                    responseLengthBytes: queryResponse.ResponseLengthBytes);
             }
             catch (Exception)
             {

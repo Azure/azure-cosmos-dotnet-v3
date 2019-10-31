@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 queryContext,
                 querySpecForInit,
                 partitionKeyRange,
-                (itemsBuffered, resourceUnitUsage, queryMetrics, requestLength, token) => produceAsyncCompleteCallback(this, itemsBuffered, resourceUnitUsage, queryMetrics, requestLength, token),
+                (itemsBuffered, resourceUnitUsage, diagnostics, requestLength, token) => produceAsyncCompleteCallback(this, itemsBuffered, resourceUnitUsage, diagnostics, requestLength, token),
                 equalityComparer,
                 initialPageSize,
                 initialContinuationToken);
@@ -144,7 +144,7 @@ namespace Microsoft.Azure.Cosmos.Query
             ItemProducerTree itemProducerTree,
             int numberOfDocuments,
             double requestCharge,
-            QueryMetrics queryMetrics,
+            IReadOnlyCollection<QueryPageDiagnostics> diagnostics,
             long responseLengthInBytes,
             CancellationToken token);
 
@@ -609,7 +609,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// This function is thread safe meaning that if multiple functions want to execute in a split proof manner,
         /// then they will need to go one after another.
         /// This is required since you could have the follow scenario:
-        /// Time    | CurrentItemProducer   | Thread 1      | Thread2
+        /// Time    | CurrentItemProducer       | Thread 1      | Thread2
         /// 0       | 0                         | MoveNextAsync | BufferMore
         /// 1       | 0                         | Split         | Split
         /// </para>

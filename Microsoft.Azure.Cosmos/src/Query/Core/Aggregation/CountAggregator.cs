@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos.Query.Aggregation
 {
     using System;
+    using System.Globalization;
     using System.Net;
     using Microsoft.Azure.Cosmos.CosmosElements;
 
@@ -61,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
 
         public string GetContinuationToken()
         {
-            return this.globalCount.ToString();
+            return this.globalCount.ToString(CultureInfo.InvariantCulture);
         }
 
         public static CountAggregator Create(string continuationToken)

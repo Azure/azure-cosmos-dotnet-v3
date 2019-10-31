@@ -108,47 +108,6 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         [TestMethod]
         [Owner("abpai")]
-        public async Task BatchLargerThanServerRequestAsync()
-        {
-            Container container = BatchUnitTests.GetContainer();
-            const int operationCount = 20;
-            int appxDocSize = Constants.MaxDirectModeBatchRequestBodySizeInBytes / operationCount;
-
-            // Increase the doc size by a bit so all docs won't fit in one server request.
-            appxDocSize = (int)(appxDocSize * 1.05);
-            Batch batch = new BatchCore((ContainerCore)container, new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1));
-            for (int i = 0; i < operationCount; i++)
-            {
-                TestItem testItem = new TestItem(new string('x', appxDocSize));
-                batch.CreateItem(testItem);
-            }
-
-            await BatchUnitTests.VerifyExceptionThrownOnExecuteAsync(
-                batch,
-                typeof(RequestEntityTooLargeException));
-        }
-
-        [TestMethod]
-        [Owner("abpai")]
-        public async Task BatchWithTooManyOperationsAsync()
-        {
-            Container container = BatchUnitTests.GetContainer();
-            const int operationCount = Constants.MaxOperationsInDirectModeBatchRequest + 1;
-
-            Batch batch = new BatchCore((ContainerCore)container, new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1));
-            for (int i = 0; i < operationCount; i++)
-            {
-                batch.ReadItem("someId");
-            }
-
-            await BatchUnitTests.VerifyExceptionThrownOnExecuteAsync(
-                batch,
-                typeof(ArgumentException),
-                ClientResources.BatchTooLarge);
-        }
-
-        [TestMethod]
-        [Owner("abpai")]
         public async Task BatchCrudRequestAsync()
         {
             Random random = new Random();

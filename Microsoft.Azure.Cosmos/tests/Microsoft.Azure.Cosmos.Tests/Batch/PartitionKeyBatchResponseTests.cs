@@ -49,8 +49,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             SinglePartitionKeyServerBatchRequest batchRequest = await SinglePartitionKeyServerBatchRequest.CreateAsync(
                 partitionKey: null,
                 operations: new ArraySegment<ItemBatchOperation>(arrayOperations),
-                maxBodyLength: 100,
-                maxOperationCount: 1,
                 serializer: new CosmosJsonDotNetSerializer(),
             cancellationToken: default(CancellationToken));
 
@@ -85,12 +83,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             SinglePartitionKeyServerBatchRequest batchRequest = await SinglePartitionKeyServerBatchRequest.CreateAsync(
                 partitionKey: null,
                 operations: new ArraySegment<ItemBatchOperation>(arrayOperations),
-                maxBodyLength: 100,
-                maxOperationCount: 1,
                 serializer: new CosmosJsonDotNetSerializer(),
             cancellationToken: default(CancellationToken));
 
-            CosmosDiagnostics diagnostics = new PointOperationStatistics(HttpStatusCode.OK, SubStatusCodes.Unknown, 0, string.Empty, HttpMethod.Get, new Uri("http://localhost"), new CosmosClientSideRequestStatistics());
+            CosmosDiagnostics diagnostics = new PointOperationStatistics(Guid.NewGuid().ToString(), HttpStatusCode.OK, SubStatusCodes.Unknown, 0, string.Empty, HttpMethod.Get, new Uri("http://localhost"), new CosmosClientSideRequestStatistics());
 
             BatchResponse batchresponse = await BatchResponse.PopulateFromContentAsync(
                 new ResponseMessage(HttpStatusCode.OK) { Content = responseContent, Diagnostics = diagnostics },

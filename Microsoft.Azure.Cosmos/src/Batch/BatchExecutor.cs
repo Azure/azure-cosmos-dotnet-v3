@@ -25,30 +25,22 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly RequestOptions batchOptions;
 
-        private readonly int maxServerRequestBodyLength;
-
-        private readonly int maxServerRequestOperationCount;
-
         public BatchExecutor(
             ContainerCore container,
             PartitionKey partitionKey,
             IReadOnlyList<ItemBatchOperation> operations,
-            RequestOptions batchOptions,
-            int maxServerRequestBodyLength,
-            int maxServerRequestOperationCount)
+            RequestOptions batchOptions)
         {
             this.container = container;
             this.clientContext = this.container.ClientContext;
             this.inputOperations = operations;
             this.partitionKey = partitionKey;
             this.batchOptions = batchOptions;
-            this.maxServerRequestBodyLength = maxServerRequestBodyLength;
-            this.maxServerRequestOperationCount = maxServerRequestOperationCount;
         }
 
         public async Task<BatchResponse> ExecuteAsync(CancellationToken cancellationToken)
         {
-            BatchExecUtils.EnsureValid(this.inputOperations, this.batchOptions, this.maxServerRequestOperationCount);
+            BatchExecUtils.EnsureValid(this.inputOperations, this.batchOptions);
 
             PartitionKey? serverRequestPartitionKey = this.partitionKey;
             if (this.batchOptions != null && this.batchOptions.IsEffectivePartitionKeyRouting)
@@ -59,15 +51,8 @@ namespace Microsoft.Azure.Cosmos
             SinglePartitionKeyServerBatchRequest serverRequest = await SinglePartitionKeyServerBatchRequest.CreateAsync(
                       serverRequestPartitionKey,
                       new ArraySegment<ItemBatchOperation>(this.inputOperations.ToArray()),
-                      this.maxServerRequestBodyLength,
-                      this.maxServerRequestOperationCount,
-                      serializer: this.clientContext.CosmosSerializer,
-                      cancellationToken: cancellationToken);
-
-            if (serverRequest.Operations.Count != this.inputOperations.Count)
-            {
-                throw new RequestEntityTooLargeException(ClientResources.BatchTooLarge);
-            }
+                      this.clientContext.CosmosSerializer,
+                      cancellationToken);
 
             return await this.ExecuteServerRequestAsync(serverRequest, cancellationToken);
         }
@@ -85,7 +70,7 @@ namespace Microsoft.Azure.Cosmos
             using (Stream serverRequestPayload = serverRequest.TransferBodyStream())
             {
                 Debug.Assert(serverRequestPayload != null, "Server request payload expected to be non-null");
-                ResponseMessage responseMessage = await clientContext.ProcessResourceOperationStreamAsync(
+                ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
                     this.container.LinkUri,
                     ResourceType.Document,
                     OperationType.Batch,
