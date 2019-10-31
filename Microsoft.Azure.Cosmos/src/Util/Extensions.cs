@@ -52,14 +52,14 @@ namespace Microsoft.Azure.Cosmos
 
         internal static ResponseMessage ToCosmosResponseMessage(this DocumentClientException dce, RequestMessage request)
         {
-            // if StatusCode is not set, it is a client business logic error and it never hit the backend, so throw
-            if (!dce.StatusCode.HasValue)
+            // if StatusCode is null it is a client business logic error and it never hit the backend, so throw
+            if (dce.StatusCode == null)
             {
                 throw dce;
             }
 
             // if there is a status code then it came from the backend, return error as http error instead of throwing the exception
-            ResponseMessage cosmosResponse = new ResponseMessage(dce.StatusCode.Value, request);
+            ResponseMessage cosmosResponse = new ResponseMessage(dce.StatusCode ?? HttpStatusCode.InternalServerError, request);
             string reasonPhraseString = string.Empty;
             if (!string.IsNullOrEmpty(dce.Message))
             {
@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos
                 errorMessage: cosmosResponse.ErrorMessage,
                 method: request?.Method,
                 requestUri: request?.RequestUri,
-                clientSideRequestStatistics: null);
+                clientSideRequestStatistics: dce.RequestStatistics as CosmosClientSideRequestStatistics);
 
             if (request != null)
             {
