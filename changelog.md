@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+- [#952](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/952) ORDER BY Undefined and Mixed Type ORDER BY support.
+
 ### Added
 
 - [#853](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/853) ORDER BY Arrays and Object support.
@@ -17,8 +19,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - [#901](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/901) Fix a bug causing query response to create a new stream for each content call
 - [#918](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/918) Fixed serializer being used for Scripts, Permissions, and Conflict related iterators
-- [#927](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/927) Fixed query returning partial results instead of error
 - [#944](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/944) Change Feed Processor won't use user serializer for internal operations
+
+## <a name="3.3.3"/> [3.3.3](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.3.3) - 2019-10-30
+
+- [#837](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/837) Fixed group by bug for non-Windows platforms
+- [#927](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/927) Fixed query returning partial results instead of error
+- [#936](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/936) Fixed bulk requests with large resources to have natural exception flow.
+
 
 ## <a name="3.3.2"/> [3.3.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.3.2) - 2019-10-16
 
@@ -30,7 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- [#895](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/895) Fixed user agent bug that caused format exceptions on non-windows platforms
+- [#895](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/895) Fixed user agent bug that caused format exceptions on non-Windows platforms
 
 ## <a name="3.3.0"/> [3.3.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.3.0) - 2019-10-09
 
@@ -142,6 +150,7 @@ Any requests to Azure Cosmos DB using a retired SDK are rejected by the service.
 
 | Version | Release Date | Retirement Date |
 | --- | --- | --- |
+| [3.3.3](#3.3.3) |October 30, 2019 |--- |
 | [3.3.2](#3.3.2) |October 16, 2019 |--- |
 | [3.3.1](#3.3.1) |October 11, 2019 |--- |
 | [3.3.0](#3.3.0) |October 8, 2019 |--- |

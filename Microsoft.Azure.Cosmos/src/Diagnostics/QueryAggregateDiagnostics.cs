@@ -5,11 +5,8 @@
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
-    using System.Collections;
     using System.Collections.Generic;
-    using System.Linq;
     using System.Text;
-    using Newtonsoft.Json;
 
     internal sealed class QueryAggregateDiagnostics : CosmosDiagnostics
     {
@@ -26,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Query
             this.Pages = pages;
         }
 
-        private IReadOnlyCollection<QueryPageDiagnostics> Pages { get; }
+        public IReadOnlyCollection<QueryPageDiagnostics> Pages { get; }
 
         public override string ToString()
         {
