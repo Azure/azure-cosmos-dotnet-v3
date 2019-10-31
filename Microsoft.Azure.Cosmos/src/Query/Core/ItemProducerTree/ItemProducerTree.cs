@@ -609,7 +609,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// This function is thread safe meaning that if multiple functions want to execute in a split proof manner,
         /// then they will need to go one after another.
         /// This is required since you could have the follow scenario:
-        /// Time    | CurrentItemProducer   | Thread 1      | Thread2
+        /// Time    | CurrentItemProducer       | Thread 1      | Thread2
         /// 0       | 0                         | MoveNextAsync | BufferMore
         /// 1       | 0                         | Split         | Split
         /// </para>
