@@ -26,6 +26,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                 CosmosQueryClient queryClient,
                 AggregateOperator[] aggregates,
                 IReadOnlyDictionary<string, AggregateOperator?> aliasToAggregateType,
+                IReadOnlyList<string> orderedAliases,
                 bool hasSelectValue,
                 string requestContinuation,
                 Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback)
@@ -35,6 +36,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                     queryClient,
                     aggregates,
                     aliasToAggregateType,
+                    orderedAliases,
                     hasSelectValue,
                     continuationToken: null);
 

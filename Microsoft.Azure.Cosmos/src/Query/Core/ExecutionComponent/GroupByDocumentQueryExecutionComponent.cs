@@ -46,6 +46,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
 
         private readonly CosmosQueryClient cosmosQueryClient;
         private readonly IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType;
+        private readonly IReadOnlyList<string> orderedAliases;
         private readonly Dictionary<UInt192, SingleGroupAggregator> groupingTable;
         private readonly bool hasSelectValue;
 
@@ -55,6 +56,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
         private GroupByDocumentQueryExecutionComponent(
             CosmosQueryClient cosmosQueryClient,
             IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
+            IReadOnlyList<string> orderedAliases,
             bool hasSelectValue,
             IDocumentQueryExecutionComponent source)
             : base(source)
@@ -69,9 +71,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                 throw new ArgumentNullException(nameof(groupByAliasToAggregateType));
             }
 
+            if (orderedAliases == null)
+            {
+                throw new ArgumentNullException(nameof(orderedAliases));
+            }
+
             this.cosmosQueryClient = cosmosQueryClient;
             this.groupingTable = new Dictionary<UInt192, SingleGroupAggregator>();
             this.groupByAliasToAggregateType = groupByAliasToAggregateType;
+            this.orderedAliases = orderedAliases;
             this.hasSelectValue = hasSelectValue;
         }
 
@@ -82,12 +90,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
             string requestContinuation,
             Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback,
             IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
+            IReadOnlyList<string> orderedAliases,
             bool hasSelectValue)
         {
             // We do not support continuation tokens for GROUP BY.
             return new GroupByDocumentQueryExecutionComponent(
                 cosmosQueryClient,
                 groupByAliasToAggregateType,
+                orderedAliases,
                 hasSelectValue,
                 await createSourceCallback(requestContinuation));
         }
@@ -122,6 +132,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                             this.cosmosQueryClient,
                             EmptyAggregateOperators,
                             this.groupByAliasToAggregateType,
+                            this.orderedAliases,
                             this.hasSelectValue,
                             continuationToken: null);
                         this.groupingTable[groupByKeysHash] = singleGroupAggregator;

@@ -195,8 +195,6 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ExecuteAsync(
-                Constants.MaxDirectModeBatchRequestBodySizeInBytes,
-                Constants.MaxOperationsInDirectModeBatchRequest,
                 requestOptions: null,
                 cancellationToken: cancellationToken);
         }
@@ -211,11 +209,9 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.ExecuteAsync(
-                Constants.MaxDirectModeBatchRequestBodySizeInBytes,
-                Constants.MaxOperationsInDirectModeBatchRequest,
-                requestOptions,
-                cancellationToken);
+            BatchExecutor executor = new BatchExecutor(this.container, this.partitionKey, this.operations, requestOptions);
+            this.operations = new List<ItemBatchOperation>();
+            return executor.ExecuteAsync(cancellationToken);
         }
 
         /// <summary>
@@ -238,17 +234,6 @@ namespace Microsoft.Azure.Cosmos
                     requestOptions: requestOptions));
 
             return this;
-        }
-
-        internal Task<BatchResponse> ExecuteAsync(
-            int maxServerRequestBodyLength,
-            int maxServerRequestOperationCount,
-            RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
-        {
-            BatchExecutor executor = new BatchExecutor(this.container, this.partitionKey, this.operations, requestOptions, maxServerRequestBodyLength, maxServerRequestOperationCount);
-            this.operations = new List<ItemBatchOperation>();
-            return executor.ExecuteAsync(cancellationToken);
         }
     }
 }

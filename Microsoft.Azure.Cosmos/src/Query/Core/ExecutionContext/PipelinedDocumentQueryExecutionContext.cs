@@ -220,6 +220,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         queryClient,
                         queryInfo.Aggregates,
                         queryInfo.GroupByAliasToAggregateType,
+                        queryInfo.GroupByAliases,
                         queryInfo.HasSelectValue,
                         continuationToken,
                         createSourceCallback);
@@ -249,6 +250,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         continuationToken,
                         createSourceCallback,
                         queryInfo.GroupByAliasToAggregateType,
+                        queryInfo.GroupByAliases,
                         queryInfo.HasSelectValue);
                 };
             }
