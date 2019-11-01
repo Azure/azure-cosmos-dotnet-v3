@@ -32,6 +32,7 @@ namespace Microsoft.Azure.Cosmos.Query
             CosmosQueryClient queryClient,
             AggregateOperator[] aggregates,
             IReadOnlyDictionary<string, AggregateOperator?> aggregateAliasToAggregateType,
+            IReadOnlyList<string> orderedAliases,
             bool hasSelectValue,
             string continuationToken)
         {
@@ -46,12 +47,12 @@ namespace Microsoft.Azure.Cosmos.Query
                 else
                 {
                     // SELECT VALUE <NON AGGREGATE>
-                    aggregateValues = SelectValueAggregateValues.Create(aggregateOperator: null, continuationToken: null);
+                    aggregateValues = SelectValueAggregateValues.Create(aggregateOperator: null, continuationToken: continuationToken);
                 }
             }
             else
             {
-                aggregateValues = SelectListAggregateValues.Create(queryClient, aggregateAliasToAggregateType, continuationToken);
+                aggregateValues = SelectListAggregateValues.Create(queryClient, aggregateAliasToAggregateType, orderedAliases, continuationToken);
             }
 
             return aggregateValues;
@@ -110,22 +111,36 @@ namespace Microsoft.Azure.Cosmos.Query
         private sealed class SelectListAggregateValues : SingleGroupAggregator
         {
             private readonly IReadOnlyDictionary<string, AggregateValue> aliasToValue;
+            private readonly IReadOnlyList<string> orderedAliases;
 
-            private SelectListAggregateValues(IReadOnlyDictionary<string, AggregateValue> aliasToValue)
+            private SelectListAggregateValues(
+                IReadOnlyDictionary<string, AggregateValue> aliasToValue,
+                IReadOnlyList<string> orderedAliases)
             {
+                if (aliasToValue == null)
+                {
+                    throw new ArgumentNullException(nameof(aliasToValue));
+                }
+
+                if (orderedAliases == null)
+                {
+                    throw new ArgumentNullException(nameof(orderedAliases));
+                }
+
                 this.aliasToValue = aliasToValue;
+                this.orderedAliases = orderedAliases;
             }
 
             public override CosmosElement GetResult()
             {
-                Dictionary<string, CosmosElement> aliasToElement = new Dictionary<string, CosmosElement>();
-                foreach (KeyValuePair<string, AggregateValue> aliasAndValue in this.aliasToValue)
+                List<KeyValuePair<string, CosmosElement>> aliasToElement = new List<KeyValuePair<string, CosmosElement>>();
+                foreach (string alias in this.orderedAliases)
                 {
-                    string alias = aliasAndValue.Key;
-                    AggregateValue aggregateValue = aliasAndValue.Value;
+                    AggregateValue aggregateValue = this.aliasToValue[alias];
                     if (aggregateValue.Result != null)
                     {
-                        aliasToElement[alias] = aggregateValue.Result;
+                        KeyValuePair<string, CosmosElement> kvp = new KeyValuePair<string, CosmosElement>(alias, aggregateValue.Result);
+                        aliasToElement.Add(kvp);
                     }
                 }
 
@@ -147,12 +162,13 @@ namespace Microsoft.Azure.Cosmos.Query
             public static SelectListAggregateValues Create(
                 CosmosQueryClient cosmosQueryClient,
                 IReadOnlyDictionary<string, AggregateOperator?> aggregateAliasToAggregateType,
+                IReadOnlyList<string> orderedAliases,
                 string continuationToken)
             {
                 CosmosObject aliasToContinuationToken;
                 if (continuationToken != null)
                 {
-                    if (!CosmosElement.TryParse<CosmosObject>(continuationToken, out aliasToContinuationToken))
+                    if (!CosmosElement.TryParse(continuationToken, out aliasToContinuationToken))
                     {
                         throw cosmosQueryClient.CreateBadRequestException(
                             $"{nameof(SelectListAggregateValues)} continuation token is malformed: {continuationToken}.");
@@ -187,7 +203,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     groupingTable[alias] = AggregateValue.Create(aggregateOperator, aliasContinuationToken);
                 }
 
-                return new SelectListAggregateValues(groupingTable);
+                return new SelectListAggregateValues(groupingTable, orderedAliases);
             }
 
             public override void AddValues(CosmosElement values)
@@ -201,7 +217,12 @@ namespace Microsoft.Azure.Cosmos.Query
                 {
                     string alias = aliasAndValue.Key;
                     AggregateValue aggregateValue = aliasAndValue.Value;
-                    aggregateValue.AddValue(payload[alias]);
+                    if (!payload.TryGetValue(alias, out CosmosElement payloadValue))
+                    {
+                        payloadValue = null;
+                    }
+
+                    aggregateValue.AddValue(payloadValue);
                 }
             }
 

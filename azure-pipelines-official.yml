@@ -5,7 +5,8 @@ pr: none
 variables:
   ReleaseArguments: ' --filter "TestCategory!=Quarantine" --verbosity normal ' 
   VmImage: windows-latest # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops 
-  BuildConfiguration: Release 
+  BuildConfiguration: Release
+  BlobVersion: ''
 
 stages:
 - stage:
@@ -37,7 +38,7 @@ stages:
           configuration: $(BuildConfiguration)
           nugetConfigPath: NuGet.config
           projects: Microsoft.Azure.Cosmos/src/Microsoft.Azure.Cosmos.csproj 
-          arguments: --configuration $(BuildConfiguration) /p:Optimize=true 
+          arguments: --configuration $(BuildConfiguration) -p:Optimize=true 
           versioningScheme: OFF
 
       - task: DotNetCoreCLI@2
@@ -58,13 +59,14 @@ stages:
 
       - task: AzureFileCopy@2
         displayName: ' Copy Artifacts to Azure SDK Release blob storage'
+		condition: and(succeeded(),ne(variables['BlobVersion'], ''))
         inputs:
           SourcePath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Cosmos'
           azureSubscription: azuresdkpartnerdrops
           Destination: AzureBlob
           storage: azuresdkpartnerdrops
           ContainerName: 'drops'
-          BlobPrefix: 'cosmosdb/csharp/$(Version)'
+          BlobPrefix: 'cosmosdb/csharp/$(BlobVersion)'
 
       - task: PublishBuildArtifacts@1
         displayName: 'Publish Artifacts: Microsoft.Azure.Cosmos'
