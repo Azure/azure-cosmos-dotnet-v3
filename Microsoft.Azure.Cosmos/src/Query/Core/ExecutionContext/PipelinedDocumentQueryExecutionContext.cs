@@ -272,6 +272,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 createComponentFunc = async (continuationToken) =>
                 {
                     return await GroupByDocumentQueryExecutionComponent.CreateAsync(
+                        executionEnvironment,
                         queryClient,
                         continuationToken,
                         createSourceCallback,

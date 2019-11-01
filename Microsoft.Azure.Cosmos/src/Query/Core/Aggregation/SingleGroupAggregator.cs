@@ -58,9 +58,9 @@ namespace Microsoft.Azure.Cosmos.Query
             else
             {
                 aggregateValues = SelectListAggregateValues.Create(
-                    queryClient, 
-                    aggregateAliasToAggregateType, 
-                    orderedAliases, 
+                    queryClient,
+                    aggregateAliasToAggregateType,
+                    orderedAliases,
                     continuationToken);
             }
 
@@ -397,7 +397,11 @@ namespace Microsoft.Azure.Cosmos.Query
                             throw new ArgumentException($"Invalid {nameof(ScalarAggregateValue)}: {continuationToken}");
                         }
 
-                        value = rawContinuationToken[nameof(ScalarAggregateValue.value)];
+                        if (!rawContinuationToken.TryGetValue(nameof(ScalarAggregateValue.value), out value))
+                        {
+                            value = null;
+                        }
+
                         initialized = rawInitialized.Value;
                     }
                     else
