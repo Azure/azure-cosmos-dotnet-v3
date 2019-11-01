@@ -29,7 +29,7 @@ jobs:
 #    Arguments: $(DebugArguments)
 #    VmImage: $(VmImage)
 
-- template:  templates/build-test-4.yml
+- template:  templates/build-test-v4.yml
   parameters:
     BuildConfiguration: Release
     Arguments: $(ReleaseArguments)
