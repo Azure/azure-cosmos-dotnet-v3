@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [#934](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/934) Preserved the ordering of projections in a GROUP BY query.
 - [#952](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/952) ORDER BY Undefined and Mixed Type ORDER BY support.
+- [#954](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/954) Support "Start from Beginning" for Change Feed Processor in multi master accounts
 
 ### Added
 
