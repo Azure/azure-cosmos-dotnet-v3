@@ -39,10 +39,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
 
         public override string ToString()
         {
-            return this.Serialize(16 * 1024);
+            return this.ToString(int.MaxValue);
         }
 
-        public string Serialize(int lengthLimitInBytes)
+        public string ToString(int lengthLimitInBytes)
         {
             string queryPlanString = this.QueryPlan?.ToString();
             bool shouldSerializeQueryPlan;

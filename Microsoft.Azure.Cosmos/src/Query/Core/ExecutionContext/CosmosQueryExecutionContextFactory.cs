@@ -167,7 +167,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 this.partitionedQueryExecutionInfo,
                 innerContinuationToken);
 
-            continuationToken = pipelineContinuationToken.Serialize(this.inputParameters.ResponseContinuationTokenLimitInKb.GetValueOrDefault(12) * 1024);
+            continuationToken = pipelineContinuationToken.ToString(this.inputParameters.ResponseContinuationTokenLimitInKb.GetValueOrDefault(12) * 1024);
             return true;
         }
 
