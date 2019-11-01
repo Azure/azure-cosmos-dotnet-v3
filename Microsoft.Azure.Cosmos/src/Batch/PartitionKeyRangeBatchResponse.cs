@@ -23,23 +23,6 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Initializes a new instance of the <see cref="PartitionKeyRangeBatchResponse"/> class.
         /// </summary>
-        /// <param name="statusCode">Completion status code of the batch request.</param>
-        /// <param name="subStatusCode">Provides further details about why the batch was not processed.</param>
-        /// <param name="operations">Operations that were supposed to be executed, but weren't.</param>
-        /// <param name="errorMessage">The reason for failure if any.</param>
-        // This constructor is expected to be used when the batch is not executed at all (if it is a bad request).
-        internal PartitionKeyRangeBatchResponse(
-            HttpStatusCode statusCode,
-            SubStatusCodes subStatusCode,
-            string errorMessage,
-            IReadOnlyList<ItemBatchOperation> operations)
-            : base(statusCode, subStatusCode, errorMessage, operations)
-        {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="PartitionKeyRangeBatchResponse"/> class.
-        /// </summary>
         /// <param name="originalOperationsCount">Original operations that generated the server responses.</param>
         /// <param name="serverResponse">Response from the server.</param>
         /// <param name="serializer">Serializer to deserialize response resource body streams.</param>

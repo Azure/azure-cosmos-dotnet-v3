@@ -75,41 +75,35 @@ namespace Microsoft.Azure.Cosmos.Tests
                 {
                     ResourceStream = new MemoryStream(new byte[] { 0x41, 0x42 }, index: 0, count: 2, writable: false, publiclyVisible: true),
                     RequestCharge = 2.5,
-                    ETag = "1234"
-                });
-
-            results.Add(
-                new BatchOperationResult((HttpStatusCode)StatusCodes.TooManyRequests)
-                {
-                    RequestCharge = 0.38,
+                    ETag = "1234",
                     RetryAfter = TimeSpan.FromMilliseconds(360)
                 });
 
             MemoryStream responseContent = await new BatchResponsePayloadWriter(results).GeneratePayloadAsync();
 
             CosmosSerializer serializer = new CosmosJsonDotNetSerializer();
-            SinglePartitionKeyServerBatchRequest batchResponse = await SinglePartitionKeyServerBatchRequest.CreateAsync(
+            SinglePartitionKeyServerBatchRequest batchRequest = await SinglePartitionKeyServerBatchRequest.CreateAsync(
                 partitionKey: Cosmos.PartitionKey.None,
                 operations: new ArraySegment<ItemBatchOperation>(
                     new ItemBatchOperation[]
                     {
+                        new ItemBatchOperation(OperationType.Read, operationIndex: 0, id: "someId"),
                         new ItemBatchOperation(OperationType.Read, operationIndex: 0, id: "someId")
                     }),
                 serializer: serializer,
                 cancellationToken: CancellationToken.None);
-            BatchResponse batchresponse = await BatchResponse.PopulateFromContentAsync(
-                new ResponseMessage(HttpStatusCode.OK) { Content = responseContent },
-                batchResponse,
+            BatchResponse batchResponse = await BatchResponse.FromResponseMessageAsync(
+                new ResponseMessage((HttpStatusCode)StatusCodes.MultiStatus) { Content = responseContent },
+                batchRequest,
                 serializer);
 
-            Assert.IsNotNull(batchresponse);
-            Assert.IsTrue(batchresponse.IsSuccessStatusCode);
-            Assert.AreEqual(3, batchresponse.Count);
+            Assert.IsNotNull(batchRequest);
+            Assert.AreEqual(HttpStatusCode.Conflict, batchResponse.StatusCode);
+            Assert.AreEqual(2, batchResponse.Count);
 
             CosmosBatchOperationResultEqualityComparer comparer = new CosmosBatchOperationResultEqualityComparer();
-            Assert.IsTrue(comparer.Equals(results[0], batchresponse[0]));
-            Assert.IsTrue(comparer.Equals(results[1], batchresponse[1]));
-            Assert.IsTrue(comparer.Equals(results[2], batchresponse[2]));
+            Assert.IsTrue(comparer.Equals(results[0], batchResponse[0]));
+            Assert.IsTrue(comparer.Equals(results[1], batchResponse[1]));
         }
 
         private class ItemBatchOperationEqualityComparer : IEqualityComparer<ItemBatchOperation>
@@ -174,7 +168,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     && this.Equals(x.ResourceStream, y.ResourceStream);
             }
 
-            private bool Equals(MemoryStream x, MemoryStream y)
+            private bool Equals(Stream x, Stream y)
             {
                 if (x == null && y == null)
                 {
@@ -187,7 +181,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         return false;
                     }
 
-                    return x.GetBuffer().SequenceEqual(y.GetBuffer());
+                    return ((MemoryStream)x).GetBuffer().SequenceEqual(((MemoryStream)y).GetBuffer());
                 }
 
                 return false;

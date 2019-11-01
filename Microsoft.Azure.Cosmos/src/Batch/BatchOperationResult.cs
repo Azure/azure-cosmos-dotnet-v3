@@ -72,9 +72,9 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the content of the resource.
         /// </summary>
         /// <value>
-        /// The content of the resource as a MemoryStream.
+        /// The content of the resource as a Stream.
         /// </value>
-        public virtual MemoryStream ResourceStream { get; internal set; }
+        public virtual Stream ResourceStream { get; internal set; }
 
         /// <summary>
         /// In case the operation is rate limited, indicates the time post which a retry can be attempted.

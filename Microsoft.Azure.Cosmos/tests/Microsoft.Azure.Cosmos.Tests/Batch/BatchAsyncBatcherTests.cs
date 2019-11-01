@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     serializer: new CosmosJsonDotNetSerializer(),
                 cancellationToken: cancellationToken);
 
-                BatchResponse batchresponse = await BatchResponse.PopulateFromContentAsync(
+                BatchResponse batchresponse = await BatchResponse.FromResponseMessageAsync(
                     new ResponseMessage(HttpStatusCode.OK)
                     {
                         Content = responseContent,
@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 };
                 responseMessage.Headers.SubStatusCode = SubStatusCodes.PartitionKeyRangeGone;
 
-                BatchResponse batchresponse = await BatchResponse.PopulateFromContentAsync(
+                BatchResponse batchresponse = await BatchResponse.FromResponseMessageAsync(
                     responseMessage,
                     batchRequest,
                     new CosmosJsonDotNetSerializer());
@@ -154,7 +154,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     serializer: new CosmosJsonDotNetSerializer(),
                 cancellationToken: cancellationToken);
 
-                BatchResponse batchresponse = await BatchResponse.PopulateFromContentAsync(
+                BatchResponse batchresponse = await BatchResponse.FromResponseMessageAsync(
                     new ResponseMessage(HttpStatusCode.OK) { Content = responseContent },
                     batchRequest,
                     new CosmosJsonDotNetSerializer());
