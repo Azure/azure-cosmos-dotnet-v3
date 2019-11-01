@@ -22,8 +22,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         [Owner("abpai")]
         public async Task BatchRequestSerializationAsync()
         {
-            const int maxBodySize = 5 * 1024;
-            const int maxOperationCount = 10;
             const string partitionKey1 = "pk1";
 
             ItemBatchOperation[] operations = new ItemBatchOperation[]
@@ -47,8 +45,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             ServerBatchRequest batchRequest = await SinglePartitionKeyServerBatchRequest.CreateAsync(
                 new Cosmos.PartitionKey(partitionKey1),
                 new ArraySegment<ItemBatchOperation>(operations),
-                maxBodySize,
-                maxOperationCount,
                 serializer: new CosmosJsonDotNetSerializer(),
                 cancellationToken: CancellationToken.None);
 
@@ -60,66 +56,6 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                 List<ItemBatchOperation> readOperations = await new BatchRequestPayloadReader().ReadPayloadAsync(payload);
                 Assert.AreEqual(2, readOperations.Count);
-                ItemBatchOperationEqualityComparer comparer = new ItemBatchOperationEqualityComparer();
-                Assert.IsTrue(comparer.Equals(operations[0], readOperations[0]));
-                Assert.IsTrue(comparer.Equals(operations[1], readOperations[1]));
-            }
-        }
-
-        [TestMethod]
-        [Owner("abpai")]
-        public async Task BatchRequestSerializationFillAsync()
-        {
-            const int maxBodySize = 5 * 1024;
-            const int maxOperationCount = 10;
-            const int operationBodySize = 2 * 1024;
-            const string partitionKey1 = "pk1";
-            const string id = "random";
-            ItemBatchOperation[] operations = new ItemBatchOperation[]
-            {
-                new ItemBatchOperation(
-                    operationType: OperationType.Replace,
-                    id: id,
-                    operationIndex: 0)
-                {
-                    ResourceBody = Encoding.UTF8.GetBytes(new string('w', operationBodySize))
-                },
-                new ItemBatchOperation(
-                    operationType: OperationType.Create,
-                    operationIndex: 1)
-                {
-                    ResourceBody = Encoding.UTF8.GetBytes(new string('x', operationBodySize))
-                },
-                new ItemBatchOperation(
-                    operationType: OperationType.Upsert,
-                    operationIndex: 2)
-                {
-                    ResourceBody = Encoding.UTF8.GetBytes(new string('y', operationBodySize))
-                },
-                new ItemBatchOperation(
-                    operationType: OperationType.Create,
-                    operationIndex: 3)
-                {
-                    ResourceBody = Encoding.UTF8.GetBytes(new string('z', operationBodySize))
-                }
-            };
-            ServerBatchRequest batchRequest = await SinglePartitionKeyServerBatchRequest.CreateAsync(
-                new Cosmos.PartitionKey(partitionKey1), 
-                new ArraySegment<ItemBatchOperation>(operations), 
-                maxBodySize,
-                maxOperationCount,
-                serializer: new CosmosJsonDotNetSerializer(),
-                cancellationToken: CancellationToken.None);
-
-            Assert.AreEqual(2, batchRequest.Operations.Count);
-
-            using (MemoryStream payload = batchRequest.TransferBodyStream())
-            {
-                Assert.IsNotNull(payload);
-
-                List<ItemBatchOperation> readOperations = await new BatchRequestPayloadReader().ReadPayloadAsync(payload);
-                Assert.AreEqual(2, readOperations.Count);
-
                 ItemBatchOperationEqualityComparer comparer = new ItemBatchOperationEqualityComparer();
                 Assert.IsTrue(comparer.Equals(operations[0], readOperations[0]));
                 Assert.IsTrue(comparer.Equals(operations[1], readOperations[1]));
@@ -154,8 +90,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                         new ItemBatchOperation(OperationType.Read, operationIndex: 0, id: "someId"),
                         new ItemBatchOperation(OperationType.Read, operationIndex: 0, id: "someId")
                     }),
-                maxBodyLength: 100,
-                maxOperationCount: 2,
                 serializer: serializer,
                 cancellationToken: CancellationToken.None);
             BatchResponse batchResponse = await BatchResponse.FromResponseMessageAsync(

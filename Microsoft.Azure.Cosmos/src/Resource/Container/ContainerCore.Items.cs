@@ -609,15 +609,13 @@ namespace Microsoft.Azure.Cosmos
                 string[] tokens = await this.GetPartitionKeyPathTokensAsync(cancellation);
                 for (int i = 0; i < tokens.Length - 1; i++)
                 {
-                    pathTraversal = pathTraversal[tokens[i]] as CosmosObject;
-                    if (pathTraversal == null)
+                    if (!pathTraversal.TryGetValue(tokens[i], out pathTraversal))
                     {
                         return PartitionKey.None;
                     }
                 }
 
-                CosmosElement partitionKeyValue = pathTraversal[tokens[tokens.Length - 1]];
-                if (partitionKeyValue == null)
+                if (!pathTraversal.TryGetValue(tokens[tokens.Length - 1], out CosmosElement partitionKeyValue))
                 {
                     return PartitionKey.None;
                 }

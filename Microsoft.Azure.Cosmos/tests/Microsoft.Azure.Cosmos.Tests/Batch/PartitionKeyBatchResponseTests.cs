@@ -39,8 +39,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             SinglePartitionKeyServerBatchRequest batchRequest = await SinglePartitionKeyServerBatchRequest.CreateAsync(
                 partitionKey: null,
                 operations: new ArraySegment<ItemBatchOperation>(arrayOperations),
-                maxBodyLength: 100,
-                maxOperationCount: 1,
                 serializer: new CosmosJsonDotNetSerializer(),
             cancellationToken: default(CancellationToken));
 
@@ -75,8 +73,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             SinglePartitionKeyServerBatchRequest batchRequest = await SinglePartitionKeyServerBatchRequest.CreateAsync(
                 partitionKey: null,
                 operations: new ArraySegment<ItemBatchOperation>(arrayOperations),
-                maxBodyLength: 100,
-                maxOperationCount: 1,
                 serializer: new CosmosJsonDotNetSerializer(),
             cancellationToken: default(CancellationToken));
 

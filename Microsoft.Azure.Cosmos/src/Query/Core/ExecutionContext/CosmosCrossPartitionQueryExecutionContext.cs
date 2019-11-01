@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Threading;
     using System.Threading.Tasks;
     using Collections.Generic;
-    using ExecutionComponent;
+    using Core.ExecutionComponent;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using ParallelQuery;
     using PartitionKeyRange = Documents.PartitionKeyRange;

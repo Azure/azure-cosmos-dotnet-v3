@@ -230,6 +230,45 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [Owner("abpai")]
+        public async Task BatchLargerThanServerRequestAsync()
+        {
+            Container container = BatchTestBase.JsonContainer;
+
+            const int operationCount = 20;
+            int appxDocSize = Constants.MaxDirectModeBatchRequestBodySizeInBytes / operationCount;
+
+            // Increase the doc size by a bit so all docs won't fit in one server request.
+            appxDocSize = (int)(appxDocSize * 1.05);
+            Batch batch = new BatchCore((ContainerCore)container, new Cosmos.PartitionKey(this.PartitionKey1));
+            for (int i = 0; i < operationCount; i++)
+            {
+                TestDoc doc = BatchTestBase.PopulateTestDoc(this.PartitionKey1, minDesiredSize: appxDocSize);
+                batch.CreateItem(doc);
+            }
+
+            BatchResponse batchResponse = await batch.ExecuteAsync();
+            Assert.AreEqual(HttpStatusCode.RequestEntityTooLarge, batchResponse.StatusCode);
+        }
+
+        [TestMethod]
+        [Owner("abpai")]
+        public async Task BatchWithTooManyOperationsAsync()
+        {
+            Container container = BatchTestBase.JsonContainer;
+            const int operationCount = Constants.MaxOperationsInDirectModeBatchRequest + 1;
+
+            Batch batch = new BatchCore((ContainerCore)container, new Cosmos.PartitionKey(this.PartitionKey1));
+            for (int i = 0; i < operationCount; i++)
+            {
+                batch.ReadItem("someId");
+            }
+
+            BatchResponse batchResponse = await batch.ExecuteAsync();
+            Assert.AreEqual(HttpStatusCode.BadRequest, batchResponse.StatusCode);
+        }
+
+        [TestMethod]
+        [Owner("abpai")]
         public async Task BatchServerResponseTooLargeAsync()
         {
             Container container = BatchTestBase.JsonContainer;

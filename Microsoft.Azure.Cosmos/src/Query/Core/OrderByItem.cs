@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 if (!this.cosmosObject.TryGetValue(ItemName, out CosmosElement cosmosElement))
                 {
-                    throw new InvalidOperationException($"Underlying object does not have an 'item' field.");
+                    cosmosElement = null;
                 }
 
                 return cosmosElement;
