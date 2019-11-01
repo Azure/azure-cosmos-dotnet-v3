@@ -76,7 +76,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
             this.groupingTable = new Dictionary<UInt192, SingleGroupAggregator>();
 
             this.cosmosQueryClient = cosmosQueryClient;
-            this.groupingTable = new Dictionary<UInt192, SingleGroupAggregator>();
             this.groupByAliasToAggregateType = groupByAliasToAggregateType;
             this.orderedAliases = orderedAliases;
             this.hasSelectValue = hasSelectValue;
