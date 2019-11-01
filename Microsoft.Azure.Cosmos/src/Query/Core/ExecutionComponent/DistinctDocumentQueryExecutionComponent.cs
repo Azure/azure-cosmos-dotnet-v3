@@ -4,16 +4,11 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
 {
     using System;
-    using System.Collections.Generic;
     using System.Globalization;
-    using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
-    using QueryResult = Documents.QueryResult;
 
     /// <summary>
     /// Distinct queries return documents that are distinct with a page.
@@ -26,173 +21,64 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
     /// of while(HasMoreResults) ExecuteNextAsync, then will see duplicates across continuations.
     /// There is no workaround for that use case, since the continuation token will have to include all the documents seen.
     /// </summary>
-    internal sealed class DistinctDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase
+    internal abstract partial class DistinctDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase
     {
         /// <summary>
         /// An DistinctMap that efficiently stores the documents that we have already seen.
         /// </summary>
         private readonly DistinctMap distinctMap;
 
-        /// <summary>
-        /// Initializes a new instance of the DistinctDocumentQueryExecutionComponent class.
-        /// </summary>
-        /// <param name="distinctQueryType">The type of distinct query.</param>
-        /// <param name="distinctMapContinuationToken">The distinct map continuation token.</param>
-        /// <param name="source">The source to drain from.</param>
-        private DistinctDocumentQueryExecutionComponent(
-            DistinctQueryType distinctQueryType,
-            string distinctMapContinuationToken,
+        protected DistinctDocumentQueryExecutionComponent(
+            DistinctMap distinctMap,
             IDocumentQueryExecutionComponent source)
             : base(source)
         {
-            if (!((distinctQueryType == DistinctQueryType.Ordered) || (distinctQueryType == DistinctQueryType.Unordered)))
+            if (distinctMap == null)
             {
-                throw new ArgumentException("It doesn't make sense to create a distinct component of type None.");
+                throw new ArgumentNullException(nameof(distinctMap));
             }
 
-            this.distinctMap = DistinctMap.Create(
-                distinctQueryType,
-                distinctMapContinuationToken);
+            this.distinctMap = distinctMap;
         }
 
         /// <summary>
         /// Creates an DistinctDocumentQueryExecutionComponent
         /// </summary>
+        /// <param name="executionEnvironment">The environment to execute on.</param>
         /// <param name="queryClient">The query client</param>
         /// <param name="requestContinuation">The continuation token.</param>
         /// <param name="createSourceCallback">The callback to create the source to drain from.</param>
         /// <param name="distinctQueryType">The type of distinct query.</param>
         /// <returns>A task to await on and in return </returns>
-        public static async Task<DistinctDocumentQueryExecutionComponent> CreateAsync(
+        public static async Task<IDocumentQueryExecutionComponent> CreateAsync(
+            ExecutionEnvironment executionEnvironment,
             CosmosQueryClient queryClient,
             string requestContinuation,
             Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback,
             DistinctQueryType distinctQueryType)
         {
-            DistinctContinuationToken distinctContinuationToken;
-            if (requestContinuation != null)
+            IDocumentQueryExecutionComponent distinctDocumentQueryExecutionComponent;
+            switch (executionEnvironment)
             {
-                if (!DistinctContinuationToken.TryParse(requestContinuation, out distinctContinuationToken))
-                {
-                    throw queryClient.CreateBadRequestException($"Invalid {nameof(DistinctContinuationToken)}: {requestContinuation}");
-                }
-            }
-            else
-            {
-                distinctContinuationToken = new DistinctContinuationToken(sourceToken: null, distinctMapToken: null);
-            }
+                case ExecutionEnvironment.Compute:
+                    distinctDocumentQueryExecutionComponent = await ComputeDistinctDocumentQueryExecutionComponent.CreateAsync(
+                        queryClient,
+                        requestContinuation,
+                        createSourceCallback,
+                        distinctQueryType);
+                    break;
 
-            return new DistinctDocumentQueryExecutionComponent(
-                distinctQueryType,
-                distinctContinuationToken.DistinctMapToken,
-                await createSourceCallback(distinctContinuationToken.SourceToken));
-        }
-
-        /// <summary>
-        /// Drains a page of results returning only distinct elements.
-        /// </summary>
-        /// <param name="maxElements">The maximum number of items to drain.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>A page of distinct results.</returns>
-        public override async Task<QueryResponseCore> DrainAsync(int maxElements, CancellationToken cancellationToken)
-        {
-            List<CosmosElement> distinctResults = new List<CosmosElement>();
-            QueryResponseCore sourceResponse = await base.DrainAsync(maxElements, cancellationToken);
-
-            if (!sourceResponse.IsSuccess)
-            {
-                return sourceResponse;
+                default:
+                    throw new ArgumentException($"Unknown {nameof(ExecutionEnvironment)}: {executionEnvironment}.");
             }
 
-            foreach (CosmosElement document in sourceResponse.CosmosElements)
-            {
-                if (this.distinctMap.Add(document, out UInt192? hash))
-                {
-                    distinctResults.Add(document);
-                }
-            }
-
-            string updatedContinuationToken;
-            if (!this.IsDone)
-            {
-                if (!this.TryGetContinuationToken(out updatedContinuationToken))
-                {
-                    throw new ArgumentException("Failed to get DISTINCT continuation token.");
-                }
-            }
-            else
-            {
-                this.Source.Stop();
-                updatedContinuationToken = null;
-            }
-
-            return QueryResponseCore.CreateSuccess(
-                result: distinctResults,
-                continuationToken: updatedContinuationToken,
-                disallowContinuationTokenMessage: null,
-                activityId: sourceResponse.ActivityId,
-                requestCharge: sourceResponse.RequestCharge,
-                diagnostics: sourceResponse.Diagnostics,
-                responseLengthBytes: sourceResponse.ResponseLengthBytes);
-        }
-
-        public override bool TryGetContinuationToken(out string continuationToken)
-        {
-            if (!this.IsDone)
-            {
-                if (this.Source.TryGetContinuationToken(out string sourceContinuationToken))
-                {
-                    continuationToken = new DistinctContinuationToken(
-                        sourceContinuationToken,
-                        this.distinctMap.GetContinuationToken()).ToString();
-                    return true;
-                }
-                else
-                {
-                    continuationToken = default;
-                    return false;
-                }
-            }
-            else
-            {
-                continuationToken = default;
-                return true;
-            }
-        }
-
-        /// <summary>
-        /// Efficiently casts a object to a JToken.
-        /// </summary>
-        /// <param name="document">The document to cast.</param>
-        /// <returns>The JToken from the object.</returns>
-        private static JToken GetJTokenFromObject(object document)
-        {
-            QueryResult queryResult = document as QueryResult;
-            if (queryResult != null)
-            {
-                // We wrap objects in QueryResults inorder to support other requests
-                // But we didn't create a nice way to turn it back into a flat object
-                return queryResult.Payload;
-            }
-
-            JToken jToken = document as JToken;
-            if (jToken != null)
-            {
-                return jToken;
-            }
-
-            // JToken.FromObject does not honor DateParseHandling.None
-            // The author does not plan on changing this:
-            // https://github.com/JamesNK/Newtonsoft.Json/issues/862
-            // Until we get our custom serializer to work we are going to have to live 
-            // with datetime.ToString(some format) all hashing to the same value :(
-            return JToken.FromObject(document);
+            return distinctDocumentQueryExecutionComponent;
         }
 
         /// <summary>
         /// Continuation token for distinct queries.
         /// </summary>
-        private sealed class DistinctContinuationToken
+        private readonly struct DistinctContinuationToken
         {
             public DistinctContinuationToken(string sourceToken, string distinctMapToken)
             {
