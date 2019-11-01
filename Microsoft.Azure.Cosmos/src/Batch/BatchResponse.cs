@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.IO;
     using System.Net;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Serialization.HybridRow;
@@ -28,20 +29,6 @@ namespace Microsoft.Azure.Cosmos
         private bool isDisposed;
 
         private List<BatchOperationResult> results;
-
-        internal BatchResponse(
-            HttpStatusCode statusCode,
-            SubStatusCodes subStatusCode,
-            string errorMessage,
-            double requestCharge,
-            TimeSpan? retryAfter,
-            string activityId,
-            CosmosDiagnostics cosmosDiagnostics,
-            ServerBatchRequest serverRequest,
-            CosmosSerializer serializer)
-            : this(statusCode, subStatusCode, errorMessage, requestCharge, retryAfter, activityId, cosmosDiagnostics, serverRequest.Operations, serializer)
-        {
-        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="BatchResponse"/> class.
@@ -66,6 +53,7 @@ namespace Microsoft.Azure.Cosmos
                   operations: operations,
                   serializer: null)
         {
+            this.CreateAndPopulateResults(operations);
         }
 
         /// <summary>
@@ -233,22 +221,35 @@ namespace Microsoft.Azure.Cosmos
             using (responseMessage)
             {
                 BatchResponse response = null;
-                if (responseMessage.IsSuccessStatusCode && responseMessage.Content != null)
+                if (responseMessage.Content != null)
                 {
-                    response = await BatchResponse.PopulateFromContentAsync(responseMessage, serverRequest, serializer);
-                    if (response == null)
+                    Stream content = responseMessage.Content;
+
+                    // Shouldn't be the case practically, but handle it for safety.
+                    if (!responseMessage.Content.CanSeek)
                     {
-                        // Convert any payload read failures as InternalServerError
-                        response = new BatchResponse(
-                            HttpStatusCode.InternalServerError,
-                            SubStatusCodes.Unknown,
-                            ClientResources.ServerResponseDeserializationFailure,
-                            responseMessage.Headers.RequestCharge,
-                            responseMessage.Headers.RetryAfter,
-                            responseMessage.Headers.ActivityId,
-                            responseMessage.Diagnostics,
-                            serverRequest,
-                            serializer);
+                        content = new MemoryStream();
+                        await responseMessage.Content.CopyToAsync(content);
+                    }
+
+                    if (content.ReadByte() == (int)HybridRowVersion.V1)
+                    {
+                        content.Position = 0;
+                        response = await BatchResponse.PopulateFromContentAsync(content, responseMessage, serverRequest, serializer);
+                        if (response == null)
+                        {
+                            // Convert any payload read failures as InternalServerError
+                            response = new BatchResponse(
+                                HttpStatusCode.InternalServerError,
+                                SubStatusCodes.Unknown,
+                                ClientResources.ServerResponseDeserializationFailure,
+                                responseMessage.Headers.RequestCharge,
+                                responseMessage.Headers.RetryAfter,
+                                responseMessage.Headers.ActivityId,
+                                responseMessage.Diagnostics,
+                                serverRequest.Operations,
+                                serializer);
+                        }
                     }
                 }
                 else
@@ -261,7 +262,7 @@ namespace Microsoft.Azure.Cosmos
                         responseMessage.Headers.RetryAfter,
                         responseMessage.Headers.ActivityId,
                         responseMessage.Diagnostics,
-                        serverRequest,
+                        serverRequest.Operations,
                         serializer);
                 }
 
@@ -279,7 +280,7 @@ namespace Microsoft.Azure.Cosmos
                             responseMessage.Headers.RetryAfter,
                             responseMessage.Headers.ActivityId,
                             responseMessage.Diagnostics,
-                            serverRequest,
+                            serverRequest.Operations,
                             serializer);
                     }
 
@@ -296,36 +297,39 @@ namespace Microsoft.Azure.Cosmos
                         }
                     }
 
-                    response.results = new List<BatchOperationResult>();
-                    for (int i = 0; i < serverRequest.Operations.Count; i++)
-                    {
-                        response.results.Add(
-                            new BatchOperationResult(response.StatusCode)
-                            {
-                                SubStatusCode = response.SubStatusCode,
-                                RetryAfter = TimeSpan.FromMilliseconds(retryAfterMilliseconds),
-                            });
-                    }
+                    response.CreateAndPopulateResults(serverRequest.Operations, retryAfterMilliseconds);
                 }
 
                 return response;
             }
         }
 
-        internal static async Task<BatchResponse> PopulateFromContentAsync(
+        private void CreateAndPopulateResults(IReadOnlyList<ItemBatchOperation> operations, int retryAfterMilliseconds = 0)
+        {
+            this.results = new List<BatchOperationResult>();
+            for (int i = 0; i < operations.Count; i++)
+            {
+                this.results.Add(
+                    new BatchOperationResult(this.StatusCode)
+                    {
+                        SubStatusCode = this.SubStatusCode,
+                        RetryAfter = TimeSpan.FromMilliseconds(retryAfterMilliseconds),
+                    });
+            }
+        }
+
+        private static async Task<BatchResponse> PopulateFromContentAsync(
+            Stream content,
             ResponseMessage responseMessage,
             ServerBatchRequest serverRequest,
             CosmosSerializer serializer)
         {
             List<BatchOperationResult> results = new List<BatchOperationResult>();
 
-            int resizerInitialCapacity = 81920;
-            if (responseMessage.Content.CanSeek)
-            {
-                resizerInitialCapacity = (int)responseMessage.Content.Length;
-            }
+            // content is ensured to be seekable in caller.
+            int resizerInitialCapacity = (int)content.Length;
 
-            Result res = await responseMessage.Content.ReadRecordIOAsync(
+            Result res = await content.ReadRecordIOAsync(
                 record =>
                 {
                     Result r = BatchOperationResult.ReadOperationResult(record, out BatchOperationResult operationResult);
@@ -344,15 +348,33 @@ namespace Microsoft.Azure.Cosmos
                 return null;
             }
 
+            HttpStatusCode responseStatusCode = responseMessage.StatusCode;
+            SubStatusCodes responseSubStatusCode = responseMessage.Headers.SubStatusCode;
+
+            // Promote the operation error status as the Batch response error status if we have a MultiStatus response
+            // to provide users with status codes they are used to.
+            if ((int)responseMessage.StatusCode == (int)StatusCodes.MultiStatus)
+            {
+                foreach (BatchOperationResult result in results)
+                {
+                    if ((int)result.StatusCode != (int)StatusCodes.FailedDependency)
+                    {
+                        responseStatusCode = result.StatusCode;
+                        responseSubStatusCode = result.SubStatusCode;
+                        break;
+                    }
+                }
+            }
+
             BatchResponse response = new BatchResponse(
-                responseMessage.StatusCode,
-                responseMessage.Headers.SubStatusCode,
+                responseStatusCode,
+                responseSubStatusCode,
                 responseMessage.ErrorMessage,
                 responseMessage.Headers.RequestCharge,
                 responseMessage.Headers.RetryAfter,
                 responseMessage.Headers.ActivityId,
                 responseMessage.Diagnostics,
-                serverRequest,
+                serverRequest.Operations,
                 serializer);
 
             response.results = results;

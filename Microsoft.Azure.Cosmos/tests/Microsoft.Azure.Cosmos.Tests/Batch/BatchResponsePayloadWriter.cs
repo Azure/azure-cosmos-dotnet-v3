@@ -108,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             return Result.Success;
         }
 
-        private static byte[] StreamToBytes(MemoryStream stream)
+        private static byte[] StreamToBytes(Stream stream)
         {
             byte[] bytes = new byte[stream.Length];
             stream.Read(bytes, 0, bytes.Length);

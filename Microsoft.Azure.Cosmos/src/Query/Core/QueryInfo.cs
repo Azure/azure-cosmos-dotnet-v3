@@ -62,6 +62,13 @@ namespace Microsoft.Azure.Cosmos.Query
             set;
         }
 
+        [JsonProperty("groupByAliases")]
+        public string[] GroupByAliases
+        {
+            get;
+            set;
+        }
+
         [JsonProperty("aggregates", ItemConverterType = typeof(StringEnumConverter))]
         public AggregateOperator[] Aggregates
         {

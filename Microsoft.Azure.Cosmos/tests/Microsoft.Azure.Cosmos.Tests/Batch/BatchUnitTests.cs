@@ -389,30 +389,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(itemRequestOptions.Properties, batchItemRequestOptions.Properties);
         }
 
-        private static async Task<ResponseMessage> GetBatchResponseMessageAsync(List<ItemBatchOperation> operations, int rateLimitedOperationCount = 0)
-        {
-            BatchOperationResult okOperationResult = new BatchOperationResult(HttpStatusCode.OK);
-            BatchOperationResult rateLimitedOperationResult = new BatchOperationResult((HttpStatusCode)StatusCodes.TooManyRequests);
-
-            List<BatchOperationResult> resultsFromServer = new List<BatchOperationResult>();
-            for (int operationIndex = 0; operationIndex < operations.Count - rateLimitedOperationCount; operationIndex++)
-            {
-                resultsFromServer.Add(okOperationResult);
-            }
-
-            for (int index = 0; index < rateLimitedOperationCount; index++)
-            {
-                resultsFromServer.Add(rateLimitedOperationResult);
-            }
-
-            HttpStatusCode batchStatus = rateLimitedOperationCount > 0 ? (HttpStatusCode)StatusCodes.MultiStatus : HttpStatusCode.OK;
-
-            return new ResponseMessage(batchStatus, requestMessage: null, errorMessage: null)
-            {
-                Content = await new BatchResponsePayloadWriter(resultsFromServer).GeneratePayloadAsync()
-            };
-        }
-
         private static void VerifyBatchItemRequestOptionsAreEqual(BatchItemRequestOptions expected, BatchItemRequestOptions actual)
         {
             if (expected != null)
