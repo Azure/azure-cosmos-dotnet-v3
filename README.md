@@ -1,6 +1,6 @@
-[![Build Status](https://cosmos-db-sdk-public.visualstudio.com/cosmos-db-sdk-public/_apis/build/status/azure-cosmos-dotnet-v3?branchName=master)](https://cosmos-db-sdk-public.visualstudio.com/cosmos-db-sdk-public/_build/latest?definitionId=41&branchName=master)
+[![Build Status](https://cosmos-db-sdk-public.visualstudio.com/cosmos-db-sdk-public/_apis/build/status/azure-cosmos-dotnet-official-v4?branchName=master)](https://cosmos-db-sdk-public.visualstudio.com/cosmos-db-sdk-public/_build/latest?definitionId=53&branchName=v4)
 
-# Microsoft Azure Cosmos DB .NET SDK Version 3
+# Microsoft Azure Cosmos DB .NET SDK Version 4
 
 This client library enables client applications to connect to Azure Cosmos via the SQL API. Azure Cosmos is a globally distributed, multi-model database service. For more information, refer to https://azure.microsoft.com/services/cosmos-db/.
 
@@ -16,9 +16,9 @@ dynamic testItem = new { id = "MyTestItemId", partitionKeyPath = "MyTestPkValue"
 ItemResponse<dynamic> response = await container.CreateItemAsync(testItem);
 ```
 
-## Install via [Nuget.org](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/)
+## Install via [Nuget.org](https://www.nuget.org/packages/Azure.Cosmos/)
 
-`Install-Package Microsoft.Azure.Cosmos`
+`Install-Package Azure.Cosmos`
 
 ## Useful links
 
