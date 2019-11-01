@@ -1083,7 +1083,8 @@ namespace Microsoft.Azure.Cosmos
                     this.serializerSettings,
                     this.connectionPolicy.UserAgentContainer,
                     this.ApiType,
-                    this.httpMessageHandler);
+                    this.httpMessageHandler,
+                    this.transportClientHandlerFactory);
 
             this.gatewayStoreModel = gatewayStoreModel;
 

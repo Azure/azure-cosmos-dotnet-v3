@@ -40,7 +40,8 @@ namespace Microsoft.Azure.Cosmos
             JsonSerializerSettings serializerSettings,
             UserAgentContainer userAgent,
             ApiType apiType = ApiType.None,
-            HttpMessageHandler messageHandler = null)
+            HttpMessageHandler messageHandler = null,
+            Func<TransportClient, TransportClient> transportClientHandlerFactory = null)
         {
             // CookieContainer is not really required, but is helpful in debugging.
             this.cookieJar = new CookieContainer();
@@ -71,6 +72,10 @@ namespace Microsoft.Azure.Cosmos
                 this.eventSource,
                 serializerSettings);
 
+            if (transportClientHandlerFactory != null)
+            {
+                this.gatewayStoreClient = (GatewayStoreClient)transportClientHandlerFactory(this.gatewayStoreClient);
+            }
         }
 
         public virtual async Task<DocumentServiceResponse> ProcessMessageAsync(DocumentServiceRequest request, CancellationToken cancellationToken = default(CancellationToken))
