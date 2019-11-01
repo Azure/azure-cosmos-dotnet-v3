@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
             }
             else if (startFromBeginning)
             {
-                requestOptions.StartTime = DateTime.MinValue.ToUniversalTime();
+                requestOptions.StartTime = ChangeFeedRequestOptions.DateTimeStartFromBeginning;
             }
 
             return new ChangeFeedPartitionKeyResultSetIteratorCore(

@@ -252,7 +252,7 @@ namespace Microsoft.Azure.Cosmos
 
             requestOptions.PopulateRequestOptions(request);
 
-            Assert.AreEqual(ChangeFeedRequestOptions.IfNoneMatchAllHeaderValue, request.Headers.IfNoneMatch);
+            Assert.IsNull(request.Headers.IfNoneMatch);
             Assert.IsNull(request.Headers[Documents.HttpConstants.HttpHeaders.IfModifiedSince]);
         }
 

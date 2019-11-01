@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
     internal class ChangeFeedRequestOptions : RequestOptions
     {
         internal const string IfNoneMatchAllHeaderValue = "*";
-        private static readonly DateTime dateTimeStartFromBeginning = DateTime.MinValue.ToUniversalTime();
+        internal static readonly DateTime DateTimeStartFromBeginning = DateTime.MinValue.ToUniversalTime();
 
         /// <summary>
         /// Specifies a particular point in time to start to read the change feed.
@@ -34,12 +34,12 @@ namespace Microsoft.Azure.Cosmos
             // Check if no Continuation Token is present
             if (string.IsNullOrEmpty(request.Headers.IfNoneMatch))
             {
-                if (this.StartTime == null
-                    || this.StartTime == ChangeFeedRequestOptions.dateTimeStartFromBeginning)
+                if (this.StartTime == null)
                 {
                     request.Headers.IfNoneMatch = ChangeFeedRequestOptions.IfNoneMatchAllHeaderValue;
                 }
-                else if (this.StartTime != null)
+                else if (this.StartTime != null
+                    && this.StartTime != ChangeFeedRequestOptions.DateTimeStartFromBeginning)
                 {
                     request.Headers.Add(HttpConstants.HttpHeaders.IfModifiedSince, this.StartTime.Value.ToUniversalTime().ToString("r", CultureInfo.InvariantCulture));
                 }
