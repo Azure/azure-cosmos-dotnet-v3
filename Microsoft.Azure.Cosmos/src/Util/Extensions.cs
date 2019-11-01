@@ -87,6 +87,16 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
+            cosmosResponse.Diagnostics = new PointOperationStatistics(
+                activityId: cosmosResponse.Headers.ActivityId,
+                statusCode: dce.StatusCode.Value,
+                subStatusCode: SubStatusCodes.Unknown,
+                requestCharge: cosmosResponse.Headers.RequestCharge,
+                errorMessage: cosmosResponse.ErrorMessage,
+                method: request?.Method,
+                requestUri: request?.RequestUri,
+                clientSideRequestStatistics: dce.RequestStatistics as CosmosClientSideRequestStatistics);
+
             if (request != null)
             {
                 request.Properties.Remove(nameof(DocumentClientException));
