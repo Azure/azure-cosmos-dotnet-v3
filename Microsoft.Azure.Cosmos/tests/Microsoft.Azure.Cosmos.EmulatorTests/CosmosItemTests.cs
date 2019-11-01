@@ -36,24 +36,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private static readonly string undefinedPartitionItemId = "undefined-partition-Item";
 
         [TestInitialize]
-        public async Task TestInitialize()
+        public void TestInitialize()
         {
-            await base.TestInit();
-            string PartitionKey = "/status";
-            this.containerSettings = new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey);
-            ContainerResponse response = await this.database.CreateContainerAsync(
-                this.containerSettings,
-                cancellationToken: this.cancellationToken);
-            Assert.IsNotNull(response);
-            Assert.IsNotNull(response.Container);
-            Assert.IsNotNull(response.Resource);
-            this.Container = response;
+            //await base.TestInit();
+            //string PartitionKey = "/status";
+            //this.containerSettings = new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey);
+            //ContainerResponse response = await this.database.CreateContainerAsync(
+            //    this.containerSettings,
+            //    cancellationToken: this.cancellationToken);
+            //Assert.IsNotNull(response);
+            //Assert.IsNotNull(response.Container);
+            //Assert.IsNotNull(response.Resource);
+            //this.Container = response;
         }
 
         [TestCleanup]
-        public async Task Cleanup()
+        public void  Cleanup()
         {
-            await base.TestCleanup();
+            //await base.TestCleanup();
         }
 
         [TestMethod]
@@ -1506,18 +1506,31 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [TestCategory("Quarantine") /* Gated runs emulator as rate limiting disabled */]
-        public void VerifyToManyRequestTest()
+        public async Task VerifyToManyRequestTest()
         {
-            CosmosClient client = TestCommon.CreateCosmosClient(builder => builder
-               .WithThrottlingRetryOptions(TimeSpan.FromMinutes(5), 400));
+            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
+                "https://jawilleytemp.documents.azure.com:443/",
+                "")
+                .WithThrottlingRetryOptions(TimeSpan.FromMinutes(5), 600);
 
-            Container container = client.GetContainer("ThrottleTest", "Throttle");
+            CosmosClient client = cosmosClientBuilder.Build();
 
 
-            Task[] createItems = new Task[4000];
+            Container container = client.GetContainer("ThrottleTest2", "ThrottleTest");
+            List<ToDoActivity> toDoActivities = new List<ToDoActivity>();
+            for(int i = 0; i < 50; i++)
+            {
+                toDoActivities.Add(ToDoActivity.CreateRandomToDoActivity(pk: i.ToString()));
+            }
+
+            using (var response = await container.ReadItemStreamAsync("test", new Cosmos.PartitionKey("Test"))) { }
+
+            Task[] createItems = new Task[toDoActivities.Count];
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
             for (int i = 0; i < createItems.Length; i++)
             {
-                createItems[i] = this.CreateItem(container);
+                createItems[i] = this.CreateItem(container, toDoActivities[i], stopwatch);
             }
 
             Task.WaitAll(createItems);
@@ -1526,21 +1539,96 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         }
 
-        private async Task CreateItem(Container container)
+        private async Task CreateItem(Container container, ToDoActivity item, Stopwatch stopwatch)
         {
-            ToDoActivity temp = ToDoActivity.CreateRandomToDoActivity();
             try
             {
                 var response = await container.UpsertItemAsync<ToDoActivity>(
-                    item: temp,
-                    partitionKey: new Cosmos.PartitionKey(temp.status));
+                    item: item,
+                    partitionKey: new Cosmos.PartitionKey(item.status));
+                Console.WriteLine($"RU:{response.RequestCharge}; Time: {stopwatch.Elapsed};Item:{item.status}");
             }
             catch (Exception e)
             {
                 CosmosException cosmosException = e as CosmosException;
                 if (cosmosException != null && (int)cosmosException.StatusCode == 429)
                 {
+                    Console.WriteLine($"429 Failure: RU:{cosmosException.RequestCharge}; Time: {stopwatch.Elapsed};Exception: {cosmosException.ToString()}");
+                }
+                else
+                {
+                    Console.WriteLine("Failure: " + e.ToString());
+                }
+            }
+        }
+
+        [TestMethod]
+        [TestCategory("Quarantine") /* Gated runs emulator as rate limiting disabled */]
+        public async Task Verifyv2ToManyRequestTest()
+        {
+            
+            ConnectionPolicy policy = new ConnectionPolicy()
+            {
+                RetryOptions = new RetryOptions
+                {
+                    MaxRetryAttemptsOnThrottledRequests = 400,
+                    MaxRetryWaitTimeInSeconds = 300
+                },
+                ConnectionMode = ConnectionMode.Direct,
+                ConnectionProtocol = Documents.Client.Protocol.Tcp
+            };
+
+            DocumentClient client = new DocumentClient(
+                new Uri("https://jawilleytemp.documents.azure.com:443/"),
+                "",
+                policy);
+
+            Uri container = UriFactory.CreateDocumentCollectionUri("ThrottleTest2", "ThrottleTest");
+            await client.OpenAsync();
+            List<ToDoActivity> toDoActivities = new List<ToDoActivity>();
+            for (int i = 0; i < 50; i++)
+            {
+                toDoActivities.Add(ToDoActivity.CreateRandomToDoActivity());
+            }
+
+            Task[] createItems = new Task[toDoActivities.Count];
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+            for (int i = 0; i < createItems.Length; i++)
+            {
+                createItems[i] = this.CreateV2Item(client, container, toDoActivities[i], stopwatch);
+            }
+
+            Task.WaitAll(createItems);
+
+            Console.WriteLine("done");
+
+        }
+
+        private async Task CreateV2Item(DocumentClient client, Uri container, ToDoActivity item, Stopwatch stopwatch)
+        {
+            try
+            {
+                var response = await client.UpsertDocumentAsync(
+                    container,
+                    item,
+                    new Documents.Client.RequestOptions()
+                    {
+                        PartitionKey = new PartitionKey(item.status)
+                    });
+
+                Console.WriteLine($"RU:{response.RequestCharge}; Time: {stopwatch.Elapsed};");
+            }
+            catch (Exception e)
+            {
+                DocumentClientException dce = e as DocumentClientException;
+                if (dce != null && (int)dce.StatusCode == 429)
+                {
                     Assert.Fail("Should not get a 429" + e.ToString());
+                }
+                else
+                {
+                    Console.Write("Failure: " + e.ToString());
                 }
             }
         }

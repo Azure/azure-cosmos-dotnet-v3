@@ -78,6 +78,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 id = Guid.NewGuid().ToString();
             }
+
+            List<ToDoActivity> children = new List<ToDoActivity>();
+            for(int i = 0; i < 2; i++)
+            {
+                children.Add(new ToDoActivity { id = "child", taskNum = i, status = i.ToString() });   
+            }
+
             return new ToDoActivity()
             {
                 id = id,
@@ -86,10 +93,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 taskNum = 42,
                 cost = double.MaxValue,
                 CamelCase = "camelCase",
-                children = new ToDoActivity[]
-                { new ToDoActivity { id = "child1", taskNum = 30 },
-                  new ToDoActivity { id = "child2", taskNum = 40}
-                },
+                children = children.ToArray(),
                 valid = true
             };
         }

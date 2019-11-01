@@ -20,6 +20,8 @@ namespace Microsoft.Azure.Cosmos
         private readonly int maxAttemptCount;
         private readonly TimeSpan maxWaitTimeInMilliseconds;
 
+        private static long TotalCount = 0;
+        private static double TotalRuCount = 0;
         private int currentAttemptCount;
         private TimeSpan cumulativeRetryDelay;
 
@@ -33,6 +35,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentException("maxWaitTimeInSeconds", "maxWaitTimeInSeconds must be less than " + (int.MaxValue / 1000));
             }
 
+            TotalCount++;
             this.maxAttemptCount = maxAttemptCount;
             this.backoffDelayFactor = backoffDelayFactor;
             this.maxWaitTimeInMilliseconds = TimeSpan.FromSeconds(maxWaitTimeInSeconds);
@@ -82,6 +85,8 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            TotalRuCount += cosmosResponseMessage.Headers.RequestCharge;
+
             if (!this.IsValidThrottleStatusCode(cosmosResponseMessage?.StatusCode))
             {
                 DefaultTrace.TraceError(
@@ -155,6 +160,8 @@ namespace Microsoft.Azure.Cosmos
             {
                 retryDelay = retryAfter.Value;
             }
+
+            retryDelay = retryDelay.Add(TimeSpan.FromMilliseconds(100));
 
             if (this.backoffDelayFactor > 1)
             {
