@@ -39,6 +39,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
 
         public override string ToString()
         {
+            return this.ToString(int.MaxValue);
+        }
+
+        public string ToString(int lengthLimitInBytes)
+        {
+            string queryPlanString = this.QueryPlan?.ToString();
+            bool shouldSerializeQueryPlan;
+            if (queryPlanString == null)
+            {
+                shouldSerializeQueryPlan = false;
+            }
+            else
+            {
+                shouldSerializeQueryPlan = (queryPlanString.Length + this.SourceContinuationToken.Length) < lengthLimitInBytes;
+            }
+
             return CosmosObject.Create(new Dictionary<string, CosmosElement>()
             {
                 {
@@ -47,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
                 },
                 {
                     PipelineContinuationTokenV1_1.QueryPlanPropertyName,
-                    this.QueryPlan == null ? (CosmosElement)CosmosNull.Create() : (CosmosElement)CosmosString.Create(this.QueryPlan.ToString())
+                    shouldSerializeQueryPlan ? (CosmosElement)CosmosString.Create(queryPlanString) : (CosmosElement)CosmosNull.Create() 
                 },
                 {
                     PipelineContinuationTokenV1_1.SourceContinuationTokenPropertyName,

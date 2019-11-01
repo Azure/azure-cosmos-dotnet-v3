@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
     {
         protected const string VersionPropertyName = "Version";
 
-        private static readonly Version CurrentVersion = new Version(major: 1, minor: 0);
+        private static readonly Version CurrentVersion = new Version(major: 1, minor: 1);
 
         protected PipelineContinuationToken(Version version)
         {
