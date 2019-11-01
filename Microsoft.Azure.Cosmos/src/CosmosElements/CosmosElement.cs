@@ -45,12 +45,6 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return CosmosElement.Dispatch(jsonNavigator, jsonNavigatorNode);
         }
 
-        public static CosmosElement Parse(string json)
-        {
-            byte[] buffer = Encoding.UTF8.GetBytes(json);
-            return CosmosElement.CreateFromBuffer(buffer);
-        }
-
         public static CosmosElement Dispatch(
             IJsonNavigator jsonNavigator,
             IJsonNavigatorNode jsonNavigatorNode)
@@ -129,6 +123,58 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             }
 
             return item;
+        }
+
+        public static CosmosElement Parse(string json)
+        {
+            if (!CosmosElement.TryParse(json, out CosmosElement cosmosElement))
+            {
+                throw new ArgumentException($"Failed to parse json: {json}.");
+            }
+
+            return cosmosElement;
+        }
+
+        public static bool TryParse(
+            string serializedCosmosElement,
+            out CosmosElement cosmosElement)
+        {
+            if (serializedCosmosElement == null)
+            {
+                throw new ArgumentNullException(nameof(serializedCosmosElement));
+            }
+
+            try
+            {
+                byte[] buffer = Encoding.UTF8.GetBytes(serializedCosmosElement);
+                cosmosElement = CosmosElement.CreateFromBuffer(buffer);
+            }
+            catch (JsonParseException)
+            {
+                cosmosElement = default;
+            }
+
+            return cosmosElement != default;
+        }
+
+        public static bool TryParse<TCosmosElement>(
+            string serializedCosmosElement,
+            out TCosmosElement typedCosmosElement)
+        {
+            if (!CosmosElement.TryParse(serializedCosmosElement, out CosmosElement cosmosElement))
+            {
+                typedCosmosElement = default;
+                return false;
+            }
+
+            if (!(cosmosElement is TCosmosElement tempCosmosElement))
+            {
+                typedCosmosElement = default;
+                return false;
+            }
+
+            typedCosmosElement = tempCosmosElement;
+            return true;
         }
     }
 #if INTERNAL

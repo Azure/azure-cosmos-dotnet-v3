@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 {
                     if (!this.TryGetValue(key, out CosmosElement value))
                     {
-                        value = null;
+                        throw new KeyNotFoundException($"Failed to find key: {key}");
                     }
 
                     return value;
