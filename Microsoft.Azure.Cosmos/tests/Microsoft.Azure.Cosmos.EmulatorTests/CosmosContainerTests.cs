@@ -772,7 +772,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             var payload = new { id = "testId", user = "testUser", creationDate = ToEpoch(DateTime.UtcNow) };
             ItemResponse<dynamic> createItemResponse = await container.CreateItemAsync<dynamic>(payload);
 
-            //read with matching Etag
+            //read with matching Etag - this should not throw
             ItemResponse<dynamic> readItemResponse = await container.ReadItemAsync<dynamic>(
                 payload.id,
                 new Cosmos.PartitionKey(payload.user),
@@ -797,7 +797,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             var payload = new { id = "testId", user = "testUser", creationDate = ToEpoch(DateTime.UtcNow) };
             ItemResponse<dynamic> createItemResponse = await container.CreateItemAsync<dynamic>(payload);
 
-            //read with matching Etag
+            //read with matching Etag - this should not throw
             ResponseMessage readItemResponse = await container.ReadItemStreamAsync(
                 payload.id,
                 new Cosmos.PartitionKey(payload.user),
@@ -805,6 +805,35 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Assert.AreEqual(readItemResponse.StatusCode, HttpStatusCode.NotModified);
             Assert.IsNull(readItemResponse.Content);
+        }
+
+        [TestMethod]
+        public async Task ReadItemAsyncIfNoneMatchEtagMissingDocumentThrows()
+        {
+            string containerName = Guid.NewGuid().ToString();
+            string partitionKeyPath = "/user";
+            ContainerProperties setting = new ContainerProperties()
+            {
+                Id = containerName,
+                PartitionKey = new PartitionKeyDefinition() { Paths = new Collection<string> { partitionKeyPath }, Kind = PartitionKind.Hash },
+            };
+
+            Container container = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(setting);
+            var payload = new { id = "testId", user = "testUser", creationDate = ToEpoch(DateTime.UtcNow) };
+
+            //read missing item with etag populated to validate that this throws
+            try
+            {
+                ItemResponse<dynamic> readItemResponse = await container.ReadItemAsync<dynamic>(
+                    payload.id,
+                    new Cosmos.PartitionKey(payload.user),
+                    new ItemRequestOptions { IfNoneMatchEtag = "etag" });
+                Assert.Fail("This operation should throw");
+            }
+            catch(CosmosException ex)
+            {
+                Assert.AreEqual(ex.StatusCode, HttpStatusCode.NotFound);
+            }
         }
 
         private void ValidateCreateContainerResponseContract(ContainerResponse containerResponse)
