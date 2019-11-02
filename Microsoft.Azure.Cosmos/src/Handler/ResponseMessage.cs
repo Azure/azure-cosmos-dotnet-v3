@@ -129,7 +129,7 @@ namespace Microsoft.Azure.Cosmos
         /// Asserts if the current <see cref="HttpStatusCode"/> is a success.
         /// </summary>
         public virtual bool IsSuccessStatusCode => (((int)this.StatusCode >= 200) && ((int)this.StatusCode <= 299)) ||
-            (this.RequestMessage?.OperationType == OperationType.Read && !string.IsNullOrEmpty(this.RequestMessage?.RequestOptions?.IfNoneMatchEtag));
+            (((int)this.StatusCode == 304) && this.RequestMessage?.OperationType == OperationType.Read && !string.IsNullOrEmpty(this.RequestMessage?.RequestOptions?.IfNoneMatchEtag));
 
         /// <summary>
         /// Checks if the current <see cref="ResponseMessage"/> has a successful status code, otherwise, throws.
