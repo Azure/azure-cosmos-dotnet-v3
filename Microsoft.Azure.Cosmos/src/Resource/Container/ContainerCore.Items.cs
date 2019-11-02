@@ -427,7 +427,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
 #if PREVIEW
-        public override Batch CreateBatch(PartitionKey partitionKey)
+        public override TransactionalBatch CreateTransactionalBatch(PartitionKey partitionKey)
         {
             return new BatchCore(this, partitionKey);
         }

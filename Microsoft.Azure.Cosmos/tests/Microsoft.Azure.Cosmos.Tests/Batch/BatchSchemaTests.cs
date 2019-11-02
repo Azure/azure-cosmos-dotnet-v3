@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     id: "id2",
                     operationType: OperationType.Replace,
                     operationIndex: 1,
-                    requestOptions: new BatchItemRequestOptions()
+                    requestOptions: new TransactionalBatchItemRequestOptions()
                     {
                         IfMatchEtag = "theCondition"
                     })
@@ -66,12 +66,12 @@ namespace Microsoft.Azure.Cosmos.Tests
         [Owner("abpai")]
         public async Task BatchResponseDeserializationAsync()
         {
-           List<BatchOperationResult> results = new List<BatchOperationResult>();
+           List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
 
-            results.Add(new BatchOperationResult(HttpStatusCode.Conflict));
+            results.Add(new TransactionalBatchOperationResult(HttpStatusCode.Conflict));
 
             results.Add(
-                new BatchOperationResult(HttpStatusCode.OK)
+                new TransactionalBatchOperationResult(HttpStatusCode.OK)
                 {
                     ResourceStream = new MemoryStream(new byte[] { 0x41, 0x42 }, index: 0, count: 2, writable: false, publiclyVisible: true),
                     RequestCharge = 2.5,
@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     }),
                 serializer: serializer,
                 cancellationToken: CancellationToken.None);
-            BatchResponse batchResponse = await BatchResponse.FromResponseMessageAsync(
+            TransactionalBatchResponse batchResponse = await TransactionalBatchResponse.FromResponseMessageAsync(
                 new ResponseMessage((HttpStatusCode)StatusCodes.MultiStatus) { Content = responseContent },
                 batchRequest,
                 serializer);
@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     && x.ResourceBody.Span.SequenceEqual(y.ResourceBody.Span);
             }
 
-            private bool Equals(BatchItemRequestOptions x, BatchItemRequestOptions y)
+            private bool Equals(TransactionalBatchItemRequestOptions x, TransactionalBatchItemRequestOptions y)
             {
                 if (x == null && y == null)
                 {
@@ -149,16 +149,16 @@ namespace Microsoft.Azure.Cosmos.Tests
                 int hashCode = 1660235553;
                 hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(obj.Id);
                 hashCode = (hashCode * -1521134295) + obj.OperationType.GetHashCode();
-                hashCode = (hashCode * -1521134295) + EqualityComparer<BatchItemRequestOptions>.Default.GetHashCode(obj.RequestOptions);
+                hashCode = (hashCode * -1521134295) + EqualityComparer<TransactionalBatchItemRequestOptions>.Default.GetHashCode(obj.RequestOptions);
                 hashCode = (hashCode * -1521134295) + obj.OperationIndex.GetHashCode();
                 hashCode = (hashCode * -1521134295) + EqualityComparer<Memory<byte>>.Default.GetHashCode(obj.ResourceBody);
                 return hashCode;
             }
         }
 
-        private class CosmosBatchOperationResultEqualityComparer : IEqualityComparer<BatchOperationResult>
+        private class CosmosBatchOperationResultEqualityComparer : IEqualityComparer<TransactionalBatchOperationResult>
         {
-            public bool Equals(BatchOperationResult x, BatchOperationResult y)
+            public bool Equals(TransactionalBatchOperationResult x, TransactionalBatchOperationResult y)
             {
                 return x.StatusCode == y.StatusCode
                     && x.SubStatusCode == y.SubStatusCode
@@ -187,7 +187,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return false;
             }
 
-            public int GetHashCode(BatchOperationResult obj)
+            public int GetHashCode(TransactionalBatchOperationResult obj)
             {
                 int hashCode = 1176625765;
                 hashCode = (hashCode * -1521134295) + obj.StatusCode.GetHashCode();

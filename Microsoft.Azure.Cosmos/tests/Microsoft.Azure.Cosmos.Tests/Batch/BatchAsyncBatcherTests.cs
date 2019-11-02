@@ -34,13 +34,13 @@ namespace Microsoft.Azure.Cosmos.Tests
         private BatchAsyncBatcherExecuteDelegate Executor
             = async (PartitionKeyRangeServerBatchRequest request, CancellationToken cancellationToken) =>
             {
-                List<BatchOperationResult> results = new List<BatchOperationResult>();
+                List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
                 ItemBatchOperation[] arrayOperations = new ItemBatchOperation[request.Operations.Count];
                 int index = 0;
                 foreach (ItemBatchOperation operation in request.Operations)
                 {
                     results.Add(
-                    new BatchOperationResult(HttpStatusCode.OK)
+                    new TransactionalBatchOperationResult(HttpStatusCode.OK)
                     {
                         ResourceStream = new MemoryStream(new byte[] { 0x41, 0x42 }, index: 0, count: 2, writable: false, publiclyVisible: true),
                         ETag = operation.Id
@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     serializer: new CosmosJsonDotNetSerializer(),
                 cancellationToken: cancellationToken);
 
-                BatchResponse batchresponse = await BatchResponse.FromResponseMessageAsync(
+                TransactionalBatchResponse batchresponse = await TransactionalBatchResponse.FromResponseMessageAsync(
                     new ResponseMessage(HttpStatusCode.OK)
                     {
                         Content = responseContent,
@@ -80,13 +80,13 @@ namespace Microsoft.Azure.Cosmos.Tests
         private BatchAsyncBatcherExecuteDelegate ExecutorWithSplit
             = async (PartitionKeyRangeServerBatchRequest request, CancellationToken cancellationToken) =>
             {
-                List<BatchOperationResult> results = new List<BatchOperationResult>();
+                List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
                 ItemBatchOperation[] arrayOperations = new ItemBatchOperation[request.Operations.Count];
                 int index = 0;
                 foreach (ItemBatchOperation operation in request.Operations)
                 {
                     results.Add(
-                    new BatchOperationResult(HttpStatusCode.Gone)
+                    new TransactionalBatchOperationResult(HttpStatusCode.Gone)
                     {
                         ETag = operation.Id,
                         SubStatusCode = SubStatusCodes.PartitionKeyRangeGone
@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 };
                 responseMessage.Headers.SubStatusCode = SubStatusCodes.PartitionKeyRangeGone;
 
-                BatchResponse batchresponse = await BatchResponse.FromResponseMessageAsync(
+                TransactionalBatchResponse batchresponse = await TransactionalBatchResponse.FromResponseMessageAsync(
                     responseMessage,
                     batchRequest,
                     new CosmosJsonDotNetSerializer());
@@ -131,13 +131,13 @@ namespace Microsoft.Azure.Cosmos.Tests
             = async (PartitionKeyRangeServerBatchRequest request, CancellationToken cancellationToken) =>
             {
                 int operationCount = request.Operations.Count - 2;
-                List<BatchOperationResult> results = new List<BatchOperationResult>();
+                List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
                 ItemBatchOperation[] arrayOperations = new ItemBatchOperation[operationCount];
                 int index = 0;
                 foreach (ItemBatchOperation operation in request.Operations.Skip(1).Take(operationCount))
                 {
                     results.Add(
-                    new BatchOperationResult(HttpStatusCode.OK)
+                    new TransactionalBatchOperationResult(HttpStatusCode.OK)
                     {
                         ResourceStream = new MemoryStream(new byte[] { 0x41, 0x42 }, index: 0, count: 2, writable: false, publiclyVisible: true),
                         ETag = operation.Id
@@ -154,7 +154,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     serializer: new CosmosJsonDotNetSerializer(),
                 cancellationToken: cancellationToken);
 
-                BatchResponse batchresponse = await BatchResponse.FromResponseMessageAsync(
+                TransactionalBatchResponse batchresponse = await TransactionalBatchResponse.FromResponseMessageAsync(
                     new ResponseMessage(HttpStatusCode.OK) { Content = responseContent },
                     batchRequest,
                     new CosmosJsonDotNetSerializer());
@@ -273,7 +273,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 ItemBatchOperation operation = operations[i];
                 Assert.AreEqual(TaskStatus.RanToCompletion, operation.Context.OperationTask.Status);
-                BatchOperationResult result = await operation.Context.OperationTask;
+                TransactionalBatchOperationResult result = await operation.Context.OperationTask;
                 Assert.AreEqual(i.ToString(), result.ETag);
 
                 Assert.IsNotNull(operation.Context.Diagnostics);
@@ -314,7 +314,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 }
                 if (operation.Context.OperationTask.Status == TaskStatus.RanToCompletion)
                 {
-                    BatchOperationResult result = await operation.Context.OperationTask;
+                    TransactionalBatchOperationResult result = await operation.Context.OperationTask;
                     Assert.AreEqual(i.ToString(), result.ETag);
                 }
                 else
@@ -330,7 +330,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 ItemBatchOperation operation = operations[i];
                 Assert.AreEqual(TaskStatus.RanToCompletion, operation.Context.OperationTask.Status);
-                BatchOperationResult result = await operation.Context.OperationTask;
+                TransactionalBatchOperationResult result = await operation.Context.OperationTask;
                 Assert.AreEqual(i.ToString(), result.ETag);
             }
         }

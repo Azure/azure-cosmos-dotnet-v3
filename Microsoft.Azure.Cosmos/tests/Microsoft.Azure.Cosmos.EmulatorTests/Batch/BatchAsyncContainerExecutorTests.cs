@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             BatchAsyncContainerExecutor executor = new BatchAsyncContainerExecutor(this.cosmosContainer, this.cosmosContainer.ClientContext, 20, Constants.MaxDirectModeBatchRequestBodySizeInBytes);
 
-            List<Task<BatchOperationResult>> tasks = new List<Task<BatchOperationResult>>();
+            List<Task<TransactionalBatchOperationResult>> tasks = new List<Task<TransactionalBatchOperationResult>>();
             for (int i = 0; i < 100; i++)
             {
                 tasks.Add(executor.AddAsync(CreateItem(i.ToString()), null, default(CancellationToken)));
@@ -54,8 +54,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             for (int i = 0; i < 100; i++)
             {
-                Task<BatchOperationResult> task = tasks[i];
-                BatchOperationResult result = await task;
+                Task<TransactionalBatchOperationResult> task = tasks[i];
+                TransactionalBatchOperationResult result = await task;
                 Assert.AreEqual(HttpStatusCode.Created, result.StatusCode);
 
                 MyDocument document = cosmosDefaultJsonSerializer.FromStream<MyDocument>(result.ResourceStream);

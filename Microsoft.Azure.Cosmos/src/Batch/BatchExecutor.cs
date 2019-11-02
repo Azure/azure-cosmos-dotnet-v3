@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos
             this.batchOptions = batchOptions;
         }
 
-        public async Task<BatchResponse> ExecuteAsync(CancellationToken cancellationToken)
+        public async Task<TransactionalBatchResponse> ExecuteAsync(CancellationToken cancellationToken)
         {
             BatchExecUtils.EnsureValid(this.inputOperations, this.batchOptions);
 
@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="serverRequest">A server request with a set of operations on items.</param>
         /// <param name="cancellationToken"><see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>Response from the server.</returns>
-        private async Task<BatchResponse> ExecuteServerRequestAsync(
+        private async Task<TransactionalBatchResponse> ExecuteServerRequestAsync(
             SinglePartitionKeyServerBatchRequest serverRequest,
             CancellationToken cancellationToken)
         {
@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos
                     },
                     cancellationToken);
 
-                return await BatchResponse.FromResponseMessageAsync(
+                return await TransactionalBatchResponse.FromResponseMessageAsync(
                     responseMessage,
                     serverRequest,
                     this.clientContext.CosmosSerializer);
