@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos
                     {
                         foreach (ItemBatchOperation itemBatchOperation in batchResponse.Operations)
                         {
-                            BatchOperationResult response = batchResponse[itemBatchOperation.OperationIndex];
+                            TransactionalBatchOperationResult response = batchResponse[itemBatchOperation.OperationIndex];
                             itemBatchOperation.Context.Diagnostics.AppendDiagnostics(batchResponse.Diagnostics);
                             if (!response.IsSuccessStatusCode)
                             {
