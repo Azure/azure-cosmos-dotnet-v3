@@ -4308,7 +4308,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         });
                     Assert.Fail("Expected an error when trying to drain a GROUP BY query with continuation tokens.");
                 }
-                catch (Exception e) when (e.GetBaseException().Message.Contains(GroupByDocumentQueryExecutionComponent.ContinuationTokenNotSupportedWithGroupBy))
+                catch (Exception)
                 {
                 }
             }

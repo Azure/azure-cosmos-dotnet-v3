@@ -13,20 +13,20 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
 
     internal abstract partial class GroupByDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase
     {
-        private static readonly IReadOnlyList<CosmosElement> EmptyResults = new List<CosmosElement>().AsReadOnly();
-        private static readonly IReadOnlyDictionary<string, QueryMetrics> EmptyQueryMetrics = new Dictionary<string, QueryMetrics>();
-        private static readonly string DoneReadingGroupingsContinuationToken = "DONE";
-
-        private static readonly string UseTryGetContinuationTokenInstead = "Use TryGetContinuationTokenInstead";
-
         private sealed class ComputeGroupByDocumentQueryExecutionComponent : GroupByDocumentQueryExecutionComponent
         {
+            private static readonly IReadOnlyList<CosmosElement> EmptyResults = new List<CosmosElement>().AsReadOnly();
+            private static readonly IReadOnlyDictionary<string, QueryMetrics> EmptyQueryMetrics = new Dictionary<string, QueryMetrics>();
+            private static readonly string DoneReadingGroupingsContinuationToken = "DONE";
+
+            private static readonly string UseTryGetContinuationTokenInstead = "Use TryGetContinuationTokenInstead";
+
             private ComputeGroupByDocumentQueryExecutionComponent(
                 IDocumentQueryExecutionComponent source,
                 CosmosQueryClient cosmosQueryClient,
                 IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
                 IReadOnlyList<string> orderedAliases,
-                string groupingTableContinuationToken,
+                Dictionary<UInt192, SingleGroupAggregator> groupingTable,
                 bool hasSelectValue,
                 int numPagesDrainedFromGroupingTable)
                 : base(
@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                       cosmosQueryClient,
                       groupByAliasToAggregateType,
                       orderedAliases,
-                      groupingTableContinuationToken,
+                      groupingTable,
                       hasSelectValue,
                       numPagesDrainedFromGroupingTable)
             {
@@ -59,11 +59,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                 }
                 else
                 {
-                    groupByContinuationToken = default;
+                    groupByContinuationToken = new GroupByContinuationToken(
+                        groupingTableContinuationToken: null,
+                        sourceContinuationToken: null,
+                        numPagesDrainedFromGroupingTable: 0);
                 }
 
                 IDocumentQueryExecutionComponent source;
-                if (groupByContinuationToken.SourceContinuationToken == GroupByDocumentQueryExecutionComponent.DoneReadingGroupingsContinuationToken)
+                if (groupByContinuationToken.SourceContinuationToken == ComputeGroupByDocumentQueryExecutionComponent.DoneReadingGroupingsContinuationToken)
                 {
                     source = DoneDocumentQueryExecutionComponent.Value;
                 }
@@ -72,12 +75,47 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                     source = await createSourceCallback(groupByContinuationToken.SourceContinuationToken);
                 }
 
+                // Rehydrate the grouping table.
+                Dictionary<UInt192, SingleGroupAggregator> groupingTable = new Dictionary<UInt192, SingleGroupAggregator>();
+                if (groupByContinuationToken.GroupingTableContinuationToken != null)
+                {
+                    if (!CosmosElement.TryParse<CosmosObject>(
+                        groupByContinuationToken.GroupingTableContinuationToken,
+                        out CosmosObject parsedGroupingTableContinuations))
+                    {
+                        throw cosmosQueryClient.CreateBadRequestException($"Invalid GroupingTableContinuationToken");
+                    }
+
+                    foreach (KeyValuePair<string, CosmosElement> kvp in parsedGroupingTableContinuations)
+                    {
+                        string key = kvp.Key;
+                        CosmosElement value = kvp.Value;
+
+                        UInt192 groupByKey = UInt192.Parse(key);
+
+                        if (!(value is CosmosString singleGroupAggregatorContinuationToken))
+                        {
+                            throw cosmosQueryClient.CreateBadRequestException($"Invalid GroupingTableContinuationToken");
+                        }
+
+                        SingleGroupAggregator singleGroupAggregator = SingleGroupAggregator.Create(
+                            cosmosQueryClient,
+                            EmptyAggregateOperators,
+                            groupByAliasToAggregateType,
+                            orderedAliases,
+                            hasSelectValue,
+                            singleGroupAggregatorContinuationToken.Value);
+
+                        groupingTable[groupByKey] = singleGroupAggregator;
+                    }
+                }
+
                 return new ComputeGroupByDocumentQueryExecutionComponent(
                     source,
                     cosmosQueryClient,
                     groupByAliasToAggregateType,
                     orderedAliases,
-                    groupByContinuationToken.GroupingTableContinuationToken,
+                    groupingTable,
                     hasSelectValue,
                     groupByContinuationToken.NumPagesDrainedFromGroupingTable);
             }
@@ -119,7 +157,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                     // Stage 2:
                     // Emit the results from the grouping table page by page
                     IEnumerable<SingleGroupAggregator> groupByValuesList = this.groupingTable
-                        .OrderBy(kvp => kvp.Key)
                         .Skip(this.numPagesDrainedFromGroupingTable * maxElements)
                         .Take(maxElements)
                         .Select(kvp => kvp.Value);
@@ -162,11 +199,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                     continuationToken = default;
                     return false;
                 }
+
                 if (this.Source.IsDone)
                 {
                     continuationToken = new GroupByContinuationToken(
                         this.GetGroupingTableContinuationToken(),
-                        GroupByDocumentQueryExecutionComponent.DoneReadingGroupingsContinuationToken,
+                        ComputeGroupByDocumentQueryExecutionComponent.DoneReadingGroupingsContinuationToken,
                         this.numPagesDrainedFromGroupingTable).ToString();
                 }
                 else
@@ -196,7 +234,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                 return result;
             }
 
-            private readonly struct GroupByContinuationToken
+            private sealed class GroupByContinuationToken
             {
                 public GroupByContinuationToken(
                     string groupingTableContinuationToken,
@@ -276,11 +314,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
 
                 public void Dispose()
                 {
-                    throw new NotImplementedException();
+                    // Do Nothing
                 }
 
                 public Task<QueryResponseCore> DrainAsync(int maxElements, CancellationToken token)
                 {
+                    token.ThrowIfCancellationRequested();
                     throw new NotImplementedException();
                 }
 
@@ -291,7 +330,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
 
                 public void Stop()
                 {
-                    throw new NotImplementedException();
                 }
 
                 public bool TryGetContinuationToken(out string state)

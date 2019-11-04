@@ -6,9 +6,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using System;
     using System.Buffers;
     using System.Buffers.Text;
-    using System.Collections.Generic;
     using System.Globalization;
-    using System.IO;
     using System.Linq;
     using System.Text;
 
@@ -398,11 +396,20 @@ namespace Microsoft.Azure.Cosmos.Json
 
             private bool RequiresEscapeSequence(char value)
             {
-                const char DoubleQuote = '"';
-                const char ReverseSolidus = '\\';
-                const char Space = ' ';
-
-                return (value == DoubleQuote) || (value == ReverseSolidus) || (value < Space);
+                switch (value)
+                {
+                    case '\\':
+                    case '"':
+                    case '/':
+                    case '\b':
+                    case '\f':
+                    case '\n':
+                    case '\r':
+                    case '\t':
+                        return true;
+                    default:
+                        return value < ' ';
+                }
             }
 
             private void WriteEscapedString(string value)

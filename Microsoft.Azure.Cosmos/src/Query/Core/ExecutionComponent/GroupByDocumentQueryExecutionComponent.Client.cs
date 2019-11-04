@@ -9,20 +9,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Json;
 
     internal abstract partial class GroupByDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase
     {
-        public const string ContinuationTokenNotSupportedWithGroupBy = "Continuation token is not supported for queries with GROUP BY. Do not use FeedResponse.ResponseContinuation or remove the GROUP BY from the query.";
-
         private sealed class ClientGroupByDocumentQueryExecutionComponent : GroupByDocumentQueryExecutionComponent
         {
+            public const string ContinuationTokenNotSupportedWithGroupBy = "Continuation token is not supported for queries with GROUP BY. Do not use FeedResponse.ResponseContinuation or remove the GROUP BY from the query.";
+
             private ClientGroupByDocumentQueryExecutionComponent(
                 IDocumentQueryExecutionComponent source,
                 CosmosQueryClient cosmosQueryClient,
                 IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
                 IReadOnlyList<string> orderedAliases,
-                string groupingTableContinuationToken,
+                Dictionary<UInt192, SingleGroupAggregator> groupingTable,
                 bool hasSelectValue,
                 int numPagesDrainedFromGroupingTable)
                 : base(
@@ -30,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                       cosmosQueryClient,
                       groupByAliasToAggregateType,
                       orderedAliases,
-                      groupingTableContinuationToken,
+                      groupingTable,
                       hasSelectValue,
                       numPagesDrainedFromGroupingTable)
             {
@@ -45,12 +44,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                 bool hasSelectValue)
             {
                 IDocumentQueryExecutionComponent source = await createSourceCallback(requestContinuation);
+                Dictionary<UInt192, SingleGroupAggregator> groupingTable = new Dictionary<UInt192, SingleGroupAggregator>();
                 return new ClientGroupByDocumentQueryExecutionComponent(
                     source,
                     cosmosQueryClient,
                     groupByAliasToAggregateType,
                     orderedAliases,
-                    groupingTableContinuationToken: null,
+                    groupingTable,
                     hasSelectValue,
                     numPagesDrainedFromGroupingTable: 0);
             }
@@ -91,7 +91,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                 // Stage 2:
                 // Emit the results from the grouping table page by page
                 IEnumerable<SingleGroupAggregator> groupByValuesList = this.groupingTable
-                    .OrderBy(kvp => kvp.Key)
                     .Skip(this.numPagesDrainedFromGroupingTable * maxElements)
                     .Take(maxElements)
                     .Select(kvp => kvp.Value);

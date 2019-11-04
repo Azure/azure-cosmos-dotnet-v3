@@ -5,12 +5,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
-    using System.Text;
-    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
 
     /// <summary>
@@ -58,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
             CosmosQueryClient cosmosQueryClient,
             IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
             IReadOnlyList<string> orderedAliases,
-            string groupingTableContinuationToken,
+            Dictionary<UInt192, SingleGroupAggregator> groupingTable,
             bool hasSelectValue,
             int numPagesDrainedFromGroupingTable)
             : base(source)
@@ -73,45 +69,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                 throw new ArgumentNullException(nameof(groupByAliasToAggregateType));
             }
 
-            this.groupingTable = new Dictionary<UInt192, SingleGroupAggregator>();
+            if (groupingTable == null)
+            {
+                throw new ArgumentNullException(nameof(groupingTable));
+            }
 
             this.cosmosQueryClient = cosmosQueryClient;
             this.groupByAliasToAggregateType = groupByAliasToAggregateType;
+            this.groupingTable = groupingTable;
             this.orderedAliases = orderedAliases;
             this.hasSelectValue = hasSelectValue;
             this.numPagesDrainedFromGroupingTable = numPagesDrainedFromGroupingTable;
-
-            if (groupingTableContinuationToken != null)
-            {
-                if (!CosmosElement.TryParse<CosmosObject>(
-                    groupingTableContinuationToken,
-                    out CosmosObject parsedGroupingTableContinuations))
-                {
-                    throw this.cosmosQueryClient.CreateBadRequestException($"Invalid GroupingTableContinuationToken");
-                }
-
-                foreach (KeyValuePair<string, CosmosElement> kvp in parsedGroupingTableContinuations)
-                {
-                    string key = kvp.Key;
-                    CosmosElement value = kvp.Value;
-
-                    UInt192 groupByKey = UInt192.Parse(key);
-
-                    if (!(value is CosmosString singleGroupAggregatorContinuationToken))
-                    {
-                        throw this.cosmosQueryClient.CreateBadRequestException($"Invalid GroupingTableContinuationToken");
-                    }
-                    SingleGroupAggregator singleGroupAggregator = SingleGroupAggregator.Create(
-                        this.cosmosQueryClient,
-                        EmptyAggregateOperators,
-                        this.groupByAliasToAggregateType,
-                        this.orderedAliases,
-                        this.hasSelectValue,
-                        singleGroupAggregatorContinuationToken.Value);
-
-                    this.groupingTable[groupByKey] = singleGroupAggregator;
-                }
-            }
         }
 
         public override bool IsDone => this.isDone;
