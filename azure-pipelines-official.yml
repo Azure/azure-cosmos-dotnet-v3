@@ -59,7 +59,7 @@ stages:
 
       - task: AzureFileCopy@2
         displayName: ' Copy Artifacts to Azure SDK Release blob storage'
-		condition: and(succeeded(),ne(variables['BlobVersion'], ''))
+        condition: and(succeeded(),ne(variables['BlobVersion'], ''))
         inputs:
           SourcePath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Cosmos'
           azureSubscription: azuresdkpartnerdrops
