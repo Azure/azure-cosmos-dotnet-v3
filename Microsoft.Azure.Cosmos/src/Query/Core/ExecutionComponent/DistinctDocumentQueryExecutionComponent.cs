@@ -60,6 +60,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
             IDocumentQueryExecutionComponent distinctDocumentQueryExecutionComponent;
             switch (executionEnvironment)
             {
+                case ExecutionEnvironment.Client:
+                    distinctDocumentQueryExecutionComponent = await ClientDistinctDocumentQueryExecutionComponent.CreateAsync(
+                        queryClient,
+                        requestContinuation,
+                        createSourceCallback,
+                        distinctQueryType);
+                    break;
+
                 case ExecutionEnvironment.Compute:
                     distinctDocumentQueryExecutionComponent = await ComputeDistinctDocumentQueryExecutionComponent.CreateAsync(
                         queryClient,
