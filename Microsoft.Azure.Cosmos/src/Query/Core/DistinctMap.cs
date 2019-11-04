@@ -4,10 +4,8 @@
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
-    using System.Collections.Generic;
-    using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using MurmurHash3 = Documents.Routing.MurmurHash3;
+    using Microsoft.Azure.Cosmos.Query.Core;
 
     /// <summary>
     /// Base class for all types of DistinctMaps.

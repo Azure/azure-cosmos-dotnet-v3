@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos.Query
 {
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core;
 
     /// <summary>
     /// Partial wrapper
