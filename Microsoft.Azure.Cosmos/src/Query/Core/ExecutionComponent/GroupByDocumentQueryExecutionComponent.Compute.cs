@@ -9,8 +9,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Json;
-    using UInt128 = Documents.UInt128;
 
     internal abstract partial class GroupByDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase
     {
@@ -24,12 +22,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
 
             private ComputeGroupByDocumentQueryExecutionComponent(
                 IDocumentQueryExecutionComponent source,
-                GroupingTable groupingTable,
-                int numPagesDrainedFromGroupingTable)
+                GroupingTable groupingTable)
                 : base(
                       source,
-                      groupingTable,
-                      numPagesDrainedFromGroupingTable)
+                      groupingTable)
             {
             }
 
@@ -54,8 +50,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                 {
                     groupByContinuationToken = new GroupByContinuationToken(
                         groupingTableContinuationToken: null,
-                        sourceContinuationToken: null,
-                        numPagesDrainedFromGroupingTable: 0);
+                        sourceContinuationToken: null);
                 }
 
                 IDocumentQueryExecutionComponent source;
@@ -77,8 +72,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
 
                 return new ComputeGroupByDocumentQueryExecutionComponent(
                     source,
-                    groupingTable,
-                    groupByContinuationToken.NumPagesDrainedFromGroupingTable);
+                    groupingTable);
             }
 
             public override async Task<QueryResponseCore> DrainAsync(
@@ -110,30 +104,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                         requestCharge: sourceResponse.RequestCharge,
                         diagnostics: sourceResponse.Diagnostics,
                         responseLengthBytes: sourceResponse.ResponseLengthBytes);
-
-                    this.isDone = false;
                 }
                 else
                 {
                     // Stage 2:
                     // Emit the results from the grouping table page by page
-                    IEnumerable<SingleGroupAggregator> groupByValuesList = this.groupingTable
-                        .Skip(this.numPagesDrainedFromGroupingTable * maxElements)
-                        .Take(maxElements)
-                        .Select(kvp => kvp.Value);
-
-                    List<CosmosElement> results = new List<CosmosElement>();
-                    foreach (SingleGroupAggregator groupByValues in groupByValuesList)
-                    {
-                        results.Add(groupByValues.GetResult());
-                    }
-
-                    this.numPagesDrainedFromGroupingTable++;
-                    if ((this.numPagesDrainedFromGroupingTable * maxElements) >= this.groupingTable.Count)
-                    {
-                        this.isDone = true;
-                    }
-
+                    IReadOnlyList<CosmosElement> results = this.groupingTable.Drain(maxElements);
+                    
                     response = QueryResponseCore.CreateSuccess(
                        result: results,
                        continuationToken: null,
@@ -165,16 +142,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                 {
                     continuationToken = new GroupByContinuationToken(
                         this.groupingTable.GetContinuationToken(),
-                        ComputeGroupByDocumentQueryExecutionComponent.DoneReadingGroupingsContinuationToken,
-                        this.numPagesDrainedFromGroupingTable).ToString();
+                        ComputeGroupByDocumentQueryExecutionComponent.DoneReadingGroupingsContinuationToken).ToString();
                 }
                 else
                 {
                     // Still need to drain the source.
                     continuationToken = new GroupByContinuationToken(
                         this.groupingTable.GetContinuationToken(),
-                        sourceContinuationToken,
-                        numPagesDrainedFromGroupingTable: 0).ToString();
+                        sourceContinuationToken).ToString();
                 }
 
                 return true;
@@ -184,27 +159,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
             {
                 public GroupByContinuationToken(
                     string groupingTableContinuationToken,
-                    string sourceContinuationToken,
-                    int numPagesDrainedFromGroupingTable)
+                    string sourceContinuationToken)
                 {
                     this.GroupingTableContinuationToken = groupingTableContinuationToken;
                     this.SourceContinuationToken = sourceContinuationToken;
-                    this.NumPagesDrainedFromGroupingTable = numPagesDrainedFromGroupingTable;
                 }
 
                 public string GroupingTableContinuationToken { get; }
 
                 public string SourceContinuationToken { get; }
 
-                public int NumPagesDrainedFromGroupingTable { get; }
-
                 public override string ToString()
                 {
                     return CosmosObject.Create(new Dictionary<string, CosmosElement>()
                     {
                         { nameof(this.GroupingTableContinuationToken), CosmosString.Create(this.GroupingTableContinuationToken) },
-                        { nameof(this.SourceContinuationToken), CosmosString.Create(this.SourceContinuationToken) },
-                        { nameof(this.NumPagesDrainedFromGroupingTable), CosmosNumber64.Create(this.NumPagesDrainedFromGroupingTable) }
+                        { nameof(this.SourceContinuationToken), CosmosString.Create(this.SourceContinuationToken) }
                     }).ToString();
                 }
 
@@ -232,18 +202,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                         return false;
                     }
 
-                    if (!groupByContinuationTokenObject.TryGetValue(
-                        nameof(GroupByContinuationToken.NumPagesDrainedFromGroupingTable),
-                        out CosmosNumber64 numPagesDrainedFromGroupingTable))
-                    {
-                        groupByContinuationToken = default;
-                        return false;
-                    }
-
                     groupByContinuationToken = new GroupByContinuationToken(
                         groupingTableContinuationToken.Value,
-                        sourceContinuationToken.Value,
-                        (int)numPagesDrainedFromGroupingTable.AsInteger().Value);
+                        sourceContinuationToken.Value);
                     return true;
                 }
             }

@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
@@ -42,13 +43,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
     {
         private readonly GroupingTable groupingTable;
 
-        private int numPagesDrainedFromGroupingTable;
-        private bool isDone;
-
         protected GroupByDocumentQueryExecutionComponent(
             IDocumentQueryExecutionComponent source,
-            GroupingTable groupingTable,
-            int numPagesDrainedFromGroupingTable)
+            GroupingTable groupingTable)
             : base(source)
         {
             if (groupingTable == null)
@@ -57,10 +54,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
             }
 
             this.groupingTable = groupingTable;
-            this.numPagesDrainedFromGroupingTable = numPagesDrainedFromGroupingTable;
         }
 
-        public override bool IsDone => this.isDone;
+        public override bool IsDone => this.groupingTable.IsDone;
 
         public static async Task<IDocumentQueryExecutionComponent> CreateAsync(
             ExecutionEnvironment executionEnvironment,
@@ -209,6 +205,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
 
             public int Count => this.table.Count;
 
+            public bool IsDone { get; private set; }
+
             public void AddPayload(RewrittenGroupByProjection rewrittenGroupByProjection)
             {
                 UInt128 groupByKeysHash = DistinctHash.GetHash(rewrittenGroupByProjection.GroupByItems);
@@ -227,6 +225,35 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
 
                 CosmosElement payload = rewrittenGroupByProjection.Payload;
                 singleGroupAggregator.AddValues(payload);
+            }
+
+            public IReadOnlyList<CosmosElement> Drain(int maxItemCount)
+            {
+                List<UInt128> keys = this.table.Keys.Take(maxItemCount).ToList();
+                List<SingleGroupAggregator> singleGroupAggregators = new List<SingleGroupAggregator>(maxItemCount);
+                foreach (UInt128 key in keys)
+                {
+                    SingleGroupAggregator singleGroupAggregator = this.table[key];
+                    singleGroupAggregators.Add(singleGroupAggregator);
+                }
+
+                foreach (UInt128 key in keys)
+                {
+                    this.table.Remove(key);
+                }
+
+                List<CosmosElement> results = new List<CosmosElement>();
+                foreach (SingleGroupAggregator singleGroupAggregator in singleGroupAggregators)
+                {
+                    results.Add(singleGroupAggregator.GetResult());
+                }
+
+                if (this.Count == 0)
+                {
+                    this.IsDone = true;
+                }
+
+                return results;
             }
 
             public string GetContinuationToken()

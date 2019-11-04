@@ -5,11 +5,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using UInt128 = Documents.UInt128;
 
     internal abstract partial class GroupByDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase
     {
@@ -19,12 +17,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
 
             private ClientGroupByDocumentQueryExecutionComponent(
                 IDocumentQueryExecutionComponent source,
-                GroupingTable groupingTable,
-                int numPagesDrainedFromGroupingTable)
+                GroupingTable groupingTable)
                 : base(
                       source,
-                      groupingTable,
-                      numPagesDrainedFromGroupingTable)
+                      groupingTable)
             {
             }
 
@@ -45,8 +41,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                     groupingTableContinuationToken: null);
                 return new ClientGroupByDocumentQueryExecutionComponent(
                     source,
-                    groupingTable,
-                    numPagesDrainedFromGroupingTable: 0);
+                    groupingTable);
             }
 
             public override async Task<QueryResponseCore> DrainAsync(
@@ -78,28 +73,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                     }
 
                     this.AggregateGroupings(sourceResponse.CosmosElements);
-
-                    this.isDone = false;
                 }
 
                 // Stage 2:
                 // Emit the results from the grouping table page by page
-                IEnumerable<SingleGroupAggregator> groupByValuesList = this.groupingTable
-                    .Skip(this.numPagesDrainedFromGroupingTable * maxElements)
-                    .Take(maxElements)
-                    .Select(kvp => kvp.Value);
-
-                List<CosmosElement> results = new List<CosmosElement>();
-                foreach (SingleGroupAggregator groupByValues in groupByValuesList)
-                {
-                    results.Add(groupByValues.GetResult());
-                }
-
-                this.numPagesDrainedFromGroupingTable++;
-                if ((this.numPagesDrainedFromGroupingTable * maxElements) >= this.groupingTable.Count)
-                {
-                    this.isDone = true;
-                }
+                IReadOnlyList<CosmosElement> results = this.groupingTable.Drain(maxElements);
 
                 QueryResponseCore response = QueryResponseCore.CreateSuccess(
                    result: results,
