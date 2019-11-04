@@ -4,9 +4,11 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
 
     /// <summary>
@@ -38,47 +40,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
     /// </summary>
     internal abstract partial class GroupByDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase
     {
-        private static readonly AggregateOperator[] EmptyAggregateOperators = new AggregateOperator[] { };
-
-        private readonly CosmosQueryClient cosmosQueryClient;
-        private readonly IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType;
-        private readonly IReadOnlyList<string> orderedAliases;
-        private readonly Dictionary<UInt192, SingleGroupAggregator> groupingTable;
-        private readonly bool hasSelectValue;
+        private readonly GroupingTable groupingTable;
 
         private int numPagesDrainedFromGroupingTable;
         private bool isDone;
 
         protected GroupByDocumentQueryExecutionComponent(
             IDocumentQueryExecutionComponent source,
-            CosmosQueryClient cosmosQueryClient,
-            IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
-            IReadOnlyList<string> orderedAliases,
-            Dictionary<UInt192, SingleGroupAggregator> groupingTable,
-            bool hasSelectValue,
+            GroupingTable groupingTable,
             int numPagesDrainedFromGroupingTable)
             : base(source)
         {
-            if (cosmosQueryClient == null)
-            {
-                throw new ArgumentNullException(nameof(cosmosQueryClient));
-            }
-
-            if (groupByAliasToAggregateType == null)
-            {
-                throw new ArgumentNullException(nameof(groupByAliasToAggregateType));
-            }
-
             if (groupingTable == null)
             {
                 throw new ArgumentNullException(nameof(groupingTable));
             }
 
-            this.cosmosQueryClient = cosmosQueryClient;
-            this.groupByAliasToAggregateType = groupByAliasToAggregateType;
             this.groupingTable = groupingTable;
-            this.orderedAliases = orderedAliases;
-            this.hasSelectValue = hasSelectValue;
             this.numPagesDrainedFromGroupingTable = numPagesDrainedFromGroupingTable;
         }
 
@@ -129,22 +107,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
             {
                 // Aggregate the values for all groupings across all continuations.
                 RewrittenGroupByProjection groupByItem = new RewrittenGroupByProjection(result);
-                UInt192 groupByKeysHash = DistinctHash.GetHash(groupByItem.GroupByItems);
-
-                if (!this.groupingTable.TryGetValue(groupByKeysHash, out SingleGroupAggregator singleGroupAggregator))
-                {
-                    singleGroupAggregator = SingleGroupAggregator.Create(
-                        this.cosmosQueryClient,
-                        EmptyAggregateOperators,
-                        this.groupByAliasToAggregateType,
-                        this.orderedAliases,
-                        this.hasSelectValue,
-                        continuationToken: null);
-                    this.groupingTable[groupByKeysHash] = singleGroupAggregator;
-                }
-
-                CosmosElement payload = groupByItem.Payload;
-                singleGroupAggregator.AddValues(payload);
+                this.groupingTable.AddPayload(groupByItem);
             }
         }
 
@@ -157,7 +120,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
         /// 
         /// This struct just lets us easily access the "groupByItems" and "payload" property.
         /// </summary>
-        private struct RewrittenGroupByProjection
+        protected readonly struct RewrittenGroupByProjection
         {
             private const string GroupByItemsPropertyName = "groupByItems";
             private const string PayloadPropertyName = "payload";
@@ -209,6 +172,131 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                     return cosmosElement;
                 }
             }
+        }
+
+        protected sealed class GroupingTable : IEnumerable<KeyValuePair<UInt128, SingleGroupAggregator>>
+        {
+            private static readonly AggregateOperator[] EmptyAggregateOperators = new AggregateOperator[] { };
+
+            private readonly Dictionary<UInt128, SingleGroupAggregator> table;
+            private readonly CosmosQueryClient cosmosQueryClient;
+            private readonly IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType;
+            private readonly IReadOnlyList<string> orderedAliases;
+            private readonly bool hasSelectValue;
+
+            private GroupingTable(
+                CosmosQueryClient cosmosQueryClient,
+                IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
+                IReadOnlyList<string> orderedAliases,
+                bool hasSelectValue)
+            {
+                if (cosmosQueryClient == null)
+                {
+                    throw new ArgumentNullException(nameof(cosmosQueryClient));
+                }
+
+                if (groupByAliasToAggregateType == null)
+                {
+                    throw new ArgumentNullException(nameof(groupByAliasToAggregateType));
+                }
+
+                this.cosmosQueryClient = cosmosQueryClient;
+                this.groupByAliasToAggregateType = groupByAliasToAggregateType;
+                this.orderedAliases = orderedAliases;
+                this.hasSelectValue = hasSelectValue;
+                this.table = new Dictionary<UInt128, SingleGroupAggregator>();
+            }
+
+            public int Count => this.table.Count;
+
+            public void AddPayload(RewrittenGroupByProjection rewrittenGroupByProjection)
+            {
+                UInt128 groupByKeysHash = DistinctHash.GetHash(rewrittenGroupByProjection.GroupByItems);
+
+                if (!this.table.TryGetValue(groupByKeysHash, out SingleGroupAggregator singleGroupAggregator))
+                {
+                    singleGroupAggregator = SingleGroupAggregator.Create(
+                        this.cosmosQueryClient,
+                        EmptyAggregateOperators,
+                        this.groupByAliasToAggregateType,
+                        this.orderedAliases,
+                        this.hasSelectValue,
+                        continuationToken: null);
+                    this.table[groupByKeysHash] = singleGroupAggregator;
+                }
+
+                CosmosElement payload = rewrittenGroupByProjection.Payload;
+                singleGroupAggregator.AddValues(payload);
+            }
+
+            public string GetContinuationToken()
+            {
+                IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
+                jsonWriter.WriteObjectStart();
+                foreach (KeyValuePair<UInt128, SingleGroupAggregator> kvp in this.table)
+                {
+                    jsonWriter.WriteFieldName(kvp.Key.ToString());
+                    jsonWriter.WriteStringValue(kvp.Value.GetContinuationToken());
+                }
+                jsonWriter.WriteObjectEnd();
+
+                string result = Utf8StringHelpers.ToString(jsonWriter.GetResult());
+                return result;
+            }
+
+            public IEnumerator<KeyValuePair<UInt128, SingleGroupAggregator>> GetEnumerator => this.table.GetEnumerator();
+
+            public static GroupingTable CreateFromContinuationToken(CosmosQueryClient cosmosQueryClient,
+                IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
+                IReadOnlyList<string> orderedAliases,
+                bool hasSelectValue,
+                string groupingTableContinuationToken)
+            {
+                GroupingTable groupingTable = new GroupingTable(
+                    cosmosQueryClient,
+                    groupByAliasToAggregateType,
+                    orderedAliases,
+                    hasSelectValue);
+
+                if (groupingTableContinuationToken != null)
+                {
+                    if (!CosmosElement.TryParse(
+                        groupingTableContinuationToken,
+                        out CosmosObject parsedGroupingTableContinuations))
+                    {
+                        throw cosmosQueryClient.CreateBadRequestException($"Invalid GroupingTableContinuationToken");
+                    }
+
+                    foreach (KeyValuePair<string, CosmosElement> kvp in parsedGroupingTableContinuations)
+                    {
+                        string key = kvp.Key;
+                        CosmosElement value = kvp.Value;
+
+                        UInt128 groupByKey = UInt128.Parse(key);
+
+                        if (!(value is CosmosString singleGroupAggregatorContinuationToken))
+                        {
+                            throw cosmosQueryClient.CreateBadRequestException($"Invalid GroupingTableContinuationToken");
+                        }
+
+                        SingleGroupAggregator singleGroupAggregator = SingleGroupAggregator.Create(
+                            cosmosQueryClient,
+                            EmptyAggregateOperators,
+                            groupByAliasToAggregateType,
+                            orderedAliases,
+                            hasSelectValue,
+                            singleGroupAggregatorContinuationToken.Value);
+
+                        groupingTable.table[groupByKey] = singleGroupAggregator;
+                    }
+                }
+
+                return groupingTable;
+            }
+
+            IEnumerator<KeyValuePair<UInt128, SingleGroupAggregator>> IEnumerable<KeyValuePair<UInt128, SingleGroupAggregator>>.GetEnumerator() => this.table.GetEnumerator();
+
+            IEnumerator IEnumerable.GetEnumerator() => this.table.GetEnumerator();
         }
     }
 }

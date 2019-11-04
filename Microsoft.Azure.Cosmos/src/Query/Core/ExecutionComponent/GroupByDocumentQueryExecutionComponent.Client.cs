@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using UInt128 = Documents.UInt128;
 
     internal abstract partial class GroupByDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase
     {
@@ -18,19 +19,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
 
             private ClientGroupByDocumentQueryExecutionComponent(
                 IDocumentQueryExecutionComponent source,
-                CosmosQueryClient cosmosQueryClient,
-                IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
-                IReadOnlyList<string> orderedAliases,
-                Dictionary<UInt192, SingleGroupAggregator> groupingTable,
-                bool hasSelectValue,
+                GroupingTable groupingTable,
                 int numPagesDrainedFromGroupingTable)
                 : base(
                       source,
-                      cosmosQueryClient,
-                      groupByAliasToAggregateType,
-                      orderedAliases,
                       groupingTable,
-                      hasSelectValue,
                       numPagesDrainedFromGroupingTable)
             {
             }
@@ -44,14 +37,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                 bool hasSelectValue)
             {
                 IDocumentQueryExecutionComponent source = await createSourceCallback(requestContinuation);
-                Dictionary<UInt192, SingleGroupAggregator> groupingTable = new Dictionary<UInt192, SingleGroupAggregator>();
-                return new ClientGroupByDocumentQueryExecutionComponent(
-                    source,
+                GroupingTable groupingTable = GroupingTable.CreateFromContinuationToken(
                     cosmosQueryClient,
                     groupByAliasToAggregateType,
                     orderedAliases,
-                    groupingTable,
                     hasSelectValue,
+                    groupingTableContinuationToken: null);
+                return new ClientGroupByDocumentQueryExecutionComponent(
+                    source,
+                    groupingTable,
                     numPagesDrainedFromGroupingTable: 0);
             }
 

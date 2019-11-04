@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Collections.Generic;
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using UInt128 = Documents.UInt128;
+    using Microsoft.Azure.Cosmos.Query.Core;
 
     /// <summary>
     /// Base class for DistinctHash.
@@ -76,10 +76,10 @@ namespace Microsoft.Azure.Cosmos.Query
         public static UInt128 GetHash(byte[] bytes, UInt128 seed)
         {
             // TODO: Have MurmurHash3 work on Span<T> instead.
-            UInt128 hash128 = Microsoft.Azure.Documents.Routing.MurmurHash3.Hash128(
+            Microsoft.Azure.Documents.UInt128 hash128 = Microsoft.Azure.Documents.Routing.MurmurHash3.Hash128(
                 bytes,
                 bytes.Length,
-                UInt128.Create(seed.GetLow(), seed.GetHigh()));
+                Microsoft.Azure.Documents.UInt128.Create(seed.GetLow(), seed.GetHigh()));
             return UInt128.Create(hash128.GetLow(), hash128.GetHigh());
         }
 
