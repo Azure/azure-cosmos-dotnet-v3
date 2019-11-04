@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#922](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/922) Included information of bulk support usage in user agent
 - [#934](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/934) Preserved the ordering of projections in a GROUP BY query.
 - [#952](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/952) ORDER BY Undefined and Mixed Type ORDER BY support
+- [#965](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/965) Batch API is now public
 
 ### Fixed
 - [#901](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/901) Fix a bug causing query response to create a new stream for each content call
