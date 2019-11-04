@@ -1113,12 +1113,13 @@ namespace Microsoft.Azure.Cosmos
             ChangesEstimationHandler estimationDelegate,
             TimeSpan? estimationPeriod = null);
 
-#if PREVIEW
         /// <summary>
-        /// Initializes a new instance of the <see cref="Batch"/> class.
+        /// Initializes a new instance of the <see cref="TransactionalBatch"/> class
+        /// that can be used to perform operations across multiple items
+        /// in the container with the provided partition key in a transactional manner.
         /// </summary>
         /// <param name="partitionKey">The partition key for all items in the batch. <see cref="PartitionKey"/>.</param>
-        /// <returns>An instance of <see cref="Batch"/></returns>
+        /// <returns>A new instance of <see cref="TransactionalBatch"/>.</returns>
         /// <exception>
         /// This API only throws on client side exceptions. This is to increase performance and prevent the overhead of throwing exceptions. Check the HTTP status code on the response to check if the operation failed.
         /// </exception>
@@ -1155,7 +1156,7 @@ namespace Microsoft.Azure.Cosmos
         ///     status = "ToBeDone"
         /// };
         ///
-        /// using (BatchResponse batchResponse = await container.CreateBatch(new Cosmos.PartitionKey(activityType))
+        /// using (TransactionalBatchResponse batchResponse = await container.CreateTransactionalBatch(new Cosmos.PartitionKey(activityType))
         ///     .CreateItem<ToDoActivity>(test1)
         ///     .ReplaceItem<ToDoActivity>(test2.id, test2)
         ///     .UpsertItem<ToDoActivity>(test3)
@@ -1172,7 +1173,7 @@ namespace Microsoft.Azure.Cosmos
         ///    }
         ///
         ///    // Look up interested results - eg. via typed access on operation results
-        ///    BatchOperationResult<ToDoActivity> replaceResult = batchResponse.GetOperationResultAtIndex<ToDoActivity>(0);
+        ///    TransactionalBatchOperationResult<ToDoActivity> replaceResult = batchResponse.GetOperationResultAtIndex<ToDoActivity>(0);
         ///    ToDoActivity readActivity = replaceResult.Resource;
         /// }
         /// ]]>
@@ -1183,7 +1184,7 @@ namespace Microsoft.Azure.Cosmos
         /// <code language="c#">
         /// <![CDATA[
         /// string activityType = "personal";
-        /// using (BatchResponse batchResponse = await container.CreateBatch(new Cosmos.PartitionKey(activityType))
+        /// using (TransactionalBatchResponse batchResponse = await container.CreateTransactionalBatch(new Cosmos.PartitionKey(activityType))
         ///    .ReadItem("playing")
         ///    .ReadItem("walking")
         ///    .ReadItem("jogging")
@@ -1192,7 +1193,7 @@ namespace Microsoft.Azure.Cosmos
         /// {
         ///     // Look up interested results - eg. via direct access to operation result stream
         ///     List<string> resultItems = new List<string>();
-        ///     foreach (BatchOperationResult operationResult in batchResponse)
+        ///     foreach (TransactionalBatchOperationResult operationResult in batchResponse)
         ///     {
         ///         using (StreamReader streamReader = new StreamReader(operationResult.ResourceStream))
         ///         {
@@ -1203,7 +1204,6 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Batch CreateBatch(PartitionKey partitionKey);
-#endif
+        public abstract TransactionalBatch CreateTransactionalBatch(PartitionKey partitionKey);
     }
 }
