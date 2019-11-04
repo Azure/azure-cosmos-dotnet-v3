@@ -125,16 +125,6 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return item;
         }
 
-        public static CosmosElement Parse(string json)
-        {
-            if (!CosmosElement.TryParse(json, out CosmosElement cosmosElement))
-            {
-                throw new ArgumentException($"Failed to parse json: {json}.");
-            }
-
-            return cosmosElement;
-        }
-
         public static bool TryParse(
             string serializedCosmosElement,
             out CosmosElement cosmosElement)
@@ -157,24 +147,33 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return cosmosElement != default;
         }
 
-        public static bool TryParse<TCosmosElement>(
-            string serializedCosmosElement,
-            out TCosmosElement typedCosmosElement)
+        public static bool TryParse<TCosmosElement>(string serializedCosmosElement, out TCosmosElement cosmosElement)
+            where TCosmosElement : CosmosElement
         {
-            if (!CosmosElement.TryParse(serializedCosmosElement, out CosmosElement cosmosElement))
+            if (!CosmosElement.TryParse(serializedCosmosElement, out CosmosElement rawCosmosElement))
             {
-                typedCosmosElement = default;
+                cosmosElement = default(TCosmosElement);
                 return false;
             }
 
-            if (!(cosmosElement is TCosmosElement tempCosmosElement))
+            if (!(rawCosmosElement is TCosmosElement typedCosmosElement))
             {
-                typedCosmosElement = default;
+                cosmosElement = default(TCosmosElement);
                 return false;
             }
 
-            typedCosmosElement = tempCosmosElement;
+            cosmosElement = typedCosmosElement;
             return true;
+        }
+
+        public static CosmosElement Parse(string json)
+        {
+            if (!CosmosElement.TryParse(json, out CosmosElement cosmosElement))
+            {
+                throw new ArgumentException($"Failed to parse json: {json}.");
+            }
+
+            return cosmosElement;
         }
     }
 #if INTERNAL
