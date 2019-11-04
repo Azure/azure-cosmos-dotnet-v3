@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
         /// <summary>
         /// Continuation token for distinct queries.
         /// </summary>
-        private readonly struct DistinctContinuationToken
+        private sealed class DistinctContinuationToken
         {
             public DistinctContinuationToken(string sourceToken, string distinctMapToken)
             {
