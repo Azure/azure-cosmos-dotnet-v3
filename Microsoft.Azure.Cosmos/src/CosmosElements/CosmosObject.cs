@@ -43,43 +43,26 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             get;
         }
 
-        public static CosmosObject Create(
-            IJsonNavigator jsonNavigator,
-            IJsonNavigatorNode jsonNavigatorNode)
-        {
-            return new LazyCosmosObject(jsonNavigator, jsonNavigatorNode);
-        }
-
-        public static CosmosObject Create(Dictionary<string, CosmosElement> dictionary)
-        {
-            return new EagerCosmosObject(dictionary.ToList());
-        }
-
-        public static CosmosObject Create(IReadOnlyList<KeyValuePair<string, CosmosElement>> properties)
-        {
-            return new EagerCosmosObject(properties);
-        }
-
         public abstract bool ContainsKey(string key);
 
         public abstract bool TryGetValue(string key, out CosmosElement value);
 
-        public bool TryGetValue<TCosmosElement>(string key, out TCosmosElement value)
+        public bool TryGetValue<TCosmosElement>(string key, out TCosmosElement typedCosmosElement)
             where TCosmosElement : CosmosElement
         {
-            if (!this.TryGetValue(key, out CosmosElement untypedCosmosElement))
+            if (!this.TryGetValue(key, out CosmosElement cosmosElement))
             {
-                value = default;
+                typedCosmosElement = default(TCosmosElement);
                 return false;
             }
 
-            if (!(untypedCosmosElement is TCosmosElement typedCosmosElement))
+            if (!(cosmosElement is TCosmosElement tCosmosElement))
             {
-                value = default;
+                typedCosmosElement = default(TCosmosElement);
                 return false;
             }
 
-            value = typedCosmosElement;
+            typedCosmosElement = tCosmosElement;
             return true;
         }
 
@@ -88,6 +71,23 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         IEnumerator IEnumerable.GetEnumerator()
         {
             return this.GetEnumerator();
+        }
+
+        public static CosmosObject Create(
+            IJsonNavigator jsonNavigator,
+            IJsonNavigatorNode jsonNavigatorNode)
+        {
+            return new LazyCosmosObject(jsonNavigator, jsonNavigatorNode);
+        }
+
+        public static CosmosObject Create(IReadOnlyDictionary<string, CosmosElement> dictionary)
+        {
+            return new EagerCosmosObject(dictionary.ToList());
+        }
+
+        public static CosmosObject Create(IReadOnlyList<KeyValuePair<string, CosmosElement>> properties)
+        {
+            return new EagerCosmosObject(properties);
         }
     }
 #if INTERNAL

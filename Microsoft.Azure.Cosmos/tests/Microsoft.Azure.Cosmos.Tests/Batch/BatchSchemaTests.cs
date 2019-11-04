@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     id: "id2",
                     operationType: OperationType.Replace,
                     operationIndex: 1,
-                    requestOptions: new BatchItemRequestOptions()
+                    requestOptions: new TransactionalBatchItemRequestOptions()
                     {
                         IfMatchEtag = "theCondition"
                     })
@@ -66,50 +66,44 @@ namespace Microsoft.Azure.Cosmos.Tests
         [Owner("abpai")]
         public async Task BatchResponseDeserializationAsync()
         {
-           List<BatchOperationResult> results = new List<BatchOperationResult>();
+           List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
 
-            results.Add(new BatchOperationResult(HttpStatusCode.Conflict));
+            results.Add(new TransactionalBatchOperationResult(HttpStatusCode.Conflict));
 
             results.Add(
-                new BatchOperationResult(HttpStatusCode.OK)
+                new TransactionalBatchOperationResult(HttpStatusCode.OK)
                 {
                     ResourceStream = new MemoryStream(new byte[] { 0x41, 0x42 }, index: 0, count: 2, writable: false, publiclyVisible: true),
                     RequestCharge = 2.5,
-                    ETag = "1234"
-                });
-
-            results.Add(
-                new BatchOperationResult((HttpStatusCode)StatusCodes.TooManyRequests)
-                {
-                    RequestCharge = 0.38,
+                    ETag = "1234",
                     RetryAfter = TimeSpan.FromMilliseconds(360)
                 });
 
             MemoryStream responseContent = await new BatchResponsePayloadWriter(results).GeneratePayloadAsync();
 
             CosmosSerializer serializer = new CosmosJsonDotNetSerializer();
-            SinglePartitionKeyServerBatchRequest batchResponse = await SinglePartitionKeyServerBatchRequest.CreateAsync(
+            SinglePartitionKeyServerBatchRequest batchRequest = await SinglePartitionKeyServerBatchRequest.CreateAsync(
                 partitionKey: Cosmos.PartitionKey.None,
                 operations: new ArraySegment<ItemBatchOperation>(
                     new ItemBatchOperation[]
                     {
+                        new ItemBatchOperation(OperationType.Read, operationIndex: 0, id: "someId"),
                         new ItemBatchOperation(OperationType.Read, operationIndex: 0, id: "someId")
                     }),
                 serializer: serializer,
                 cancellationToken: CancellationToken.None);
-            BatchResponse batchresponse = await BatchResponse.PopulateFromContentAsync(
-                new ResponseMessage(HttpStatusCode.OK) { Content = responseContent },
-                batchResponse,
+            TransactionalBatchResponse batchResponse = await TransactionalBatchResponse.FromResponseMessageAsync(
+                new ResponseMessage((HttpStatusCode)StatusCodes.MultiStatus) { Content = responseContent },
+                batchRequest,
                 serializer);
 
-            Assert.IsNotNull(batchresponse);
-            Assert.IsTrue(batchresponse.IsSuccessStatusCode);
-            Assert.AreEqual(3, batchresponse.Count);
+            Assert.IsNotNull(batchRequest);
+            Assert.AreEqual(HttpStatusCode.Conflict, batchResponse.StatusCode);
+            Assert.AreEqual(2, batchResponse.Count);
 
             CosmosBatchOperationResultEqualityComparer comparer = new CosmosBatchOperationResultEqualityComparer();
-            Assert.IsTrue(comparer.Equals(results[0], batchresponse[0]));
-            Assert.IsTrue(comparer.Equals(results[1], batchresponse[1]));
-            Assert.IsTrue(comparer.Equals(results[2], batchresponse[2]));
+            Assert.IsTrue(comparer.Equals(results[0], batchResponse[0]));
+            Assert.IsTrue(comparer.Equals(results[1], batchResponse[1]));
         }
 
         private class ItemBatchOperationEqualityComparer : IEqualityComparer<ItemBatchOperation>
@@ -123,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     && x.ResourceBody.Span.SequenceEqual(y.ResourceBody.Span);
             }
 
-            private bool Equals(BatchItemRequestOptions x, BatchItemRequestOptions y)
+            private bool Equals(TransactionalBatchItemRequestOptions x, TransactionalBatchItemRequestOptions y)
             {
                 if (x == null && y == null)
                 {
@@ -155,16 +149,16 @@ namespace Microsoft.Azure.Cosmos.Tests
                 int hashCode = 1660235553;
                 hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(obj.Id);
                 hashCode = (hashCode * -1521134295) + obj.OperationType.GetHashCode();
-                hashCode = (hashCode * -1521134295) + EqualityComparer<BatchItemRequestOptions>.Default.GetHashCode(obj.RequestOptions);
+                hashCode = (hashCode * -1521134295) + EqualityComparer<TransactionalBatchItemRequestOptions>.Default.GetHashCode(obj.RequestOptions);
                 hashCode = (hashCode * -1521134295) + obj.OperationIndex.GetHashCode();
                 hashCode = (hashCode * -1521134295) + EqualityComparer<Memory<byte>>.Default.GetHashCode(obj.ResourceBody);
                 return hashCode;
             }
         }
 
-        private class CosmosBatchOperationResultEqualityComparer : IEqualityComparer<BatchOperationResult>
+        private class CosmosBatchOperationResultEqualityComparer : IEqualityComparer<TransactionalBatchOperationResult>
         {
-            public bool Equals(BatchOperationResult x, BatchOperationResult y)
+            public bool Equals(TransactionalBatchOperationResult x, TransactionalBatchOperationResult y)
             {
                 return x.StatusCode == y.StatusCode
                     && x.SubStatusCode == y.SubStatusCode
@@ -174,7 +168,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     && this.Equals(x.ResourceStream, y.ResourceStream);
             }
 
-            private bool Equals(MemoryStream x, MemoryStream y)
+            private bool Equals(Stream x, Stream y)
             {
                 if (x == null && y == null)
                 {
@@ -187,13 +181,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                         return false;
                     }
 
-                    return x.GetBuffer().SequenceEqual(y.GetBuffer());
+                    return ((MemoryStream)x).GetBuffer().SequenceEqual(((MemoryStream)y).GetBuffer());
                 }
 
                 return false;
             }
 
-            public int GetHashCode(BatchOperationResult obj)
+            public int GetHashCode(TransactionalBatchOperationResult obj)
             {
                 int hashCode = 1176625765;
                 hashCode = (hashCode * -1521134295) + obj.StatusCode.GetHashCode();

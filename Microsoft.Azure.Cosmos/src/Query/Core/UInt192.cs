@@ -1,12 +1,11 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos.Query.Core
 {
     using System;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
-    using UInt128 = Documents.UInt128;
 
     /// <summary>
     /// Struct that represents a 192 bit unsigned integer

@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading.Tasks;
     using System.Xml;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
@@ -596,6 +597,45 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        private static async Task<List<T>> QueryWithTryGetContinuationTokens<T>(
+            Container container,
+            string query,
+            QueryRequestOptions queryRequestOptions = null)
+        {
+            if (queryRequestOptions == null)
+            {
+                queryRequestOptions = new QueryRequestOptions();
+            }
+
+            List<T> resultsFromTryGetContinuationToken = new List<T>();
+            string state = null;
+            do
+            {
+                QueryRequestOptions computeRequestOptions = queryRequestOptions.Clone();
+                computeRequestOptions.ExecutionEnvironment = Cosmos.Query.Core.ExecutionContext.ExecutionEnvironment.Compute;
+
+                FeedIterator<T> itemQuery = container.GetItemQueryIterator<T>(
+                   queryText: query,
+                   requestOptions: computeRequestOptions,
+                   continuationToken: state);
+
+                FeedResponse<T> cosmosQueryResponse = await itemQuery.ReadNextAsync();
+                if (queryRequestOptions.MaxItemCount.HasValue)
+                {
+                    Assert.IsTrue(
+                        cosmosQueryResponse.Count <= queryRequestOptions.MaxItemCount.Value,
+                        "Max Item Count is not being honored");
+                }
+
+                resultsFromTryGetContinuationToken.AddRange(cosmosQueryResponse);
+                Assert.IsTrue(
+                    itemQuery.TryGetContinuationToken(out state),
+                    "Failed to get state for query");
+            } while (state != null);
+
+            return resultsFromTryGetContinuationToken;
+        }
+
         private static async Task<List<T>> QueryWithContinuationTokens<T>(
             Container container,
             string query,
@@ -626,45 +666,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 resultsFromContinuationToken.AddRange(cosmosQueryResponse);
                 continuationToken = cosmosQueryResponse.ContinuationToken;
             } while (continuationToken != null);
-
-            List<T> resultsFromState = new List<T>();
-            string state = null;
-            do
-            {
-                QueryRequestOptions computeRequestOptions = queryRequestOptions.Clone();
-                computeRequestOptions.ExecutionEnvironment = Cosmos.Query.Core.ExecutionContext.ExecutionEnvironment.Compute;
-
-                FeedIterator<T> itemQuery = container.GetItemQueryIterator<T>(
-                   queryText: query,
-                   requestOptions: computeRequestOptions,
-                   continuationToken: state);
-
-                FeedResponse<T> cosmosQueryResponse = await itemQuery.ReadNextAsync();
-                if (queryRequestOptions.MaxItemCount.HasValue)
-                {
-                    Assert.IsTrue(
-                        cosmosQueryResponse.Count <= queryRequestOptions.MaxItemCount.Value,
-                        "Max Item Count is not being honored");
-                }
-
-                resultsFromState.AddRange(cosmosQueryResponse);
-                Assert.IsTrue(
-                    itemQuery.TryGetContinuationToken(out state),
-                    "Failed to get state for query");
-            } while (state != null);
-
-            List<JToken> resultsFromContinuationTokenAsJTokens = resultsFromContinuationToken
-                .Select(x => x == null ? JValue.CreateNull() : JToken.FromObject(x)).ToList();
-
-            List<JToken> resultsFromStateAsJTokens = resultsFromState
-                .Select(x => x == null ? JValue.CreateNull() : JToken.FromObject(x)).ToList();
-
-            Assert.IsTrue(
-                resultsFromContinuationTokenAsJTokens
-                    .SequenceEqual(resultsFromStateAsJTokens, JsonTokenEqualityComparer.Value),
-                $"{query} returned different results with continuation tokens vs state. " +
-                $"continuation tokens : {JsonConvert.SerializeObject(resultsFromContinuationTokenAsJTokens)}" +
-                $"state: {JsonConvert.SerializeObject(resultsFromStateAsJTokens)}");
 
             return resultsFromContinuationToken;
         }
@@ -4131,7 +4132,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 foreach (int maxItemCount in new int[] { 1, 5, 10 })
                 {
-                    List<JToken> actual = await CrossPartitionQueryTests.QueryWithoutContinuationTokens<JToken>(
+                    List<JToken> actualWithoutContinuationTokens = await CrossPartitionQueryTests.QueryWithoutContinuationTokens<JToken>(
                         container,
                         query,
                         new QueryRequestOptions()
@@ -4140,17 +4141,33 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             MaxItemCount = maxItemCount,
                             MaxBufferedItemCount = 100,
                         });
+                    HashSet<JToken> actualWithoutContinuationTokensSet = new HashSet<JToken>(actualWithoutContinuationTokens, JsonTokenEqualityComparer.Value);
 
-                    HashSet<JToken> actualSet = new HashSet<JToken>(actual, JsonTokenEqualityComparer.Value);
+                    List<JToken> actualWithTryGetContinuationTokens = await CrossPartitionQueryTests.QueryWithTryGetContinuationTokens<JToken>(
+                        container,
+                        query,
+                        new QueryRequestOptions()
+                        {
+                            MaxConcurrency = 2,
+                            MaxItemCount = maxItemCount,
+                            MaxBufferedItemCount = 100,
+                        });
+                    HashSet<JToken> actualWithTryGetContinuationTokensSet = new HashSet<JToken>(actualWithTryGetContinuationTokens, JsonTokenEqualityComparer.Value);
+
+                    Assert.IsTrue(
+                       actualWithoutContinuationTokensSet.SetEquals(actualWithTryGetContinuationTokensSet),
+                       $"Results did not match for query: {query} with maxItemCount: {maxItemCount}" +
+                       $"ActualWithoutContinuationTokens: {JsonConvert.SerializeObject(actualWithoutContinuationTokensSet)}" +
+                       $"ActualWithTryGetContinuationTokens: {JsonConvert.SerializeObject(actualWithTryGetContinuationTokensSet)}");
 
                     List<JToken> expected = expectedResults.ToList();
                     HashSet<JToken> expectedSet = new HashSet<JToken>(expected, JsonTokenEqualityComparer.Value);
 
                     Assert.IsTrue(
-                       actualSet.SetEquals(expectedSet),
+                       actualWithoutContinuationTokensSet.SetEquals(expectedSet),
                        $"Results did not match for query: {query} with maxItemCount: {maxItemCount}" +
-                       $"Actual {JsonConvert.SerializeObject(actual)}" +
-                       $"Expected: {JsonConvert.SerializeObject(expected)}");
+                       $"Actual {JsonConvert.SerializeObject(actualWithoutContinuationTokensSet)}" +
+                       $"Expected: {JsonConvert.SerializeObject(expectedSet)}");
                 }
             }
 
@@ -4168,7 +4185,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         });
                     Assert.Fail("Expected an error when trying to drain a GROUP BY query with continuation tokens.");
                 }
-                catch (Exception e) when (e.GetBaseException().Message.Contains(GroupByDocumentQueryExecutionComponent.ContinuationTokenNotSupportedWithGroupBy))
+                catch (Exception)
                 {
                 }
             }
@@ -4460,15 +4477,28 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 query,
                 queryRequestOptions);
 
+            List<T> queryResultsWithTryGetContinuationToken = await QueryWithTryGetContinuationTokens<T>(
+                container,
+                query,
+                queryRequestOptions);
+
             List<JToken> queryResultsWithoutContinuationTokenAsJTokens = queryResultsWithoutContinuationToken
                 .Select(x => x == null ? JValue.CreateNull() : JToken.FromObject(x)).ToList();
 
             List<JToken> queryResultsWithContinuationTokensAsJTokens = queryResultsWithContinuationTokens
                 .Select(x => x == null ? JValue.CreateNull() : JToken.FromObject(x)).ToList();
 
+            List<JToken> queryResultsWithTryGetContinuationTokensAsJTokens = queryResultsWithTryGetContinuationToken
+                .Select(x => x == null ? JValue.CreateNull() : JToken.FromObject(x)).ToList();
+
             Assert.IsTrue(
                 queryResultsWithoutContinuationTokenAsJTokens
                     .SequenceEqual(queryResultsWithContinuationTokensAsJTokens, JsonTokenEqualityComparer.Value),
+                $"{query} returned different results with and without continuation tokens.");
+
+            Assert.IsTrue(
+                queryResultsWithoutContinuationTokenAsJTokens
+                    .SequenceEqual(queryResultsWithTryGetContinuationTokensAsJTokens, JsonTokenEqualityComparer.Value),
                 $"{query} returned different results with and without continuation tokens.");
 
             return queryResultsWithoutContinuationToken;
