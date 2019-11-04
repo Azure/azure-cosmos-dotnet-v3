@@ -1113,7 +1113,6 @@ namespace Microsoft.Azure.Cosmos
             ChangesEstimationHandler estimationDelegate,
             TimeSpan? estimationPeriod = null);
 
-#if PREVIEW
         /// <summary>
         /// Initializes a new instance of the <see cref="TransactionalBatch"/> class
         /// that can be used to perform operations across multiple items
@@ -1206,6 +1205,5 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         public abstract TransactionalBatch CreateTransactionalBatch(PartitionKey partitionKey);
-#endif
     }
 }

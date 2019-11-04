@@ -426,12 +426,10 @@ namespace Microsoft.Azure.Cosmos
                 applyBuilderConfiguration: changeFeedEstimatorCore.ApplyBuildConfiguration);
         }
 
-#if PREVIEW
         public override TransactionalBatch CreateTransactionalBatch(PartitionKey partitionKey)
         {
             return new BatchCore(this, partitionKey);
         }
-#endif
 
         internal async Task<IEnumerable<string>> GetChangeFeedTokensAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
