@@ -169,8 +169,8 @@ namespace Microsoft.Azure.Cosmos.Query
                     case CosmosElementType.Array:
                     case CosmosElementType.Object:
                         {
-                            UInt192 hash1 = DistinctHash.GetHash(element1);
-                            UInt192 hash2 = DistinctHash.GetHash(element2);
+                            UInt128 hash1 = DistinctHash.GetHash(element1);
+                            UInt128 hash2 = DistinctHash.GetHash(element2);
                             return hash1.CompareTo(hash2);
                         }
 
