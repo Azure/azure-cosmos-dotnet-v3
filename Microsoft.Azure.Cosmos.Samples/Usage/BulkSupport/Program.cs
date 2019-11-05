@@ -136,7 +136,7 @@
                         {
                             semaphore.Release();
                             HttpStatusCode resultCode = t.Result.StatusCode;
-                            countsByStatus.AddOrUpdate(resultCode, 1, (_, old) => old++);
+                            countsByStatus.AddOrUpdate(resultCode, 1, (_, old) => old + 1);
                         });
                 }
             }
