@@ -13,7 +13,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
     internal abstract partial class DistinctDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase
     {
         /// <summary>
-        /// Compute implementation of DISTINCT. Here we never serialize the continuation token, but you can always retrieve it on demand with TryGetContinuationToken.
+        /// Compute implementation of DISTINCT.
+        /// Here we never serialize the continuation token, but you can always retrieve it on demand with TryGetContinuationToken.
         /// </summary>
         private sealed class ComputeDistinctDocumentQueryExecutionComponent : DistinctDocumentQueryExecutionComponent
         {
