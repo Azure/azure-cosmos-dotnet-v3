@@ -1,9 +1,12 @@
 ﻿namespace Cosmos.Samples.Shared
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
@@ -24,13 +27,10 @@
 
     public class Program
     {
-        private const int concurrentWorkers = 3;
-        private const int concurrentDocuments = 100;
         private const string databaseId = "samples";
         private const string containerId = "bulk-support";
         private static readonly JsonSerializer Serializer = new JsonSerializer();
 
-        //Reusable instance of ItemClient which represents the connection to a Cosmos endpoint
         private static Database database = null;
 
         // Async main requires c# 7.1 which is set in the csproj with the LangVersion attribute
@@ -39,6 +39,11 @@
         {
             try
             {
+                int concurrency = args.Length > 0 ? int.Parse(args[0]) : 2;
+                int docSize = args.Length > 1 ? int.Parse(args[1]) : 300 * 1024;
+                int runtimeInSeconds = args.Length > 2 ? int.Parse(args[2]) : 5;
+                bool useBulk = args.Length > 3 ? bool.Parse(args[3]) : false;
+
                 // Read the Cosmos endpointUrl and authorisationKeys from configuration
                 // These values are available from the Azure Management Portal on the Cosmos Account Blade under "Keys"
                 // Keep these values in a safe & secure location. Together they provide Administrative access to your Cosmos account
@@ -58,13 +63,16 @@
                     throw new ArgumentException("Please specify a valid AuthorizationKey in the appSettings.json");
                 }
 
-                CosmosClient bulkClient = Program.GetBulkClientInstance(endpoint, authKey);
+                CosmosClient bulkClient = Program.GetBulkClientInstance(endpoint, authKey, useBulk);
                 // Create the require container, can be done with any client
-                await Program.InitializeAsync(bulkClient);
+                //await Program.InitializeAsync(bulkClient, throughput);
+                await Task.Yield();
 
-                Console.WriteLine("Running demo with a Bulk enabled CosmosClient...");
+                Console.WriteLine("Running demo with a {0}CosmosClient...", useBulk ? "Bulk enabled " : string.Empty);
                 // Execute inserts for 30 seconds on a Bulk enabled client
-                await Program.CreateItemsConcurrentlyAsync(bulkClient);
+                Program.CreateItemsConcurrently(bulkClient, concurrency, docSize, runtimeInSeconds);
+
+                bulkClient.Dispose();
             }
             catch (CosmosException cre)
             {
@@ -77,7 +85,7 @@
             }
             finally
             {
-                await Program.CleanupAsync();
+                //await Program.CleanupAsync();
                 Console.WriteLine("End of demo, press any key to exit.");
                 Console.ReadKey();
             }
@@ -86,62 +94,61 @@
 
         private static CosmosClient GetBulkClientInstance(
             string endpoint,
-            string authKey) =>
+            string authKey,
+            bool useBulk) =>
         // </Initialization>
-            new CosmosClient(endpoint, authKey, new CosmosClientOptions() { AllowBulkExecution = true } );
+            new CosmosClient(endpoint, authKey, new CosmosClientOptions() { AllowBulkExecution = useBulk } );
         // </Initialization>
 
-        private static async Task CreateItemsConcurrentlyAsync(CosmosClient client)
+        private static void CreateItemsConcurrently(CosmosClient client, int concurrency, int docSize, int runtimeInSeconds)
         {
-            // Create concurrent workers that will insert items for 30 seconds
+            DataSource dataSource = new DataSource(concurrency, docSize);
+
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
-            cancellationTokenSource.CancelAfter(30000);
+            cancellationTokenSource.CancelAfter(runtimeInSeconds * 1000);
             CancellationToken cancellationToken = cancellationTokenSource.Token;
 
             Container container = client.GetContainer(Program.databaseId, Program.containerId);
-            List<Task<int>> workerTasks = new List<Task<int>>(Program.concurrentWorkers);
-            Console.WriteLine($"Initiating process with {Program.concurrentWorkers} worker threads writing groups of {Program.concurrentDocuments} items for 30 seconds.");
-            for (var i = 0; i < Program.concurrentWorkers; i++)
-            {
-                workerTasks.Add(CreateItemsAsync(container, cancellationToken));
-            }
-
-            await Task.WhenAll(workerTasks);
-            Console.WriteLine($"Inserted {workerTasks.Sum(task => task.Result)} items.");
+            Console.WriteLine($"Initiating creates of items of about {docSize} bytes each maintaining {concurrency} in-progress items for {runtimeInSeconds} seconds.");
+            int created = CreateItems(container, dataSource, concurrency, docSize, cancellationToken);
+            Console.WriteLine($"Inserted {created} items.");
         }
 
-        private static async Task<int> CreateItemsAsync(
-            Container container, 
+        private static int CreateItems(
+            Container container,
+            DataSource dataSource,
+            int concurrency,
+            int docSize,
             CancellationToken cancellationToken)
         {
-            int itemsCreated = 0;
-            string partitionKeyValue = Guid.NewGuid().ToString();
-            while (!cancellationToken.IsCancellationRequested)
+            ConcurrentDictionary<HttpStatusCode, int> countsByStatus = new ConcurrentDictionary<HttpStatusCode, int>();
+
+            SemaphoreSlim semaphore = new SemaphoreSlim(concurrency, concurrency);
+
+            try
             {
-                List<Task> tasks = new List<Task>(Program.concurrentDocuments);
-                for (int i = 0; i < Program.concurrentDocuments; i++)
+                while (true)
                 {
-                    string id = Guid.NewGuid().ToString();
-                    MyDocument myDocument = new MyDocument() { id = id, pk = partitionKeyValue };
-                    tasks.Add(
-                        container.CreateItemAsync<MyDocument>(myDocument, new PartitionKey(partitionKeyValue))
-                        .ContinueWith((Task<ItemResponse<MyDocument>> task) =>
+                    semaphore.Wait(cancellationToken);
+                    MemoryStream stream = dataSource.GetNextItemStream(out string partitionKeyValue);
+                    _ = container.CreateItemStreamAsync(stream, new PartitionKey(partitionKeyValue))
+                        .ContinueWith((t) =>
                         {
-                            if (!task.IsCompletedSuccessfully)
-                            {
-                                AggregateException innerExceptions = task.Exception.Flatten();
-                                CosmosException cosmosException = innerExceptions.InnerExceptions.FirstOrDefault(innerEx => innerEx is CosmosException) as CosmosException;
-                                Console.WriteLine($"Item {myDocument.id} failed with status code {cosmosException.StatusCode}");
-                            }
-                        }));
+                            semaphore.Release();
+                            HttpStatusCode resultCode = t.Result.StatusCode;
+                            countsByStatus.AddOrUpdate(resultCode, 1, (_, old) => old++);
+                        });
                 }
-
-                await Task.WhenAll(tasks);
-
-                itemsCreated += tasks.Count(task => task.IsCompletedSuccessfully);
             }
-            
-            return itemsCreated;
+            catch
+            {
+                foreach (var countForStatus in countsByStatus)
+                {
+                    Console.WriteLine(countForStatus.Key + " " + countForStatus.Value);
+                }
+            }
+
+            return countsByStatus.SingleOrDefault(x => x.Key == HttpStatusCode.Created).Value;
         }
 
         // <Model>
@@ -151,7 +158,7 @@
 
             public string pk { get; set; }
 
-            public bool Updated { get; set; }
+            public string other { get; set; }
         }
         // </Model>
 
@@ -163,7 +170,7 @@
             }
         }
 
-        private static async Task InitializeAsync(CosmosClient client)
+        private static async Task InitializeAsync(CosmosClient client, int throughput)
         {
             Program.database = await client.CreateDatabaseIfNotExistsAsync(Program.databaseId);
 
@@ -172,9 +179,8 @@
             { }
 
             // We create a partitioned collection here which needs a partition key. Partitioned collections
-            // can be created with very high values of provisioned throughput (up to Throughput = 250,000)
-            // and used to store up to 250 GB of data. 
-            Console.WriteLine("The demo will create a 20000 RU/s container, press any key to continue.");
+            // can be created with very high values of provisioned throughput and used to store 100's of GBs of data. 
+            Console.WriteLine($"The demo will create a {throughput} RU/s container, press any key to continue.");
             Console.ReadKey();
 
             // Create with a throughput of 20000 RU/s - this demo is about throughput so it needs a higher degree of RU/s to show volume
@@ -188,7 +194,102 @@
                             .Path("/*")
                             .Attach()
                     .Attach()
-                .CreateAsync(20000);
+                .CreateAsync(throughput);
+        }
+
+        private class DataSource
+        {
+            private int docSize;
+            private MemoryStreamPool pool;
+            private byte[] sample;
+            private int idIndex = -1, pkIndex = -1;
+
+            public DataSource(int concurrency, int docSize)
+            {
+                this.pool = new MemoryStreamPool(concurrency, docSize);
+                this.docSize = docSize;
+            }
+
+            public MemoryStream GetNextItemStream(out string partitionKeyValue)
+            {
+                // Actual implementation would possibly read from a file or other source.
+
+                partitionKeyValue = Guid.NewGuid().ToString();
+                string id = Guid.NewGuid().ToString();
+
+                if (this.sample == null)
+                {
+                    // Leave about 100 bytes for pk, id and 210 bytes for system properties.
+                    string padding = this.docSize > 310 ? new string('x', this.docSize - 310) : string.Empty;
+                    MyDocument myDocument = new MyDocument() { id = id, pk = partitionKeyValue, other = padding };
+                    string str = JsonConvert.SerializeObject(myDocument);
+                    this.sample = Encoding.UTF8.GetBytes(str);
+                    this.idIndex = str.IndexOf(id);
+                    this.pkIndex = str.IndexOf(partitionKeyValue);
+                }
+
+                MemoryStream stream = this.pool.Take();
+                byte[] buffer = stream.GetBuffer();
+                if(buffer[0] == '\0')
+                {
+                    sample.CopyTo(buffer.AsSpan());
+                    stream.SetLength(sample.Length);
+                }
+
+                Memory<byte> mem = buffer.AsMemory().Slice(this.idIndex, id.Length);
+                Encoding.UTF8.GetBytes(id).CopyTo(mem);
+
+                mem = buffer.AsMemory().Slice(this.pkIndex, partitionKeyValue.Length);
+                Encoding.UTF8.GetBytes(partitionKeyValue).CopyTo(mem);
+
+                stream.Position = 0;
+                return stream;
+            }
+        }
+
+        /// <summary>
+        /// Simplistic implementation of a pool for MemoryStream to avoid repeated allocations.
+        /// Expects that the requirement is for MemoryStreams all with fixed and similar buffer size,
+        /// and that the buffer is publicly visible.
+        /// </summary>
+        private class MemoryStreamPool
+        {
+            private int streamSize;
+
+            private ConcurrentBag<MemoryStream> freeStreams;
+
+
+            public MemoryStreamPool(int initialPoolSize, int bufferSize)
+            {
+                this.streamSize = bufferSize;
+                this.freeStreams = new ConcurrentBag<MemoryStream>();
+
+                for(int i = 0; i< initialPoolSize;i++)
+                {
+                    this.freeStreams.Add(this.GetNewStream());
+                }
+            }
+
+            public MemoryStream Take()
+            {
+                if (this.freeStreams.TryTake(out MemoryStream stream))
+                {
+                    return stream;
+                }
+
+                return this.GetNewStream();
+            }
+
+            public void Return(MemoryStream stream)
+            {
+                this.freeStreams.Add(stream);
+            }
+
+            private MemoryStream GetNewStream()
+            {
+                byte[] buffer = new byte[streamSize];
+                return new MemoryStream(buffer, index: 0, count: streamSize, writable: true, publiclyVisible: true);
+            }
         }
     }
 }
