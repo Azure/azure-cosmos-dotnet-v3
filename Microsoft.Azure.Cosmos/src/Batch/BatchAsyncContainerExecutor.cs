@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly RetryOptions retryOptions;
 
         private readonly Stopwatch stopwatch = new Stopwatch();
-        private readonly ConcurrentBag<(int, double)> countsAndLatencies = new ConcurrentBag<(int, double)>();
+        private readonly ConcurrentBag<(int, bool, double)> countsAndLatencies = new ConcurrentBag<(int, bool, double)>();
 
         /// <summary>
         /// For unit testing.
@@ -120,10 +120,10 @@ namespace Microsoft.Azure.Cosmos
 
             this.timerPool.Dispose();
 
-            IEnumerable<IGrouping<int, (int, double)>> gs = this.countsAndLatencies.GroupBy(i => i.Item1);
-            foreach (IGrouping<int, (int, double)> g in gs)
+            IEnumerable<IGrouping<int, (int, bool, double)>> gs = this.countsAndLatencies.GroupBy(i => i.Item1);
+            foreach (IGrouping<int, (int, bool, double)> g in gs)
             {
-                Console.WriteLine($"BatchItemCount: {g.Key} BatchCount: {g.Count()} AvgLatency: {g.Average(h => h.Item2)}");
+                Console.WriteLine($"BatchItemCount: {g.Key} BatchCount: {g.Count()} RateLimitedBatches: {g.Count(h => h.Item2)} AvgLatency: {g.Average(h => h.Item3)}");
             }
         }
 
@@ -249,7 +249,10 @@ namespace Microsoft.Azure.Cosmos
                         requestEnricher: requestMessage => BatchAsyncContainerExecutor.AddHeadersToRequestMessage(requestMessage, serverRequest.PartitionKeyRangeId),
                         cancellationToken: cancellationToken).ConfigureAwait(false);
                     TransactionalBatchResponse serverResponse = await TransactionalBatchResponse.FromResponseMessageAsync(responseMessage, serverRequest, this.cosmosClientContext.CosmosSerializer).ConfigureAwait(false);
-                    this.countsAndLatencies.Add((serverRequest.Operations.Count, (this.stopwatch.Elapsed - start).TotalMilliseconds));
+                    this.countsAndLatencies.Add(
+                        (serverRequest.Operations.Count,
+                        serverResponse.Any(r => r.StatusCode == (System.Net.HttpStatusCode)429),
+                        (this.stopwatch.Elapsed - start).TotalMilliseconds));
                     return new PartitionKeyRangeBatchExecutionResult(serverRequest.PartitionKeyRangeId, serverRequest.Operations, serverResponse);
                 }
             }
