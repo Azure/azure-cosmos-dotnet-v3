@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos.Query.Core
 {
     using System;
+    using System.Linq;
 
     /// <summary>
     /// Struct that represents a 128 bit unsigned integer.
@@ -378,7 +379,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             {
                 throw new ArgumentException("value can not be null or empty.");
             }
-            string[] hexPairs = value.Split('-');
+            string[] hexPairs = value.Split('-').Take(UInt128.Length).ToArray();
             if (hexPairs.Length != UInt128.Length)
             {
                 throw new ArgumentException("not enough bytes encoded.");
