@@ -148,7 +148,6 @@ namespace Microsoft.Azure.Cosmos.Query
             QueryInfo queryInfo = initParams.PartitionedQueryExecutionInfo.QueryInfo;
 
             int initialPageSize = initParams.InitialPageSize;
-            CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams parameters = initParams;
             if (queryInfo.HasGroupBy)
             {
                 // The query will block until all groupings are gathered so we might as well speed up the process.
@@ -233,6 +232,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 createComponentFunc = async (continuationToken) =>
                 {
                     return await DistinctDocumentQueryExecutionComponent.CreateAsync(
+                        executionEnvironment,
                         queryClient,
                         continuationToken,
                         createSourceCallback,
@@ -246,6 +246,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 createComponentFunc = async (continuationToken) =>
                 {
                     return await GroupByDocumentQueryExecutionComponent.CreateAsync(
+                        executionEnvironment,
                         queryClient,
                         continuationToken,
                         createSourceCallback,

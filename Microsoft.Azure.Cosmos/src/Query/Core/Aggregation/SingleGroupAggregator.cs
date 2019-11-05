@@ -6,9 +6,10 @@ namespace Microsoft.Azure.Cosmos.Query
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Aggregation;
-    using Newtonsoft.Json;
 
     /// <summary>
     /// Aggregates all the projections for a single grouping.
@@ -42,17 +43,25 @@ namespace Microsoft.Azure.Cosmos.Query
                 if (aggregates != null && aggregates.Any())
                 {
                     // SELECT VALUE <AGGREGATE>
-                    aggregateValues = SelectValueAggregateValues.Create(aggregates[0], continuationToken);
+                    aggregateValues = SelectValueAggregateValues.Create(
+                        aggregates[0],
+                        continuationToken);
                 }
                 else
                 {
                     // SELECT VALUE <NON AGGREGATE>
-                    aggregateValues = SelectValueAggregateValues.Create(aggregateOperator: null, continuationToken: continuationToken);
+                    aggregateValues = SelectValueAggregateValues.Create(
+                        aggregateOperator: null,
+                        continuationToken: continuationToken);
                 }
             }
             else
             {
-                aggregateValues = SelectListAggregateValues.Create(queryClient, aggregateAliasToAggregateType, orderedAliases, continuationToken);
+                aggregateValues = SelectListAggregateValues.Create(
+                    queryClient,
+                    aggregateAliasToAggregateType,
+                    orderedAliases,
+                    continuationToken);
             }
 
             return aggregateValues;
@@ -228,7 +237,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             public override string ToString()
             {
-                return JsonConvert.SerializeObject(this.aliasToValue);
+                return Newtonsoft.Json.JsonConvert.SerializeObject(this.aliasToValue);
             }
         }
 
@@ -353,28 +362,55 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 public override string GetContinuationToken()
                 {
-                    return this.value.ToString();
+                    IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
+                    jsonWriter.WriteObjectStart();
+                    jsonWriter.WriteFieldName(nameof(this.initialized));
+                    jsonWriter.WriteBoolValue(this.initialized);
+                    if (this.value != null)
+                    {
+                        jsonWriter.WriteFieldName(nameof(this.value));
+                        this.value.WriteTo(jsonWriter);
+                    }
+                    jsonWriter.WriteObjectEnd();
+
+                    string continuationToken = Utf8StringHelpers.ToString(jsonWriter.GetResult());
+                    return continuationToken;
                 }
 
                 public static ScalarAggregateValue Create(string continuationToken)
                 {
-                    CosmosElement initialValue;
+                    CosmosElement value;
                     bool initialized;
                     if (continuationToken != null)
                     {
-                        if (!CosmosElement.TryParse(continuationToken, out initialValue))
+                        if (!CosmosElement.TryParse<CosmosObject>(
+                            continuationToken,
+                            out CosmosObject rawContinuationToken))
                         {
                             throw new ArgumentException($"Invalid {nameof(ScalarAggregateValue)}: {continuationToken}");
                         }
-                        initialized = true;
+
+                        if (!rawContinuationToken.TryGetValue<CosmosBoolean>(
+                            nameof(ScalarAggregateValue.initialized),
+                            out CosmosBoolean rawInitialized))
+                        {
+                            throw new ArgumentException($"Invalid {nameof(ScalarAggregateValue)}: {continuationToken}");
+                        }
+
+                        if (!rawContinuationToken.TryGetValue(nameof(ScalarAggregateValue.value), out value))
+                        {
+                            value = null;
+                        }
+
+                        initialized = rawInitialized.Value;
                     }
                     else
                     {
-                        initialValue = null;
+                        value = null;
                         initialized = false;
                     }
 
-                    return new ScalarAggregateValue(initialValue, initialized);
+                    return new ScalarAggregateValue(value, initialized);
                 }
 
                 public override void AddValue(CosmosElement aggregateValue)

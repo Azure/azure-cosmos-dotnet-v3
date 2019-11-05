@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 this.lazyNumber = new Lazy<float>(() => jsonNavigator.GetFloat32Value(jsonNavigatorNode));
             }
 
-            protected override float GetValue()
+            public override float GetValue()
             {
                 return this.lazyNumber.Value;
             }

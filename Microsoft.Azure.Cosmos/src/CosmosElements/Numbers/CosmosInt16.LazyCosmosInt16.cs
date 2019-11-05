@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 this.lazyNumber = new Lazy<short>(() => jsonNavigator.GetInt16Value(jsonNavigatorNode));
             }
 
-            protected override short GetValue()
+            public override short GetValue()
             {
                 return this.lazyNumber.Value;
             }

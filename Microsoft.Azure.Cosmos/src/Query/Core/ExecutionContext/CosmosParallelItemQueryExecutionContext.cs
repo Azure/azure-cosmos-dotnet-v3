@@ -132,8 +132,12 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="maxElements">The maximum number of documents to drains.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task that when awaited on returns a DoucmentFeedResponse of results.</returns>
-        public override async Task<IReadOnlyList<CosmosElement>> InternalDrainAsync(int maxElements, CancellationToken cancellationToken)
+        public override async Task<IReadOnlyList<CosmosElement>> InternalDrainAsync(
+            int maxElements,
+            CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             // In order to maintain the continuation token for the user we must drain with a few constraints
             // 1) We fully drain from the left most partition before moving on to the next partition
             // 2) We drain only full pages from the document producer so we aren't left with a partial page
