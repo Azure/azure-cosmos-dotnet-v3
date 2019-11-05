@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Threading.Tasks;
     using Collections.Generic;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Newtonsoft.Json;
     using ParallelQuery;
     using PartitionKeyRange = Documents.PartitionKeyRange;
@@ -59,6 +60,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Initializes a new instance of the CosmosOrderByItemQueryExecutionContext class.
         /// </summary>
+        /// <param name="executionEnvironment">The environment to execute on.</param>
         /// <param name="initPararms">The params used to construct the base class.</param>
         /// For cross partition order by queries a query like "SELECT c.id, c.field_0 ORDER BY r.field_7 gets rewritten as:
         /// <![CDATA[
@@ -73,19 +75,21 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="maxItemCount">Max item count</param>
         /// <param name="consumeComparer">Comparer used to internally compare documents from different sorted partitions.</param>
         private CosmosOrderByItemQueryExecutionContext(
+            ExecutionEnvironment executionEnvironment,
             CosmosQueryContext initPararms,
             int? maxConcurrency,
             int? maxItemCount,
             int? maxBufferedItemCount,
             OrderByConsumeComparer consumeComparer)
             : base(
-                queryContext: initPararms,
-                maxConcurrency: maxConcurrency,
-                maxItemCount: maxItemCount,
-                maxBufferedItemCount: maxBufferedItemCount,
-                moveNextComparer: consumeComparer,
-                fetchPrioirtyFunction: CosmosOrderByItemQueryExecutionContext.FetchPriorityFunction,
-                equalityComparer: new OrderByEqualityComparer(consumeComparer))
+                  executionEnvironment: executionEnvironment,
+                  queryContext: initPararms,
+                  maxConcurrency: maxConcurrency,
+                  maxItemCount: maxItemCount,
+                  maxBufferedItemCount: maxBufferedItemCount,
+                  moveNextComparer: consumeComparer,
+                  fetchPrioirtyFunction: CosmosOrderByItemQueryExecutionContext.FetchPriorityFunction,
+                  equalityComparer: new OrderByEqualityComparer(consumeComparer))
         {
         }
 
@@ -156,6 +160,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 "OrderBy~Context must have order by query info.");
 
             CosmosOrderByItemQueryExecutionContext context = new CosmosOrderByItemQueryExecutionContext(
+                executionEnvironment: initParams.ExecutionEnvironment,
                 initPararms: queryContext,
                 maxConcurrency: initParams.MaxConcurrency,
                 maxItemCount: initParams.MaxItemCount,

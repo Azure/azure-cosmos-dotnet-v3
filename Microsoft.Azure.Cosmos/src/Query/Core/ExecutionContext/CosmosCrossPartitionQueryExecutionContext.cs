@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Collections.Generic;
     using Core.ExecutionComponent;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using ParallelQuery;
     using PartitionKeyRange = Documents.PartitionKeyRange;
     using RequestChargeTracker = Documents.RequestChargeTracker;
@@ -69,6 +70,8 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         private readonly long actualMaxBufferedItemCount;
 
+        protected readonly ExecutionEnvironment executionEnvironment;
+
         private CosmosQueryContext queryContext;
 
         protected CosmosQueryClient queryClient;
@@ -102,6 +105,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Initializes a new instance of the CosmosCrossPartitionQueryExecutionContext class.
         /// </summary>
+        /// <param name="executionEnvironment">The environment to execute on.</param>
         /// <param name="queryContext">Constructor parameters for the base class.</param>
         /// <param name="maxConcurrency">The max concurrency</param>
         /// <param name="maxBufferedItemCount">The max buffered item count</param>
@@ -110,6 +114,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="fetchPrioirtyFunction">The priority function to determine which partition to fetch documents from next.</param>
         /// <param name="equalityComparer">Used to determine whether we need to return the continuation token for a partition.</param>
         protected CosmosCrossPartitionQueryExecutionContext(
+            ExecutionEnvironment executionEnvironment,
             CosmosQueryContext queryContext,
             int? maxConcurrency,
             int? maxItemCount,
@@ -133,6 +138,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 throw new ArgumentNullException(nameof(equalityComparer));
             }
 
+            this.executionEnvironment = executionEnvironment;
             this.queryContext = queryContext ?? throw new ArgumentNullException(nameof(queryContext));
             this.queryClient = queryContext.QueryClient ?? throw new ArgumentNullException(nameof(queryContext.QueryClient));
             this.itemProducerForest = new PriorityQueue<ItemProducerTree>(moveNextComparer, isSynchronized: true);
@@ -692,6 +698,7 @@ namespace Microsoft.Azure.Cosmos.Query
             /// <summary>
             /// Initializes a new instance of the InitParams struct.
             /// </summary>
+            /// <param name="executionEnvironment">The environment the query is going to be executed on.</param>
             /// <param name="sqlQuerySpec">The Sql query spec</param>
             /// <param name="collectionRid">The collection rid.</param>
             /// <param name="partitionedQueryExecutionInfo">The partitioned query execution info.</param>
@@ -701,6 +708,7 @@ namespace Microsoft.Azure.Cosmos.Query
             /// <param name="maxBufferedItemCount">The max buffered item count</param>
             /// <param name="maxItemCount">Max item count</param>
             public CrossPartitionInitParams(
+                ExecutionEnvironment executionEnvironment,
                 SqlQuerySpec sqlQuerySpec,
                 string collectionRid,
                 PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
@@ -744,6 +752,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 }
 
                 //// Request continuation is allowed to be null
+
+                this.ExecutionEnvironment = executionEnvironment;
                 this.SqlQuerySpec = sqlQuerySpec;
                 this.CollectionRid = collectionRid;
                 this.PartitionedQueryExecutionInfo = partitionedQueryExecutionInfo;
@@ -753,6 +763,11 @@ namespace Microsoft.Azure.Cosmos.Query
                 this.MaxConcurrency = maxConcurrency;
                 this.MaxItemCount = maxItemCount;
             }
+
+            /// <summary>
+            /// The environment the query will be executed on.
+            /// </summary>
+            public ExecutionEnvironment ExecutionEnvironment { get; }
 
             /// <summary>
             /// Get the sql query spec

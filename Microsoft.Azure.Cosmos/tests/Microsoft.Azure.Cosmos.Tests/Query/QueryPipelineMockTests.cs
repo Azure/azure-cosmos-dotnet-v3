@@ -66,6 +66,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     mockQueryClient.Object);
 
                 CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams = new CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams(
+                    executionEnvironment: Query.Core.ExecutionContext.ExecutionEnvironment.Client,
                     sqlQuerySpec: MockQueryFactory.DefaultQuerySpec,
                     collectionRid: MockQueryFactory.DefaultCollectionRid,
                     partitionedQueryExecutionInfo: new PartitionedQueryExecutionInfo() { QueryInfo = new QueryInfo() },
@@ -149,6 +150,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     mockQueryClient.Object);
 
                 CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams = new CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams(
+                    executionEnvironment: Query.Core.ExecutionContext.ExecutionEnvironment.Client,
                     sqlQuerySpec: MockQueryFactory.DefaultQuerySpec,
                     collectionRid: MockQueryFactory.DefaultCollectionRid,
                     partitionedQueryExecutionInfo: new PartitionedQueryExecutionInfo() { QueryInfo = new QueryInfo() },
@@ -277,6 +279,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 };
 
                 CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams = new CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams(
+                    executionEnvironment: Query.Core.ExecutionContext.ExecutionEnvironment.Client,
                     sqlQuerySpec: MockQueryFactory.DefaultQuerySpec,
                     collectionRid: MockQueryFactory.DefaultCollectionRid,
                     partitionedQueryExecutionInfo: new PartitionedQueryExecutionInfo() { QueryInfo = queryInfo },
@@ -400,6 +403,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 };
 
                 CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams = new CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams(
+                    executionEnvironment: Query.Core.ExecutionContext.ExecutionEnvironment.Client,
                     sqlQuerySpec: MockQueryFactory.DefaultQuerySpec,
                     collectionRid: MockQueryFactory.DefaultCollectionRid,
                     partitionedQueryExecutionInfo: new PartitionedQueryExecutionInfo() { QueryInfo = queryInfo },
@@ -490,6 +494,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
 
             CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams = new CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams(
+                executionEnvironment: Query.Core.ExecutionContext.ExecutionEnvironment.Client,
                 sqlQuerySpec: MockQueryFactory.DefaultQuerySpec,
                 collectionRid: MockQueryFactory.DefaultCollectionRid,
                 partitionedQueryExecutionInfo: new PartitionedQueryExecutionInfo() { QueryInfo = queryInfo },
@@ -506,6 +511,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 default(CancellationToken));
 
             initParams = new CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams(
+                executionEnvironment: Query.Core.ExecutionContext.ExecutionEnvironment.Client,
                 sqlQuerySpec: MockQueryFactory.DefaultQuerySpec,
                 collectionRid: MockQueryFactory.DefaultCollectionRid,
                 partitionedQueryExecutionInfo: new PartitionedQueryExecutionInfo()

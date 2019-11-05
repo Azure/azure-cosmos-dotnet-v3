@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Threading.Tasks;
     using Collections.Generic;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Newtonsoft.Json;
     using PartitionKeyRange = Documents.PartitionKeyRange;
 
@@ -42,23 +43,26 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Initializes a new instance of the CosmosParallelItemQueryExecutionContext class.
         /// </summary>
+        /// <param name="executionEnvironment">The environment to execute on.</param>
         /// <param name="queryContext">The parameters for constructing the base class.</param>
         /// <param name="maxConcurrency">The max concurrency</param>
         /// <param name="maxBufferedItemCount">The max buffered item count</param>
         /// <param name="maxItemCount">Max item count</param>
         private CosmosParallelItemQueryExecutionContext(
+            ExecutionEnvironment executionEnvironment,
             CosmosQueryContext queryContext,
             int? maxConcurrency,
             int? maxItemCount,
             int? maxBufferedItemCount)
             : base(
-                queryContext: queryContext,
-                maxConcurrency: maxConcurrency,
-                maxItemCount: maxItemCount,
-                maxBufferedItemCount: maxBufferedItemCount,
-                moveNextComparer: CosmosParallelItemQueryExecutionContext.MoveNextComparer,
-                fetchPrioirtyFunction: CosmosParallelItemQueryExecutionContext.FetchPriorityFunction,
-                equalityComparer: CosmosParallelItemQueryExecutionContext.EqualityComparer)
+                  executionEnvironment: executionEnvironment,
+                  queryContext: queryContext,
+                  maxConcurrency: maxConcurrency,
+                  maxItemCount: maxItemCount,
+                  maxBufferedItemCount: maxBufferedItemCount,
+                  moveNextComparer: CosmosParallelItemQueryExecutionContext.MoveNextComparer,
+                  fetchPrioirtyFunction: CosmosParallelItemQueryExecutionContext.FetchPriorityFunction,
+                  equalityComparer: CosmosParallelItemQueryExecutionContext.EqualityComparer)
         {
         }
 
@@ -110,6 +114,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 "Parallel~Context must not have order by query info.");
 
             CosmosParallelItemQueryExecutionContext context = new CosmosParallelItemQueryExecutionContext(
+                executionEnvironment: initParams.ExecutionEnvironment,
                 queryContext: queryContext,
                 maxConcurrency: initParams.MaxConcurrency,
                 maxItemCount: initParams.MaxItemCount,
@@ -177,6 +182,12 @@ namespace Microsoft.Azure.Cosmos.Query
                 this.PushCurrentItemProducerTree(currentItemProducerTree);
 
                 // At this point the document producer tree should have internally called MoveNextPage, since we fully drained a page.
+
+                if (this.executionEnvironment == ExecutionEnvironment.Compute)
+                {
+                    // If the query is being executed on compute, then preempt as frequently as possible.
+                    break;
+                }
             }
 
             return results;

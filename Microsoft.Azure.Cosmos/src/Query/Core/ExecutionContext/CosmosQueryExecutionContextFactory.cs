@@ -371,6 +371,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 string.Format(CultureInfo.InvariantCulture, "Invalid MaxItemCount {0}", initialPageSize));
 
             CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams = new CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams(
+                executionEnvironment: inputParameters.ExecutionEnvironment,
                 sqlQuerySpec: inputParameters.SqlQuerySpec,
                 collectionRid: collectionRid,
                 partitionedQueryExecutionInfo: partitionedQueryExecutionInfo,

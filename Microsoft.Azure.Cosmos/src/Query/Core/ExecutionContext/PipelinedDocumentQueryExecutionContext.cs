@@ -151,6 +151,7 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 // The query will block until all groupings are gathered so we might as well speed up the process.
                 initParams = new CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams(
+                    executionEnvironment: initParams.ExecutionEnvironment,
                     sqlQuerySpec: initParams.SqlQuerySpec,
                     collectionRid: initParams.CollectionRid,
                     partitionedQueryExecutionInfo: initParams.PartitionedQueryExecutionInfo,
