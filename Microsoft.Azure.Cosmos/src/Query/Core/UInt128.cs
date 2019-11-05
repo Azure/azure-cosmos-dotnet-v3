@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos.Query.Core
 {
     using System;
+    using System.Linq;
 
     /// <summary>
     /// Struct that represents a 128 bit unsigned integer.
@@ -372,25 +373,34 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             return this.low;
         }
 
-        public static UInt128 Parse(string value)
+        public static bool TryParse(string value, out UInt128 uInt128)
         {
             if (string.IsNullOrEmpty(value))
             {
                 throw new ArgumentException("value can not be null or empty.");
             }
-            string[] hexPairs = value.Split('-');
+
+            string[] hexPairs = value.Split('-').Take(UInt128.Length).ToArray();
             if (hexPairs.Length != UInt128.Length)
             {
-                throw new ArgumentException("not enough bytes encoded.");
+                uInt128 = default;
+                return false;
             }
 
             byte[] bytes = new byte[UInt128.Length];
             for (int index = 0; index < UInt128.Length; index++)
             {
-                bytes[index] = byte.Parse(hexPairs[index], System.Globalization.NumberStyles.HexNumber, null);
+                if (!byte.TryParse(hexPairs[index], System.Globalization.NumberStyles.HexNumber, null, out byte parsedBytes))
+                {
+                    uInt128 = default;
+                    return false;
+                }
+
+                bytes[index] = parsedBytes;
             }
 
-            return UInt128.FromByteArray(bytes);
+            uInt128 = UInt128.FromByteArray(bytes);
+            return true;
         }
     }
 }

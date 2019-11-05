@@ -248,6 +248,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 tryCreatePipelineAsync = async (continuationToken) =>
                 {
                     return await DistinctDocumentQueryExecutionComponent.TryCreateAsync(
+                        executionEnvironment,
                         continuationToken,
                         tryCreateSourceAsync,
                         queryInfo.DistinctType);

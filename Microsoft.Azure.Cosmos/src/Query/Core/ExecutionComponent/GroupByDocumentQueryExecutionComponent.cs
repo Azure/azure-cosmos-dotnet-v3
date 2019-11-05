@@ -292,7 +292,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                         string key = kvp.Key;
                         CosmosElement value = kvp.Value;
 
-                        UInt128 groupByKey = UInt128.Parse(key);
+                        if (!UInt128.TryParse(key, out UInt128 groupByKey))
+                        {
+                            return TryCatch<GroupingTable>.FromException(new Exception($"Invalid GroupingTableContinuationToken"));
+                        }
 
                         if (!(value is CosmosString singleGroupAggregatorContinuationToken))
                         {

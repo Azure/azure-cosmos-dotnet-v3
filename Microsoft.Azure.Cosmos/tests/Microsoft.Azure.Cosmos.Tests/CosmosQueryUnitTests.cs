@@ -176,6 +176,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 setupContext.func)).ThrowIfException);
 
             components.Add((await DistinctDocumentQueryExecutionComponent.TryCreateAsync(
+                Query.Core.ExecutionContext.ExecutionEnvironment.Client,
                 null,
                 setupContext.func,
                 DistinctQueryType.Ordered)).ThrowIfException);
