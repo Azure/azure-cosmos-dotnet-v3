@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 int itemsLeftInCurrentPage = currentItemProducerTree.ItemsLeftInCurrentPage;
 
-                if (results.Count + itemsLeftInCurrentPage <= maxElements)
+                if ((results.Count + itemsLeftInCurrentPage) <= maxElements)
                 {
                     // Only drain full pages or less if this is a top query.
                     for (int i = 0; (i < Math.Min(itemsLeftInCurrentPage, maxElements)) && movedNext; i++)
