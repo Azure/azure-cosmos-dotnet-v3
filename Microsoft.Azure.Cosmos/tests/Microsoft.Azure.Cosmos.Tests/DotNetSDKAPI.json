@@ -598,6 +598,11 @@
           "Attributes": [],
           "MethodInfo": null
         },
+        "Microsoft.Azure.Cosmos.TransactionalBatch CreateTransactionalBatch(Microsoft.Azure.Cosmos.PartitionKey)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.TransactionalBatch CreateTransactionalBatch(Microsoft.Azure.Cosmos.PartitionKey)"
+        },
         "System.Linq.IOrderedQueryable`1[T] GetItemLinqQueryable[T](Boolean, System.String, Microsoft.Azure.Cosmos.QueryRequestOptions)": {
           "Type": "Method",
           "Attributes": [],
@@ -4676,6 +4681,36 @@
             }
           },
           "NestedTypes": {}
+        },
+        "TransactionalBatchItemRequestOptions": {
+          "Subclasses": {},
+          "Members": {
+            "System.Nullable`1[Microsoft.Azure.Cosmos.IndexingDirective] get_IndexingDirective()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "System.Nullable`1[Microsoft.Azure.Cosmos.IndexingDirective] get_IndexingDirective()"
+            },
+            "System.Nullable`1[Microsoft.Azure.Cosmos.IndexingDirective] IndexingDirective": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "Void .ctor()": {
+              "Type": "Constructor",
+              "Attributes": [],
+              "MethodInfo": "Void .ctor()"
+            },
+            "Void set_IndexingDirective(System.Nullable`1[Microsoft.Azure.Cosmos.IndexingDirective])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Void set_IndexingDirective(System.Nullable`1[Microsoft.Azure.Cosmos.IndexingDirective])"
+            }
+          },
+          "NestedTypes": {}
         }
       },
       "Members": {
@@ -7077,6 +7112,325 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "System.String get_ETag()"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "TransactionalBatch": {
+      "Subclasses": {},
+      "Members": {
+        "Microsoft.Azure.Cosmos.TransactionalBatch CreateItem[T](T, Microsoft.Azure.Cosmos.TransactionalBatchItemRequestOptions)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.TransactionalBatch CreateItem[T](T, Microsoft.Azure.Cosmos.TransactionalBatchItemRequestOptions)"
+        },
+        "Microsoft.Azure.Cosmos.TransactionalBatch CreateItemStream(System.IO.Stream, Microsoft.Azure.Cosmos.TransactionalBatchItemRequestOptions)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.TransactionalBatch CreateItemStream(System.IO.Stream, Microsoft.Azure.Cosmos.TransactionalBatchItemRequestOptions)"
+        },
+        "Microsoft.Azure.Cosmos.TransactionalBatch DeleteItem(System.String, Microsoft.Azure.Cosmos.TransactionalBatchItemRequestOptions)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.TransactionalBatch DeleteItem(System.String, Microsoft.Azure.Cosmos.TransactionalBatchItemRequestOptions)"
+        },
+        "Microsoft.Azure.Cosmos.TransactionalBatch ReadItem(System.String, Microsoft.Azure.Cosmos.TransactionalBatchItemRequestOptions)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.TransactionalBatch ReadItem(System.String, Microsoft.Azure.Cosmos.TransactionalBatchItemRequestOptions)"
+        },
+        "Microsoft.Azure.Cosmos.TransactionalBatch ReplaceItem[T](System.String, T, Microsoft.Azure.Cosmos.TransactionalBatchItemRequestOptions)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.TransactionalBatch ReplaceItem[T](System.String, T, Microsoft.Azure.Cosmos.TransactionalBatchItemRequestOptions)"
+        },
+        "Microsoft.Azure.Cosmos.TransactionalBatch ReplaceItemStream(System.String, System.IO.Stream, Microsoft.Azure.Cosmos.TransactionalBatchItemRequestOptions)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.TransactionalBatch ReplaceItemStream(System.String, System.IO.Stream, Microsoft.Azure.Cosmos.TransactionalBatchItemRequestOptions)"
+        },
+        "Microsoft.Azure.Cosmos.TransactionalBatch UpsertItem[T](T, Microsoft.Azure.Cosmos.TransactionalBatchItemRequestOptions)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.TransactionalBatch UpsertItem[T](T, Microsoft.Azure.Cosmos.TransactionalBatchItemRequestOptions)"
+        },
+        "Microsoft.Azure.Cosmos.TransactionalBatch UpsertItemStream(System.IO.Stream, Microsoft.Azure.Cosmos.TransactionalBatchItemRequestOptions)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.TransactionalBatch UpsertItemStream(System.IO.Stream, Microsoft.Azure.Cosmos.TransactionalBatchItemRequestOptions)"
+        },
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.TransactionalBatchResponse] ExecuteAsync(System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.TransactionalBatchResponse] ExecuteAsync(System.Threading.CancellationToken)"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "TransactionalBatchItemRequestOptions": {
+      "Subclasses": {},
+      "Members": {
+        "System.Nullable`1[Microsoft.Azure.Cosmos.IndexingDirective] get_IndexingDirective()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[Microsoft.Azure.Cosmos.IndexingDirective] get_IndexingDirective()"
+        },
+        "System.Nullable`1[Microsoft.Azure.Cosmos.IndexingDirective] IndexingDirective": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Void .ctor()": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "Void .ctor()"
+        },
+        "Void set_IndexingDirective(System.Nullable`1[Microsoft.Azure.Cosmos.IndexingDirective])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_IndexingDirective(System.Nullable`1[Microsoft.Azure.Cosmos.IndexingDirective])"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "TransactionalBatchOperationResult": {
+      "Subclasses": {
+        "TransactionalBatchOperationResult`1": {
+          "Subclasses": {},
+          "Members": {
+            "T get_Resource()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "T get_Resource()"
+            },
+            "T Resource": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "Void set_Resource(T)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Void set_Resource(T)"
+            }
+          },
+          "NestedTypes": {}
+        }
+      },
+      "Members": {
+        "Boolean get_IsSuccessStatusCode()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Boolean get_IsSuccessStatusCode()"
+        },
+        "Boolean IsSuccessStatusCode": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.IO.Stream get_ResourceStream()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.IO.Stream get_ResourceStream()"
+        },
+        "System.IO.Stream ResourceStream": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.Net.HttpStatusCode get_StatusCode()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Net.HttpStatusCode get_StatusCode()"
+        },
+        "System.Net.HttpStatusCode StatusCode": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String ETag": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String get_ETag()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.String get_ETag()"
+        },
+        "System.TimeSpan get_RetryAfter()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.TimeSpan get_RetryAfter()"
+        },
+        "System.TimeSpan RetryAfter": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        }
+      },
+      "NestedTypes": {}
+    },
+    "TransactionalBatchOperationResult`1": {
+      "Subclasses": {},
+      "Members": {
+        "T get_Resource()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "T get_Resource()"
+        },
+        "T Resource": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Void set_Resource(T)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_Resource(T)"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "TransactionalBatchResponse": {
+      "Subclasses": {},
+      "Members": {
+        "Boolean get_IsSuccessStatusCode()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Boolean get_IsSuccessStatusCode()"
+        },
+        "Boolean IsSuccessStatusCode": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Double get_RequestCharge()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Double get_RequestCharge()"
+        },
+        "Double RequestCharge": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Int32 Count": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Int32 get_Count()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Int32 get_Count()"
+        },
+        "Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()"
+        },
+        "Microsoft.Azure.Cosmos.TransactionalBatchOperationResult get_Item(Int32)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.TransactionalBatchOperationResult get_Item(Int32)"
+        },
+        "Microsoft.Azure.Cosmos.TransactionalBatchOperationResult Item [Int32]": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Microsoft.Azure.Cosmos.TransactionalBatchOperationResult`1[T] GetOperationResultAtIndex[T](Int32)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.TransactionalBatchOperationResult`1[T] GetOperationResultAtIndex[T](Int32)"
+        },
+        "System.Collections.Generic.IEnumerator`1[Microsoft.Azure.Cosmos.TransactionalBatchOperationResult] GetEnumerator()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Collections.Generic.IEnumerator`1[Microsoft.Azure.Cosmos.TransactionalBatchOperationResult] GetEnumerator()"
+        },
+        "System.Net.HttpStatusCode get_StatusCode()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Net.HttpStatusCode get_StatusCode()"
+        },
+        "System.Net.HttpStatusCode StatusCode": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.Nullable`1[System.TimeSpan] get_RetryAfter()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[System.TimeSpan] get_RetryAfter()"
+        },
+        "System.Nullable`1[System.TimeSpan] RetryAfter": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String ActivityId": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String ErrorMessage": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String get_ActivityId()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.String get_ActivityId()"
+        },
+        "System.String get_ErrorMessage()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.String get_ErrorMessage()"
+        },
+        "Void Dispose()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void Dispose()"
         }
       },
       "NestedTypes": {}

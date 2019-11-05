@@ -1,14 +1,13 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
+namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
 {
     using System;
     using System.Collections.Generic;
     using System.Globalization;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Newtonsoft.Json;
@@ -143,7 +142,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                 disallowContinuationTokenMessage: disallowContinuationTokenMessage,
                 activityId: cosmosQueryResponse.ActivityId,
                 requestCharge: cosmosQueryResponse.RequestCharge,
-                diagnostics: cosmosQueryResponse.diagnostics,
+                diagnostics: cosmosQueryResponse.Diagnostics,
                 responseLengthBytes: cosmosQueryResponse.ResponseLengthBytes);
         }
 

@@ -5,14 +5,9 @@
 namespace Microsoft.Azure.Cosmos
 {
     /// <summary>
-    /// <see cref="RequestOptions"/> that apply to operations within a <see cref="Batch"/>.
+    /// <see cref="RequestOptions"/> that applies to an operation within a <see cref="TransactionalBatch"/>.
     /// </summary>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-    class BatchItemRequestOptions : RequestOptions
+    public class TransactionalBatchItemRequestOptions : RequestOptions
     {
         /// <summary>
         /// Gets or sets the indexing directive (Include or Exclude) for the request in the Azure Cosmos DB service.
@@ -24,7 +19,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="IndexingDirective"/>
         public IndexingDirective? IndexingDirective { get; set; }
 
-        internal static BatchItemRequestOptions FromItemRequestOptions(ItemRequestOptions itemRequestOptions)
+        internal static TransactionalBatchItemRequestOptions FromItemRequestOptions(ItemRequestOptions itemRequestOptions)
         {
             if (itemRequestOptions == null)
             {
@@ -32,7 +27,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             RequestOptions requestOptions = itemRequestOptions as RequestOptions;
-            BatchItemRequestOptions batchItemRequestOptions = new BatchItemRequestOptions();
+            TransactionalBatchItemRequestOptions batchItemRequestOptions = new TransactionalBatchItemRequestOptions();
             batchItemRequestOptions.IndexingDirective = itemRequestOptions.IndexingDirective;
             batchItemRequestOptions.IfMatchEtag = requestOptions.IfMatchEtag;
             batchItemRequestOptions.IfNoneMatchEtag = requestOptions.IfNoneMatchEtag;

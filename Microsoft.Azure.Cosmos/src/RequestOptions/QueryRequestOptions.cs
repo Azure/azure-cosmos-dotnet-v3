@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Globalization;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -140,6 +141,8 @@ namespace Microsoft.Azure.Cosmos
         internal string SessionToken { get; set; }
 
         internal CosmosSerializationFormatOptions CosmosSerializationFormatOptions { get; set; }
+
+        internal ExecutionEnvironment? ExecutionEnvironment { get; set; }
 
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
