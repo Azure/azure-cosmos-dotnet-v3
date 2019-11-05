@@ -31,6 +31,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Newtonsoft.Json.Linq;
     using Query;
     using Query.ParallelQuery;
+    using UInt128 = Query.Core.UInt128;
 
     /// <summary>
     /// Tests for CrossPartitionQueryTests.
@@ -2413,7 +2414,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     FeedResponse<JToken> cosmosQueryResponse = await documentQueryWithoutDistinct.ReadNextAsync();
                     foreach (JToken document in cosmosQueryResponse)
                     {
-                        if (documentsSeen.Add(document, out UInt192? hash))
+                        if (documentsSeen.Add(document, out UInt128 hash))
                         {
                             documentsFromWithoutDistinct.Add(document);
                         }
@@ -2471,7 +2472,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     },
                     QueryDrainingMode.ContinuationToken | QueryDrainingMode.HoldState);
                 documentsFromWithoutDistinct = documentsFromWithoutDistinct
-                    .Where(document => documentsSeen.Add(document, out UInt192? hash))
+                    .Where(document => documentsSeen.Add(document, out UInt128 hash))
                     .ToList();
 
                 foreach (int pageSize in new int[] { 1, 10, 100 })
@@ -2519,7 +2520,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     },
                     QueryDrainingMode.TryGetContinuationTokens | QueryDrainingMode.HoldState);
                 documentsFromWithoutDistinct = documentsFromWithoutDistinct
-                    .Where(document => documentsSeen.Add(document, out UInt192? hash))
+                    .Where(document => documentsSeen.Add(document, out UInt128 hash))
                     .ToList();
 
                 foreach (int pageSize in new int[] { 1, 10, 100 })
@@ -4633,9 +4634,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // >> True
             private readonly HashSet<JToken> jTokenSet = new HashSet<JToken>(JsonTokenEqualityComparer.Value);
 
-            public bool Add(JToken jToken, out UInt192? hash)
+            public bool Add(JToken jToken, out UInt128 hash)
             {
-                hash = null;
+                hash = default(UInt128);
                 return this.jTokenSet.Add(jToken);
             }
         }

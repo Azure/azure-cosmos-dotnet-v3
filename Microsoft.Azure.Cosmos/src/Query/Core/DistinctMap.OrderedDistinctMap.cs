@@ -28,13 +28,13 @@ namespace Microsoft.Azure.Cosmos.Query
             /// <summary>
             /// The hash of the last item that was added to this distinct map.
             /// </summary>
-            private UInt192 lastHash;
+            private UInt128 lastHash;
 
             /// <summary>
             /// Initializes a new instance of the OrderedDistinctMap class.
             /// </summary>
             /// <param name="lastHash">The previous hash from the previous continuation.</param>
-            private OrderedDistinctMap(UInt192 lastHash)
+            private OrderedDistinctMap(UInt128 lastHash)
             {
                 this.lastHash = lastHash;
             }
@@ -46,14 +46,14 @@ namespace Microsoft.Azure.Cosmos.Query
             /// <param name="hash">The hash of the token.</param>
             /// <returns>Whether or not the item was added to this Distinct Map.</returns>
             /// <remarks>This function assumes data is added in sorted order.</remarks>
-            public override bool Add(CosmosElement cosmosElement, out UInt192? hash)
+            public override bool Add(CosmosElement cosmosElement, out UInt128 hash)
             {
                 hash = DistinctHash.GetHash(cosmosElement);
 
                 bool added;
                 if (this.lastHash != hash)
                 {
-                    this.lastHash = hash.Value;
+                    this.lastHash = hash;
                     added = true;
                 }
                 else
@@ -71,14 +71,14 @@ namespace Microsoft.Azure.Cosmos.Query
 
             public static OrderedDistinctMap Create(string continuationToken)
             {
-                UInt192 lastHash;
+                UInt128 lastHash;
                 if (continuationToken != null)
                 {
-                    lastHash = UInt192.Parse(continuationToken);
+                    lastHash = UInt128.Parse(continuationToken);
                 }
                 else
                 {
-                    lastHash = default(UInt192);
+                    lastHash = default;
                 }
 
                 return new OrderedDistinctMap(lastHash);

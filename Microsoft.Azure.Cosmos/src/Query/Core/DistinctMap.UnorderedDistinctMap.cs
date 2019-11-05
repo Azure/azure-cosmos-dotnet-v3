@@ -209,11 +209,11 @@ namespace Microsoft.Azure.Cosmos.Query
             /// <param name="cosmosElement">The element to add.</param>
             /// <param name="hash">The hash of the token.</param>
             /// <returns>Whether or not the item was added to this Distinct Map.</returns>
-            public override bool Add(CosmosElement cosmosElement, out UInt192? hash)
+            public override bool Add(CosmosElement cosmosElement, out UInt128 hash)
             {
                 // Unordered distinct does not need to return a valid hash.
                 // Since it doesn't need the last hash for a continuation.
-                hash = null;
+                hash = default;
                 bool added = false;
                 CosmosElementType cosmosElementType = cosmosElement.Type;
                 switch (cosmosElementType)

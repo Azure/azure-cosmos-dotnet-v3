@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
 
                 foreach (CosmosElement document in sourceResponse.CosmosElements)
                 {
-                    if (this.distinctMap.Add(document, out UInt192? hash))
+                    if (this.distinctMap.Add(document, out UInt128 hash))
                     {
                         distinctResults.Add(document);
                     }
