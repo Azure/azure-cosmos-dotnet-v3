@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly TimerPool timerPool;
         private readonly RetryOptions retryOptions;
 
-        private readonly ConcurrentDictionary<string, Stopwatch> stopwatchesByPartitionKeyRange = new ConcurrentDictionary<string, Stopwatch>();
+        private readonly Stopwatch stopwatch = new Stopwatch();
         private readonly ConcurrentBag<(int, double)> countsAndLatencies = new ConcurrentBag<(int, double)>();
 
         /// <summary>
@@ -83,6 +83,7 @@ namespace Microsoft.Azure.Cosmos
             this.dispatchTimerInSeconds = dispatchTimerInSeconds;
             this.timerPool = new TimerPool(BatchAsyncContainerExecutor.MinimumDispatchTimerInSeconds);
             this.retryOptions = cosmosClientContext.ClientOptions.GetConnectionPolicy().RetryOptions;
+            this.stopwatch.Start();
         }
 
         public virtual async Task<TransactionalBatchOperationResult> AddAsync(
@@ -236,8 +237,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     Debug.Assert(serverRequestPayload != null, "Server request payload expected to be non-null");
 
-                    Stopwatch stopwatch = this.GetOrAddStopwatchForPartitionKeyRange(serverRequest.PartitionKeyRangeId);
-                    stopwatch.Restart();
+                    TimeSpan start = this.stopwatch.Elapsed;
                     ResponseMessage responseMessage = await this.cosmosClientContext.ProcessResourceOperationStreamAsync(
                         this.cosmosContainer.LinkUri,
                         ResourceType.Document,
@@ -249,7 +249,7 @@ namespace Microsoft.Azure.Cosmos
                         requestEnricher: requestMessage => BatchAsyncContainerExecutor.AddHeadersToRequestMessage(requestMessage, serverRequest.PartitionKeyRangeId),
                         cancellationToken: cancellationToken).ConfigureAwait(false);
                     TransactionalBatchResponse serverResponse = await TransactionalBatchResponse.FromResponseMessageAsync(responseMessage, serverRequest, this.cosmosClientContext.CosmosSerializer).ConfigureAwait(false);
-                    this.countsAndLatencies.Add((serverRequest.Operations.Count, stopwatch.Elapsed.TotalMilliseconds));
+                    this.countsAndLatencies.Add((serverRequest.Operations.Count, (this.stopwatch.Elapsed - start).TotalMilliseconds));
                     return new PartitionKeyRangeBatchExecutionResult(serverRequest.PartitionKeyRangeId, serverRequest.Operations, serverResponse);
                 }
             }
@@ -285,18 +285,6 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return this.limitersByPartitionkeyRange[partitionKeyRangeId];
-        }
-
-        private Stopwatch GetOrAddStopwatchForPartitionKeyRange(string partitionKeyRangeId)
-        {
-            if (this.stopwatchesByPartitionKeyRange.TryGetValue(partitionKeyRangeId, out Stopwatch stopwatch))
-            {
-                return stopwatch;
-            }
-
-            Stopwatch newStopwatch = new Stopwatch();
-            this.stopwatchesByPartitionKeyRange.TryAdd(partitionKeyRangeId, newStopwatch);
-            return this.stopwatchesByPartitionKeyRange[partitionKeyRangeId];
         }
     }
 }
