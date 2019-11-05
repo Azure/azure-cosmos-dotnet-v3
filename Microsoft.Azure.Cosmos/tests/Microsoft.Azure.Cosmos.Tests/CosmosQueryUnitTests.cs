@@ -176,6 +176,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 setupContext.func));
 
             components.Add(await DistinctDocumentQueryExecutionComponent.CreateAsync(
+                Query.Core.ExecutionContext.ExecutionEnvironment.Client,
                 new Mock<CosmosQueryClient>().Object,
                 null,
                 setupContext.func,

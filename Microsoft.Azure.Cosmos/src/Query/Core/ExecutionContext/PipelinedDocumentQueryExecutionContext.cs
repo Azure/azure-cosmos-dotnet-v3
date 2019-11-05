@@ -233,6 +233,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 createComponentFunc = async (continuationToken) =>
                 {
                     return await DistinctDocumentQueryExecutionComponent.CreateAsync(
+                        executionEnvironment,
                         queryClient,
                         continuationToken,
                         createSourceCallback,
