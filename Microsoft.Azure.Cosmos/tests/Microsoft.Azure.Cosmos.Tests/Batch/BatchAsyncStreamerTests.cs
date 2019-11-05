@@ -26,13 +26,13 @@ namespace Microsoft.Azure.Cosmos.Tests
         private BatchAsyncBatcherExecuteDelegate Executor
             = async (PartitionKeyRangeServerBatchRequest request, CancellationToken cancellationToken) =>
             {
-                List<BatchOperationResult> results = new List<BatchOperationResult>();
+                List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
                 ItemBatchOperation[] arrayOperations = new ItemBatchOperation[request.Operations.Count];
                 int index = 0;
                 foreach (ItemBatchOperation operation in request.Operations)
                 {
                     results.Add(
-                    new BatchOperationResult(HttpStatusCode.OK)
+                    new TransactionalBatchOperationResult(HttpStatusCode.OK)
                     {
                         ResourceStream = new MemoryStream(new byte[] { 0x41, 0x42 }, index: 0, count: 2, writable: false, publiclyVisible: true),
                         ETag = operation.Id
@@ -46,12 +46,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                 SinglePartitionKeyServerBatchRequest batchRequest = await SinglePartitionKeyServerBatchRequest.CreateAsync(
                     partitionKey: null,
                     operations: new ArraySegment<ItemBatchOperation>(arrayOperations),
-                    maxBodyLength: (int)responseContent.Length * request.Operations.Count,
-                    maxOperationCount: request.Operations.Count,
                     serializer: new CosmosJsonDotNetSerializer(),
                 cancellationToken: cancellationToken);
 
-                BatchResponse batchresponse = await BatchResponse.PopulateFromContentAsync(
+                TransactionalBatchResponse batchresponse = await TransactionalBatchResponse.FromResponseMessageAsync(
                     new ResponseMessage(HttpStatusCode.OK) { Content = responseContent },
                     batchRequest,
                     new CosmosJsonDotNetSerializer());
@@ -125,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             BatchAsyncStreamer batchAsyncStreamer = new BatchAsyncStreamer(2, MaxBatchByteSize, DispatchTimerInSeconds, this.TimerPool, new CosmosJsonDotNetSerializer(), this.Executor, this.Retrier);
             ItemBatchOperationContext context = AttachContext(this.ItemBatchOperation);
             batchAsyncStreamer.Add(this.ItemBatchOperation);
-            BatchOperationResult result = await context.OperationTask;
+            TransactionalBatchOperationResult result = await context.OperationTask;
 
             Assert.AreEqual(this.ItemBatchOperation.Id, result.ETag);
         }
@@ -135,7 +133,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             // Expect all operations to complete as their batches get dispached
             BatchAsyncStreamer batchAsyncStreamer = new BatchAsyncStreamer(2, MaxBatchByteSize, DispatchTimerInSeconds, this.TimerPool, new CosmosJsonDotNetSerializer(), this.Executor, this.Retrier);
-            List<Task<BatchOperationResult>> contexts = new List<Task<BatchOperationResult>>(10);
+            List<Task<TransactionalBatchOperationResult>> contexts = new List<Task<TransactionalBatchOperationResult>>(10);
             for (int i = 0; i < 10; i++)
             {
                 ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, i, i.ToString());
@@ -148,9 +146,9 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             for (int i = 0; i < 10; i++)
             {
-                Task<BatchOperationResult> context = contexts[i];
+                Task<TransactionalBatchOperationResult> context = contexts[i];
                 Assert.AreEqual(TaskStatus.RanToCompletion, context.Status);
-                BatchOperationResult result = await context;
+                TransactionalBatchOperationResult result = await context;
                 Assert.AreEqual(i.ToString(), result.ETag);
             }
         }

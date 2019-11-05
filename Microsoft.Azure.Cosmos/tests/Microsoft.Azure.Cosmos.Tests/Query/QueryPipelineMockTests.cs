@@ -13,8 +13,9 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Cosmos.Query.ExecutionComponent;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -457,18 +458,22 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task TestNegativeAggreateComponentCreation()
         {
-            TryCatch<AggregateDocumentQueryExecutionComponent> tryCreateWhenSourceFails = await AggregateDocumentQueryExecutionComponent.TryCreateAsync(
+            TryCatch<IDocumentQueryExecutionComponent> tryCreateWhenSourceFails = await AggregateDocumentQueryExecutionComponent.TryCreateAsync(
+                ExecutionEnvironment.Client,
                 new AggregateOperator[] { },
                 new Dictionary<string, AggregateOperator?>(),
+                new string[] { },
                 false,
                 null,
                 FailToCreateSource);
 
             Assert.IsFalse(tryCreateWhenSourceFails.Succeeded);
 
-            TryCatch<AggregateDocumentQueryExecutionComponent> tryCreateWhenInvalidContinuationToken = await AggregateDocumentQueryExecutionComponent.TryCreateAsync(
+            TryCatch<IDocumentQueryExecutionComponent> tryCreateWhenInvalidContinuationToken = await AggregateDocumentQueryExecutionComponent.TryCreateAsync(
+                ExecutionEnvironment.Client,
                 new AggregateOperator[] { },
                 new Dictionary<string, AggregateOperator?>(),
+                new string[] { },
                 false,
                 null,
                 FailToCreateSource);
@@ -479,14 +484,14 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task TestNegativeDistinctComponentCreation()
         {
-            TryCatch<DistinctDocumentQueryExecutionComponent> tryCreateWhenSourceFails = await DistinctDocumentQueryExecutionComponent.TryCreateAsync(
+            TryCatch<IDocumentQueryExecutionComponent> tryCreateWhenSourceFails = await DistinctDocumentQueryExecutionComponent.TryCreateAsync(
                 null,
                 FailToCreateSource,
                 DistinctQueryType.Ordered);
 
             Assert.IsFalse(tryCreateWhenSourceFails.Succeeded);
 
-            TryCatch<DistinctDocumentQueryExecutionComponent> tryCreateWhenInvalidContinuationToken = await DistinctDocumentQueryExecutionComponent.TryCreateAsync(
+            TryCatch<IDocumentQueryExecutionComponent> tryCreateWhenInvalidContinuationToken = await DistinctDocumentQueryExecutionComponent.TryCreateAsync(
                 "This is not a valid continuation token",
                 CreateSource,
                 DistinctQueryType.Unordered);

@@ -11,6 +11,8 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.ParallelQuery;
 
     /// <summary>
@@ -34,6 +36,11 @@ namespace Microsoft.Azure.Cosmos.Query
         /// Store any exception thrown
         /// </summary>
         private Exception exception;
+
+        /// <summary>
+        /// The query plan that will be embeded in the continuation token.
+        /// </summary>
+        private PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
 
         public CosmosQueryExecutionContextFactory(
             CosmosQueryContext cosmosQueryContext,
@@ -142,9 +149,26 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        public override bool TryGetContinuationToken(out string state)
+        public override bool TryGetContinuationToken(out string continuationToken)
         {
-            return this.innerExecutionContext.TryGetContinuationToken(out state);
+            if (this.innerExecutionContext.IsDone)
+            {
+                continuationToken = null;
+                return true;
+            }
+
+            if (!this.innerExecutionContext.TryGetContinuationToken(out string innerContinuationToken))
+            {
+                continuationToken = null;
+                return false;
+            }
+
+            PipelineContinuationTokenV1_1 pipelineContinuationToken = new PipelineContinuationTokenV1_1(
+                this.partitionedQueryExecutionInfo,
+                innerContinuationToken);
+
+            continuationToken = pipelineContinuationToken.ToString(this.inputParameters.ResponseContinuationTokenLimitInKb.GetValueOrDefault(12) * 1024);
+            return true;
         }
 
         private async Task<CosmosQueryExecutionContext> CreateItemQueryExecutionContextAsync(
@@ -152,12 +176,45 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             cancellationToken.ThrowIfCancellationRequested();
 
+            string continuationToken = this.inputParameters.InitialUserContinuationToken;
+            if (this.inputParameters.InitialUserContinuationToken != null)
+            {
+                if (!PipelineContinuationToken.TryParse(
+                    continuationToken,
+                    out PipelineContinuationToken pipelineContinuationToken))
+                {
+                    throw this.CosmosQueryContext.QueryClient.CreateBadRequestException(
+                        $"Malformed {nameof(PipelineContinuationToken)}: {continuationToken}.");
+                }
+
+                if (PipelineContinuationToken.IsTokenFromTheFuture(pipelineContinuationToken))
+                {
+                    throw this.CosmosQueryContext.QueryClient.CreateBadRequestException(
+                        $"{nameof(PipelineContinuationToken)} Continuation token is from a newer version of the SDK. Upgrade the SDK to avoid this issue.\n {continuationToken}.");
+                }
+
+                if (!PipelineContinuationToken.TryConvertToLatest(
+                    pipelineContinuationToken,
+                    out PipelineContinuationTokenV1_1 latestVersionPipelineContinuationToken))
+                {
+                    throw this.CosmosQueryContext.QueryClient.CreateBadRequestException(
+                        $"{nameof(PipelineContinuationToken)}: '{continuationToken}' is no longer supported.");
+                }
+
+                continuationToken = latestVersionPipelineContinuationToken.SourceContinuationToken;
+
+                this.inputParameters.InitialUserContinuationToken = continuationToken;
+                if (latestVersionPipelineContinuationToken.QueryPlan != null)
+                {
+                    this.inputParameters.PartitionedQueryExecutionInfo = latestVersionPipelineContinuationToken.QueryPlan;
+                }
+            }
+
             CosmosQueryClient cosmosQueryClient = this.CosmosQueryContext.QueryClient;
             ContainerQueryProperties containerQueryProperties = await cosmosQueryClient.GetCachedContainerQueryPropertiesAsync(
                 this.CosmosQueryContext.ResourceLink,
                 this.inputParameters.PartitionKey,
                 cancellationToken);
-
             this.CosmosQueryContext.ContainerResourceId = containerQueryProperties.ResourceId;
 
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
@@ -211,6 +268,8 @@ namespace Microsoft.Azure.Cosmos.Query
                         cancellationToken);
                 }
             }
+
+            this.partitionedQueryExecutionInfo = partitionedQueryExecutionInfo;
 
             return await this.CreateFromPartitionedQuerExecutionInfoAsync(
                 partitionedQueryExecutionInfo,
@@ -333,6 +392,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 maxBufferedItemCount: inputParameters.MaxBufferedItemCount);
 
             return await PipelinedDocumentQueryExecutionContext.CreateAsync(
+                inputParameters.ExecutionEnvironment,
                 cosmosQueryContext,
                 initParams,
                 inputParameters.InitialUserContinuationToken,
@@ -379,28 +439,6 @@ namespace Microsoft.Azure.Cosmos.Query
             return targetRanges;
         }
 
-        public static Task<PartitionedQueryExecutionInfo> GetPartitionedQueryExecutionInfoAsync(
-            CosmosQueryClient queryClient,
-            SqlQuerySpec sqlQuerySpec,
-            Documents.PartitionKeyDefinition partitionKeyDefinition,
-            bool requireFormattableOrderByQuery,
-            bool isContinuationExpected,
-            bool allowNonValueAggregateQuery,
-            bool hasLogicalPartitionKey,
-            CancellationToken cancellationToken)
-        {
-            // $ISSUE-felixfan-2016-07-13: We should probably get PartitionedQueryExecutionInfo from Gateway in GatewayMode
-
-            return queryClient.GetPartitionedQueryExecutionInfoAsync(
-                sqlQuerySpec,
-                partitionKeyDefinition,
-                requireFormattableOrderByQuery,
-                isContinuationExpected,
-                allowNonValueAggregateQuery,
-                hasLogicalPartitionKey,
-                cancellationToken);
-        }
-
         private static bool TryGetEpkProperty(
             IDictionary<string, object> properties,
             out string effectivePartitionKeyString)
@@ -439,8 +477,10 @@ namespace Microsoft.Azure.Cosmos.Query
             internal int? MaxItemCount { get; set; }
             internal int? MaxBufferedItemCount { get; set; }
             internal PartitionKey? PartitionKey { get; set; }
+            internal int? ResponseContinuationTokenLimitInKb { get; set; }
             internal IDictionary<string, object> Properties { get; set; }
             internal PartitionedQueryExecutionInfo PartitionedQueryExecutionInfo { get; set; }
+            internal ExecutionEnvironment ExecutionEnvironment { get; set; }
         }
     }
 }

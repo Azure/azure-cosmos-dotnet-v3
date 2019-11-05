@@ -323,7 +323,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 this.produceAsyncCompleteCallback(
                     feedResponse.CosmosElements.Count,
                     feedResponse.RequestCharge,
-                    feedResponse.diagnostics,
+                    feedResponse.Diagnostics,
                     feedResponse.ResponseLengthBytes,
                     token);
 

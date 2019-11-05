@@ -80,6 +80,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                id: testItem.id,
                partitionKey: new PartitionKey(testItem.status));
             Assert.IsNotNull(deleteStreamResponse.Diagnostics);
+
+            // Ensure diagnostics are set even on failed operations
+            testItem.description = new string('x', Microsoft.Azure.Documents.Constants.MaxResourceSizeInBytes + 1);
+            ResponseMessage createTooBigStreamResponse = await this.Container.CreateItemStreamAsync(
+                partitionKey: new PartitionKey(testItem.status),
+                streamPayload: TestCommon.Serializer.ToStream<ToDoActivity>(testItem));
+            Assert.IsFalse(createTooBigStreamResponse.IsSuccessStatusCode);
+            Assert.IsNotNull(createTooBigStreamResponse.Diagnostics);
         }
 
         [TestMethod]

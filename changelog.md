@@ -7,17 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## <a name="3.4.0"/> [3.4.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.4.0) - 2019-11-04
 ### Added
 
 - [#853](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/853) ORDER BY Arrays and Object support.
 - [#877](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/877) Query diagnostics now contains client side request diagnostics information
 - [#923](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/923) Bulk Support is now public
 - [#922](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/922) Included information of bulk support usage in user agent
+- [#934](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/934) Preserved the ordering of projections in a GROUP BY query.
+- [#952](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/952) ORDER BY Undefined and Mixed Type ORDER BY support
+- [#965](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/965) Batch API is now public
 
 ### Fixed
 - [#901](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/901) Fix a bug causing query response to create a new stream for each content call
 - [#918](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/918) Fixed serializer being used for Scripts, Permissions, and Conflict related iterators
+- [#936](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/936) Fixed bulk requests with large resources to have natural exception 
+
+
+## <a name="3.3.3"/> [3.3.3](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.3.3) - 2019-10-30
+
+- [#837](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/837) Fixed group by bug for non-Windows platforms
 - [#927](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/927) Fixed query returning partial results instead of error
+flow.
+
 
 ## <a name="3.3.2"/> [3.3.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.3.2) - 2019-10-16
 
@@ -29,7 +41,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- [#895](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/895) Fixed user agent bug that caused format exceptions on non-windows platforms
+- [#895](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/895) Fixed user agent bug that caused format exceptions on non-Windows platforms
+
 
 ## <a name="3.3.0"/> [3.3.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.3.0) - 2019-10-09
 
@@ -47,6 +60,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#857](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/857) Fixed reusability of the Bulk support across Container instances
 - [#860](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/860) Fixed base user agent string
 - [#876](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/876) Default connection timeout reduced from 60s to 10s
+
 
 ## <a name="3.2.0"/> [3.2.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.2.0) - 2019-09-17
 
@@ -70,14 +84,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#772](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/772) Fixed Throughput throwing when custom serializer used or offer doesn't exists
 - [#785](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/785) Incorrect key to throw CosmosExceptions with HttpStatusCode.Unauthorized status code
 
+
 ## <a name="3.2.0-preview2"/> [3.2.0-preview2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.2.0-preview2) - 2019-09-10
 
 - [#585](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/585), [#741](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/741) Bulk execution support
 - [#427](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/427) Transactional batch support (Item CRUD)
 
+
 ## <a name="3.2.0-preview"/> [3.2.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.2.0-preview) - 2019-08-09
 
 - [#427](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/427) Transactional batch support (Item CRUD)
+
 
 ## <a name="3.1.1"/> [3.1.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.1.1) - 2019-08-12
 
@@ -93,6 +110,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#626](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/626) FeedResponse<T> status code now return OK for success instead of the invalid status code 0 or Accepted 
 - [#629](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/629) Fixed CreateContainerIfNotExistsAsync validation to limited to partitionKeyPath only
 - [#630](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/630) Fixed User Agent to contain environment and package information
+
 
 ## <a name="3.1.0"/> 3.1.0 - 2019-07-29 - Unlisted
 
@@ -115,6 +133,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#567](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/567) Query correctly handles different language cultures
 - [#574](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/574) Fixed empty error message if query parsing fails from unexpected exception
 - [#576](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/576) Query correctly serializes the input into a stream
+
 
 ## <a name="3.0.0"/> [3.0.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.0.0) - 2019-07-15
 
@@ -141,6 +160,8 @@ Any requests to Azure Cosmos DB using a retired SDK are rejected by the service.
 
 | Version | Release Date | Retirement Date |
 | --- | --- | --- |
+| [3.4.0](#3.4.0) |November 04, 2019 |--- |
+| [3.3.3](#3.3.3) |October 30, 2019 |--- |
 | [3.3.2](#3.3.2) |October 16, 2019 |--- |
 | [3.3.1](#3.3.1) |October 11, 2019 |--- |
 | [3.3.0](#3.3.0) |October 8, 2019 |--- |

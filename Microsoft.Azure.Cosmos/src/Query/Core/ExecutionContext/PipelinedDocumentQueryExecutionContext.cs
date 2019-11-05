@@ -2,21 +2,19 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Query
+namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 {
     using System;
-    using System.Collections.Generic;
     using System.Globalization;
-    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Cosmos.Query.ExecutionComponent;
     using Microsoft.Azure.Documents.Collections;
-    using PartitionKeyRange = Documents.PartitionKeyRange;
 
     /// <summary>
     /// You can imagine the pipeline to be a directed acyclic graph where documents flow from multiple sources (the partitions) to a single sink (the client who calls on ExecuteNextAsync()).
@@ -132,25 +130,30 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Creates a CosmosPipelinedItemQueryExecutionContext.
         /// </summary>
+        /// <param name="executionEnvironment">The environment to execute on.</param>
         /// <param name="queryContext">The parameters for constructing the base class.</param>
         /// <param name="initParams">The initial parameters</param>
         /// <param name="requestContinuationToken">The request continuation.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task to await on, which in turn returns a CosmosPipelinedItemQueryExecutionContext.</returns>
         public static async Task<CosmosQueryExecutionContext> CreateAsync(
+            ExecutionEnvironment executionEnvironment,
             CosmosQueryContext queryContext,
             CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams,
             string requestContinuationToken,
             CancellationToken cancellationToken)
         {
-            if (queryContext == null)
-            {
-                throw new ArgumentNullException(nameof(initParams));
-            }
+            DefaultTrace.TraceInformation(
+                string.Format(
+                    CultureInfo.InvariantCulture,
+                    "{0}, CorrelatedActivityId: {1} | Pipelined~Context.CreateAsync",
+                    DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
+                    queryContext.CorrelatedActivityId));
 
             cancellationToken.ThrowIfCancellationRequested();
 
             TryCatch<PipelinedDocumentQueryExecutionContext> tryCreateMonad = await PipelinedDocumentQueryExecutionContext.TryCreateAsync(
+                executionEnvironment,
                 queryContext,
                 initParams,
                 requestContinuationToken,
@@ -165,6 +168,7 @@ namespace Microsoft.Azure.Cosmos.Query
         }
 
         public static async Task<TryCatch<PipelinedDocumentQueryExecutionContext>> TryCreateAsync(
+            ExecutionEnvironment executionEnvironment,
             CosmosQueryContext queryContext,
             CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams,
             string requestContinuationToken,
@@ -180,7 +184,6 @@ namespace Microsoft.Azure.Cosmos.Query
             QueryInfo queryInfo = initParams.PartitionedQueryExecutionInfo.QueryInfo;
 
             int initialPageSize = initParams.InitialPageSize;
-            CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams parameters = initParams;
             if (queryInfo.HasGroupBy)
             {
                 // The query will block until all groupings are gathered so we might as well speed up the process.
@@ -228,12 +231,14 @@ namespace Microsoft.Azure.Cosmos.Query
                 Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync = tryCreatePipelineAsync;
                 tryCreatePipelineAsync = async (continuationToken) =>
                 {
-                    return (await AggregateDocumentQueryExecutionComponent.TryCreateAsync(
+                    return await AggregateDocumentQueryExecutionComponent.TryCreateAsync(
+                        executionEnvironment,
                         queryInfo.Aggregates,
                         queryInfo.GroupByAliasToAggregateType,
+                        queryInfo.GroupByAliases,
                         queryInfo.HasSelectValue,
                         continuationToken,
-                        tryCreateSourceAsync)).Try<IDocumentQueryExecutionComponent>(x => x);
+                        tryCreateSourceAsync);
                 };
             }
 
@@ -242,10 +247,10 @@ namespace Microsoft.Azure.Cosmos.Query
                 Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync = tryCreatePipelineAsync;
                 tryCreatePipelineAsync = async (continuationToken) =>
                 {
-                    return (await DistinctDocumentQueryExecutionComponent.TryCreateAsync(
+                    return await DistinctDocumentQueryExecutionComponent.TryCreateAsync(
                         continuationToken,
                         tryCreateSourceAsync,
-                        queryInfo.DistinctType)).Try<IDocumentQueryExecutionComponent>(x => x);
+                        queryInfo.DistinctType);
                 };
             }
 
@@ -254,11 +259,13 @@ namespace Microsoft.Azure.Cosmos.Query
                 Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync = tryCreatePipelineAsync;
                 tryCreatePipelineAsync = async (continuationToken) =>
                 {
-                    return (await GroupByDocumentQueryExecutionComponent.TryCreateAsync(
+                    return await GroupByDocumentQueryExecutionComponent.TryCreateAsync(
+                        executionEnvironment,
                         continuationToken,
                         tryCreateSourceAsync,
                         queryInfo.GroupByAliasToAggregateType,
-                        queryInfo.HasSelectValue)).Try<IDocumentQueryExecutionComponent>(x => x);
+                        queryInfo.GroupByAliases,
+                        queryInfo.HasSelectValue);
                 };
             }
 
@@ -267,10 +274,10 @@ namespace Microsoft.Azure.Cosmos.Query
                 Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync = tryCreatePipelineAsync;
                 tryCreatePipelineAsync = async (continuationToken) =>
                 {
-                    return (await SkipDocumentQueryExecutionComponent.TryCreateAsync(
+                    return await SkipDocumentQueryExecutionComponent.TryCreateAsync(
                         queryInfo.Offset.Value,
                         continuationToken,
-                        tryCreateSourceAsync)).Try<IDocumentQueryExecutionComponent>(x => x);
+                        tryCreateSourceAsync);
                 };
             }
 
@@ -279,10 +286,10 @@ namespace Microsoft.Azure.Cosmos.Query
                 Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync = tryCreatePipelineAsync;
                 tryCreatePipelineAsync = async (continuationToken) =>
                 {
-                    return (await TakeDocumentQueryExecutionComponent.TryCreateLimitDocumentQueryExecutionComponentAsync(
+                    return await TakeDocumentQueryExecutionComponent.TryCreateLimitDocumentQueryExecutionComponentAsync(
                         queryInfo.Limit.Value,
                         continuationToken,
-                        tryCreateSourceAsync)).Try<IDocumentQueryExecutionComponent>(x => x);
+                        tryCreateSourceAsync);
                 };
             }
 
@@ -291,10 +298,10 @@ namespace Microsoft.Azure.Cosmos.Query
                 Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync = tryCreatePipelineAsync;
                 tryCreatePipelineAsync = async (continuationToken) =>
                 {
-                    return (await TakeDocumentQueryExecutionComponent.TryCreateTopDocumentQueryExecutionComponentAsync(
+                    return await TakeDocumentQueryExecutionComponent.TryCreateTopDocumentQueryExecutionComponentAsync(
                         queryInfo.Top.Value,
                         continuationToken,
-                        tryCreateSourceAsync)).Try<IDocumentQueryExecutionComponent>(x => x);
+                        tryCreateSourceAsync);
                 };
             }
 
@@ -342,9 +349,34 @@ namespace Microsoft.Azure.Cosmos.Query
                 if (!queryResponse.IsSuccess)
                 {
                     this.component.Stop();
+                    return queryResponse;
                 }
 
-                return queryResponse;
+                string updatedContinuationToken;
+                if (queryResponse.DisallowContinuationTokenMessage == null)
+                {
+                    if (queryResponse.ContinuationToken != null)
+                    {
+                        updatedContinuationToken = new PipelineContinuationTokenV0(queryResponse.ContinuationToken).ToString();
+                    }
+                    else
+                    {
+                        updatedContinuationToken = null;
+                    }
+                }
+                else
+                {
+                    updatedContinuationToken = null;
+                }
+
+                return QueryResponseCore.CreateSuccess(
+                    result: queryResponse.CosmosElements,
+                    continuationToken: updatedContinuationToken,
+                    disallowContinuationTokenMessage: queryResponse.DisallowContinuationTokenMessage,
+                    activityId: queryResponse.ActivityId,
+                    requestCharge: queryResponse.RequestCharge,
+                    diagnostics: queryResponse.Diagnostics,
+                    responseLengthBytes: queryResponse.ResponseLengthBytes);
             }
             catch (Exception)
             {
