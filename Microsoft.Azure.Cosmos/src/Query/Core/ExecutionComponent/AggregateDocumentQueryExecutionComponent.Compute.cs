@@ -34,20 +34,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                 string requestContinuation,
                 Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync)
             {
-                AggregateContinuationToken aggregateContinuationToken;
+                string sourceContinuationToken;
+                string singleGroupAggregatorContinuationToken;
                 if (requestContinuation != null)
                 {
-                    if (!AggregateContinuationToken.TryParse(requestContinuation, out aggregateContinuationToken))
+                    if (!AggregateContinuationToken.TryParse(requestContinuation, out AggregateContinuationToken aggregateContinuationToken))
                     {
                         return TryCatch<IDocumentQueryExecutionComponent>.FromException(
                             new Exception($"Malfomed {nameof(AggregateContinuationToken)}: '{requestContinuation}'"));
                     }
+
+                    sourceContinuationToken = aggregateContinuationToken.SourceContinuationToken;
+                    singleGroupAggregatorContinuationToken = aggregateContinuationToken.SingleGroupAggregatorContinuationToken;
                 }
                 else
                 {
-                    aggregateContinuationToken = AggregateContinuationToken.Create(
-                        singleGroupAggregatorContinuationToken: null,
-                        sourceContinuationToken: null);
+                    sourceContinuationToken = null;
+                    singleGroupAggregatorContinuationToken = null;
                 }
 
                 TryCatch<SingleGroupAggregator> tryCreateSingleGroupAggregator = SingleGroupAggregator.TryCreate(
@@ -55,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                     aliasToAggregateType,
                     orderedAliases,
                     hasSelectValue,
-                    aggregateContinuationToken.SingleGroupAggregatorContinuationToken);
+                    singleGroupAggregatorContinuationToken);
 
                 if (!tryCreateSingleGroupAggregator.Succeeded)
                 {
@@ -63,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                         tryCreateSingleGroupAggregator.Exception);
                 }
 
-                return (await tryCreateSourceAsync(aggregateContinuationToken.SourceContinuationToken)).Try<IDocumentQueryExecutionComponent>((source) =>
+                return (await tryCreateSourceAsync(sourceContinuationToken)).Try<IDocumentQueryExecutionComponent>((source) =>
                 {
                     return new ComputeAggregateDocumentQueryExecutionComponent(
                     source,
@@ -249,15 +252,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                     return false;
                 }
 
-                CosmosElement rawSingleGroupAggregatorContinuationToken = rawAggregateContinuationToken[AggregateContinuationToken.SingleGroupAggregatorContinuationTokenName];
-                if (!(rawSingleGroupAggregatorContinuationToken is CosmosString singleGroupAggregatorContinuationToken))
+                if (!rawAggregateContinuationToken.TryGetValue(
+                    AggregateContinuationToken.SingleGroupAggregatorContinuationTokenName,
+                    out CosmosString singleGroupAggregatorContinuationToken))
                 {
                     aggregateContinuationToken = default;
                     return false;
                 }
 
-                CosmosElement rawSourceContinuationToken = rawAggregateContinuationToken[AggregateContinuationToken.SourceContinuationTokenName];
-                if (!(rawSourceContinuationToken is CosmosString sourceContinuationToken))
+                if (!rawAggregateContinuationToken.TryGetValue(
+                    AggregateContinuationToken.SourceContinuationTokenName,
+                    out CosmosString sourceContinuationToken))
                 {
                     aggregateContinuationToken = default;
                     return false;
