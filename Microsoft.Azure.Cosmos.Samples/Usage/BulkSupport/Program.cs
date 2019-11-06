@@ -106,12 +106,11 @@
         {
             DataSource dataSource = new DataSource(concurrency, docSize);
 
+            Container container = client.GetContainer(Program.databaseId, Program.containerId);
+            Console.WriteLine($"Initiating creates of items of about {docSize} bytes each maintaining {concurrency} in-progress items for {runtimeInSeconds} seconds.");
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
             cancellationTokenSource.CancelAfter(runtimeInSeconds * 1000);
             CancellationToken cancellationToken = cancellationTokenSource.Token;
-
-            Container container = client.GetContainer(Program.databaseId, Program.containerId);
-            Console.WriteLine($"Initiating creates of items of about {docSize} bytes each maintaining {concurrency} in-progress items for {runtimeInSeconds} seconds.");
             int created = CreateItems(container, dataSource, concurrency, docSize, cancellationToken);
             Console.WriteLine($"Inserted {created} items.");
         }
@@ -137,12 +136,17 @@
                         .ContinueWith((Task<ResponseMessage> task) =>
                         {
                             semaphore.Release();
+                            dataSource.DoneWithItemStream(stream);
                             HttpStatusCode resultCode = task.Result.StatusCode;
                             countsByStatus.AddOrUpdate(resultCode, 1, (_, old) => old + 1);
                         });
                 }
             }
-            catch
+            catch //(Exception ex)
+            {
+                // Console.WriteLine(ex);
+            }
+            finally
             {
                 foreach (var countForStatus in countsByStatus)
                 {
@@ -221,8 +225,8 @@
 
                 if (this.sample == null)
                 {
-                    // Leave about 100 bytes for pk, id and 210 bytes for system properties.
-                    string padding = this.docSize > 310 ? new string('x', this.docSize - 310) : string.Empty;
+                    // Leave about 100 bytes for pk, id and 200 bytes for system properties.
+                    string padding = this.docSize > 300 ? new string('x', this.docSize - 300) : string.Empty;
                     MyDocument myDocument = new MyDocument() { id = id, pk = partitionKeyValue, other = padding };
                     string str = JsonConvert.SerializeObject(myDocument);
                     this.sample = Encoding.UTF8.GetBytes(str);
@@ -246,6 +250,11 @@
 
                 stream.Position = 0;
                 return stream;
+            }
+
+            public void DoneWithItemStream(MemoryStream stream)
+            {
+                this.pool.Return(stream);
             }
         }
 
@@ -289,7 +298,7 @@
 
             private MemoryStream GetNewStream()
             {
-                byte[] buffer = new byte[streamSize];
+                byte[] buffer = new byte[this.streamSize];
                 return new MemoryStream(buffer, index: 0, count: streamSize, writable: true, publiclyVisible: true);
             }
         }
