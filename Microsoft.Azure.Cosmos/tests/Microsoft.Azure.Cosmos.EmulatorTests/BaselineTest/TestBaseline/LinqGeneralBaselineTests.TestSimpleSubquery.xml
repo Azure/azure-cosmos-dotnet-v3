@@ -26,7 +26,6 @@ WHERE (LENGTH(root["FamilyId"]) > 10) ]]></SqlQuery>
     <Input>
       <Description><![CDATA[Select -> OrderBy -> Take -> Select -> Orderby -> Take]]></Description>
       <Expression><![CDATA[query.Select(x => x).OrderBy(x => x).Take(10).Select(f => f.FamilyId).OrderBy(n => n.Count()).Take(5)]]></Expression>
-      <ErrorMessage><![CDATA['ORDER BY' is not supported in subqueries.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -38,13 +37,13 @@ FROM (
 ) AS r1 
 ORDER BY LENGTH(r1) ASC 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":75,"end":92},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":35,"end":41},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[Select -> Orderby -> Take -> Select -> Orderby -> Take]]></Description>
       <Expression><![CDATA[query.Select(f => f).OrderBy(f => f.Children.Count()).Take(3).Select(x => x).OrderBy(f => f.Parents.Count()).Take(2)]]></Expression>
-      <ErrorMessage><![CDATA['ORDER BY' is not supported in subqueries.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -56,13 +55,13 @@ FROM (
 ) AS r1 
 ORDER BY ARRAY_LENGTH(r1["Parents"]) ASC 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":62,"end":105},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":35,"end":40},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[Orderby -> Take -> Orderby -> Take]]></Description>
       <Expression><![CDATA[query.OrderBy(f => f.Children.Count()).Take(3).OrderBy(f => f.Parents.Count()).Take(2)]]></Expression>
-      <ErrorMessage><![CDATA['ORDER BY' is not supported in subqueries.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -74,13 +73,13 @@ FROM (
 ) AS r0 
 ORDER BY ARRAY_LENGTH(r0["Parents"]) ASC 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":62,"end":105},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":35,"end":40},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[Take -> Orderby -> Take]]></Description>
       <Expression><![CDATA[query.Take(10).OrderBy(f => f.FamilyId).Take(1)]]></Expression>
-      <ErrorMessage><![CDATA['TOP' is not supported in subqueries.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -91,13 +90,13 @@ FROM (
 ) AS r0 
 ORDER BY r0["FamilyId"] ASC 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":35,"end":41},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[Take -> Where -> Take -> Where -> Take -> Where]]></Description>
       <Expression><![CDATA[query.Take(10).Where(f => (f.Children.Count() > 0)).Take(9).Where(f => (f.Parents.Count() > 0)).Take(8).Where(f => (f.FamilyId.Count() > 10))]]></Expression>
-      <ErrorMessage><![CDATA['TOP' is not supported in subqueries.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -116,13 +115,13 @@ FROM (
 ) AS r2 
 WHERE (LENGTH(r2["FamilyId"]) > 10) 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":85,"end":91},"code":"SC2203","message":"'TOP' is not supported in subqueries."},{"severity":"Error","location":{"start":57,"end":62},"code":"SC2203","message":"'TOP' is not supported in subqueries."},{"severity":"Error","location":{"start":29,"end":34},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[Take -> Where -> Distinct -> Select -> Take -> Where]]></Description>
       <Expression><![CDATA[query.Take(10).Where(f => (f.Children.Count() > 0)).Distinct().Select(f => new AnonymousType(f = f)).Take(8).Where(f => (f.f.FamilyId.Count() > 10))]]></Expression>
-      <ErrorMessage><![CDATA['TOP' is not supported in subqueries.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -140,13 +139,13 @@ FROM (
 ) AS r2 
 WHERE (LENGTH(r2["f"]["FamilyId"]) > 10) 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":95,"end":101},"code":"SC2203","message":"'TOP' is not supported in subqueries."},{"severity":"Error","location":{"start":29,"end":34},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[Distinct -> Select -> Take -> Where -> Take -> Where]]></Description>
       <Expression><![CDATA[query.Distinct().Select(f => new AnonymousType(f = f)).Take(10).Where(f => (f.f.Children.Count() > 0)).Take(9).Where(f => (f.f.Parents.Count() > 0))]]></Expression>
-      <ErrorMessage><![CDATA['TOP' is not supported in subqueries.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -164,6 +163,7 @@ FROM (
 ) AS r2 
 WHERE (ARRAY_LENGTH(r2["f"]["Parents"]) > 0) 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":57,"end":63},"code":"SC2203","message":"'TOP' is not supported in subqueries."},{"severity":"Error","location":{"start":29,"end":34},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
     </Output>
   </Result>
 </Results>

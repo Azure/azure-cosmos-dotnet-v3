@@ -5,10 +5,11 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## <a name="3.3.0"/> [3.3.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.3.0) - 2019-10-08
 
 ### Added
 
+- [#801](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/801) Enabled LINQ ThenBy operator after OrderBy
 - [#814](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/814) Ability to limit to configured endpoint only
 - [#822](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/822) GROUP BY query support.
 - [#844](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/844) Added PartitionKeyDefinitionVersion to container builder
@@ -114,6 +115,7 @@ Any requests to Azure Cosmos DB using a retired SDK are rejected by the service.
 
 | Version | Release Date | Retirement Date |
 | --- | --- | --- |
+| [3.3.0](#3.3.0) |October 8, 2019 |--- |
 | [3.2.0](#3.2.0) |September 18, 2019 |--- |
 | [3.1.1](#3.1.1) |August 12, 2019 |--- |
 | [3.1.0](#3.1.0) |July 29, 2019 |--- |
