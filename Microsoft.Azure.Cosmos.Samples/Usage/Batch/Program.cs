@@ -15,12 +15,12 @@
     // Prerequisites - 
     // 
     // 1. An Azure Cosmos account - 
-    //    https://azure.microsoft.com/en-us/itemation/articles/itemdb-create-account/
+    //    https://docs.microsoft.com/en-us/azure/cosmos-db/create-cosmosdb-resources-portal
     //
     // 2. Microsoft.Azure.Cosmos NuGet package - 
     //    http://www.nuget.org/packages/Microsoft.Azure.Cosmos/ 
     // ----------------------------------------------------------------------------------------------------------
-    // Sample - demonstrates the basic usage of the Batch API that allows atomic CRUD operations against items
+    // Sample - demonstrates the basic usage of the TransactionalBatch API that allows atomic CRUD operations against items
     // that have the same partition key in a container.
     // ----------------------------------------------------------------------------------------------------------
 
@@ -37,9 +37,9 @@
         {
             try
             {
-                // Read the Cosmos endpointUrl and authorisationKeys from configuration
-                // These values are available from the Azure Management Portal on the Cosmos Account Blade under "Keys"
-                // Keep these values in a safe & secure location. Together they provide Administrative access to your Cosmos account
+                // Read the Cosmos endpointUrl and authorizationKey from configuration.
+                // These values are available from the Azure Management Portal on the Cosmos Account Blade under "Keys".
+                // Keep these values in a safe and secure location. Together they provide administrative access to your Cosmos account.
                 IConfigurationRoot configuration = new ConfigurationBuilder()
                     .AddJsonFile("appSettings.json")
                     .Build();
@@ -56,9 +56,6 @@
                     throw new ArgumentException("Please specify a valid AuthorizationKey in the appSettings.json");
                 }
 
-                // Read the Cosmos endpointUrl and authorization key from configuration
-                // These values are available from the Azure Management Portal on the Cosmos Account Blade under "Keys"
-                // NB > Keep these values in a safe & secure location. Together they provide Administrative access to your Cosmos account
                 using (CosmosClient client = new CosmosClient(endpoint, authKey))
                 {
                     await Program.InitializeAsync(client);
@@ -87,15 +84,15 @@
         {
             Program.database = await client.CreateDatabaseIfNotExistsAsync(Program.databaseId);
 
-            // Delete the existing container to prevent create item conflicts
-            using (await Program.database.GetContainer(containerId).DeleteContainerStreamAsync())
+            // Delete the existing container to prevent create item conflicts.
+            using (await Program.database.GetContainer(Program.containerId).DeleteContainerStreamAsync())
             { }
 
             Console.WriteLine("The demo will create a 1000 RU/s container, press any key to continue.");
             Console.ReadKey();
 
-            // Create a container with a throughput of 1000 RU/s
-            await Program.database.DefineContainer(containerId, "/GameId").CreateAsync(1000);
+            // Create a container with a throughput of 1000 RU/s.
+            await Program.database.DefineContainer(Program.containerId, "/GameId").CreateAsync(1000);
         }
 
         private static async Task RunDemoAsync()
@@ -114,8 +111,8 @@
 
             Console.WriteLine("At the start of the game, the balls are added on the map, and the players are added ...");
 
-            // The below batch request is used to create the game balls and participants in an atomic fashion
-            BatchResponse gameStartResponse = await gamesContainer.CreateBatch(new PartitionKey(gameId))
+            // The below batch request is used to create the game balls and participants in an atomic fashion.
+            TransactionalBatchResponse gameStartResponse = await gamesContainer.CreateTransactionalBatch(new PartitionKey(gameId))
                 .CreateItem<GameBall>(GameBall.Create(gameId, Color.Red, 4, 2))
                 .CreateItem<GameBall>(GameBall.Create(gameId, Color.Blue, 6, 4))
                 .CreateItem<GameBall>(GameBall.Create(gameId, Color.Blue, 8, 7))
@@ -131,23 +128,22 @@
             using (gameStartResponse)
             {
                 // Batch requests do not throw exceptions on execution failures as long as the request is valid, so we need to check the response status explicitly.
-                // A HTTP 200 (OK) StatusCode on the BatchResponse indicates that all operations succeeded.
-                // If one or more operations within the batch have failed, HTTP 207 (Multistatus) status code may be returned (example later).
-                // Other status codes such as HTTP 429 (Too Many Requests) and HTTP 5xx on server errors may also be returned.
-                // Given a batch request is atomic, in case any operation within a batch fails, no changes from the batch will be committed.
-                if (gameStartResponse.StatusCode != HttpStatusCode.OK)
+                // A HTTP 200 (OK) StatusCode on the batch response indicates that all operations succeeded.
+                // An example later demonstrates a failure case.
+                if (!gameStartResponse.IsSuccessStatusCode)
                 {
                     // Log and handle failure
                     LogFailure(gameStartResponse);
                     return;
                 }
 
-                // Refresh in-memory state from response
-                // The BatchResponse has a list of BatchOperationResult, one for each operation within the batch request in the order of operations.
+                // Refresh in-memory state from response.
+                // The TransactionalBatchResponse has a list of TransactionalBatchOperationResult, one for each operation within the batch request in the order
+                // the operations were added to the TransactionalBatch.
                 for (int index = 0; index < ballCount; index++)
                 {
-                    // The GetOperationResultAtIndex method returns the result of the batch operation with a Resource deserialized to the provided type.
-                    BatchOperationResult<GameBall> gameBallResult = gameStartResponse.GetOperationResultAtIndex<GameBall>(index);
+                    // The GetOperationResultAtIndex method returns the result of the operation at the given index with a Resource deserialized to the provided type.
+                    TransactionalBatchOperationResult<GameBall> gameBallResult = gameStartResponse.GetOperationResultAtIndex<GameBall>(index);
                     balls.Add(gameBallResult.Resource);
                 }
 
@@ -173,15 +169,15 @@
             // An existing item maybe replaced along with concurrency checks the ETag returned in the responses of earlier requests on the item
             // or without these checks if they are not required.
             // Item deletes may also be a part of batch requests.
-            BatchResponse aliceFoundBallResponse = await gamesContainer.CreateBatch(new PartitionKey(gameId))
+            TransactionalBatchResponse aliceFoundBallResponse = await gamesContainer.CreateTransactionalBatch(new PartitionKey(gameId))
                 .UpsertItem<ParticipantLastActive>(ParticipantLastActive.Create(gameId, "alice"))
-                .ReplaceItem<GameParticipant>(alice.Nickname, alice, new BatchItemRequestOptions { IfMatchEtag = alice.ETag })
+                .ReplaceItem<GameParticipant>(alice.Nickname, alice, new TransactionalBatchItemRequestOptions { IfMatchEtag = alice.ETag })
                 .DeleteItem(firstBlueBall.Id)
                 .ExecuteAsync();
 
             using (aliceFoundBallResponse)
             {
-                if (aliceFoundBallResponse.StatusCode != HttpStatusCode.OK)
+                if (!aliceFoundBallResponse.IsSuccessStatusCode)
                 {
                     // Log and handle failure
                     alice.BlueCount--;
@@ -189,7 +185,7 @@
                     return;
                 }
 
-                // Refresh in-memory state from response
+                // Refresh in-memory state from response.
                 balls.Remove(firstBlueBall);
 
                 // We only update the etag as we have the rest of the state we care about here already as needed.
@@ -208,23 +204,23 @@
             using (bobIsActiveStream)
             using (bobAsStream)
             {
-                BatchResponse bobFoundBallResponse = await gamesContainer.CreateBatch(new PartitionKey(gameId))
+                TransactionalBatchResponse bobFoundBallResponse = await gamesContainer.CreateTransactionalBatch(new PartitionKey(gameId))
                     .UpsertItemStream(bobIsActiveStream)
-                    .ReplaceItemStream(bob.Nickname, bobAsStream, new BatchItemRequestOptions { IfMatchEtag = bob.ETag })
+                    .ReplaceItemStream(bob.Nickname, bobAsStream, new TransactionalBatchItemRequestOptions { IfMatchEtag = bob.ETag })
                     .DeleteItem(secondRedBall.Id)
                     .ExecuteAsync();
 
                 using (bobFoundBallResponse)
                 {
-                    if (bobFoundBallResponse.StatusCode != HttpStatusCode.OK)
+                    if (!bobFoundBallResponse.IsSuccessStatusCode)
                     {
-                        // Log and handle failure
+                        // Log and handle failure.
                         bob.RedCount--;
                         LogFailure(bobFoundBallResponse);
                         return;
                     }
 
-                    // Refresh in-memory state from response
+                    // Refresh in-memory state from response.
                     balls.Remove(secondRedBall);
 
                     // The resultant item for each operation is also available as a Stream that can be used for example if the response is just
@@ -238,7 +234,7 @@
             PrintState(players, balls);
 
             Console.WriteLine("A golden ball appears near each of the players to select an instant winner ...");
-            BatchResponse goldenBallResponse = await gamesContainer.CreateBatch(new PartitionKey(gameId))
+            TransactionalBatchResponse goldenBallResponse = await gamesContainer.CreateTransactionalBatch(new PartitionKey(gameId))
                .CreateItem<GameBall>(GameBall.Create(gameId, Color.Gold, 2, 2))
                .CreateItem<GameBall>(GameBall.Create(gameId, Color.Gold, 6, 3))
                // oops - there is already a ball at 8, 7
@@ -247,35 +243,36 @@
 
             using (goldenBallResponse)
             {
-                // If one or more operations within the batch have failed, a HTTP Status Code of 207 MultiStatus could be returned 
-                // as the StatusCode of the BatchResponse that indicates that the response needs to be examined to understand details of the 
-                // execution and failure. The first operation to fail (for example if we have a conflict because we are trying to create an item 
-                // that already exists) will have the StatusCode on its corresponding BatchOperationResult set with the actual failure reason
-                // (HttpStatusCode.Conflict in this example).
-                // All other operations will be aborted - these would return a status code of HTTP 424 Failed Dependency.
-                //
-                // Other status codes such as HTTP 429 (Too Many Requests) and HTTP 5xx on server errors may also be returned for the BatchResponse.
-                // Given a batch request is atomic, in case any operation within a batch fails, no changes from the batch will be committed.
-                if (goldenBallResponse.StatusCode != HttpStatusCode.OK)
+                // If an operation within the TransactionalBatch fails during execution, the TransactionalBatchResponse will have a status code of the failing operation.
+                // The TransactionalBatchOperationResult entries within the response can be read to get details about the specific operation that failed.
+                // The failing operation (for example if we have a conflict because we are trying to create an item 
+                // that already exists) will have the StatusCode on its corresponding TransactionalBatchOperationResult set to the actual failure status
+                // (HttpStatusCode.Conflict in this example). All other result entries will have a status code of HTTP 424 Failed Dependency.
+                // In case any operation within a TransactionalBatch fails, no changes from the batch will be committed.
+                // Other status codes such as HTTP 429 (Too Many Requests) and HTTP 5xx on server errors may also be returned on the TransactionalBatchResponse.
+                if (!goldenBallResponse.IsSuccessStatusCode)
                 {
-                    for (int index = 0; index < goldenBallResponse.Count; index++)
+                    if (goldenBallResponse.StatusCode == HttpStatusCode.Conflict)
                     {
-                        BatchOperationResult operationResult = goldenBallResponse[index];
-                        if ((int)operationResult.StatusCode == 424)
+                        for (int index = 0; index < goldenBallResponse.Count; index++)
                         {
-                            // This operation failed because it was batched along with another operation where the latter was the actual cause of failure.
-                            continue;
+                            TransactionalBatchOperationResult operationResult = goldenBallResponse[index];
+                            if ((int)operationResult.StatusCode == 424)
+                            {
+                                // This operation failed because it was in a TransactionalBatch along with another operation where the latter was the actual cause of failure.
+                                continue;
+                            }
+                            else if (operationResult.StatusCode == HttpStatusCode.Conflict)
+                            {
+                                Console.WriteLine("Creation of the {0}rd golden ball failed because there was already an existing ball at that position.", index + 1);
+                            }
                         }
-                        else if (operationResult.StatusCode == HttpStatusCode.Conflict)
-                        {
-                            Console.WriteLine("Creation of the {0}rd golden ball failed because there was already an existing ball at that position.", index + 1);
-                        }
-                        else
-                        {
-                            // Log and handle other failures
-                            LogFailure(goldenBallResponse);
-                            return;
-                        }
+                    }
+                    else
+                    {
+                        // Log and handle other failures
+                        LogFailure(goldenBallResponse);
+                        return;
                     }
                 }
             }
@@ -284,8 +281,8 @@
 
             Console.WriteLine("We need to end the game now; determining the winner as the player with highest balls ...");
 
-            // Batch requests may also be used to atomically read multiple items within a partition key.
-            BatchResponse playersResponse = await gamesContainer.CreateBatch(new PartitionKey(gameId))
+            // Batch requests may also be used to atomically read multiple items with the same partition key.
+            TransactionalBatchResponse playersResponse = await gamesContainer.CreateTransactionalBatch(new PartitionKey(gameId))
                 .ReadItem(alice.Nickname)
                 .ReadItem(bob.Nickname)
                 .ReadItem(carla.Nickname)
@@ -296,7 +293,7 @@
 
             using (playersResponse)
             {
-                if (playersResponse.StatusCode != HttpStatusCode.OK)
+                if (!playersResponse.IsSuccessStatusCode)
                 {
                     // Log and handle failure
                     LogFailure(playersResponse);
@@ -360,16 +357,10 @@
             Console.WriteLine("\n===================================================================================\n");
         }
 
-        private static void LogFailure(BatchResponse batchResponse)
+        private static void LogFailure(TransactionalBatchResponse batchResponse)
         {
             Console.WriteLine("Unexpected error in executing batch requests in the sample. Please retry the sample.");
-
-            // Note: Please log batchResponse.Diagnostics along with Timestamp once available in the SDK.
-            Console.WriteLine("Timestamp={0} Status={1}, ErrorMessage={2}, ActivityId={3}",
-                DateTime.UtcNow,
-                batchResponse.StatusCode,
-                batchResponse.ErrorMessage,
-                batchResponse.ActivityId);
+            Console.WriteLine("Timestamp: {0}\nDiagnostics: {1}", DateTime.UtcNow, batchResponse.Diagnostics.ToString());
         }
 
         private static async Task CleanupAsync()
