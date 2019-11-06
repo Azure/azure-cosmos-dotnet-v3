@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            return await this.queryClient.TryGetPartitionedQueryExecutionInfoAsync(
+            TryCatch<PartitionedQueryExecutionInfo> tryGetPartitoinedQueryExecutionInfo = await this.queryClient.TryGetPartitionedQueryExecutionInfoAsync(
                 sqlQuerySpec: sqlQuerySpec,
                 partitionKeyDefinition: partitionKeyDefinition,
                 requireFormattableOrderByQuery: true,
@@ -122,6 +122,8 @@ namespace Microsoft.Azure.Cosmos
                 allowNonValueAggregateQuery: true,
                 hasLogicalPartitionKey: hasLogicalPartitionKey,
                 cancellationToken: cancellationToken);
+
+            return tryGetPartitoinedQueryExecutionInfo;
         }
 
         private static class QueryPlanSupportChecker

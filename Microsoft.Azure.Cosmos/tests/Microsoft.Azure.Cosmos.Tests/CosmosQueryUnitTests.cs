@@ -109,16 +109,24 @@ namespace Microsoft.Azure.Cosmos.Tests
             CancellationToken cancellationtoken = cancellationTokenSource.Token;
 
             Mock<CosmosQueryClient> client = new Mock<CosmosQueryClient>();
-            client.Setup(x => x.GetCachedContainerQueryPropertiesAsync(It.IsAny<Uri>(), It.IsAny<Cosmos.PartitionKey?>(), cancellationtoken)).Returns(Task.FromResult(new ContainerQueryProperties("mockContainer", null, partitionKeyDefinition)));
-            client.Setup(x => x.ByPassQueryParsing()).Returns(false);
-            client.Setup(x => x.TryGetPartitionedQueryExecutionInfoAsync(
-                sqlQuerySpec,
-                partitionKeyDefinition,
-                true,
-                isContinuationExpected,
-                allowNonValueAggregateQuery,
-                false, // has logical partition key
-                cancellationtoken)).Throws(new InvalidOperationException("Verified that the PartitionKeyDefinition was correctly set. Cancel the rest of the query"));
+            client
+                .Setup(x => x.GetCachedContainerQueryPropertiesAsync(It.IsAny<Uri>(), It.IsAny<Cosmos.PartitionKey?>(), cancellationtoken))
+                .ReturnsAsync(new ContainerQueryProperties("mockContainer", null, partitionKeyDefinition));
+            client
+                .Setup(x => x.ByPassQueryParsing())
+                .Returns(false);
+            client
+                .Setup(x => x.TryGetPartitionedQueryExecutionInfoAsync(
+                    It.IsAny<SqlQuerySpec>(),
+                    It.IsAny<PartitionKeyDefinition>(),
+                    It.IsAny<bool>(),
+                    It.IsAny<bool>(),
+                    It.IsAny<bool>(),
+                    It.IsAny<bool>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(TryCatch<PartitionedQueryExecutionInfo>.FromException(
+                    new InvalidOperationException(
+                        "Verified that the PartitionKeyDefinition was correctly set. Cancel the rest of the query")));
 
             CosmosQueryExecutionContextFactory.InputParameters inputParameters = new CosmosQueryExecutionContextFactory.InputParameters()
             {
