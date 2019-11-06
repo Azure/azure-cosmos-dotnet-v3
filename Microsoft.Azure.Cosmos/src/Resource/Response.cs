@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos
         /// To get public access to the quota information do the following
         /// cosmosResponse.Headers.GetHeaderValue("x-ms-resource-quota")
         /// </remarks>
-        internal abstract string MaxResourceQuota { get; }
+        internal string MaxResourceQuota { get; }
 
         /// <summary>
         /// Gets the current size of this entity from the Azure Cosmos DB service.
@@ -92,6 +92,6 @@ namespace Microsoft.Azure.Cosmos
         /// To get public access to the quota information do the following
         /// cosmosResponse.Headers.GetHeaderValue("x-ms-resource-usage")
         /// </remarks>
-        internal abstract string CurrentResourceQuotaUsage { get; }
+        internal string CurrentResourceQuotaUsage { get; }
     }
 }

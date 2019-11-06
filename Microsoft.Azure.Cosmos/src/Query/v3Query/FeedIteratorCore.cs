@@ -153,7 +153,7 @@ namespace Microsoft.Azure.Cosmos
             return this.responseCreator(response);
         }
 
-        internal override bool TryGetContinuationToken(out string state)
+        internal bool TryGetContinuationToken(out string state)
         {
             QueryIterator queryIterator = this.feedIterator as QueryIterator;
             if (queryIterator != null)
