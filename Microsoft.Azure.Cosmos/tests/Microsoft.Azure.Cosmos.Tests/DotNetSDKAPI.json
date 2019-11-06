@@ -3862,6 +3862,18 @@
           "Attributes": [],
           "MethodInfo": null
         },
+        "System.String get_SessionToken()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.String get_SessionToken()"
+        },
+        "System.String SessionToken": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
         "Void .ctor()": {
           "Type": "Constructor",
           "Attributes": [],
@@ -3920,6 +3932,13 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_ResponseContinuationTokenLimitInKb(System.Nullable`1[System.Int32])"
+        },
+        "Void set_SessionToken(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_SessionToken(System.String)"
         }
       },
       "NestedTypes": {}
@@ -4556,6 +4575,18 @@
               "Attributes": [],
               "MethodInfo": null
             },
+            "System.String get_SessionToken()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "System.String get_SessionToken()"
+            },
+            "System.String SessionToken": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
             "Void .ctor()": {
               "Type": "Constructor",
               "Attributes": [],
@@ -4614,6 +4645,13 @@
                 "CompilerGeneratedAttribute"
               ],
               "MethodInfo": "Void set_ResponseContinuationTokenLimitInKb(System.Nullable`1[System.Int32])"
+            },
+            "Void set_SessionToken(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Void set_SessionToken(System.String)"
             }
           },
           "NestedTypes": {}
