@@ -111,7 +111,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock<CosmosQueryClient> client = new Mock<CosmosQueryClient>();
             client.Setup(x => x.GetCachedContainerQueryPropertiesAsync(It.IsAny<Uri>(), It.IsAny<Cosmos.PartitionKey?>(), cancellationtoken)).Returns(Task.FromResult(new ContainerQueryProperties("mockContainer", null, partitionKeyDefinition)));
             client.Setup(x => x.ByPassQueryParsing()).Returns(false);
-            client.Setup(x => x.GetPartitionedQueryExecutionInfoAsync(
+            client.Setup(x => x.TryGetPartitionedQueryExecutionInfoAsync(
                 sqlQuerySpec,
                 partitionKeyDefinition,
                 true,

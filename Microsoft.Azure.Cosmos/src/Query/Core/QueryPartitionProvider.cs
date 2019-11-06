@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Runtime.InteropServices;
     using System.Text;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Routing;
     using Newtonsoft.Json;
     using PartitionKeyDefinition = Documents.PartitionKeyDefinition;
@@ -103,8 +104,7 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        public PartitionedQueryExecutionInfo GetPartitionedQueryExecutionInfo(
-            Func<string, Exception> createBadRequestException,
+        public TryCatch<PartitionedQueryExecutionInfo> TryGetPartitionedQueryExecutionInfo(
             SqlQuerySpec querySpec,
             PartitionKeyDefinition partitionKeyDefinition,
             bool requireFormattableOrderByQuery,
@@ -112,16 +112,20 @@ namespace Microsoft.Azure.Cosmos.Query
             bool allowNonValueAggregateQuery,
             bool hasLogicalPartitionKey)
         {
-            PartitionedQueryExecutionInfoInternal queryInfoInternal = this.GetPartitionedQueryExecutionInfoInternal(
-                createBadRequestException,
+            TryCatch<PartitionedQueryExecutionInfoInternal> tryGetInternalQueryInfo = this.TryGetPartitionedQueryExecutionInfoInternal(
                 querySpec,
                 partitionKeyDefinition,
                 requireFormattableOrderByQuery,
                 isContinuationExpected,
                 allowNonValueAggregateQuery,
                 hasLogicalPartitionKey);
+            if (!tryGetInternalQueryInfo.Succeeded)
+            {
+                return TryCatch<PartitionedQueryExecutionInfo>.FromException(tryGetInternalQueryInfo.Exception);
+            }
 
-            return this.ConvertPartitionedQueryExecutionInfo(queryInfoInternal, partitionKeyDefinition);
+            PartitionedQueryExecutionInfo queryInfo = this.ConvertPartitionedQueryExecutionInfo(tryGetInternalQueryInfo.Result, partitionKeyDefinition);
+            return TryCatch<PartitionedQueryExecutionInfo>.FromResult(queryInfo);
         }
 
         internal PartitionedQueryExecutionInfo ConvertPartitionedQueryExecutionInfo(
@@ -147,8 +151,7 @@ namespace Microsoft.Azure.Cosmos.Query
             };
         }
 
-        internal PartitionedQueryExecutionInfoInternal GetPartitionedQueryExecutionInfoInternal(
-            Func<string, Exception> createBadRequestException,
+        internal TryCatch<PartitionedQueryExecutionInfoInternal> TryGetPartitionedQueryExecutionInfoInternal(
             SqlQuerySpec querySpec,
             PartitionKeyDefinition partitionKeyDefinition,
             bool requireFormattableOrderByQuery,
@@ -158,7 +161,7 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             if (querySpec == null || partitionKeyDefinition == null)
             {
-                return DefaultInfoInternal;
+                return TryCatch<PartitionedQueryExecutionInfoInternal>.FromResult(DefaultInfoInternal);
             }
 
             string queryText = JsonConvert.SerializeObject(querySpec);
@@ -241,7 +244,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     errorMessage = "Message: " + serializedQueryExecutionInfo;
                 }
 
-                throw createBadRequestException(errorMessage);
+                return TryCatch<PartitionedQueryExecutionInfoInternal>.FromException(new Exception(errorMessage));
             }
 
             PartitionedQueryExecutionInfoInternal queryInfoInternal =
@@ -252,7 +255,7 @@ namespace Microsoft.Azure.Cosmos.Query
                        DateParseHandling = DateParseHandling.None
                    });
 
-            return queryInfoInternal;
+            return TryCatch<PartitionedQueryExecutionInfoInternal>.FromResult(queryInfoInternal);
         }
 
         ~QueryPartitionProvider()

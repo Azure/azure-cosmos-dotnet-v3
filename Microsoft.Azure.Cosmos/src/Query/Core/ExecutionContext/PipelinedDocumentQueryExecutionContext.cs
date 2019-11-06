@@ -5,11 +5,9 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 {
     using System;
-    using System.Globalization;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent;
@@ -127,47 +125,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             return this.component.TryGetContinuationToken(out state);
         }
 
-        /// <summary>
-        /// Creates a CosmosPipelinedItemQueryExecutionContext.
-        /// </summary>
-        /// <param name="executionEnvironment">The environment to execute on.</param>
-        /// <param name="queryContext">The parameters for constructing the base class.</param>
-        /// <param name="initParams">The initial parameters</param>
-        /// <param name="requestContinuationToken">The request continuation.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>A task to await on, which in turn returns a CosmosPipelinedItemQueryExecutionContext.</returns>
-        public static async Task<CosmosQueryExecutionContext> CreateAsync(
-            ExecutionEnvironment executionEnvironment,
-            CosmosQueryContext queryContext,
-            CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams,
-            string requestContinuationToken,
-            CancellationToken cancellationToken)
-        {
-            DefaultTrace.TraceInformation(
-                string.Format(
-                    CultureInfo.InvariantCulture,
-                    "{0}, CorrelatedActivityId: {1} | Pipelined~Context.CreateAsync",
-                    DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
-                    queryContext.CorrelatedActivityId));
-
-            cancellationToken.ThrowIfCancellationRequested();
-
-            TryCatch<PipelinedDocumentQueryExecutionContext> tryCreateMonad = await PipelinedDocumentQueryExecutionContext.TryCreateAsync(
-                executionEnvironment,
-                queryContext,
-                initParams,
-                requestContinuationToken,
-                cancellationToken);
-
-            if (!tryCreateMonad.Succeeded)
-            {
-                throw queryContext.QueryClient.CreateBadRequestException(tryCreateMonad.Exception.ToString());
-            }
-
-            return tryCreateMonad.Result;
-        }
-
-        public static async Task<TryCatch<PipelinedDocumentQueryExecutionContext>> TryCreateAsync(
+        public static async Task<TryCatch<CosmosQueryExecutionContext>> TryCreateAsync(
             ExecutionEnvironment executionEnvironment,
             CosmosQueryContext queryContext,
             CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams,
@@ -307,7 +265,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             }
 
             return (await tryCreatePipelineAsync(requestContinuationToken))
-                .Try((source) => new PipelinedDocumentQueryExecutionContext(source, initialPageSize));
+                .Try<CosmosQueryExecutionContext>((source) => new PipelinedDocumentQueryExecutionContext(source, initialPageSize));
         }
 
         /// <summary>

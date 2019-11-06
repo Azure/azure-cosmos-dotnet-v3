@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.ParallelQuery;
 
     /// <summary>
@@ -175,6 +176,15 @@ namespace Microsoft.Azure.Cosmos.Query
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            TryCatch<CosmosQueryExecutionContext> tryCreateItemQueryExecutionContext = await this.TryCreateItemQueryExecutionContextAsync(
+                cancellationToken);
+            return tryCreateItemQueryExecutionContext.ThrowIfException;
+        }
+
+        private async Task<TryCatch<CosmosQueryExecutionContext>> TryCreateItemQueryExecutionContextAsync(
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
 
             string continuationToken = this.inputParameters.InitialUserContinuationToken;
             if (this.inputParameters.InitialUserContinuationToken != null)
@@ -183,22 +193,25 @@ namespace Microsoft.Azure.Cosmos.Query
                     continuationToken,
                     out PipelineContinuationToken pipelineContinuationToken))
                 {
-                    throw this.CosmosQueryContext.QueryClient.CreateBadRequestException(
-                        $"Malformed {nameof(PipelineContinuationToken)}: {continuationToken}.");
+                    return TryCatch<CosmosQueryExecutionContext>.FromException(
+                        new Exception($"Malformed {nameof(PipelineContinuationToken)}: {continuationToken}."));
                 }
 
                 if (PipelineContinuationToken.IsTokenFromTheFuture(pipelineContinuationToken))
                 {
-                    throw this.CosmosQueryContext.QueryClient.CreateBadRequestException(
-                        $"{nameof(PipelineContinuationToken)} Continuation token is from a newer version of the SDK. Upgrade the SDK to avoid this issue.\n {continuationToken}.");
+                    return TryCatch<CosmosQueryExecutionContext>.FromException(
+                        new Exception(
+                            $"{nameof(PipelineContinuationToken)} Continuation token is from a newer version of the SDK. " +
+                            $"Upgrade the SDK to avoid this issue." +
+                            $"{continuationToken}."));
                 }
 
                 if (!PipelineContinuationToken.TryConvertToLatest(
                     pipelineContinuationToken,
                     out PipelineContinuationTokenV1_1 latestVersionPipelineContinuationToken))
                 {
-                    throw this.CosmosQueryContext.QueryClient.CreateBadRequestException(
-                        $"{nameof(PipelineContinuationToken)}: '{continuationToken}' is no longer supported.");
+                    return TryCatch<CosmosQueryExecutionContext>.FromException(
+                        new Exception($"{nameof(PipelineContinuationToken)}: '{continuationToken}' is no longer supported."));
                 }
 
                 continuationToken = latestVersionPipelineContinuationToken.SourceContinuationToken;
@@ -271,13 +284,13 @@ namespace Microsoft.Azure.Cosmos.Query
 
             this.partitionedQueryExecutionInfo = partitionedQueryExecutionInfo;
 
-            return await this.CreateFromPartitionedQuerExecutionInfoAsync(
+            return await this.TryCreateFromPartitionedQuerExecutionInfoAsync(
                 partitionedQueryExecutionInfo,
                 containerQueryProperties,
                 cancellationToken);
         }
 
-        public async Task<CosmosQueryExecutionContext> CreateFromPartitionedQuerExecutionInfoAsync(
+        public async Task<TryCatch<CosmosQueryExecutionContext>> TryCreateFromPartitionedQuerExecutionInfoAsync(
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
             ContainerQueryProperties containerQueryProperties,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -301,7 +314,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 };
             }
 
-            return await CosmosQueryExecutionContextFactory.CreateSpecializedDocumentQueryExecutionContextAsync(
+            return await CosmosQueryExecutionContextFactory.TryCreateSpecializedDocumentQueryExecutionContextAsync(
                 this.CosmosQueryContext,
                 this.inputParameters,
                 partitionedQueryExecutionInfo,
@@ -310,7 +323,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 cancellationToken);
         }
 
-        public static async Task<CosmosQueryExecutionContext> CreateSpecializedDocumentQueryExecutionContextAsync(
+        public static async Task<TryCatch<CosmosQueryExecutionContext>> TryCreateSpecializedDocumentQueryExecutionContextAsync(
             CosmosQueryContext cosmosQueryContext,
             InputParameters inputParameters,
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
@@ -330,7 +343,8 @@ namespace Microsoft.Azure.Cosmos.Query
 
             if (initialPageSize < -1 || initialPageSize == 0)
             {
-                throw cosmosQueryContext.QueryClient.CreateBadRequestException($"Invalid MaxItemCount {initialPageSize}");
+                return TryCatch<CosmosQueryExecutionContext>.FromException(
+                    new Exception($"Invalid MaxItemCount {initialPageSize}"));
             }
 
             QueryInfo queryInfo = partitionedQueryExecutionInfo.QueryInfo;
@@ -391,7 +405,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 maxItemCount: inputParameters.MaxItemCount,
                 maxBufferedItemCount: inputParameters.MaxBufferedItemCount);
 
-            return await PipelinedDocumentQueryExecutionContext.CreateAsync(
+            return await PipelinedDocumentQueryExecutionContext.TryCreateAsync(
                 inputParameters.ExecutionEnvironment,
                 cosmosQueryContext,
                 initParams,

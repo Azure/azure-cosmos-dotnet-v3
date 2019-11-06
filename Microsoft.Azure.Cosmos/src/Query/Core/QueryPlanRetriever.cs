@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         private static readonly string SupportedQueryFeaturesString = SupportedQueryFeatures.ToString();
 
-        public static Task<PartitionedQueryExecutionInfo> GetQueryPlanWithServiceInteropAsync(
+        public static async Task<PartitionedQueryExecutionInfo> GetQueryPlanWithServiceInteropAsync(
             CosmosQueryClient queryClient,
             SqlQuerySpec sqlQuerySpec,
             PartitionKeyDefinition partitionKeyDefinition,
@@ -55,12 +55,12 @@ namespace Microsoft.Azure.Cosmos.Query
             cancellationToken.ThrowIfCancellationRequested();
             QueryPlanHandler queryPlanHandler = new QueryPlanHandler(queryClient);
 
-            return queryPlanHandler.GetQueryPlanAsync(
+            return (await queryPlanHandler.TryGetQueryPlanAsync(
                     sqlQuerySpec,
                     partitionKeyDefinition,
                     QueryPlanRetriever.SupportedQueryFeatures,
                     hasLogicalPartitionKey,
-                    cancellationToken);
+                    cancellationToken)).ThrowIfException;
         }
 
         public static Task<PartitionedQueryExecutionInfo> GetQueryPlanThroughGatewayAsync(

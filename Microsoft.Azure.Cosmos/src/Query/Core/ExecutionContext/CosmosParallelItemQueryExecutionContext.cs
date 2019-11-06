@@ -207,23 +207,33 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            return await TryGetInitializationInfoFromContinuationToken(partitionKeyRanges, requestContinuation)
-                .TryAsync<CosmosParallelItemQueryExecutionContext>(async (initializationInfo) =>
-                {
-                    IReadOnlyList<PartitionKeyRange> filteredPartitionKeyRanges = initializationInfo.PartialRanges;
-                    IReadOnlyDictionary<string, CompositeContinuationToken> targetIndicesForFullContinuation = initializationInfo.ContinuationTokens;
-                    await base.InitializeAsync(
-                        collectionRid,
-                        filteredPartitionKeyRanges,
-                        initialPageSize,
-                        sqlQuerySpec,
-                        targetIndicesForFullContinuation?.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Token),
-                        true,
-                        null,
-                        null,
-                        cancellationToken);
-                    return this;
-                });
+            TryCatch<ParallelInitInfo> tryGetInitInfo = TryGetInitializationInfoFromContinuationToken(
+                partitionKeyRanges,
+                requestContinuation);
+            if (!tryGetInitInfo.Succeeded)
+            {
+                return TryCatch<CosmosParallelItemQueryExecutionContext>.FromException(tryGetInitInfo.Exception);
+            }
+
+            ParallelInitInfo initializationInfo = tryGetInitInfo.Result;
+            IReadOnlyList<PartitionKeyRange> filteredPartitionKeyRanges = initializationInfo.PartialRanges;
+            IReadOnlyDictionary<string, CompositeContinuationToken> targetIndicesForFullContinuation = initializationInfo.ContinuationTokens;
+            TryCatch<bool> tryInitialize = await base.TryInitializeAsync(
+                collectionRid,
+                filteredPartitionKeyRanges,
+                initialPageSize,
+                sqlQuerySpec,
+                targetIndicesForFullContinuation?.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Token),
+                true,
+                null,
+                null,
+                cancellationToken);
+            if (!tryInitialize.Succeeded)
+            {
+                return TryCatch<CosmosParallelItemQueryExecutionContext>.FromException(tryInitialize.Exception);
+            }
+
+            return TryCatch<CosmosParallelItemQueryExecutionContext>.FromResult(this);
         }
 
         /// <summary>
