@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [ExpectedException(typeof(InvalidOperationException))]
+        [ExpectedException(typeof(CosmosException))]
         public async Task TestCosmosQueryPartitionKeyDefinition()
         {
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition();
