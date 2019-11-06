@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Documents;
     using static Microsoft.Azure.Documents.RuntimeConstants;
 
@@ -154,7 +155,19 @@ namespace Microsoft.Azure.Cosmos
 
         internal override bool TryGetContinuationToken(out string state)
         {
-            return ((FeedIteratorCore)this.feedIterator).TryGetContinuationToken(out state);
+            QueryIterator queryIterator = this.feedIterator as QueryIterator;
+            if (queryIterator != null)
+            {
+                return queryIterator.TryGetContinuationToken(out state);
+            }
+
+            FeedIteratorCore feedIteratorCore = this.feedIterator as FeedIteratorCore;
+            if (feedIteratorCore != null)
+            {
+                return feedIteratorCore.TryGetContinuationToken(out state);
+            }
+
+            throw new ArgumentException($"Unsupported  iterator type of {this.feedIterator.GetType().Name}");
         }
     }
 }
