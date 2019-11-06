@@ -405,14 +405,16 @@ namespace Microsoft.Azure.Cosmos.Query
                             continuationToken,
                             out CosmosObject rawContinuationToken))
                         {
-                            throw new ArgumentException($"Invalid {nameof(ScalarAggregateValue)}: {continuationToken}");
+                            return TryCatch<AggregateValue>.FromException(
+                                new ArgumentException($"Invalid {nameof(ScalarAggregateValue)}: {continuationToken}"));
                         }
 
                         if (!rawContinuationToken.TryGetValue<CosmosBoolean>(
                             nameof(ScalarAggregateValue.initialized),
                             out CosmosBoolean rawInitialized))
                         {
-                            throw new ArgumentException($"Invalid {nameof(ScalarAggregateValue)}: {continuationToken}");
+                            return TryCatch<AggregateValue>.FromException(
+                                new ArgumentException($"Invalid {nameof(ScalarAggregateValue)}: {continuationToken}"));
                         }
 
                         if (!rawContinuationToken.TryGetValue(nameof(ScalarAggregateValue.value), out value))
