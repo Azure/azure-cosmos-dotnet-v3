@@ -610,7 +610,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string continuationToken = null;
             do
             {
-                FeedIterator<T> itemQuery = container.GetItemQueryIterator<T>(
+                QueryRequestOptions computeRequestOptions = queryRequestOptions.Clone();
+                computeRequestOptions.ExecutionEnvironment = Cosmos.Query.Core.ExecutionContext.ExecutionEnvironment.Compute;
+
+                FeedIteratorCore<T> itemQuery = (FeedIteratorCore<T>)container.GetItemQueryIterator<T>(
                    queryText: query,
                    requestOptions: queryRequestOptions,
                    continuationToken: continuationToken);
