@@ -1,0 +1,46 @@
+﻿@page "/generatedata"
+
+@using Blazor.Data
+@using Bogus
+@using Microsoft.Azure.Cosmos
+@inject CosmosClient cosmosClient
+
+<h1>Generate Data</h1>
+
+<p>This component demonstrates generating random data in the service.</p>
+
+@if (!done)
+{
+    <p><em>Generating 20 random records...</em></p>
+}
+else
+{
+    <p>Data is loaded.</p>
+    <NavLink class="nav-link" href="fetchdata">
+        <span class="oi oi-list-rich" aria-hidden="true"></span> Query the data
+    </NavLink>
+}
+
+@code {
+    bool done = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await cosmosClient.CreateDatabaseIfNotExistsAsync("mydb");
+        await cosmosClient.GetDatabase("mydb").CreateContainerIfNotExistsAsync("mycontainer", "/id");
+        Container container = cosmosClient.GetContainer("mydb", "mycontainer");
+        foreach(WeatherForecast weatherForecast in new Faker<WeatherForecast>()
+            .StrictMode(true)
+            .RuleFor(o => o.id, f => Guid.NewGuid().ToString())
+            .RuleFor(o => o.Date, f => f.Date.Future())
+            .RuleFor(o => o.Summary, f => f.Lorem.Sentence())
+            .RuleFor(o => o.TemperatureC, f => f.Random.Number(0,100))
+            .RuleFor(o => o.TemperatureF, f => f.Random.Number(40,200))
+            .Generate(20))
+        {
+            await container.CreateItemAsync(weatherForecast);
+        }
+
+        done = true;
+    }
+}
