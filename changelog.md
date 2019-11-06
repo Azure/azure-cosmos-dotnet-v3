@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- [#978](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/978) Fixed FeedIterator mocking
+- [#978](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/978) Fix mocking for FeedIterator and Response classes
 
 ## <a name="3.4.0"/> [3.4.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.4.0) - 2019-11-04
 
