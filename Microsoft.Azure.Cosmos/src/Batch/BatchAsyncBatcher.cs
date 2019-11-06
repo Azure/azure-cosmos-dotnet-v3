@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos
 
             int itemByteSize = operation.GetApproximateSerializedLength();
 
-            if (itemByteSize + this.currentSize > this.maxBatchByteSize)
+            if (this.batchOperations.Count > 0 && itemByteSize + this.currentSize > this.maxBatchByteSize)
             {
                 DefaultTrace.TraceInformation($"Batch is full - Max byte size {this.maxBatchByteSize} reached.");
                 return false;
@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos
                     {
                         foreach (ItemBatchOperation itemBatchOperation in batchResponse.Operations)
                         {
-                            BatchOperationResult response = batchResponse[itemBatchOperation.OperationIndex];
+                            TransactionalBatchOperationResult response = batchResponse[itemBatchOperation.OperationIndex];
                             itemBatchOperation.Context.Diagnostics.AppendDiagnostics(batchResponse.Diagnostics);
                             if (!response.IsSuccessStatusCode)
                             {

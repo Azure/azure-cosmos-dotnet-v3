@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ItemBatchOperationContext batchAsyncOperationContext = new ItemBatchOperationContext(string.Empty);
             operation.AttachContext(batchAsyncOperationContext);
 
-            BatchOperationResult expected = new BatchOperationResult(HttpStatusCode.OK);
+            TransactionalBatchOperationResult expected = new TransactionalBatchOperationResult(HttpStatusCode.OK);
 
             batchAsyncOperationContext.Complete(null, expected);
 
@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task ShouldRetry_NoPolicy()
         {
-            BatchOperationResult result = new BatchOperationResult(HttpStatusCode.OK);
+            TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.OK);
             ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, 0);
             operation.AttachContext(new ItemBatchOperationContext(string.Empty));
             ShouldRetryResult shouldRetryResult = await operation.Context.ShouldRetryAsync(result, default(CancellationToken));
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             IDocumentClientRetryPolicy retryPolicy = new BulkPartitionKeyRangeGoneRetryPolicy(
                 new ResourceThrottleRetryPolicy(1));
-            BatchOperationResult result = new BatchOperationResult(HttpStatusCode.OK);
+            TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.OK);
             ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, 0);
             operation.AttachContext(new ItemBatchOperationContext(string.Empty, retryPolicy));
             ShouldRetryResult shouldRetryResult = await operation.Context.ShouldRetryAsync(result, default(CancellationToken));
@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             IDocumentClientRetryPolicy retryPolicy = new BulkPartitionKeyRangeGoneRetryPolicy(
                 new ResourceThrottleRetryPolicy(1));
-            BatchOperationResult result = new BatchOperationResult((HttpStatusCode)StatusCodes.TooManyRequests);
+            TransactionalBatchOperationResult result = new TransactionalBatchOperationResult((HttpStatusCode)StatusCodes.TooManyRequests);
             ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, 0);
             operation.AttachContext(new ItemBatchOperationContext(string.Empty, retryPolicy));
             ShouldRetryResult shouldRetryResult = await operation.Context.ShouldRetryAsync(result, default(CancellationToken));
@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             IDocumentClientRetryPolicy retryPolicy = new BulkPartitionKeyRangeGoneRetryPolicy(
                 new ResourceThrottleRetryPolicy(1));
-            BatchOperationResult result = new BatchOperationResult(HttpStatusCode.Gone) { SubStatusCode = SubStatusCodes.PartitionKeyRangeGone };
+            TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.Gone) { SubStatusCode = SubStatusCodes.PartitionKeyRangeGone };
             ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, 0);
             operation.AttachContext(new ItemBatchOperationContext(string.Empty, retryPolicy));
             ShouldRetryResult shouldRetryResult = await operation.Context.ShouldRetryAsync(result, default(CancellationToken));

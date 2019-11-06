@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 {
     using System.Collections;
     using System.Collections.Generic;
+    using System.Linq;
     using Microsoft.Azure.Cosmos.Json;
 
 #if INTERNAL
@@ -42,6 +43,36 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             get;
         }
 
+        public abstract bool ContainsKey(string key);
+
+        public abstract bool TryGetValue(string key, out CosmosElement value);
+
+        public bool TryGetValue<TCosmosElement>(string key, out TCosmosElement typedCosmosElement)
+            where TCosmosElement : CosmosElement
+        {
+            if (!this.TryGetValue(key, out CosmosElement cosmosElement))
+            {
+                typedCosmosElement = default(TCosmosElement);
+                return false;
+            }
+
+            if (!(cosmosElement is TCosmosElement tCosmosElement))
+            {
+                typedCosmosElement = default(TCosmosElement);
+                return false;
+            }
+
+            typedCosmosElement = tCosmosElement;
+            return true;
+        }
+
+        public abstract IEnumerator<KeyValuePair<string, CosmosElement>> GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return this.GetEnumerator();
+        }
+
         public static CosmosObject Create(
             IJsonNavigator jsonNavigator,
             IJsonNavigatorNode jsonNavigatorNode)
@@ -49,20 +80,14 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return new LazyCosmosObject(jsonNavigator, jsonNavigatorNode);
         }
 
-        public static CosmosObject Create(IDictionary<string, CosmosElement> dictionary)
+        public static CosmosObject Create(IReadOnlyDictionary<string, CosmosElement> dictionary)
         {
-            return new EagerCosmosObject(dictionary);
+            return new EagerCosmosObject(dictionary.ToList());
         }
 
-        public abstract bool ContainsKey(string key);
-
-        public abstract bool TryGetValue(string key, out CosmosElement value);
-
-        public abstract IEnumerator<KeyValuePair<string, CosmosElement>> GetEnumerator();
-
-        IEnumerator IEnumerable.GetEnumerator()
+        public static CosmosObject Create(IReadOnlyList<KeyValuePair<string, CosmosElement>> properties)
         {
-            return this.GetEnumerator();
+            return new EagerCosmosObject(properties);
         }
     }
 #if INTERNAL
