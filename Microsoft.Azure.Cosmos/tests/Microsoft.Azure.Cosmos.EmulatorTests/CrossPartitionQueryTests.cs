@@ -637,7 +637,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 QueryRequestOptions computeRequestOptions = queryRequestOptions.Clone();
                 computeRequestOptions.ExecutionEnvironment = Cosmos.Query.Core.ExecutionContext.ExecutionEnvironment.Compute;
 
-                FeedIterator<T> itemQuery = container.GetItemQueryIterator<T>(
+                FeedIteratorCore<T> itemQuery = (FeedIteratorCore<T>)container.GetItemQueryIterator<T>(
                    queryText: query,
                    requestOptions: computeRequestOptions,
                    continuationToken: state);
