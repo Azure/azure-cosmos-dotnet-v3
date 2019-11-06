@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using HttpConstants = Documents.HttpConstants;
     using OperationType = Documents.OperationType;
     using PartitionKeyDefinition = Documents.PartitionKeyDefinition;
@@ -55,12 +56,21 @@ namespace Microsoft.Azure.Cosmos.Query
             cancellationToken.ThrowIfCancellationRequested();
             QueryPlanHandler queryPlanHandler = new QueryPlanHandler(queryClient);
 
-            return (await queryPlanHandler.TryGetQueryPlanAsync(
-                    sqlQuerySpec,
-                    partitionKeyDefinition,
-                    QueryPlanRetriever.SupportedQueryFeatures,
-                    hasLogicalPartitionKey,
-                    cancellationToken)).ThrowIfException;
+            TryCatch<PartitionedQueryExecutionInfo> tryGetQueryPlan = await queryPlanHandler.TryGetQueryPlanAsync(
+                sqlQuerySpec,
+                partitionKeyDefinition,
+                QueryPlanRetriever.SupportedQueryFeatures,
+                hasLogicalPartitionKey,
+                cancellationToken);
+
+            if (!tryGetQueryPlan.Succeeded)
+            {
+                throw new CosmosException(
+                    System.Net.HttpStatusCode.BadRequest,
+                    tryGetQueryPlan.Exception.Message);
+            }
+
+            return tryGetQueryPlan.Result;
         }
 
         public static Task<PartitionedQueryExecutionInfo> GetQueryPlanThroughGatewayAsync(

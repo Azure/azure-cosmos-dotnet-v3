@@ -54,20 +54,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
             }
         }
 
-        public TResult ThrowIfException
-        {
-            get
-            {
-                if (this.Succeeded)
-                {
-                    return this.either.FromRight(default);
-                }
-
-                ExceptionDispatchInfo.Capture(this.either.FromLeft(default)).Throw();
-                return default;
-            }
-        }
-
         public void Match(
             Action<TResult> onSuccess,
             Action<Exception> onError)

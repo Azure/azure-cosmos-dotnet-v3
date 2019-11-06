@@ -138,29 +138,6 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        /// <summary>
-        /// Creates an CosmosOrderByItemQueryExecutionContext
-        /// </summary>
-        /// <param name="queryContext">The parameters for the base class constructor.</param>
-        /// <param name="initParams">The parameters to initialize the base class.</param>
-        /// <param name="requestContinuationToken">The request continuation.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>A task to await on, which in turn creates an CosmosOrderByItemQueryExecutionContext.</returns>
-        public static async Task<CosmosOrderByItemQueryExecutionContext> CreateAsync(
-            CosmosQueryContext queryContext,
-            CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams,
-            string requestContinuationToken,
-            CancellationToken cancellationToken)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            return (await CosmosOrderByItemQueryExecutionContext.TryCreateAsync(
-                queryContext,
-                initParams,
-                requestContinuationToken,
-                cancellationToken)).ThrowIfException;
-        }
-
         public static async Task<TryCatch<CosmosOrderByItemQueryExecutionContext>> TryCreateAsync(
             CosmosQueryContext queryContext,
             CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams,

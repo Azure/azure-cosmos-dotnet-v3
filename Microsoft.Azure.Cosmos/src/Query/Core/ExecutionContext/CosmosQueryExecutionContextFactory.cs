@@ -110,7 +110,20 @@ namespace Microsoft.Azure.Cosmos.Query
                     // not possible to combine query results from multiple containers.
                     if (this.innerExecutionContext == null)
                     {
-                        this.innerExecutionContext = await this.CreateItemQueryExecutionContextAsync(cancellationToken);
+                        TryCatch<CosmosQueryExecutionContext> tryCreateItemQueryExecutionContext = await this.TryCreateItemQueryExecutionContextAsync(cancellationToken);
+                        if (!tryCreateItemQueryExecutionContext.Succeeded)
+                        {
+                            // Failed to create pipeline (due to a bad request).
+                            return QueryResponseCore.CreateFailure(
+                                HttpStatusCode.BadRequest,
+                                subStatusCodes: null,
+                                errorMessage: tryCreateItemQueryExecutionContext.Exception.ToString(),
+                                requestCharge: 0,
+                                activityId: this.CosmosQueryContext.CorrelatedActivityId.ToString(),
+                                diagnostics: QueryResponseCore.EmptyDiagnostics);
+                        }
+
+                        this.innerExecutionContext = tryCreateItemQueryExecutionContext.Result;
                         isFirstExecute = true;
                     }
 
@@ -121,12 +134,27 @@ namespace Microsoft.Azure.Cosmos.Query
                         break;
                     }
 
-                    if (isFirstExecute && response.StatusCode == HttpStatusCode.Gone && response.SubStatusCode == Documents.SubStatusCodes.NameCacheIsStale)
+                    if (isFirstExecute
+                        && (response.StatusCode == HttpStatusCode.Gone)
+                        && (response.SubStatusCode == Documents.SubStatusCodes.NameCacheIsStale))
                     {
                         await this.CosmosQueryContext.QueryClient.ForceRefreshCollectionCacheAsync(
                             this.CosmosQueryContext.ResourceLink.OriginalString,
                             cancellationToken);
-                        this.innerExecutionContext = await this.CreateItemQueryExecutionContextAsync(cancellationToken);
+                        TryCatch<CosmosQueryExecutionContext> tryCreateItemQueryExecutionContext = await this.TryCreateItemQueryExecutionContextAsync(cancellationToken);
+                        if (!tryCreateItemQueryExecutionContext.Succeeded)
+                        {
+                            // Failed to create pipeline (due to a bad request).
+                            return QueryResponseCore.CreateFailure(
+                                HttpStatusCode.BadRequest,
+                                subStatusCodes: null,
+                                errorMessage: tryCreateItemQueryExecutionContext.Exception.ToString(),
+                                requestCharge: 0,
+                                activityId: this.CosmosQueryContext.CorrelatedActivityId.ToString(),
+                                diagnostics: QueryResponseCore.EmptyDiagnostics);
+                        }
+
+                        this.innerExecutionContext = tryCreateItemQueryExecutionContext.Result;
                         isFirstExecute = false;
                     }
                     else
@@ -170,15 +198,6 @@ namespace Microsoft.Azure.Cosmos.Query
 
             continuationToken = pipelineContinuationToken.ToString(this.inputParameters.ResponseContinuationTokenLimitInKb.GetValueOrDefault(12) * 1024);
             return true;
-        }
-
-        private async Task<CosmosQueryExecutionContext> CreateItemQueryExecutionContextAsync(
-            CancellationToken cancellationToken)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            TryCatch<CosmosQueryExecutionContext> tryCreateItemQueryExecutionContext = await this.TryCreateItemQueryExecutionContextAsync(
-                cancellationToken);
-            return tryCreateItemQueryExecutionContext.ThrowIfException;
         }
 
         private async Task<TryCatch<CosmosQueryExecutionContext>> TryCreateItemQueryExecutionContextAsync(

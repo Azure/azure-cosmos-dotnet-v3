@@ -78,11 +78,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                     maxItemCount: maxPageSize,
                     maxBufferedItemCount: null);
 
-                CosmosParallelItemQueryExecutionContext executionContext = await CosmosParallelItemQueryExecutionContext.CreateAsync(
+                CosmosParallelItemQueryExecutionContext executionContext = (await CosmosParallelItemQueryExecutionContext.TryCreateAsync(
                     context,
                     initParams,
                     fullConitnuationToken,
-                    this.cancellationToken);
+                    this.cancellationToken)).Result;
 
                 // Read all the pages from both splits
                 List<ToDoItem> itemsRead = new List<ToDoItem>();
@@ -161,11 +161,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                     maxItemCount: maxPageSize,
                     maxBufferedItemCount: null);
 
-                CosmosParallelItemQueryExecutionContext executionContext = await CosmosParallelItemQueryExecutionContext.CreateAsync(
+                CosmosParallelItemQueryExecutionContext executionContext = (await CosmosParallelItemQueryExecutionContext.TryCreateAsync(
                     context,
                     initParams,
                     fullConitnuationToken,
-                    this.cancellationToken);
+                    this.cancellationToken)).Result;
 
                 // Read all the pages from both splits
                 List<ToDoItem> itemsRead = new List<ToDoItem>();
@@ -289,11 +289,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                     maxItemCount: maxPageSize,
                     maxBufferedItemCount: null);
 
-                CosmosOrderByItemQueryExecutionContext executionContext = await CosmosOrderByItemQueryExecutionContext.CreateAsync(
+                CosmosOrderByItemQueryExecutionContext executionContext = (await CosmosOrderByItemQueryExecutionContext.TryCreateAsync(
                     context,
                     initParams,
                     fullConitnuationToken,
-                    this.cancellationToken);
+                    this.cancellationToken)).Result;
 
                 // For order by it will drain all the pages till it gets a value.
                 if (allItems.Count == 0)
@@ -412,11 +412,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                     maxItemCount: maxPageSize,
                     maxBufferedItemCount: null);
 
-                CosmosOrderByItemQueryExecutionContext executionContext = await CosmosOrderByItemQueryExecutionContext.CreateAsync(
+                CosmosOrderByItemQueryExecutionContext executionContext = (await CosmosOrderByItemQueryExecutionContext.TryCreateAsync(
                     context,
                     initParams,
                     fullConitnuationToken,
-                    this.cancellationToken);
+                    this.cancellationToken)).Result;
 
                 Assert.IsTrue(!executionContext.IsDone);
 

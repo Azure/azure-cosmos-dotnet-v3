@@ -181,28 +181,28 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new List<string>() { "test" },
                 false,
                 null,
-                setupContext.func)).ThrowIfException);
+                setupContext.func)).Result);
 
             components.Add((await DistinctDocumentQueryExecutionComponent.TryCreateAsync(
                 Query.Core.ExecutionContext.ExecutionEnvironment.Client,
                 null,
                 setupContext.func,
-                DistinctQueryType.Ordered)).ThrowIfException);
+                DistinctQueryType.Ordered)).Result);
 
             components.Add((await SkipDocumentQueryExecutionComponent.TryCreateAsync(
                 5,
                 null,
-                setupContext.func)).ThrowIfException);
+                setupContext.func)).Result);
 
             components.Add((await TakeDocumentQueryExecutionComponent.TryCreateLimitDocumentQueryExecutionComponentAsync(
                 5,
                 null,
-                setupContext.func)).ThrowIfException);
+                setupContext.func)).Result);
 
             components.Add((await TakeDocumentQueryExecutionComponent.TryCreateTopDocumentQueryExecutionComponentAsync(
                 5,
                 null,
-                setupContext.func)).ThrowIfException);
+                setupContext.func)).Result);
 
             return (components, setupContext.response);
         }

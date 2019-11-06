@@ -92,29 +92,6 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        /// <summary>
-        /// Creates a CosmosParallelItemQueryExecutionContext
-        /// </summary>
-        /// <param name="queryContext">The params the construct the base class.</param>
-        /// <param name="initParams">The params to initialize the cross partition context.</param>
-        /// <param name="requestContinuationToken">The request continuation.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>A task to await on, which in turn returns a CosmosParallelItemQueryExecutionContext.</returns>
-        public static async Task<CosmosParallelItemQueryExecutionContext> CreateAsync(
-            CosmosQueryContext queryContext,
-            CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams,
-            string requestContinuationToken,
-            CancellationToken cancellationToken)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            return (await TryCreateAsync(
-                queryContext,
-                initParams,
-                requestContinuationToken,
-                cancellationToken)).ThrowIfException;
-        }
-
         public static async Task<TryCatch<CosmosParallelItemQueryExecutionContext>> TryCreateAsync(
             CosmosQueryContext queryContext,
             CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams,
