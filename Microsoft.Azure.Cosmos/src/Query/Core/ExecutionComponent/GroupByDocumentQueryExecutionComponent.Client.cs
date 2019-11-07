@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
     internal abstract partial class GroupByDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase
     {
@@ -24,24 +25,30 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
             {
             }
 
-            public static async Task<IDocumentQueryExecutionComponent> CreateAsync(
-                CosmosQueryClient cosmosQueryClient,
+            public static async Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
                 string requestContinuation,
-                Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback,
+                Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSource,
                 IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
                 IReadOnlyList<string> orderedAliases,
                 bool hasSelectValue)
             {
-                IDocumentQueryExecutionComponent source = await createSourceCallback(requestContinuation);
-                GroupingTable groupingTable = GroupingTable.CreateFromContinuationToken(
-                    cosmosQueryClient,
+                TryCatch<GroupingTable> tryCreateGroupingTable = GroupingTable.TryCreateFromContinuationToken(
                     groupByAliasToAggregateType,
                     orderedAliases,
                     hasSelectValue,
                     groupingTableContinuationToken: null);
-                return new ClientGroupByDocumentQueryExecutionComponent(
-                    source,
-                    groupingTable);
+
+                if (!tryCreateGroupingTable.Succeeded)
+                {
+                    return TryCatch<IDocumentQueryExecutionComponent>.FromException(tryCreateGroupingTable.Exception);
+                }
+
+                return (await tryCreateSource(requestContinuation)).Try<IDocumentQueryExecutionComponent>(source =>
+                {
+                    return new ClientGroupByDocumentQueryExecutionComponent(
+                        source,
+                        tryCreateGroupingTable.Result);
+                });
             }
 
             public override async Task<QueryResponseCore> DrainAsync(
