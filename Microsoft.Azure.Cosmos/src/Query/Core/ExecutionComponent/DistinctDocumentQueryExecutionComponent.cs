@@ -4,10 +4,9 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
 {
     using System;
-    using System.Globalization;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -41,38 +40,31 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
             this.distinctMap = distinctMap;
         }
 
-        /// <summary>
-        /// Creates an DistinctDocumentQueryExecutionComponent
-        /// </summary>
-        /// <param name="executionEnvironment">The environment to execute on.</param>
-        /// <param name="queryClient">The query client</param>
-        /// <param name="requestContinuation">The continuation token.</param>
-        /// <param name="createSourceCallback">The callback to create the source to drain from.</param>
-        /// <param name="distinctQueryType">The type of distinct query.</param>
-        /// <returns>A task to await on and in return </returns>
-        public static async Task<IDocumentQueryExecutionComponent> CreateAsync(
+        public static async Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
             ExecutionEnvironment executionEnvironment,
-            CosmosQueryClient queryClient,
             string requestContinuation,
-            Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback,
+            Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync,
             DistinctQueryType distinctQueryType)
         {
-            IDocumentQueryExecutionComponent distinctDocumentQueryExecutionComponent;
+            if (tryCreateSourceAsync == null)
+            {
+                throw new ArgumentNullException(nameof(tryCreateSourceAsync));
+            }
+
+            TryCatch<IDocumentQueryExecutionComponent> tryCreateDistinctDocumentQueryExecutionComponent;
             switch (executionEnvironment)
             {
                 case ExecutionEnvironment.Client:
-                    distinctDocumentQueryExecutionComponent = await ClientDistinctDocumentQueryExecutionComponent.CreateAsync(
-                        queryClient,
+                    tryCreateDistinctDocumentQueryExecutionComponent = await ClientDistinctDocumentQueryExecutionComponent.TryCreateAsync(
                         requestContinuation,
-                        createSourceCallback,
+                        tryCreateSourceAsync,
                         distinctQueryType);
                     break;
 
                 case ExecutionEnvironment.Compute:
-                    distinctDocumentQueryExecutionComponent = await ComputeDistinctDocumentQueryExecutionComponent.CreateAsync(
-                        queryClient,
+                    tryCreateDistinctDocumentQueryExecutionComponent = await ComputeDistinctDocumentQueryExecutionComponent.TryCreateAsync(
                         requestContinuation,
-                        createSourceCallback,
+                        tryCreateSourceAsync,
                         distinctQueryType);
                     break;
 
@@ -80,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                     throw new ArgumentException($"Unknown {nameof(ExecutionEnvironment)}: {executionEnvironment}.");
             }
 
-            return distinctDocumentQueryExecutionComponent;
+            return tryCreateDistinctDocumentQueryExecutionComponent;
         }
 
         /// <summary>
@@ -119,9 +111,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                     distinctContinuationToken = JsonConvert.DeserializeObject<DistinctContinuationToken>(value);
                     return true;
                 }
-                catch (JsonException ex)
+                catch (JsonException)
                 {
-                    DefaultTrace.TraceWarning($"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)} Invalid continuation token {value} for Distinct~Component, exception: {ex.Message}");
                     return false;
                 }
             }

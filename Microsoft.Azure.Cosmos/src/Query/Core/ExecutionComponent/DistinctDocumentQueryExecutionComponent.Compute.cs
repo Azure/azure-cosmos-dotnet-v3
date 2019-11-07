@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
     internal abstract partial class DistinctDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase
     {
@@ -28,18 +29,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
             {
             }
 
-            /// <summary>
-            /// Creates an DistinctDocumentQueryExecutionComponent
-            /// </summary>
-            /// <param name="queryClient">The query client</param>
-            /// <param name="requestContinuation">The continuation token.</param>
-            /// <param name="createSourceCallback">The callback to create the source to drain from.</param>
-            /// <param name="distinctQueryType">The type of distinct query.</param>
-            /// <returns>A task to await on and in return </returns>
-            public static async Task<DistinctDocumentQueryExecutionComponent> CreateAsync(
-                CosmosQueryClient queryClient,
+            public static async Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
                 string requestContinuation,
-                Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback,
+                Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync,
                 DistinctQueryType distinctQueryType)
             {
                 DistinctContinuationToken distinctContinuationToken;
@@ -47,7 +39,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                 {
                     if (!DistinctContinuationToken.TryParse(requestContinuation, out distinctContinuationToken))
                     {
-                        throw queryClient.CreateBadRequestException($"Invalid {nameof(DistinctContinuationToken)}: {requestContinuation}");
+                        return TryCatch<IDocumentQueryExecutionComponent>.FromException(
+                            new Exception($"Invalid {nameof(DistinctContinuationToken)}: {requestContinuation}"));
                     }
                 }
                 else
@@ -55,12 +48,25 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                     distinctContinuationToken = new DistinctContinuationToken(sourceToken: null, distinctMapToken: null);
                 }
 
-                DistinctMap distinctMap = DistinctMap.Create(distinctQueryType, distinctContinuationToken.DistinctMapToken);
-                IDocumentQueryExecutionComponent source = await createSourceCallback(distinctContinuationToken.SourceToken);
-                return new ComputeDistinctDocumentQueryExecutionComponent(
+                TryCatch<DistinctMap> tryCreateDistinctMap = DistinctMap.TryCreate(
                     distinctQueryType,
-                    distinctMap,
-                    source);
+                    distinctContinuationToken.DistinctMapToken);
+                if (!tryCreateDistinctMap.Succeeded)
+                {
+                    return TryCatch<IDocumentQueryExecutionComponent>.FromException(tryCreateDistinctMap.Exception);
+                }
+
+                TryCatch<IDocumentQueryExecutionComponent> tryCreateSource = await tryCreateSourceAsync(distinctContinuationToken.SourceToken);
+                if (!tryCreateSource.Succeeded)
+                {
+                    return TryCatch<IDocumentQueryExecutionComponent>.FromException(tryCreateSource.Exception);
+                }
+
+                return TryCatch<IDocumentQueryExecutionComponent>.FromResult(
+                    new ComputeDistinctDocumentQueryExecutionComponent(
+                        distinctQueryType,
+                        tryCreateDistinctMap.Result,
+                        tryCreateSource.Result));
             }
 
             /// <summary>

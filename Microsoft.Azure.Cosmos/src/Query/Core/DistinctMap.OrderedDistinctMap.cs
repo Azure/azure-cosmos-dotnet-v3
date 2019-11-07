@@ -3,8 +3,10 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query
 {
+    using System;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
     /// <summary>
     /// Partial wrapper
@@ -69,19 +71,23 @@ namespace Microsoft.Azure.Cosmos.Query
                 return this.lastHash.ToString();
             }
 
-            public static OrderedDistinctMap Create(string continuationToken)
+            public static TryCatch<DistinctMap> TryCreate(string continuationToken)
             {
                 UInt128 lastHash;
                 if (continuationToken != null)
                 {
-                    lastHash = UInt128.Parse(continuationToken);
+                    if (!UInt128.TryParse(continuationToken, out lastHash))
+                    {
+                        return TryCatch<DistinctMap>.FromException(
+                            new Exception($"Malformed {nameof(OrderedDistinctMap)} continuation token: {continuationToken}."));
+                    }
                 }
                 else
                 {
                     lastHash = default;
                 }
 
-                return new OrderedDistinctMap(lastHash);
+                return TryCatch<DistinctMap>.FromResult(new OrderedDistinctMap(lastHash));
             }
         }
     }

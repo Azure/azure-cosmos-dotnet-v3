@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
 {
     using System;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
     /// <summary>
     /// Concrete implementation of IAggregator that can take the global min/max from the local min/max of multiple partitions and continuations.
@@ -161,17 +162,17 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
             return continuationToken;
         }
 
-        public static MinMaxAggregator CreateMinAggregator(string continuationToken)
+        public static TryCatch<IAggregator> TryCreateMinAggregator(string continuationToken)
         {
-            return MinMaxAggregator.Create(isMinAggregation: true, continuationToken: continuationToken);
+            return MinMaxAggregator.TryCreate(isMinAggregation: true, continuationToken: continuationToken);
         }
 
-        public static MinMaxAggregator CreateMaxAggregator(string continuationToken)
+        public static TryCatch<IAggregator> TryCreateMaxAggregator(string continuationToken)
         {
-            return MinMaxAggregator.Create(isMinAggregation: false, continuationToken: continuationToken);
+            return MinMaxAggregator.TryCreate(isMinAggregation: false, continuationToken: continuationToken);
         }
 
-        private static MinMaxAggregator Create(bool isMinAggregation, string continuationToken)
+        private static TryCatch<IAggregator> TryCreate(bool isMinAggregation, string continuationToken)
         {
             CosmosElement globalMinMax;
             if (continuationToken != null)
@@ -192,7 +193,8 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
                 {
                     if (!CosmosElement.TryParse(continuationToken, out globalMinMax))
                     {
-                        throw new ArgumentException($"Malformed continuation token: {continuationToken}");
+                        return TryCatch<IAggregator>.FromException(
+                            new Exception($"Malformed continuation token: {continuationToken}"));
                     }
                 }
             }
@@ -201,7 +203,8 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
                 globalMinMax = isMinAggregation ? (CosmosElement)ItemComparer.MaxValue : (CosmosElement)ItemComparer.MinValue;
             }
 
-            return new MinMaxAggregator(isMinAggregation: isMinAggregation, globalMinMax: globalMinMax);
+            return TryCatch<IAggregator>.FromResult(
+                new MinMaxAggregator(isMinAggregation: isMinAggregation, globalMinMax: globalMinMax));
         }
 
         private static bool CosmosElementIsPrimitive(CosmosElement cosmosElement)

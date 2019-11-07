@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
     /// <summary>
     /// Base class for all types of DistinctMaps.
@@ -24,21 +25,29 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="distinctQueryType">The type of distinct query.</param>
         /// <param name="distinctMapContinuationToken">The continuation token to resume from.</param>
         /// <returns>The appropriate IDistinctMap.</returns>
-        public static DistinctMap Create(
+        public static TryCatch<DistinctMap> TryCreate(
             DistinctQueryType distinctQueryType,
             string distinctMapContinuationToken)
         {
+            TryCatch<DistinctMap> tryCreateDistinctMap;
             switch (distinctQueryType)
             {
                 case DistinctQueryType.None:
                     throw new ArgumentException("distinctQueryType can not be None. This part of code is not supposed to be reachable. Please contact support to resolve this issue.");
+
                 case DistinctQueryType.Unordered:
-                    return UnorderdDistinctMap.Create(distinctMapContinuationToken);
+                    tryCreateDistinctMap = UnorderdDistinctMap.TryCreate(distinctMapContinuationToken);
+                    break;
+
                 case DistinctQueryType.Ordered:
-                    return OrderedDistinctMap.Create(distinctMapContinuationToken);
+                    tryCreateDistinctMap = OrderedDistinctMap.TryCreate(distinctMapContinuationToken);
+                    break;
+
                 default:
                     throw new ArgumentException($"Unrecognized DistinctQueryType: {distinctQueryType}.");
             }
+
+            return tryCreateDistinctMap;
         }
 
         /// <summary>
