@@ -284,8 +284,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(triggerSettings.Id, settings.Id,
                 "Trigger id do not match");
             Assert.IsTrue(cosmosResponse.RequestCharge > 0);
-            Assert.IsNotNull(cosmosResponse.MaxResourceQuota);
-            Assert.IsNotNull(cosmosResponse.CurrentResourceQuotaUsage);
+            Assert.IsNotNull(cosmosResponse.Headers.GetHeaderValue<string>(Documents.HttpConstants.HttpHeaders.MaxResourceQuota));
+            Assert.IsNotNull(cosmosResponse.Headers.GetHeaderValue<string>(Documents.HttpConstants.HttpHeaders.CurrentResourceQuotaUsage));
         }
 
         private class Job

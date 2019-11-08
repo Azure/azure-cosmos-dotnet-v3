@@ -211,9 +211,9 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             ItemRequestOptions itemRequestOptions = requestOptions as ItemRequestOptions;
-            BatchItemRequestOptions batchItemRequestOptions = BatchItemRequestOptions.FromItemRequestOptions(itemRequestOptions);
+            TransactionalBatchItemRequestOptions batchItemRequestOptions = TransactionalBatchItemRequestOptions.FromItemRequestOptions(itemRequestOptions);
             ItemBatchOperation itemBatchOperation = new ItemBatchOperation(operationType, /* index */ 0, partitionKey, itemId, streamPayload, batchItemRequestOptions);
-            BatchOperationResult batchOperationResult = await cosmosContainerCore.BatchExecutor.AddAsync(itemBatchOperation, itemRequestOptions, cancellationToken);
+            TransactionalBatchOperationResult batchOperationResult = await cosmosContainerCore.BatchExecutor.AddAsync(itemBatchOperation, itemRequestOptions, cancellationToken);
             return batchOperationResult.ToResponseMessage();
         }
 

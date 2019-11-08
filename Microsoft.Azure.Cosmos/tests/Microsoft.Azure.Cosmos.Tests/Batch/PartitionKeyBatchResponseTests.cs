@@ -20,13 +20,13 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task StatusCodesAreSetThroughResponseAsync()
         {
-            List<BatchOperationResult> results = new List<BatchOperationResult>();
+            List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
             ItemBatchOperation[] arrayOperations = new ItemBatchOperation[1];
 
             ItemBatchOperation operation = new ItemBatchOperation(OperationType.AddComputeGatewayRequestCharges, 0, "0");
 
             results.Add(
-                    new BatchOperationResult(HttpStatusCode.OK)
+                    new TransactionalBatchOperationResult(HttpStatusCode.OK)
                     {
                         ResourceStream = new MemoryStream(new byte[] { 0x41, 0x42 }, index: 0, count: 2, writable: false, publiclyVisible: true),
                         ETag = operation.Id
@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 serializer: new CosmosJsonDotNetSerializer(),
             cancellationToken: default(CancellationToken));
 
-            BatchResponse batchresponse = await BatchResponse.FromResponseMessageAsync(
+            TransactionalBatchResponse batchresponse = await TransactionalBatchResponse.FromResponseMessageAsync(
                 new ResponseMessage(HttpStatusCode.OK) { Content = responseContent },
                 batchRequest,
                 new CosmosJsonDotNetSerializer());
@@ -54,13 +54,13 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task DiagnosticsAreSetThroughResponseAsync()
         {
-            List<BatchOperationResult> results = new List<BatchOperationResult>();
+            List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
             ItemBatchOperation[] arrayOperations = new ItemBatchOperation[1];
 
             ItemBatchOperation operation = new ItemBatchOperation(OperationType.AddComputeGatewayRequestCharges, 0, "0");
 
             results.Add(
-                    new BatchOperationResult(HttpStatusCode.OK)
+                    new TransactionalBatchOperationResult(HttpStatusCode.OK)
                     {
                         ResourceStream = new MemoryStream(new byte[] { 0x41, 0x42 }, index: 0, count: 2, writable: false, publiclyVisible: true),
                         ETag = operation.Id
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             CosmosDiagnostics diagnostics = new PointOperationStatistics(Guid.NewGuid().ToString(), HttpStatusCode.OK, SubStatusCodes.Unknown, 0, string.Empty, HttpMethod.Get, new Uri("http://localhost"), new CosmosClientSideRequestStatistics());
 
-            BatchResponse batchresponse = await BatchResponse.FromResponseMessageAsync(
+            TransactionalBatchResponse batchresponse = await TransactionalBatchResponse.FromResponseMessageAsync(
                 new ResponseMessage(HttpStatusCode.OK) { Content = responseContent, Diagnostics = diagnostics },
                 batchRequest,
                 new CosmosJsonDotNetSerializer());

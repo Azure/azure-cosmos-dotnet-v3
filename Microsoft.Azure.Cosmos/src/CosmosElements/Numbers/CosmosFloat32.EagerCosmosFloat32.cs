@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 this.number = number;
             }
 
-            protected override float GetValue()
+            public override float GetValue()
             {
                 return this.number;
             }

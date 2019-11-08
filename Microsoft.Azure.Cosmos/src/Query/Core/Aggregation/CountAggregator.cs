@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
     using System.Globalization;
     using System.Net;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
     /// <summary>
     /// Concrete implementation of IAggregator that can take the global count from the local counts from multiple partitions and continuations.
@@ -65,16 +66,15 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
             return this.globalCount.ToString(CultureInfo.InvariantCulture);
         }
 
-        public static CountAggregator Create(string continuationToken)
+        public static TryCatch<IAggregator> TryCreate(string continuationToken)
         {
             long partialCount;
             if (continuationToken != null)
             {
                 if (!long.TryParse(continuationToken, out partialCount))
                 {
-                    throw new CosmosException(
-                        HttpStatusCode.BadRequest,
-                        $@"Invalid count continuation token: ""{continuationToken}"".");
+                    return TryCatch<IAggregator>.FromException(
+                        new Exception($@"Invalid count continuation token: ""{continuationToken}""."));
                 }
             }
             else
@@ -82,7 +82,8 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
                 partialCount = 0;
             }
 
-            return new CountAggregator(initialCount: partialCount);
+            return TryCatch<IAggregator>.FromResult(
+                new CountAggregator(initialCount: partialCount));
         }
     }
 }

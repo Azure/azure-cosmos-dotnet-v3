@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos
             PartitionKey partitionKey,
             string id = null,
             Stream resourceStream = null,
-            BatchItemRequestOptions requestOptions = null)
+            TransactionalBatchItemRequestOptions requestOptions = null)
         {
             this.OperationType = operationType;
             this.OperationIndex = operationIndex;
@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos
             int operationIndex,
             string id = null,
             Stream resourceStream = null,
-            BatchItemRequestOptions requestOptions = null)
+            TransactionalBatchItemRequestOptions requestOptions = null)
         {
             this.OperationType = operationType;
             this.OperationIndex = operationIndex;
@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos
 
         public Stream ResourceStream { get; protected set; }
 
-        public BatchItemRequestOptions RequestOptions { get; }
+        public TransactionalBatchItemRequestOptions RequestOptions { get; }
 
         public int OperationIndex { get; internal set; }
 
@@ -147,7 +147,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (operation.RequestOptions != null)
             {
-                BatchItemRequestOptions options = operation.RequestOptions;
+                TransactionalBatchItemRequestOptions options = operation.RequestOptions;
                 if (options.IndexingDirective.HasValue)
                 {
                     string indexingDirectiveString = IndexingDirectiveStrings.FromIndexingDirective(options.IndexingDirective.Value);
@@ -339,7 +339,7 @@ namespace Microsoft.Azure.Cosmos
             PartitionKey partitionKey,
             T resource,
             string id = null,
-            BatchItemRequestOptions requestOptions = null)
+            TransactionalBatchItemRequestOptions requestOptions = null)
             : base(operationType, operationIndex, partitionKey: partitionKey, id: id, requestOptions: requestOptions)
         {
             this.Resource = resource;
@@ -350,7 +350,7 @@ namespace Microsoft.Azure.Cosmos
             int operationIndex,
             T resource,
             string id = null,
-            BatchItemRequestOptions requestOptions = null)
+            TransactionalBatchItemRequestOptions requestOptions = null)
             : base(operationType, operationIndex, id: id, requestOptions: requestOptions)
         {
             this.Resource = resource;

@@ -188,10 +188,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return Result.Failure;
             }
 
-            BatchItemRequestOptions requestOptions = null;
+            TransactionalBatchItemRequestOptions requestOptions = null;
             if (indexingDirective.HasValue || ifMatch != null || ifNoneMatch != null || binaryId != null || effectivePartitionKey != null || ttlInSeconds.HasValue)
             {
-                requestOptions = new BatchItemRequestOptions();
+                requestOptions = new TransactionalBatchItemRequestOptions();
                 if (indexingDirective.HasValue)
                 {
                     requestOptions.IndexingDirective = indexingDirective;

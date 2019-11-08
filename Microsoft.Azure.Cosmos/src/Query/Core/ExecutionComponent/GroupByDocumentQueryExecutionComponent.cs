@@ -4,11 +4,14 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
     /// <summary>
     /// Query execution component that groups groupings across continuations and pages.
@@ -37,162 +40,74 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
     /// So we know how to aggregate each column. 
     /// At the end the columns are stitched together to make the grouped document.
     /// </summary>
-    internal sealed class GroupByDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase
+    internal abstract partial class GroupByDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase
     {
-        public const string ContinuationTokenNotSupportedWithGroupBy = "Continuation token is not supported for queries with GROUP BY. Do not use FeedResponse.ResponseContinuation or remove the GROUP BY from the query.";
-        private static readonly List<CosmosElement> EmptyResults = new List<CosmosElement>();
-        private static readonly Dictionary<string, QueryMetrics> EmptyQueryMetrics = new Dictionary<string, QueryMetrics>();
-        private static readonly AggregateOperator[] EmptyAggregateOperators = new AggregateOperator[] { };
+        private readonly GroupingTable groupingTable;
 
-        private readonly CosmosQueryClient cosmosQueryClient;
-        private readonly IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType;
-        private readonly IReadOnlyList<string> orderedAliases;
-        private readonly Dictionary<UInt192, SingleGroupAggregator> groupingTable;
-        private readonly bool hasSelectValue;
-
-        private int numPagesDrainedFromGroupingTable;
-        private bool isDone;
-
-        private GroupByDocumentQueryExecutionComponent(
-            CosmosQueryClient cosmosQueryClient,
-            IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
-            IReadOnlyList<string> orderedAliases,
-            bool hasSelectValue,
-            IDocumentQueryExecutionComponent source)
+        protected GroupByDocumentQueryExecutionComponent(
+            IDocumentQueryExecutionComponent source,
+            GroupingTable groupingTable)
             : base(source)
         {
-            if (cosmosQueryClient == null)
+            if (groupingTable == null)
             {
-                throw new ArgumentNullException(nameof(cosmosQueryClient));
+                throw new ArgumentNullException(nameof(groupingTable));
             }
 
-            if (groupByAliasToAggregateType == null)
-            {
-                throw new ArgumentNullException(nameof(groupByAliasToAggregateType));
-            }
-
-            if (orderedAliases == null)
-            {
-                throw new ArgumentNullException(nameof(orderedAliases));
-            }
-
-            this.cosmosQueryClient = cosmosQueryClient;
-            this.groupingTable = new Dictionary<UInt192, SingleGroupAggregator>();
-            this.groupByAliasToAggregateType = groupByAliasToAggregateType;
-            this.orderedAliases = orderedAliases;
-            this.hasSelectValue = hasSelectValue;
+            this.groupingTable = groupingTable;
         }
 
-        public override bool IsDone => this.isDone;
+        public override bool IsDone => this.groupingTable.IsDone;
 
-        public static async Task<IDocumentQueryExecutionComponent> CreateAsync(
-            CosmosQueryClient cosmosQueryClient,
-            string requestContinuation,
-            Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback,
+        public static async Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
+            ExecutionEnvironment executionEnvironment,
+            string continuationToken,
+            Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync,
             IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
             IReadOnlyList<string> orderedAliases,
             bool hasSelectValue)
         {
-            // We do not support continuation tokens for GROUP BY.
-            return new GroupByDocumentQueryExecutionComponent(
-                cosmosQueryClient,
-                groupByAliasToAggregateType,
-                orderedAliases,
-                hasSelectValue,
-                await createSourceCallback(requestContinuation));
-        }
-
-        public override async Task<QueryResponseCore> DrainAsync(
-            int maxElements,
-            CancellationToken cancellationToken)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            // Draining GROUP BY is broken down into two stages:
-            QueryResponseCore response;
-            if (!this.Source.IsDone)
+            if (tryCreateSourceAsync == null)
             {
-                // Stage 1: 
-                // Drain the groupings fully from all continuation and all partitions
-                QueryResponseCore sourceResponse = await base.DrainAsync(int.MaxValue, cancellationToken);
-                if (!sourceResponse.IsSuccess)
-                {
-                    return sourceResponse;
-                }
-
-                foreach (CosmosElement result in sourceResponse.CosmosElements)
-                {
-                    // Aggregate the values for all groupings across all continuations.
-                    RewrittenGroupByProjection groupByItem = new RewrittenGroupByProjection(result);
-                    UInt192 groupByKeysHash = DistinctHash.GetHash(groupByItem.GroupByItems);
-
-                    if (!this.groupingTable.TryGetValue(groupByKeysHash, out SingleGroupAggregator singleGroupAggregator))
-                    {
-                        singleGroupAggregator = SingleGroupAggregator.Create(
-                            this.cosmosQueryClient,
-                            EmptyAggregateOperators,
-                            this.groupByAliasToAggregateType,
-                            this.orderedAliases,
-                            this.hasSelectValue,
-                            continuationToken: null);
-                        this.groupingTable[groupByKeysHash] = singleGroupAggregator;
-                    }
-
-                    CosmosElement payload = groupByItem.Payload;
-                    singleGroupAggregator.AddValues(payload);
-                }
-
-                // We need to give empty pages until the results are fully drained.
-                response = QueryResponseCore.CreateSuccess(
-                    result: EmptyResults,
-                    continuationToken: null,
-                    disallowContinuationTokenMessage: GroupByDocumentQueryExecutionComponent.ContinuationTokenNotSupportedWithGroupBy,
-                    activityId: sourceResponse.ActivityId,
-                    requestCharge: sourceResponse.RequestCharge,
-                    diagnostics: sourceResponse.Diagnostics,
-                    responseLengthBytes: sourceResponse.ResponseLengthBytes);
-
-                this.isDone = false;
-            }
-            else
-            {
-                // Stage 2:
-                // Emit the results from the grouping table page by page
-                IEnumerable<SingleGroupAggregator> groupByValuesList = this.groupingTable
-                    .OrderBy(kvp => kvp.Key)
-                    .Skip(this.numPagesDrainedFromGroupingTable * maxElements)
-                    .Take(maxElements)
-                    .Select(kvp => kvp.Value);
-
-                List<CosmosElement> results = new List<CosmosElement>();
-                foreach (SingleGroupAggregator groupByValues in groupByValuesList)
-                {
-                    results.Add(groupByValues.GetResult());
-                }
-
-                response = QueryResponseCore.CreateSuccess(
-                   result: results,
-                   continuationToken: null,
-                   disallowContinuationTokenMessage: GroupByDocumentQueryExecutionComponent.ContinuationTokenNotSupportedWithGroupBy,
-                   activityId: null,
-                   requestCharge: 0,
-                   diagnostics: QueryResponseCore.EmptyDiagnostics,
-                   responseLengthBytes: 0);
-
-                this.numPagesDrainedFromGroupingTable++;
-                if (this.numPagesDrainedFromGroupingTable * maxElements >= this.groupingTable.Count)
-                {
-                    this.isDone = true;
-                }
+                throw new ArgumentNullException(nameof(tryCreateSourceAsync));
             }
 
-            return response;
+            TryCatch<IDocumentQueryExecutionComponent> tryCreateGroupByComponent;
+            switch (executionEnvironment)
+            {
+                case ExecutionEnvironment.Client:
+                    tryCreateGroupByComponent = await ClientGroupByDocumentQueryExecutionComponent.TryCreateAsync(
+                        continuationToken,
+                        tryCreateSourceAsync,
+                        groupByAliasToAggregateType,
+                        orderedAliases,
+                        hasSelectValue);
+                    break;
+
+                case ExecutionEnvironment.Compute:
+                    tryCreateGroupByComponent = await ComputeGroupByDocumentQueryExecutionComponent.TryCreateAsync(
+                        continuationToken,
+                        tryCreateSourceAsync,
+                        groupByAliasToAggregateType,
+                        orderedAliases,
+                        hasSelectValue);
+                    break;
+
+                default:
+                    throw new ArgumentException($"Unknown {nameof(ExecutionEnvironment)}: {executionEnvironment}");
+            }
+
+            return tryCreateGroupByComponent;
         }
 
-        public override bool TryGetContinuationToken(out string state)
+        protected void AggregateGroupings(IReadOnlyList<CosmosElement> cosmosElements)
         {
-            state = default(string);
-            return false;
+            foreach (CosmosElement result in cosmosElements)
+            {
+                // Aggregate the values for all groupings across all continuations.
+                RewrittenGroupByProjection groupByItem = new RewrittenGroupByProjection(result);
+                this.groupingTable.AddPayload(groupByItem);
+            }
         }
 
         /// <summary>
@@ -204,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
         /// 
         /// This struct just lets us easily access the "groupByItems" and "payload" property.
         /// </summary>
-        private struct RewrittenGroupByProjection
+        protected readonly struct RewrittenGroupByProjection
         {
             private const string GroupByItemsPropertyName = "groupByItems";
             private const string PayloadPropertyName = "payload";
@@ -256,6 +171,161 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                     return cosmosElement;
                 }
             }
+        }
+
+        protected sealed class GroupingTable : IEnumerable<KeyValuePair<UInt128, SingleGroupAggregator>>
+        {
+            private static readonly AggregateOperator[] EmptyAggregateOperators = new AggregateOperator[] { };
+
+            private readonly Dictionary<UInt128, SingleGroupAggregator> table;
+            private readonly IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType;
+            private readonly IReadOnlyList<string> orderedAliases;
+            private readonly bool hasSelectValue;
+
+            private GroupingTable(
+                IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
+                IReadOnlyList<string> orderedAliases,
+                bool hasSelectValue)
+            {
+                if (groupByAliasToAggregateType == null)
+                {
+                    throw new ArgumentNullException(nameof(groupByAliasToAggregateType));
+                }
+
+                this.groupByAliasToAggregateType = groupByAliasToAggregateType;
+                this.orderedAliases = orderedAliases;
+                this.hasSelectValue = hasSelectValue;
+                this.table = new Dictionary<UInt128, SingleGroupAggregator>();
+            }
+
+            public int Count => this.table.Count;
+
+            public bool IsDone { get; private set; }
+
+            public void AddPayload(RewrittenGroupByProjection rewrittenGroupByProjection)
+            {
+                UInt128 groupByKeysHash = DistinctHash.GetHash(rewrittenGroupByProjection.GroupByItems);
+
+                if (!this.table.TryGetValue(groupByKeysHash, out SingleGroupAggregator singleGroupAggregator))
+                {
+                    singleGroupAggregator = SingleGroupAggregator.TryCreate(
+                        EmptyAggregateOperators,
+                        this.groupByAliasToAggregateType,
+                        this.orderedAliases,
+                        this.hasSelectValue,
+                        continuationToken: null).Result;
+                    this.table[groupByKeysHash] = singleGroupAggregator;
+                }
+
+                CosmosElement payload = rewrittenGroupByProjection.Payload;
+                singleGroupAggregator.AddValues(payload);
+            }
+
+            public IReadOnlyList<CosmosElement> Drain(int maxItemCount)
+            {
+                List<UInt128> keys = this.table.Keys.Take(maxItemCount).ToList();
+                List<SingleGroupAggregator> singleGroupAggregators = new List<SingleGroupAggregator>(maxItemCount);
+                foreach (UInt128 key in keys)
+                {
+                    SingleGroupAggregator singleGroupAggregator = this.table[key];
+                    singleGroupAggregators.Add(singleGroupAggregator);
+                }
+
+                foreach (UInt128 key in keys)
+                {
+                    this.table.Remove(key);
+                }
+
+                List<CosmosElement> results = new List<CosmosElement>();
+                foreach (SingleGroupAggregator singleGroupAggregator in singleGroupAggregators)
+                {
+                    results.Add(singleGroupAggregator.GetResult());
+                }
+
+                if (this.Count == 0)
+                {
+                    this.IsDone = true;
+                }
+
+                return results;
+            }
+
+            public string GetContinuationToken()
+            {
+                IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
+                jsonWriter.WriteObjectStart();
+                foreach (KeyValuePair<UInt128, SingleGroupAggregator> kvp in this.table)
+                {
+                    jsonWriter.WriteFieldName(kvp.Key.ToString());
+                    jsonWriter.WriteStringValue(kvp.Value.GetContinuationToken());
+                }
+                jsonWriter.WriteObjectEnd();
+
+                string result = Utf8StringHelpers.ToString(jsonWriter.GetResult());
+                return result;
+            }
+
+            public IEnumerator<KeyValuePair<UInt128, SingleGroupAggregator>> GetEnumerator => this.table.GetEnumerator();
+
+            public static TryCatch<GroupingTable> TryCreateFromContinuationToken(
+                IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
+                IReadOnlyList<string> orderedAliases,
+                bool hasSelectValue,
+                string groupingTableContinuationToken)
+            {
+                GroupingTable groupingTable = new GroupingTable(
+                    groupByAliasToAggregateType,
+                    orderedAliases,
+                    hasSelectValue);
+
+                if (groupingTableContinuationToken != null)
+                {
+                    if (!CosmosElement.TryParse(
+                        groupingTableContinuationToken,
+                        out CosmosObject parsedGroupingTableContinuations))
+                    {
+                        return TryCatch<GroupingTable>.FromException(new Exception($"Invalid GroupingTableContinuationToken"));
+                    }
+
+                    foreach (KeyValuePair<string, CosmosElement> kvp in parsedGroupingTableContinuations)
+                    {
+                        string key = kvp.Key;
+                        CosmosElement value = kvp.Value;
+
+                        if (!UInt128.TryParse(key, out UInt128 groupByKey))
+                        {
+                            return TryCatch<GroupingTable>.FromException(new Exception($"Invalid GroupingTableContinuationToken"));
+                        }
+
+                        if (!(value is CosmosString singleGroupAggregatorContinuationToken))
+                        {
+                            return TryCatch<GroupingTable>.FromException(new Exception($"Invalid GroupingTableContinuationToken"));
+                        }
+
+                        TryCatch<SingleGroupAggregator> tryCreateSingleGroupAggregator = SingleGroupAggregator.TryCreate(
+                            EmptyAggregateOperators,
+                            groupByAliasToAggregateType,
+                            orderedAliases,
+                            hasSelectValue,
+                            singleGroupAggregatorContinuationToken.Value);
+
+                        if (tryCreateSingleGroupAggregator.Succeeded)
+                        {
+                            groupingTable.table[groupByKey] = tryCreateSingleGroupAggregator.Result;
+                        }
+                        else
+                        {
+                            return TryCatch<GroupingTable>.FromException(tryCreateSingleGroupAggregator.Exception);
+                        }
+                    }
+                }
+
+                return TryCatch<GroupingTable>.FromResult(groupingTable);
+            }
+
+            IEnumerator<KeyValuePair<UInt128, SingleGroupAggregator>> IEnumerable<KeyValuePair<UInt128, SingleGroupAggregator>>.GetEnumerator() => this.table.GetEnumerator();
+
+            IEnumerator IEnumerable.GetEnumerator() => this.table.GetEnumerator();
         }
     }
 }
