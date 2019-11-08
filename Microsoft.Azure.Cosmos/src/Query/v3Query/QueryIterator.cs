@@ -64,6 +64,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 Properties = queryRequestOptions.Properties,
                 PartitionedQueryExecutionInfo = partitionedQueryExecutionInfo,
                 ExecutionEnvironment = queryRequestOptions.ExecutionEnvironment.GetValueOrDefault(Core.ExecutionContext.ExecutionEnvironment.Client),
+                ResponseContinuationTokenLimitInKb = queryRequestOptions.ResponseContinuationTokenLimitInKb,
             };
 
             return new QueryIterator(
@@ -145,7 +146,7 @@ namespace Microsoft.Azure.Cosmos.Query
             return response;
         }
 
-        internal override bool TryGetContinuationToken(out string state)
+        internal bool TryGetContinuationToken(out string state)
         {
             return this.cosmosQueryExecutionContext.TryGetContinuationToken(out state);
         }

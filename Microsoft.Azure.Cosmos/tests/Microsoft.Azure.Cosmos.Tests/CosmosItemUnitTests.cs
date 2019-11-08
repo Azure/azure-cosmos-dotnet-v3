@@ -746,7 +746,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 this.MockedExecutor
                     .Setup(e => e.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()))
-                    .ReturnsAsync(new BatchOperationResult(HttpStatusCode.OK));
+                    .ReturnsAsync(new TransactionalBatchOperationResult(HttpStatusCode.OK));
             }
 
             internal override BatchAsyncContainerExecutor InitializeBatchExecutorForContainer() => this.MockedExecutor.Object;
@@ -762,8 +762,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 this.MockedExecutor
                     .SetupSequence(e => e.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()))
-                    .ReturnsAsync(new BatchOperationResult((HttpStatusCode) StatusCodes.TooManyRequests))
-                    .ReturnsAsync(new BatchOperationResult(HttpStatusCode.OK));
+                    .ReturnsAsync(new TransactionalBatchOperationResult((HttpStatusCode) StatusCodes.TooManyRequests))
+                    .ReturnsAsync(new TransactionalBatchOperationResult(HttpStatusCode.OK));
             }
 
             internal override BatchAsyncContainerExecutor InitializeBatchExecutorForContainer() => this.MockedExecutor.Object;

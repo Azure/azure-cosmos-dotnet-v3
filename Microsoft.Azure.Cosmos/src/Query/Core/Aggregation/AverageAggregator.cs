@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
 {
     using System;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
     /// <summary>
     /// Concrete implementation of IAggregator that can take the global weighted average from the local weighted average of multiple partitions and continuations.
@@ -50,14 +51,14 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
             return this.globalAverage.ToString();
         }
 
-        public static AverageAggregator Create(string continuationToken)
+        public static TryCatch<IAggregator> TryCreate(string continuationToken)
         {
             AverageInfo averageInfo;
             if (continuationToken != null)
             {
                 if (!AverageInfo.TryParse(continuationToken, out averageInfo))
                 {
-                    throw new ArgumentException($"Invalid continuation token: {continuationToken}");
+                    return TryCatch<IAggregator>.FromException(new ArgumentException($"Invalid continuation token: {continuationToken}"));
                 }
             }
             else
@@ -65,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
                 averageInfo = new AverageInfo(0, 0);
             }
 
-            return new AverageAggregator(averageInfo);
+            return TryCatch<IAggregator>.FromResult(new AverageAggregator(averageInfo));
         }
 
         /// <summary>

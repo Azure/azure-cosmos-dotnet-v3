@@ -35,13 +35,13 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task StatusCodesAreSetThroughResponseAsync()
         {
-            List<BatchOperationResult> results = new List<BatchOperationResult>();
+            List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
             ItemBatchOperation[] arrayOperations = new ItemBatchOperation[1];
 
             ItemBatchOperation operation = new ItemBatchOperation(OperationType.Read, 0, "0");
 
             results.Add(
-                    new BatchOperationResult(HttpStatusCode.OK)
+                    new TransactionalBatchOperationResult(HttpStatusCode.OK)
                     {
                         ResourceStream = new MemoryStream(new byte[] { 0x41, 0x42 }, index: 0, count: 2, writable: false, publiclyVisible: true),
                         ETag = operation.Id
@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 serializer: new CosmosJsonDotNetSerializer(),
             cancellationToken: default(CancellationToken));
 
-            BatchResponse batchresponse = await BatchResponse.PopulateFromContentAsync(
+            TransactionalBatchResponse batchresponse = await TransactionalBatchResponse.FromResponseMessageAsync(
                 new ResponseMessage(HttpStatusCode.OK) { Content = responseContent },
                 batchRequest,
                 new CosmosJsonDotNetSerializer());
@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void ToResponseMessage_MapsProperties()
         {
-            BatchOperationResult result = new BatchOperationResult(HttpStatusCode.OK)
+            TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.OK)
             {
                 ResourceStream = new MemoryStream(new byte[] { 0x41, 0x42 }, index: 0, count: 2, writable: false, publiclyVisible: true),
                 ETag = "1234",
@@ -91,13 +91,13 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private async Task<bool> ConstainsSplitIsTrueInternal(HttpStatusCode statusCode, SubStatusCodes subStatusCode)
         {
-            List<BatchOperationResult> results = new List<BatchOperationResult>();
+            List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
             ItemBatchOperation[] arrayOperations = new ItemBatchOperation[1];
 
             ItemBatchOperation operation = new ItemBatchOperation(OperationType.Read, 0, "0");
 
             results.Add(
-                    new BatchOperationResult(HttpStatusCode.OK)
+                    new TransactionalBatchOperationResult(HttpStatusCode.OK)
                     {
                         ResourceStream = new MemoryStream(new byte[] { 0x41, 0x42 }, index: 0, count: 2, writable: false, publiclyVisible: true),
                         ETag = operation.Id
@@ -116,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ResponseMessage response = new ResponseMessage(statusCode) { Content = responseContent };
             response.Headers.SubStatusCode = subStatusCode;
 
-            BatchResponse batchresponse = await BatchResponse.PopulateFromContentAsync(
+            TransactionalBatchResponse batchresponse = await TransactionalBatchResponse.FromResponseMessageAsync(
                 response,
                 batchRequest,
                 new CosmosJsonDotNetSerializer());
