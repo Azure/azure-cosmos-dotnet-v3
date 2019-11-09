@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosQueryResponseMessageHeaders responseHeaders,
             HttpStatusCode statusCode,
             RequestMessage requestMessage,
-            CosmosDiagnostics diagnostics,
+            CosmosDiagnosticsCore diagnostics,
             string errorMessage,
             Error error)
             : base(
@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos
             int count,
             long responseLengthBytes,
             CosmosQueryResponseMessageHeaders responseHeaders,
-            CosmosDiagnostics diagnostics)
+            CosmosDiagnosticsCore diagnostics)
         {
             if (count < 0)
             {
@@ -120,7 +120,7 @@ namespace Microsoft.Azure.Cosmos
             RequestMessage requestMessage,
             string errorMessage,
             Error error,
-            CosmosDiagnostics diagnostics)
+            CosmosDiagnosticsCore diagnostics)
         {
             QueryResponse cosmosQueryResponse = new QueryResponse(
                 result: Enumerable.Empty<CosmosElement>(),

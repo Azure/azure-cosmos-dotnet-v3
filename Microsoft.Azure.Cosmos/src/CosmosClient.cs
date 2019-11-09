@@ -717,6 +717,7 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey: null,
                 streamPayload: streamPayload,
                 requestEnricher: (httpRequestMessage) => httpRequestMessage.AddThroughputHeader(throughput),
+                diagnosticsScope: null,
                 cancellationToken: cancellationToken);
         }
 
@@ -743,6 +744,7 @@ namespace Microsoft.Azure.Cosmos
                     QueryRequestOptions.FillMaxItemCount(request, maxItemCount);
                 },
                 responseCreator: response => this.ClientContext.ResponseFactory.CreateQueryFeedResponse<DatabaseProperties>(response),
+                diagnosticsScope: null,
                 cancellationToken: cancellationToken);
         }
 

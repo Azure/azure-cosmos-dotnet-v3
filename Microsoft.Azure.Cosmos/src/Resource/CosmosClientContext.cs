@@ -71,6 +71,7 @@ namespace Microsoft.Azure.Cosmos
             string itemId,
             Stream streamPayload,
             Action<RequestMessage> requestEnricher,
+            CosmosDiagnosticsCore diagnosticsScope,
             CancellationToken cancellationToken);
 
         /// <summary>
@@ -86,6 +87,7 @@ namespace Microsoft.Azure.Cosmos
             PartitionKey? partitionKey,
             Stream streamPayload,
             Action<RequestMessage> requestEnricher,
+            CosmosDiagnosticsCore diagnosticsScope,
             CancellationToken cancellationToken);
 
         /// <summary>
@@ -102,6 +104,7 @@ namespace Microsoft.Azure.Cosmos
            Stream streamPayload,
            Action<RequestMessage> requestEnricher,
            Func<ResponseMessage, T> responseCreator,
+           CosmosDiagnosticsCore diagnosticsScope,
            CancellationToken cancellationToken);
     }
 }

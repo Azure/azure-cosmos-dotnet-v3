@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             CosmosClientSideRequestStatistics cosmosClientSideRequestStatistics = response.RequestStats as CosmosClientSideRequestStatistics;
-            cosmosResponse.Diagnostics = new PointOperationStatistics(
+            PointOperationStatistics pointOperationStatistics = new PointOperationStatistics(
                 activityId: cosmosResponse.Headers.ActivityId,
                 statusCode: response.StatusCode,
                 subStatusCode: response.SubStatusCode,
@@ -47,10 +47,15 @@ namespace Microsoft.Azure.Cosmos
                 requestUri: requestMessage?.RequestUri,
                 clientSideRequestStatistics: cosmosClientSideRequestStatistics);
 
+            requestMessage.DiagnosticsCore.AddJsonAttribute("DSR", pointOperationStatistics);
+            cosmosResponse.DiagnosticsCore = requestMessage.DiagnosticsCore;
+
             return cosmosResponse;
         }
 
-        internal static ResponseMessage ToCosmosResponseMessage(this DocumentClientException dce, RequestMessage request)
+        internal static ResponseMessage ToCosmosResponseMessage(
+            this DocumentClientException dce,
+            RequestMessage request)
         {
             // if StatusCode is null it is a client business logic error and it never hit the backend, so throw
             if (dce.StatusCode == null)
@@ -87,7 +92,7 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            cosmosResponse.Diagnostics = new PointOperationStatistics(
+            PointOperationStatistics pointOperationStatistics = new PointOperationStatistics(
                 activityId: cosmosResponse.Headers.ActivityId,
                 statusCode: dce.StatusCode.Value,
                 subStatusCode: SubStatusCodes.Unknown,
@@ -96,6 +101,9 @@ namespace Microsoft.Azure.Cosmos
                 method: request?.Method,
                 requestUri: request?.RequestUri,
                 clientSideRequestStatistics: dce.RequestStatistics as CosmosClientSideRequestStatistics);
+
+            request.DiagnosticsCore.AddJsonAttribute("DCE", pointOperationStatistics);
+            cosmosResponse.DiagnosticsCore = request.DiagnosticsCore;
 
             if (request != null)
             {

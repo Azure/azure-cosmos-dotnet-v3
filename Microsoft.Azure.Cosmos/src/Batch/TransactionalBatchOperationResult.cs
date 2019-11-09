@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the cosmos diagnostic information for the current request to Azure Cosmos DB service
         /// </summary>
-        internal virtual CosmosDiagnostics Diagnostics { get; set; }
+        internal virtual CosmosDiagnosticsCore Diagnostics { get; set; }
 
         internal static Result ReadOperationResult(Memory<byte> input, out TransactionalBatchOperationResult batchOperationResult)
         {
@@ -203,7 +203,7 @@ namespace Microsoft.Azure.Cosmos
             responseMessage.Headers.RetryAfter = this.RetryAfter;
             responseMessage.Headers.RequestCharge = this.RequestCharge;
             responseMessage.Content = this.ResourceStream;
-            responseMessage.Diagnostics = this.Diagnostics;
+            responseMessage.DiagnosticsCore = this.Diagnostics;
             return responseMessage;
         }
     }

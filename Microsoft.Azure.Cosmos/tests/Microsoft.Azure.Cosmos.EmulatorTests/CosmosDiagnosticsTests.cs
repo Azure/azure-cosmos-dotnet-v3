@@ -46,6 +46,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
             ItemResponse<ToDoActivity> createResponse = await this.Container.CreateItemAsync<ToDoActivity>(item: testItem);
             Assert.IsNotNull(createResponse.Diagnostics);
+            string createDiagnostics = createResponse.Diagnostics.ToString();
+            Assert.IsNotNull(createDiagnostics);
 
             ItemResponse<ToDoActivity> readResponse = await this.Container.ReadItemAsync<ToDoActivity>(id: testItem.id, partitionKey: new PartitionKey(testItem.status));
             Assert.IsNotNull(readResponse.Diagnostics);
@@ -64,6 +66,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 partitionKey: new PartitionKey(testItem.status),
                 streamPayload: TestCommon.Serializer.ToStream<ToDoActivity>(testItem));
             Assert.IsNotNull(createStreamResponse.Diagnostics);
+            string diagnostics = createStreamResponse.Diagnostics.ToString();
+            Assert.IsNotNull(diagnostics);
 
             ResponseMessage readStreamResponse = await this.Container.ReadItemStreamAsync(
                 id: testItem.id,

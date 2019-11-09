@@ -228,12 +228,15 @@ namespace Microsoft.Azure.Cosmos
             //Throw the exception
             cosmosResponseMessage.EnsureSuccessStatusCode();
 
-            if (cosmosResponseMessage.Content == null)
+            using (cosmosResponseMessage.DiagnosticsCore.CreateScope("ResponseSerialize"))
             {
-                return default(T);
-            }
+                if (cosmosResponseMessage.Content == null)
+                {
+                    return default(T);
+                }
 
-            return jsonSerializer.FromStream<T>(cosmosResponseMessage.Content);
+                return jsonSerializer.FromStream<T>(cosmosResponseMessage.Content);
+            }
         }
     }
 }

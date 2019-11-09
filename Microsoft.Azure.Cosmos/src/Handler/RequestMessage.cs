@@ -72,6 +72,8 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        internal CosmosDiagnosticsCore DiagnosticsCore { get; set; }
+
         internal RequestOptions RequestOptions { get; set; }
 
         internal ResourceType ResourceType { get; set; }

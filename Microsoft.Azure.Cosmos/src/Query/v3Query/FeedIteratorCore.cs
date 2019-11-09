@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos
                     this.clientContext.PropertiesSerializer :
                     this.clientContext.SqlQuerySpecSerializer;
 
-                stream = serializer.ToStream(this.querySpec);    
+                stream = serializer.ToStream(this.querySpec);
                 operation = OperationType.Query;
             }
 
@@ -93,6 +93,7 @@ namespace Microsoft.Azure.Cosmos
                        request.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
                    }
                },
+               diagnosticsScope: null,
                cancellationToken: cancellationToken);
 
             this.continuationToken = response.Headers.ContinuationToken;

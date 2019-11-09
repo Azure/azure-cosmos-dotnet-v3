@@ -76,15 +76,16 @@ namespace Microsoft.Azure.Cosmos.Tests
                 serializer: new CosmosJsonDotNetSerializer(),
             cancellationToken: default(CancellationToken));
 
-            CosmosDiagnostics diagnostics = new PointOperationStatistics(Guid.NewGuid().ToString(), HttpStatusCode.OK, SubStatusCodes.Unknown, 0, string.Empty, HttpMethod.Get, new Uri("http://localhost"), new CosmosClientSideRequestStatistics());
+            CosmosDiagnosticsCore scope = new CosmosDiagnosticsCore();
+            scope.AddJsonAttribute("request", new PointOperationStatistics(Guid.NewGuid().ToString(), HttpStatusCode.OK, SubStatusCodes.Unknown, 0, string.Empty, HttpMethod.Get, new Uri("http://localhost"), new CosmosClientSideRequestStatistics()));
 
             TransactionalBatchResponse batchresponse = await TransactionalBatchResponse.FromResponseMessageAsync(
-                new ResponseMessage(HttpStatusCode.OK) { Content = responseContent, Diagnostics = diagnostics },
+                new ResponseMessage(HttpStatusCode.OK) { Content = responseContent, DiagnosticsCore = scope },
                 batchRequest,
                 new CosmosJsonDotNetSerializer());
 
             PartitionKeyRangeBatchResponse response = new PartitionKeyRangeBatchResponse(arrayOperations.Length, batchresponse, new CosmosJsonDotNetSerializer());
-            Assert.AreEqual(diagnostics, response.Diagnostics);
+            Assert.AreEqual(scope.ToString(), response.Diagnostics.ToString());
         }
     }
 }

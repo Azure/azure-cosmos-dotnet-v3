@@ -43,6 +43,7 @@ namespace Microsoft.Azure.Cosmos
             this.RequestMessage = requestMessage;
             this.ErrorMessage = errorMessage;
             this.Headers = new Headers();
+            this.DiagnosticsCore = default(CosmosDiagnosticsCore);
         }
 
         /// <summary>
@@ -60,14 +61,14 @@ namespace Microsoft.Azure.Cosmos
             string errorMessage,
             Error error,
             Headers headers,
-            CosmosDiagnostics diagnostics)
+            CosmosDiagnosticsCore diagnostics)
         {
             this.StatusCode = statusCode;
             this.RequestMessage = requestMessage;
             this.ErrorMessage = errorMessage;
             this.Error = error;
             this.Headers = headers;
-            this.Diagnostics = diagnostics;
+            this.DiagnosticsCore = diagnostics;
         }
 
         /// <summary>
@@ -114,7 +115,9 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the cosmos diagnostic information for the current request to Azure Cosmos DB service
         /// </summary>
-        public virtual CosmosDiagnostics Diagnostics { get; internal set; }
+        public virtual CosmosDiagnostics Diagnostics => this.DiagnosticsCore;
+
+        internal CosmosDiagnosticsCore DiagnosticsCore { get; set; }
 
         /// <summary>
         /// Gets the internal error object.

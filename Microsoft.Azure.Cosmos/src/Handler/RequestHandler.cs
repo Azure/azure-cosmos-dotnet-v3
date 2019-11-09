@@ -36,7 +36,10 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(this.InnerHandler));
             }
 
-            return this.InnerHandler.SendAsync(request, cancellationToken);
+            using (request.DiagnosticsCore.CreateScope("Handler"))
+            {
+                return this.InnerHandler.SendAsync(request, cancellationToken);
+            }
         }
     }
 }

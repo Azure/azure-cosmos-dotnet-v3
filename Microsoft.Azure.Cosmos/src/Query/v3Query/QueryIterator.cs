@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         result: responseCore.CosmosElements,
                         count: responseCore.CosmosElements.Count,
                         responseLengthBytes: responseCore.ResponseLengthBytes,
-                        diagnostics: diagnostics,
+                        diagnostics: default(CosmosDiagnosticsCore), // devnote: need to wire up query diagnostics
                         responseHeaders: new CosmosQueryResponseMessageHeaders(
                             responseCore.ContinuationToken,
                             responseCore.DisallowContinuationTokenMessage,
@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         error: null,
                         errorMessage: responseCore.ErrorMessage,
                         requestMessage: null,
-                        diagnostics: diagnostics,
+                        diagnostics: default(CosmosDiagnosticsCore), // devnote: need to wire up query diagnostics
                         responseHeaders: new CosmosQueryResponseMessageHeaders(
                             responseCore.ContinuationToken,
                             responseCore.DisallowContinuationTokenMessage,

@@ -33,18 +33,20 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="subStatusCode">Provides further details about why the batch was not processed.</param>
         /// <param name="errorMessage">The reason for failure.</param>
         /// <param name="operations">Operations that were to be executed.</param>
+        /// <param name="cosmosDiagnostics">Diagnostics for the operation</param>
         internal TransactionalBatchResponse(
             HttpStatusCode statusCode,
             SubStatusCodes subStatusCode,
             string errorMessage,
-            IReadOnlyList<ItemBatchOperation> operations)
+            IReadOnlyList<ItemBatchOperation> operations,
+            CosmosDiagnosticsCore cosmosDiagnostics)
             : this(statusCode,
                   subStatusCode,
                   errorMessage,
                   requestCharge: 0,
                   retryAfter: null,
                   activityId: Guid.Empty.ToString(),
-                  cosmosDiagnostics: null,
+                  cosmosDiagnostics: cosmosDiagnostics,
                   operations: operations,
                   serializer: null)
         {
@@ -65,7 +67,7 @@ namespace Microsoft.Azure.Cosmos
             double requestCharge,
             TimeSpan? retryAfter,
             string activityId,
-            CosmosDiagnostics cosmosDiagnostics,
+            CosmosDiagnosticsCore cosmosDiagnostics,
             IReadOnlyList<ItemBatchOperation> operations,
             CosmosSerializer serializer)
         {
@@ -78,6 +80,7 @@ namespace Microsoft.Azure.Cosmos
             this.RetryAfter = retryAfter;
             this.ActivityId = activityId;
             this.Diagnostics = cosmosDiagnostics;
+            this.DiagnosticsScope = cosmosDiagnostics;
         }
 
         /// <summary>
@@ -131,6 +134,8 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the cosmos diagnostic information for the current request to Azure Cosmos DB service
         /// </summary>
         public virtual CosmosDiagnostics Diagnostics { get; }
+
+        internal virtual CosmosDiagnosticsCore DiagnosticsScope { get; }
 
         internal virtual SubStatusCodes SubStatusCode { get; }
 
@@ -241,7 +246,7 @@ namespace Microsoft.Azure.Cosmos
                                 responseMessage.Headers.RequestCharge,
                                 responseMessage.Headers.RetryAfter,
                                 responseMessage.Headers.ActivityId,
-                                responseMessage.Diagnostics,
+                                responseMessage.DiagnosticsCore,
                                 serverRequest.Operations,
                                 serializer);
                         }
@@ -256,7 +261,7 @@ namespace Microsoft.Azure.Cosmos
                         responseMessage.Headers.RequestCharge,
                         responseMessage.Headers.RetryAfter,
                         responseMessage.Headers.ActivityId,
-                        responseMessage.Diagnostics,
+                        responseMessage.DiagnosticsCore,
                         serverRequest.Operations,
                         serializer);
                 }
@@ -274,7 +279,7 @@ namespace Microsoft.Azure.Cosmos
                             responseMessage.Headers.RequestCharge,
                             responseMessage.Headers.RetryAfter,
                             responseMessage.Headers.ActivityId,
-                            responseMessage.Diagnostics,
+                            responseMessage.DiagnosticsCore,
                             serverRequest.Operations,
                             serializer);
                     }
@@ -368,7 +373,7 @@ namespace Microsoft.Azure.Cosmos
                 responseMessage.Headers.RequestCharge,
                 responseMessage.Headers.RetryAfter,
                 responseMessage.Headers.ActivityId,
-                responseMessage.Diagnostics,
+                responseMessage.DiagnosticsCore,
                 serverRequest.Operations,
                 serializer);
 

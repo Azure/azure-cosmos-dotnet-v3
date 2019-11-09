@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                             RequestCharge = responseCore.RequestCharge,
                             ActivityId = responseCore.ActivityId
                         },
-                        diagnostics: null);
+                        diagnostics: new CosmosDiagnosticsCore());
 
             using (Stream stream = queryResponse.Content)
             {

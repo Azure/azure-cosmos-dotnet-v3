@@ -162,13 +162,14 @@ namespace Microsoft.Azure.Cosmos
 
         internal ResponseMessage ToCosmosResponseMessage(RequestMessage request)
         {
+            request.DiagnosticsCore.AddJsonAttribute("CE", this.Diagnostics);
             return new ResponseMessage(
                  headers: this.Headers,
                  requestMessage: request,
                  errorMessage: this.Message,
                  statusCode: this.StatusCode,
                  error: this.Error,
-                 diagnostics: this.Diagnostics);
+                 diagnostics: request.DiagnosticsCore);
         }
     }
 }

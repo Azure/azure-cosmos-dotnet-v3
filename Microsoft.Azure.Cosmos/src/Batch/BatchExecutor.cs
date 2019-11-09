@@ -84,6 +84,7 @@ namespace Microsoft.Azure.Cosmos
                         requestMessage.Headers.Add(HttpConstants.HttpHeaders.IsBatchAtomic, bool.TrueString);
                         requestMessage.Headers.Add(HttpConstants.HttpHeaders.IsBatchOrdered, bool.TrueString);
                     },
+                    diagnosticsScope: null,
                     cancellationToken);
 
                 return await TransactionalBatchResponse.FromResponseMessageAsync(
