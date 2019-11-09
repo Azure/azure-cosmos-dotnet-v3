@@ -39,8 +39,11 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.BenchmarkStrategies
                     case BenchmarkFrameworks.NetCore21:
                         toolchain = CsProjCoreToolchain.NetCoreApp21;
                         break;
-                    case BenchmarkFrameworks.NetFx471:
-                        toolchain = CsProjClassicNetToolchain.Net471;
+                    //case BenchmarkFrameworks.NetFx471:
+                    //    toolchain = CsProjClassicNetToolchain.Net471;
+                    //    break;
+                    case BenchmarkFrameworks.NetCore30:
+                        toolchain = CsProjCoreToolchain.NetCoreApp30;
                         break;
                 }
 

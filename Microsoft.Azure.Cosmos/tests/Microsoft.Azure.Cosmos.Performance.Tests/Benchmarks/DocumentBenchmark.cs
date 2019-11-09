@@ -15,8 +15,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
     /// <summary>
     /// Benchmark for Item related operations.
     /// </summary>
-    [MemoryDiagnoser]
-    [NetThroughput(new BenchmarkFrameworks[] { BenchmarkFrameworks.NetFx471, BenchmarkFrameworks.NetCore21 }, maxIterations: 50)]
     public class ItemBenchmark
     {
         private readonly CosmosClient clientForTests;

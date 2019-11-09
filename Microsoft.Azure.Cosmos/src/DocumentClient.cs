@@ -698,7 +698,7 @@ namespace Microsoft.Azure.Cosmos
             this.ServiceEndpoint = serviceEndpoint;
         }
 
-        internal virtual async Task<ClientCollectionCache> GetCollectionCacheAsync()
+        internal virtual async ValueTask<ClientCollectionCache> GetCollectionCacheAsync()
         {
             await this.EnsureValidClientAsync();
             return this.collectionCache;
@@ -1315,7 +1315,7 @@ namespace Microsoft.Azure.Cosmos
             get
             {
 #pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
-                TaskHelper.InlineIfPossibleAsync(() => this.EnsureValidClientAsync(), null).Wait();
+                TaskHelper.InlineIfPossibleAsync(() => this.EnsureValidClientAsync().AsTask(), null).Wait();
 #pragma warning restore VSTHRD002 // Avoid problematic synchronous waits
                 return this.desiredConsistencyLevel.HasValue ? this.desiredConsistencyLevel.Value :
                     this.accountServiceConfiguration.DefaultConsistencyLevel;
@@ -1536,7 +1536,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal virtual async Task EnsureValidClientAsync()
+        internal virtual async ValueTask EnsureValidClientAsync()
         {
             this.ThrowIfDisposed();
 

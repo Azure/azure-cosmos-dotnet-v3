@@ -15,8 +15,13 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.BenchmarkStrategies
         NetCore21,
 
         /// <summary>
+        /// Net Core 3.0
+        /// </summary>
+        NetCore30,
+
+        /// <summary>
         /// Net Full Framework 4.7.1
         /// </summary>
-        NetFx471,
+        //NetFx471,
     }
 }

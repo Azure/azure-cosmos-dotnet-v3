@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
@@ -27,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             AsyncCache<int, int> cache = new AsyncCache<int, int>();
 
-            List<Task> tasks = new List<Task>();
+            List<ValueTask<int>> tasks = new List<ValueTask<int>>();
             for (int i = 0; i < 10; i++)
             {
                 for (int j = 0; j < 10; j++)
@@ -37,19 +38,19 @@ namespace Microsoft.Azure.Cosmos.Tests
                 }
             }
 
-            await Task.WhenAll(tasks);
+            await Task.WhenAll(tasks.Select(e => e.AsTask()));
 
             Assert.AreEqual(10, numberOfCacheRefreshes);
 
             Assert.AreEqual(4, await cache.GetAsync(2, -1, () => refreshFunc(2, CancellationToken.None), CancellationToken.None));
 
-            Func<int, CancellationToken, Task<int>> refreshFunc1 = (key, cancellationToken) =>
+            Func<int, CancellationToken, ValueTask<int>> refreshFunc1 = (key, cancellationToken) =>
             {
                 Interlocked.Increment(ref numberOfCacheRefreshes);
                 return Task.FromResult(key * 2 + 1);
             };
 
-            List<Task> tasks1 = new List<Task>();
+            List<ValueTask<int>> tasks1 = new List<ValueTask<int>>();
             for (int i = 0; i < 10; i++)
             {
                 for (int j = 0; j < 10; j++)
@@ -65,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 }
             }
             
-            await Task.WhenAll(tasks1);
+            await Task.WhenAll(tasks1.Select(e => e.AsTask()));
 
             Assert.AreEqual(20, numberOfCacheRefreshes);
             Assert.AreEqual(5, await cache.GetAsync(2, -1, () => refreshFunc(2, CancellationToken.None), CancellationToken.None));
@@ -100,9 +101,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             // set up two threads that are concurrently updating the async cache for the same key.
             // the only difference is that one thread passes in a cancellation token
             // and the other does not.
-            Task<int> getTask1 = cache.GetAsync(key: 1, obsoleteValue: -1, singleValueInitFunc: generatorFunc1, cancellationToken: cancellationTokenSource.Token);
+            ValueTask<int> getTask1 = cache.GetAsync(key: 1, obsoleteValue: -1, singleValueInitFunc: generatorFunc1, cancellationToken: cancellationTokenSource.Token);
 
-            Task<int> getTask2 = cache.GetAsync(key: 1, obsoleteValue: -1, singleValueInitFunc: generatorFunc2, cancellationToken: CancellationToken.None);
+            ValueTask<int> getTask2 = cache.GetAsync(key: 1, obsoleteValue: -1, singleValueInitFunc: generatorFunc2, cancellationToken: CancellationToken.None);
 
             // assert that the tasks haven't completed.
             Assert.IsFalse(getTask2.IsCompleted);
@@ -152,9 +153,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             // set up two threads that are concurrently updating the async cache for the same key.
             // the only difference is that one thread passes in a cancellation token
             // and the other does not.
-            Task<int> getTask1 = cache.GetAsync(key: 1, obsoleteValue: -1, singleValueInitFunc: generatorFunc1, cancellationToken: cancellationTokenSource.Token);
+            ValueTask<int> getTask1 = cache.GetAsync(key: 1, obsoleteValue: -1, singleValueInitFunc: generatorFunc1, cancellationToken: cancellationTokenSource.Token);
 
-            Task<int> getTask2 = cache.GetAsync(key: 1, obsoleteValue: -1, singleValueInitFunc: generatorFunc2, cancellationToken: cancellationTokenSource.Token);
+            ValueTask<int> getTask2 = cache.GetAsync(key: 1, obsoleteValue: -1, singleValueInitFunc: generatorFunc2, cancellationToken: cancellationTokenSource.Token);
 
             // assert that the tasks haven't completed.
             Assert.IsFalse(getTask2.IsCompleted);

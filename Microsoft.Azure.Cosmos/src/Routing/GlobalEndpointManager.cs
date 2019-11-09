@@ -278,7 +278,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 this.connectionPolicy.PreferredLocations));
         }
 
-        private Task<AccountProperties> RefreshDatabaseAccountInternalAsync()
+        private ValueTask<AccountProperties> RefreshDatabaseAccountInternalAsync()
         {
             return this.databaseAccountCache.GetAsync(
                 string.Empty,

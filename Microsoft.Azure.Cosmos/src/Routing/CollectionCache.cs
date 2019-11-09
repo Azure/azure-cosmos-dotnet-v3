@@ -29,10 +29,10 @@ namespace Microsoft.Azure.Cosmos.Common
         {
             internal InternalCache()
             {
-                collectionInfoByName = new AsyncCache<string, ContainerProperties>(new CollectionRidComparer());
-                collectionInfoById = new AsyncCache<string, ContainerProperties>(new CollectionRidComparer());
-                collectionInfoByNameLastRefreshTime = new ConcurrentDictionary<string, DateTime>();
-                collectionInfoByIdLastRefreshTime = new ConcurrentDictionary<string, DateTime>();
+                this.collectionInfoByName = new AsyncCache<string, ContainerProperties>(new CollectionRidComparer());
+                this.collectionInfoById = new AsyncCache<string, ContainerProperties>(new CollectionRidComparer());
+                this.collectionInfoByNameLastRefreshTime = new ConcurrentDictionary<string, DateTime>();
+                this.collectionInfoByIdLastRefreshTime = new ConcurrentDictionary<string, DateTime>();
             }
 
             internal readonly AsyncCache<string, ContainerProperties> collectionInfoByName;
@@ -211,7 +211,7 @@ namespace Microsoft.Azure.Cosmos.Common
             return null;
         }
 
-        private Task<ContainerProperties> ResolveByRidAsync(
+        private ValueTask<ContainerProperties> ResolveByRidAsync(
             string apiVersion,
             string resourceId,
             CancellationToken cancellationToken)
@@ -235,7 +235,7 @@ namespace Microsoft.Azure.Cosmos.Common
                 cancellationToken);
         }
 
-        internal virtual async Task<ContainerProperties> ResolveByNameAsync(
+        internal virtual async ValueTask<ContainerProperties> ResolveByNameAsync(
             string apiVersion,
             string resourceAddress,
             CancellationToken cancellationToken)

@@ -7,6 +7,7 @@
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using CommandLine;
@@ -22,6 +23,8 @@
 
         private int pendingTaskCount;
         private long itemsInserted;
+        private long itemsThrottled;
+        private long itemsFailed;
         private CosmosClient client;
         private double[] RequestUnitsConsumed { get; set; }
 
@@ -67,7 +70,7 @@
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
                 RequestTimeout = new TimeSpan(1, 0, 0),
-                MaxRetryAttemptsOnRateLimitedRequests = 10,
+                MaxRetryAttemptsOnRateLimitedRequests = 0,
                 MaxRetryWaitTimeOnRateLimitedRequests = TimeSpan.FromSeconds(60),
             };
 
@@ -96,6 +99,29 @@
             }
 
             Environment.Exit(errors.Count());
+        }
+
+        private static readonly JsonSerializer Serializer = JsonSerializer.Create();
+
+        private static MemoryStream ToStream<T>(T input)
+        {
+            MemoryStream streamPayload = new MemoryStream();
+            using (StreamWriter streamWriter = new StreamWriter(streamPayload, 
+                encoding: new UTF8Encoding(false, true), 
+                bufferSize: 1024*1024, 
+                leaveOpen: true))
+            {
+                using (JsonWriter writer = new JsonTextWriter(streamWriter))
+                {
+                    writer.Formatting = Newtonsoft.Json.Formatting.None;
+                    Program.Serializer.Serialize(writer, input);
+                    writer.Flush();
+                    streamWriter.Flush();
+                }
+            }
+
+            streamPayload.Position = 0;
+            return streamPayload;
         }
 
         /// <summary>
@@ -128,20 +154,41 @@
 
             Console.WriteLine("Starting Inserts with {0} tasks", taskCount);
             Console.WriteLine();
-            string sampleItem = File.ReadAllText(options.ItemTemplateFile);
+            string sampleItemString = File.ReadAllText(options.ItemTemplateFile);
 
             pendingTaskCount = taskCount;
-            var tasks = new List<Task>();
-            tasks.Add(this.LogOutputStats());
 
             string partitionKeyPath = containerResponse.Resource.PartitionKeyPath;
             long numberOfItemsToInsert = options.ItemCount / taskCount;
-            for (var i = 0; i < taskCount; i++)
-            {
-                tasks.Add(this.InsertItem(i, container, partitionKeyPath, sampleItem, numberOfItemsToInsert));
-            }
 
-            await Task.WhenAll(tasks);
+            Stopwatch serializationTime = new Stopwatch();
+            serializationTime.Start();
+            Tuple<string, MemoryStream>[] inputs = new Tuple<string, MemoryStream>[options.ItemCount];
+            string partitionKeyProperty = partitionKeyPath.Replace("/", "");
+            for (var i = 0; i < options.ItemCount; i++)
+            {
+                Dictionary<string, object> newDictionary = JsonConvert.DeserializeObject<Dictionary<string, object>>(sampleItemString);
+
+                string newPartitionKey = Guid.NewGuid().ToString();
+                newDictionary["id"] = Guid.NewGuid().ToString();
+                newDictionary[partitionKeyProperty] = newPartitionKey;
+
+                MemoryStream ms = Program.ToStream(newDictionary);
+                inputs[i] = new Tuple<string, MemoryStream>(newPartitionKey, ms);
+            }
+            serializationTime.Stop();
+            Console.WriteLine($"Payload serialization took: {serializationTime.ElapsedMilliseconds/1000} seconds");
+
+            Console.WriteLine("Starting STREAM inserts");
+            ////var tasks = new List<Task>();
+            ////tasks.Add(this.LogOutputStats());
+
+            ////for (var i = 0; i < taskCount; i++)
+            ////{
+            ////    tasks.Add(this.InsertItem(i, container, inputs, numberOfItemsToInsert));
+            ////}
+
+            ////await Task.WhenAll(tasks);
 
             if (options.CleanupOnFinish)
             {
@@ -152,46 +199,55 @@
         }
 
         private async Task InsertItem(
-            int taskId, 
-            Container container, 
-            string partitionKeyPath,
-            string sampleJson, 
+            int taskId,
+            Container container,
+            Tuple<string, MemoryStream>[] inputs,
             long numberOfItemsToInsert)
         {
             this.RequestUnitsConsumed[taskId] = 0;
-            string partitionKeyProperty = partitionKeyPath.Replace("/", "");
-            Dictionary<string, object> newDictionary = JsonConvert.DeserializeObject<Dictionary<string, object>>(sampleJson);
 
-            for (var i = 0; i < numberOfItemsToInsert; i++)
+            long startIndex = taskId * numberOfItemsToInsert;
+            long count = numberOfItemsToInsert;
+            if (startIndex + numberOfItemsToInsert > inputs.Length)
             {
-                string newPartitionKey = Guid.NewGuid().ToString();
-                newDictionary["id"] = Guid.NewGuid().ToString();
-                newDictionary[partitionKeyProperty] = newPartitionKey;
+                count = inputs.Length - startIndex + 1;
+            }
 
-                try
+            try
+            {
+                for (var i = 0; i < count; i++)
                 {
-                    var itemResponse = await container.CreateItemAsync(
-                            newDictionary,
-                            new PartitionKey(newPartitionKey));
+                    Tuple<string, MemoryStream> operationInput = inputs[startIndex + i];
 
-                    string partition = itemResponse.Headers.Session.Split(':')[0];
-                    this.RequestUnitsConsumed[taskId] += itemResponse.RequestCharge;
-                    Interlocked.Increment(ref this.itemsInserted);
-                }
-                catch (CosmosException ex)
-                {
-                    if (ex.StatusCode != HttpStatusCode.Forbidden)
-                    {
-                        Trace.TraceError($"Failed to write {JsonConvert.SerializeObject(newDictionary)}. Exception was {ex}");
-                    }
-                    else
+                    var itemResponse = await container.CreateItemStreamAsync(
+                            operationInput.Item2,
+                            new PartitionKey(operationInput.Item1));
+
+                    this.RequestUnitsConsumed[taskId] += itemResponse.Headers.RequestCharge;
+                    if (itemResponse.IsSuccessStatusCode)
                     {
                         Interlocked.Increment(ref this.itemsInserted);
                     }
+                    else if (itemResponse.StatusCode == (HttpStatusCode)429)
+                    {
+                        Interlocked.Increment(ref this.itemsThrottled);
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Insert failed with statuscode: {itemResponse.StatusCode}");
+                        Interlocked.Increment(ref this.itemsFailed);
+                    }
                 }
             }
-
-            Interlocked.Decrement(ref this.pendingTaskCount);
+            catch(Exception ex)
+            {
+                Console.WriteLine($"Insert task failed with {ex.ToString()}");
+                throw;
+            }
+            finally
+            {
+                Interlocked.Decrement(ref this.pendingTaskCount);
+            }
         }
 
         private async Task LogOutputStats()
@@ -217,11 +273,12 @@
                 ruPerSecond = (requestUnits / seconds);
                 ruPerMonth = ruPerSecond * 86400 * 30;
 
-                Console.WriteLine("Inserted {0} docs @ {1} writes/s, {2} RU/s ({3}B max monthly 1KB reads)",
-                    currentCount,
+                Console.WriteLine("Summary: RPS: {0, 10}, RUPS: {1, 10}, Created: {2, 10}, Throttled: {3, 10}, Failed: {4, 10}",
                     Math.Round(this.itemsInserted / seconds),
                     Math.Round(ruPerSecond),
-                    Math.Round(ruPerMonth / (1000 * 1000 * 1000)));
+                    currentCount,
+                    this.itemsThrottled,
+                    this.itemsFailed);
 
                 lastCount = itemsInserted;
                 lastSeconds = seconds;

@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.collectionCache = collectionCache;
         }
 
-        public virtual async Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(
+        public virtual async ValueTask<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(
             string collectionRid,
             Range<string> range,
             bool forceRefresh = false)
@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             return routingMap.GetOverlappingRanges(range);
         }
 
-        public async Task<PartitionKeyRange> TryGetPartitionKeyRangeByIdAsync(
+        public async ValueTask<PartitionKeyRange> TryGetPartitionKeyRangeByIdAsync(
             string collectionResourceId,
             string partitionKeyRangeId,
             bool forceRefresh = false)
@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             return routingMap.TryGetRangeByPartitionKeyRangeId(partitionKeyRangeId);
         }
 
-        public virtual async Task<CollectionRoutingMap> TryLookupAsync(
+        public virtual async ValueTask<CollectionRoutingMap> TryLookupAsync(
             string collectionRid,
             CollectionRoutingMap previousValue,
             DocumentServiceRequest request,
@@ -125,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
         }
 
-        public async Task<PartitionKeyRange> TryGetRangeByPartitionKeyRangeIdAsync(string collectionRid, string partitionKeyRangeId)
+        public async ValueTask<PartitionKeyRange> TryGetRangeByPartitionKeyRangeIdAsync(string collectionRid, string partitionKeyRangeId)
         {
             try
             {
@@ -170,7 +170,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 RetryOptions retryOptions = new RetryOptions();
                 using (DocumentServiceResponse response = await BackoffRetryUtility<DocumentServiceResponse>.ExecuteAsync(
-                    () => ExecutePartitionKeyRangeReadChangeFeedAsync(collectionRid, headers),
+                    () => this.ExecutePartitionKeyRangeReadChangeFeedAsync(collectionRid, headers),
                     new ResourceThrottleRetryPolicy(retryOptions.MaxRetryAttemptsOnThrottledRequests, retryOptions.MaxRetryWaitTimeInSeconds),
                     cancellationToken))
                 {

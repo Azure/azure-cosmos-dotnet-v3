@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.Common
 
     internal interface ICollectionRoutingMapCache
     {
-        Task<CollectionRoutingMap> TryLookupAsync(
+        ValueTask<CollectionRoutingMap> TryLookupAsync(
             string collectionRid,
             CollectionRoutingMap previousValue,
             DocumentServiceRequest request,

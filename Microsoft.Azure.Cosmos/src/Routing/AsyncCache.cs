@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.Common
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <param name="forceRefresh">Skip cached value and generate new value.</param>
         /// <returns>Cached value or value returned by initialization function.</returns>
-        public async Task<TValue> GetAsync(
+        public async ValueTask<TValue> GetAsync(
            TKey key,
            TValue obsoleteValue,
            Func<Task<TValue>> singleValueInitFunc,
