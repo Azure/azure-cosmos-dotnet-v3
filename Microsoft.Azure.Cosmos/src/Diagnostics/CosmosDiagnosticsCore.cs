@@ -42,8 +42,10 @@ namespace Microsoft.Azure.Cosmos
                 // remove extra comma
                 builder.Length -= 1;
             }
+            builder.Append("]");
 
-            builder.Append("]}");
+            this.AppendAttributes(builder);
+            builder.Append("}");
             return builder.ToString();
         }
 
