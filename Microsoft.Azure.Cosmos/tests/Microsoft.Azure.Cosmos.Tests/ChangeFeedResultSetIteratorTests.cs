@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             secondResponse.ErrorMessage = "something";
 
             mockContext.SetupSequence(x => x.ProcessResourceOperationAsync<ResponseMessage>(
-                It.IsAny<Uri>(),
+                It.IsAny<string>(),
                 It.IsAny<Documents.ResourceType>(),
                 It.IsAny<Documents.OperationType>(),
                 It.IsAny<RequestOptions>(),
@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(HttpStatusCode.NotFound, firstRequest.StatusCode);
 
             mockContext.Verify(x => x.ProcessResourceOperationAsync<ResponseMessage>(
-                It.IsAny<Uri>(),
+                It.IsAny<string>(),
                 It.IsAny<Documents.ResourceType>(),
                 It.IsAny<Documents.OperationType>(),
                 It.IsAny<RequestOptions>(),
@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             secondResponse.Headers.ETag = "SecondContinuation";
 
             mockContext.SetupSequence(x => x.ProcessResourceOperationAsync<ResponseMessage>(
-                It.IsAny<Uri>(),
+                It.IsAny<string>(),
                 It.IsAny<Documents.ResourceType>(),
                 It.IsAny<Documents.OperationType>(),
                 It.IsAny<RequestOptions>(),
@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(HttpStatusCode.OK, firstRequest.StatusCode);
 
             mockContext.Verify(x => x.ProcessResourceOperationAsync<ResponseMessage>(
-                It.IsAny<Uri>(),
+                It.IsAny<string>(),
                 It.IsAny<Documents.ResourceType>(),
                 It.IsAny<Documents.OperationType>(),
                 It.IsAny<RequestOptions>(),
@@ -142,7 +142,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             thirdResponse.Headers.ETag = "ThirdContinuation";
 
             mockContext.SetupSequence(x => x.ProcessResourceOperationAsync<ResponseMessage>(
-                It.IsAny<Uri>(),
+                It.IsAny<string>(),
                 It.IsAny<Documents.ResourceType>(),
                 It.IsAny<Documents.OperationType>(),
                 It.IsAny<RequestOptions>(),
@@ -165,7 +165,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(HttpStatusCode.NotModified, firstRequest.StatusCode);
 
             mockContext.Verify(x => x.ProcessResourceOperationAsync<ResponseMessage>(
-                It.IsAny<Uri>(),
+                It.IsAny<string>(),
                 It.IsAny<Documents.ResourceType>(),
                 It.IsAny<Documents.OperationType>(),
                 It.IsAny<RequestOptions>(),
@@ -193,7 +193,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             firstResponse.Headers.ETag = "FirstContinuation";
 
             mockContext.SetupSequence(x => x.ProcessResourceOperationAsync<ResponseMessage>(
-                It.IsAny<Uri>(),
+                It.IsAny<string>(),
                 It.IsAny<Documents.ResourceType>(),
                 It.IsAny<Documents.OperationType>(),
                 It.IsAny<RequestOptions>(),
@@ -212,7 +212,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(HttpStatusCode.NotModified, firstRequest.StatusCode);
 
             mockContext.Verify(x => x.ProcessResourceOperationAsync<ResponseMessage>(
-                It.IsAny<Uri>(),
+                It.IsAny<string>(),
                 It.IsAny<Documents.ResourceType>(),
                 It.IsAny<Documents.OperationType>(),
                 It.IsAny<RequestOptions>(),

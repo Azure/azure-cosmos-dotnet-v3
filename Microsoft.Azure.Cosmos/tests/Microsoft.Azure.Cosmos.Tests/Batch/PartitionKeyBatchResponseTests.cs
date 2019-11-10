@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 serializer: new CosmosJsonDotNetSerializer(),
             cancellationToken: default(CancellationToken));
 
-            CosmosDiagnostics diagnostics = new PointOperationStatistics(Guid.NewGuid().ToString(), HttpStatusCode.OK, SubStatusCodes.Unknown, 0, string.Empty, HttpMethod.Get, new Uri("http://localhost"), new CosmosClientSideRequestStatistics());
+            CosmosDiagnostics diagnostics = new PointOperationStatistics(Guid.NewGuid().ToString(), HttpStatusCode.OK, SubStatusCodes.Unknown, 0, string.Empty, HttpMethod.Get, "http://localhost", new CosmosClientSideRequestStatistics());
 
             TransactionalBatchResponse batchresponse = await TransactionalBatchResponse.FromResponseMessageAsync(
                 new ResponseMessage(HttpStatusCode.OK) { Content = responseContent, Diagnostics = diagnostics },

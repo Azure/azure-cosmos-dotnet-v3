@@ -175,7 +175,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         requestCharge: 42,
                         errorMessage: null,
                         method: HttpMethod.Post,
-                        requestUri: new Uri("http://localhost.com"),
+                        requestUriString: "http://localhost.com",
                         clientSideRequestStatistics: null),
                    schedulingStopwatch: new SchedulingStopwatch());
             IReadOnlyCollection<QueryPageDiagnostics> pageDiagnostics = new List<QueryPageDiagnostics>() { diagnostics };
@@ -225,7 +225,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         requestCharge: 10.2,
                         errorMessage: "Error message",
                         method: HttpMethod.Post,
-                        requestUri: new Uri("http://localhost.com"),
+                        requestUriString: "http://localhost.com",
                         clientSideRequestStatistics: null),
                    schedulingStopwatch: new SchedulingStopwatch());
             pageDiagnostics = new List<QueryPageDiagnostics>() { diagnostics };

@@ -306,12 +306,12 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (ranges.Max.Equals(Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey))
                 {
-                    return Task.FromResult(keyRanges);
+                    return new ValueTask<IReadOnlyList<Documents.PartitionKeyRange>>(keyRanges);
                 }
 
                 IReadOnlyList<Documents.PartitionKeyRange> filteredRanges = new List<Documents.PartitionKeyRange>(keyRanges.Where(range=> range.MinInclusive.CompareTo(ranges.Min) >= 0 && range.MaxExclusive.CompareTo(ranges.Max) <= 0));
 
-                return Task.FromResult(filteredRanges);
+                return new ValueTask<IReadOnlyList<Documents.PartitionKeyRange>>(filteredRanges);
             };
         }
 

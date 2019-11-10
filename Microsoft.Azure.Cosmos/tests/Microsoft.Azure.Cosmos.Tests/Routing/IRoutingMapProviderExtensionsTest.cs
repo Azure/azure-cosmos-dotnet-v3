@@ -28,14 +28,14 @@ namespace Microsoft.Azure.Cosmos.Routing
                 this.routingMap = CollectionRoutingMap.TryCreateCompleteRoutingMap(ranges.Select(r => Tuple.Create(r, (ServiceIdentity)null)), "");
             }
 
-            public Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(string collectionIdOrNameBasedLink, Range<string> range, bool forceRefresh = false)
+            public ValueTask<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(string collectionIdOrNameBasedLink, Range<string> range, bool forceRefresh = false)
             {
-                return Task.FromResult(this.routingMap.GetOverlappingRanges(range));
+                return new ValueTask<IReadOnlyList<PartitionKeyRange>>(this.routingMap.GetOverlappingRanges(range));
             }
 
-            public Task<PartitionKeyRange> TryGetPartitionKeyRangeByIdAsync(string collectionResourceId, string partitionKeyRangeId, bool forceRefresh = false)
+            public ValueTask<PartitionKeyRange> TryGetPartitionKeyRangeByIdAsync(string collectionResourceId, string partitionKeyRangeId, bool forceRefresh = false)
             {
-                return Task.FromResult(this.routingMap.TryGetRangeByPartitionKeyRangeId(partitionKeyRangeId));
+                return new ValueTask<PartitionKeyRange>(this.routingMap.TryGetRangeByPartitionKeyRangeId(partitionKeyRangeId));
             }
         }
 

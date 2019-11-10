@@ -140,7 +140,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
                 It.IsAny<string>(),
                 It.IsAny<Range<string>>(),
                 It.Is<bool>(x => x == false)
-            )).Returns(Task.FromResult(overlappingRanges)).Verifiable();
+            )).Returns(new ValueTask<IReadOnlyList<PartitionKeyRange>>(overlappingRanges)).Verifiable();
             
 
             //Reverse
@@ -161,7 +161,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
                 It.IsAny<string>(),
                 It.Is<Range<string>>(x => x.Min == range.Min),
                 It.IsAny<bool>()
-            )).Returns(Task.FromResult((IReadOnlyList<PartitionKeyRange>)overlappingRanges.Take(1).ToList())).Verifiable();
+            )).Returns(new ValueTask<IReadOnlyList<PartitionKeyRange>>((IReadOnlyList<PartitionKeyRange>)overlappingRanges.Take(1).ToList())).Verifiable();
             resolvedRangeInfo = await partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRangeAsync(
                 providedRanges,
                 routingMapProvider.Object,
@@ -201,7 +201,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
                 It.IsAny<string>(),
                 It.Is<Range<string>>(x => x.Min == range.Min),
                 It.IsAny<bool>()
-            )).Returns(Task.FromResult((IReadOnlyList<PartitionKeyRange>)overlappingRanges.Take(1).ToList())).Verifiable();
+            )).Returns(new ValueTask<IReadOnlyList<PartitionKeyRange>>((IReadOnlyList<PartitionKeyRange>)overlappingRanges.Take(1).ToList())).Verifiable();
 
             //Reverse
             PartitionRoutingHelper partitionRoutingHelper = new PartitionRoutingHelper();
@@ -247,12 +247,12 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
                 It.IsAny<string>(),
                 It.Is<Range<string>>(x => x.Min == rangeFromContinuationToken.Min),
                 It.Is<bool>(x => x == false)
-            )).Returns(Task.FromResult((IReadOnlyList<PartitionKeyRange>)overlappingRanges.Take(1).ToList())).Verifiable();
+            )).Returns(new ValueTask<IReadOnlyList<PartitionKeyRange>>((IReadOnlyList<PartitionKeyRange>)overlappingRanges.Take(1).ToList())).Verifiable();
             routingMapProvider.Setup(m => m.TryGetOverlappingRangesAsync(
                 It.IsAny<string>(),
                 It.Is<Range<string>>(x => x.Min == rangeFromContinuationToken.Min && x.Max == rangeFromContinuationToken.Max),
                 It.Is<bool>(x => x == true)
-            )).Returns(Task.FromResult(replacedRanges)).Verifiable();
+            )).Returns(new ValueTask<IReadOnlyList<PartitionKeyRange>>(replacedRanges)).Verifiable();
 
             //Reverse
             PartitionRoutingHelper partitionRoutingHelper = new PartitionRoutingHelper();
@@ -319,7 +319,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
                 It.IsAny<string>(),
                 It.Is<Range<string>>(x => x.Min == providedRanges.Single().Min && x.Max == providedRanges.Single().Max),
                 It.Is<bool>(x => x == false)
-            )).Returns(Task.FromResult(overlappingRanges)).Verifiable();
+            )).Returns(new ValueTask<IReadOnlyList<PartitionKeyRange>>(overlappingRanges)).Verifiable();
 
             //Reverse
             PartitionRoutingHelper partitionRoutingHelper = new PartitionRoutingHelper();
@@ -346,7 +346,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
                 It.IsAny<string>(),
                 It.IsAny<Range<string>>(),
                 It.IsAny<bool>()
-            )).Returns(Task.FromResult((IReadOnlyList<PartitionKeyRange>)overlappingRanges.Skip(2).ToList())).Verifiable();
+            )).Returns(new ValueTask<IReadOnlyList<PartitionKeyRange>>((IReadOnlyList<PartitionKeyRange>)overlappingRanges.Skip(2).ToList())).Verifiable();
             headers = new DictionaryNameValueCollection();
             result = await partitionRoutingHelper.TryAddPartitionKeyRangeToContinuationTokenAsync(
                  headers,
@@ -375,7 +375,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
                 It.IsAny<string>(),
                 It.IsAny<Range<string>>(),
                 It.IsAny<bool>()
-            )).Returns(Task.FromResult<IReadOnlyList<PartitionKeyRange>>(null)).Verifiable();
+            )).Returns(new ValueTask<IReadOnlyList<PartitionKeyRange>>((IReadOnlyList<PartitionKeyRange>)null)).Verifiable();
 
             PartitionRoutingHelper partitionRoutingHelper = new PartitionRoutingHelper();
             DictionaryNameValueCollection headers = new DictionaryNameValueCollection();
@@ -462,7 +462,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
                 It.IsAny<string>(),
                 It.Is<Range<string>>(x => x.Min == providedRanges.Single().Min && x.Max == providedRanges.Single().Max),
                 It.Is<bool>(x => x == false)
-            )).Returns(Task.FromResult(overlappingRanges)).Verifiable();
+            )).Returns(new ValueTask<IReadOnlyList<PartitionKeyRange>>(overlappingRanges)).Verifiable();
 
             PartitionRoutingHelper partitionRoutingHelper = new PartitionRoutingHelper();
             DictionaryNameValueCollection headers = new DictionaryNameValueCollection();
@@ -493,7 +493,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
                 It.IsAny<string>(),
                 It.IsAny<Range<string>>(),
                 It.IsAny<bool>()
-            )).Returns(Task.FromResult(overlappingRanges));
+            )).Returns(new ValueTask<IReadOnlyList<PartitionKeyRange>>(overlappingRanges));
             headers = new DictionaryNameValueCollection();
 
             result = await partitionRoutingHelper.TryAddPartitionKeyRangeToContinuationTokenAsync(

@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos
                 requestCharge: 42,
                 errorMessage: null,
                 method: HttpMethod.Get,
-                requestUri: new System.Uri("https://localhost:8081"),
+                requestUriString: "https://localhost:8081",
                 clientSideRequestStatistics: cosmosClientSideRequestStatistics);
 
             pointOperationStatistics.ToString();
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
                 requestCharge: 42,
                 errorMessage: null,
                 method: HttpMethod.Get,
-                requestUri: new System.Uri("https://localhost:8081"),
+                requestUriString: "https://localhost:8081",
                 clientSideRequestStatistics: cosmosClientSideRequestStatistics);
             pointOperationStatistics.ToString();
             Assert.AreEqual(5, pointOperationStatistics.supplementalResponseStatisticsList.Count);
@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos
                 requestCharge: 42,
                 errorMessage: null,
                 method: HttpMethod.Get,
-                requestUri: new System.Uri("https://localhost:8081"),
+                requestUriString: "https://localhost:8081",
                 clientSideRequestStatistics:  cosmosClientSideRequestStatistics);
             pointOperationStatistics.ToString();
             Assert.AreEqual(10, pointOperationStatistics.supplementalResponseStatisticsList.Count);
@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos
                 requestCharge: 42,
                 errorMessage: null,
                 method: HttpMethod.Get,
-                requestUri: new System.Uri("https://localhost:8081"),
+                requestUriString: "https://localhost:8081",
                 clientSideRequestStatistics:  cosmosClientSideRequestStatistics);
             pointOperationStatistics.ToString();
             Assert.AreEqual(10, pointOperationStatistics.supplementalResponseStatisticsList.Count);

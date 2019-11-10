@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
             this.Init();
         }
 
-        internal override async Task EnsureValidClientAsync()
+        internal override async ValueTask EnsureValidClientAsync()
         {
             await Task.Yield();
         }
@@ -115,9 +115,10 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
 
         internal override IRetryPolicyFactory ResetSessionTokenRetryPolicy => new RetryPolicy(this.globalEndpointManager.Object, new ConnectionPolicy());
 
-        internal override Task<ClientCollectionCache> GetCollectionCacheAsync()
+        internal override async ValueTask<ClientCollectionCache> GetCollectionCacheAsync()
         {
-            return Task.FromResult(this.collectionCache.Object);
+            await Task.Yield();
+            return this.collectionCache.Object;
         }
 
         internal override Task<PartitionKeyRangeCache> GetPartitionKeyRangeCacheAsync()
@@ -176,7 +177,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
                 ).Returns(() => {
                     ContainerProperties containerSettings = ContainerProperties.CreateWithResourceId("test");
                     containerSettings.PartitionKey.Paths = new Collection<string>() { pkPath };
-                    return Task.FromResult(containerSettings);
+                    return new ValueTask<ContainerProperties>(containerSettings);
                 });
 
             this.collectionCache.Setup
@@ -198,7 +199,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
                         }
                     };
 
-                    return Task.FromResult(cosmosContainerSetting);
+                    return new ValueTask<ContainerProperties>(cosmosContainerSetting);
                 });
 
             this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, null, null);
@@ -209,7 +210,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
                             It.IsAny<DocumentServiceRequest>(),
                             It.IsAny<CancellationToken>()
                         )
-                ).Returns(Task.FromResult<CollectionRoutingMap>(null));
+                ).Returns(new ValueTask<CollectionRoutingMap>((CollectionRoutingMap)null));
             this.partitionKeyRangeCache.Setup(
                         m => m.TryGetOverlappingRangesAsync(
                             It.IsAny<string>(),
@@ -218,7 +219,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
                         )
                 ).Returns((string collectionRid, Documents.Routing.Range<string> range, bool forceRefresh) =>
                 {
-                    return Task.FromResult<IReadOnlyList<PartitionKeyRange>>(this.ResolveOverlapingPartitionKeyRanges(collectionRid, range, forceRefresh));
+                    return new ValueTask<IReadOnlyList<PartitionKeyRange>>(this.ResolveOverlapingPartitionKeyRanges(collectionRid, range, forceRefresh));
                 });
 
             this.globalEndpointManager = new Mock<GlobalEndpointManager>(this, new ConnectionPolicy());

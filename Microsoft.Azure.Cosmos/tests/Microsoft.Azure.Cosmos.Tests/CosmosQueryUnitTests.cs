@@ -222,7 +222,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     requestCharge: 4,
                     errorMessage: null,
                     method: HttpMethod.Post,
-                    requestUri: new Uri("http://localhost.com"),
+                    requestUriString: "http://localhost.com",
                     clientSideRequestStatistics: null),
                 new SchedulingStopwatch())
             };

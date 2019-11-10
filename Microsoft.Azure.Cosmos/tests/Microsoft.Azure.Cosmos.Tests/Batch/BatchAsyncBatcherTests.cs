@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                             0,
                             string.Empty,
                             HttpMethod.Get,
-                            new Uri("http://localhost"),
+                            "http://localhost",
                             new CosmosClientSideRequestStatistics())
                     },
                     batchRequest,
@@ -113,7 +113,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         0,
                         string.Empty,
                         HttpMethod.Get,
-                        new Uri("http://localhost"),
+                        "http://localhost",
                         new CosmosClientSideRequestStatistics())
                 };
                 responseMessage.Headers.SubStatusCode = SubStatusCodes.PartitionKeyRangeGone;

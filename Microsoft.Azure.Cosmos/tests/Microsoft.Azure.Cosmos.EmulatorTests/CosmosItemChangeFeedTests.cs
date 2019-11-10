@@ -464,7 +464,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         this.HasCalledForceRefresh = true;
                     }
 
-                    return Task.FromResult(filteredRanges);
+                    return new ValueTask<IReadOnlyList<Documents.PartitionKeyRange>>(filteredRanges);
                 }).Result;
             }
 

@@ -44,10 +44,10 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Assert.AreEqual(4, await cache.GetAsync(2, -1, () => refreshFunc(2, CancellationToken.None), CancellationToken.None));
 
-            Func<int, CancellationToken, ValueTask<int>> refreshFunc1 = (key, cancellationToken) =>
+            Func<int, CancellationToken, Task<int>> refreshFunc1 = (key, cancellationToken) =>
             {
                 Interlocked.Increment(ref numberOfCacheRefreshes);
-                return Task.FromResult(key * 2 + 1);
+                return Task.FromResult((key * 2) + 1);
             };
 
             List<ValueTask<int>> tasks1 = new List<ValueTask<int>>();
@@ -211,9 +211,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             // set up two threads that are concurrently updating the async cache for the same key.
             // the only difference is that one thread passes in a cancellation token
             // and the other does not.
-            Task<int> getTask1 = cache.GetAsync(key: 1, obsoleteValue: -1, singleValueInitFunc: generatorFunc1, cancellationToken: CancellationToken.None);
+            ValueTask<int> getTask1 = cache.GetAsync(key: 1, obsoleteValue: -1, singleValueInitFunc: generatorFunc1, cancellationToken: CancellationToken.None);
 
-            Task<int> getTask2 = cache.GetAsync(key: 1, obsoleteValue: -1, singleValueInitFunc: generatorFunc2, cancellationToken: CancellationToken.None);
+            ValueTask<int> getTask2 = cache.GetAsync(key: 1, obsoleteValue: -1, singleValueInitFunc: generatorFunc2, cancellationToken: CancellationToken.None);
 
             // assert that the tasks haven't completed.
             Assert.IsFalse(getTask2.IsCompleted);

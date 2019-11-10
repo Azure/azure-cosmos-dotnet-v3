@@ -259,14 +259,14 @@ namespace Microsoft.Azure.Cosmos.Routing
                 this.collectionRoutingMap = collectionRoutingMap;
             }
 
-            public Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(string collectionResourceId, Range<string> range, bool forceRefresh = false)
+            public ValueTask<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(string collectionResourceId, Range<string> range, bool forceRefresh = false)
             {
-                return Task.FromResult(this.collectionRoutingMap.GetOverlappingRanges(range));
+                return new ValueTask<IReadOnlyList<PartitionKeyRange>>(this.collectionRoutingMap.GetOverlappingRanges(range));
             }
 
-            public Task<PartitionKeyRange> TryGetPartitionKeyRangeByIdAsync(string collectionResourceId, string partitionKeyRangeId, bool forceRefresh = false)
+            public ValueTask<PartitionKeyRange> TryGetPartitionKeyRangeByIdAsync(string collectionResourceId, string partitionKeyRangeId, bool forceRefresh = false)
             {
-                return Task.FromResult(this.collectionRoutingMap.TryGetRangeByPartitionKeyRangeId(partitionKeyRangeId));
+                return new ValueTask<PartitionKeyRange>(this.collectionRoutingMap.TryGetRangeByPartitionKeyRangeId(partitionKeyRangeId));
             }
 
             public Task<PartitionKeyRange> TryGetRangeByEffectivePartitionKey(string collectionResourceId, string effectivePartitionKey)
