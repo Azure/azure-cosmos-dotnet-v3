@@ -50,9 +50,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
                 try
                 {
-                    ItemResponse<DocumentServiceLeaseCore> response = await this.container.ReadItemAsync<DocumentServiceLeaseCore>(
-                    itemId, partitionKey).ConfigureAwait(false);
-                    DocumentServiceLeaseCore serverLease = response.Resource;
+                    DocumentServiceLeaseCore serverLease = await this.container.TryGetItemAsync<DocumentServiceLeaseCore>(partitionKey, itemId);
 
                     DefaultTrace.TraceInformation(
                     "Lease with token {0} update failed because the lease with concurrency token '{1}' was updated by host '{2}' with concurrency token '{3}'. Will retry, {4} retry(s) left.",
@@ -76,17 +74,17 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         private async Task<DocumentServiceLeaseCore> TryReplaceLeaseAsync(
             DocumentServiceLeaseCore lease,
-            Cosmos.PartitionKey? partitionKey,
+            PartitionKey partitionKey,
             string itemId)
         {
             try
             {
                 ItemRequestOptions itemRequestOptions = this.CreateIfMatchOptions(lease);
-                ItemResponse<DocumentServiceLeaseCore> response = await this.container.ReplaceItemAsync<DocumentServiceLeaseCore>(
-                id: itemId,
-                item: lease,
-                partitionKey: partitionKey,
-                requestOptions: itemRequestOptions).ConfigureAwait(false);
+                ItemResponse<DocumentServiceLeaseCore> response = await this.container.TryReplaceItemAsync<DocumentServiceLeaseCore>(
+                    itemId,
+                    lease,
+                    partitionKey,
+                    itemRequestOptions).ConfigureAwait(false);
 
                 return response.Resource;
             }
