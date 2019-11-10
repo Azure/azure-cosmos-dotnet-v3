@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos
 
             schedulingStopwatch.Start();
             ResponseMessage message = await this.clientContext.ProcessResourceOperationStreamAsync(
-                resourceUri: resourceUri,
+                resourceUriString: resourceUri.OriginalString,
                 resourceType: resourceType,
                 operationType: operationType,
                 requestOptions: queryRequestOptions,
@@ -172,7 +172,7 @@ namespace Microsoft.Azure.Cosmos
         {
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
             using (ResponseMessage message = await this.clientContext.ProcessResourceOperationStreamAsync(
-                resourceUri: resourceUri,
+                resourceUriString: resourceUri.OriginalString,
                 resourceType: resourceType,
                 operationType: operationType,
                 requestOptions: null,

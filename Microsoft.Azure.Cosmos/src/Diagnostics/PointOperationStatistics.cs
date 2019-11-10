@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos
         public double RequestCharge { get; }
         public string ErrorMessage { get; }
         public HttpMethod Method { get; }
-        public Uri RequestUri { get; }
+        public string RequestUriString { get; }
 
         public DateTime requestStartTime { get; private set; }
 
@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos
             double requestCharge,
             string errorMessage,
             HttpMethod method,
-            Uri requestUri,
+            string requestUriString,
             CosmosClientSideRequestStatistics clientSideRequestStatistics)
         {
             this.ActivityId = activityId;
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
             this.RequestCharge = requestCharge;
             this.ErrorMessage = errorMessage;
             this.Method = method;
-            this.RequestUri = requestUri;
+            this.RequestUriString = requestUriString;
             if (clientSideRequestStatistics != null)
             {
                 this.requestStartTime = clientSideRequestStatistics.requestStartTime;

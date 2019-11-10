@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
         }
 
         public virtual async Task<T> SendAsync<T>(
-            Uri resourceUri,
+            string resourceUriString,
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,
@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
 
             ResponseMessage responseMessage = await this.SendAsync(
-                resourceUri: resourceUri,
+                resourceUriString: resourceUriString,
                 resourceType: resourceType,
                 operationType: operationType,
                 requestOptions: requestOptions,
@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
         }
 
         public virtual async Task<ResponseMessage> SendAsync(
-            Uri resourceUri,
+            string resourceUriString,
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,
@@ -99,14 +99,14 @@ namespace Microsoft.Azure.Cosmos.Handlers
             Action<RequestMessage> requestEnricher,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (resourceUri == null)
+            if (resourceUriString == null)
             {
-                throw new ArgumentNullException(nameof(resourceUri));
+                throw new ArgumentNullException(nameof(resourceUriString));
             }
 
             HttpMethod method = RequestInvokerHandler.GetHttpMethod(operationType);
 
-            RequestMessage request = new RequestMessage(method, resourceUri)
+            RequestMessage request = new RequestMessage(method, resourceUriString)
             {
                 OperationType = operationType,
                 ResourceType = resourceType,

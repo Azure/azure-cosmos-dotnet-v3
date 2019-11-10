@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
         /// in a resource can be unit tested.
         /// </summary>
         internal abstract Task<ResponseMessage> ProcessResourceOperationStreamAsync(
-            Uri resourceUri,
+            string resourceUriString,
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos
         /// in a resource can be unit tested.
         /// </summary>
         internal abstract Task<ResponseMessage> ProcessResourceOperationStreamAsync(
-            Uri resourceUri,
+            string resourceUriString,
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos
         /// in a resource can be unit tested.
         /// </summary>
         internal abstract Task<T> ProcessResourceOperationAsync<T>(
-           Uri resourceUri,
+           string resourceUriString,
            ResourceType resourceType,
            OperationType operationType,
            RequestOptions requestOptions,

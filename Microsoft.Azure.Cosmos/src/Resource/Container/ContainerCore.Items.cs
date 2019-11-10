@@ -563,13 +563,13 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey = null;
             }
 
-            if (extractPartitionKeyIfNeeded && partitionKey == null)
-            {
-                partitionKey = await this.GetPartitionKeyValueFromStreamAsync(streamPayload, cancellationToken);
-            }
+            ////if (extractPartitionKeyIfNeeded && partitionKey == null)
+            ////{
+            ////    partitionKey = await this.GetPartitionKeyValueFromStreamAsync(streamPayload, cancellationToken);
+            ////}
 
             ContainerCore.ValidatePartitionKey(partitionKey, requestOptions);
-            Uri resourceUri = this.GetResourceUri(requestOptions, operationType, itemId);
+            string resourceUri = this.GetResourceUri(requestOptions, operationType, itemId);
 
             return await this.ClientContext.ProcessResourceOperationStreamAsync(
                 resourceUri,
@@ -669,18 +669,19 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal Uri GetResourceUri(RequestOptions requestOptions, OperationType operationType, string itemId)
+        internal string GetResourceUri(RequestOptions requestOptions, OperationType operationType, string itemId)
         {
             if (requestOptions != null && requestOptions.TryGetResourceUri(out Uri resourceUri))
             {
-                return resourceUri;
+                // TODO: work with interop
+                return resourceUri.OriginalString;
             }
 
             switch (operationType)
             {
                 case OperationType.Create:
                 case OperationType.Upsert:
-                    return this.LinkUri;
+                    return this.LinkUri.OriginalString;
 
                 default:
                     return this.ContcatCachedUriWithId(itemId);
@@ -730,9 +731,9 @@ namespace Microsoft.Azure.Cosmos
         /// </returns>
         /// <remarks>Would be used when creating an <see cref="Attachment"/>, or when replacing or deleting a item in Azure Cosmos DB.</remarks>
         /// <seealso cref="Uri.EscapeUriString"/>
-        private Uri ContcatCachedUriWithId(string resourceId)
+        private string ContcatCachedUriWithId(string resourceId)
         {
-            return new Uri(this.cachedUriSegmentWithoutId + Uri.EscapeUriString(resourceId), UriKind.Relative);
+            return this.cachedUriSegmentWithoutId + Uri.EscapeUriString(resourceId);
         }
     }
 }

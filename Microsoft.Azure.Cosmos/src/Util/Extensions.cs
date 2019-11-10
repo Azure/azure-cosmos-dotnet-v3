@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos
                 requestCharge: cosmosResponse.Headers.RequestCharge,
                 errorMessage: cosmosResponse.ErrorMessage,
                 method: requestMessage?.Method,
-                requestUri: requestMessage?.RequestUri,
+                requestUriString: requestMessage?.RequestUriString,
                 clientSideRequestStatistics: cosmosClientSideRequestStatistics);
 
             return cosmosResponse;
@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos
                 requestCharge: cosmosResponse.Headers.RequestCharge,
                 errorMessage: cosmosResponse.ErrorMessage,
                 method: request?.Method,
-                requestUri: request?.RequestUri,
+                requestUriString: request?.RequestUriString,
                 clientSideRequestStatistics: dce.RequestStatistics as CosmosClientSideRequestStatistics);
 
             if (request != null)

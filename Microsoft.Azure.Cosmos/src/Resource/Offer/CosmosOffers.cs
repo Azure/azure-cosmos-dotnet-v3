@@ -209,7 +209,7 @@ namespace Microsoft.Azure.Cosmos
            CancellationToken cancellationToken = default(CancellationToken))
         {
             Task<ResponseMessage> responseMessage = this.ClientContext.ProcessResourceOperationStreamAsync(
-              resourceUri: linkUri,
+              resourceUriString: linkUri.OriginalString,
               resourceType: resourceType,
               operationType: operationType,
               cosmosContainerCore: null,

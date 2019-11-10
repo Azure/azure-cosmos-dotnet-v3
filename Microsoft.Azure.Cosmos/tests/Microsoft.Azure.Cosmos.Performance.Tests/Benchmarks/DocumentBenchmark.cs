@@ -95,22 +95,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         /// </summary>
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         [Benchmark]
-        public async Task ReadItem()
-        {
-            ResponseMessage response = await this.container.ReadItemStreamAsync(
-                Constants.ValidOperationId,
-                new Cosmos.PartitionKey(Constants.ValidOperationId));
-            if (response.StatusCode == System.Net.HttpStatusCode.NotFound || response.Content == null)
-            {
-                throw new Exception();
-            }
-        }
-
-        /// <summary>
-        /// Benchmark for ReadItemAsync.
-        /// </summary>
-        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-        [Benchmark]
         public async Task ReadItemNotExists()
         {
             ResponseMessage response = await this.container.ReadItemStreamAsync(

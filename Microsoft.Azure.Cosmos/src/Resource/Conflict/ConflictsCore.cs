@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos
                  id: conflict.Id);
 
             return this.clientContext.ProcessResourceOperationStreamAsync(
-                resourceUri: conflictLink,
+                resourceUriString: conflictLink.OriginalString,
                 resourceType: ResourceType.Conflict,
                 operationType: OperationType.Delete,
                 requestOptions: null,
@@ -154,7 +154,7 @@ namespace Microsoft.Azure.Cosmos
                 id: cosmosConflict.SourceResourceId);
 
             Task<ResponseMessage> response = this.clientContext.ProcessResourceOperationStreamAsync(
-                resourceUri: itemLink,
+                resourceUriString: itemLink.OriginalString,
                 resourceType: ResourceType.Document,
                 operationType: OperationType.Read,
                 requestOptions: null,

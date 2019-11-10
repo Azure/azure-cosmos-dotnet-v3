@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal override Task<ResponseMessage> ProcessResourceOperationStreamAsync(
-            Uri resourceUri,
+            string resourceUriString,
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,
@@ -108,7 +108,7 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 return this.ProcessResourceOperationAsBulkStreamAsync(
-                    resourceUri: resourceUri,
+                    resourceUri: new Uri(resourceUriString, UriKind.Relative),
                     resourceType: resourceType,
                     operationType: operationType,
                     requestOptions: requestOptions,
@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return this.ProcessResourceOperationStreamAsync(
-                resourceUri: resourceUri,
+                resourceUriString: resourceUriString,
                 resourceType: resourceType,
                 operationType: operationType,
                 requestOptions: requestOptions,
@@ -133,7 +133,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal override Task<ResponseMessage> ProcessResourceOperationStreamAsync(
-            Uri resourceUri,
+            string resourceUriString,
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,
@@ -143,8 +143,12 @@ namespace Microsoft.Azure.Cosmos
             Action<RequestMessage> requestEnricher,
             CancellationToken cancellationToken)
         {
+            //ResponseMessage tmp = new ResponseMessage(System.Net.HttpStatusCode.Created, null);
+            //tmp.Content = new MemoryStream();
+            //return Task.FromResult(tmp);
+
             return this.RequestHandler.SendAsync(
-                resourceUri: resourceUri,
+                resourceUriString: resourceUriString,
                 resourceType: resourceType,
                 operationType: operationType,
                 requestOptions: requestOptions,
@@ -156,7 +160,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal override Task<T> ProcessResourceOperationAsync<T>(
-            Uri resourceUri,
+            string resourceUristring,
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,
@@ -168,7 +172,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             return this.RequestHandler.SendAsync<T>(
-                resourceUri: resourceUri,
+                resourceUriString: resourceUristring,
                 resourceType: resourceType,
                 operationType: operationType,
                 requestOptions: requestOptions,

@@ -41,7 +41,14 @@ namespace Microsoft.Azure.Cosmos
         public RequestMessage(HttpMethod method, Uri requestUri)
         {
             this.Method = method;
-            this.RequestUri = requestUri;
+            this.InternalRequestUri = requestUri;
+            this.RequestUriString = requestUri.OriginalString;
+        }
+
+        internal RequestMessage(HttpMethod method, string requestUriString)
+        {
+            this.Method = method;
+            this.RequestUriString = requestUriString;
         }
 
         /// <summary>
@@ -49,10 +56,24 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public virtual HttpMethod Method { get; private set; }
 
+        internal string RequestUriString { get; private set; }
+        internal Uri InternalRequestUri { get; private set; }
+
         /// <summary>
         /// Gets the <see cref="Uri"/> for the current request.
         /// </summary>
-        public virtual Uri RequestUri { get; private set; }
+        public virtual Uri RequestUri
+        {
+            get
+            {
+                if (this.InternalRequestUri == null)
+                {
+                    this.InternalRequestUri = new Uri(this.RequestUriString, UriKind.Relative);
+                }
+
+                return this.InternalRequestUri;
+            }
+        }
 
         /// <summary>
         /// Gets the current <see cref="RequestMessage"/> HTTP headers.
@@ -194,7 +215,7 @@ namespace Microsoft.Azure.Cosmos
                 }
                 else
                 {
-                    serviceRequest = new DocumentServiceRequest(this.OperationType, this.ResourceType, this.RequestUri?.ToString(), this.Content, AuthorizationTokenType.PrimaryMasterKey, this.Headers.CosmosMessageHeaders);
+                    serviceRequest = new DocumentServiceRequest(this.OperationType, this.ResourceType, this.RequestUriString, this.Content, AuthorizationTokenType.PrimaryMasterKey, this.Headers.CosmosMessageHeaders);
                 }
 
                 if (this.UseGatewayMode.HasValue)

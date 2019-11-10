@@ -709,7 +709,7 @@ namespace Microsoft.Azure.Cosmos
                 CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ClientContext.ProcessResourceOperationStreamAsync(
-                resourceUri: this.DatabaseRootUri,
+                resourceUriString: this.DatabaseRootUri.OriginalString,
                 resourceType: ResourceType.Database,
                 operationType: OperationType.Create,
                 requestOptions: requestOptions,
@@ -730,7 +730,7 @@ namespace Microsoft.Azure.Cosmos
             Debug.Assert(state == null);
 
             return this.ClientContext.ProcessResourceOperationAsync<FeedResponse<DatabaseProperties>>(
-                resourceUri: this.DatabaseRootUri,
+                resourceUriString: this.DatabaseRootUri.OriginalString,
                 resourceType: ResourceType.Database,
                 operationType: OperationType.ReadFeed,
                 requestOptions: options,

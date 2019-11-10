@@ -154,7 +154,7 @@ namespace Microsoft.Azure.Cosmos
         {
             Uri resourceUri = this.container.LinkUri;
             return this.clientContext.ProcessResourceOperationAsync<ResponseMessage>(
-                resourceUri: resourceUri,
+                resourceUriString: resourceUri.OriginalString,
                 resourceType: Documents.ResourceType.Document,
                 operationType: Documents.OperationType.ReadFeed,
                 requestOptions: options,

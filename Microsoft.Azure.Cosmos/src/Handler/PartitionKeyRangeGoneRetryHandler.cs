@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             return new PartitionKeyRangeGoneRetryPolicy(
                 await this.client.DocumentClient.GetCollectionCacheAsync(),
                 await this.client.DocumentClient.GetPartitionKeyRangeCacheAsync(),
-                PathsHelper.GetCollectionPath(request.RequestUri.ToString()),
+                PathsHelper.GetCollectionPath(request.RequestUriString),
                 null);
         }
     }
