@@ -5,7 +5,11 @@
 namespace Microsoft.Azure.Cosmos.Performance.Tests
 {
     using System;
+    using System.Collections.Generic;
+    using System.Linq;
     using System.Threading.Tasks;
+    using BenchmarkDotNet.Configs;
+    using BenchmarkDotNet.Jobs;
     using BenchmarkDotNet.Running;
     using CosmosDB.Benchmark.Common.Models;
     using Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks;
@@ -26,6 +30,25 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
             //ItemBenchmark itemBenchmark = new ItemBenchmark();
             //await itemBenchmark.InsertItem();
+
+            ////List<Task> all = new List<Task>();
+            ////for (int i=0; i < 100; i++)
+            ////{
+            ////    all.Add(Test(100000));
+            ////}
+
+            ////Task.WaitAll(all.ToArray());
+        }
+
+        static async Task Test(int count)
+        {
+            await Task.Yield();
+
+            ItemBenchmark itemBenchmark = new ItemBenchmark();
+            for (int i=0; i< count; i++)
+            {
+                await itemBenchmark.CreateItem();
+            }
         }
     }
 }
