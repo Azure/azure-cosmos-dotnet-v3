@@ -563,10 +563,10 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey = null;
             }
 
-            ////if (extractPartitionKeyIfNeeded && partitionKey == null)
-            ////{
-            ////    partitionKey = await this.GetPartitionKeyValueFromStreamAsync(streamPayload, cancellationToken);
-            ////}
+            if (extractPartitionKeyIfNeeded && partitionKey == null)
+            {
+                partitionKey = await this.GetPartitionKeyValueFromStreamAsync(streamPayload, cancellationToken);
+            }
 
             ContainerCore.ValidatePartitionKey(partitionKey, requestOptions);
             string resourceUri = this.GetResourceUri(requestOptions, operationType, itemId);
