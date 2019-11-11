@@ -4266,7 +4266,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         string continuationToken = null;
                         do
                         {
-                            (PartitionedQueryExecutionInfo partitionedQueryExecutionInfo, (bool canSupportActual, FeedIterator queryIterator)) = await conatinerCore.TryExecuteQueryAsync(
+                            ((Exception exception, PartitionedQueryExecutionInfo partitionedQueryExecutionInfo), (bool canSupportActual, FeedIterator queryIterator)) = await conatinerCore.TryExecuteQueryAsync(
                                 supportedQueryFeatures: queryFeatures,
                                 queryDefinition: new QueryDefinition(query),
                                 requestOptions: new QueryRequestOptions()
@@ -4287,6 +4287,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         } while (continuationToken != null);
                     }
                 }
+            }
+
+            {
+                // Test the syntax error case
+                ((Exception exception, PartitionedQueryExecutionInfo partitionedQueryExecutionInfo), (bool canSupportActual, FeedIterator queryIterator)) = await conatinerCore.TryExecuteQueryAsync(
+                                supportedQueryFeatures: QueryFeatures.None,
+                                queryDefinition: new QueryDefinition("This is not a valid query."),
+                                requestOptions: new QueryRequestOptions()
+                                {
+                                    MaxConcurrency = 1,
+                                    MaxItemCount = 1,
+                                },
+                                continuationToken: null);
+
+                Assert.IsNotNull(exception);
             }
         }
 

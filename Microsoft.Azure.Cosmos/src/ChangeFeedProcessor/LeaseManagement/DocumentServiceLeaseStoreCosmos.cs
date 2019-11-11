@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 {
     using System;
+    using System.IO;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
@@ -40,18 +41,24 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         public override async Task MarkInitializedAsync()
         {
             string markerDocId = this.GetStoreMarkerName();
-            var containerDocument = new { id = markerDocId };
+            dynamic containerDocument = new { id = markerDocId };
 
-            await this.container.CreateItemAsync<dynamic>(
-                item: containerDocument,
-                partitionKey: this.requestOptionsFactory.GetPartitionKey(markerDocId)).ConfigureAwait(false);
+            using (Stream itemStream = CosmosContainerExtensions.DefaultJsonSerializer.ToStream(containerDocument))
+            {
+                using (ResponseMessage responseMessage = await this.container.CreateItemStreamAsync(
+                    itemStream,
+                    this.requestOptionsFactory.GetPartitionKey(markerDocId)).ConfigureAwait(false))
+                {
+                    responseMessage.EnsureSuccessStatusCode();
+                }
+            }
         }
 
         public override async Task<bool> AcquireInitializationLockAsync(TimeSpan lockTime)
         {
             string lockId = this.GetStoreLockName();
-            var containerDocument = new LockDocument() { Id = lockId, TimeToLive = (int)lockTime.TotalSeconds };
-            var document = await this.container.TryCreateItemAsync<LockDocument>(
+            LockDocument containerDocument = new LockDocument() { Id = lockId, TimeToLive = (int)lockTime.TotalSeconds };
+            ItemResponse<LockDocument> document = await this.container.TryCreateItemAsync<LockDocument>(
                 this.requestOptionsFactory.GetPartitionKey(lockId),
                 containerDocument).ConfigureAwait(false);
 
@@ -67,17 +74,17 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         public override async Task<bool> ReleaseInitializationLockAsync()
         {
             string lockId = this.GetStoreLockName();
-            var requestOptions = new ItemRequestOptions()
+            ItemRequestOptions requestOptions = new ItemRequestOptions()
             {
                 IfMatchEtag = this.lockETag,
             };
 
-            var document = await this.container.TryDeleteItemAsync<LockDocument>(
+            bool deleted = await this.container.TryDeleteItemAsync<LockDocument>(
                 this.requestOptionsFactory.GetPartitionKey(lockId),
                 lockId,
                 requestOptions).ConfigureAwait(false);
 
-            if (document != null)
+            if (deleted)
             {
                 this.lockETag = null;
                 return true;

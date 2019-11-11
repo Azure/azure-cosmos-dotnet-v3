@@ -5,10 +5,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
     internal abstract partial class GroupByDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase
     {
@@ -29,10 +29,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
             {
             }
 
-            public static async Task<IDocumentQueryExecutionComponent> CreateAsync(
-                CosmosQueryClient cosmosQueryClient,
+            public static async Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
                 string requestContinuation,
-                Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback,
+                Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync,
                 IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
                 IReadOnlyList<string> orderedAliases,
                 bool hasSelectValue)
@@ -42,8 +41,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                 {
                     if (!GroupByContinuationToken.TryParse(requestContinuation, out groupByContinuationToken))
                     {
-                        throw cosmosQueryClient.CreateBadRequestException(
-                            $"Invalid {nameof(GroupByContinuationToken)}: '{requestContinuation}'");
+                        return TryCatch<IDocumentQueryExecutionComponent>.FromException(
+                            new Exception($"Invalid {nameof(GroupByContinuationToken)}: '{requestContinuation}'"));
                     }
                 }
                 else
@@ -53,26 +52,36 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                         sourceContinuationToken: null);
                 }
 
-                IDocumentQueryExecutionComponent source;
+                TryCatch<IDocumentQueryExecutionComponent> tryCreateSource;
                 if (groupByContinuationToken.SourceContinuationToken == ComputeGroupByDocumentQueryExecutionComponent.DoneReadingGroupingsContinuationToken)
                 {
-                    source = DoneDocumentQueryExecutionComponent.Value;
+                    tryCreateSource = TryCatch<IDocumentQueryExecutionComponent>.FromResult(DoneDocumentQueryExecutionComponent.Value);
                 }
                 else
                 {
-                    source = await createSourceCallback(groupByContinuationToken.SourceContinuationToken);
+                    tryCreateSource = await tryCreateSourceAsync(groupByContinuationToken.SourceContinuationToken);
                 }
 
-                GroupingTable groupingTable = GroupingTable.CreateFromContinuationToken(
-                    cosmosQueryClient,
+                if (!tryCreateSource.Succeeded)
+                {
+                    return TryCatch<IDocumentQueryExecutionComponent>.FromException(tryCreateSource.Exception);
+                }
+
+                TryCatch<GroupingTable> tryCreateGroupingTable = GroupingTable.TryCreateFromContinuationToken(
                     groupByAliasToAggregateType,
                     orderedAliases,
                     hasSelectValue,
                     groupByContinuationToken.GroupingTableContinuationToken);
 
-                return new ComputeGroupByDocumentQueryExecutionComponent(
-                    source,
-                    groupingTable);
+                if (!tryCreateGroupingTable.Succeeded)
+                {
+                    return TryCatch<IDocumentQueryExecutionComponent>.FromException(tryCreateGroupingTable.Exception);
+                }
+
+                return TryCatch<IDocumentQueryExecutionComponent>.FromResult(
+                    new ComputeGroupByDocumentQueryExecutionComponent(
+                        tryCreateSource.Result,
+                        tryCreateGroupingTable.Result));
             }
 
             public override async Task<QueryResponseCore> DrainAsync(
@@ -110,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                     // Stage 2:
                     // Emit the results from the grouping table page by page
                     IReadOnlyList<CosmosElement> results = this.groupingTable.Drain(maxElements);
-                    
+
                     response = QueryResponseCore.CreateSuccess(
                        result: results,
                        continuationToken: null,
