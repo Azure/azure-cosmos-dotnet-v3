@@ -14,7 +14,9 @@ namespace Microsoft.Azure.Cosmos
     internal class CosmosDiagnosticsCore : CosmosDiagnostics
     {
         private List<ICosmosDiagnosticsJsonWriter> Scopes { get; } = new List<ICosmosDiagnosticsJsonWriter>();
-      
+        private long retryCount = 0;
+        private TimeSpan retryBackoffTimeSpan;
+
         internal CosmosDiagnosticsScope CreateScope(string name)
         {
             CosmosDiagnosticsScope scope = new CosmosDiagnosticsScope(this, name);
@@ -30,7 +32,9 @@ namespace Microsoft.Azure.Cosmos
         public override string ToString()
         {
             StringBuilder builder = new StringBuilder();
-            builder.Append("{\"Scopes\":[");
+            builder.Append("{");
+            this.AppendJsonRetryInfo(builder);
+            builder.Append(",\"Scopes\":[");
             if (this.Scopes != null && this.Scopes.Count > 0)
             {
                 foreach (ICosmosDiagnosticsJsonWriter scope in this.Scopes)
@@ -46,6 +50,17 @@ namespace Microsoft.Azure.Cosmos
             return builder.ToString();
         }
 
+        internal void AddSdkRetry(TimeSpan backOffTimeSpan)
+        {
+            if (this.retryBackoffTimeSpan == null)
+            {
+                this.retryBackoffTimeSpan = new TimeSpan();
+            }
+
+            this.retryBackoffTimeSpan.Add(backOffTimeSpan);
+            this.retryCount++;
+        }
+
         internal void AddScope(CosmosDiagnosticsScope diagnosticsScope)
         {
             this.Scopes.Add(diagnosticsScope);
@@ -54,6 +69,19 @@ namespace Microsoft.Azure.Cosmos
         internal void AddJsonAttribute(string name, dynamic property)
         {
             this.Scopes.Add(new CosmosDiagnosticScopeAttribute(name, property));
+        }
+
+        private void AppendJsonRetryInfo(StringBuilder stringBuilder)
+        {
+            stringBuilder.Append("\"RetryCount\":");
+            stringBuilder.Append(this.retryCount);
+            if (this.retryBackoffTimeSpan == null)
+            {
+                stringBuilder.Append(",\"RetryTimeDelay\":\"");
+
+                stringBuilder.Append(this.retryBackoffTimeSpan);
+                stringBuilder.Append("\"");
+            }
         }
 
         private interface ICosmosDiagnosticsJsonWriter

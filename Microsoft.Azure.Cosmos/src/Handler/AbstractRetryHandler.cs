@@ -37,6 +37,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     {
                         return retryPolicyInstance.ShouldRetryAsync(exception, cancellationToken);
                     },
+                    diagnosticsCore: request.DiagnosticsCore,
                     cancellationToken: cancellationToken);
             }
             catch (DocumentClientException ex)
@@ -71,7 +72,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
            Func<Task<ResponseMessage>> callbackMethod,
            Func<ResponseMessage, CancellationToken, Task<ShouldRetryResult>> callShouldRetry,
            Func<Exception, CancellationToken, Task<ShouldRetryResult>> callShouldRetryException,
-           CancellationToken cancellationToken = default(CancellationToken))
+           CosmosDiagnosticsCore diagnosticsCore,
+           CancellationToken cancellationToken)
         {
             while (true)
             {
@@ -87,6 +89,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     }
 
                     result = await callShouldRetry(cosmosResponseMessage, cancellationToken);
+                    
                     if (!result.ShouldRetry)
                     {
                         return cosmosResponseMessage;
@@ -108,6 +111,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 {
                     await Task.Delay(result.BackoffTime, cancellationToken);
                 }
+
+                diagnosticsCore.AddSdkRetry(backoffTime);
             }
         }
     }
