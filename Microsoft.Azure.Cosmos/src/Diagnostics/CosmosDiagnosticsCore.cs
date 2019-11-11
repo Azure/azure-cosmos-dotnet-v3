@@ -13,9 +13,8 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class CosmosDiagnosticsCore : CosmosDiagnostics
     {
-        private List<CosmosDiagnosticsScope> Scopes { get; } = new List<CosmosDiagnosticsScope>();
-        private List<(string, dynamic)> jsonAttributes { get; } = new List<(string, dynamic)>();
-
+        private List<ICosmosDiagnosticsJsonWriter> Scopes { get; } = new List<ICosmosDiagnosticsJsonWriter>();
+      
         internal CosmosDiagnosticsScope CreateScope(string name)
         {
             CosmosDiagnosticsScope scope = new CosmosDiagnosticsScope(this, name);
@@ -34,7 +33,7 @@ namespace Microsoft.Azure.Cosmos
             builder.Append("{\"Scopes\":[");
             if (this.Scopes != null && this.Scopes.Count > 0)
             {
-                foreach (CosmosDiagnosticsScope scope in this.Scopes)
+                foreach (ICosmosDiagnosticsJsonWriter scope in this.Scopes)
                 {
                     scope.AppendJson(builder);
                     builder.Append(",");
@@ -42,10 +41,8 @@ namespace Microsoft.Azure.Cosmos
                 // remove extra comma
                 builder.Length -= 1;
             }
-            builder.Append("]");
+            builder.Append("]}");
 
-            this.AppendAttributes(builder);
-            builder.Append("}");
             return builder.ToString();
         }
 
@@ -56,23 +53,38 @@ namespace Microsoft.Azure.Cosmos
 
         internal void AddJsonAttribute(string name, dynamic property)
         {
-            this.jsonAttributes.Add((name, property));
+            this.Scopes.Add(new CosmosDiagnosticScopeAttribute(name, property));
         }
 
-        private void AppendAttributes(StringBuilder stringBuilder)
+        private interface ICosmosDiagnosticsJsonWriter
         {
-            if (this.jsonAttributes == null || this.jsonAttributes.Count == 0)
+            void AppendJson(StringBuilder stringBuilder);
+        }
+
+        private struct CosmosDiagnosticScopeAttribute : ICosmosDiagnosticsJsonWriter
+        {
+            private readonly string name;
+            private readonly dynamic jsonValue;
+
+            internal CosmosDiagnosticScopeAttribute(
+                string name,
+                dynamic jsonValue)
             {
-                return;
+                this.name = name;
+                this.jsonValue = jsonValue;
             }
-            foreach ((string name, dynamic value) attribute in this.jsonAttributes)
+
+            public void AppendJson(StringBuilder stringBuilder)
             {
-                stringBuilder.Append($",\"{attribute.name}\":");
-                stringBuilder.Append(attribute.value);
+                stringBuilder.Append("{\"");
+                stringBuilder.Append(this.name);
+                stringBuilder.Append("\":");
+                stringBuilder.Append(this.jsonValue);
+                stringBuilder.Append("}");
             }
         }
 
-        internal struct CosmosDiagnosticsScope : IDisposable
+        internal struct CosmosDiagnosticsScope : IDisposable, ICosmosDiagnosticsJsonWriter
         {
             private string Name { get; }
             private DateTimeOffset StartTime { get; }
@@ -96,15 +108,15 @@ namespace Microsoft.Azure.Cosmos
                 this.ElapsedTime.Stop();
             }
 
-            internal void AppendJson(StringBuilder builder)
+            public void AppendJson(StringBuilder stringBuilder)
             {
-                builder.Append("{\"Name\":\"");
-                builder.Append(this.Name);
-                builder.Append("\",\"StartTime\":\"");
-                builder.Append(this.StartTime);
-                builder.Append("\",\"ElapsedTime\":\"");
-                builder.Append(this.ElapsedTime.Elapsed);
-                builder.Append("\"}");
+                stringBuilder.Append("{\"Name\":\"");
+                stringBuilder.Append(this.Name);
+                stringBuilder.Append("\",\"StartTime\":\"");
+                stringBuilder.Append(this.StartTime);
+                stringBuilder.Append("\",\"ElapsedTime\":\"");
+                stringBuilder.Append(this.ElapsedTime.Elapsed);
+                stringBuilder.Append("\"}");
             }
         }
     }

@@ -45,31 +45,39 @@ namespace Microsoft.Azure.Cosmos.Handlers
         {
             ResponseMessage response = null;
             string originalContinuation = request.Headers.ContinuationToken;
+
             try
             {
-                RntdbEnumerationDirection rntdbEnumerationDirection = RntdbEnumerationDirection.Forward;
-                if (request.Properties.TryGetValue(HttpConstants.HttpHeaders.EnumerationDirection, out object direction))
+                List<Range<string>> providedRanges;
+                PartitionKeyRangeCache routingMapProvider;
+                CollectionCache collectionCache;
+                ContainerProperties collectionFromCache;
+                ResolvedRangeInfo resolvedRangeInfo;
+                using (request.DiagnosticsCore.CreateScope("PartitionKeyRangeHandler"))
                 {
-                    rntdbEnumerationDirection = (byte)direction == (byte)RntdbEnumerationDirection.Reverse ? RntdbEnumerationDirection.Reverse : RntdbEnumerationDirection.Forward;
-                }
+                    RntdbEnumerationDirection rntdbEnumerationDirection = RntdbEnumerationDirection.Forward;
+                    if (request.Properties.TryGetValue(HttpConstants.HttpHeaders.EnumerationDirection, out object direction))
+                    {
+                        rntdbEnumerationDirection = (byte)direction == (byte)RntdbEnumerationDirection.Reverse ? RntdbEnumerationDirection.Reverse : RntdbEnumerationDirection.Forward;
+                    }
 
-                request.Headers.Remove(HttpConstants.HttpHeaders.IsContinuationExpected);
-                request.Headers.Add(HttpConstants.HttpHeaders.IsContinuationExpected, bool.TrueString);
+                    request.Headers.Remove(HttpConstants.HttpHeaders.IsContinuationExpected);
+                    request.Headers.Add(HttpConstants.HttpHeaders.IsContinuationExpected, bool.TrueString);
 
-                if (!request.Properties.TryGetValue(HandlerConstants.StartEpkString, out object startEpk))
-                {
-                    startEpk = PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey;
-                }
+                    if (!request.Properties.TryGetValue(HandlerConstants.StartEpkString, out object startEpk))
+                    {
+                        startEpk = PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey;
+                    }
 
-                if (!request.Properties.TryGetValue(HandlerConstants.EndEpkString, out object endEpk))
-                {
-                    endEpk = PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey;
-                }
+                    if (!request.Properties.TryGetValue(HandlerConstants.EndEpkString, out object endEpk))
+                    {
+                        endEpk = PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey;
+                    }
 
-                startEpk = startEpk ?? PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey;
-                endEpk = endEpk ?? PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey;
+                    startEpk = startEpk ?? PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey;
+                    endEpk = endEpk ?? PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey;
 
-                List<Range<string>> providedRanges = new List<Range<string>>
+                    providedRanges = new List<Range<string>>
                 {
                     new Range<string>(
                         (string)startEpk,
@@ -78,47 +86,48 @@ namespace Microsoft.Azure.Cosmos.Handlers
                         isMaxInclusive: false)
                 };
 
-                DocumentServiceRequest serviceRequest = request.ToDocumentServiceRequest();
+                    DocumentServiceRequest serviceRequest = request.ToDocumentServiceRequest();
 
-                PartitionKeyRangeCache routingMapProvider = await this.client.DocumentClient.GetPartitionKeyRangeCacheAsync();
-                CollectionCache collectionCache = await this.client.DocumentClient.GetCollectionCacheAsync();
-                ContainerProperties collectionFromCache =
-                    await collectionCache.ResolveCollectionAsync(serviceRequest, CancellationToken.None);
+                    routingMapProvider = await this.client.DocumentClient.GetPartitionKeyRangeCacheAsync();
+                    collectionCache = await this.client.DocumentClient.GetCollectionCacheAsync();
+                    collectionFromCache =
+                        await collectionCache.ResolveCollectionAsync(serviceRequest, CancellationToken.None);
 
-                //direction is not expected to change  between continuations.
-                Range<string> rangeFromContinuationToken =
-                    this.partitionRoutingHelper.ExtractPartitionKeyRangeFromContinuationToken(serviceRequest.Headers, out List<CompositeContinuationToken> suppliedTokens);
+                    //direction is not expected to change  between continuations.
+                    Range<string> rangeFromContinuationToken =
+                        this.partitionRoutingHelper.ExtractPartitionKeyRangeFromContinuationToken(serviceRequest.Headers, out List<CompositeContinuationToken> suppliedTokens);
 
-                ResolvedRangeInfo resolvedRangeInfo =
-                    await this.partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRangeAsync(
-                        providedPartitionKeyRanges: providedRanges,
-                        routingMapProvider: routingMapProvider,
-                        collectionRid: collectionFromCache.ResourceId,
-                        rangeFromContinuationToken: rangeFromContinuationToken,
-                        suppliedTokens: suppliedTokens,
-                        direction: rntdbEnumerationDirection);
+                    ResolvedRangeInfo resolvedRangeInfo =
+                        await this.partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRangeAsync(
+                            providedPartitionKeyRanges: providedRanges,
+                            routingMapProvider: routingMapProvider,
+                            collectionRid: collectionFromCache.ResourceId,
+                            rangeFromContinuationToken: rangeFromContinuationToken,
+                            suppliedTokens: suppliedTokens,
+                            direction: rntdbEnumerationDirection);
 
-                if (serviceRequest.IsNameBased && resolvedRangeInfo.ResolvedRange == null && resolvedRangeInfo.ContinuationTokens == null)
-                {
-                    serviceRequest.ForceNameCacheRefresh = true;
-                    collectionFromCache = await collectionCache.ResolveCollectionAsync(serviceRequest, CancellationToken.None);
-                    resolvedRangeInfo = await this.partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRangeAsync(
-                        providedPartitionKeyRanges: providedRanges,
-                        routingMapProvider: routingMapProvider,
-                        collectionRid: collectionFromCache.ResourceId,
-                        rangeFromContinuationToken: rangeFromContinuationToken,
-                        suppliedTokens: suppliedTokens,
-                        direction: rntdbEnumerationDirection);
+                    if (serviceRequest.IsNameBased && resolvedRangeInfo.ResolvedRange == null && resolvedRangeInfo.ContinuationTokens == null)
+                    {
+                        serviceRequest.ForceNameCacheRefresh = true;
+                        collectionFromCache = await collectionCache.ResolveCollectionAsync(serviceRequest, CancellationToken.None);
+                        resolvedRangeInfo = await this.partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRangeAsync(
+                            providedPartitionKeyRanges: providedRanges,
+                            routingMapProvider: routingMapProvider,
+                            collectionRid: collectionFromCache.ResourceId,
+                            rangeFromContinuationToken: rangeFromContinuationToken,
+                            suppliedTokens: suppliedTokens,
+                            direction: rntdbEnumerationDirection);
+                    }
+
+                    if (resolvedRangeInfo.ResolvedRange == null && resolvedRangeInfo.ContinuationTokens == null)
+                    {
+                        return ((DocumentClientException)new NotFoundException(
+                                $"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)}: Was not able to get queryRoutingInfo even after resolve collection async with force name cache refresh to the following collectionRid: {collectionFromCache.ResourceId} with the supplied tokens: {JsonConvert.SerializeObject(suppliedTokens)}")
+                                ).ToCosmosResponseMessage(request);
+                    }
+
+                    serviceRequest.RouteTo(new PartitionKeyRangeIdentity(collectionFromCache.ResourceId, resolvedRangeInfo.ResolvedRange.Id));
                 }
-
-                if (resolvedRangeInfo.ResolvedRange == null && resolvedRangeInfo.ContinuationTokens == null)
-                {
-                    return ((DocumentClientException)new NotFoundException(
-                            $"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)}: Was not able to get queryRoutingInfo even after resolve collection async with force name cache refresh to the following collectionRid: {collectionFromCache.ResourceId} with the supplied tokens: {JsonConvert.SerializeObject(suppliedTokens)}")
-                            ).ToCosmosResponseMessage(request);
-                }
-
-                serviceRequest.RouteTo(new PartitionKeyRangeIdentity(collectionFromCache.ResourceId, resolvedRangeInfo.ResolvedRange.Id));
 
                 response = await base.SendAsync(request, cancellationToken);
 
