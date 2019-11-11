@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
 
     // Retry when we receive the throttling from server.
-    internal sealed class ResourceThrottleRetryPolicy : IDocumentClientRetryPolicy
+    internal struct ResourceThrottleRetryPolicy : IDocumentClientRetryPolicy
     {
         private const int DefaultMaxWaitTimeInSeconds = 60;
         private const int DefaultRetryInSeconds = 5;
@@ -36,6 +36,8 @@ namespace Microsoft.Azure.Cosmos
             this.maxAttemptCount = maxAttemptCount;
             this.backoffDelayFactor = backoffDelayFactor;
             this.maxWaitTimeInMilliseconds = TimeSpan.FromSeconds(maxWaitTimeInSeconds);
+
+            this.currentAttemptCount = 0;
         }
 
         /// <summary> 
@@ -98,7 +100,7 @@ namespace Microsoft.Azure.Cosmos
         {
             TimeSpan retryDelay = TimeSpan.Zero;
             if (this.currentAttemptCount < this.maxAttemptCount &&
-                (this.CheckIfRetryNeeded(retryAfter, out retryDelay)))
+                this.CheckIfRetryNeeded(retryAfter, out retryDelay))
             {
                 this.currentAttemptCount++;
                 DefaultTrace.TraceWarning(

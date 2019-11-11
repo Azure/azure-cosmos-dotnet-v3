@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Documents;
 
-    internal sealed class PartitionKeyMismatchRetryPolicy : IDocumentClientRetryPolicy
+    internal struct PartitionKeyMismatchRetryPolicy : IDocumentClientRetryPolicy
     {
         private const int MaxRetries = 1;
 
@@ -32,6 +32,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.clientCollectionCache = clientCollectionCache;
             this.nextRetryPolicy = nextRetryPolicy;
+            this.retriesAttempted = 0;
         }
 
         /// <summary> 

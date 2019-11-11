@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Client policy is combination of endpoint change retry + throttling retry.
     /// </summary>
-    internal sealed class ClientRetryPolicy : IDocumentClientRetryPolicy
+    internal struct ClientRetryPolicy : IDocumentClientRetryPolicy
     {
         private const int RetryIntervalInMS = 1000; // Once we detect failover wait for 1 second before retrying request.
         private const int MaxRetryCount = 120;
@@ -40,6 +40,10 @@ namespace Microsoft.Azure.Cosmos
             bool enableEndpointDiscovery,
             RetryOptions retryOptions)
         {
+            this.isReadRequest = false;
+            this.locationEndpoint = null;
+            this.retryContext = null;
+
             this.throttlingRetry = new ResourceThrottleRetryPolicy(
                 retryOptions.MaxRetryAttemptsOnThrottledRequests,
                 retryOptions.MaxRetryWaitTimeInSeconds);

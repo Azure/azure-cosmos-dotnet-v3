@@ -46,14 +46,17 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         [Benchmark]
         public async Task CreateItem()
         {
-            MemoryStream ms = new MemoryStream(this.payloadBytes);
-
-            ResponseMessage response = await this.container.CreateItemStreamAsync(
-                ms,
-                new Cosmos.PartitionKey(Constants.ValidOperationId));
-            if ((int)response.StatusCode > 300 || response.Content == null)
+            using (MemoryStream ms = new MemoryStream(this.payloadBytes))
             {
-                throw new Exception();
+                using (ResponseMessage response = await this.container.CreateItemStreamAsync(
+                    ms,
+                    new Cosmos.PartitionKey(Constants.ValidOperationId)))
+                {
+                    if ((int)response.StatusCode > 300 || response.Content == null)
+                    {
+                        throw new Exception();
+                    }
+                }
             }
         }
 

@@ -519,7 +519,7 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
-            PartitionKeyMismatchRetryPolicy requestRetryPolicy = null;
+            PartitionKeyMismatchRetryPolicy? requestRetryPolicy = null;
             while (true)
             {
                 ResponseMessage responseMessage = await this.ProcessItemStreamAsync(
@@ -541,7 +541,7 @@ namespace Microsoft.Azure.Cosmos
                     requestRetryPolicy = new PartitionKeyMismatchRetryPolicy(await this.ClientContext.DocumentClient.GetCollectionCacheAsync(), null);
                 }
 
-                ShouldRetryResult retryResult = await requestRetryPolicy.ShouldRetryAsync(responseMessage, cancellationToken);
+                ShouldRetryResult retryResult = await requestRetryPolicy.Value.ShouldRetryAsync(responseMessage, cancellationToken);
                 if (!retryResult.ShouldRetry)
                 {
                     return responseMessage;

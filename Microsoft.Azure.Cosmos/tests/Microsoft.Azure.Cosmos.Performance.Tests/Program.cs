@@ -31,13 +31,13 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             //ItemBenchmark itemBenchmark = new ItemBenchmark();
             //await itemBenchmark.InsertItem();
 
-            ////List<Task> all = new List<Task>();
-            ////for (int i=0; i < 100; i++)
-            ////{
-            ////    all.Add(Test(100000));
-            ////}
+            //List<Task> all = new List<Task>();
+            //for (int i = 0; i < 100; i++)
+            //{
+            //    all.Add(Test(100000));
+            //}
 
-            ////Task.WaitAll(all.ToArray());
+            //Task.WaitAll(all.ToArray());
         }
 
         static async Task Test(int count)

@@ -18,17 +18,19 @@ namespace Microsoft.Azure.Cosmos
     /// The expectation that is the outer retry policy in the retry policy chain and nobody can overwrite ShouldRetryResult.
     /// Once we clear the session we expect call to fail and throw exceptio to the client. Otherwise we may violate session consistency.
     /// </summary>
-    internal sealed class ClearingSessionContainerClientRetryPolicy : IDocumentClientRetryPolicy
+    internal struct ClearingSessionContainerClientRetryPolicy : IDocumentClientRetryPolicy
     {
         private readonly IDocumentClientRetryPolicy retryPolicy;
         private readonly ISessionContainer sessionContainer;
         private DocumentServiceRequest request;
-        private bool hasTriggered = false;
+        private bool hasTriggered;
 
         public ClearingSessionContainerClientRetryPolicy(ISessionContainer sessionContainer, IDocumentClientRetryPolicy retryPolicy)
         {
             this.retryPolicy = retryPolicy;
             this.sessionContainer = sessionContainer;
+            this.hasTriggered = false;
+            this.request = null;
         }
 
         public void OnBeforeSendRequest(DocumentServiceRequest request)
@@ -77,9 +79,9 @@ namespace Microsoft.Azure.Cosmos
                     subStatusCode.Value == SubStatusCodes.ReadSessionNotAvailable)
                 {
                     // Clear the session token, because the collection name might be reused.
-                    DefaultTrace.TraceWarning("Clear the the token for named base request {0}", request.ResourceAddress);
+                    DefaultTrace.TraceWarning("Clear the the token for named base request {0}", this.request.ResourceAddress);
 
-                    this.sessionContainer.ClearTokenByCollectionFullname(request.ResourceAddress);
+                    this.sessionContainer.ClearTokenByCollectionFullname(this.request.ResourceAddress);
 
                     this.hasTriggered = true;
                 }

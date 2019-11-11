@@ -143,10 +143,6 @@ namespace Microsoft.Azure.Cosmos
             Action<RequestMessage> requestEnricher,
             CancellationToken cancellationToken)
         {
-            //ResponseMessage tmp = new ResponseMessage(System.Net.HttpStatusCode.Created, null);
-            //tmp.Content = new MemoryStream();
-            //return Task.FromResult(tmp);
-
             return this.RequestHandler.SendAsync(
                 resourceUriString: resourceUriString,
                 resourceType: resourceType,
