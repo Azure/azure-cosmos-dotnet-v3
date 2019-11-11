@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- [#944](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/944) Change Feed Processor won't use user serializer for internal operations
 - [#954](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/954) Support "Start from Beginning" for Change Feed Processor in multi master accounts
 
 
