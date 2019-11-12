@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -128,16 +129,17 @@ namespace Microsoft.Azure.Cosmos.Tests
                     new InvalidOperationException(
                         "Verified that the PartitionKeyDefinition was correctly set. Cancel the rest of the query")));
 
-            CosmosQueryExecutionContextFactory.InputParameters inputParameters = new CosmosQueryExecutionContextFactory.InputParameters()
-            {
-                SqlQuerySpec = sqlQuerySpec,
-                InitialUserContinuationToken = null,
-                MaxBufferedItemCount = queryRequestOptions?.MaxBufferedItemCount,
-                MaxConcurrency = queryRequestOptions?.MaxConcurrency,
-                MaxItemCount = queryRequestOptions?.MaxItemCount,
-                PartitionKey = queryRequestOptions?.PartitionKey,
-                Properties = queryRequestOptions?.Properties
-            };
+            CosmosQueryExecutionContextFactory.InputParameters inputParameters = new CosmosQueryExecutionContextFactory.InputParameters(
+                sqlQuerySpec: sqlQuerySpec,
+                initialUserContinuationToken: null,
+                maxConcurrency: queryRequestOptions?.MaxConcurrency,
+                maxItemCount: queryRequestOptions?.MaxItemCount,
+                maxBufferedItemCount: queryRequestOptions?.MaxBufferedItemCount,
+                responseContinuationTokenLimitInKb: null,
+                partitionKey: queryRequestOptions?.PartitionKey,
+                properties: queryRequestOptions?.Properties,
+                partitionedQueryExecutionInfo: null,
+                executionEnvironment: queryRequestOptions?.ExecutionEnvironment);
 
             CosmosQueryContext cosmosQueryContext = new CosmosQueryContextCore(
                 client: client.Object,
@@ -150,11 +152,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                 allowNonValueAggregateQuery: allowNonValueAggregateQuery,
                 correlatedActivityId: new Guid("221FC86C-1825-4284-B10E-A6029652CCA6"));
 
-            CosmosQueryExecutionContextFactory factory = new CosmosQueryExecutionContextFactory(
-                cosmosQueryContext: cosmosQueryContext,
-                inputParameters: inputParameters);
+            TryCatch<CosmosQueryExecutionContext> tryCreateContext = await CosmosQueryExecutionContextFactory.TryCreateAsync(
+                cosmosQueryContext,
+                inputParameters,
+                cancellationtoken);
+            Assert.IsTrue(tryCreateContext.Succeeded);
 
-            await factory.ExecuteNextAsync(cancellationtoken);
+            await tryCreateContext.Result.ExecuteNextAsync(cancellationtoken);
         }
 
         private async Task<(IList<IDocumentQueryExecutionComponent> components, QueryResponseCore response)> GetAllExecutionComponents()

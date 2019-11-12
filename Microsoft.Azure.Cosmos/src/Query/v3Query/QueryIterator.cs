@@ -8,21 +8,32 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Handlers;
+    using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
     internal class QueryIterator : FeedIterator
     {
-        private readonly CosmosQueryExecutionContextFactory cosmosQueryExecutionContext;
+        private readonly CosmosQueryContext cosmosQueryContext;
+        private readonly CosmosQueryExecutionContext cosmosQueryExecutionContext;
         private readonly CosmosSerializationFormatOptions cosmosSerializationFormatOptions;
 
         private QueryIterator(
-            CosmosQueryExecutionContextFactory cosmosQueryExecutionContext,
+            CosmosQueryContext cosmosQueryContext,
+            CosmosQueryExecutionContext cosmosQueryExecutionContext,
             CosmosSerializationFormatOptions cosmosSerializationFormatOptions)
         {
+            if (cosmosQueryContext == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosQueryContext));
+            }
+
             if (cosmosQueryExecutionContext == null)
             {
                 throw new ArgumentNullException(nameof(cosmosQueryExecutionContext));
             }
 
+            this.cosmosQueryContext = cosmosQueryContext;
             this.cosmosQueryExecutionContext = cosmosQueryExecutionContext;
             this.cosmosSerializationFormatOptions = cosmosSerializationFormatOptions;
         }
@@ -42,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 queryRequestOptions = new QueryRequestOptions();
             }
 
-            CosmosQueryContext context = new CosmosQueryContextCore(
+            CosmosQueryContext cosmosQueryContext = new CosmosQueryContextCore(
                 client: client,
                 queryRequestOptions: queryRequestOptions,
                 resourceTypeEnum: Documents.ResourceType.Document,
@@ -53,24 +64,35 @@ namespace Microsoft.Azure.Cosmos.Query
                 allowNonValueAggregateQuery: allowNonValueAggregateQuery,
                 correlatedActivityId: Guid.NewGuid());
 
-            CosmosQueryExecutionContextFactory.InputParameters inputParams = new CosmosQueryExecutionContextFactory.InputParameters()
-            {
-                SqlQuerySpec = sqlQuerySpec,
-                InitialUserContinuationToken = continuationToken,
-                MaxBufferedItemCount = queryRequestOptions.MaxBufferedItemCount,
-                MaxConcurrency = queryRequestOptions.MaxConcurrency,
-                MaxItemCount = queryRequestOptions.MaxItemCount,
-                PartitionKey = queryRequestOptions.PartitionKey,
-                Properties = queryRequestOptions.Properties,
-                PartitionedQueryExecutionInfo = partitionedQueryExecutionInfo,
-                ExecutionEnvironment = queryRequestOptions.ExecutionEnvironment.GetValueOrDefault(Core.ExecutionContext.ExecutionEnvironment.Client),
-                ResponseContinuationTokenLimitInKb = queryRequestOptions.ResponseContinuationTokenLimitInKb,
-            };
+            CosmosQueryExecutionContextFactory.InputParameters inputParameters = new CosmosQueryExecutionContextFactory.InputParameters(
+                sqlQuerySpec: sqlQuerySpec,
+                initialUserContinuationToken: continuationToken,
+                maxConcurrency: queryRequestOptions.MaxConcurrency,
+                maxItemCount: queryRequestOptions.MaxItemCount,
+                maxBufferedItemCount: queryRequestOptions.MaxBufferedItemCount,
+                responseContinuationTokenLimitInKb: queryRequestOptions.ResponseContinuationTokenLimitInKb,
+                partitionKey: queryRequestOptions.PartitionKey,
+                properties: queryRequestOptions.Properties,
+                partitionedQueryExecutionInfo: partitionedQueryExecutionInfo,
+                executionEnvironment: queryRequestOptions.ExecutionEnvironment);
+
+            CosmosQueryExecutionContextWithNameCacheStaleRetry cosmosQueryExecutionContextWithNameCacheStaleRetry = new CosmosQueryExecutionContextWithNameCacheStaleRetry(
+                cosmosQueryContext: cosmosQueryContext,
+                cosmosQueryExecutionContextFactory: () =>
+                {
+                    // Query Iterator requires that the creation of the query context is defered until the user calls ReadNextAsync
+                    AsyncLazy<TryCatch<CosmosQueryExecutionContext>> lazyTryCreateCosmosQueryExecutionContext = new AsyncLazy<TryCatch<CosmosQueryExecutionContext>>(valueFactory: (cancellationToken) =>
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        return CosmosQueryExecutionContextFactory.TryCreateAsync(cosmosQueryContext, inputParameters, cancellationToken);
+                    });
+                    LazyCosmosQueryExecutionContext lazyCosmosQueryExecutionContext = new LazyCosmosQueryExecutionContext(lazyTryCreateCosmosQueryExecutionContext);
+                    return lazyCosmosQueryExecutionContext;
+                });
 
             return new QueryIterator(
-                new CosmosQueryExecutionContextFactory(
-                    cosmosQueryContext: context,
-                    inputParameters: inputParams),
+                cosmosQueryContext,
+                cosmosQueryExecutionContextWithNameCacheStaleRetry,
                 queryRequestOptions.CosmosSerializationFormatOptions);
         }
 
@@ -83,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.Query
             try
             {
                 QueryResponseCore responseCore = await this.cosmosQueryExecutionContext.ExecuteNextAsync(cancellationToken);
-                CosmosQueryContext cosmosQueryContext = this.cosmosQueryExecutionContext.CosmosQueryContext;
+                CosmosQueryContext cosmosQueryContext = this.cosmosQueryContext;
                 QueryAggregateDiagnostics diagnostics = new QueryAggregateDiagnostics(responseCore.Diagnostics);
                 QueryResponse queryResponse;
                 if (responseCore.IsSuccess)
