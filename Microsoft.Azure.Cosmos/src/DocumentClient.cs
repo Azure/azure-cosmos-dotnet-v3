@@ -1438,7 +1438,7 @@ namespace Microsoft.Azure.Cosmos
             set { this.onExecuteScalarQueryCallback = value; }
         }
 
-        internal async Task<IDictionary<string, object>> GetQueryEngineConfigurationAsync()
+        internal virtual async Task<IDictionary<string, object>> GetQueryEngineConfigurationAsync()
         {
             await this.EnsureValidClientAsync();
             return this.accountServiceConfiguration.QueryEngineConfiguration;
