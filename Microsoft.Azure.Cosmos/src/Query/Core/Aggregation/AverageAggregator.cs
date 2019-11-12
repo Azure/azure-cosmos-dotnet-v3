@@ -58,7 +58,8 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
             {
                 if (!AverageInfo.TryParse(continuationToken, out averageInfo))
                 {
-                    return TryCatch<IAggregator>.FromException(new ArgumentException($"Invalid continuation token: {continuationToken}"));
+                    return TryCatch<IAggregator>.FromException(
+                        new ArgumentException($"Invalid continuation token: {continuationToken}"));
                 }
             }
             else

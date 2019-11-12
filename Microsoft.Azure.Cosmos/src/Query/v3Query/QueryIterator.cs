@@ -76,23 +76,9 @@ namespace Microsoft.Azure.Cosmos.Query
                 partitionedQueryExecutionInfo: partitionedQueryExecutionInfo,
                 executionEnvironment: queryRequestOptions.ExecutionEnvironment);
 
-            CosmosQueryExecutionContextWithNameCacheStaleRetry cosmosQueryExecutionContextWithNameCacheStaleRetry = new CosmosQueryExecutionContextWithNameCacheStaleRetry(
-                cosmosQueryContext: cosmosQueryContext,
-                cosmosQueryExecutionContextFactory: () =>
-                {
-                    // Query Iterator requires that the creation of the query context is defered until the user calls ReadNextAsync
-                    AsyncLazy<TryCatch<CosmosQueryExecutionContext>> lazyTryCreateCosmosQueryExecutionContext = new AsyncLazy<TryCatch<CosmosQueryExecutionContext>>(valueFactory: (cancellationToken) =>
-                    {
-                        cancellationToken.ThrowIfCancellationRequested();
-                        return CosmosQueryExecutionContextFactory.TryCreateAsync(cosmosQueryContext, inputParameters, cancellationToken);
-                    });
-                    LazyCosmosQueryExecutionContext lazyCosmosQueryExecutionContext = new LazyCosmosQueryExecutionContext(lazyTryCreateCosmosQueryExecutionContext);
-                    return lazyCosmosQueryExecutionContext;
-                });
-
             return new QueryIterator(
                 cosmosQueryContext,
-                cosmosQueryExecutionContextWithNameCacheStaleRetry,
+                CosmosQueryExecutionContextFactory.Create(cosmosQueryContext, inputParameters),
                 queryRequestOptions.CosmosSerializationFormatOptions);
         }
 

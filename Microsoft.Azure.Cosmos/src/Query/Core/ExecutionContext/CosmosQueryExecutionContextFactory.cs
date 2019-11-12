@@ -16,10 +16,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         private const string InternalPartitionKeyDefinitionProperty = "x-ms-query-partitionkey-definition";
         private const int PageSizeFactorForTop = 5;
 
-        public static async Task<TryCatch<CosmosQueryExecutionContext>> TryCreateAsync(
+        public static CosmosQueryExecutionContext Create(
             CosmosQueryContext cosmosQueryContext,
-            InputParameters inputParameters,
-            CancellationToken cancellationToken)
+            InputParameters inputParameters)
         {
             if (cosmosQueryContext == null)
             {
@@ -31,8 +30,31 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 throw new ArgumentNullException(nameof(inputParameters));
             }
 
-            cancellationToken.ThrowIfCancellationRequested();
+            CosmosQueryExecutionContextWithNameCacheStaleRetry cosmosQueryExecutionContextWithNameCacheStaleRetry = new CosmosQueryExecutionContextWithNameCacheStaleRetry(
+                cosmosQueryContext: cosmosQueryContext,
+                cosmosQueryExecutionContextFactory: () =>
+                {
+                    // Query Iterator requires that the creation of the query context is defered until the user calls ReadNextAsync
+                    AsyncLazy<TryCatch<CosmosQueryExecutionContext>> lazyTryCreateCosmosQueryExecutionContext = new AsyncLazy<TryCatch<CosmosQueryExecutionContext>>(valueFactory: (innerCancellationToken) =>
+                    {
+                        innerCancellationToken.ThrowIfCancellationRequested();
+                        return CosmosQueryExecutionContextFactory.TryCreateCoreContextAsync(
+                            cosmosQueryContext,
+                            inputParameters,
+                            innerCancellationToken);
+                    });
+                    LazyCosmosQueryExecutionContext lazyCosmosQueryExecutionContext = new LazyCosmosQueryExecutionContext(lazyTryCreateCosmosQueryExecutionContext);
+                    return lazyCosmosQueryExecutionContext;
+                });
 
+            return cosmosQueryExecutionContextWithNameCacheStaleRetry;
+        }
+
+        private static async Task<TryCatch<CosmosQueryExecutionContext>> TryCreateCoreContextAsync(
+            CosmosQueryContext cosmosQueryContext,
+            InputParameters inputParameters,
+            CancellationToken cancellationToken)
+        {
             // Try to parse the continuation token.
             string continuationToken = inputParameters.InitialUserContinuationToken;
             PartitionedQueryExecutionInfo queryPlanFromContinuationToken = inputParameters.PartitionedQueryExecutionInfo;
@@ -137,11 +159,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         }
 
         public static async Task<TryCatch<CosmosQueryExecutionContext>> TryCreateFromPartitionedQuerExecutionInfoAsync(
-            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
-            ContainerQueryProperties containerQueryProperties,
-            CosmosQueryContext cosmosQueryContext,
-            InputParameters inputParameters,
-            CancellationToken cancellationToken)
+        PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
+        ContainerQueryProperties containerQueryProperties,
+        CosmosQueryContext cosmosQueryContext,
+        InputParameters inputParameters,
+        CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 

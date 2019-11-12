@@ -71,14 +71,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             TryCatch<CosmosQueryExecutionContext> tryCreateCosmosQueryExecutionContext = await this.lazyTryCreateCosmosQueryExecutionContext.GetValueAsync(cancellationToken);
             if (!tryCreateCosmosQueryExecutionContext.Succeeded)
             {
-                // If we failed to create then return it as a bad request:
-                return QueryResponseCore.CreateFailure(
-                    statusCode: System.Net.HttpStatusCode.BadRequest,
-                    subStatusCodes: null,
-                    errorMessage: tryCreateCosmosQueryExecutionContext.Exception.ToString(),
-                    requestCharge: 0,
-                    activityId: Guid.NewGuid().ToString(),
-                    diagnostics: QueryResponseCore.EmptyDiagnostics);
+                return QueryResponseFactory.CreateFromException(tryCreateCosmosQueryExecutionContext.Exception);
             }
 
             CosmosQueryExecutionContext cosmosQueryExecutionContext = tryCreateCosmosQueryExecutionContext.Result;

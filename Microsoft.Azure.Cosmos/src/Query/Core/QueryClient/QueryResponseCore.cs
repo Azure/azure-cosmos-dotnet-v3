@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Query
     internal struct QueryResponseCore
     {
         private static readonly IReadOnlyList<CosmosElement> EmptyList = new List<CosmosElement>().AsReadOnly();
+        internal static readonly string EmptyGuidString = Guid.Empty.ToString();
         internal static readonly IReadOnlyCollection<QueryPageDiagnostics> EmptyDiagnostics = new List<QueryPageDiagnostics>();
 
         private QueryResponseCore(
