@@ -326,11 +326,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     throw new ArgumentNullException(nameof(sqlQuerySpec));
                 }
 
-                if (properties == null)
-                {
-                    throw new ArgumentNullException(nameof(properties));
-                }
-
                 this.SqlQuerySpec = sqlQuerySpec;
                 this.InitialUserContinuationToken = initialUserContinuationToken;
 
