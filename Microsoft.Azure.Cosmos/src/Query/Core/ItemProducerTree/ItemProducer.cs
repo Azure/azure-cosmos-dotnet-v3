@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Collections.Generic;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using PartitionKeyRange = Documents.PartitionKeyRange;
     using PartitionKeyRangeIdentity = Documents.PartitionKeyRangeIdentity;
 
@@ -56,6 +57,8 @@ namespace Microsoft.Azure.Cosmos.Query
 
         private readonly SqlQuerySpec querySpecForInit;
 
+        private readonly TestSettings testFlags;
+
         /// <summary>
         /// Over the duration of the life time of a document producer the page size will change, since we have an adaptive page size.
         /// </summary>
@@ -100,6 +103,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="partitionKeyRange">The partition key range.</param>
         /// <param name="produceAsyncCompleteCallback">The callback to call once you are done fetching.</param>
         /// <param name="equalityComparer">The comparer to use to determine whether the producer has seen a new document.</param>
+        /// <param name="testFlags">Flags used to help faciliate testing.</param>
         /// <param name="initialPageSize">The initial page size.</param>
         /// <param name="initialContinuationToken">The initial continuation token.</param>
         public ItemProducer(
@@ -108,6 +112,7 @@ namespace Microsoft.Azure.Cosmos.Query
             PartitionKeyRange partitionKeyRange,
             ProduceAsyncCompleteDelegate produceAsyncCompleteCallback,
             IEqualityComparer<CosmosElement> equalityComparer,
+            TestSettings testFlags,
             long initialPageSize = 50,
             string initialContinuationToken = null)
         {
@@ -148,6 +153,8 @@ namespace Microsoft.Azure.Cosmos.Query
 
             this.fetchSchedulingMetrics = new SchedulingStopwatch();
             this.fetchSchedulingMetrics.Ready();
+
+            this.testFlags = testFlags;
 
             this.HasMoreResults = true;
         }
@@ -303,6 +310,21 @@ namespace Microsoft.Azure.Cosmos.Query
                     pageSize: pageSize,
                     schedulingStopwatch: this.fetchSchedulingMetrics,
                     cancellationToken: token);
+
+                if ((this.testFlags != null) && this.testFlags.Simulate429s)
+                {
+                    Random random = new Random();
+                    if (random.Next() % 2 == 0)
+                    {
+                        feedResponse = QueryResponseCore.CreateFailure(
+                            statusCode: (System.Net.HttpStatusCode)429,
+                            subStatusCodes: null,
+                            errorMessage: "Request Rate Too Large",
+                            requestCharge: 0,
+                            activityId: Guid.Empty.ToString(),
+                            diagnostics: QueryResponseCore.EmptyDiagnostics);
+                    }
+                }
 
                 this.hasStartedFetching = true;
                 this.ActivityId = Guid.Parse(feedResponse.ActivityId);

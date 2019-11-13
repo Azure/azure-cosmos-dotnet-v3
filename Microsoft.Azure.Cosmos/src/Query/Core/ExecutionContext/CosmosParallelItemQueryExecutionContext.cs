@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Threading.Tasks;
     using Collections.Generic;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Newtonsoft.Json;
     using PartitionKeyRange = Documents.PartitionKeyRange;
@@ -47,11 +48,13 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="maxConcurrency">The max concurrency</param>
         /// <param name="maxBufferedItemCount">The max buffered item count</param>
         /// <param name="maxItemCount">Max item count</param>
+        /// <param name="testSettings">Test settings.</param>
         private CosmosParallelItemQueryExecutionContext(
             CosmosQueryContext queryContext,
             int? maxConcurrency,
             int? maxItemCount,
-            int? maxBufferedItemCount)
+            int? maxBufferedItemCount,
+            TestSettings testSettings)
             : base(
                 queryContext: queryContext,
                 maxConcurrency: maxConcurrency,
@@ -59,7 +62,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 maxBufferedItemCount: maxBufferedItemCount,
                 moveNextComparer: CosmosParallelItemQueryExecutionContext.MoveNextComparer,
                 fetchPrioirtyFunction: CosmosParallelItemQueryExecutionContext.FetchPriorityFunction,
-                equalityComparer: CosmosParallelItemQueryExecutionContext.EqualityComparer)
+                equalityComparer: CosmosParallelItemQueryExecutionContext.EqualityComparer,
+                testSettings: testSettings)
         {
         }
 
@@ -108,7 +112,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 queryContext: queryContext,
                 maxConcurrency: initParams.MaxConcurrency,
                 maxItemCount: initParams.MaxItemCount,
-                maxBufferedItemCount: initParams.MaxBufferedItemCount);
+                maxBufferedItemCount: initParams.MaxBufferedItemCount,
+                testSettings: initParams.TestSettings);
 
             return await context.TryInitializeAsync(
                 sqlQuerySpec: initParams.SqlQuerySpec,

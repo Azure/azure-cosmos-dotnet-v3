@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Collections.Generic;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core;
 
     /// <summary>
     /// This class is responsible for fetching documents from a partition and all it's descendants, which is modeled as a tree of document producers.
@@ -69,6 +70,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="produceAsyncCompleteCallback">Callback to invoke once a fetch finishes.</param>
         /// <param name="itemProducerTreeComparer">Comparer to determine, which tree to produce from.</param>
         /// <param name="equalityComparer">Comparer to see if we need to return the continuation token for a partition.</param>
+        /// <param name="testSettings">Test flags.</param>
         /// <param name="deferFirstPage">Whether or not to defer fetching the first page.</param>
         /// <param name="collectionRid">The collection to drain from.</param>
         /// <param name="initialPageSize">The initial page size.</param>
@@ -80,6 +82,7 @@ namespace Microsoft.Azure.Cosmos.Query
             ProduceAsyncCompleteDelegate produceAsyncCompleteCallback,
             IComparer<ItemProducerTree> itemProducerTreeComparer,
             IEqualityComparer<CosmosElement> equalityComparer,
+            TestSettings testSettings,
             bool deferFirstPage,
             string collectionRid,
             long initialPageSize = 50,
@@ -121,6 +124,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 partitionKeyRange,
                 (itemsBuffered, resourceUnitUsage, diagnostics, requestLength, token) => produceAsyncCompleteCallback(this, itemsBuffered, resourceUnitUsage, diagnostics, requestLength, token),
                 equalityComparer,
+                testSettings,
                 initialPageSize,
                 initialContinuationToken);
 
@@ -134,6 +138,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 produceAsyncCompleteCallback,
                 itemProducerTreeComparer,
                 equalityComparer,
+                testSettings,
                 deferFirstPage,
                 collectionRid,
                 initialPageSize);
@@ -478,6 +483,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="produceAsyncCompleteCallback">Callback to invoke once a fetch finishes.</param>
         /// <param name="itemProducerTreeComparer">Comparer to determine, which tree to produce from.</param>
         /// <param name="equalityComparer">Comparer to see if we need to return the continuation token for a partition.</param>
+        /// <param name="testFlags">Test flags.</param>
         /// <param name="deferFirstPage">Whether or not to defer fetching the first page.</param>
         /// <param name="collectionRid">The collection to drain from.</param>
         /// <param name="initialPageSize">The initial page size.</param>
@@ -488,6 +494,7 @@ namespace Microsoft.Azure.Cosmos.Query
             ProduceAsyncCompleteDelegate produceAsyncCompleteCallback,
             IComparer<ItemProducerTree> itemProducerTreeComparer,
             IEqualityComparer<CosmosElement> equalityComparer,
+            TestSettings testFlags,
             bool deferFirstPage,
             string collectionRid,
             long initialPageSize = 50)
@@ -501,6 +508,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     produceAsyncCompleteCallback,
                     itemProducerTreeComparer,
                     equalityComparer,
+                    testFlags,
                     deferFirstPage,
                     collectionRid,
                     initialPageSize,

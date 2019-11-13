@@ -647,6 +647,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 queryRequestOptions = new QueryRequestOptions();
             }
 
+            queryRequestOptions.TestSettings = new TestSettings(simulate429s: true);
+
             List<T> resultsFromContinuationToken = new List<T>();
             string continuationToken = null;
             do
@@ -656,16 +658,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                    requestOptions: queryRequestOptions,
                    continuationToken: continuationToken);
 
-                FeedResponse<T> cosmosQueryResponse = await itemQuery.ReadNextAsync();
-                if (queryRequestOptions.MaxItemCount.HasValue)
+                try
                 {
-                    Assert.IsTrue(
-                        cosmosQueryResponse.Count <= queryRequestOptions.MaxItemCount.Value,
-                        "Max Item Count is not being honored");
-                }
+                    FeedResponse<T> cosmosQueryResponse = await itemQuery.ReadNextAsync();
+                    if (queryRequestOptions.MaxItemCount.HasValue)
+                    {
+                        Assert.IsTrue(
+                            cosmosQueryResponse.Count <= queryRequestOptions.MaxItemCount.Value,
+                            "Max Item Count is not being honored");
+                    }
 
-                resultsFromContinuationToken.AddRange(cosmosQueryResponse);
-                continuationToken = cosmosQueryResponse.ContinuationToken;
+                    resultsFromContinuationToken.AddRange(cosmosQueryResponse);
+                    continuationToken = cosmosQueryResponse.ContinuationToken;
+                }
+                catch (CosmosException cosmosException) when (cosmosException.StatusCode == (HttpStatusCode)429)
+                {
+                    continue;
+                }
             } while (continuationToken != null);
 
             return resultsFromContinuationToken;
@@ -4602,9 +4611,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                         Assert.IsTrue(
                             queryDrainingModeAsJTokens1.SequenceEqual(queryDrainingModeAsJTokens2, JsonTokenEqualityComparer.Value),
-                            $"{query} returned different results." +
-                            $"{queryDrainingMode1}: {JsonConvert.SerializeObject(queryDrainingModeAsJTokens1)}" +
-                            $"{queryDrainingMode2}: {JsonConvert.SerializeObject(queryDrainingModeAsJTokens2)}");
+                            $"{query} returned different results.\n" +
+                            $"{queryDrainingMode1}: {JsonConvert.SerializeObject(queryDrainingModeAsJTokens1)}\n" +
+                            $"{queryDrainingMode2}: {JsonConvert.SerializeObject(queryDrainingModeAsJTokens2)}\n");
                     }
                 }
             }

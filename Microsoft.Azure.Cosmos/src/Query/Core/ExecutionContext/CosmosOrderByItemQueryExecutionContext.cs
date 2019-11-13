@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Threading.Tasks;
     using Collections.Generic;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Newtonsoft.Json;
     using ParallelQuery;
@@ -73,12 +74,14 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="maxBufferedItemCount">The max buffered item count</param>
         /// <param name="maxItemCount">Max item count</param>
         /// <param name="consumeComparer">Comparer used to internally compare documents from different sorted partitions.</param>
+        /// <param name="testSettings">Test settings.</param>
         private CosmosOrderByItemQueryExecutionContext(
             CosmosQueryContext initPararms,
             int? maxConcurrency,
             int? maxItemCount,
             int? maxBufferedItemCount,
-            OrderByConsumeComparer consumeComparer)
+            OrderByConsumeComparer consumeComparer,
+            TestSettings testSettings)
             : base(
                 queryContext: initPararms,
                 maxConcurrency: maxConcurrency,
@@ -86,7 +89,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 maxBufferedItemCount: maxBufferedItemCount,
                 moveNextComparer: consumeComparer,
                 fetchPrioirtyFunction: CosmosOrderByItemQueryExecutionContext.FetchPriorityFunction,
-                equalityComparer: new OrderByEqualityComparer(consumeComparer))
+                equalityComparer: new OrderByEqualityComparer(consumeComparer),
+                testSettings: testSettings)
         {
         }
 
@@ -160,7 +164,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 maxConcurrency: initParams.MaxConcurrency,
                 maxItemCount: initParams.MaxItemCount,
                 maxBufferedItemCount: initParams.MaxBufferedItemCount,
-                consumeComparer: new OrderByConsumeComparer(initParams.PartitionedQueryExecutionInfo.QueryInfo.OrderBy));
+                consumeComparer: new OrderByConsumeComparer(initParams.PartitionedQueryExecutionInfo.QueryInfo.OrderBy),
+                testSettings: initParams.TestSettings);
 
             return (await context.TryInitializeAsync(
                 sqlQuerySpec: initParams.SqlQuerySpec,

@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Collections.Generic;
     using Core.ExecutionComponent;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using ParallelQuery;
     using PartitionKeyRange = Documents.PartitionKeyRange;
@@ -70,6 +71,8 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         private readonly long actualMaxBufferedItemCount;
 
+        private readonly TestSettings testSettings;
+
         private CosmosQueryContext queryContext;
 
         protected CosmosQueryClient queryClient;
@@ -110,6 +113,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="moveNextComparer">Comparer used to figure out that document producer tree to serve documents from next.</param>
         /// <param name="fetchPrioirtyFunction">The priority function to determine which partition to fetch documents from next.</param>
         /// <param name="equalityComparer">Used to determine whether we need to return the continuation token for a partition.</param>
+        /// <param name="testSettings">Test settings.</param>
         protected CosmosCrossPartitionQueryExecutionContext(
             CosmosQueryContext queryContext,
             int? maxConcurrency,
@@ -117,7 +121,8 @@ namespace Microsoft.Azure.Cosmos.Query
             int? maxBufferedItemCount,
             IComparer<ItemProducerTree> moveNextComparer,
             Func<ItemProducerTree, int> fetchPrioirtyFunction,
-            IEqualityComparer<CosmosElement> equalityComparer)
+            IEqualityComparer<CosmosElement> equalityComparer,
+            TestSettings testSettings)
         {
             if (moveNextComparer == null)
             {
@@ -140,6 +145,7 @@ namespace Microsoft.Azure.Cosmos.Query
             this.fetchPrioirtyFunction = fetchPrioirtyFunction;
             this.comparableTaskScheduler = new ComparableTaskScheduler(maxConcurrency.GetValueOrDefault(0));
             this.equalityComparer = equalityComparer;
+            this.testSettings = testSettings;
             this.requestChargeTracker = new RequestChargeTracker();
             this.diagnosticsPages = new ConcurrentBag<QueryPageDiagnostics>();
             this.actualMaxPageSize = maxItemCount.GetValueOrDefault(ParallelQueryConfig.GetConfig().ClientInternalMaxItemCount);
@@ -430,6 +436,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     this.OnItemProducerTreeCompleteFetching,
                     this.itemProducerForest.Comparer as IComparer<ItemProducerTree>,
                     this.equalityComparer,
+                    this.testSettings,
                     deferFirstPage,
                     collectionRid,
                     initialPageSize,
@@ -740,6 +747,7 @@ namespace Microsoft.Azure.Cosmos.Query
             /// <param name="maxConcurrency">The max concurrency</param>
             /// <param name="maxBufferedItemCount">The max buffered item count</param>
             /// <param name="maxItemCount">Max item count</param>
+            /// <param name="testSettings">Test settings.</param>
             public CrossPartitionInitParams(
                 SqlQuerySpec sqlQuerySpec,
                 string collectionRid,
@@ -748,7 +756,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 int initialPageSize,
                 int? maxConcurrency,
                 int? maxItemCount,
-                int? maxBufferedItemCount)
+                int? maxBufferedItemCount,
+                TestSettings testSettings)
             {
                 if (string.IsNullOrWhiteSpace(collectionRid))
                 {
@@ -792,6 +801,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 this.MaxBufferedItemCount = maxBufferedItemCount;
                 this.MaxConcurrency = maxConcurrency;
                 this.MaxItemCount = maxItemCount;
+                this.TestSettings = testSettings;
             }
 
             /// <summary>
@@ -833,6 +843,8 @@ namespace Microsoft.Azure.Cosmos.Query
             /// Gets the max buffered item count
             /// </summary>
             public int? MaxBufferedItemCount { get; }
+
+            public TestSettings TestSettings { get; }
         }
 
         #region ItemProducerTreeComparableTask
