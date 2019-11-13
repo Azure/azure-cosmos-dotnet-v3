@@ -80,19 +80,23 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             get
             {
-                if (this.IsDone)
-                {
-                    return null;
-                }
-
                 IEnumerable<ItemProducer> activeItemProducers = this.GetActiveItemProducers();
-                return activeItemProducers.Count() > 0 ? JsonConvert.SerializeObject(
-                    activeItemProducers.Select((documentProducer) => new CompositeContinuationToken
+                string continuationToken;
+                if (activeItemProducers.Any())
+                {
+                    IEnumerable<CompositeContinuationToken> compositeContinuationTokens = activeItemProducers.Select((documentProducer) => new CompositeContinuationToken
                     {
                         Token = documentProducer.PreviousContinuationToken,
                         Range = documentProducer.PartitionKeyRange.ToRange()
-                    }),
-                    DefaultJsonSerializationSettings.Value) : null;
+                    });
+                    continuationToken = JsonConvert.SerializeObject(compositeContinuationTokens, DefaultJsonSerializationSettings.Value);
+                }
+                else
+                {
+                    continuationToken = null;
+                }
+
+                return continuationToken;
             }
         }
 
@@ -145,21 +149,27 @@ namespace Microsoft.Azure.Cosmos.Query
             ItemProducerTree currentItemProducerTree = this.PopCurrentItemProducerTree();
 
             // This might be the first time we have seen this document producer tree so we need to buffer documents
+            bool itemProducerReady = true;
             if (currentItemProducerTree.Current == null)
             {
-                await this.MoveNextHelperAsync(currentItemProducerTree, cancellationToken);
+                itemProducerReady = await this.MoveNextHelperAsync(currentItemProducerTree, cancellationToken);
             }
 
-            int itemsLeftInCurrentPage = currentItemProducerTree.ItemsLeftInCurrentPage;
-
-            // Only drain full pages or less if this is a top query.
             List<CosmosElement> results = new List<CosmosElement>();
-            for (int i = 0; i < Math.Min(itemsLeftInCurrentPage, maxElements); i++)
+
+            if (itemProducerReady)
             {
-                results.Add(currentItemProducerTree.Current);
-                if (!await this.MoveNextHelperAsync(currentItemProducerTree, cancellationToken))
+                int itemsLeftInCurrentPage = currentItemProducerTree.ItemsLeftInCurrentPage;
+
+                // Only drain full pages or less if this is a top query.
+
+                for (int i = 0; i < Math.Min(itemsLeftInCurrentPage, maxElements); i++)
                 {
-                    break;
+                    results.Add(currentItemProducerTree.Current);
+                    if (!await this.MoveNextHelperAsync(currentItemProducerTree, cancellationToken))
+                    {
+                        break;
+                    }
                 }
             }
 

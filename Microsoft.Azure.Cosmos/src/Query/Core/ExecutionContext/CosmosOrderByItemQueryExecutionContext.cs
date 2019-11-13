@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
     using ParallelQuery;
     using PartitionKeyRange = Documents.PartitionKeyRange;
     using ResourceId = Documents.ResourceId;
@@ -111,34 +112,45 @@ namespace Microsoft.Azure.Cosmos.Query
             // With this information we have captured the progress for all partitions in a single continuation token.
             get
             {
-                if (this.IsDone)
-                {
-                    return null;
-                }
-
                 IEnumerable<ItemProducer> activeItemProducers = this.GetActiveItemProducers();
-                return activeItemProducers.Count() > 0 ? JsonConvert.SerializeObject(
-                    activeItemProducers.Select(
-                        (itemProducer) =>
+                string continuationToken;
+                if (activeItemProducers.Any())
                 {
-                    OrderByQueryResult orderByQueryResult = new OrderByQueryResult(itemProducer.Current);
-                    string filter = itemProducer.Filter;
-                    return new OrderByContinuationToken(
-                        this.queryClient,
-                        new CompositeContinuationToken
-                        {
-                            Token = itemProducer.PreviousContinuationToken,
-                            Range = itemProducer.PartitionKeyRange.ToRange(),
-                        },
-                        orderByQueryResult.OrderByItems,
-                        orderByQueryResult.Rid,
-                        this.ShouldIncrementSkipCount(itemProducer) ? this.skipCount + 1 : 0,
-                        filter);
-                }),
-                    new JsonSerializerSettings()
+                    IEnumerable<OrderByContinuationToken> orderByContinuationTokens = activeItemProducers.Select((itemProducer) =>
+                    {
+                        OrderByQueryResult orderByQueryResult = new OrderByQueryResult(itemProducer.Current);
+                        string filter = itemProducer.Filter;
+                        return new OrderByContinuationToken(
+                            this.queryClient,
+                            new CompositeContinuationToken
+                            {
+                                Token = itemProducer.PreviousContinuationToken,
+                                Range = itemProducer.PartitionKeyRange.ToRange(),
+                            },
+                            orderByQueryResult.OrderByItems,
+                            orderByQueryResult.Rid,
+                            this.ShouldIncrementSkipCount(itemProducer) ? this.skipCount + 1 : 0,
+                            filter);
+                    });
+
+                    continuationToken = JsonConvert.SerializeObject(orderByContinuationTokens, new JsonSerializerSettings()
                     {
                         StringEscapeHandling = StringEscapeHandling.EscapeNonAscii,
-                    }) : null;
+                    });
+
+                    // Newtonsoft has a bug where non ascii characters aren't escaped for custom POGOs
+                    // so the workaround is to double serialize
+                    continuationToken = JsonConvert.SerializeObject(JToken.Parse(continuationToken), new JsonSerializerSettings()
+                    {
+                        StringEscapeHandling = StringEscapeHandling.EscapeNonAscii,
+                    });
+                }
+                else
+                {
+                    continuationToken = null;
+                }
+
+                return continuationToken;
             }
         }
 
@@ -214,7 +226,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             List<CosmosElement> results = new List<CosmosElement>();
             bool isSuccessToMoveNext = true;
-            while (!this.IsDone && results.Count < maxElements && isSuccessToMoveNext)
+            while (!this.IsDone && (results.Count < maxElements) && isSuccessToMoveNext)
             {
                 // Only drain from the highest priority document producer 
                 // We need to pop and push back the document producer tree, since the priority changes according to the sort order.

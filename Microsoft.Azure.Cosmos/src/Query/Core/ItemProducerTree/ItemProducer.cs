@@ -65,12 +65,6 @@ namespace Microsoft.Azure.Cosmos.Query
         private long pageSize;
 
         /// <summary>
-        /// The current continuation token that the user has read from the document producer tree.
-        /// This is used for determining whether there are more results.
-        /// </summary>
-        private string currentContinuationToken;
-
-        /// <summary>
         /// The current page that is being enumerated.
         /// </summary>
         private IEnumerator<CosmosElement> CurrentPage;
@@ -142,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.Query
             this.produceAsyncCompleteCallback = produceAsyncCompleteCallback;
             this.equalityComparer = equalityComparer;
             this.pageSize = initialPageSize;
-            this.currentContinuationToken = initialContinuationToken;
+            this.CurrentContinuationToken = initialContinuationToken;
             this.BackendContinuationToken = initialContinuationToken;
             this.PreviousContinuationToken = initialContinuationToken;
             if (!string.IsNullOrEmpty(initialContinuationToken))
@@ -183,6 +177,12 @@ namespace Microsoft.Azure.Cosmos.Query
         /// Gets the previous continuation token.
         /// </summary>
         public string PreviousContinuationToken { get; private set; }
+
+        /// <summary>
+        /// The current continuation token that the user has read from the document producer tree.
+        /// This is used for determining whether there are more results.
+        /// </summary>
+        public string CurrentContinuationToken { get; private set; }
 
         /// <summary>
         /// Gets the backend continuation token.
@@ -257,7 +257,7 @@ namespace Microsoft.Azure.Cosmos.Query
             CosmosElement originalCurrent = this.Current;
             (bool successfullyMovedNext, QueryResponseCore? failureResponse) movedNext = await this.MoveNextAsyncImplementationAsync(token);
 
-            if (!movedNext.successfullyMovedNext || (originalCurrent != null && !this.equalityComparer.Equals(originalCurrent, this.Current)))
+            if (movedNext.successfullyMovedNext && (originalCurrent != null) && !this.equalityComparer.Equals(originalCurrent, this.Current))
             {
                 this.IsActive = false;
             }
@@ -443,6 +443,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 throw new InvalidOperationException("Tried to move onto the next page before finishing the first page.");
             }
 
+            this.IsActive = true;
+
             // We need to buffer pages if empty, since that how we know there are no more pages left.
             await this.BufferMoreIfEmptyAsync(token);
 
@@ -455,8 +457,8 @@ namespace Microsoft.Azure.Cosmos.Query
             QueryResponseCore queryResponse = await this.bufferedPages.TakeAsync(token);
 
             // Update the state.
-            this.PreviousContinuationToken = this.currentContinuationToken;
-            this.currentContinuationToken = queryResponse.ContinuationToken;
+            this.PreviousContinuationToken = this.CurrentContinuationToken;
+            this.CurrentContinuationToken = queryResponse.ContinuationToken;
             this.CurrentPage = queryResponse.CosmosElements.GetEnumerator();
             this.IsAtBeginningOfPage = true;
             this.itemsLeftInCurrentPage = queryResponse.CosmosElements.Count;
@@ -464,6 +466,12 @@ namespace Microsoft.Azure.Cosmos.Query
             if (!queryResponse.IsSuccess)
             {
                 return (false, queryResponse);
+            }
+
+            if (this.CurrentContinuationToken == null)
+            {
+                // Finished draining this document producer.
+                this.IsActive = false;
             }
 
             // Prime the enumerator,
@@ -476,7 +484,7 @@ namespace Microsoft.Azure.Cosmos.Query
             else
             {
                 // We got an empty page
-                if (this.currentContinuationToken != null)
+                if (this.CurrentContinuationToken != null)
                 {
                     return await this.TryMoveNextPageAsync(token);
                 }
