@@ -59,6 +59,8 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         private string previousRid;
 
+        private IList<OrderByItem> previousOrderByItems;
+
         /// <summary>
         /// Initializes a new instance of the CosmosOrderByItemQueryExecutionContext class.
         /// </summary>
@@ -118,19 +120,38 @@ namespace Microsoft.Azure.Cosmos.Query
                 {
                     IEnumerable<OrderByContinuationToken> orderByContinuationTokens = activeItemProducers.Select((itemProducer) =>
                     {
-                        OrderByQueryResult orderByQueryResult = new OrderByQueryResult(itemProducer.Current);
-                        string filter = itemProducer.Filter;
-                        return new OrderByContinuationToken(
-                            this.queryClient,
-                            new CompositeContinuationToken
-                            {
-                                Token = itemProducer.PreviousContinuationToken,
-                                Range = itemProducer.PartitionKeyRange.ToRange(),
-                            },
-                            orderByQueryResult.OrderByItems,
-                            orderByQueryResult.Rid,
-                            this.ShouldIncrementSkipCount(itemProducer) ? this.skipCount + 1 : 0,
-                            filter);
+                        OrderByContinuationToken orderByContinuationToken;
+                        if (itemProducer.Current != null)
+                        {
+                            OrderByQueryResult orderByQueryResult = new OrderByQueryResult(itemProducer.Current);
+                            string filter = itemProducer.Filter;
+                            orderByContinuationToken = new OrderByContinuationToken(
+                                new CompositeContinuationToken
+                                {
+                                    Token = itemProducer.PreviousContinuationToken,
+                                    Range = itemProducer.PartitionKeyRange.ToRange(),
+                                },
+                                orderByQueryResult.OrderByItems,
+                                orderByQueryResult.Rid,
+                                this.ShouldIncrementSkipCount(itemProducer) ? this.skipCount + 1 : 0,
+                                filter);
+                        }
+                        else
+                        {
+                            // We finished draining the current page, but we don't have have buffered results
+                            orderByContinuationToken = new OrderByContinuationToken(
+                                new CompositeContinuationToken
+                                {
+                                    Token = itemProducer.BackendContinuationToken,
+                                    Range = itemProducer.PartitionKeyRange.ToRange(),
+                                },
+                                orderByItems: this.previousOrderByItems,
+                                rid: this.previousRid,
+                                skipCount: 0,
+                                filter: null);
+                        }
+
+                        return orderByContinuationToken;
                     });
 
                     continuationToken = JsonConvert.SerializeObject(orderByContinuationTokens, new JsonSerializerSettings()
@@ -250,6 +271,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 }
 
                 this.previousRid = orderByQueryResult.Rid;
+                this.previousOrderByItems = orderByQueryResult.OrderByItems;
 
                 isSuccessToMoveNext = await this.MoveNextHelperAsync(currentItemProducerTree, cancellationToken);
 
@@ -502,6 +524,12 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 while (true)
                 {
+                    if (tree.Current == null)
+                    {
+                        // This document producer doesn't have anymore items.
+                        break;
+                    }
+
                     OrderByQueryResult orderByResult = new OrderByQueryResult(tree.Current);
                     // Throw away documents until it matches the item from the continuation token.
                     int cmp = 0;

@@ -751,7 +751,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             byte[] bytes = Encoding.UTF8.GetBytes(orderByItemSerialized);
             OrderByItem orderByItem = new OrderByItem(CosmosElement.CreateFromBuffer(bytes));
             OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
-                new Mock<CosmosQueryClient>().Object,
                 compositeContinuationToken,
                 new List<OrderByItem> { orderByItem },
                 "asdf",

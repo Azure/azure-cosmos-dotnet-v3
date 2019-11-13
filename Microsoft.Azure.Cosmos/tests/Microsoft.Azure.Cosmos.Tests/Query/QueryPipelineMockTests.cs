@@ -244,7 +244,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                     };
 
                     OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
-                        queryClient: mockQueryClient.Object,
                         compositeContinuationToken: compositeContinuation,
                         orderByItems: orderByItems,
                         rid: itemToRepresentPreviousQuery._rid,
@@ -368,7 +367,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                     };
 
                     OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
-                        queryClient: mockQueryClient.Object,
                         compositeContinuationToken: compositeContinuation,
                         orderByItems: orderByItems,
                         rid: itemToRepresentPreviousQuery._rid,
