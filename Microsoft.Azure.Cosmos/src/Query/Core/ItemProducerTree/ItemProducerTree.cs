@@ -372,47 +372,6 @@ namespace Microsoft.Azure.Cosmos.Query
         private bool HasSplit => this.children.Count != 0;
 
         /// <summary>
-        /// Moves to the next item in the document producer tree.
-        /// </summary>
-        /// <param name="token">The cancellation token.</param>
-        /// <returns>A task to await on that returns whether we successfully moved next.</returns>
-        /// <remarks>This function is split proofed.</remarks>
-        public async Task<(bool successfullyMovedNext, QueryResponseCore? failureResponse)> MoveNextAsync(CancellationToken token)
-        {
-            return await this.ExecuteWithSplitProofingAsync(
-                function: this.TryMoveNextAsyncImplementationAsync,
-                functionNeedsBeReexecuted: false,
-                cancellationToken: token);
-        }
-
-        /// <summary>
-        /// Moves next only if the producer has not split.
-        /// This is used to avoid calling move next twice during splits.
-        /// </summary>
-        /// <param name="token">The cancellation token.</param>
-        /// <returns>A task to await on which in turn returns whether or not we moved next.</returns>
-        public async Task<(bool successfullyMovedNext, QueryResponseCore? failureResponse)> MoveNextIfNotSplitAsync(CancellationToken token)
-        {
-            return await this.ExecuteWithSplitProofingAsync(
-                function: this.TryMoveNextIfNotSplitAsyncImplementationAsync,
-                functionNeedsBeReexecuted: false,
-                cancellationToken: token);
-        }
-
-        /// <summary>
-        /// Buffers more documents in a split proof manner.
-        /// </summary>
-        /// <param name="token">The cancellation token.</param>
-        /// <returns>A task to await on.</returns>
-        public Task<(bool successfullyMovedNext, QueryResponseCore? failureResponse)> BufferMoreDocumentsAsync(CancellationToken token)
-        {
-            return this.ExecuteWithSplitProofingAsync(
-                function: this.BufferMoreDocumentsImplementationAsync,
-                functionNeedsBeReexecuted: true,
-                cancellationToken: token);
-        }
-
-        /// <summary>
         /// Gets the document producers that need their continuation token return to the user.
         /// </summary>
         /// <returns>The document producers that need their continuation token return to the user.</returns>
@@ -526,82 +485,71 @@ namespace Microsoft.Azure.Cosmos.Query
             return ex.StatusCode == HttpStatusCode.Gone && ex.SubStatusCode == Documents.SubStatusCodes.PartitionKeyRangeGone;
         }
 
-        /// <summary>
-        /// Implementation for moving to the next item in the document producer tree.
-        /// </summary>
-        /// <param name="token">The cancellation token.</param>
-        /// <returns>A task with whether or not move next succeeded.</returns>
-        private async Task<(bool successfullyMovedNext, QueryResponseCore? failureResponse)> TryMoveNextAsyncImplementationAsync(CancellationToken token)
+        public async Task<(bool succeeded, QueryResponseCore? failureResponse)> TryMoveNextPageAsync(CancellationToken cancellationToken)
         {
-            if (!this.HasMoreResults)
-            {
-                return ItemProducer.IsDoneResponse;
-            }
-
-            if (this.CurrentItemProducerTree == this)
-            {
-                return await this.Root.MoveNextAsync(token);
-            }
-            else
-            {
-                // Keep track of the current tree
-                ItemProducerTree itemProducerTree = this.CurrentItemProducerTree;
-                (bool successfullyMovedNext, QueryResponseCore? failureResponse) response = await itemProducerTree.MoveNextAsync(token);
-
-                // Update the priority queue for the new values
-                this.children.Enqueue(this.children.Dequeue());
-
-                // If the current tree is done, but other trees still have a result
-                // then return true.
-                if (!response.successfullyMovedNext &&
-                    response.failureResponse == null &&
-                    this.HasMoreResults)
-                {
-                    return ItemProducer.IsSuccessResponse;
-                }
-
-                return response;
-            }
+            cancellationToken.ThrowIfCancellationRequested();
+            return await this.ExecuteWithSplitProofingAsync(
+               function: this.TryMoveNextPageImplementationAsync,
+               functionNeedsBeReexecuted: false,
+               cancellationToken: cancellationToken);
         }
 
-        /// <summary>
-        /// Implementation for moving next if the tree has not split.
-        /// </summary>
-        /// <param name="token">The cancellation token.</param>
-        /// <returns>A task to await on which in turn return whether we successfully moved next.</returns>
-        private async Task<(bool successfullyMovedNext, QueryResponseCore? failureResponse)> TryMoveNextIfNotSplitAsyncImplementationAsync(CancellationToken token)
+        public async Task<(bool succeeded, QueryResponseCore? failureResponse)> TryMoveNextPageIfNotSplitAsync(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return await this.ExecuteWithSplitProofingAsync(
+                function: this.TryMoveNextPageIfNotSplitAsyncImplementationAsync,
+                functionNeedsBeReexecuted: false,
+                cancellationToken: cancellationToken);
+        }
+
+        private async Task<(bool successfullyMovedNext, QueryResponseCore? failureResponse)> TryMoveNextPageIfNotSplitAsyncImplementationAsync(CancellationToken token)
         {
             if (this.HasSplit)
             {
                 return ItemProducer.IsDoneResponse;
             }
 
-            return await this.TryMoveNextAsyncImplementationAsync(token);
+            return await this.TryMoveNextPageImplementationAsync(token);
         }
 
-        /// <summary>
-        /// Implementation for buffering more documents.
-        /// </summary>
-        /// <param name="token">The cancellation token.</param>
-        /// <returns>A task to await on.</returns>
-        private async Task<(bool successfullyMovedNext, QueryResponseCore? failureResponse)> BufferMoreDocumentsImplementationAsync(CancellationToken token)
+        public async Task BufferMoreDocumentsAsync(CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             if (this.CurrentItemProducerTree == this)
             {
-                if (!this.HasMoreBackendResults || this.HasSplit)
-                {
-                    // Just no-op, since this method might be called by the scheduler, which doesn't know of the reconfiguration yet.
-                    return ItemProducer.IsSuccessResponse;
-                }
-
-                await this.Root.BufferMoreDocumentsAsync(token);
+                await this.Root.BufferMoreDocumentsAsync(cancellationToken);
             }
             else
             {
-                await this.CurrentItemProducerTree.BufferMoreDocumentsAsync(token);
+                await this.CurrentItemProducerTree.BufferMoreDocumentsAsync(cancellationToken);
             }
+        }
 
-            return ItemProducer.IsSuccessResponse;
+        public bool TryMoveNextDocumentWithinPage()
+        {
+            if (this.CurrentItemProducerTree == this)
+            {
+                return this.Root.TryMoveNextDocumentWithinPage();
+            }
+            else
+            {
+                return this.CurrentItemProducerTree.TryMoveNextDocumentWithinPage();
+            }
+        }
+
+        private async Task<(bool succeeded, QueryResponseCore? failureResponse)> TryMoveNextPageImplementationAsync(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (this.CurrentItemProducerTree == this)
+            {
+                return await this.Root.TryMoveNextPageAsync(cancellationToken);
+            }
+            else
+            {
+                return await this.CurrentItemProducerTree.TryMoveNextPageAsync(cancellationToken);
+            }
         }
 
         /// <summary>
@@ -664,7 +612,25 @@ namespace Microsoft.Azure.Cosmos.Query
 
                         if (!this.deferFirstPage)
                         {
-                            await replacementItemProducerTree.MoveNextAsync(cancellationToken);
+                            while (true)
+                            {
+                                (bool succeeded, QueryResponseCore? queryReponseCore) = await replacementItemProducerTree.TryMoveNextPageAsync(cancellationToken);
+                                if (!succeeded)
+                                {
+                                    throw new InvalidOperationException("Unable to get the first page for the child document producers");
+                                }
+
+                                if (replacementItemProducerTree.ItemsLeftInCurrentPage != 0)
+                                {
+                                    // Order By requires at least one item in the tree so that the comparator will work.
+                                    break;
+                                }
+                            }
+
+                            if (!replacementItemProducerTree.TryMoveNextDocumentWithinPage())
+                            {
+                                throw new InvalidOperationException("Unable to move to the first document in the first page for the child document producers");
+                            }
                         }
 
                         replacementItemProducerTree.Filter = splitItemProducerTree.Root.Filter;

@@ -246,26 +246,6 @@ namespace Microsoft.Azure.Cosmos.Query
         internal static readonly (bool successfullyMovedNext, QueryResponseCore? failureResponse) IsDoneResponse = (false, null);
 
         /// <summary>
-        /// Moves to the next document in the producer.
-        /// </summary>
-        /// <param name="token">The cancellation token.</param>
-        /// <returns>Whether or not we successfully moved to the next document.</returns>
-        public async Task<(bool successfullyMovedNext, QueryResponseCore? failureResponse)> MoveNextAsync(CancellationToken token)
-        {
-            token.ThrowIfCancellationRequested();
-
-            CosmosElement originalCurrent = this.Current;
-            (bool successfullyMovedNext, QueryResponseCore? failureResponse) movedNext = await this.MoveNextAsyncImplementationAsync(token);
-
-            if (movedNext.successfullyMovedNext && (originalCurrent != null) && !this.equalityComparer.Equals(originalCurrent, this.Current))
-            {
-                this.IsActive = false;
-            }
-
-            return movedNext;
-        }
-
-        /// <summary>
         /// Buffers more documents if the producer is empty.
         /// </summary>
         /// <param name="token">The cancellation token.</param>
@@ -362,99 +342,28 @@ namespace Microsoft.Azure.Cosmos.Query
             this.HasMoreResults = false;
         }
 
-        /// <summary>
-        /// Implementation of move next async.
-        /// After this function is called the wrapper function determines if a distinct document has been read and updates the 'IsActive' flag.
-        /// </summary>
-        /// <param name="token">The cancellation token.</param>
-        /// <returns>Whether or not we successfully moved to the next document in the producer.</returns>
-        private async Task<(bool successfullyMovedNext, QueryResponseCore? failureResponse)> MoveNextAsyncImplementationAsync(CancellationToken token)
+        public async Task<(bool succeeded, QueryResponseCore?)> TryMoveNextPageAsync(CancellationToken cancellationToken)
         {
-            token.ThrowIfCancellationRequested();
-
-            if (!this.HasMoreResults)
-            {
-                return ItemProducer.IsDoneResponse;
-            }
-
-            // Always try reading from current page first
-            if (this.MoveNextDocumentWithinCurrentPage())
-            {
-                return ItemProducer.IsSuccessResponse;
-            }
-            else
-            {
-                // We might be at a continuation boundary so we need to move to the next page
-                (bool successfullyMovedNext, QueryResponseCore? failureResponse) response = await this.TryMoveNextPageAsync(token);
-                if (!response.successfullyMovedNext)
-                {
-                    this.HasMoreResults = false;
-                }
-
-                return response;
-            }
-        }
-
-        private bool MoveToFirstDocumentInPage()
-        {
-            if (this.CurrentPage == null || !this.CurrentPage.MoveNext())
-            {
-                return false;
-            }
-
-            this.Current = this.CurrentPage.Current;
-            this.IsAtBeginningOfPage = true;
-
-            return true;
-        }
-
-        /// <summary>
-        /// Tries to moved to the next document within the current page that we are reading from.
-        /// </summary>
-        /// <returns>Whether the operation was successful.</returns>
-        private bool MoveNextDocumentWithinCurrentPage()
-        {
-            if (this.CurrentPage == null)
-            {
-                return false;
-            }
-
-            bool movedNext = this.CurrentPage.MoveNext();
-            this.Current = this.CurrentPage.Current;
-            this.IsAtBeginningOfPage = false;
-
-            Interlocked.Decrement(ref this.bufferedItemCount);
-            Interlocked.Decrement(ref this.itemsLeftInCurrentPage);
-
-            return movedNext;
-        }
-
-        /// <summary>
-        /// Tries to the move to the next page in the document producer.
-        /// </summary>
-        /// <param name="token">The cancellation token.</param>
-        /// <returns>Whether the operation was successful.</returns>
-        private async Task<(bool successfullyMovedNext, QueryResponseCore? failureResponse)> TryMoveNextPageAsync(CancellationToken token)
-        {
-            token.ThrowIfCancellationRequested();
-
+            cancellationToken.ThrowIfCancellationRequested();
             if (this.itemsLeftInCurrentPage != 0)
             {
                 throw new InvalidOperationException("Tried to move onto the next page before finishing the first page.");
             }
 
-            this.IsActive = true;
-
-            // We need to buffer pages if empty, since that how we know there are no more pages left.
-            await this.BufferMoreIfEmptyAsync(token);
-
+            // We need to buffer pages if empty, since thats how we know there are no more pages left.
+            await this.BufferMoreIfEmptyAsync(cancellationToken);
             if (this.bufferedPages.Count == 0)
             {
+                this.HasMoreResults = false;
                 return ItemProducer.IsDoneResponse;
             }
 
             // Pull a FeedResponse using TryCatch (we could have buffered an exception).
-            QueryResponseCore queryResponse = await this.bufferedPages.TakeAsync(token);
+            QueryResponseCore queryResponse = await this.bufferedPages.TakeAsync(cancellationToken);
+            if (!queryResponse.IsSuccess)
+            {
+                return (false, queryResponse);
+            }
 
             // Update the state.
             this.PreviousContinuationToken = this.CurrentContinuationToken;
@@ -463,34 +372,38 @@ namespace Microsoft.Azure.Cosmos.Query
             this.IsAtBeginningOfPage = true;
             this.itemsLeftInCurrentPage = queryResponse.CosmosElements.Count;
 
-            if (!queryResponse.IsSuccess)
-            {
-                return (false, queryResponse);
-            }
-
             if (this.CurrentContinuationToken == null)
             {
-                // Finished draining this document producer.
+                this.HasMoreResults = false;
+            }
+
+            return ItemProducer.IsSuccessResponse;
+        }
+
+        public bool TryMoveNextDocumentWithinPage()
+        {
+            if (this.CurrentPage == null)
+            {
+                return false;
+            }
+
+            bool movedNext = this.CurrentPage.MoveNext();
+            CosmosElement originalCurrent = this.Current;
+            this.Current = this.CurrentPage.Current;
+            this.IsAtBeginningOfPage = false;
+
+            if (!movedNext || ((originalCurrent != null) && !this.equalityComparer.Equals(originalCurrent, this.Current)))
+            {
                 this.IsActive = false;
             }
 
-            // Prime the enumerator,
-            // so that current is pointing to the first document instead of one before.
-            if (this.MoveToFirstDocumentInPage())
+            if (movedNext)
             {
-                this.IsAtBeginningOfPage = true;
-                return ItemProducer.IsSuccessResponse;
+                Interlocked.Decrement(ref this.bufferedItemCount);
+                Interlocked.Decrement(ref this.itemsLeftInCurrentPage);
             }
-            else
-            {
-                // We got an empty page
-                if (this.CurrentContinuationToken != null)
-                {
-                    return await this.TryMoveNextPageAsync(token);
-                }
 
-                return ItemProducer.IsDoneResponse;
-            }
+            return movedNext;
         }
     }
 }

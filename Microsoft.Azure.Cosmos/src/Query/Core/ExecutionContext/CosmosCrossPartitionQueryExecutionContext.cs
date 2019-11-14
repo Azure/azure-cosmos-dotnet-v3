@@ -6,9 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
-    using System.Globalization;
     using System.Linq;
-    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Collections.Generic;
@@ -37,6 +35,11 @@ namespace Microsoft.Azure.Cosmos.Query
         private const double DynamicPageSizeAdjustmentFactor = 1.6;
 
         /// <summary>
+        /// Request Charge Tracker used to atomically add request charges (doubles).
+        /// </summary>
+        protected readonly RequestChargeTracker requestChargeTracker;
+
+        /// <summary>
         /// Priority Queue of ItemProducerTrees that make a forest that can be iterated on.
         /// </summary>
         private readonly PriorityQueue<ItemProducerTree> itemProducerForest;
@@ -55,12 +58,6 @@ namespace Microsoft.Azure.Cosmos.Query
         /// The equality comparer used to determine whether a document producer needs it's continuation token to be part of the composite continuation token.
         /// </summary>
         private readonly IEqualityComparer<CosmosElement> equalityComparer;
-
-        /// <summary>
-        /// Request Charge Tracker used to atomically add request charges (doubles).
-        /// </summary>
-        private readonly RequestChargeTracker requestChargeTracker;
-
         /// <summary>
         /// The actual max page size after all the optimizations have been made it in the create document query execution context layer.
         /// </summary>
@@ -102,6 +99,8 @@ namespace Microsoft.Azure.Cosmos.Query
         /// The total response length.
         /// </summary>
         private long totalResponseLengthBytes;
+
+        protected QueryResponseCore? failureResponse;
 
         /// <summary>
         /// Initializes a new instance of the CosmosCrossPartitionQueryExecutionContext class.
@@ -187,16 +186,6 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         public override bool IsDone => !this.HasMoreResults;
 
-        /// <summary>
-        /// If a failure is hit store it and return it on the next drain call.
-        /// This allows returning the results computed before the failure.
-        /// </summary>
-        public QueryResponseCore? FailureResponse
-        {
-            get;
-            protected set;
-        }
-
         protected int ActualMaxBufferedItemCount => (int)this.actualMaxBufferedItemCount;
 
         protected int ActualMaxPageSize => (int)this.actualMaxPageSize;
@@ -218,7 +207,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Gets a value indicating whether the context still has more results.
         /// </summary>
-        private bool HasMoreResults => this.FailureResponse != null || (this.itemProducerForest.Count != 0 && this.CurrentItemProducerTree().HasMoreResults);
+        private bool HasMoreResults => this.itemProducerForest.Count != 0 && this.CurrentItemProducerTree().HasMoreResults;
 
         /// <summary>
         /// Gets the number of documents we can still buffer.
@@ -314,80 +303,6 @@ namespace Microsoft.Azure.Cosmos.Query
         }
 
         /// <summary>
-        /// A helper to move next and set the failure response if one is received
-        /// </summary>
-        /// <param name="itemProducerTree">The item producer tree</param>
-        /// <param name="cancellationToken">The cancellation token</param>
-        /// <returns>True if it move next failed. It can fail from an error or hitting the end of the tree</returns>
-        protected async Task<bool> MoveNextHelperAsync(ItemProducerTree itemProducerTree, CancellationToken cancellationToken)
-        {
-            (bool successfullyMovedNext, QueryResponseCore? failureResponse) moveNextResponse = await itemProducerTree.MoveNextAsync(cancellationToken);
-            if (moveNextResponse.failureResponse != null)
-            {
-                this.FailureResponse = moveNextResponse.failureResponse;
-            }
-
-            return moveNextResponse.successfullyMovedNext;
-        }
-
-        /// <summary>
-        /// Drains documents from this component. This has the common drain logic for each implementation.
-        /// </summary>
-        /// <param name="maxElements">The maximum number of documents to drain.</param>
-        /// <param name="cancellationToken">The cancellation token to cancel tasks.</param>
-        /// <returns>A task that when awaited on returns a feed response.</returns>
-        public override async Task<QueryResponseCore> DrainAsync(int maxElements, CancellationToken cancellationToken)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            // The initialization or previous Drain Async failed. Just return the failure.
-            if (this.FailureResponse != null)
-            {
-                this.Stop();
-
-                QueryResponseCore failure = this.FailureResponse.Value;
-                this.FailureResponse = null;
-                return failure;
-            }
-
-            // Drain the results. If there is no results and a failure then return the failure.
-            IReadOnlyList<CosmosElement> results = await this.InternalDrainAsync(maxElements, cancellationToken);
-            if ((results == null || results.Count == 0) && this.FailureResponse != null)
-            {
-                this.Stop();
-                QueryResponseCore failure = this.FailureResponse.Value;
-                this.FailureResponse = null;
-                return failure;
-
-            }
-
-            string continuation = this.ContinuationToken;
-            if (continuation == "[]")
-            {
-                throw new InvalidOperationException("Somehow a document query execution context returned an empty array of continuations.");
-            }
-
-            IReadOnlyCollection<QueryPageDiagnostics> diagnostics = this.GetAndResetDiagnostics();
-
-            return QueryResponseCore.CreateSuccess(
-                result: results,
-                requestCharge: this.requestChargeTracker.GetAndResetCharge(),
-                activityId: null,
-                diagnostics: diagnostics,
-                disallowContinuationTokenMessage: null,
-                continuationToken: continuation,
-                responseLengthBytes: this.GetAndResetResponseLengthBytes());
-        }
-
-        /// <summary>
-        /// The drain async logic for the different implementation 
-        /// </summary>
-        /// <param name="maxElements">The maximum number of documents to drain.</param>
-        /// <param name="token">The cancellation token to cancel tasks.</param>
-        /// <returns>A task that when awaited on returns a feed response.</returns>
-        public abstract Task<IReadOnlyList<CosmosElement>> InternalDrainAsync(int maxElements, CancellationToken token);
-
-        /// <summary>
         /// Initializes cross partition query execution context by initializing the necessary document producers.
         /// </summary>
         /// <param name="collectionRid">The collection to drain from.</param>
@@ -459,11 +374,11 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 if (!deferFirstPage)
                 {
-                    (bool successfullyMovedNext, QueryResponseCore? failureResponse) = await itemProducerTree.MoveNextIfNotSplitAsync(cancellationToken);
+                    (bool successfullyMovedNext, QueryResponseCore? failureResponse) = await itemProducerTree.TryMoveNextPageIfNotSplitAsync(cancellationToken);
                     if (failureResponse != null)
                     {
                         // Set the failure so on drain it can be returned.
-                        this.FailureResponse = failureResponse;
+                        this.failureResponse = failureResponse;
 
                         // No reason to enqueue the rest of the itemProducerTrees since there is a failure.
                         break;
@@ -635,7 +550,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// Since query metrics are being aggregated asynchronously to the feed responses as explained in the member documentation,
         /// this function allows us to take a snapshot of the query metrics.
         /// </summary>
-        private IReadOnlyCollection<QueryPageDiagnostics> GetAndResetDiagnostics()
+        protected IReadOnlyCollection<QueryPageDiagnostics> GetAndResetDiagnostics()
         {
             // Safely swap the current ConcurrentBag<QueryPageDiagnostics> for a new instance. 
             ConcurrentBag<QueryPageDiagnostics> queryPageDiagnostics = Interlocked.Exchange(

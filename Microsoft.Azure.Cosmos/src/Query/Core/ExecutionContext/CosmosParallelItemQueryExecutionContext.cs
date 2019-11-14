@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 {
                     IEnumerable<CompositeContinuationToken> compositeContinuationTokens = activeItemProducers.Select((documentProducer) => new CompositeContinuationToken
                     {
-                        Token = documentProducer.PreviousContinuationToken,
+                        Token = documentProducer.CurrentContinuationToken,
                         Range = documentProducer.PartitionKeyRange.ToRange()
                     });
                     continuationToken = JsonConvert.SerializeObject(compositeContinuationTokens, DefaultJsonSerializationSettings.Value);
@@ -128,15 +128,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 cancellationToken: cancellationToken);
         }
 
-        /// <summary>
-        /// Drains documents from this execution context.
-        /// </summary>
-        /// <param name="maxElements">The maximum number of documents to drains.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>A task that when awaited on returns a DoucmentFeedResponse of results.</returns>
-        public override async Task<IReadOnlyList<CosmosElement>> InternalDrainAsync(
-            int maxElements,
-            CancellationToken cancellationToken)
+        public override async Task<QueryResponseCore> DrainAsync(int maxElements, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -147,36 +139,42 @@ namespace Microsoft.Azure.Cosmos.Query
 
             // Only drain from the leftmost (current) document producer tree
             ItemProducerTree currentItemProducerTree = this.PopCurrentItemProducerTree();
-
-            // This might be the first time we have seen this document producer tree so we need to buffer documents
-            bool itemProducerReady = true;
-            if (currentItemProducerTree.Current == null)
-            {
-                itemProducerReady = await this.MoveNextHelperAsync(currentItemProducerTree, cancellationToken);
-            }
-
             List<CosmosElement> results = new List<CosmosElement>();
-
-            if (itemProducerReady)
+            try
             {
-                int itemsLeftInCurrentPage = currentItemProducerTree.ItemsLeftInCurrentPage;
-
-                // Only drain full pages or less if this is a top query.
-
-                for (int i = 0; i < Math.Min(itemsLeftInCurrentPage, maxElements); i++)
+                (bool gotNextPage, QueryResponseCore? failureResponse) = await currentItemProducerTree.TryMoveNextPageAsync(cancellationToken);
+                if (failureResponse != null)
                 {
-                    results.Add(currentItemProducerTree.Current);
-                    if (!await this.MoveNextHelperAsync(currentItemProducerTree, cancellationToken))
+                    return failureResponse.Value;
+                }
+
+                if (gotNextPage)
+                {
+                    int itemsLeftInCurrentPage = currentItemProducerTree.ItemsLeftInCurrentPage;
+
+                    // Only drain full pages or less if this is a top query.
+                    currentItemProducerTree.TryMoveNextDocumentWithinPage();
+                    int numberOfItemsToDrain = Math.Min(itemsLeftInCurrentPage, maxElements);
+                    for (int i = 0; i < numberOfItemsToDrain; i++)
                     {
-                        break;
+                        results.Add(currentItemProducerTree.Current);
+                        currentItemProducerTree.TryMoveNextDocumentWithinPage();
                     }
                 }
             }
+            finally
+            {
+                this.PushCurrentItemProducerTree(currentItemProducerTree);
+            }
 
-            this.PushCurrentItemProducerTree(currentItemProducerTree);
-
-            // At this point the document producer tree should have internally called MoveNextPage, since we fully drained a page.
-            return results;
+            return QueryResponseCore.CreateSuccess(
+                    result: results,
+                    requestCharge: this.requestChargeTracker.GetAndResetCharge(),
+                    activityId: null,
+                    responseLengthBytes: this.GetAndResetResponseLengthBytes(),
+                    disallowContinuationTokenMessage: null,
+                    continuationToken: this.ContinuationToken,
+                    diagnostics: this.GetAndResetDiagnostics());
         }
 
         /// <summary>
