@@ -362,6 +362,7 @@ namespace Microsoft.Azure.Cosmos.Query
             QueryResponseCore queryResponse = await this.bufferedPages.TakeAsync(cancellationToken);
             if (!queryResponse.IsSuccess)
             {
+                this.HasMoreResults = false;
                 return (false, queryResponse);
             }
 

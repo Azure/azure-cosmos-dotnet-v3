@@ -100,8 +100,6 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         private long totalResponseLengthBytes;
 
-        protected QueryResponseCore? failureResponse;
-
         /// <summary>
         /// Initializes a new instance of the CosmosCrossPartitionQueryExecutionContext class.
         /// </summary>
@@ -240,22 +238,19 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </returns>
         public IEnumerable<ItemProducer> GetActiveItemProducers()
         {
-            lock (this.itemProducerForest)
+            ItemProducerTree current = this.itemProducerForest.Peek().CurrentItemProducerTree;
+            if (current.HasMoreResults && !current.IsActive)
             {
-                ItemProducerTree current = this.itemProducerForest.Peek().CurrentItemProducerTree;
-                if (current.HasMoreResults && !current.IsActive)
-                {
-                    // If the current document producer tree has more results, but isn't active.
-                    // then we still want to emit it, since it won't get picked up in the below for loop.
-                    yield return current.Root;
-                }
+                // If the current document producer tree has more results, but isn't active.
+                // then we still want to emit it, since it won't get picked up in the below for loop.
+                yield return current.Root;
+            }
 
-                foreach (ItemProducerTree itemProducerTree in this.itemProducerForest)
+            foreach (ItemProducerTree itemProducerTree in this.itemProducerForest)
+            {
+                foreach (ItemProducer itemProducer in itemProducerTree.GetActiveItemProducers())
                 {
-                    foreach (ItemProducer itemProducer in itemProducerTree.GetActiveItemProducers())
-                    {
-                        yield return itemProducer;
-                    }
+                    yield return itemProducer;
                 }
             }
         }
@@ -377,13 +372,16 @@ namespace Microsoft.Azure.Cosmos.Query
                     while (true)
                     {
                         (bool movedToNextPage, QueryResponseCore? failureResponse) = await itemProducerTree.TryMoveNextPageIfNotSplitAsync(cancellationToken);
-                        if (failureResponse != null)
-                        {
-                            // Set the failure so on drain it can be returned.
-                            this.failureResponse = failureResponse;
 
-                            // No reason to enqueue the rest of the itemProducerTrees since there is a failure.
-                            break;
+                        if (failureResponse.HasValue)
+                        {
+                            return TryCatch<bool>.FromException(
+                                new CosmosException(
+                                    statusCode: failureResponse.Value.StatusCode,
+                                    subStatusCode: (int)failureResponse.Value.SubStatusCode.GetValueOrDefault(0),
+                                    message: failureResponse.Value.ErrorMessage,
+                                    activityId: failureResponse.Value.ActivityId,
+                                    requestCharge: 0));
                         }
 
                         if (!movedToNextPage)
@@ -396,28 +394,23 @@ namespace Microsoft.Azure.Cosmos.Query
                             break;
                         }
                     }
-
-                    if (this.failureResponse != null)
-                    {
-                        // No reason to enqueue the rest of the itemProducerTrees since there is a failure.
-                        break;
-                    }
                 }
 
                 if (tryFilterAsync != null)
                 {
                     TryCatch<bool> tryFilter = await tryFilterAsync(itemProducerTree);
-
                     if (!tryFilter.Succeeded)
                     {
                         return tryFilter;
                     }
                 }
 
-                if (itemProducerTree.HasMoreResults)
-                {
-                    this.itemProducerForest.Enqueue(itemProducerTree);
-                }
+                this.itemProducerForest.Enqueue(itemProducerTree);
+            }
+
+            if (this.itemProducerForest.Count == 0)
+            {
+                return TryCatch<bool>.FromException(new Exception("Failed to initialize cross partition query execution context."));
             }
 
             return TryCatch<bool>.FromResult(true);

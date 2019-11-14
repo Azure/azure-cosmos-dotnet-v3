@@ -120,36 +120,18 @@ namespace Microsoft.Azure.Cosmos.Query
                 {
                     IEnumerable<OrderByContinuationToken> orderByContinuationTokens = activeItemProducers.Select((itemProducer) =>
                     {
-                        OrderByContinuationToken orderByContinuationToken;
-                        if (itemProducer.Current != null)
-                        {
-                            OrderByQueryResult orderByQueryResult = new OrderByQueryResult(itemProducer.Current);
-                            string filter = itemProducer.Filter;
-                            orderByContinuationToken = new OrderByContinuationToken(
-                                new CompositeContinuationToken
-                                {
-                                    Token = itemProducer.PreviousContinuationToken,
-                                    Range = itemProducer.PartitionKeyRange.ToRange(),
-                                },
-                                orderByQueryResult.OrderByItems,
-                                orderByQueryResult.Rid,
-                                this.ShouldIncrementSkipCount(itemProducer) ? this.skipCount + 1 : 0,
-                                filter);
-                        }
-                        else
-                        {
-                            // We finished draining the current page, but we don't have have buffered results
-                            orderByContinuationToken = new OrderByContinuationToken(
-                                new CompositeContinuationToken
-                                {
-                                    Token = itemProducer.BackendContinuationToken,
-                                    Range = itemProducer.PartitionKeyRange.ToRange(),
-                                },
-                                orderByItems: this.previousOrderByItems,
-                                rid: this.previousRid,
-                                skipCount: 0,
-                                filter: null);
-                        }
+                        OrderByQueryResult orderByQueryResult = new OrderByQueryResult(itemProducer.Current);
+                        string filter = itemProducer.Filter;
+                        OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
+                            new CompositeContinuationToken
+                            {
+                                Token = itemProducer.PreviousContinuationToken,
+                                Range = itemProducer.PartitionKeyRange.ToRange(),
+                            },
+                            orderByQueryResult.OrderByItems,
+                            orderByQueryResult.Rid,
+                            this.ShouldIncrementSkipCount(itemProducer) ? this.skipCount + 1 : 0,
+                            filter);
 
                         return orderByContinuationToken;
                     });
@@ -248,51 +230,60 @@ namespace Microsoft.Azure.Cosmos.Query
             ////  2) <i, j> always come before <i, k> where j < k
 
             List<CosmosElement> results = new List<CosmosElement>();
-            bool isSuccessToMoveNext = true;
-            while (!this.IsDone && (results.Count < maxElements) && isSuccessToMoveNext)
+            while (results.Count < maxElements)
             {
                 // Only drain from the highest priority document producer 
                 // We need to pop and push back the document producer tree, since the priority changes according to the sort order.
                 ItemProducerTree currentItemProducerTree = this.PopCurrentItemProducerTree();
-
-                OrderByQueryResult orderByQueryResult = new OrderByQueryResult(currentItemProducerTree.Current);
-
-                // Only add the payload, since other stuff is garbage from the caller's perspective.
-                results.Add(orderByQueryResult.Payload);
-
-                // If we are at the beginning of the page and seeing an rid from the previous page we should increment the skip count
-                // due to the fact that JOINs can make a document appear multiple times and across continuations, so we don't want to
-                // surface this more than needed. More information can be found in the continuation token docs.
-                if (this.ShouldIncrementSkipCount(currentItemProducerTree.CurrentItemProducerTree.Root))
+                try
                 {
-                    ++this.skipCount;
-                }
-                else
-                {
-                    this.skipCount = 0;
-                }
+                    OrderByQueryResult orderByQueryResult = new OrderByQueryResult(currentItemProducerTree.Current);
 
-                this.previousRid = orderByQueryResult.Rid;
-                this.previousOrderByItems = orderByQueryResult.OrderByItems;
+                    // Only add the payload, since other stuff is garbage from the caller's perspective.
+                    results.Add(orderByQueryResult.Payload);
 
-                if (!currentItemProducerTree.TryMoveNextDocumentWithinPage())
-                {
-                    while (true)
+                    // If we are at the beginning of the page and seeing an rid from the previous page we should increment the skip count
+                    // due to the fact that JOINs can make a document appear multiple times and across continuations, so we don't want to
+                    // surface this more than needed. More information can be found in the continuation token docs.
+                    if (this.ShouldIncrementSkipCount(currentItemProducerTree.CurrentItemProducerTree.Root))
                     {
-                        (bool movedToNextPage, QueryResponseCore? failureResponse) = await currentItemProducerTree.TryMoveNextPageAsync(cancellationToken);
-                        if (!movedToNextPage)
-                        {
-                            break;
-                        }
+                        ++this.skipCount;
+                    }
+                    else
+                    {
+                        this.skipCount = 0;
+                    }
 
-                        if (currentItemProducerTree.TryMoveNextDocumentWithinPage())
+                    this.previousRid = orderByQueryResult.Rid;
+                    this.previousOrderByItems = orderByQueryResult.OrderByItems;
+
+                    if (!currentItemProducerTree.TryMoveNextDocumentWithinPage())
+                    {
+                        while (true)
                         {
-                            break;
+                            (bool movedToNextPage, QueryResponseCore? failureResponse) = await currentItemProducerTree.TryMoveNextPageAsync(cancellationToken);
+                            if (!movedToNextPage)
+                            {
+                                if (failureResponse.HasValue)
+                                {
+                                    // TODO: We can buffer this failure so that the user can still get the pages we already got.
+                                    return failureResponse.Value;
+                                }
+
+                                break;
+                            }
+
+                            if (currentItemProducerTree.TryMoveNextDocumentWithinPage())
+                            {
+                                break;
+                            }
                         }
                     }
                 }
-
-                this.PushCurrentItemProducerTree(currentItemProducerTree);
+                finally
+                {
+                    this.PushCurrentItemProducerTree(currentItemProducerTree);
+                }
             }
 
             return QueryResponseCore.CreateSuccess(
@@ -373,7 +364,6 @@ namespace Microsoft.Azure.Cosmos.Query
                     deferFirstPage: false,
                     filter: null,
                     tryFilterAsync: null);
-
                 if (!tryInitialize.Succeeded)
                 {
                     return tryInitialize;
@@ -427,7 +417,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         sqlQuerySpec.QueryText.Replace(FormatPlaceHolder, info.Filter),
                         sqlQuerySpec.Parameters);
 
-                    await base.TryInitializeAsync(
+                    TryCatch<bool> tryInitialize = await base.TryInitializeAsync(
                         collectionRid,
                         partialRanges,
                         initialPageSize,
@@ -458,6 +448,10 @@ namespace Microsoft.Azure.Cosmos.Query
                             return TryCatch<bool>.FromResult(true);
                         },
                         cancellationToken);
+                    if (!tryInitialize.Succeeded)
+                    {
+                        return tryInitialize;
+                    }
                 }
             }
 
@@ -624,12 +618,18 @@ namespace Microsoft.Azure.Cosmos.Query
                     {
                         while (true)
                         {
-                            (bool successfullyMovedNext, QueryResponseCore? failureResponse) moveNextResponse = await tree.TryMoveNextPageAsync(cancellationToken);
-                            if (!moveNextResponse.successfullyMovedNext)
+                            (bool successfullyMovedNext, QueryResponseCore? failureResponse) = await tree.TryMoveNextPageAsync(cancellationToken);
+                            if (!successfullyMovedNext)
                             {
-                                if (moveNextResponse.failureResponse != null)
+                                if (failureResponse.HasValue)
                                 {
-                                    this.failureResponse = moveNextResponse.failureResponse;
+                                    return TryCatch<bool>.FromException(
+                                        new CosmosException(
+                                            statusCode: failureResponse.Value.StatusCode,
+                                            subStatusCode: (int)failureResponse.Value.SubStatusCode.GetValueOrDefault(0),
+                                            message: failureResponse.Value.ErrorMessage,
+                                            activityId: failureResponse.Value.ActivityId,
+                                            requestCharge: 0));
                                 }
 
                                 break;

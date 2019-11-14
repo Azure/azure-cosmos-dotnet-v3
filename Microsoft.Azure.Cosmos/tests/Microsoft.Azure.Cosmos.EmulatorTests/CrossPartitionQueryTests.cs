@@ -1345,7 +1345,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             MaxItemCount = maxItemCount
                         };
 
-                        List<JToken> queryResults = await CrossPartitionQueryTests.QueryWithContinuationTokens<JToken>(
+                        List<JToken> queryResults = await CrossPartitionQueryTests.RunQuery<JToken>(
                             container,
                             query,
                             feedOptions);
@@ -1380,7 +1380,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             foreach (int maxItemCount in new int[] { 10/*, 100*/ })
             {
-                foreach (string query in new string[] { "SELECT c.id FROM c"/*, "SELECT c._ts, c.id FROM c ORDER BY c._ts"*/ })
+                foreach (string query in new string[] { /*"SELECT c.id FROM c",*/ "SELECT c._ts, c.id FROM c ORDER BY c._ts" })
                 {
                     QueryRequestOptions feedOptions = new QueryRequestOptions
                     {
