@@ -1323,7 +1323,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.CreateIngestQueryDelete(
                 ConnectionModes.Direct,
-                CollectionTypes.SinglePartition /*| CollectionTypes.MultiPartition*/,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
                 this.TestBasicCrossPartitionQueryHelper);
         }
@@ -1332,11 +1332,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Container container,
             IEnumerable<Document> documents)
         {
-            foreach (int maxDegreeOfParallelism in new int[] { 1/*, 100*/ })
+            foreach (int maxDegreeOfParallelism in new int[] { 1, 100 })
             {
-                foreach (int maxItemCount in new int[] { 50/*, 100*/ })
+                foreach (int maxItemCount in new int[] { 10, 100 })
                 {
-                    foreach (string query in new string[] { "SELECT c.id FROM c"/*, "SELECT c._ts, c.id FROM c ORDER BY c._ts"*/ })
+                    foreach (string query in new string[] { "SELECT c.id FROM c", "SELECT c._ts, c.id FROM c ORDER BY c._ts" })
                     {
                         QueryRequestOptions feedOptions = new QueryRequestOptions
                         {

@@ -372,11 +372,6 @@ namespace Microsoft.Azure.Cosmos.Query
             this.IsAtBeginningOfPage = true;
             this.itemsLeftInCurrentPage = queryResponse.CosmosElements.Count;
 
-            if (this.CurrentContinuationToken == null)
-            {
-                this.HasMoreResults = false;
-            }
-
             return ItemProducer.IsSuccessResponse;
         }
 
@@ -401,6 +396,13 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 Interlocked.Decrement(ref this.bufferedItemCount);
                 Interlocked.Decrement(ref this.itemsLeftInCurrentPage);
+            }
+            else
+            {
+                if (this.CurrentContinuationToken == null)
+                {
+                    this.HasMoreResults = false;
+                }
             }
 
             return movedNext;

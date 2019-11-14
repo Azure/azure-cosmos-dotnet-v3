@@ -374,12 +374,31 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 if (!deferFirstPage)
                 {
-                    (bool successfullyMovedNext, QueryResponseCore? failureResponse) = await itemProducerTree.TryMoveNextPageIfNotSplitAsync(cancellationToken);
-                    if (failureResponse != null)
+                    while (true)
                     {
-                        // Set the failure so on drain it can be returned.
-                        this.failureResponse = failureResponse;
+                        (bool movedToNextPage, QueryResponseCore? failureResponse) = await itemProducerTree.TryMoveNextPageIfNotSplitAsync(cancellationToken);
+                        if (failureResponse != null)
+                        {
+                            // Set the failure so on drain it can be returned.
+                            this.failureResponse = failureResponse;
 
+                            // No reason to enqueue the rest of the itemProducerTrees since there is a failure.
+                            break;
+                        }
+
+                        if (!movedToNextPage)
+                        {
+                            break;
+                        }
+
+                        if (itemProducerTree.TryMoveNextDocumentWithinPage())
+                        {
+                            break;
+                        }
+                    }
+
+                    if (this.failureResponse != null)
+                    {
                         // No reason to enqueue the rest of the itemProducerTrees since there is a failure.
                         break;
                     }
