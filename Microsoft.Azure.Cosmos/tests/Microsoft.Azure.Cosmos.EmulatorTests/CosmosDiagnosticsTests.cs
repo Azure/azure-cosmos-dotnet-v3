@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //Checking point operation diagnostics on typed operations
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
             ItemResponse<ToDoActivity> createResponse = await this.Container.CreateItemAsync<ToDoActivity>(item: testItem);
-            Assert.IsNotNull(createResponse.Diagnostics);
+            CosmosDiagnosticsTests.VerifyPointDiagnostics(createResponse.Diagnostics);
 
             ItemResponse<ToDoActivity> readResponse = await this.Container.ReadItemAsync<ToDoActivity>(id: testItem.id, partitionKey: new PartitionKey(testItem.status));
             Assert.IsNotNull(readResponse.Diagnostics);
@@ -53,33 +53,33 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             testItem.description = "NewDescription";
             ItemResponse<ToDoActivity> replaceResponse = await this.Container.ReplaceItemAsync<ToDoActivity>(item: testItem, id: testItem.id, partitionKey: new PartitionKey(testItem.status));
             Assert.AreEqual(replaceResponse.Resource.description, "NewDescription");
-            Assert.IsNotNull(replaceResponse.Diagnostics);
+            CosmosDiagnosticsTests.VerifyPointDiagnostics(replaceResponse.Diagnostics);
 
             ItemResponse<ToDoActivity> deleteResponse = await this.Container.DeleteItemAsync<ToDoActivity>(partitionKey: new Cosmos.PartitionKey(testItem.status), id: testItem.id);
             Assert.IsNotNull(deleteResponse);
-            Assert.IsNotNull(deleteResponse.Diagnostics);
+            CosmosDiagnosticsTests.VerifyPointDiagnostics(deleteResponse.Diagnostics);
 
             //Checking point operation diagnostics on stream operations
             ResponseMessage createStreamResponse = await this.Container.CreateItemStreamAsync(
                 partitionKey: new PartitionKey(testItem.status),
                 streamPayload: TestCommon.Serializer.ToStream<ToDoActivity>(testItem));
-            Assert.IsNotNull(createStreamResponse.Diagnostics);
+            CosmosDiagnosticsTests.VerifyPointDiagnostics(createStreamResponse.Diagnostics);
 
             ResponseMessage readStreamResponse = await this.Container.ReadItemStreamAsync(
                 id: testItem.id,
                 partitionKey: new PartitionKey(testItem.status));
-            Assert.IsNotNull(readStreamResponse.Diagnostics);
+            CosmosDiagnosticsTests.VerifyPointDiagnostics(readStreamResponse.Diagnostics);
 
             ResponseMessage replaceStreamResponse = await this.Container.ReplaceItemStreamAsync(
                streamPayload: TestCommon.Serializer.ToStream<ToDoActivity>(testItem),
                id: testItem.id,
                partitionKey: new PartitionKey(testItem.status));
-            Assert.IsNotNull(replaceStreamResponse.Diagnostics);
+            CosmosDiagnosticsTests.VerifyPointDiagnostics(replaceStreamResponse.Diagnostics);
 
             ResponseMessage deleteStreamResponse = await this.Container.DeleteItemStreamAsync(
                id: testItem.id,
                partitionKey: new PartitionKey(testItem.status));
-            Assert.IsNotNull(deleteStreamResponse.Diagnostics);
+            CosmosDiagnosticsTests.VerifyPointDiagnostics(deleteStreamResponse.Diagnostics);
 
             // Ensure diagnostics are set even on failed operations
             testItem.description = new string('x', Microsoft.Azure.Documents.Constants.MaxResourceSizeInBytes + 1);
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 partitionKey: new PartitionKey(testItem.status),
                 streamPayload: TestCommon.Serializer.ToStream<ToDoActivity>(testItem));
             Assert.IsFalse(createTooBigStreamResponse.IsSuccessStatusCode);
-            Assert.IsNotNull(createTooBigStreamResponse.Diagnostics);
+            CosmosDiagnosticsTests.VerifyPointDiagnostics(createTooBigStreamResponse.Diagnostics);
         }
 
         [TestMethod]
@@ -153,6 +153,34 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 JObject requestDiagnostics = jObject["RequestDiagnostics"].Value<JObject>();
                 Assert.IsNotNull(requestDiagnostics);
                 Assert.IsNotNull(requestDiagnostics["ActivityId"].ToString());
+            }
+        }
+
+        public static void VerifyPointDiagnostics(CosmosDiagnostics diagnostics)
+        {
+            string info = diagnostics.ToString();
+            Assert.IsNotNull(info);
+            JObject jObject = JObject.Parse(info);
+            Assert.IsNotNull(jObject["ActivityId"].ToString());
+            Assert.IsNotNull(jObject["StatusCode"].ToString());
+            Assert.IsNotNull(jObject["RequestCharge"].ToString());
+            Assert.IsNotNull(jObject["RequestUri"].ToString());
+            Assert.IsNotNull(jObject["requestStartTime"].ToString());
+            Assert.IsNotNull(jObject["requestEndTime"].ToString());
+            Assert.IsNotNull(jObject["responseStatisticsList"].ToString());
+            Assert.IsNotNull(jObject["supplementalResponseStatisticsList"].ToString());
+            Assert.IsNotNull(jObject["addressResolutionStatistics"].ToString());
+            Assert.IsNotNull(jObject["contactedReplicas"].ToString());
+            Assert.IsNotNull(jObject["failedReplicas"].ToString());
+            Assert.IsNotNull(jObject["regionsContacted"].ToString());
+            Assert.IsNotNull(jObject["requestLatency"].ToString());
+
+            int statusCode = jObject["StatusCode"].ToObject<int>();
+
+            // Session token only expected on success
+            if (statusCode >= 200 && statusCode < 300)
+            {
+                Assert.IsNotNull(jObject["ResponseSessionToken"].ToString());
             }
         }
 

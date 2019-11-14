@@ -76,7 +76,17 @@ namespace Microsoft.Azure.Cosmos.Tests
                 SubStatusCode = SubStatusCodes.CompletingSplit,
                 RetryAfter = TimeSpan.FromSeconds(10),
                 RequestCharge = 4.3,
-                Diagnostics = new PointOperationStatistics(Guid.NewGuid().ToString(), HttpStatusCode.OK, SubStatusCodes.Unknown, 0, string.Empty, HttpMethod.Get, new Uri("http://localhost"), new CosmosClientSideRequestStatistics())
+                Diagnostics = new PointOperationStatistics(
+                    activityId: Guid.NewGuid().ToString(),
+                    statusCode: HttpStatusCode.OK,
+                    subStatusCode: SubStatusCodes.Unknown,
+                    requestCharge: 0,
+                    errorMessage: string.Empty,
+                    method: HttpMethod.Get,
+                    requestUri: new Uri("http://localhost"),
+                    requestSessionToken: null,
+                    responseSessionToken: null,
+                    clientSideRequestStatistics: new CosmosClientSideRequestStatistics())
             };
 
             ResponseMessage response = result.ToResponseMessage();
