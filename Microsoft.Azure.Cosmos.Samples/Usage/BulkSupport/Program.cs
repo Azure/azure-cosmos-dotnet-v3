@@ -41,10 +41,11 @@
             {
                 // Make sure this is >= 2 * physical_partition_count * (2MB / docSize) when useBulk is true
                 // for best perf.
-                int concurrency = args.Length > 0 ? int.Parse(args[0]) : 1000;
-                int docSize = args.Length > 1 ? int.Parse(args[1]) : 180 * 1024;
+                int concurrency = args.Length > 0 ? int.Parse(args[0]) : 20000;
+                int docSize = args.Length > 1 ? int.Parse(args[1]) : 1024;
                 int runtimeInSeconds = args.Length > 2 ? int.Parse(args[2]) : 30;
                 bool useBulk = args.Length > 3 ? bool.Parse(args[3]) : true;
+                int workerCount = args.Length > 4 ? int.Parse(args[4]) : 1;
 
                 // Read the Cosmos endpointUrl and authorisationKeys from configuration
                 // These values are available from the Azure Management Portal on the Cosmos Account Blade under "Keys"
@@ -67,12 +68,11 @@
 
                 CosmosClient bulkClient = Program.GetBulkClientInstance(endpoint, authKey, useBulk);
                 // Create the require container, can be done with any client
-                //await Program.InitializeAsync(bulkClient, throughput);
-                await Task.Yield();
+                //await Program.InitializeAsync(bulkClient, throughput: 6000);
 
                 Console.WriteLine("Running demo with a {0}CosmosClient...", useBulk ? "Bulk enabled " : string.Empty);
                 // Execute inserts for 30 seconds on a Bulk enabled client
-                Program.CreateItemsConcurrently(bulkClient, concurrency, docSize, runtimeInSeconds);
+                await Program.CreateItemsConcurrentlyAsync(bulkClient, concurrency, docSize, runtimeInSeconds, workerCount);
 
                 bulkClient.Dispose();
             }
@@ -102,24 +102,30 @@
             new CosmosClient(endpoint, authKey, new CosmosClientOptions() { AllowBulkExecution = useBulk } );
         // </Initialization>
 
-        private static void CreateItemsConcurrently(CosmosClient client, int concurrency, int docSize, int runtimeInSeconds)
+        private static async Task CreateItemsConcurrentlyAsync(
+            CosmosClient client, 
+            int concurrency, 
+            int docSize, 
+            int runtimeInSeconds,
+            int workerCount)
         {
-            DataSource dataSource = new DataSource(concurrency, docSize);
+            DataSource dataSource = new DataSource(concurrency * workerCount, docSize);
 
             Container container = client.GetContainer(Program.databaseId, Program.containerId);
-            Console.WriteLine($"Initiating creates of items of about {docSize} bytes each maintaining {concurrency} in-progress items for {runtimeInSeconds} seconds.");
+            Console.WriteLine($"Initiating creates of items of about {docSize} bytes with {workerCount} workers each maintaining {concurrency} in-progress items for {runtimeInSeconds} seconds.");
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
             cancellationTokenSource.CancelAfter(runtimeInSeconds * 1000);
             CancellationToken cancellationToken = cancellationTokenSource.Token;
-            int created = CreateItems(container, dataSource, concurrency, docSize, cancellationToken);
+            int created = await CreateItemsAsync(container, dataSource, concurrency, docSize, workerCount, cancellationToken);
             Console.WriteLine($"Inserted {created} items.");
         }
 
-        private static int CreateItems(
+        private static async Task<int> CreateItemsAsync(
             Container container,
             DataSource dataSource,
             int concurrency,
             int docSize,
+            int workerCount,
             CancellationToken cancellationToken)
         {
             ConcurrentDictionary<HttpStatusCode, int> countsByStatus = new ConcurrentDictionary<HttpStatusCode, int>();
@@ -128,23 +134,32 @@
 
             try
             {
-                while (true)
+                List<Task> workerTasks = new List<Task>();
+                for (int i = 0; i < workerCount; i++)
                 {
-                    semaphore.Wait(cancellationToken);
-                    MemoryStream stream = dataSource.GetNextItemStream(out string partitionKeyValue);
-                    _ = container.CreateItemStreamAsync(stream, new PartitionKey(partitionKeyValue))
-                        .ContinueWith((Task<ResponseMessage> task) =>
+                    workerTasks.Add(Task.Run(() =>
+                    {
+                        while (true)
                         {
-                            semaphore.Release();
-                            dataSource.DoneWithItemStream(stream);
-                            HttpStatusCode resultCode = task.Result.StatusCode;
-                            countsByStatus.AddOrUpdate(resultCode, 1, (_, old) => old + 1);
-                        });
+                            semaphore.Wait(cancellationToken);
+                            MemoryStream stream = dataSource.GetNextItemStream(out string partitionKeyValue);
+                            _ = container.CreateItemStreamAsync(stream, new PartitionKey(partitionKeyValue))
+                                .ContinueWith((Task<ResponseMessage> task) =>
+                                {
+                                    semaphore.Release();
+                                    dataSource.DoneWithItemStream(stream);
+                                    HttpStatusCode resultCode = task.Result.StatusCode;
+                                    countsByStatus.AddOrUpdate(resultCode, 1, (_, old) => old + 1);
+                                });
+                        }
+                    }));
                 }
+
+                await Task.WhenAll(workerTasks);
             }
-            catch //(Exception ex)
+            catch (Exception ex)
             {
-                // Console.WriteLine(ex);
+                Console.WriteLine(ex);
             }
             finally
             {
@@ -210,9 +225,9 @@
             private byte[] sample;
             private int idIndex = -1, pkIndex = -1;
 
-            public DataSource(int concurrency, int docSize)
+            public DataSource(int initialPoolSize, int docSize)
             {
-                this.pool = new MemoryStreamPool(concurrency, docSize);
+                this.pool = new MemoryStreamPool(initialPoolSize, docSize);
                 this.docSize = docSize;
             }
 
@@ -299,6 +314,7 @@
             private MemoryStream GetNewStream()
             {
                 byte[] buffer = new byte[this.streamSize];
+                buffer[this.streamSize - 1] = 0;
                 return new MemoryStream(buffer, index: 0, count: streamSize, writable: true, publiclyVisible: true);
             }
         }
