@@ -619,19 +619,28 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                    queryText: query,
                    requestOptions: computeRequestOptions,
                    continuationToken: state);
-
-                FeedResponse<T> cosmosQueryResponse = await itemQuery.ReadNextAsync();
-                if (queryRequestOptions.MaxItemCount.HasValue)
+                try
                 {
-                    Assert.IsTrue(
-                        cosmosQueryResponse.Count <= queryRequestOptions.MaxItemCount.Value,
-                        "Max Item Count is not being honored");
-                }
+                    FeedResponse<T> cosmosQueryResponse = await itemQuery.ReadNextAsync();
+                    if (queryRequestOptions.MaxItemCount.HasValue)
+                    {
+                        Assert.IsTrue(
+                            cosmosQueryResponse.Count <= queryRequestOptions.MaxItemCount.Value,
+                            "Max Item Count is not being honored");
+                    }
 
-                resultsFromTryGetContinuationToken.AddRange(cosmosQueryResponse);
-                Assert.IsTrue(
-                    itemQuery.TryGetContinuationToken(out state),
-                    "Failed to get state for query");
+                    resultsFromTryGetContinuationToken.AddRange(cosmosQueryResponse);
+                    Assert.IsTrue(
+                        itemQuery.TryGetContinuationToken(out state),
+                        "Failed to get state for query");
+                }
+                catch (CosmosException cosmosException) when (cosmosException.StatusCode == (HttpStatusCode)429)
+                {
+                    itemQuery = (FeedIteratorCore<T>)container.GetItemQueryIterator<T>(
+                            queryText: query,
+                            requestOptions: queryRequestOptions,
+                            continuationToken: state);
+                }
             } while (state != null);
 
             return resultsFromTryGetContinuationToken;
@@ -700,16 +709,29 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 queryText: query,
                 requestOptions: queryRequestOptions);
 
+            string continuationTokenForRetries = null;
             while (itemQuery.HasMoreResults)
             {
-                FeedResponse<T> page = await itemQuery.ReadNextAsync();
-                results.AddRange(page);
-
-                if (queryRequestOptions.MaxItemCount.HasValue)
+                try
                 {
-                    Assert.IsTrue(
-                        page.Count <= queryRequestOptions.MaxItemCount.Value,
-                        "Max Item Count is not being honored");
+                    FeedResponse<T> page = await itemQuery.ReadNextAsync();
+                    results.AddRange(page);
+
+                    if (queryRequestOptions.MaxItemCount.HasValue)
+                    {
+                        Assert.IsTrue(
+                            page.Count <= queryRequestOptions.MaxItemCount.Value,
+                            "Max Item Count is not being honored");
+                    }
+
+                    continuationTokenForRetries = page.ContinuationToken;
+                }
+                catch (CosmosException cosmosException) when (cosmosException.StatusCode == (HttpStatusCode)429)
+                {
+                    itemQuery = container.GetItemQueryIterator<T>(
+                        queryText: query,
+                        requestOptions: queryRequestOptions,
+                        continuationToken: continuationTokenForRetries);
                 }
             }
 
@@ -1369,7 +1391,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.CreateIngestQueryDelete(
                 ConnectionModes.Direct,
-                CollectionTypes.SinglePartition,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
                 this.TestExceptionlessFailuresHelper);
         }
@@ -1378,9 +1400,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Container container,
             IEnumerable<Document> documents)
         {
-            foreach (int maxItemCount in new int[] { 10/*, 100*/ })
+            foreach (int maxItemCount in new int[] { 10, 100 })
             {
-                foreach (string query in new string[] { /*"SELECT c.id FROM c",*/ "SELECT c._ts, c.id FROM c ORDER BY c._ts" })
+                foreach (string query in new string[] { "SELECT c.id FROM c", "SELECT c._ts, c.id FROM c ORDER BY c._ts" })
                 {
                     QueryRequestOptions feedOptions = new QueryRequestOptions
                     {
@@ -1390,7 +1412,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         TestSettings = new TestSettings(simulate429s: true)
                     };
 
-                    List<JToken> queryResults = await CrossPartitionQueryTests.QueryWithContinuationTokens<JToken>(
+                    List<JToken> queryResults = await CrossPartitionQueryTests.RunQuery<JToken>(
                         container,
                         query,
                         feedOptions);
