@@ -298,14 +298,16 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 Content = responseContent,
                 Diagnostics = new PointOperationStatistics(
-                    Guid.NewGuid().ToString(),
-                    HttpStatusCode.Gone,
-                    SubStatusCodes.Unknown,
-                    0,
-                    string.Empty,
-                    HttpMethod.Get,
-                    new Uri("http://localhost"),
-                    new CosmosClientSideRequestStatistics())
+                    activityId: Guid.NewGuid().ToString(),
+                    statusCode: HttpStatusCode.Gone,
+                    subStatusCode: SubStatusCodes.Unknown,
+                    requestCharge: 0,
+                    errorMessage: string.Empty,
+                    method: HttpMethod.Get,
+                    requestUri: new Uri("http://localhost"),
+                    requestSessionToken: null,
+                    responseSessionToken: null,
+                    clientSideRequestStatistics: new CosmosClientSideRequestStatistics())
             };
             responseMessage.Headers.SubStatusCode = SubStatusCodes.PartitionKeyRangeGone;
             return responseMessage;
@@ -336,14 +338,16 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 Content = responseContent,
                 Diagnostics = new PointOperationStatistics(
-                    Guid.NewGuid().ToString(),
-                    HttpStatusCode.Gone,
-                    SubStatusCodes.Unknown,
-                    0,
-                    string.Empty,
-                    HttpMethod.Get,
-                    new Uri("http://localhost"),
-                    new CosmosClientSideRequestStatistics())
+                    activityId: Guid.NewGuid().ToString(),
+                    statusCode: HttpStatusCode.Gone,
+                    subStatusCode: SubStatusCodes.Unknown,
+                    requestCharge: 0,
+                    errorMessage: string.Empty,
+                    method: HttpMethod.Get,
+                    requestUri: new Uri("http://localhost"),
+                    requestSessionToken: null,
+                    responseSessionToken: null,
+                    clientSideRequestStatistics: new CosmosClientSideRequestStatistics())
             };
             responseMessage.Headers.SubStatusCode = SubStatusCodes.NameCacheIsStale;
             return responseMessage;
@@ -373,14 +377,16 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 Content = responseContent,
                 Diagnostics = new PointOperationStatistics(
-                    Guid.NewGuid().ToString(),
-                    (HttpStatusCode)StatusCodes.TooManyRequests,
-                    SubStatusCodes.Unknown,
-                    0,
-                    string.Empty,
-                    HttpMethod.Get,
-                    new Uri("http://localhost"),
-                    new CosmosClientSideRequestStatistics())
+                    activityId: Guid.NewGuid().ToString(),
+                    statusCode: (HttpStatusCode)StatusCodes.TooManyRequests,
+                    subStatusCode: SubStatusCodes.Unknown,
+                    requestCharge: 0,
+                    errorMessage: string.Empty,
+                    method: HttpMethod.Get,
+                    requestUri: new Uri("http://localhost"),
+                    requestSessionToken: null,
+                    responseSessionToken: null,
+                    clientSideRequestStatistics: new CosmosClientSideRequestStatistics())
             };
             return responseMessage;
         }
@@ -409,14 +415,16 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 Content = responseContent,
                 Diagnostics = new PointOperationStatistics(
-                     Guid.NewGuid().ToString(),
-                     HttpStatusCode.OK,
-                     SubStatusCodes.Unknown,
-                     0,
-                     string.Empty,
-                     HttpMethod.Get,
-                     new Uri("http://localhost"),
-                     new CosmosClientSideRequestStatistics())
+                     activityId: Guid.NewGuid().ToString(),
+                     statusCode: HttpStatusCode.OK,
+                     subStatusCode: SubStatusCodes.Unknown,
+                     requestCharge: 0,
+                     errorMessage: string.Empty,
+                     method: HttpMethod.Get,
+                     requestUri: new Uri("http://localhost"),
+                     requestSessionToken: null,
+                     responseSessionToken: null,
+                     clientSideRequestStatistics: new CosmosClientSideRequestStatistics())
             };
             return responseMessage;
         }
