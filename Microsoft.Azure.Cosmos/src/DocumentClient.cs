@@ -84,6 +84,7 @@ namespace Microsoft.Azure.Cosmos
         private const string MaxRequestsPerChannelConfig = "CosmosDbMaxRequestsPerTcpChannel";
         private const string TcpPartitionCount = "CosmosDbTcpPartitionCount";
         private const string MaxChannelsPerHostConfig = "CosmosDbMaxTcpChannelsPerHost";
+        private const string RntbdPortReuseMode = "CosmosDbTcpPortReusePolicy";
         private const string RntbdReceiveHangDetectionTimeConfig = "CosmosDbTcpReceiveHangDetectionTimeSeconds";
         private const string RntbdSendHangDetectionTimeConfig = "CosmosDbTcpSendHangDetectionTimeSeconds";
         private const string EnableCpuMonitorConfig = "CosmosDbEnableCpuMonitor";
@@ -96,6 +97,7 @@ namespace Microsoft.Azure.Cosmos
         private const int DefaultMaxRequestsPerRntbdChannel = 30;
         private const int DefaultRntbdPartitionCount = 1;
         private const int DefaultMaxRntbdChannelsPerHost = ushort.MaxValue;
+        private const PortReuseMode DefaultRntbdPortReuseMode = PortReuseMode.ReuseUnicastPort;
         private const int DefaultRntbdReceiveHangDetectionTimeSeconds = 65;
         private const int DefaultRntbdSendHangDetectionTimeSeconds = 10;
         private const bool DefaultEnableCpuMonitor = true;
@@ -112,6 +114,7 @@ namespace Microsoft.Azure.Cosmos
         private int maxRequestsPerRntbdChannel = DefaultMaxRequestsPerRntbdChannel;
         private int rntbdPartitionCount = DefaultRntbdPartitionCount;
         private int maxRntbdChannels = DefaultMaxRntbdChannelsPerHost;
+        private PortReuseMode rntbdPortReuseMode = DefaultRntbdPortReuseMode;
         private int rntbdReceiveHangDetectionTimeSeconds = DefaultRntbdReceiveHangDetectionTimeSeconds;
         private int rntbdSendHangDetectionTimeSeconds = DefaultRntbdSendHangDetectionTimeSeconds;
         private bool enableCpuMonitor = DefaultEnableCpuMonitor;
@@ -912,6 +915,16 @@ namespace Microsoft.Azure.Cosmos
                     }
                 }
 
+                string rntbdPortReuseModeOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.RntbdPortReuseMode];
+                if (!string.IsNullOrEmpty(rntbdPortReuseModeOverrideString))
+                {
+                    PortReuseMode portReuseMode = DefaultRntbdPortReuseMode;
+                    if (Enum.TryParse<PortReuseMode>(rntbdPortReuseModeOverrideString, out portReuseMode))
+                    {
+                        this.rntbdPortReuseMode = portReuseMode;
+                    }
+                }
+
                 string rntbdReceiveHangDetectionTimeSecondsString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.RntbdReceiveHangDetectionTimeConfig];
                 if (!string.IsNullOrEmpty(rntbdReceiveHangDetectionTimeSecondsString))
                 {
@@ -979,6 +992,11 @@ namespace Microsoft.Azure.Cosmos
                 if (this.ConnectionPolicy.MaxTcpConnectionsPerEndpoint.HasValue)
                 {
                     this.maxRntbdChannels = this.ConnectionPolicy.MaxTcpConnectionsPerEndpoint.Value;
+                }
+
+                if (this.ConnectionPolicy.PortReuseMode.HasValue)
+                {
+                    this.rntbdPortReuseMode = this.ConnectionPolicy.PortReuseMode.Value;
                 }
             }
 
@@ -6480,7 +6498,8 @@ namespace Microsoft.Azure.Cosmos
                     receiveHangDetectionTimeSeconds: this.rntbdReceiveHangDetectionTimeSeconds,
                     sendHangDetectionTimeSeconds: this.rntbdSendHangDetectionTimeSeconds,
                     enableCpuMonitor: this.enableCpuMonitor,
-                    retryWithConfiguration: this.connectionPolicy.RetryOptions?.GetRetryWithConfiguration());
+                    retryWithConfiguration: this.connectionPolicy.RetryOptions?.GetRetryWithConfiguration(),
+                    rntbdPortReuseMode: (Documents.PortReuseMode)this.rntbdPortReuseMode);
 
                 if (this.transportClientHandlerFactory != null)
                 {

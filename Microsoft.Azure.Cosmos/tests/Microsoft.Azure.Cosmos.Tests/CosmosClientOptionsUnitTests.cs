@@ -44,6 +44,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             TimeSpan openTcpConnectionTimeout = new TimeSpan(0, 0, 5);
             int maxRequestsPerTcpConnection = 30;
             int maxTcpConnectionsPerEndpoint = 65535;
+            Cosmos.PortReuseMode portReuseMode = Cosmos.PortReuseMode.PrivatePortPool;
             IWebProxy webProxy = new TestWebProxy();
 
             CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
@@ -131,7 +132,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 idleTcpConnectionTimeout,
                 openTcpConnectionTimeout,
                 maxRequestsPerTcpConnection,
-                maxTcpConnectionsPerEndpoint
+                maxTcpConnectionsPerEndpoint,
+                portReuseMode
             );
 
             cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
@@ -142,6 +144,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(openTcpConnectionTimeout, clientOptions.OpenTcpConnectionTimeout);
             Assert.AreEqual(maxRequestsPerTcpConnection, clientOptions.MaxRequestsPerTcpConnection);
             Assert.AreEqual(maxTcpConnectionsPerEndpoint, clientOptions.MaxTcpConnectionsPerEndpoint);
+            Assert.AreEqual(portReuseMode, clientOptions.PortReuseMode);
 
             //Verify GetConnectionPolicy returns the correct values
             policy = clientOptions.GetConnectionPolicy();
@@ -149,6 +152,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(openTcpConnectionTimeout, policy.OpenTcpConnectionTimeout);
             Assert.AreEqual(maxRequestsPerTcpConnection, policy.MaxRequestsPerTcpConnection);
             Assert.AreEqual(maxTcpConnectionsPerEndpoint, policy.MaxTcpConnectionsPerEndpoint);
+            Assert.AreEqual(portReuseMode, policy.PortReuseMode);
         }
 
         [TestMethod]

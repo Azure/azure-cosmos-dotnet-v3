@@ -62,6 +62,7 @@ namespace Microsoft.Azure.Cosmos
         private TimeSpan? openTcpConnectionTimeout;
         private int? maxRequestsPerTcpConnection;
         private int? maxTcpConnectionsPerEndpoint;
+        private PortReuseMode? portReuseMode;
         private IWebProxy webProxy;
 
         /// <summary>
@@ -270,6 +271,22 @@ namespace Microsoft.Azure.Cosmos
             set
             {
                 this.maxTcpConnectionsPerEndpoint = value;
+                this.ValidateDirectTCPSettings();
+            }
+        }
+
+        /// <summary>
+        /// (Direct/TCP) Controls the client port reuse policy used by the transport stack.
+        /// </summary>
+        /// <value>
+        /// The default value is PortReuseMode.ReuseUnicastPort.
+        /// </value>
+        public PortReuseMode? PortReuseMode
+        {
+            get => this.portReuseMode;
+            set
+            {
+                this.portReuseMode = value;
                 this.ValidateDirectTCPSettings();
             }
         }
@@ -522,7 +539,8 @@ namespace Microsoft.Azure.Cosmos
                 OpenTcpConnectionTimeout = this.OpenTcpConnectionTimeout,
                 MaxRequestsPerTcpConnection = this.MaxRequestsPerTcpConnection,
                 MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
-                EnableEndpointDiscovery = !this.LimitToEndpoint
+                EnableEndpointDiscovery = !this.LimitToEndpoint,
+                PortReuseMode = this.portReuseMode
             };
 
             if (this.ApplicationRegion != null)
@@ -649,6 +667,10 @@ namespace Microsoft.Azure.Cosmos
                 else if (this.MaxTcpConnectionsPerEndpoint.HasValue)
                 {
                     settingName = nameof(this.MaxTcpConnectionsPerEndpoint);
+                }
+                else if (this.PortReuseMode.HasValue)
+                {
+                    settingName = nameof(this.PortReuseMode);
                 }
             }
 
