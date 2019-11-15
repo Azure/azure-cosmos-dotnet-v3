@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using System.IO;
+    using System.Linq;
     using System.Net;
     using System.Net.Http;
     using Microsoft.Azure.Cosmos.Client.Core.Tests;
@@ -153,6 +154,20 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(maxRequestsPerTcpConnection, policy.MaxRequestsPerTcpConnection);
             Assert.AreEqual(maxTcpConnectionsPerEndpoint, policy.MaxTcpConnectionsPerEndpoint);
             Assert.AreEqual(portReuseMode, policy.PortReuseMode);
+        }
+
+        [TestMethod]
+        public void VerifyPortReuseModeIsSyncedWithDirect()
+        {
+            CollectionAssert.AreEqual(
+                Enum.GetNames(typeof(PortReuseMode)).OrderBy(x => x).ToArray(),
+                Enum.GetNames(typeof(Cosmos.PortReuseMode)).OrderBy(x => x).ToArray()
+            );
+
+            CollectionAssert.AreEqual(
+                Enum.GetValues(typeof(PortReuseMode)).Cast<int>().ToArray(),
+                Enum.GetValues(typeof(Cosmos.PortReuseMode)).Cast<int>().ToArray()
+            );
         }
 
         [TestMethod]
