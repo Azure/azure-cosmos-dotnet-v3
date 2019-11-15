@@ -243,7 +243,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 }
                 else
                 {
-                    queryPartitionProviderException = new UnexpectedQueryPartitionProviderException(
+                    queryPartitionProviderException = new ExpectedQueryPartitionProviderException(
                         serializedQueryExecutionInfo,
                         exception);
                 }
