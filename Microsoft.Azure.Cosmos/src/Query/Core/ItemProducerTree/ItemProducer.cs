@@ -89,6 +89,8 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         private bool hitException;
 
+        private bool firstMoveNext;
+
         /// <summary>
         /// Initializes a new instance of the ItemProducer class.
         /// </summary>
@@ -370,7 +372,8 @@ namespace Microsoft.Azure.Cosmos.Query
             this.PreviousContinuationToken = this.CurrentContinuationToken;
             this.CurrentContinuationToken = queryResponse.ContinuationToken;
             this.CurrentPage = queryResponse.CosmosElements.GetEnumerator();
-            this.IsAtBeginningOfPage = true;
+            this.IsAtBeginningOfPage = false;
+            this.firstMoveNext = true;
             this.itemsLeftInCurrentPage = queryResponse.CosmosElements.Count;
 
             return ItemProducer.IsSuccessResponse;
@@ -386,7 +389,16 @@ namespace Microsoft.Azure.Cosmos.Query
             bool movedNext = this.CurrentPage.MoveNext();
             CosmosElement originalCurrent = this.Current;
             this.Current = this.CurrentPage.Current;
-            this.IsAtBeginningOfPage = false;
+            if (this.firstMoveNext)
+            {
+                this.IsAtBeginningOfPage = true;
+            }
+            else
+            {
+                this.IsAtBeginningOfPage = false;
+            }
+
+            this.firstMoveNext = false;
 
             if (!movedNext || ((originalCurrent != null) && !this.equalityComparer.Equals(originalCurrent, this.Current)))
             {

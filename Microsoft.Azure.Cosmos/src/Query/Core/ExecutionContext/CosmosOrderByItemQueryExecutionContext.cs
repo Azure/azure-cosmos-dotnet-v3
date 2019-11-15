@@ -237,6 +237,12 @@ namespace Microsoft.Azure.Cosmos.Query
                 ItemProducerTree currentItemProducerTree = this.PopCurrentItemProducerTree();
                 try
                 {
+                    if (!currentItemProducerTree.HasMoreResults)
+                    {
+                        // This means there are no more items to drain
+                        break;
+                    }
+
                     OrderByQueryResult orderByQueryResult = new OrderByQueryResult(currentItemProducerTree.Current);
 
                     // Only add the payload, since other stuff is garbage from the caller's perspective.
