@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
     using System;
     using System.Net;
 
-    internal abstract class CosmosHttpException : Exception
+    internal abstract class CosmosHttpException : CosmosException
     {
         protected CosmosHttpException(HttpStatusCode statusCode)
             : this(statusCode, message: null, innerException: null)
@@ -20,11 +20,8 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
         }
 
         protected CosmosHttpException(HttpStatusCode statusCode, string message, Exception innerException)
-            : base(message: message, innerException: innerException)
+            : base(statusCode: statusCode, message: message, inner: innerException)
         {
-            this.StatusCode = statusCode;
         }
-
-        public HttpStatusCode StatusCode { get; }
     }
 }

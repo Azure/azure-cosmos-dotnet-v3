@@ -114,14 +114,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         TryCatch<CosmosQueryExecutionContext> tryCreateItemQueryExecutionContext = await this.TryCreateItemQueryExecutionContextAsync(cancellationToken);
                         if (!tryCreateItemQueryExecutionContext.Succeeded)
                         {
-                            // Failed to create pipeline (due to a bad request).
-                            return QueryResponseCore.CreateFailure(
-                                HttpStatusCode.BadRequest,
-                                subStatusCodes: null,
-                                errorMessage: tryCreateItemQueryExecutionContext.Exception.ToString(),
-                                requestCharge: 0,
-                                activityId: this.CosmosQueryContext.CorrelatedActivityId.ToString(),
-                                diagnostics: QueryResponseCore.EmptyDiagnostics);
+                            return QueryResponseFactory.CreateFromException(tryCreateItemQueryExecutionContext.Exception);
                         }
 
                         this.innerExecutionContext = tryCreateItemQueryExecutionContext.Result;
@@ -145,14 +138,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         TryCatch<CosmosQueryExecutionContext> tryCreateItemQueryExecutionContext = await this.TryCreateItemQueryExecutionContextAsync(cancellationToken);
                         if (!tryCreateItemQueryExecutionContext.Succeeded)
                         {
-                            // Failed to create pipeline (due to a bad request).
-                            return QueryResponseCore.CreateFailure(
-                                HttpStatusCode.BadRequest,
-                                subStatusCodes: null,
-                                errorMessage: tryCreateItemQueryExecutionContext.Exception.ToString(),
-                                requestCharge: 0,
-                                activityId: this.CosmosQueryContext.CorrelatedActivityId.ToString(),
-                                diagnostics: QueryResponseCore.EmptyDiagnostics);
+                            return QueryResponseFactory.CreateFromException(tryCreateItemQueryExecutionContext.Exception);
                         }
 
                         this.innerExecutionContext = tryCreateItemQueryExecutionContext.Result;
