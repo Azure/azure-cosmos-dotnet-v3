@@ -70,7 +70,6 @@ namespace Microsoft.Azure.Cosmos.Query
                 maxConcurrency: queryRequestOptions.MaxConcurrency,
                 maxItemCount: queryRequestOptions.MaxItemCount,
                 maxBufferedItemCount: queryRequestOptions.MaxBufferedItemCount,
-                responseContinuationTokenLimitInKb: queryRequestOptions.ResponseContinuationTokenLimitInKb,
                 partitionKey: queryRequestOptions.PartitionKey,
                 properties: queryRequestOptions.Properties,
                 partitionedQueryExecutionInfo: partitionedQueryExecutionInfo,
