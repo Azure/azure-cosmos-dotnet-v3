@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
 {
     using System;
 
-    internal sealed class BadRequestException : CosmosException
+    internal sealed class BadRequestException : CosmosHttpException
     {
         public BadRequestException()
             : base(statusCode: System.Net.HttpStatusCode.BadRequest, message: null)
@@ -18,8 +18,8 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
         {
         }
 
-        public BadRequestException(string message, Exception inner)
-            : base(statusCode: System.Net.HttpStatusCode.BadRequest, message: message, inner: inner)
+        public BadRequestException(string message, Exception innerException)
+            : base(statusCode: System.Net.HttpStatusCode.BadRequest, message: message, innerException: innerException)
         {
         }
     }
