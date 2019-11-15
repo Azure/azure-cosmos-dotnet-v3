@@ -9,6 +9,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.Cosmos.Test
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.Cosmos.EmulatorTests", "Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.EmulatorTests\Microsoft.Azure.Cosmos.EmulatorTests.csproj", "{F16D0FDA-36A1-420C-BA6B-BB30FA62B28D}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.Cosmos.Performance.Tests", "Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Performance.Tests\Microsoft.Azure.Cosmos.Performance.Tests.csproj", "{0392A590-68EF-4283-94D8-33F350BEC9BF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Cover|Any CPU = Cover|Any CPU
@@ -55,6 +57,18 @@ Global
 		{F16D0FDA-36A1-420C-BA6B-BB30FA62B28D}.Release|Any CPU.Build.0 = Release|Any CPU
 		{F16D0FDA-36A1-420C-BA6B-BB30FA62B28D}.Release|x64.ActiveCfg = Release|Any CPU
 		{F16D0FDA-36A1-420C-BA6B-BB30FA62B28D}.Release|x64.Build.0 = Release|Any CPU
+		{0392A590-68EF-4283-94D8-33F350BEC9BF}.Cover|Any CPU.ActiveCfg = Debug|Any CPU
+		{0392A590-68EF-4283-94D8-33F350BEC9BF}.Cover|Any CPU.Build.0 = Debug|Any CPU
+		{0392A590-68EF-4283-94D8-33F350BEC9BF}.Cover|x64.ActiveCfg = Debug|Any CPU
+		{0392A590-68EF-4283-94D8-33F350BEC9BF}.Cover|x64.Build.0 = Debug|Any CPU
+		{0392A590-68EF-4283-94D8-33F350BEC9BF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0392A590-68EF-4283-94D8-33F350BEC9BF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0392A590-68EF-4283-94D8-33F350BEC9BF}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{0392A590-68EF-4283-94D8-33F350BEC9BF}.Debug|x64.Build.0 = Debug|Any CPU
+		{0392A590-68EF-4283-94D8-33F350BEC9BF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0392A590-68EF-4283-94D8-33F350BEC9BF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0392A590-68EF-4283-94D8-33F350BEC9BF}.Release|x64.ActiveCfg = Release|Any CPU
+		{0392A590-68EF-4283-94D8-33F350BEC9BF}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
