@@ -22,7 +22,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             this.cosmosQueryContext = cosmosQueryContext;
             this.cosmosQueryExecutionContextFactory = cosmosQueryExecutionContextFactory;
             this.currentCosmosQueryExecutionContext = cosmosQueryExecutionContextFactory();
-            this.alreadyRetried = false;
         }
 
         public override bool IsDone => this.currentCosmosQueryExecutionContext.IsDone;

@@ -152,13 +152,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                 allowNonValueAggregateQuery: allowNonValueAggregateQuery,
                 correlatedActivityId: new Guid("221FC86C-1825-4284-B10E-A6029652CCA6"));
 
-            TryCatch<CosmosQueryExecutionContext> tryCreateContext = await CosmosQueryExecutionContextFactory.TryCreateAsync(
+            CosmosQueryExecutionContext context = CosmosQueryExecutionContextFactory.Create(
                 cosmosQueryContext,
-                inputParameters,
-                cancellationtoken);
-            Assert.IsTrue(tryCreateContext.Succeeded);
+                inputParameters);
 
-            await tryCreateContext.Result.ExecuteNextAsync(cancellationtoken);
+            await context.ExecuteNextAsync(cancellationtoken);
         }
 
         private async Task<(IList<IDocumentQueryExecutionComponent> components, QueryResponseCore response)> GetAllExecutionComponents()

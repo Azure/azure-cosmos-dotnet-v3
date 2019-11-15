@@ -189,7 +189,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     inputParameters.MaxConcurrency,
                     inputParameters.MaxItemCount,
                     inputParameters.MaxBufferedItemCount,
-                    inputParameters.ResponseContinuationTokenLimitInKb,
                     inputParameters.PartitionKey,
                     inputParameters.Properties,
                     inputParameters.PartitionedQueryExecutionInfo,
@@ -325,10 +324,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
         public sealed class InputParameters
         {
-            private const int DefaultMaxConcurrency = 4;
+            private const int DefaultMaxConcurrency = 0;
             private const int DefaultMaxItemCount = 1000;
             private const int DefaultMaxBufferedItemCount = 1000;
-            private const int DefaultResponseContinuationTokenLimitInKb = 4;
             private const ExecutionEnvironment DefaultExecutionEnvironment = ExecutionEnvironment.Client;
 
             public InputParameters(
@@ -337,7 +335,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 int? maxConcurrency,
                 int? maxItemCount,
                 int? maxBufferedItemCount,
-                int? responseContinuationTokenLimitInKb,
                 PartitionKey? partitionKey,
                 IReadOnlyDictionary<string, object> properties,
                 PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
@@ -372,13 +369,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 }
                 this.MaxBufferedItemCount = resolvedMaxBufferedItemCount;
 
-                int resolvedResponseContinuationTokenLimitInKb = responseContinuationTokenLimitInKb.GetValueOrDefault(InputParameters.DefaultResponseContinuationTokenLimitInKb);
-                if (resolvedResponseContinuationTokenLimitInKb < 0)
-                {
-                    resolvedResponseContinuationTokenLimitInKb = int.MaxValue;
-                }
-                this.ResponseContinuationTokenLimitInKb = resolvedResponseContinuationTokenLimitInKb;
-
                 this.PartitionKey = partitionKey;
                 this.Properties = properties;
                 this.PartitionedQueryExecutionInfo = partitionedQueryExecutionInfo;
@@ -393,7 +383,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             public int MaxItemCount { get; }
             public int MaxBufferedItemCount { get; }
             public PartitionKey? PartitionKey { get; }
-            public int ResponseContinuationTokenLimitInKb { get; }
             public IReadOnlyDictionary<string, object> Properties { get; }
             public PartitionedQueryExecutionInfo PartitionedQueryExecutionInfo { get; }
             public ExecutionEnvironment ExecutionEnvironment { get; }
