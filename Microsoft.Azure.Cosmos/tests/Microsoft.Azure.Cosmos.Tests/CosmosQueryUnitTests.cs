@@ -135,7 +135,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 maxConcurrency: queryRequestOptions?.MaxConcurrency,
                 maxItemCount: queryRequestOptions?.MaxItemCount,
                 maxBufferedItemCount: queryRequestOptions?.MaxBufferedItemCount,
-                responseContinuationTokenLimitInKb: null,
                 partitionKey: queryRequestOptions?.PartitionKey,
                 properties: queryRequestOptions?.Properties,
                 partitionedQueryExecutionInfo: null,
