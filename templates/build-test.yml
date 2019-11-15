@@ -41,7 +41,7 @@ jobs:
     condition: succeeded()
     inputs:
       command: run
-      projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/*.csproj'
+      projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Performance.Tests/*.csproj'
       arguments: --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }} -c Release -- -j short -f * -m --allStats --join
       publishTestResults: true
       nugetConfigPath: NuGet.config
