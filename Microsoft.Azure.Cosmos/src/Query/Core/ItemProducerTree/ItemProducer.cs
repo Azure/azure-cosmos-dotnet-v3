@@ -303,7 +303,24 @@ namespace Microsoft.Azure.Cosmos.Query
                             subStatusCodes: null,
                             errorMessage: "Request Rate Too Large",
                             requestCharge: 0,
-                            activityId: Guid.Empty.ToString(),
+                            activityId: QueryResponseCore.EmptyGuidString,
+                            diagnostics: QueryResponseCore.EmptyDiagnostics);
+                    }
+                }
+
+                // Can not simulate an empty page on the first page, since we would return a null continuation token, which will end the query early.
+                if ((this.testFlags != null) && this.testFlags.SimulateEmptyPages && (this.BackendContinuationToken != null))
+                {
+                    Random random = new Random();
+                    if (random.Next() % 2 == 0)
+                    {
+                        feedResponse = QueryResponseCore.CreateSuccess(
+                            result: new List<CosmosElement>(),
+                            requestCharge: 0,
+                            activityId: QueryResponseCore.EmptyGuidString,
+                            responseLengthBytes: 0,
+                            disallowContinuationTokenMessage: null,
+                            continuationToken: this.BackendContinuationToken,
                             diagnostics: QueryResponseCore.EmptyDiagnostics);
                     }
                 }

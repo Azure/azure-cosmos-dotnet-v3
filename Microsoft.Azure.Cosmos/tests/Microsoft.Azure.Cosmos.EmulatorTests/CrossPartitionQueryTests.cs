@@ -1409,7 +1409,51 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         MaxBufferedItemCount = 7000,
                         MaxConcurrency = 2,
                         MaxItemCount = maxItemCount,
-                        TestSettings = new TestSettings(simulate429s: true)
+                        TestSettings = new TestSettings(simulate429s: true, simulateEmptyPages: false)
+                    };
+
+                    List<JToken> queryResults = await CrossPartitionQueryTests.RunQuery<JToken>(
+                        container,
+                        query,
+                        feedOptions);
+
+                    Assert.AreEqual(
+                        documents.Count(),
+                        queryResults.Count,
+                        $"query: {query} failed with {nameof(maxItemCount)}: {maxItemCount}");
+                }
+            }
+        }
+
+        [TestMethod]
+        public async Task TestEmptyPages()
+        {
+            int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+            uint numberOfDocuments = 100;
+            QueryOracle.QueryOracleUtil util = new QueryOracle.QueryOracle2(seed);
+            IEnumerable<string> documents = util.GetDocuments(numberOfDocuments);
+
+            await this.CreateIngestQueryDelete(
+                ConnectionModes.Direct,
+                CollectionTypes.SinglePartition /*| CollectionTypes.MultiPartition*/,
+                documents,
+                this.TestEmptyPagesHelper);
+        }
+
+        private async Task TestEmptyPagesHelper(
+            Container container,
+            IEnumerable<Document> documents)
+        {
+            foreach (int maxItemCount in new int[] { 10, 100 })
+            {
+                foreach (string query in new string[] { "SELECT c.id FROM c", "SELECT c._ts, c.id FROM c ORDER BY c._ts" })
+                {
+                    QueryRequestOptions feedOptions = new QueryRequestOptions
+                    {
+                        MaxBufferedItemCount = 7000,
+                        MaxConcurrency = 2,
+                        MaxItemCount = maxItemCount,
+                        TestSettings = new TestSettings(simulate429s: false, simulateEmptyPages: true)
                     };
 
                     List<JToken> queryResults = await CrossPartitionQueryTests.RunQuery<JToken>(
