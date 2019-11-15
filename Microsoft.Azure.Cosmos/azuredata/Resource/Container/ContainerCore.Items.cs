@@ -261,7 +261,7 @@ namespace Azure.Cosmos
         /// <summary>
         /// Used in the compute gateway to support legacy gateway interface.
         /// </summary>
-        internal async Task<(PartitionedQueryExecutionInfo, (bool, QueryIterator))> TryExecuteQueryAsync(
+        internal async Task<((Exception, PartitionedQueryExecutionInfo), (bool, QueryIterator))> TryExecuteQueryAsync(
             QueryFeatures supportedQueryFeatures,
             QueryDefinition queryDefinition,
             string continuationToken,
@@ -306,12 +306,17 @@ namespace Azure.Cosmos
 
             QueryPlanHandler queryPlanHandler = new QueryPlanHandler(this.queryClient);
 
-            (PartitionedQueryExecutionInfo partitionedQueryExecutionInfo, bool supported) = await queryPlanHandler.GetQueryInfoAndIfSupportedAsync(
+            ((Exception exception, PartitionedQueryExecutionInfo partitionedQueryExecutionInfo), bool supported) = await queryPlanHandler.TryGetQueryInfoAndIfSupportedAsync(
                 supportedQueryFeatures,
                 queryDefinition.ToSqlQuerySpec(),
                 partitionKeyDefinition,
                 requestOptions.PartitionKey.HasValue,
                 cancellationToken);
+
+            if (exception != null)
+            {
+                return ((exception, null), (false, null));
+            }
 
             QueryIterator queryIterator;
             if (supported)
@@ -331,7 +336,7 @@ namespace Azure.Cosmos
                 queryIterator = null;
             }
 
-            return (partitionedQueryExecutionInfo, (supported, queryIterator));
+            return ((null, partitionedQueryExecutionInfo), (supported, queryIterator));
         }
 
         public override AsyncPageable<T> GetItemQueryIterator<T>(
@@ -443,7 +448,7 @@ namespace Azure.Cosmos
         }
 
 #if PREVIEW
-        public override Batch CreateBatch(PartitionKey partitionKey)
+        public override TransactionalBatch CreateTransactionalBatch(PartitionKey partitionKey)
         {
             return new BatchCore(this, partitionKey);
         }
@@ -632,15 +637,13 @@ namespace Azure.Cosmos
                 string[] tokens = await this.GetPartitionKeyPathTokensAsync(cancellation);
                 for (int i = 0; i < tokens.Length - 1; i++)
                 {
-                    pathTraversal = pathTraversal[tokens[i]] as CosmosObject;
-                    if (pathTraversal == null)
+                    if (!pathTraversal.TryGetValue(tokens[i], out pathTraversal))
                     {
                         return PartitionKey.None;
                     }
                 }
 
-                CosmosElement partitionKeyValue = pathTraversal[tokens[tokens.Length - 1]];
-                if (partitionKeyValue == null)
+                if (!pathTraversal.TryGetValue(tokens[tokens.Length - 1], out CosmosElement partitionKeyValue))
                 {
                     return PartitionKey.None;
                 }

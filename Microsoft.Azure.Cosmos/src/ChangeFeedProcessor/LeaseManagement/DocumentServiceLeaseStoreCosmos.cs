@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             using (Stream itemStream = CosmosContainerExtensions.DefaultJsonSerializer.ToStream(containerDocument))
             {
-                using (ResponseMessage responseMessage = await this.container.CreateItemStreamAsync(
+                using (var responseMessage = await this.container.CreateItemStreamAsync(
                     itemStream,
                     this.requestOptionsFactory.GetPartitionKey(markerDocId)).ConfigureAwait(false))
                 {

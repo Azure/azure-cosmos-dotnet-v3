@@ -11,6 +11,9 @@ namespace Microsoft.Azure.Cosmos.Query
     using OperationType = Documents.OperationType;
     using PartitionKeyDefinition = Documents.PartitionKeyDefinition;
     using ResourceType = Documents.ResourceType;
+#if AZURECORE
+    using global::Azure.Cosmos;
+#endif
 
     internal static class QueryPlanRetriever
     {

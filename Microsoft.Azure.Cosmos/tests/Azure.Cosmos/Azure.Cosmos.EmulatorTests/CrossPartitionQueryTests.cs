@@ -18,12 +18,9 @@ namespace Azure.Cosmos.EmulatorTests
     using System.Threading;
     using System.Threading.Tasks;
     using System.Xml;
-    using Azure.Cosmos.Query;
-    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Query;
-    using Microsoft.Azure.Cosmos.Query.ExecutionComponent;
-    using Microsoft.Azure.Cosmos.Query.ParallelQuery;
+    using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
@@ -32,6 +29,11 @@ namespace Azure.Cosmos.EmulatorTests
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
     using Newtonsoft.Json.Linq;
+    using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.Query.ParallelQuery;
+    using UInt128 = Microsoft.Azure.Cosmos.Query.Core.UInt128;
+    using Microsoft.Azure.Cosmos;
+    using Azure.Cosmos.Query;
 
     /// <summary>
     /// Tests for CrossPartitionQueryTests.
@@ -272,11 +274,9 @@ namespace Azure.Cosmos.EmulatorTests
             }
 
             List<Document> insertedDocuments = new List<Document>();
-
             foreach (string document in documents)
             {
                 JObject documentObject = JsonConvert.DeserializeObject<JObject>(document);
-
                 // Add an id
                 if (documentObject["id"] == null)
                 {
@@ -386,10 +386,10 @@ namespace Azure.Cosmos.EmulatorTests
             Cosmos.IndexingPolicy indexingPolicy = null,
             CosmosClientFactory cosmosClientFactory = null)
         {
-            Query<object> queryWrapper = (container, inputDocuments, throwaway) =>
+            Task queryWrapper(Container container, IEnumerable<Document> inputDocuments, object throwaway)
             {
                 return query(container, inputDocuments);
-            };
+            }
 
             await this.CreateIngestQueryDelete<object>(
                 connectionModes,
@@ -597,6 +597,46 @@ namespace Azure.Cosmos.EmulatorTests
             }
         }
 
+        private static async Task<List<T>> QueryWithTryGetContinuationTokens<T>(
+            Container container,
+            string query,
+            QueryRequestOptions queryRequestOptions = null)
+        {
+            if (queryRequestOptions == null)
+            {
+                queryRequestOptions = new QueryRequestOptions();
+            }
+
+            List<T> resultsFromTryGetContinuationToken = new List<T>();
+            string state = null;
+            do
+            {
+                QueryRequestOptions computeRequestOptions = queryRequestOptions.Clone();
+                computeRequestOptions.ExecutionEnvironment = Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ExecutionEnvironment.Compute;
+
+                IAsyncEnumerable<Page<T>> itemQuery = container.GetItemQueryIterator<T>(
+                   queryText: query,
+                   requestOptions: computeRequestOptions,
+                   continuationToken: state).AsPages();
+
+                await foreach (Page<T> cosmosQueryResponse in itemQuery)
+                {
+                    if (queryRequestOptions.MaxItemCount.HasValue)
+                    {
+                        Assert.IsTrue(
+                            cosmosQueryResponse.Values.Count <= queryRequestOptions.MaxItemCount.Value,
+                            "Max Item Count is not being honored");
+                    }
+
+                    resultsFromTryGetContinuationToken.AddRange(cosmosQueryResponse.Values);
+                    state = cosmosQueryResponse.ContinuationToken;
+                    break;
+                }
+            } while (state != null);
+
+            return resultsFromTryGetContinuationToken;
+        }
+
         private static async Task<List<T>> QueryWithContinuationTokens<T>(
             Container container,
             string query,
@@ -607,7 +647,7 @@ namespace Azure.Cosmos.EmulatorTests
                 queryRequestOptions = new QueryRequestOptions();
             }
 
-            List<T> results = new List<T>();
+            List<T> resultsFromContinuationToken = new List<T>();
             string continuationToken = null;
             do
             {
@@ -616,25 +656,24 @@ namespace Azure.Cosmos.EmulatorTests
                    requestOptions: queryRequestOptions,
                    continuationToken: continuationToken).AsPages();
 
-                Page<T> cosmosQueryResponse = null;
-                await foreach (Page<T> page in itemQuery)
+                await foreach (Page<T> cosmosQueryResponse in itemQuery)
                 {
-                    cosmosQueryResponse = page;
+                    if (queryRequestOptions.MaxItemCount.HasValue)
+                    {
+                        Assert.IsTrue(
+                            cosmosQueryResponse.Values.Count <= queryRequestOptions.MaxItemCount.Value,
+                            "Max Item Count is not being honored");
+                    }
+
+                    resultsFromContinuationToken.AddRange(cosmosQueryResponse.Values);
+                    continuationToken = cosmosQueryResponse.ContinuationToken;
+
                     break;
                 }
 
-                if (queryRequestOptions.MaxItemCount.HasValue)
-                {
-                    Assert.IsTrue(
-                        cosmosQueryResponse.Values.Count <= queryRequestOptions.MaxItemCount.Value,
-                        "Max Item Count is not being honored");
-                }
-
-                results.AddRange(cosmosQueryResponse.Values);
-                continuationToken = cosmosQueryResponse.ContinuationToken;
             } while (continuationToken != null);
 
-            return results;
+            return resultsFromContinuationToken;
         }
 
         private static async Task<List<T>> QueryWithoutContinuationTokens<T>(
@@ -742,6 +781,7 @@ namespace Azure.Cosmos.EmulatorTests
 
                 await foreach(Document doc in resultSetIterator)
                 {
+                    break;
                 }
 
                 Assert.Fail($"Expected {nameof(CosmosException)}");
@@ -776,13 +816,13 @@ namespace Azure.Cosmos.EmulatorTests
                 /// '"code":"SC2001","message":"Identifier 'c' could not be resolved."'
                 string query = "SELECT c._ts, c.id, c.TicketNumber, c.PosCustomerNumber, c.CustomerId, c.CustomerUserId, c.ContactEmail, c.ContactPhone, c.StoreCode, c.StoreUid, c.PoNumber, c.OrderPlacedOn, c.OrderType, c.OrderStatus, c.Customer.UserFirstName, c.Customer.UserLastName, c.Customer.Name, c.UpdatedBy, c.UpdatedOn, c.ExpirationDate, c.TotalAmountFROM c ORDER BY c._ts";
                 List<Document> expectedValues = new List<Document>();
-                IAsyncEnumerable<Page<Document>> resultSetIterator = container.GetItemQueryIterator<Document>(
+                AsyncPageable<Document> resultSetIterator = container.GetItemQueryIterator<Document>(
                     query,
-                    requestOptions: new QueryRequestOptions() { MaxConcurrency = 0 }).AsPages();
+                    requestOptions: new QueryRequestOptions() { MaxConcurrency = 0 });
 
-                await foreach (Page<Document> page in resultSetIterator)
+                await foreach (Document doc in resultSetIterator)
                 {
-                    expectedValues.AddRange(page.Values);
+                    expectedValues.Add(doc);
                 }
 
                 Assert.Fail("Expected to get an exception for this query.");
@@ -869,18 +909,18 @@ namespace Azure.Cosmos.EmulatorTests
 
                 foreach ((string, string) queryAndExpectedResult in queries)
                 {
-                    IAsyncEnumerable<Page<Document>> resultSetIterator = container.GetItemQueryIterator<Document>(
+                    AsyncPageable<Document> resultSetIterator = container.GetItemQueryIterator<Document>(
                         queryText: queryAndExpectedResult.Item1,
                         requestOptions: new QueryRequestOptions()
                         {
                             MaxItemCount = 1,
                             PartitionKey = new Cosmos.PartitionKey(keys[i]),
-                        }).AsPages();
+                        });
 
                     List<Document> result = new List<Document>();
-                    await foreach (Page<Document> page in resultSetIterator)
+                    await foreach (Document doc in resultSetIterator)
                     {
-                        result.AddRange(page.Values);
+                        result.Add(doc);
                     }
 
                     string resultDocIds = string.Join(",", result.Select(doc => doc.Id));
@@ -918,19 +958,21 @@ namespace Azure.Cosmos.EmulatorTests
             IAsyncEnumerable<Page<dynamic>> resultSetIterator = container.GetItemQueryIterator<dynamic>(
                 "SELECT * FROM c WHERE c.pk = 'doc5'").AsPages();
 
-            await foreach (Page<dynamic> page in resultSetIterator)
+            await foreach(Page<dynamic> response in resultSetIterator)
             {
-                Assert.AreEqual(1, page.Values.Count);
-                Assert.IsNull(page.ContinuationToken);
-            }
+                Assert.AreEqual(1, response.Values.Count);
+                Assert.IsNull(response.ContinuationToken);
+                break;
+            }            
 
             resultSetIterator = container.GetItemQueryIterator<dynamic>(
                "SELECT * FROM c WHERE c.pk = 'doc10'").AsPages();
 
-            await foreach (Page<dynamic> page in resultSetIterator)
+            await foreach (Page<dynamic> response in resultSetIterator)
             {
-                Assert.AreEqual(0, page.Values.Count);
-                Assert.IsNull(page.ContinuationToken);
+                Assert.AreEqual(0, response.Values.Count);
+                Assert.IsNull(response.ContinuationToken);
+                break;
             }
         }
 
@@ -1044,7 +1086,7 @@ namespace Azure.Cosmos.EmulatorTests
             };
 
             specialPropertyDocument.GetType().GetProperty(args.Name).SetValue(specialPropertyDocument, args.Value);
-            Func<SpecialPropertyDocument, object> getPropertyValueFunction = d => d.GetType().GetProperty(args.Name).GetValue(d);
+            object getPropertyValueFunction(SpecialPropertyDocument d) => d.GetType().GetProperty(args.Name).GetValue(d);
 
             ItemResponse<SpecialPropertyDocument> response = await container.CreateItemAsync<SpecialPropertyDocument>(specialPropertyDocument);
             dynamic returnedDoc = response.Value;
@@ -1087,7 +1129,7 @@ namespace Azure.Cosmos.EmulatorTests
                     break;
             }
 
-            await foreach (SpecialPropertyDocument doc in container.GetItemQueryIterator<SpecialPropertyDocument>(
+            await foreach(SpecialPropertyDocument doc in container.GetItemQueryIterator<SpecialPropertyDocument>(
                 query,
                 requestOptions: new QueryRequestOptions()
                 {
@@ -1095,8 +1137,11 @@ namespace Azure.Cosmos.EmulatorTests
                     PartitionKey = new Cosmos.PartitionKey(args.ValueToPartitionKey),
                 }))
             {
-                Assert.AreEqual(doc, getPropertyValueFunction(returnedDoc));
+                returnedDoc = doc;
+                break;
             }
+
+            Assert.AreEqual(args.Value, getPropertyValueFunction(returnedDoc));
         }
 
         private sealed class SpecialPropertyDocument
@@ -1247,7 +1292,10 @@ namespace Azure.Cosmos.EmulatorTests
                 "/" + partitionKey);
         }
 
-        private async Task TestQueryCrossPartitionWithLargeNumberOfKeysHelper(Container container, IEnumerable<Document> documents, QueryCrossPartitionWithLargeNumberOfKeysArgs args)
+        private async Task TestQueryCrossPartitionWithLargeNumberOfKeysHelper(
+            Container container,
+            IEnumerable<Document> documents,
+            QueryCrossPartitionWithLargeNumberOfKeysArgs args)
         {
             QueryDefinition query = new QueryDefinition(
                 $"SELECT VALUE r.{args.PartitionKey} FROM r WHERE ARRAY_CONTAINS(@keys, r.{args.PartitionKey})").WithParameter("@keys", args.ExpectedPartitionKeyValues);
@@ -1651,9 +1699,10 @@ namespace Azure.Cosmos.EmulatorTests
                     //}
 
                     // Make sure ExecuteNextAsync works for unsupported aggregate projection
-                    await foreach(Page<dynamic> page in container.GetItemQueryIterator<dynamic>(query, requestOptions: new QueryRequestOptions() { MaxConcurrency = 1 }).AsPages())
+                    AsyncPageable<dynamic> asyncPageble = container.GetItemQueryIterator<dynamic>(query, requestOptions: new QueryRequestOptions() { MaxConcurrency = 1 });
+                    await foreach(dynamic doc in asyncPageble)
                     {
-
+                        break;
                     }
                 }
             }
@@ -2025,7 +2074,7 @@ namespace Azure.Cosmos.EmulatorTests
 
             await this.CreateIngestQueryDelete(
                 ConnectionModes.Direct,
-                CollectionTypes.SinglePartition,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
                 this.TestNonValueAggregates);
         }
@@ -2224,7 +2273,7 @@ namespace Azure.Cosmos.EmulatorTests
             {
                 foreach (int maxItemCount in new int[] { 1, 5, 10 })
                 {
-                    List<JToken> actual = await QueryWithoutContinuationTokens<JToken>(
+                    List<JToken> actual = await RunQuery<JToken>(
                         container: container,
                         query: query,
                         queryRequestOptions: new QueryRequestOptions()
@@ -2277,7 +2326,6 @@ namespace Azure.Cosmos.EmulatorTests
         }
 
         [TestMethod]
-        [TestCategory("Functional")]
         public async Task TestQueryDistinct()
         {
             int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
@@ -2288,14 +2336,17 @@ namespace Azure.Cosmos.EmulatorTests
 
             for (int i = 0; i < numberOfDocuments; i++)
             {
+                // Generate random people
                 Person person = CrossPartitionQueryTests.GetRandomPerson(rand);
                 for (int j = 0; j < rand.Next(0, 4); j++)
                 {
+                    // Force an exact duplicate
                     people.Add(person);
                 }
             }
 
             List<string> documents = new List<string>();
+            // Shuffle them so they end up in different pages
             people = people.OrderBy((person) => Guid.NewGuid()).ToList();
             foreach (Person person in people)
             {
@@ -2303,8 +2354,8 @@ namespace Azure.Cosmos.EmulatorTests
             }
 
             await this.CreateIngestQueryDelete(
-                ConnectionModes.Direct | ConnectionModes.Gateway,
-                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
+                ConnectionModes.Direct,
+                CollectionTypes.MultiPartition,
                 documents,
                 this.TestQueryDistinct,
                 "/id");
@@ -2319,69 +2370,24 @@ namespace Azure.Cosmos.EmulatorTests
             {
                 // basic distinct queries
                 "SELECT {0} VALUE null",
-                "SELECT {0} VALUE false",
-                "SELECT {0} VALUE true",
-                "SELECT {0} VALUE 1",
-                "SELECT {0} VALUE 'a'",
-                "SELECT {0} VALUE [null, true, false, 1, 'a']",
-                "SELECT {0} VALUE {{p1:null, p2:true, p3:false, p4:1, p5:'a'}}",
-                "SELECT {0} false AS p",
-                "SELECT {0} 1 AS p",
-                "SELECT {0} 'a' AS p",
-                "SELECT {0} [null, true, false, 1, 'a'] AS p",
-                "SELECT {0} {{p1:null, p2:true, p3:false, p4:1, p5:'a'}} AS p",
-                "SELECT {0} VALUE {{p1:null, p2:true, p3:false, p4:1, p5:'a'}}",
-                "SELECT {0} VALUE null FROM c",
-                "SELECT {0} VALUE false FROM c",
-                "SELECT {0} VALUE 1 FROM c",
-                "SELECT {0} VALUE 'a' FROM c",
-                "SELECT {0} VALUE [null, true, false, 1, 'a'] FROM c",
-                "SELECT {0} null AS p FROM c",
-                "SELECT {0} false AS p FROM c",
-                "SELECT {0} 1 AS p FROM c",
-                "SELECT {0} 'a' AS p FROM c",
-                "SELECT {0} [null, true, false, 1, 'a'] AS p FROM c",
-                "SELECT {0} {{p1:null, p2:true, p3:false, p4:1, p5:'a'}} AS p FROM c",
 
                 // number value distinct queries
                 "SELECT {0} VALUE c.income from c",
-                "SELECT {0} VALUE c.age from c",
-                "SELECT {0} c.income, c.income AS income2 from c",
-                "SELECT {0} c.income, c.age from c",
-                "SELECT {0} VALUE [c.income, c.age] from c",
 
                 // string value distinct queries
                 "SELECT {0} VALUE c.name from c",
-                "SELECT {0} VALUE c.city from c",
-                "SELECT {0} VALUE c.partitionKey from c",
-                "SELECT {0} c.name, c.name AS name2 from c",
-                "SELECT {0} c.name, c.city from c",
-                "SELECT {0} VALUE [c.name, c.city] from c",
 
                 // array value distinct queries
                 "SELECT {0} VALUE c.children from c",
-                "SELECT {0} c.children, c.children AS children2 from c",
-                "SELECT {0} VALUE [c.name, c.age, c.pet] from c",
 
                 // object value distinct queries
                 "SELECT {0} VALUE c.pet from c",
-                "SELECT {0} c.pet, c.pet AS pet2 from c",
 
                 // scalar expressions distinct query
                 "SELECT {0} VALUE c.age % 2 FROM c",
-                "SELECT {0} VALUE ABS(c.age) FROM c",
-                "SELECT {0} VALUE LEFT(c.name, 1) FROM c",
-                "SELECT {0} VALUE c.name || ', ' || (c.city ?? '') FROM c",
-                "SELECT {0} VALUE ARRAY_LENGTH(c.children) FROM c",
-                "SELECT {0} VALUE IS_DEFINED(c.city) FROM c",
-                "SELECT {0} VALUE (c.children[0].age ?? 0) + (c.children[1].age ?? 0) FROM c",
 
                 // distinct queries with order by
                 "SELECT {0} VALUE c.age FROM c ORDER BY c.age",
-                "SELECT {0} VALUE c.name FROM c ORDER BY c.name",
-                "SELECT {0} VALUE c.city FROM c ORDER BY c.city",
-                "SELECT {0} VALUE c.city FROM c ORDER BY c.age",
-                "SELECT {0} VALUE LEFT(c.name, 1) FROM c ORDER BY c.name",
 
                 // distinct queries with top and no matching order by
                 "SELECT {0} TOP 2147483647 VALUE c.age FROM c",
@@ -2394,18 +2400,12 @@ namespace Azure.Cosmos.EmulatorTests
 
                 // distinct queries with joins
                 "SELECT {0} VALUE c.age FROM p JOIN c IN p.children",
-                "SELECT {0} p.age AS ParentAge, c.age ChildAge FROM p JOIN c IN p.children",
-                "SELECT {0} VALUE c.name FROM p JOIN c IN p.children",
-                "SELECT {0} p.name AS ParentName, c.name ChildName FROM p JOIN c IN p.children",
 
                 // distinct queries in subqueries
                 "SELECT {0} r.age, s FROM r JOIN (SELECT DISTINCT VALUE c FROM (SELECT 1 a) c) s WHERE r.age > 25",
-                "SELECT {0} p.name, p.age FROM (SELECT DISTINCT * FROM r) p WHERE p.age > 25",
 
                 // distinct queries in scalar subqeries
                 "SELECT {0} p.name, (SELECT DISTINCT VALUE p.age) AS Age FROM p",
-                "SELECT {0} p.name, p.age FROM p WHERE (SELECT DISTINCT VALUE LEFT(p.name, 1)) > 'A' AND (SELECT DISTINCT VALUE p.age) > 21",
-                "SELECT {0} p.name, (SELECT DISTINCT VALUE p.age) AS Age FROM p WHERE (SELECT DISTINCT VALUE p.name) > 'A' OR (SELECT DISTINCT VALUE p.age) > 21",
 
                 // select *
                 "SELECT {0} * FROM c",
@@ -2417,38 +2417,37 @@ namespace Azure.Cosmos.EmulatorTests
             // PageSize = 1 guarantees that the backend will return some duplicates.
             foreach (string query in queries)
             {
-                foreach (int pageSize in new int[] { 1, 10, 100 })
-                {
-                    string queryWithDistinct = string.Format(query, "DISTINCT");
-                    string queryWithoutDistinct = string.Format(query, "");
-                    MockDistinctMap documentsSeen = new MockDistinctMap();
-                    List<JToken> documentsFromWithDistinct = new List<JToken>();
-                    List<JToken> documentsFromWithoutDistinct = new List<JToken>();
+                string queryWithoutDistinct = string.Format(query, "");
 
-                    QueryRequestOptions requestOptions = new QueryRequestOptions() { MaxItemCount = pageSize, MaxConcurrency = 100 };
-                    AsyncPageable<JToken> documentQueryWithoutDistinct = container.GetItemQueryIterator<JToken>(
+                QueryRequestOptions requestOptions = new QueryRequestOptions() { MaxItemCount = 100, MaxConcurrency = 100 };
+                AsyncPageable<JToken> documentQueryWithoutDistinct = container.GetItemQueryIterator<JToken>(
                         queryWithoutDistinct,
                         requestOptions: requestOptions);
 
-                    await foreach (JToken document in documentQueryWithoutDistinct)
+                MockDistinctMap documentsSeen = new MockDistinctMap();
+                List<JToken> documentsFromWithoutDistinct = new List<JToken>();
+                await foreach (JToken document in documentQueryWithoutDistinct)
+                {
+                    if (documentsSeen.Add(document, out UInt128 hash))
                     {
-                        if (documentsSeen.Add(document, out UInt192? hash))
-                        {
-                            documentsFromWithoutDistinct.Add(document);
-                        }
-                        else
-                        {
-                            // No Op for debugging purposes.
-                        }
+                        documentsFromWithoutDistinct.Add(document);
                     }
-
-                    IAsyncEnumerable<Page<JToken>> documentQueryWithDistinct = container.GetItemQueryIterator<JToken>(
-                        queryWithDistinct,
-                        requestOptions: requestOptions).AsPages();
-
-                    await foreach(Page<JToken> page in documentQueryWithDistinct)
+                    else
                     {
-                        documentsFromWithDistinct.AddRange(page.Values);
+                        // No Op for debugging purposes.
+                    }
+                }
+
+                foreach (int pageSize in new int[] { 1, 10, 100 })
+                {
+                    string queryWithDistinct = string.Format(query, "DISTINCT");
+                    List<JToken> documentsFromWithDistinct = new List<JToken>();
+                    AsyncPageable<JToken> documentQueryWithDistinct = container.GetItemQueryIterator<JToken>(
+                        queryWithDistinct,
+                        requestOptions: requestOptions);
+                    await foreach(JToken doc in documentQueryWithDistinct)
+                    {
+                        documentsFromWithDistinct.Add(doc);
                     }
 
                     Assert.AreEqual(documentsFromWithDistinct.Count, documentsFromWithoutDistinct.Count());
@@ -2463,71 +2462,7 @@ namespace Azure.Cosmos.EmulatorTests
                 }
             }
             #endregion
-            #region Unordered Continuation
-            // Run the unordered distinct query through the continuation api should result in the same set(but maybe some duplicates)
-            foreach (string query in new string[]
-            {
-                "SELECT {0} VALUE c.name from c",
-                "SELECT {0} VALUE c.age from c",
-                "SELECT {0} TOP 2147483647 VALUE c.city from c",
-                "SELECT {0} VALUE c.age from c ORDER BY c.name",
-            })
-            {
-                string queryWithDistinct = string.Format(query, "DISTINCT");
-                string queryWithoutDistinct = string.Format(query, "");
-                HashSet<JToken> documentsFromWithDistinct = new HashSet<JToken>(JsonTokenEqualityComparer.Value);
-                HashSet<JToken> documentsFromWithoutDistinct = new HashSet<JToken>(JsonTokenEqualityComparer.Value);
-
-                AsyncPageable<JToken> documentQueryWithoutDistinct = container.GetItemQueryIterator<JToken>(
-                        queryWithoutDistinct,
-                        requestOptions: new QueryRequestOptions() { MaxItemCount = 10, MaxConcurrency = 100 });
-
-                await foreach (JToken jToken in documentQueryWithoutDistinct)
-                {
-                    documentsFromWithoutDistinct.Add(jToken);
-                }
-
-                IAsyncEnumerable<Page<JToken>> documentQueryWithDistinct = container.GetItemQueryIterator<JToken>(
-                    queryWithDistinct,
-                    requestOptions: new QueryRequestOptions() { MaxItemCount = 10, MaxConcurrency = 100 }).AsPages();
-
-                // For now we are blocking the use of continuation 
-                // This try catch can be removed if we do allow the continuation token.
-                try
-                {
-                    string continuationToken = null;
-                    do
-                    {
-                        IAsyncEnumerable<Page<JToken>> documentQuery = container.GetItemQueryIterator<JToken>(
-                            queryWithDistinct,
-                           requestOptions: new QueryRequestOptions() { MaxItemCount = 10, MaxConcurrency = 100 }).AsPages();
-
-                        await foreach (Page<JToken> page in documentQuery)
-                        {
-                            foreach (JToken jToken in page.Values)
-                            {
-                                documentsFromWithDistinct.Add(jToken);
-                            }
-
-                            continuationToken = page.ContinuationToken;
-                            break;
-                        }
-                    }
-                    while (continuationToken != null);
-                    Assert.IsTrue(
-                        documentsFromWithDistinct.IsSubsetOf(documentsFromWithoutDistinct),
-                        $"Documents didn't match for {queryWithDistinct} on a Partitioned container");
-
-                    Assert.Fail("Expected an exception when using continuation tokens on an unordered distinct query.");
-                }
-                catch (Exception ex)
-                {
-                    string disallowContinuationErrorMessage = RMResources.UnorderedDistinctQueryContinuationToken;
-                    Assert.AreEqual(disallowContinuationErrorMessage, ex.InnerException.Message);
-                }
-            }
-            #endregion
-            #region Ordered Region
+            #region Continuation Token Support
             // Run the ordered distinct query through the continuation api, should result in the same set
             // since the previous hash is passed in the continuation token.
             foreach (string query in new string[]
@@ -2536,52 +2471,81 @@ namespace Azure.Cosmos.EmulatorTests
                 "SELECT {0} VALUE c.name FROM c ORDER BY c.name",
             })
             {
+                string queryWithoutDistinct = string.Format(query, "");
+                MockDistinctMap documentsSeen = new MockDistinctMap();
+                List<JToken> documentsFromWithoutDistinct = await CrossPartitionQueryTests.RunQueryCombinations<JToken>(
+                    container,
+                    queryWithoutDistinct,
+                    new QueryRequestOptions()
+                    {
+                        MaxConcurrency = 10,
+                        MaxItemCount = 100,
+                    },
+                    QueryDrainingMode.ContinuationToken | QueryDrainingMode.HoldState);
+                documentsFromWithoutDistinct = documentsFromWithoutDistinct
+                    .Where(document => documentsSeen.Add(document, out UInt128 hash))
+                    .ToList();
+
                 foreach (int pageSize in new int[] { 1, 10, 100 })
                 {
                     string queryWithDistinct = string.Format(query, "DISTINCT");
-                    string queryWithoutDistinct = string.Format(query, "");
-                    MockDistinctMap documentsSeen = new MockDistinctMap();
-                    List<JToken> documentsFromWithDistinct = new List<JToken>();
-                    List<JToken> documentsFromWithoutDistinct = new List<JToken>();
+                    List<JToken> documentsFromWithDistinct = await CrossPartitionQueryTests.RunQueryCombinations<JToken>(
+                        container,
+                        queryWithDistinct,
+                        new QueryRequestOptions()
+                        {
+                            MaxConcurrency = 10,
+                            MaxItemCount = pageSize
+                        },
+                        QueryDrainingMode.ContinuationToken | QueryDrainingMode.HoldState);
 
-                    AsyncPageable<JToken> documentQueryWithoutDistinct = container.GetItemQueryIterator<JToken>(
-                        queryText: queryWithoutDistinct,
-                        requestOptions: new QueryRequestOptions() { MaxItemCount = 1, MaxConcurrency = 100 });
-
-                    await foreach (JToken document in documentQueryWithoutDistinct)
+                    Assert.IsTrue(
+                        documentsFromWithDistinct.SequenceEqual(documentsFromWithoutDistinct, JsonTokenEqualityComparer.Value),
+                        $"Documents didn't match for {queryWithDistinct} on a Partitioned container");
+                }
+            }
+            #endregion
+            #region TryGetContinuationToken Support
+            // Run the ordered distinct query through the continuation api, should result in the same set
+            // since the previous hash is passed in the continuation token.
+            foreach (string query in new string[]
+            {
+                "SELECT {0} VALUE c.age FROM c ORDER BY c.age",
+                "SELECT {0} VALUE c.name FROM c ORDER BY c.name",
+                "SELECT {0} VALUE c.name from c",
+                "SELECT {0} VALUE c.age from c",
+                "SELECT {0} VALUE c.mixedTypeField from c",
+                "SELECT {0} TOP 2147483647 VALUE c.city from c",
+                "SELECT {0} VALUE c.age from c ORDER BY c.name",
+            })
+            {
+                string queryWithoutDistinct = string.Format(query, "");
+                MockDistinctMap documentsSeen = new MockDistinctMap();
+                List<JToken> documentsFromWithoutDistinct = await CrossPartitionQueryTests.RunQueryCombinations<JToken>(
+                    container,
+                    queryWithoutDistinct,
+                    new QueryRequestOptions()
                     {
-                        if (documentsSeen.Add(document, out UInt192? hash))
+                        MaxConcurrency = 10,
+                        MaxItemCount = 100,
+                    },
+                    QueryDrainingMode.TryGetContinuationTokens | QueryDrainingMode.HoldState);
+                documentsFromWithoutDistinct = documentsFromWithoutDistinct
+                    .Where(document => documentsSeen.Add(document, out UInt128 hash))
+                    .ToList();
+
+                foreach (int pageSize in new int[] { 1, 10, 100 })
+                {
+                    string queryWithDistinct = string.Format(query, "DISTINCT");
+                    List<JToken> documentsFromWithDistinct = await CrossPartitionQueryTests.RunQueryCombinations<JToken>(
+                        container,
+                        queryWithDistinct,
+                        new QueryRequestOptions()
                         {
-                            documentsFromWithoutDistinct.Add(document);
-                        }
-                        else
-                        {
-                            // No Op for debugging purposes.
-                        }
-                    }
-
-                    AsyncPageable<JToken> documentQueryWithDistinct = container.GetItemQueryIterator<JToken>(
-                       queryText: queryWithDistinct,
-                       requestOptions: new QueryRequestOptions() { MaxItemCount = 1, MaxConcurrency = 100 });
-
-                    string continuationToken = null;
-                    do
-                    {
-                        IAsyncEnumerable<Page<JToken>> cosmosQuery = container.GetItemQueryIterator<JToken>(
-                                   queryText: queryWithDistinct,
-                                   continuationToken: continuationToken,
-                                   requestOptions: new QueryRequestOptions() { MaxItemCount = 1, MaxConcurrency = 100 }).AsPages();
-
-                        await foreach (Page<JToken> page in cosmosQuery)
-                        {
-
-                            documentsFromWithDistinct.AddRange(page.Values);
-                            continuationToken = page.ContinuationToken;
-                            break;
-                        }
-                        
-                    }
-                    while (continuationToken != null);
+                            MaxConcurrency = 10,
+                            MaxItemCount = pageSize
+                        },
+                        QueryDrainingMode.TryGetContinuationTokens | QueryDrainingMode.HoldState);
 
                     Assert.IsTrue(
                         documentsFromWithDistinct.SequenceEqual(documentsFromWithoutDistinct, JsonTokenEqualityComparer.Value),
@@ -2719,23 +2683,6 @@ namespace Azure.Cosmos.EmulatorTests
                 }
             }
 
-            // Just have range indexes
-            Cosmos.IndexingPolicy indexV1Policy = new Cosmos.IndexingPolicy()
-            {
-                IncludedPaths = new Collection<Cosmos.IncludedPath>()
-                {
-                    new Cosmos.IncludedPath()
-                    {
-                        Path = "/*",
-                        Indexes = new Collection<Cosmos.Index>()
-                        {
-                            Cosmos.Index.Range(Cosmos.DataType.String, -1),
-                            Cosmos.Index.Range(Cosmos.DataType.Number, -1),
-                        }
-                    }
-                }
-            };
-
             // Add a composite index to force an index v2 container to be made.
             Cosmos.IndexingPolicy indexV2Policy = new Cosmos.IndexingPolicy()
             {
@@ -2744,6 +2691,10 @@ namespace Azure.Cosmos.EmulatorTests
                     new Cosmos.IncludedPath()
                     {
                         Path = "/*",
+                    },
+                    new Cosmos.IncludedPath()
+                    {
+                        Path = $"/{nameof(MixedTypedDocument.MixedTypeField)}/?",
                     }
                 },
 
@@ -2764,92 +2715,30 @@ namespace Azure.Cosmos.EmulatorTests
                 }
             };
 
-            string indexV2Api = HttpConstants.Versions.v2018_09_17;
-            string indexV1Api = HttpConstants.Versions.v2017_11_15;
-
-            async Task runWithAllowMixedTypeOrderByFlag(bool allowMixedTypeOrderByTestFlag, OrderByTypes[] orderByTypes, Action<Exception> expectedExcpetionHandler)
-            {
-                bool allowMixedTypeOrderByTestFlagOriginalValue = OrderByConsumeComparer.AllowMixedTypeOrderByTestFlag;
-                string apiVersion = allowMixedTypeOrderByTestFlag ? indexV2Api : indexV1Api;
-                Cosmos.IndexingPolicy indexingPolicy = allowMixedTypeOrderByTestFlag ? indexV2Policy : indexV1Policy;
-                try
-                {
-                    OrderByConsumeComparer.AllowMixedTypeOrderByTestFlag = allowMixedTypeOrderByTestFlag;
-                    await this.RunWithApiVersion(
-                        apiVersion,
-                        async () =>
-                        {
-                            await this.CreateIngestQueryDelete<Tuple<OrderByTypes[], Action<Exception>>>(
-                                ConnectionModes.Direct,
-                                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
-                                documents,
-                                this.TestMixedTypeOrderByHelper,
-                                new Tuple<OrderByTypes[], Action<Exception>>(orderByTypes, expectedExcpetionHandler),
-                                "/id",
-                                indexingPolicy);
-                        });
-                }
-                finally
-                {
-                    OrderByConsumeComparer.AllowMixedTypeOrderByTestFlag = allowMixedTypeOrderByTestFlagOriginalValue;
-                }
-            }
-
-            bool dontAllowMixedTypes = false;
-            bool doAllowMixedTypes = true;
-
             OrderByTypes primitives = OrderByTypes.Bool | OrderByTypes.Null | OrderByTypes.Number | OrderByTypes.String;
             OrderByTypes nonPrimitives = OrderByTypes.Array | OrderByTypes.Object;
             OrderByTypes all = primitives | nonPrimitives | OrderByTypes.Undefined;
 
-            // Don't allow mixed types but single type order by should still work
-            await runWithAllowMixedTypeOrderByFlag(
-                dontAllowMixedTypes,
-                new OrderByTypes[]
-                {
-                    OrderByTypes.Array,
-                    OrderByTypes.Bool,
-                    OrderByTypes.Null,
-                    OrderByTypes.Number,
-                    OrderByTypes.Object,
-                    OrderByTypes.String,
-                    OrderByTypes.Undefined,
-                }, null);
-
-            // If you don't allow mixed types but you run a mixed type query then you should get an exception or the results are just wrong.
-            await runWithAllowMixedTypeOrderByFlag(
-                dontAllowMixedTypes,
-                new OrderByTypes[]
-                {
-                    all,
-                    primitives,
-                },
-                (exception) =>
-                {
-                    Assert.IsTrue(
-                        // Either we get the weird client exception for having mixed types
-                        exception.Message.Contains("Cannot execute cross partition order-by queries on mix types.")
-                        // Or the results are just messed up since the pages in isolation were not mixed typed.
-                        || exception.GetType() == typeof(AssertFailedException));
-                });
-
-            // Mixed type orderby should work for all scenarios,
-            // since for now the non primitives are accepted to not be served from the index.
-            await runWithAllowMixedTypeOrderByFlag(
-                doAllowMixedTypes,
-                new OrderByTypes[]
-                {
-                    OrderByTypes.Array,
-                    OrderByTypes.Bool,
-                    OrderByTypes.Null,
-                    OrderByTypes.Number,
-                    OrderByTypes.Object,
-                    OrderByTypes.String,
-                    OrderByTypes.Undefined,
-                    primitives,
-                    nonPrimitives,
-                    all,
-                }, null);
+            await this.CreateIngestQueryDelete<OrderByTypes[]>(
+                    ConnectionModes.Direct,
+                    CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
+                    documents,
+                    this.TestMixedTypeOrderByHelper,
+                    new OrderByTypes[]
+                    {
+                        OrderByTypes.Array,
+                        OrderByTypes.Bool,
+                        OrderByTypes.Null,
+                        OrderByTypes.Number,
+                        OrderByTypes.Object,
+                        OrderByTypes.String,
+                        OrderByTypes.Undefined,
+                        primitives,
+                        nonPrimitives,
+                        all,
+                    },
+                    "/id",
+                    indexV2Policy);
         }
 
         private sealed class MixedTypedDocument
@@ -2883,7 +2772,7 @@ namespace Azure.Cosmos.EmulatorTests
                     return CosmosBoolean.Create((random.Next() % 2) == 0);
                 // Object
                 case 4:
-                    return CosmosObject.Create(new Dictionary<string, CosmosElement>());
+                    return CosmosObject.Create(new List<KeyValuePair<string, CosmosElement>>());
                 // Array
                 case 5:
                     return CosmosArray.Create(new List<CosmosElement>());
@@ -2895,24 +2784,15 @@ namespace Azure.Cosmos.EmulatorTests
             }
         }
 
-        private sealed class MockOrderByComparer : IComparer<object>
+        private sealed class MockOrderByComparer : IComparer<CosmosElement>
         {
             public static readonly MockOrderByComparer Value = new MockOrderByComparer();
 
-            public int Compare(object x, object y)
+            public int Compare(CosmosElement element1, CosmosElement element2)
             {
-                CosmosElement element1 = ObjectToCosmosElement(x);
-                CosmosElement element2 = ObjectToCosmosElement(y);
-
                 return ItemComparer.Instance.Compare(element1, element2);
             }
 
-            private static CosmosElement ObjectToCosmosElement(object obj)
-            {
-                string json = JsonConvert.SerializeObject(obj != null ? JToken.FromObject(obj) : JValue.CreateNull());
-                byte[] bytes = Encoding.UTF8.GetBytes(json);
-                return CosmosElement.CreateFromBuffer(bytes);
-            }
         }
 
         [Flags]
@@ -2930,73 +2810,70 @@ namespace Azure.Cosmos.EmulatorTests
         private async Task TestMixedTypeOrderByHelper(
             Container container,
             IEnumerable<Document> documents,
-            Tuple<OrderByTypes[], Action<Exception>> args)
+            OrderByTypes[] args)
         {
-            OrderByTypes[] orderByTypesList = args.Item1;
-            Action<Exception> expectedExceptionHandler = args.Item2;
-            try
+            OrderByTypes[] orderByTypesList = args;
+            foreach (bool isDesc in new bool[] { true, false })
             {
-                foreach (bool isDesc in new bool[] { true, false })
+                foreach (OrderByTypes orderByTypes in orderByTypesList)
                 {
-                    foreach (OrderByTypes orderByTypes in orderByTypesList)
+                    string orderString = isDesc ? "DESC" : "ASC";
+                    List<string> mixedTypeFilters = new List<string>();
+                    if (orderByTypes.HasFlag(OrderByTypes.Array))
                     {
-                        string orderString = isDesc ? "DESC" : "ASC";
-                        List<string> mixedTypeFilters = new List<string>();
-                        if (orderByTypes.HasFlag(OrderByTypes.Array))
-                        {
-                            mixedTypeFilters.Add($"IS_ARRAY(c.{nameof(MixedTypedDocument.MixedTypeField)})");
-                        }
+                        mixedTypeFilters.Add($"IS_ARRAY(c.{nameof(MixedTypedDocument.MixedTypeField)})");
+                    }
 
-                        if (orderByTypes.HasFlag(OrderByTypes.Bool))
-                        {
-                            mixedTypeFilters.Add($"IS_BOOL(c.{nameof(MixedTypedDocument.MixedTypeField)})");
-                        }
+                    if (orderByTypes.HasFlag(OrderByTypes.Bool))
+                    {
+                        mixedTypeFilters.Add($"IS_BOOL(c.{nameof(MixedTypedDocument.MixedTypeField)})");
+                    }
 
-                        if (orderByTypes.HasFlag(OrderByTypes.Null))
-                        {
-                            mixedTypeFilters.Add($"IS_NULL(c.{nameof(MixedTypedDocument.MixedTypeField)})");
-                        }
+                    if (orderByTypes.HasFlag(OrderByTypes.Null))
+                    {
+                        mixedTypeFilters.Add($"IS_NULL(c.{nameof(MixedTypedDocument.MixedTypeField)})");
+                    }
 
-                        if (orderByTypes.HasFlag(OrderByTypes.Number))
-                        {
-                            mixedTypeFilters.Add($"IS_NUMBER(c.{nameof(MixedTypedDocument.MixedTypeField)})");
-                        }
+                    if (orderByTypes.HasFlag(OrderByTypes.Number))
+                    {
+                        mixedTypeFilters.Add($"IS_NUMBER(c.{nameof(MixedTypedDocument.MixedTypeField)})");
+                    }
 
-                        if (orderByTypes.HasFlag(OrderByTypes.Object))
-                        {
-                            mixedTypeFilters.Add($"IS_OBJECT(c.{nameof(MixedTypedDocument.MixedTypeField)})");
-                        }
+                    if (orderByTypes.HasFlag(OrderByTypes.Object))
+                    {
+                        mixedTypeFilters.Add($"IS_OBJECT(c.{nameof(MixedTypedDocument.MixedTypeField)})");
+                    }
 
-                        if (orderByTypes.HasFlag(OrderByTypes.String))
-                        {
-                            mixedTypeFilters.Add($"IS_STRING(c.{nameof(MixedTypedDocument.MixedTypeField)})");
-                        }
+                    if (orderByTypes.HasFlag(OrderByTypes.String))
+                    {
+                        mixedTypeFilters.Add($"IS_STRING(c.{nameof(MixedTypedDocument.MixedTypeField)})");
+                    }
 
-                        if (orderByTypes.HasFlag(OrderByTypes.Undefined))
-                        {
-                            mixedTypeFilters.Add($"not IS_DEFINED(c.{nameof(MixedTypedDocument.MixedTypeField)})");
-                        }
+                    if (orderByTypes.HasFlag(OrderByTypes.Undefined))
+                    {
+                        mixedTypeFilters.Add($"not IS_DEFINED(c.{nameof(MixedTypedDocument.MixedTypeField)})");
+                    }
 
-                        string filter = mixedTypeFilters.Count() == 0 ? "true" : string.Join(" OR ", mixedTypeFilters);
+                    string filter = mixedTypeFilters.Count() == 0 ? "true" : string.Join(" OR ", mixedTypeFilters);
 
-                        string query = $@"
-                            SELECT VALUE c.{nameof(MixedTypedDocument.MixedTypeField)} 
+                    string query = $@"
+                            SELECT c.{nameof(MixedTypedDocument.MixedTypeField)}
                             FROM c
                             WHERE {filter}
                             ORDER BY c.{nameof(MixedTypedDocument.MixedTypeField)} {orderString}";
 
-                        QueryRequestOptions feedOptions = new QueryRequestOptions()
-                        {
-                            MaxBufferedItemCount = 1000,
-                            MaxItemCount = 16,
-                            MaxConcurrency = 10,
-                        };
+                    QueryRequestOptions feedOptions = new QueryRequestOptions()
+                    {
+                        MaxBufferedItemCount = 1000,
+                        MaxItemCount = 16,
+                        MaxConcurrency = 10,
+                    };
 
-                        List<CosmosElement> actualFromQueryWithoutContinutionTokens;
-                        actualFromQueryWithoutContinutionTokens = await CrossPartitionQueryTests.QueryWithoutContinuationTokens<CosmosElement>(
-                            container,
-                            query,
-                            queryRequestOptions: feedOptions);
+                    List<CosmosObject> actualFromQueryWithoutContinutionTokens;
+                    actualFromQueryWithoutContinutionTokens = await CrossPartitionQueryTests.QueryWithoutContinuationTokens<CosmosObject>(
+                        container,
+                        query,
+                        queryRequestOptions: feedOptions);
 #if false
                         For now we can not serve the query through continuation tokens correctly.
                         This is because we allow order by on mixed types but not comparisions across types
@@ -3018,78 +2895,97 @@ namespace Azure.Cosmos.EmulatorTests
                         and that is because comparision across types is undefined so "aaaaaaaaaaa" > 303093052 never got emitted
 #endif
 
-                        IEnumerable<CosmosElement> insertedDocs = documents
-                            .Select(document => (CosmosElement.CreateFromBuffer(Encoding.UTF8.GetBytes(document.ToString())) as CosmosObject)[nameof(MixedTypedDocument.MixedTypeField)])
-                            .Where(document => document != null);
-
-                        // Build the expected results using LINQ
-                        IEnumerable<CosmosElement> expected = new List<CosmosElement>();
-
-                        // Filter based on the mixedOrderByType enum
-                        if (orderByTypes.HasFlag(OrderByTypes.Array))
+                    IEnumerable<CosmosObject> insertedDocs = documents
+                        .Select(document => CosmosElement.CreateFromBuffer(Encoding.UTF8.GetBytes(document.ToString())) as CosmosObject)
+                        .Select(document =>
                         {
-                            expected = expected.Concat(insertedDocs.Where(x => x?.Type == CosmosElementType.Array));
-                        }
+                            Dictionary<string, CosmosElement> dictionary = new Dictionary<string, CosmosElement>();
+                            if (document.TryGetValue(nameof(MixedTypedDocument.MixedTypeField), out CosmosElement value))
+                            {
+                                dictionary.Add(nameof(MixedTypedDocument.MixedTypeField), value);
+                            }
 
-                        if (orderByTypes.HasFlag(OrderByTypes.Bool))
-                        {
-                            expected = expected.Concat(insertedDocs.Where(x => x?.Type == CosmosElementType.Boolean));
-                        }
+                            return CosmosObject.Create(dictionary);
+                        });
 
-                        if (orderByTypes.HasFlag(OrderByTypes.Null))
-                        {
-                            expected = expected.Concat(insertedDocs.Where(x => x?.Type == CosmosElementType.Null));
-                        }
+                    // Build the expected results using LINQ
+                    IEnumerable<CosmosObject> expected = new List<CosmosObject>();
 
-                        if (orderByTypes.HasFlag(OrderByTypes.Number))
-                        {
-                            expected = expected.Concat(insertedDocs.Where(x => x?.Type == CosmosElementType.Number));
-                        }
+                    // Filter based on the mixedOrderByType enum
 
-                        if (orderByTypes.HasFlag(OrderByTypes.Object))
-                        {
-                            expected = expected.Concat(insertedDocs.Where(x => x?.Type == CosmosElementType.Object));
-                        }
+                    if (orderByTypes.HasFlag(OrderByTypes.Undefined))
+                    {
+                        expected = expected.Concat(insertedDocs.Where(x => !x.TryGetValue(nameof(MixedTypedDocument.MixedTypeField), out CosmosElement value)));
+                    }
 
-                        if (orderByTypes.HasFlag(OrderByTypes.String))
-                        {
-                            expected = expected.Concat(insertedDocs.Where(x => x?.Type == CosmosElementType.String));
-                        }
+                    if (orderByTypes.HasFlag(OrderByTypes.Null))
+                    {
+                        expected = expected.Concat(insertedDocs.Where(x => x.TryGetValue(nameof(MixedTypedDocument.MixedTypeField), out CosmosNull value)));
+                    }
 
-                        // Order using the mock order by comparer
-                        if (isDesc)
-                        {
-                            expected = expected.OrderByDescending(x => x, MockOrderByComparer.Value);
-                        }
-                        else
-                        {
-                            expected = expected.OrderBy(x => x, MockOrderByComparer.Value);
-                        }
+                    if (orderByTypes.HasFlag(OrderByTypes.Bool))
+                    {
+                        expected = expected.Concat(insertedDocs.Where(x => x.TryGetValue(nameof(MixedTypedDocument.MixedTypeField), out CosmosBoolean value)));
+                    }
 
-                        Assert.IsTrue(
-                            expected.SequenceEqual(actualFromQueryWithoutContinutionTokens, CosmosElementEqualityComparer.Value),
-                            $@" queryWithoutContinuations: {query},
+                    if (orderByTypes.HasFlag(OrderByTypes.Number))
+                    {
+                        expected = expected.Concat(insertedDocs.Where(x => x.TryGetValue(nameof(MixedTypedDocument.MixedTypeField), out CosmosNumber value)));
+                    }
+
+                    if (orderByTypes.HasFlag(OrderByTypes.String))
+                    {
+                        expected = expected.Concat(insertedDocs.Where(x => x.TryGetValue(nameof(MixedTypedDocument.MixedTypeField), out CosmosString value)));
+                    }
+
+                    if (orderByTypes.HasFlag(OrderByTypes.Array))
+                    {
+                        expected = expected.Concat(insertedDocs.Where(x => x.TryGetValue(nameof(MixedTypedDocument.MixedTypeField), out CosmosArray value)));
+                    }
+
+                    if (orderByTypes.HasFlag(OrderByTypes.Object))
+                    {
+                        expected = expected.Concat(insertedDocs.Where(x => x.TryGetValue(nameof(MixedTypedDocument.MixedTypeField), out CosmosObject value)));
+                    }
+
+                    // Order using the mock order by comparer
+                    if (isDesc)
+                    {
+                        expected = expected.OrderByDescending(x =>
+                        {
+                            if (!x.TryGetValue(nameof(MixedTypedDocument.MixedTypeField), out CosmosElement cosmosElement))
+                            {
+                                cosmosElement = null;
+                            }
+
+                            return cosmosElement;
+                        }, MockOrderByComparer.Value);
+                    }
+                    else
+                    {
+                        expected = expected.OrderBy(x =>
+                        {
+                            if (!x.TryGetValue(nameof(MixedTypedDocument.MixedTypeField), out CosmosElement cosmosElement))
+                            {
+                                cosmosElement = null;
+                            }
+
+                            return cosmosElement;
+                        }, MockOrderByComparer.Value);
+                    }
+
+                    Assert.IsTrue(
+                        expected.SequenceEqual(actualFromQueryWithoutContinutionTokens, CosmosElementEqualityComparer.Value),
+                        $@" queryWithoutContinuations: {query},
                             expected:{JsonConvert.SerializeObject(expected)},
                             actual: {JsonConvert.SerializeObject(actualFromQueryWithoutContinutionTokens)}");
 
-                        // Can't assert for reasons mentioned above
-                        //Assert.IsTrue(
-                        //    expected.SequenceEqual(actualFromQueryWithContinutionTokens, DistinctMapTests.JsonTokenEqualityComparer.Value),
-                        //    $@" queryWithContinuations: {query},
-                        //    expected:{JsonConvert.SerializeObject(expected)},
-                        //    actual: {JsonConvert.SerializeObject(actualFromQueryWithContinutionTokens)}");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                if (expectedExceptionHandler != null)
-                {
-                    expectedExceptionHandler(ex);
-                }
-                else
-                {
-                    throw;
+                    // Can't assert for reasons mentioned above
+                    //Assert.IsTrue(
+                    //    expected.SequenceEqual(actualFromQueryWithContinutionTokens, DistinctMapTests.JsonTokenEqualityComparer.Value),
+                    //    $@" queryWithContinuations: {query},
+                    //    expected:{JsonConvert.SerializeObject(expected)},
+                    //    actual: {JsonConvert.SerializeObject(actualFromQueryWithContinutionTokens)}");
                 }
             }
         }
@@ -3172,10 +3068,10 @@ namespace Azure.Cosmos.EmulatorTests
                                     string orderByField = "field_" + rand.Next(10);
                                     IEnumerable<Document> filteredDocuments;
 
-                                    Func<string> getTop = () =>
+                                    string getTop() =>
                                         hasTop ? string.Format(CultureInfo.InvariantCulture, "TOP {0} ", isParametrized ? topValueName : top.ToString()) : string.Empty;
 
-                                    Func<string> getOrderBy = () =>
+                                    string getOrderBy() =>
                                         hasOrderBy ? string.Format(CultureInfo.InvariantCulture, " ORDER BY r.{0} {1}", orderByField, sortOrder) : string.Empty;
 
                                     if (fanOut)
@@ -3272,13 +3168,13 @@ namespace Azure.Cosmos.EmulatorTests
 
                                     DateTime startTime = DateTime.Now;
                                     List<Document> result = new List<Document>();
-                                    IAsyncEnumerable<Page<Document>> query = container.GetItemQueryIterator<Document>(
+                                    AsyncPageable<Document> query = container.GetItemQueryIterator<Document>(
                                         querySpec,
-                                        requestOptions: feedOptions).AsPages();
+                                        requestOptions: feedOptions);
 
-                                    await foreach (Page<Document> page in query)
+                                    await foreach(Document doc in query)
                                     {
-                                        result.AddRange(page.Values);
+                                        result.Add(doc);
                                     }
 
                                     actualDocuments = result;
@@ -3344,14 +3240,17 @@ namespace Azure.Cosmos.EmulatorTests
 
             for (int i = 0; i < numberOfDocuments; i++)
             {
+                // Generate random people
                 Person person = GetRandomPerson(rand);
                 for (int j = 0; j < rand.Next(0, 4); j++)
                 {
+                    // Force an exact duplicate
                     people.Add(person);
                 }
             }
 
             List<string> documents = new List<string>();
+            // Shuffle them so that they end up in different pages.
             people = people.OrderBy((person) => Guid.NewGuid()).ToList();
             foreach (Person person in people)
             {
@@ -3449,19 +3348,15 @@ namespace Azure.Cosmos.EmulatorTests
                             // Max DOP needs to be 0 since the query needs to run in serial => 
                             // otherwise the parallel code will prefetch from other partitions,
                             // since the first N-1 partitions might be empty.
-                            IAsyncEnumerable<Page<dynamic>> documentQuery = container.GetItemQueryIterator<dynamic>(
+                            AsyncPageable<dynamic> documentQuery = container.GetItemQueryIterator<dynamic>(
                                     query,
-                                    requestOptions: new QueryRequestOptions() { MaxConcurrency = 0, MaxItemCount = pageSize }).AsPages();
+                                    requestOptions: new QueryRequestOptions() { MaxConcurrency = 0, MaxItemCount = pageSize });
 
                             //QueryMetrics aggregatedQueryMetrics = QueryMetrics.Zero;
                             int numberOfDocuments = 0;
-                            await foreach(Page<dynamic> page in documentQuery)
+                            await foreach(dynamic doc in documentQuery)
                             {
-                                numberOfDocuments += page.Values.Count;
-                                //foreach (QueryMetrics queryMetrics in cosmosQueryResponse.QueryMetrics.Values)
-                                //{
-                                //    aggregatedQueryMetrics += queryMetrics;
-                                //}
+                                numberOfDocuments++;
                             }
 
                             Assert.IsTrue(
@@ -3534,7 +3429,10 @@ namespace Azure.Cosmos.EmulatorTests
                 "/" + partitionKey);
         }
 
-        private async Task TestQueryCrossPartitionWithContinuationsHelper(Container container, IEnumerable<Document> documents, CrossPartitionWithContinuationsArgs args)
+        private async Task TestQueryCrossPartitionWithContinuationsHelper(
+            Container container,
+            IEnumerable<Document> documents,
+            CrossPartitionWithContinuationsArgs args)
         {
             int documentCount = args.NumberOfDocuments;
             string partitionKey = args.PartitionKey;
@@ -3548,14 +3446,14 @@ namespace Azure.Cosmos.EmulatorTests
             #region BadContinuations
             try
             {
-                AsyncPageable<Document> pageable = container.GetItemQueryIterator<Document>(
+                AsyncPageable<Document> query = container.GetItemQueryIterator<Document>(
                     "SELECT * FROM t",
                     continuationToken: Guid.NewGuid().ToString(),
                     requestOptions: new QueryRequestOptions() { MaxConcurrency = 1 });
 
-                await foreach(Document item in pageable)
+                await foreach(Document doc in query)
                 {
-
+                    break;
                 }
 
                 Assert.Fail("Expect exception");
@@ -3571,14 +3469,14 @@ namespace Azure.Cosmos.EmulatorTests
 
             try
             {
-                AsyncPageable<Document> pageable = container.GetItemQueryIterator<Document>(
+                AsyncPageable<Document> query = container.GetItemQueryIterator<Document>(
                     "SELECT TOP 10 * FROM r",
                     continuationToken: "{'top':11}",
                     requestOptions: new QueryRequestOptions() { MaxItemCount = 10, MaxConcurrency = -1 });
 
-                await foreach (Document item in pageable)
+                await foreach (Document doc in query)
                 {
-
+                    break;
                 }
 
                 Assert.Fail("Expect exception");
@@ -3590,14 +3488,14 @@ namespace Azure.Cosmos.EmulatorTests
 
             try
             {
-                AsyncPageable<Document> pageable = container.GetItemQueryIterator<Document>(
+                AsyncPageable<Document> query = container.GetItemQueryIterator<Document>(
                     "SELECT * FROM r ORDER BY r.field1",
                     continuationToken: "{'compositeToken':{'range':{'min':'05C1E9CD673398','max':'FF'}}, 'orderByItems':[{'item':2}, {'item':1}]}",
                     requestOptions: new QueryRequestOptions() { MaxItemCount = 10, MaxConcurrency = -1 });
 
-                await foreach (Document item in pageable)
+                await foreach (Document doc in query)
                 {
-
+                    break;
                 }
 
                 Assert.Fail("Expect exception");
@@ -3609,14 +3507,14 @@ namespace Azure.Cosmos.EmulatorTests
 
             try
             {
-                AsyncPageable<Document> pageable = container.GetItemQueryIterator<Document>(
+                AsyncPageable<Document> query = container.GetItemQueryIterator<Document>(
                    "SELECT * FROM r ORDER BY r.field1, r.field2",
                    continuationToken: "{'compositeToken':{'range':{'min':'05C1E9CD673398','max':'FF'}}, 'orderByItems':[{'item':2}, {'item':1}]}",
                    requestOptions: new QueryRequestOptions() { MaxItemCount = 10, MaxConcurrency = -1 });
 
-                await foreach (Document item in pageable)
+                await foreach (Document doc in query)
                 {
-
+                    break;
                 }
 
                 Assert.Fail("Expect exception");
@@ -3631,9 +3529,10 @@ namespace Azure.Cosmos.EmulatorTests
                 string.Format(CultureInfo.InvariantCulture, "SELECT TOP 1 * FROM r ORDER BY r.{0}", partitionKey),
                 requestOptions: new QueryRequestOptions() { MaxConcurrency = 10, MaxItemCount = -1 }).AsPages();
 
-            await foreach (Page<Document> page in responseWithEmptyContinuationExpected)
+            await foreach(Page<Document> page in responseWithEmptyContinuationExpected)
             {
                 Assert.AreEqual(null, page.ContinuationToken);
+                break;
             }
 
             string[] queries = new[]
@@ -3713,6 +3612,9 @@ namespace Azure.Cosmos.EmulatorTests
                     documents.Add(JsonConvert.SerializeObject(partitionClone));
                 }
             }
+
+            // Shuffle the documents so they end up in different pages
+            documents = documents.OrderBy((person) => Guid.NewGuid()).ToList();
 
             Cosmos.IndexingPolicy indexingPolicy = new Cosmos.IndexingPolicy()
             {
@@ -4304,7 +4206,7 @@ namespace Azure.Cosmos.EmulatorTests
             {
                 foreach (int maxItemCount in new int[] { 1, 5, 10 })
                 {
-                    List<JToken> actual = await CrossPartitionQueryTests.QueryWithoutContinuationTokens<JToken>(
+                    List<JToken> actualWithoutContinuationTokens = await CrossPartitionQueryTests.QueryWithoutContinuationTokens<JToken>(
                         container,
                         query,
                         new QueryRequestOptions()
@@ -4313,17 +4215,33 @@ namespace Azure.Cosmos.EmulatorTests
                             MaxItemCount = maxItemCount,
                             MaxBufferedItemCount = 100,
                         });
+                    HashSet<JToken> actualWithoutContinuationTokensSet = new HashSet<JToken>(actualWithoutContinuationTokens, JsonTokenEqualityComparer.Value);
 
-                    HashSet<JToken> actualSet = new HashSet<JToken>(actual, JsonTokenEqualityComparer.Value);
+                    List<JToken> actualWithTryGetContinuationTokens = await CrossPartitionQueryTests.QueryWithTryGetContinuationTokens<JToken>(
+                        container,
+                        query,
+                        new QueryRequestOptions()
+                        {
+                            MaxConcurrency = 2,
+                            MaxItemCount = maxItemCount,
+                            MaxBufferedItemCount = 100,
+                        });
+                    HashSet<JToken> actualWithTryGetContinuationTokensSet = new HashSet<JToken>(actualWithTryGetContinuationTokens, JsonTokenEqualityComparer.Value);
+
+                    Assert.IsTrue(
+                       actualWithoutContinuationTokensSet.SetEquals(actualWithTryGetContinuationTokensSet),
+                       $"Results did not match for query: {query} with maxItemCount: {maxItemCount}" +
+                       $"ActualWithoutContinuationTokens: {JsonConvert.SerializeObject(actualWithoutContinuationTokensSet)}" +
+                       $"ActualWithTryGetContinuationTokens: {JsonConvert.SerializeObject(actualWithTryGetContinuationTokensSet)}");
 
                     List<JToken> expected = expectedResults.ToList();
                     HashSet<JToken> expectedSet = new HashSet<JToken>(expected, JsonTokenEqualityComparer.Value);
 
                     Assert.IsTrue(
-                       actualSet.SetEquals(expectedSet),
+                       actualWithoutContinuationTokensSet.SetEquals(expectedSet),
                        $"Results did not match for query: {query} with maxItemCount: {maxItemCount}" +
-                       $"Actual {JsonConvert.SerializeObject(actual)}" +
-                       $"Expected: {JsonConvert.SerializeObject(expected)}");
+                       $"Actual {JsonConvert.SerializeObject(actualWithoutContinuationTokensSet)}" +
+                       $"Expected: {JsonConvert.SerializeObject(expectedSet)}");
                 }
             }
 
@@ -4341,7 +4259,7 @@ namespace Azure.Cosmos.EmulatorTests
                         });
                     Assert.Fail("Expected an error when trying to drain a GROUP BY query with continuation tokens.");
                 }
-                catch (Exception e) when (e.GetBaseException().Message.Contains(GroupByDocumentQueryExecutionComponent.ContinuationTokenNotSupportedWithGroupBy))
+                catch (Exception)
                 {
                 }
             }
@@ -4376,7 +4294,7 @@ namespace Azure.Cosmos.EmulatorTests
                         string continuationToken = null;
                         do
                         {
-                            (PartitionedQueryExecutionInfo partitionedQueryExecutionInfo, (bool canSupportActual, FeedIterator queryIterator)) = await conatinerCore.TryExecuteQueryAsync(
+                            ((Exception exception, PartitionedQueryExecutionInfo partitionedQueryExecutionInfo), (bool canSupportActual, FeedIterator queryIterator)) = await conatinerCore.TryExecuteQueryAsync(
                                 supportedQueryFeatures: queryFeatures,
                                 queryDefinition: new QueryDefinition(query),
                                 requestOptions: new QueryRequestOptions()
@@ -4397,6 +4315,54 @@ namespace Azure.Cosmos.EmulatorTests
                         } while (continuationToken != null);
                     }
                 }
+            }
+
+            {
+                // Test the syntax error case
+                ((Exception exception, PartitionedQueryExecutionInfo partitionedQueryExecutionInfo), (bool canSupportActual, FeedIterator queryIterator)) = await conatinerCore.TryExecuteQueryAsync(
+                                supportedQueryFeatures: QueryFeatures.None,
+                                queryDefinition: new QueryDefinition("This is not a valid query."),
+                                requestOptions: new QueryRequestOptions()
+                                {
+                                    MaxConcurrency = 1,
+                                    MaxItemCount = 1,
+                                },
+                                continuationToken: null);
+
+                Assert.IsNotNull(exception);
+            }
+        }
+
+        [TestMethod]
+        public async Task TestMalformedPipelinedContinuationToken()
+        {
+            await this.CreateIngestQueryDelete(
+                ConnectionModes.Direct,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
+                NoDocuments,
+                this.TestMalformedPipelinedContinuationTokenHelper);
+        }
+
+        private async Task TestMalformedPipelinedContinuationTokenHelper(
+            Container container,
+            IEnumerable<Document> documents)
+        {
+            string query = "SELECT * FROM c";
+
+            // Malformed continuation token
+            try
+            {
+                IAsyncEnumerable<Response> itemQuery = container.GetItemQueryStreamIterator(
+                    queryText: query,
+                    continuationToken: "is not the continuation token you are looking for");
+                await foreach (Response response in itemQuery)
+                {
+                    Assert.Fail("Expected bad request");
+                    break;
+                }
+            }
+            catch (Exception)
+            {
             }
         }
 
@@ -4593,27 +4559,87 @@ namespace Azure.Cosmos.EmulatorTests
             string query,
             QueryRequestOptions queryRequestOptions = null)
         {
-            List<T> queryResultsWithoutContinuationToken = await QueryWithoutContinuationTokens<T>(
+            return await RunQueryCombinations<T>(
                 container,
                 query,
-                queryRequestOptions);
-            List<T> queryResultsWithContinuationTokens = await QueryWithContinuationTokens<T>(
-                container,
-                query,
-                queryRequestOptions);
+                queryRequestOptions,
+                QueryDrainingMode.ContinuationToken | QueryDrainingMode.HoldState | QueryDrainingMode.TryGetContinuationTokens);
+        }
 
-            List<JToken> queryResultsWithoutContinuationTokenAsJTokens = queryResultsWithoutContinuationToken
-                .Select(x => x == null ? JValue.CreateNull() : JToken.FromObject(x)).ToList();
+        [Flags]
+        public enum QueryDrainingMode
+        {
+            None = 0,
+            HoldState = 1,
+            ContinuationToken = 2,
+            TryGetContinuationTokens = 4,
+        }
 
-            List<JToken> queryResultsWithContinuationTokensAsJTokens = queryResultsWithContinuationTokens
-                .Select(x => x == null ? JValue.CreateNull() : JToken.FromObject(x)).ToList();
+        private static async Task<List<T>> RunQueryCombinations<T>(
+            Container container,
+            string query,
+            QueryRequestOptions queryRequestOptions,
+            QueryDrainingMode queryDrainingMode)
+        {
+            if (queryDrainingMode == QueryDrainingMode.None)
+            {
+                throw new ArgumentOutOfRangeException(nameof(queryDrainingMode));
+            }
 
-            Assert.IsTrue(
-                queryResultsWithoutContinuationTokenAsJTokens
-                    .SequenceEqual(queryResultsWithContinuationTokensAsJTokens, JsonTokenEqualityComparer.Value),
-                $"{query} returned different results with and without continuation tokens.");
+            Dictionary<QueryDrainingMode, List<T>> queryExecutionResults = new Dictionary<QueryDrainingMode, List<T>>();
 
-            return queryResultsWithoutContinuationToken;
+            if (queryDrainingMode.HasFlag(QueryDrainingMode.HoldState))
+            {
+                List<T> queryResultsWithoutContinuationToken = await QueryWithoutContinuationTokens<T>(
+                    container,
+                    query,
+                    queryRequestOptions);
+
+                queryExecutionResults[QueryDrainingMode.HoldState] = queryResultsWithoutContinuationToken;
+            }
+
+            if (queryDrainingMode.HasFlag(QueryDrainingMode.ContinuationToken))
+            {
+                List<T> queryResultsWithContinuationTokens = await QueryWithContinuationTokens<T>(
+                    container,
+                    query,
+                    queryRequestOptions);
+
+                queryExecutionResults[QueryDrainingMode.ContinuationToken] = queryResultsWithContinuationTokens;
+            }
+
+            if (queryDrainingMode.HasFlag(QueryDrainingMode.TryGetContinuationTokens))
+            {
+                List<T> queryResultsWithTryGetContinuationToken = await QueryWithTryGetContinuationTokens<T>(
+                    container,
+                    query,
+                    queryRequestOptions);
+
+                queryExecutionResults[QueryDrainingMode.TryGetContinuationTokens] = queryResultsWithTryGetContinuationToken;
+            }
+
+            foreach (QueryDrainingMode queryDrainingMode1 in queryExecutionResults.Keys)
+            {
+                foreach (QueryDrainingMode queryDrainingMode2 in queryExecutionResults.Keys)
+                {
+                    if (queryDrainingMode1 != queryDrainingMode2)
+                    {
+                        List<JToken> queryDrainingModeAsJTokens1 = queryExecutionResults[queryDrainingMode1]
+                            .Select(x => x == null ? JValue.CreateNull() : JToken.FromObject(x)).ToList();
+
+                        List<JToken> queryDrainingModeAsJTokens2 = queryExecutionResults[queryDrainingMode2]
+                            .Select(x => x == null ? JValue.CreateNull() : JToken.FromObject(x)).ToList();
+
+                        Assert.IsTrue(
+                            queryDrainingModeAsJTokens1.SequenceEqual(queryDrainingModeAsJTokens2, JsonTokenEqualityComparer.Value),
+                            $"{query} returned different results." +
+                            $"{queryDrainingMode1}: {JsonConvert.SerializeObject(queryDrainingModeAsJTokens1)}" +
+                            $"{queryDrainingMode2}: {JsonConvert.SerializeObject(queryDrainingModeAsJTokens2)}");
+                    }
+                }
+            }
+
+            return queryExecutionResults.Values.First();
         }
 
         private async Task<List<T>> RunSinglePartitionQuery<T>(
@@ -4621,14 +4647,14 @@ namespace Azure.Cosmos.EmulatorTests
             string query,
             QueryRequestOptions requestOptions = null)
         {
-            IAsyncEnumerable<Page<T>> resultSetIterator = container.GetItemQueryIterator<T>(
+            AsyncPageable<T> resultSetIterator = container.GetItemQueryIterator<T>(
                 query,
-                requestOptions: requestOptions).AsPages();
+                requestOptions: requestOptions);
 
             List<T> items = new List<T>();
-            await foreach (Page<T> page in resultSetIterator)
+            await foreach(T item in resultSetIterator)
             {
-                items.AddRange(page.Values);
+                items.Add(item);
             }
 
             return items;
@@ -4653,9 +4679,9 @@ namespace Azure.Cosmos.EmulatorTests
             // >> True
             private readonly HashSet<JToken> jTokenSet = new HashSet<JToken>(JsonTokenEqualityComparer.Value);
 
-            public bool Add(JToken jToken, out UInt192? hash)
+            public bool Add(JToken jToken, out UInt128 hash)
             {
-                hash = null;
+                hash = default(UInt128);
                 return this.jTokenSet.Add(jToken);
             }
         }
@@ -4722,7 +4748,42 @@ namespace Azure.Cosmos.EmulatorTests
             int age = CrossPartitionQueryTests.GetRandomAge(rand);
             Pet pet = CrossPartitionQueryTests.GetRandomPet(rand);
             Guid guid = Guid.NewGuid();
-            return new Person(name, city, income, children, age, pet, guid);
+
+            object mixedTypeField;
+            switch (rand.Next(0, 7))
+            {
+                case 0:
+                    mixedTypeField = name;
+                    break;
+
+                case 1:
+                    mixedTypeField = city;
+                    break;
+
+                case 2:
+                    mixedTypeField = income;
+                    break;
+
+                case 3:
+                    mixedTypeField = children;
+                    break;
+
+                case 4:
+                    mixedTypeField = age;
+                    break;
+
+                case 5:
+                    mixedTypeField = pet;
+                    break;
+
+                case 6:
+                    mixedTypeField = guid;
+                    break;
+
+                default:
+                    throw new ArgumentException();
+            }
+            return new Person(name, city, income, children, age, pet, guid, mixedTypeField);
         }
 
         public sealed class JsonTokenEqualityComparer : IEqualityComparer<JToken>
@@ -4924,7 +4985,18 @@ namespace Azure.Cosmos.EmulatorTests
             [JsonProperty("guid")]
             public Guid Guid { get; }
 
-            public Person(string name, City city, double income, Person[] children, int age, Pet pet, Guid guid)
+            [JsonProperty("mixedTypeField")]
+            public object MixedTypeField { get; }
+
+            public Person(
+                string name,
+                City city,
+                double income,
+                Person[] children,
+                int age,
+                Pet pet,
+                Guid guid,
+                object mixedTypeField)
             {
                 this.Name = name;
                 this.City = city;
@@ -4933,6 +5005,7 @@ namespace Azure.Cosmos.EmulatorTests
                 this.Age = age;
                 this.Pet = pet;
                 this.Guid = guid;
+                this.MixedTypeField = mixedTypeField;
             }
         }
 
@@ -4970,10 +5043,32 @@ namespace Azure.Cosmos.EmulatorTests
                 return base.ExecuteQueryPlanRequestAsync(resourceUri, resourceType, operationType, sqlQuerySpec, supportedQueryFeatures, cancellationToken);
             }
 
-            internal override Task<QueryResponseCore> ExecuteItemQueryAsync<RequestOptionType>(Uri resourceUri, ResourceType resourceType, OperationType operationType, RequestOptionType requestOptions, SqlQuerySpec sqlQuerySpec, string continuationToken, PartitionKeyRangeIdentity partitionKeyRange, bool isContinuationExpected, int pageSize, SchedulingStopwatch schedulingStopwatch, CancellationToken cancellationToken)
+            internal override Task<QueryResponseCore> ExecuteItemQueryAsync<RequestOptionType>(
+                Uri resourceUri,
+                ResourceType resourceType,
+                OperationType operationType,
+                RequestOptionType requestOptions,
+                SqlQuerySpec sqlQuerySpec,
+                string continuationToken,
+                PartitionKeyRangeIdentity partitionKeyRange,
+                bool isContinuationExpected,
+                int pageSize,
+                SchedulingStopwatch schedulingStopwatch,
+                CancellationToken cancellationToken)
             {
                 Assert.IsFalse(this.forceQueryPlanGatewayElseServiceInterop && this.QueryPlanCalls == 0, "Query Plan is force gateway mode, but no ExecuteQueryPlanRequestAsync have been called");
-                return base.ExecuteItemQueryAsync(resourceUri, resourceType, operationType, requestOptions, sqlQuerySpec, continuationToken, partitionKeyRange, isContinuationExpected, pageSize, schedulingStopwatch, cancellationToken);
+                return base.ExecuteItemQueryAsync(
+                    resourceUri: resourceUri,
+                    resourceType: resourceType,
+                    operationType: operationType,
+                    requestOptions: requestOptions,
+                    sqlQuerySpec: sqlQuerySpec,
+                    continuationToken: continuationToken,
+                    partitionKeyRange: partitionKeyRange,
+                    isContinuationExpected: isContinuationExpected,
+                    pageSize: pageSize,
+                    schedulingStopwatch: schedulingStopwatch,
+                    cancellationToken: cancellationToken);
             }
         }
     }

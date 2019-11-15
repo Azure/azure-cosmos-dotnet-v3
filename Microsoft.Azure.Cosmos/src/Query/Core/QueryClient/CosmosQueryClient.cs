@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
 #if AZURECORE
     using global::Azure.Cosmos;
 #endif

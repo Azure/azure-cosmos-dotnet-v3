@@ -17,6 +17,7 @@ namespace Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
@@ -73,7 +74,7 @@ namespace Azure.Cosmos.Query
                 containerProperties.PartitionKey);
         }
 
-        internal override async Task<PartitionedQueryExecutionInfo> GetPartitionedQueryExecutionInfoAsync(
+        internal override async Task<TryCatch<PartitionedQueryExecutionInfo>> TryGetPartitionedQueryExecutionInfoAsync(
             SqlQuerySpec sqlQuerySpec,
             PartitionKeyDefinition partitionKeyDefinition,
             bool requireFormattableOrderByQuery,
@@ -101,8 +102,7 @@ namespace Azure.Cosmos.Query
                 }
             }
 
-            return this.queryPartitionProvider.GetPartitionedQueryExecutionInfo(
-                this.CreateBadRequestException,
+            return this.queryPartitionProvider.TryGetPartitionedQueryExecutionInfo(
                 sqlQuerySpec,
                 partitionKeyDefinition,
                 requireFormattableOrderByQuery,
@@ -369,11 +369,6 @@ namespace Azure.Cosmos.Query
         private Task<PartitionKeyRangeCache> GetRoutingMapProviderAsync()
         {
             return this.documentClient.GetPartitionKeyRangeCacheAsync();
-        }
-
-        internal override Exception CreateBadRequestException(string message)
-        {
-            return new CosmosException(System.Net.HttpStatusCode.BadRequest, message);
         }
     }
 }

@@ -4,16 +4,11 @@
 
 namespace Azure.Cosmos.ChangeFeed.Tests
 {
-    using System;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
-    using Azure.Cosmos.Fluent;
-    using Azure.Cosmos.Tests;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -48,8 +43,12 @@ namespace Azure.Cosmos.ChangeFeed.Tests
                 DocumentServiceLeaseContainerCosmosTests.GetMockedContainer(),
                 DocumentServiceLeaseContainerCosmosTests.leaseStoreManagerSettings);
 
-            IEnumerable<DocumentServiceLease> readLeases = await documentServiceLeaseContainerCosmos.GetAllLeasesAsync();
-            CollectionAssert.AreEqual(DocumentServiceLeaseContainerCosmosTests.allLeases, readLeases.ToList());
+            List<DocumentServiceLease> readLeases = (await documentServiceLeaseContainerCosmos.GetAllLeasesAsync()).ToList();
+            Assert.AreEqual(DocumentServiceLeaseContainerCosmosTests.allLeases.Count, readLeases.Count);
+            Assert.AreEqual(DocumentServiceLeaseContainerCosmosTests.allLeases[0].Id, readLeases[0].Id);
+            Assert.AreEqual(DocumentServiceLeaseContainerCosmosTests.allLeases[1].Id, readLeases[1].Id);
+            Assert.AreEqual(DocumentServiceLeaseContainerCosmosTests.allLeases[0].Owner, readLeases[0].Owner);
+            Assert.AreEqual(DocumentServiceLeaseContainerCosmosTests.allLeases[1].Owner, readLeases[1].Owner);
         }
 
         [TestMethod]
@@ -59,8 +58,12 @@ namespace Azure.Cosmos.ChangeFeed.Tests
                 DocumentServiceLeaseContainerCosmosTests.GetMockedContainer(),
                 DocumentServiceLeaseContainerCosmosTests.leaseStoreManagerSettings);
 
-            IEnumerable<DocumentServiceLease> readLeases = await documentServiceLeaseContainerCosmos.GetOwnedLeasesAsync();
-            CollectionAssert.AreEqual(DocumentServiceLeaseContainerCosmosTests.allLeases.Where(l => l.Owner == DocumentServiceLeaseContainerCosmosTests.leaseStoreManagerSettings.HostName).ToList(), readLeases.ToList());
+            List<DocumentServiceLease> readLeases = (await documentServiceLeaseContainerCosmos.GetOwnedLeasesAsync()).ToList();
+            List<DocumentServiceLeaseCore> owned = DocumentServiceLeaseContainerCosmosTests.allLeases.Where(l => l.Owner == DocumentServiceLeaseContainerCosmosTests.leaseStoreManagerSettings.HostName).ToList();
+
+            Assert.AreEqual(owned.Count, readLeases.Count);
+            Assert.AreEqual(owned[0].Id, readLeases[0].Id);
+            Assert.AreEqual(owned[0].Owner, readLeases[0].Owner);
         }
 
         private static Container GetMockedContainer(string containerName = "myColl")
@@ -68,10 +71,21 @@ namespace Azure.Cosmos.ChangeFeed.Tests
             Headers headers = new Headers();
             headers.ContinuationToken = string.Empty;
 
-            MockAsyncPageable<DocumentServiceLeaseCore> asyncPageable = new MockAsyncPageable<DocumentServiceLeaseCore>(DocumentServiceLeaseContainerCosmosTests.allLeases);
+            MockFeedResponse<DocumentServiceLeaseCore> cosmosFeedResponse = new MockFeedResponse<DocumentServiceLeaseCore>()
+            {
+                Documents = DocumentServiceLeaseContainerCosmosTests.allLeases
+            };
+
+            ResponseMessage mockFeedResponse = new ResponseMessage()
+            {
+                Content = new CosmosJsonDotNetSerializer().ToStream(cosmosFeedResponse)
+            };
+
+            Mock<IAsyncEnumerable<Response>> mockEnumerable = new Mock<IAsyncEnumerable<Response>>();
+            mockEnumerable.Setup(m => m.GetAsyncEnumerator(It.IsAny<CancellationToken>())).Returns(new MockAsyncEnumerator<Response>(new List<Response>() { mockFeedResponse }));
 
             Mock<Container> mockedItems = new Mock<Container>();
-            mockedItems.Setup(i => i.GetItemQueryIterator<DocumentServiceLeaseCore>(
+            mockedItems.Setup(i => i.GetItemQueryStreamIterator(
                 // To make sure the SQL Query gets correctly created
                 It.Is<string>(value => string.Equals("SELECT * FROM c WHERE STARTSWITH(c.id, '" + DocumentServiceLeaseContainerCosmosTests.leaseStoreManagerSettings.GetPartitionLeasePrefix() + "')", value)),
                 It.IsAny<string>(), 
@@ -79,10 +93,42 @@ namespace Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<CancellationToken>()))
                 .Returns(()=>
                 {
-                    return asyncPageable;
+                    return mockEnumerable.Object;
                 });
 
             return mockedItems.Object;
+        }
+
+        private class MockAsyncEnumerator<T> : IAsyncEnumerator<T>
+        {
+            private readonly List<T> results;
+            private int currentIndex = 0;
+            public MockAsyncEnumerator(List<T> results)
+            {
+                this.results = results;
+            }
+            public T Current => this.results[this.currentIndex++];
+
+            public ValueTask DisposeAsync()
+            {
+                return new ValueTask(Task.CompletedTask);
+            }
+
+            public ValueTask<bool> MoveNextAsync()
+            {
+                if (this.currentIndex == this.results.Count)
+                {
+                    return new ValueTask<bool>(Task.FromResult(false));
+                }
+
+                return new ValueTask<bool>(Task.FromResult(true));
+            }
+        }
+
+
+        private class MockFeedResponse<T>
+        {
+            public List<T> Documents { get; set; }
         }
     }
 }

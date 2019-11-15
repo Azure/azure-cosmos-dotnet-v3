@@ -7,6 +7,7 @@ namespace Azure.Cosmos.ChangeFeed
     using System;
     using System.Collections.Generic;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
 
     internal sealed class DocumentServiceLeaseContainerCosmos : DocumentServiceLeaseContainer
     {
@@ -47,12 +48,12 @@ namespace Azure.Cosmos.ChangeFeed
                 throw new ArgumentException("Prefix must be non-empty string", nameof(prefix));
 
             List<DocumentServiceLeaseCore> leases = new List<DocumentServiceLeaseCore>();
-            await foreach (Page<DocumentServiceLeaseCore> page in this.container.GetItemQueryIterator<DocumentServiceLeaseCore>(
+            await foreach (Response page in this.container.GetItemQueryStreamIterator(
                 "SELECT * FROM c WHERE STARTSWITH(c.id, '" + prefix + "')",
                 continuationToken: null,
-                requestOptions: queryRequestOptions).AsPages())
+                requestOptions: queryRequestOptions))
             {
-                leases.AddRange(page.Values);
+                leases.AddRange(CosmosContainerExtensions.DefaultJsonSerializer.FromStream<CosmosFeedResponseUtil<DocumentServiceLeaseCore>>(page.ContentStream).Data);
             }
 
             return leases;

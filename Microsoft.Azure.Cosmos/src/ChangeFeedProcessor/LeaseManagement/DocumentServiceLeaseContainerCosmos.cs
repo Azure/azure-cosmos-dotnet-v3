@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using System;
     using System.Collections.Generic;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
 
     internal sealed class DocumentServiceLeaseContainerCosmos : DocumentServiceLeaseContainer
     {

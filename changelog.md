@@ -12,6 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- [#853](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/853) ORDER BY Arrays and Object support.
+- [#877](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/877) Query diagnostics now contains client side request diagnostics information
+- [#934](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/934) Preserved the ordering of projections in a GROUP BY query.
+- [#952](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/952) ORDER BY Undefined and Mixed Type ORDER BY support
+
 ### Fixed
 
 ## <a name="4.0.0-preview"/> [4.0.0-preview](https://www.nuget.org/packages/Azure.Cosmos/4.0.0-preview) - 2019-10-31
