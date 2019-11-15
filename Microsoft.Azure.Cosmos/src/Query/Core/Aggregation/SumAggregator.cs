@@ -6,8 +6,8 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
     using System;
     using System.Globalization;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
 
     /// <summary>
     /// Concrete implementation of IAggregator that can take the global sum from the local sum of multiple partitions and continuations.
