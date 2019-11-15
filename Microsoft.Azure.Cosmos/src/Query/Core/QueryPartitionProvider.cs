@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Runtime.InteropServices;
     using System.Text;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Routing;
     using Newtonsoft.Json;
@@ -233,18 +234,22 @@ namespace Microsoft.Azure.Cosmos.Query
             Exception exception = Marshal.GetExceptionForHR((int)errorCode);
             if (exception != null)
             {
-                DefaultTrace.TraceInformation("QueryEngineConfiguration: " + this.queryengineConfiguration);
-                string errorMessage;
+                QueryPartitionProviderException queryPartitionProviderException;
                 if (string.IsNullOrEmpty(serializedQueryExecutionInfo))
                 {
-                    errorMessage = $"Message: Query service interop parsing hit an unexpected exception: {exception.ToString()}";
+                    queryPartitionProviderException = new UnexpectedQueryPartitionProviderException(
+                        "Query service interop parsing hit an unexpected exception",
+                        exception);
                 }
                 else
                 {
-                    errorMessage = "Message: " + serializedQueryExecutionInfo;
+                    queryPartitionProviderException = new UnexpectedQueryPartitionProviderException(
+                        serializedQueryExecutionInfo,
+                        exception);
                 }
 
-                return TryCatch<PartitionedQueryExecutionInfoInternal>.FromException(new Exception(errorMessage));
+                return TryCatch<PartitionedQueryExecutionInfoInternal>.FromException(
+                    queryPartitionProviderException);
             }
 
             PartitionedQueryExecutionInfoInternal queryInfoInternal =
