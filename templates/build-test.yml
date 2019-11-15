@@ -28,7 +28,7 @@ jobs:
       testRunTitle: Microsoft.Azure.Cosmos.Tests
       
 - job:
-  displayName: ${{ parameters.BuildConfiguration }}-${{ parameters.VmImage }} PerformanceTests
+  displayName: ${{ parameters.BuildConfiguration }} - ${{ parameters.VmImage }} PerformanceTests
   pool:
     vmImage: ${{ parameters.VmImage }}
 
