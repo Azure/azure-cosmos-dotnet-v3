@@ -27,6 +27,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
         public async Task<T> GetValueAsync(CancellationToken cancellationToken)
         {
+            // Note that this class is not thread safe.
+            // if the valueFacotyr has 
             cancellationToken.ThrowIfCancellationRequested();
             if (!this.ValueInitialized)
             {
