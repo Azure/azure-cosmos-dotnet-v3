@@ -108,7 +108,8 @@ namespace Microsoft.Azure.Cosmos.Query
                             cosmosQueryContext.ContainerResourceId)
                         {
                             RequestCharge = responseCore.RequestCharge,
-                            ActivityId = responseCore.ActivityId
+                            ActivityId = responseCore.ActivityId,
+                            SubStatusCode = responseCore.SubStatusCode ?? Documents.SubStatusCodes.Unknown
                         });
                 }
                 else
@@ -126,7 +127,8 @@ namespace Microsoft.Azure.Cosmos.Query
                             cosmosQueryContext.ContainerResourceId)
                         {
                             RequestCharge = responseCore.RequestCharge,
-                            ActivityId = responseCore.ActivityId
+                            ActivityId = responseCore.ActivityId,
+                            SubStatusCode = responseCore.SubStatusCode ?? Documents.SubStatusCodes.Unknown
                         });
                 }
 
@@ -136,7 +138,7 @@ namespace Microsoft.Azure.Cosmos.Query
             }
             catch (Documents.DocumentClientException exception)
             {
-                response = exception.ToCosmosResponseMessage(request: null);
+                response = exception.ToCosmosResponseMessage(requestMessage: null);
             }
             catch (CosmosException exception)
             {
