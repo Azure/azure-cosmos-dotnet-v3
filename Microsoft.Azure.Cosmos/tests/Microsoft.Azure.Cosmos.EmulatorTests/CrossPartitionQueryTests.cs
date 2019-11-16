@@ -633,7 +633,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Assert.IsTrue(
                         itemQuery.TryGetContinuationToken(out continuationToken),
                         "Failed to get state for query");
-                    Assert.IsTrue(continuationToken.All((character) => character < 128));
+                    if (continuationToken != null)
+                    {
+                        Assert.IsTrue(continuationToken.All((character) => character < 128));
+                    }
                 }
                 catch (CosmosException cosmosException) when (cosmosException.StatusCode == (HttpStatusCode)429)
                 {
@@ -666,7 +669,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                    requestOptions: queryRequestOptions,
                    continuationToken: continuationToken);
 
-                while(true)
+                while (true)
                 {
                     try
                     {
@@ -680,7 +683,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                         resultsFromContinuationToken.AddRange(cosmosQueryResponse);
                         continuationToken = cosmosQueryResponse.ContinuationToken;
-                        Assert.IsTrue(continuationToken.All((character) => character < 128));
+                        if (continuationToken != null)
+                        {
+                            Assert.IsTrue(continuationToken.All((character) => character < 128));
+                        }
                         break;
                     }
                     catch (CosmosException cosmosException) when (cosmosException.StatusCode == (HttpStatusCode)429)
@@ -727,7 +733,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
 
                     continuationTokenForRetries = page.ContinuationToken;
-                    Assert.IsTrue(continuationTokenForRetries.All((character) => character < 128));
+                    if (continuationTokenForRetries != null)
+                    {
+                        Assert.IsTrue(continuationTokenForRetries.All((character) => character < 128));
+                    }
                 }
                 catch (CosmosException cosmosException) when (cosmosException.StatusCode == (HttpStatusCode)429)
                 {

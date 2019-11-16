@@ -89,8 +89,6 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         private bool hitException;
 
-        private bool firstMoveNext;
-
         /// <summary>
         /// Initializes a new instance of the ItemProducer class.
         /// </summary>
@@ -389,9 +387,26 @@ namespace Microsoft.Azure.Cosmos.Query
             this.PreviousContinuationToken = this.CurrentContinuationToken;
             this.CurrentContinuationToken = queryResponse.ContinuationToken;
             this.CurrentPage = queryResponse.CosmosElements.GetEnumerator();
-            this.IsAtBeginningOfPage = false;
-            this.firstMoveNext = true;
             this.itemsLeftInCurrentPage = queryResponse.CosmosElements.Count;
+
+            // Prime the enumerator
+            bool primedEnumerator = this.CurrentPage.MoveNext();
+            if (!primedEnumerator)
+            {
+                // We got an empty page
+                if (this.CurrentContinuationToken != null)
+                {
+                    return await this.TryMoveNextPageAsync(cancellationToken);
+                }
+                else
+                {
+                    this.HasMoreResults = false;
+                    return ItemProducer.IsDoneResponse;
+                }
+            }
+
+            this.Current = this.CurrentPage.Current;
+            this.IsAtBeginningOfPage = true;
 
             return ItemProducer.IsSuccessResponse;
         }
@@ -403,36 +418,22 @@ namespace Microsoft.Azure.Cosmos.Query
                 return false;
             }
 
+            this.IsAtBeginningOfPage = false;
             bool movedNext = this.CurrentPage.MoveNext();
             CosmosElement originalCurrent = this.Current;
             this.Current = this.CurrentPage.Current;
-            if (this.firstMoveNext)
-            {
-                this.IsAtBeginningOfPage = true;
-            }
-            else
-            {
-                this.IsAtBeginningOfPage = false;
-            }
-
-            this.firstMoveNext = false;
 
             if (!movedNext || ((originalCurrent != null) && !this.equalityComparer.Equals(originalCurrent, this.Current)))
             {
                 this.IsActive = false;
             }
 
-            if (movedNext)
+            Interlocked.Decrement(ref this.bufferedItemCount);
+            Interlocked.Decrement(ref this.itemsLeftInCurrentPage);
+
+            if (!movedNext && (this.CurrentContinuationToken == null))
             {
-                Interlocked.Decrement(ref this.bufferedItemCount);
-                Interlocked.Decrement(ref this.itemsLeftInCurrentPage);
-            }
-            else
-            {
-                if (this.CurrentContinuationToken == null)
-                {
-                    this.HasMoreResults = false;
-                }
+                this.HasMoreResults = false;
             }
 
             return movedNext;

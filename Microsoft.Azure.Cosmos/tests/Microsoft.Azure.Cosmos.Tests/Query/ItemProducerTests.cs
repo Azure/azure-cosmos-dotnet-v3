@@ -220,8 +220,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 {
                     await itemProducer.TryMoveNextPageAsync(this.cancellationToken);
                 }
-
-                itemProducer.TryMoveNextDocumentWithinPage();
             });
 #pragma warning restore 4014
             while (callBackCount == 2)
@@ -255,7 +253,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 {
                     (bool successfullyMovedNext, QueryResponseCore? failureResponse) movedNext = await itemProducer.TryMoveNextPageAsync(this.cancellationToken);
                     Assert.IsTrue(movedNext.successfullyMovedNext);
-                    Assert.IsTrue(itemProducer.TryMoveNextDocumentWithinPage());
                 }
 
                 Assert.IsTrue(itemProducer.HasMoreResults);
