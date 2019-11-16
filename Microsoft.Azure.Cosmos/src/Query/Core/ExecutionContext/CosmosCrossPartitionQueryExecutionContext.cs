@@ -375,7 +375,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 {
                     while (true)
                     {
-                        (bool movedToNextPage, QueryResponseCore? failureResponse) = await itemProducerTree.TryMoveNextPageIfNotSplitAsync(cancellationToken);
+                        (bool movedToNextPage, QueryResponseCore? failureResponse) = await itemProducerTree.TryMoveNextPageAsync(cancellationToken);
 
                         if (failureResponse.HasValue)
                         {
@@ -390,6 +390,12 @@ namespace Microsoft.Azure.Cosmos.Query
 
                         if (!movedToNextPage)
                         {
+                            break;
+                        }
+
+                        if (itemProducerTree.HasSplit)
+                        {
+                            // If we got a split, then don't call moveNext again, since we already did in the split proofing.
                             break;
                         }
 

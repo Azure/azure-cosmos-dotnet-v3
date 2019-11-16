@@ -89,6 +89,8 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         private bool hitException;
 
+        private bool enumeratorPrimed;
+
         /// <summary>
         /// Initializes a new instance of the ItemProducer class.
         /// </summary>
@@ -233,7 +235,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Gets the current document in this producer.
         /// </summary>
-        public CosmosElement Current { get; private set; }
+        public CosmosElement Current => this.CurrentPage?.Current;
 
         /// <summary>
         /// A static object representing that the move next operation succeeded, and was able to load the next page
@@ -359,7 +361,7 @@ namespace Microsoft.Azure.Cosmos.Query
             this.HasMoreResults = false;
         }
 
-        public async Task<(bool succeeded, QueryResponseCore?)> TryMoveNextPageAsync(CancellationToken cancellationToken)
+        public async Task<(bool movedToNextPage, QueryResponseCore? failureReponse)> TryMoveNextPageAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             if (this.itemsLeftInCurrentPage != 0)
@@ -388,25 +390,7 @@ namespace Microsoft.Azure.Cosmos.Query
             this.CurrentContinuationToken = queryResponse.ContinuationToken;
             this.CurrentPage = queryResponse.CosmosElements.GetEnumerator();
             this.itemsLeftInCurrentPage = queryResponse.CosmosElements.Count;
-
-            // Prime the enumerator
-            bool primedEnumerator = this.CurrentPage.MoveNext();
-            if (!primedEnumerator)
-            {
-                // We got an empty page
-                if (this.CurrentContinuationToken != null)
-                {
-                    return await this.TryMoveNextPageAsync(cancellationToken);
-                }
-                else
-                {
-                    this.HasMoreResults = false;
-                    return ItemProducer.IsDoneResponse;
-                }
-            }
-
-            this.Current = this.CurrentPage.Current;
-            this.IsAtBeginningOfPage = true;
+            this.enumeratorPrimed = false;
 
             return ItemProducer.IsSuccessResponse;
         }
@@ -418,18 +402,26 @@ namespace Microsoft.Azure.Cosmos.Query
                 return false;
             }
 
-            this.IsAtBeginningOfPage = false;
-            bool movedNext = this.CurrentPage.MoveNext();
             CosmosElement originalCurrent = this.Current;
-            this.Current = this.CurrentPage.Current;
+            bool movedNext = this.CurrentPage.MoveNext();
 
             if (!movedNext || ((originalCurrent != null) && !this.equalityComparer.Equals(originalCurrent, this.Current)))
             {
                 this.IsActive = false;
             }
 
-            Interlocked.Decrement(ref this.bufferedItemCount);
-            Interlocked.Decrement(ref this.itemsLeftInCurrentPage);
+            if (!this.enumeratorPrimed)
+            {
+                this.IsAtBeginningOfPage = true;
+                this.enumeratorPrimed = true;
+            }
+            else
+            {
+                Interlocked.Decrement(ref this.bufferedItemCount);
+                Interlocked.Decrement(ref this.itemsLeftInCurrentPage);
+
+                this.IsAtBeginningOfPage = false;
+            }
 
             if (!movedNext && (this.CurrentContinuationToken == null))
             {

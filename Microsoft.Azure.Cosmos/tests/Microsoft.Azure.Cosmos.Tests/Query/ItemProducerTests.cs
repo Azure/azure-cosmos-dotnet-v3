@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                 Assert.IsTrue(itemProducer.HasMoreResults);
 
-                while ((await itemProducer.TryMoveNextPageAsync(this.cancellationToken)).succeeded)
+                while ((await itemProducer.TryMoveNextPageAsync(this.cancellationToken)).movedToNextPage)
                 {
                     while (itemProducer.TryMoveNextDocumentWithinPage())
                     {
@@ -218,7 +218,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 if (!itemProducer.TryMoveNextDocumentWithinPage())
                 {
-                    await itemProducer.TryMoveNextPageAsync(this.cancellationToken);
+                    Assert.IsTrue((await itemProducer.TryMoveNextPageAsync(this.cancellationToken)).movedToNextPage);
+                    Assert.IsTrue(itemProducer.TryMoveNextDocumentWithinPage());
                 }
             });
 #pragma warning restore 4014
@@ -251,8 +252,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 if (!itemProducer.TryMoveNextDocumentWithinPage())
                 {
-                    (bool successfullyMovedNext, QueryResponseCore? failureResponse) movedNext = await itemProducer.TryMoveNextPageAsync(this.cancellationToken);
-                    Assert.IsTrue(movedNext.successfullyMovedNext);
+                    Assert.IsTrue((await itemProducer.TryMoveNextPageAsync(this.cancellationToken)).movedToNextPage);
+                    Assert.IsTrue(itemProducer.TryMoveNextDocumentWithinPage());
                 }
 
                 Assert.IsTrue(itemProducer.HasMoreResults);

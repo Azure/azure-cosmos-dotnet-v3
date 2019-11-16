@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 List<ToDoItem> itemsRead = new List<ToDoItem>();
                 while ((await itemProducerTree.TryMoveNextPageAsync(this.cancellationToken)).movedToNextPage)
                 {
-                    while(itemProducerTree.TryMoveNextDocumentWithinPage())
+                    while (itemProducerTree.TryMoveNextDocumentWithinPage())
                     {
                         Assert.IsTrue(itemProducerTree.HasMoreResults);
                         string jsonValue = itemProducerTree.Current.ToString();
@@ -264,6 +264,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.IsTrue(movedToNextPage);
                 Assert.IsNull(failureResponse);
                 Assert.IsTrue(itemProducerTree.TryMoveNextDocumentWithinPage());
+                Assert.IsFalse(itemProducerTree.TryMoveNextDocumentWithinPage());
                 Assert.IsTrue(itemProducerTree.HasMoreResults);
             }
 
@@ -273,6 +274,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.IsTrue(movedToNextPage);
                 Assert.IsNull(failureResponse);
                 Assert.IsTrue(itemProducerTree.TryMoveNextDocumentWithinPage());
+                Assert.IsFalse(itemProducerTree.TryMoveNextDocumentWithinPage());
                 Assert.IsTrue(itemProducerTree.HasMoreResults);
             }
 

@@ -369,7 +369,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Gets a value indicating whether the document producer tree has split.
         /// </summary>
-        private bool HasSplit => this.children.Count != 0;
+        public bool HasSplit => this.children.Count != 0;
 
         /// <summary>
         /// Gets the document producers that need their continuation token return to the user.
@@ -503,28 +503,13 @@ namespace Microsoft.Azure.Cosmos.Query
                 cancellationToken: cancellationToken);
         }
 
-        private async Task<(bool successfullyMovedNext, QueryResponseCore? failureResponse)> TryMoveNextPageIfNotSplitAsyncImplementationAsync(CancellationToken token)
-        {
-            if (this.HasSplit)
-            {
-                return ItemProducer.IsDoneResponse;
-            }
-
-            return await this.TryMoveNextPageImplementationAsync(token);
-        }
-
-        public async Task BufferMoreDocumentsAsync(CancellationToken cancellationToken)
+        public async Task<(bool bufferedMoreDocuments, QueryResponseCore? failureResponse)> BufferMoreDocumentsAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-
-            if (this.CurrentItemProducerTree == this)
-            {
-                await this.Root.BufferMoreDocumentsAsync(cancellationToken);
-            }
-            else
-            {
-                await this.CurrentItemProducerTree.BufferMoreDocumentsAsync(cancellationToken);
-            }
+            return await this.ExecuteWithSplitProofingAsync(
+                function: this.BufferMoreDocumentsImplementationAsync,
+                functionNeedsBeReexecuted: true,
+                cancellationToken: cancellationToken);
         }
 
         public bool TryMoveNextDocumentWithinPage()
@@ -535,7 +520,21 @@ namespace Microsoft.Azure.Cosmos.Query
             }
             else
             {
-                return this.CurrentItemProducerTree.TryMoveNextDocumentWithinPage();
+                // Keep track of the current tree
+                ItemProducerTree itemProducerTree = this.CurrentItemProducerTree;
+                bool movedNext = itemProducerTree.TryMoveNextDocumentWithinPage();
+
+                // Update the priority queue for the new values
+                this.children.Enqueue(this.children.Dequeue());
+
+                // If the current tree is done, but other trees still have a result
+                // then return true.
+                if (!movedNext && this.HasMoreResults)
+                {
+                    return true;
+                }
+
+                return movedNext;
             }
         }
 
@@ -548,8 +547,58 @@ namespace Microsoft.Azure.Cosmos.Query
             }
             else
             {
-                return await this.CurrentItemProducerTree.TryMoveNextPageAsync(cancellationToken);
+                // Keep track of the current tree
+                ItemProducerTree itemProducerTree = this.CurrentItemProducerTree;
+                (bool successfullyMovedNext, QueryResponseCore? failureResponse) response = await itemProducerTree.TryMoveNextPageAsync(cancellationToken);
+
+                // Update the priority queue for the new values
+                this.children.Enqueue(this.children.Dequeue());
+
+                // If the current tree is done, but other trees still have a result
+                // then return true.
+                if (!response.successfullyMovedNext &&
+                    response.failureResponse == null &&
+                    this.HasMoreResults)
+                {
+                    return ItemProducer.IsSuccessResponse;
+                }
+
+                return response;
             }
+        }
+
+        private async Task<(bool successfullyMovedNext, QueryResponseCore? failureResponse)> TryMoveNextPageIfNotSplitAsyncImplementationAsync(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (this.HasSplit)
+            {
+                return ItemProducer.IsDoneResponse;
+            }
+
+            return await this.TryMoveNextPageImplementationAsync(cancellationToken);
+        }
+
+        private async Task<(bool successfullyMovedNext, QueryResponseCore? failureResponse)> BufferMoreDocumentsImplementationAsync(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (this.CurrentItemProducerTree == this)
+            {
+                if (!this.HasMoreBackendResults || this.HasSplit)
+                {
+                    // Just no-op, since this method might be called by the scheduler, which doesn't know of the reconfiguration yet.
+                    return ItemProducer.IsSuccessResponse;
+                }
+
+                await this.Root.BufferMoreDocumentsAsync(cancellationToken);
+            }
+            else
+            {
+                await this.CurrentItemProducerTree.BufferMoreDocumentsAsync(cancellationToken);
+            }
+
+            return ItemProducer.IsSuccessResponse;
         }
 
         /// <summary>
@@ -614,22 +663,22 @@ namespace Microsoft.Azure.Cosmos.Query
                         {
                             while (true)
                             {
-                                (bool succeeded, QueryResponseCore? queryReponseCore) = await replacementItemProducerTree.TryMoveNextPageAsync(cancellationToken);
-                                if (!succeeded)
+                                (bool movedToNextPage, QueryResponseCore? failureResponse) = await replacementItemProducerTree.TryMoveNextPageAsync(cancellationToken);
+                                if (!movedToNextPage)
                                 {
-                                    throw new InvalidOperationException("Unable to get the first page for the child document producers");
-                                }
+                                    if (failureResponse.HasValue)
+                                    {
+                                        return (movedToNextPage, failureResponse);
+                                    }
 
-                                if (replacementItemProducerTree.ItemsLeftInCurrentPage != 0)
-                                {
-                                    // Order By requires at least one item in the tree so that the comparator will work.
                                     break;
                                 }
-                            }
 
-                            if (!replacementItemProducerTree.TryMoveNextDocumentWithinPage())
-                            {
-                                throw new InvalidOperationException("Unable to move to the first document in the first page for the child document producers");
+                                // Order By requires at least one item in the tree so that the comparator will work.
+                                if (replacementItemProducerTree.TryMoveNextDocumentWithinPage())
+                                {
+                                    break;
+                                }
                             }
                         }
 
@@ -643,7 +692,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         }
                     }
 
-                    if (!functionNeedsBeReexecuted)
+                    if (!this.deferFirstPage)
                     {
                         // We don't want to call move next async again, since we already did when creating the document producers
                         return ItemProducer.IsSuccessResponse;
