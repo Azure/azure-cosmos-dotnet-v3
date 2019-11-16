@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Collections.Generic;
     using Core.ExecutionComponent;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using ParallelQuery;
     using PartitionKeyRange = Documents.PartitionKeyRange;
@@ -559,7 +560,7 @@ namespace Microsoft.Azure.Cosmos.Query
             if (minIndex < 0)
             {
                 return TryCatch<InitInfo<TContinuationToken>>.FromException(
-                    new ArgumentException(
+                    new MalformedContinuationTokenException(
                         $"{RMResources.InvalidContinuationToken} - Could not find continuation token: {firstContinuationToken}"));
             }
 
@@ -579,7 +580,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 if (replacementRanges.Count() == 0)
                 {
                     return TryCatch<InitInfo<TContinuationToken>>.FromException(
-                        new ArgumentException(
+                        new MalformedContinuationTokenException(
                             $"{RMResources.InvalidContinuationToken} - Could not find continuation token: {continuationToken}"));
                 }
 
@@ -598,7 +599,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     child1Min == parentMin))
                 {
                     return TryCatch<InitInfo<TContinuationToken>>.FromException(
-                        new ArgumentException(
+                        new MalformedContinuationTokenException(
                             $"{RMResources.InvalidContinuationToken} - PMax = C2Max > C2Min > C1Max > C1Min = PMin: {continuationToken}"));
                 }
 

@@ -781,7 +781,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (CosmosException exception) when (exception.StatusCode == HttpStatusCode.BadRequest)
             {
-                Assert.IsTrue(exception.Message.StartsWith("Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {\"errors\":[{\"severity\":\"Error\",\"location\":{\"start\":27,\"end\":28},\"code\":\"SC2001\",\"message\":\"Identifier 'a' could not be resolved.\"}]}"),
+                Assert.IsTrue(exception.Message.StartsWith(@"Response status code does not indicate success: 400 Substatus: 0 Reason: ({""errors"":[{""severity"":""Error"",""location"":{""start"":27,""end"":28},""code"":""SC2001"",""message"":""Identifier 'a' could not be resolved.""}]})."),
                     exception.Message);
             }
         }

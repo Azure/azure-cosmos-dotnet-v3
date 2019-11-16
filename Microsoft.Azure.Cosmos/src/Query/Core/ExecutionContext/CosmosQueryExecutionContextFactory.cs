@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
@@ -113,14 +114,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         TryCatch<CosmosQueryExecutionContext> tryCreateItemQueryExecutionContext = await this.TryCreateItemQueryExecutionContextAsync(cancellationToken);
                         if (!tryCreateItemQueryExecutionContext.Succeeded)
                         {
-                            // Failed to create pipeline (due to a bad request).
-                            return QueryResponseCore.CreateFailure(
-                                HttpStatusCode.BadRequest,
-                                subStatusCodes: null,
-                                errorMessage: tryCreateItemQueryExecutionContext.Exception.ToString(),
-                                requestCharge: 0,
-                                activityId: this.CosmosQueryContext.CorrelatedActivityId.ToString(),
-                                diagnostics: QueryResponseCore.EmptyDiagnostics);
+                            return QueryResponseFactory.CreateFromException(tryCreateItemQueryExecutionContext.Exception);
                         }
 
                         this.innerExecutionContext = tryCreateItemQueryExecutionContext.Result;
@@ -144,14 +138,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         TryCatch<CosmosQueryExecutionContext> tryCreateItemQueryExecutionContext = await this.TryCreateItemQueryExecutionContextAsync(cancellationToken);
                         if (!tryCreateItemQueryExecutionContext.Succeeded)
                         {
-                            // Failed to create pipeline (due to a bad request).
-                            return QueryResponseCore.CreateFailure(
-                                HttpStatusCode.BadRequest,
-                                subStatusCodes: null,
-                                errorMessage: tryCreateItemQueryExecutionContext.Exception.ToString(),
-                                requestCharge: 0,
-                                activityId: this.CosmosQueryContext.CorrelatedActivityId.ToString(),
-                                diagnostics: QueryResponseCore.EmptyDiagnostics);
+                            return QueryResponseFactory.CreateFromException(tryCreateItemQueryExecutionContext.Exception);
                         }
 
                         this.innerExecutionContext = tryCreateItemQueryExecutionContext.Result;
@@ -213,13 +200,14 @@ namespace Microsoft.Azure.Cosmos.Query
                     out PipelineContinuationToken pipelineContinuationToken))
                 {
                     return TryCatch<CosmosQueryExecutionContext>.FromException(
-                        new Exception($"Malformed {nameof(PipelineContinuationToken)}: {continuationToken}."));
+                        new MalformedContinuationTokenException(
+                            $"Malformed {nameof(PipelineContinuationToken)}: {continuationToken}."));
                 }
 
                 if (PipelineContinuationToken.IsTokenFromTheFuture(pipelineContinuationToken))
                 {
                     return TryCatch<CosmosQueryExecutionContext>.FromException(
-                        new Exception(
+                        new MalformedContinuationTokenException(
                             $"{nameof(PipelineContinuationToken)} Continuation token is from a newer version of the SDK. " +
                             $"Upgrade the SDK to avoid this issue." +
                             $"{continuationToken}."));
@@ -230,7 +218,8 @@ namespace Microsoft.Azure.Cosmos.Query
                     out PipelineContinuationTokenV1_1 latestVersionPipelineContinuationToken))
                 {
                     return TryCatch<CosmosQueryExecutionContext>.FromException(
-                        new Exception($"{nameof(PipelineContinuationToken)}: '{continuationToken}' is no longer supported."));
+                        new MalformedContinuationTokenException(
+                            $"{nameof(PipelineContinuationToken)}: '{continuationToken}' is no longer supported."));
                 }
 
                 continuationToken = latestVersionPipelineContinuationToken.SourceContinuationToken;
@@ -363,7 +352,7 @@ namespace Microsoft.Azure.Cosmos.Query
             if (initialPageSize < -1 || initialPageSize == 0)
             {
                 return TryCatch<CosmosQueryExecutionContext>.FromException(
-                    new Exception($"Invalid MaxItemCount {initialPageSize}"));
+                    new MalformedContinuationTokenException($"Invalid MaxItemCount {initialPageSize}"));
             }
 
             QueryInfo queryInfo = partitionedQueryExecutionInfo.QueryInfo;

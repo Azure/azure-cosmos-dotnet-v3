@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
 {
     using System;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
     /// <summary>
@@ -194,7 +195,7 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
                     if (!CosmosElement.TryParse(continuationToken, out globalMinMax))
                     {
                         return TryCatch<IAggregator>.FromException(
-                            new Exception($"Malformed continuation token: {continuationToken}"));
+                            new MalformedContinuationTokenException($"Malformed continuation token: {continuationToken}"));
                     }
                 }
             }
