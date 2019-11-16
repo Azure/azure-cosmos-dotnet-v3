@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.Query
             ProduceAsyncCompleteDelegate produceAsyncCompleteCallback,
             IComparer<ItemProducerTree> itemProducerTreeComparer,
             IEqualityComparer<CosmosElement> equalityComparer,
-            TestSettings testSettings,
+            TestInjections testSettings,
             bool deferFirstPage,
             string collectionRid,
             long initialPageSize = 50,
@@ -453,7 +453,7 @@ namespace Microsoft.Azure.Cosmos.Query
             ProduceAsyncCompleteDelegate produceAsyncCompleteCallback,
             IComparer<ItemProducerTree> itemProducerTreeComparer,
             IEqualityComparer<CosmosElement> equalityComparer,
-            TestSettings testFlags,
+            TestInjections testFlags,
             bool deferFirstPage,
             string collectionRid,
             long initialPageSize = 50)
@@ -485,7 +485,7 @@ namespace Microsoft.Azure.Cosmos.Query
             return ex.StatusCode == HttpStatusCode.Gone && ex.SubStatusCode == Documents.SubStatusCodes.PartitionKeyRangeGone;
         }
 
-        public async Task<(bool succeeded, QueryResponseCore? failureResponse)> TryMoveNextPageAsync(CancellationToken cancellationToken)
+        public async Task<(bool movedToNextPage, QueryResponseCore? failureResponse)> TryMoveNextPageAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             return await this.ExecuteWithSplitProofingAsync(
@@ -494,7 +494,7 @@ namespace Microsoft.Azure.Cosmos.Query
                cancellationToken: cancellationToken);
         }
 
-        public async Task<(bool succeeded, QueryResponseCore? failureResponse)> TryMoveNextPageIfNotSplitAsync(CancellationToken cancellationToken)
+        public async Task<(bool movedToNextPage, QueryResponseCore? failureResponse)> TryMoveNextPageIfNotSplitAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             return await this.ExecuteWithSplitProofingAsync(

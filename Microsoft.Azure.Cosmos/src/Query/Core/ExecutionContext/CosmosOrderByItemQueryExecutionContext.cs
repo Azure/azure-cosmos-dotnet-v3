@@ -48,6 +48,11 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         private static readonly Func<ItemProducerTree, int> FetchPriorityFunction = itemProducerTree => itemProducerTree.BufferedItemCount;
 
+        private static readonly JsonSerializerSettings NoAsciiCharactersSerializerSettings = new JsonSerializerSettings()
+        {
+            StringEscapeHandling = StringEscapeHandling.EscapeNonAscii,
+        };
+
         /// <summary>
         /// Skip count used for JOIN queries.
         /// You can read up more about this in the documentation for the continuation token.
@@ -84,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.Query
             int? maxItemCount,
             int? maxBufferedItemCount,
             OrderByConsumeComparer consumeComparer,
-            TestSettings testSettings)
+            TestInjections testSettings)
             : base(
                 queryContext: initPararms,
                 maxConcurrency: maxConcurrency,
@@ -136,17 +141,11 @@ namespace Microsoft.Azure.Cosmos.Query
                         return orderByContinuationToken;
                     });
 
-                    continuationToken = JsonConvert.SerializeObject(orderByContinuationTokens, new JsonSerializerSettings()
-                    {
-                        StringEscapeHandling = StringEscapeHandling.EscapeNonAscii,
-                    });
+                    continuationToken = JsonConvert.SerializeObject(orderByContinuationTokens, NoAsciiCharactersSerializerSettings);
 
                     // Newtonsoft has a bug where non ascii characters aren't escaped for custom POGOs
                     // so the workaround is to double serialize
-                    continuationToken = JsonConvert.SerializeObject(JToken.Parse(continuationToken), new JsonSerializerSettings()
-                    {
-                        StringEscapeHandling = StringEscapeHandling.EscapeNonAscii,
-                    });
+                    continuationToken = JsonConvert.SerializeObject(JToken.Parse(continuationToken), NoAsciiCharactersSerializerSettings);
                 }
                 else
                 {

@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         private readonly SqlQuerySpec querySpecForInit;
 
-        private readonly TestSettings testFlags;
+        private readonly TestInjections testFlags;
 
         /// <summary>
         /// Over the duration of the life time of a document producer the page size will change, since we have an adaptive page size.
@@ -108,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.Query
             PartitionKeyRange partitionKeyRange,
             ProduceAsyncCompleteDelegate produceAsyncCompleteCallback,
             IEqualityComparer<CosmosElement> equalityComparer,
-            TestSettings testFlags,
+            TestInjections testFlags,
             long initialPageSize = 50,
             string initialContinuationToken = null)
         {
@@ -293,7 +293,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     schedulingStopwatch: this.fetchSchedulingMetrics,
                     cancellationToken: token);
 
-                if ((this.testFlags != null) && this.testFlags.Simulate429s)
+                if ((this.testFlags != null) && this.testFlags.SimulateThrottles)
                 {
                     Random random = new Random();
                     if (random.Next() % 2 == 0)

@@ -145,7 +145,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal ExecutionEnvironment? ExecutionEnvironment { get; set; }
 
-        internal TestSettings TestSettings { get; set; }
+        internal TestInjections TestSettings { get; set; }
 
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties

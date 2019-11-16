@@ -609,7 +609,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             List<T> resultsFromTryGetContinuationToken = new List<T>();
-            string state = null;
+            string continuationToken = null;
             do
             {
                 QueryRequestOptions computeRequestOptions = queryRequestOptions.Clone();
@@ -618,7 +618,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 FeedIteratorCore<T> itemQuery = (FeedIteratorCore<T>)container.GetItemQueryIterator<T>(
                    queryText: query,
                    requestOptions: computeRequestOptions,
-                   continuationToken: state);
+                   continuationToken: continuationToken);
                 try
                 {
                     FeedResponse<T> cosmosQueryResponse = await itemQuery.ReadNextAsync();
@@ -631,17 +631,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     resultsFromTryGetContinuationToken.AddRange(cosmosQueryResponse);
                     Assert.IsTrue(
-                        itemQuery.TryGetContinuationToken(out state),
+                        itemQuery.TryGetContinuationToken(out continuationToken),
                         "Failed to get state for query");
+                    Assert.IsTrue(continuationToken.All((character) => character < 128));
                 }
                 catch (CosmosException cosmosException) when (cosmosException.StatusCode == (HttpStatusCode)429)
                 {
                     itemQuery = (FeedIteratorCore<T>)container.GetItemQueryIterator<T>(
                             queryText: query,
                             requestOptions: queryRequestOptions,
-                            continuationToken: state);
+                            continuationToken: continuationToken);
                 }
-            } while (state != null);
+            } while (continuationToken != null);
 
             return resultsFromTryGetContinuationToken;
         }
@@ -679,6 +680,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                         resultsFromContinuationToken.AddRange(cosmosQueryResponse);
                         continuationToken = cosmosQueryResponse.ContinuationToken;
+                        Assert.IsTrue(continuationToken.All((character) => character < 128));
                         break;
                     }
                     catch (CosmosException cosmosException) when (cosmosException.StatusCode == (HttpStatusCode)429)
@@ -725,6 +727,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
 
                     continuationTokenForRetries = page.ContinuationToken;
+                    Assert.IsTrue(continuationTokenForRetries.All((character) => character < 128));
                 }
                 catch (CosmosException cosmosException) when (cosmosException.StatusCode == (HttpStatusCode)429)
                 {
@@ -1409,7 +1412,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         MaxBufferedItemCount = 7000,
                         MaxConcurrency = 2,
                         MaxItemCount = maxItemCount,
-                        TestSettings = new TestSettings(simulate429s: true, simulateEmptyPages: false)
+                        TestSettings = new TestInjections(simulate429s: true, simulateEmptyPages: false)
                     };
 
                     List<JToken> queryResults = await CrossPartitionQueryTests.RunQuery<JToken>(
@@ -1453,7 +1456,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         MaxBufferedItemCount = 7000,
                         MaxConcurrency = 2,
                         MaxItemCount = maxItemCount,
-                        TestSettings = new TestSettings(simulate429s: false, simulateEmptyPages: true)
+                        TestSettings = new TestInjections(simulate429s: false, simulateEmptyPages: true)
                     };
 
                     List<JToken> queryResults = await CrossPartitionQueryTests.RunQuery<JToken>(

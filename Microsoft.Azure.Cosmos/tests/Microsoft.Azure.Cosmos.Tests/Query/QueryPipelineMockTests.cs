@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     maxConcurrency: null,
                     maxItemCount: maxPageSize,
                     maxBufferedItemCount: null,
-                    testSettings: new Query.Core.TestSettings(simulate429s: false, simulateEmptyPages: false));
+                    testSettings: new Query.Core.TestInjections(simulate429s: false, simulateEmptyPages: false));
 
                 CosmosParallelItemQueryExecutionContext executionContext = (await CosmosParallelItemQueryExecutionContext.TryCreateAsync(
                     context,
@@ -161,7 +161,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     maxConcurrency: null,
                     maxItemCount: maxPageSize,
                     maxBufferedItemCount: null,
-                    testSettings: new Query.Core.TestSettings(simulate429s: false, simulateEmptyPages: false));
+                    testSettings: new Query.Core.TestInjections(simulate429s: false, simulateEmptyPages: false));
 
                 CosmosParallelItemQueryExecutionContext executionContext = (await CosmosParallelItemQueryExecutionContext.TryCreateAsync(
                     context,
@@ -289,7 +289,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     maxConcurrency: null,
                     maxItemCount: maxPageSize,
                     maxBufferedItemCount: null,
-                    testSettings: new Query.Core.TestSettings(simulate429s: false, simulateEmptyPages: false));
+                    testSettings: new Query.Core.TestInjections(simulate429s: false, simulateEmptyPages: false));
 
                 CosmosOrderByItemQueryExecutionContext executionContext = (await CosmosOrderByItemQueryExecutionContext.TryCreateAsync(
                     context,
@@ -412,7 +412,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     maxConcurrency: null,
                     maxItemCount: maxPageSize,
                     maxBufferedItemCount: null,
-                    testSettings: new Query.Core.TestSettings(simulate429s: false, simulateEmptyPages: false));
+                    testSettings: new Query.Core.TestInjections(simulate429s: false, simulateEmptyPages: false));
 
                 CosmosOrderByItemQueryExecutionContext executionContext = (await CosmosOrderByItemQueryExecutionContext.TryCreateAsync(
                     context,

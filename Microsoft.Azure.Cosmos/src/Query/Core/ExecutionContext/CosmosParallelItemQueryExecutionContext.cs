@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.Query
             int? maxConcurrency,
             int? maxItemCount,
             int? maxBufferedItemCount,
-            TestSettings testSettings)
+            TestInjections testSettings)
             : base(
                 queryContext: queryContext,
                 maxConcurrency: maxConcurrency,

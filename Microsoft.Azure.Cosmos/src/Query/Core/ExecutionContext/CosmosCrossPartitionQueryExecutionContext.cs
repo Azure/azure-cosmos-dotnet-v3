@@ -68,7 +68,11 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         private readonly long actualMaxBufferedItemCount;
 
-        private readonly TestSettings testSettings;
+        /// <summary>
+        /// Injections used to reproduce special failure cases.
+        /// Convert this to a mock in the future.
+        /// </summary>
+        private readonly TestInjections testSettings;
 
         private CosmosQueryContext queryContext;
 
@@ -119,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.Query
             IComparer<ItemProducerTree> moveNextComparer,
             Func<ItemProducerTree, int> fetchPrioirtyFunction,
             IEqualityComparer<CosmosElement> equalityComparer,
-            TestSettings testSettings)
+            TestInjections testSettings)
         {
             if (moveNextComparer == null)
             {
@@ -205,7 +209,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Gets a value indicating whether the context still has more results.
         /// </summary>
-        private bool HasMoreResults => this.itemProducerForest.Count != 0 && this.CurrentItemProducerTree().HasMoreResults;
+        private bool HasMoreResults => (this.itemProducerForest.Count != 0) && this.CurrentItemProducerTree().HasMoreResults;
 
         /// <summary>
         /// Gets the number of documents we can still buffer.
@@ -381,7 +385,7 @@ namespace Microsoft.Azure.Cosmos.Query
                                     subStatusCode: (int)failureResponse.Value.SubStatusCode.GetValueOrDefault(0),
                                     message: failureResponse.Value.ErrorMessage,
                                     activityId: failureResponse.Value.ActivityId,
-                                    requestCharge: 0));
+                                    requestCharge: failureResponse.Value.RequestCharge));
                         }
 
                         if (!movedToNextPage)
@@ -406,11 +410,6 @@ namespace Microsoft.Azure.Cosmos.Query
                 }
 
                 this.itemProducerForest.Enqueue(itemProducerTree);
-            }
-
-            if (this.itemProducerForest.Count == 0)
-            {
-                return TryCatch<bool>.FromException(new Exception("Failed to initialize cross partition query execution context."));
             }
 
             return TryCatch<bool>.FromResult(true);
@@ -684,7 +683,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 int? maxConcurrency,
                 int? maxItemCount,
                 int? maxBufferedItemCount,
-                TestSettings testSettings)
+                TestInjections testSettings)
             {
                 if (string.IsNullOrWhiteSpace(collectionRid))
                 {
@@ -771,7 +770,7 @@ namespace Microsoft.Azure.Cosmos.Query
             /// </summary>
             public int? MaxBufferedItemCount { get; }
 
-            public TestSettings TestSettings { get; }
+            public TestInjections TestSettings { get; }
         }
 
         #region ItemProducerTreeComparableTask

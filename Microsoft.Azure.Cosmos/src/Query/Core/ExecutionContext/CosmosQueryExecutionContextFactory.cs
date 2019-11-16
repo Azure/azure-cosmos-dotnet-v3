@@ -502,7 +502,7 @@ namespace Microsoft.Azure.Cosmos.Query
             internal IDictionary<string, object> Properties { get; set; }
             internal PartitionedQueryExecutionInfo PartitionedQueryExecutionInfo { get; set; }
             internal ExecutionEnvironment ExecutionEnvironment { get; set; }
-            internal TestSettings TestSettings { get; set; }
+            internal TestInjections TestSettings { get; set; }
         }
     }
 }

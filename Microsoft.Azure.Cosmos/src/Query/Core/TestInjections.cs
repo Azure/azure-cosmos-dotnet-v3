@@ -4,15 +4,15 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core
 {
-    internal sealed class TestSettings
+    internal sealed class TestInjections
     {
-        public TestSettings(bool simulate429s, bool simulateEmptyPages)
+        public TestInjections(bool simulate429s, bool simulateEmptyPages)
         {
-            this.Simulate429s = simulate429s;
+            this.SimulateThrottles = simulate429s;
             this.SimulateEmptyPages = simulateEmptyPages;
         }
 
-        public bool Simulate429s { get; }
+        public bool SimulateThrottles { get; }
 
         public bool SimulateEmptyPages { get; }
     }
