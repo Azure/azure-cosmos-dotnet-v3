@@ -46,12 +46,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 (queryResponse.SubStatusCode == Documents.SubStatusCodes.NameCacheIsStale) &&
                 !this.alreadyRetried)
             {
-                this.currentCosmosQueryExecutionContext.Dispose();
-                await this.cosmosQueryContext.QueryClient.ForceRefreshCollectionCacheAsync(
-                    this.cosmosQueryContext.ResourceLink.OriginalString,
-                    cancellationToken);
+                try
+                {
+                    await this.cosmosQueryContext.QueryClient.ForceRefreshCollectionCacheAsync(
+                        this.cosmosQueryContext.ResourceLink.OriginalString,
+                        cancellationToken);
+                }
+                finally
+                {
+                    this.alreadyRetried = true;
+                    this.currentCosmosQueryExecutionContext.Dispose();
+                }
+
                 this.currentCosmosQueryExecutionContext = this.cosmosQueryExecutionContextFactory();
-                this.alreadyRetried = true;
                 return await this.ExecuteNextAsync(cancellationToken);
             }
 
