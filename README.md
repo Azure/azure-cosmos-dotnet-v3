@@ -6,8 +6,8 @@ This client library enables client applications to connect to Azure Cosmos via t
 
 ```csharp
 CosmosClient client = new CosmosClient("https://mycosmosaccount.documents.azure.com:443/", "mysupersecretkey");
-Database database = await client.CreateDatabaseIfNotExistsAsync("MyDatabaseName");
-Container container = await database.CreateContainerIfNotExistsAsync(
+CosmosDatabase database = await client.CreateDatabaseIfNotExistsAsync("MyDatabaseName");
+CosmosContainer container = await database.CreateContainerIfNotExistsAsync(
     "MyContainerName",
     "/partitionKeyPath",
     400);
