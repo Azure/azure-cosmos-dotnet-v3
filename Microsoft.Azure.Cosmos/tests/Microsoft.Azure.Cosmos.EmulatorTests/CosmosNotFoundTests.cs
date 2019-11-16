@@ -163,14 +163,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task VerifyQueryNotFoundResponse(FeedIterator iterator)
         {
-            // Verify that even if the user ignores the HasMoreResults it still returns the exception
-            for(int i = 0; i < 3 ; i++)
-            {
-                ResponseMessage response = await iterator.ReadNextAsync();
-                Assert.IsNotNull(response);
-                Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
-                Assert.IsFalse(iterator.HasMoreResults);
-            }
+            ResponseMessage response = await iterator.ReadNextAsync();
+            Assert.IsNotNull(response);
+            Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
+            Assert.IsFalse(iterator.HasMoreResults);
         }
 
         private void VerifyNotFoundResponse(ResponseMessage response)

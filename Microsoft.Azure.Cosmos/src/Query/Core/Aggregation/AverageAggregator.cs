@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
 {
     using System;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
     /// <summary>
@@ -59,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
                 if (!AverageInfo.TryParse(continuationToken, out averageInfo))
                 {
                     return TryCatch<IAggregator>.FromException(
-                        new ArgumentException($"Invalid continuation token: {continuationToken}"));
+                        new MalformedContinuationTokenException($"Invalid continuation token: {continuationToken}"));
                 }
             }
             else

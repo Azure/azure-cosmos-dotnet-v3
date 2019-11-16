@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Threading.Tasks;
     using Collections.Generic;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Newtonsoft.Json;
     using PartitionKeyRange = Documents.PartitionKeyRange;
@@ -237,7 +238,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 if (!TryParseContinuationToken(continuationToken, out CompositeContinuationToken[] tokens))
                 {
                     return TryCatch<ParallelInitInfo>.FromException(
-                        new Exception($"Invalid format for continuation token {continuationToken} for {nameof(CosmosParallelItemQueryExecutionContext)}"));
+                        new MalformedContinuationTokenException($"Invalid format for continuation token {continuationToken} for {nameof(CosmosParallelItemQueryExecutionContext)}"));
                 }
 
                 return CosmosCrossPartitionQueryExecutionContext.TryFindTargetRangeAndExtractContinuationTokens(
