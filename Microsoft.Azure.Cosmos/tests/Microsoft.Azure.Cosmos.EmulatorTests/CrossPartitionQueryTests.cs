@@ -828,7 +828,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (CosmosException exception) when (exception.StatusCode == HttpStatusCode.BadRequest)
             {
-                Assert.IsTrue(exception.Message.StartsWith("Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {\"errors\":[{\"severity\":\"Error\",\"location\":{\"start\":27,\"end\":28},\"code\":\"SC2001\",\"message\":\"Identifier 'a' could not be resolved.\"}]}"),
+                Assert.IsTrue(exception.Message.StartsWith(@"Response status code does not indicate success: 400 Substatus: 0 Reason: ({""errors"":[{""severity"":""Error"",""location"":{""start"":27,""end"":28},""code"":""SC2001"",""message"":""Identifier 'a' could not be resolved.""}]})."),
                     exception.Message);
             }
         }
@@ -3574,68 +3574,67 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string children = args.Children;
 
             // Try resuming from bad continuation token
-            // TODO: comment these back in once they are properly tagged.
-            //#region BadContinuations
-            //try
-            //{
-            //    await container.GetItemQueryIterator<Document>(
-            //        "SELECT * FROM t",
-            //        continuationToken: Guid.NewGuid().ToString(),
-            //        requestOptions: new QueryRequestOptions() { MaxConcurrency = 1 }).ReadNextAsync();
+            #region BadContinuations
+            try
+            {
+                await container.GetItemQueryIterator<Document>(
+                    "SELECT * FROM t",
+                    continuationToken: Guid.NewGuid().ToString(),
+                    requestOptions: new QueryRequestOptions() { MaxConcurrency = 1 }).ReadNextAsync();
 
-            //    Assert.Fail("Expect exception");
-            //}
-            //catch (CosmosException dce)
-            //{
-            //    Assert.IsTrue(dce.StatusCode == HttpStatusCode.BadRequest);
-            //}
-            //catch (AggregateException aggrEx)
-            //{
-            //    Assert.Fail(aggrEx.ToString());
-            //}
+                Assert.Fail("Expect exception");
+            }
+            catch (CosmosException dce)
+            {
+                Assert.IsTrue(dce.StatusCode == HttpStatusCode.BadRequest);
+            }
+            catch (AggregateException aggrEx)
+            {
+                Assert.Fail(aggrEx.ToString());
+            }
 
-            //try
-            //{
-            //    await container.GetItemQueryIterator<Document>(
-            //        "SELECT TOP 10 * FROM r",
-            //        continuationToken: "{'top':11}",
-            //        requestOptions: new QueryRequestOptions() { MaxItemCount = 10, MaxConcurrency = -1 }).ReadNextAsync();
+            try
+            {
+                await container.GetItemQueryIterator<Document>(
+                    "SELECT TOP 10 * FROM r",
+                    continuationToken: "{'top':11}",
+                    requestOptions: new QueryRequestOptions() { MaxItemCount = 10, MaxConcurrency = -1 }).ReadNextAsync();
 
-            //    Assert.Fail("Expect exception");
-            //}
-            //catch (CosmosException dce)
-            //{
-            //    Assert.IsTrue(dce.StatusCode == HttpStatusCode.BadRequest);
-            //}
+                Assert.Fail("Expect exception");
+            }
+            catch (CosmosException dce)
+            {
+                Assert.IsTrue(dce.StatusCode == HttpStatusCode.BadRequest);
+            }
 
-            //try
-            //{
-            //    await container.GetItemQueryIterator<Document>(
-            //        "SELECT * FROM r ORDER BY r.field1",
-            //        continuationToken: "{'compositeToken':{'range':{'min':'05C1E9CD673398','max':'FF'}}, 'orderByItems':[{'item':2}, {'item':1}]}",
-            //        requestOptions: new QueryRequestOptions() { MaxItemCount = 10, MaxConcurrency = -1 }).ReadNextAsync();
+            try
+            {
+                await container.GetItemQueryIterator<Document>(
+                    "SELECT * FROM r ORDER BY r.field1",
+                    continuationToken: "{'compositeToken':{'range':{'min':'05C1E9CD673398','max':'FF'}}, 'orderByItems':[{'item':2}, {'item':1}]}",
+                    requestOptions: new QueryRequestOptions() { MaxItemCount = 10, MaxConcurrency = -1 }).ReadNextAsync();
 
-            //    Assert.Fail("Expect exception");
-            //}
-            //catch (CosmosException dce)
-            //{
-            //    Assert.IsTrue(dce.StatusCode == HttpStatusCode.BadRequest);
-            //}
+                Assert.Fail("Expect exception");
+            }
+            catch (CosmosException dce)
+            {
+                Assert.IsTrue(dce.StatusCode == HttpStatusCode.BadRequest);
+            }
 
-            //try
-            //{
-            //    await container.GetItemQueryIterator<Document>(
-            //       "SELECT * FROM r ORDER BY r.field1, r.field2",
-            //       continuationToken: "{'compositeToken':{'range':{'min':'05C1E9CD673398','max':'FF'}}, 'orderByItems':[{'item':2}, {'item':1}]}",
-            //       requestOptions: new QueryRequestOptions() { MaxItemCount = 10, MaxConcurrency = -1 }).ReadNextAsync();
+            try
+            {
+                await container.GetItemQueryIterator<Document>(
+                   "SELECT * FROM r ORDER BY r.field1, r.field2",
+                   continuationToken: "{'compositeToken':{'range':{'min':'05C1E9CD673398','max':'FF'}}, 'orderByItems':[{'item':2}, {'item':1}]}",
+                   requestOptions: new QueryRequestOptions() { MaxItemCount = 10, MaxConcurrency = -1 }).ReadNextAsync();
 
-            //    Assert.Fail("Expect exception");
-            //}
-            //catch (CosmosException dce)
-            //{
-            //    Assert.IsTrue(dce.StatusCode == HttpStatusCode.BadRequest);
-            //}
-            //#endregion
+                Assert.Fail("Expect exception");
+            }
+            catch (CosmosException dce)
+            {
+                Assert.IsTrue(dce.StatusCode == HttpStatusCode.BadRequest);
+            }
+            #endregion
 
             FeedResponse<Document> responseWithEmptyContinuationExpected = await container.GetItemQueryIterator<Document>(
                 string.Format(CultureInfo.InvariantCulture, "SELECT TOP 1 * FROM r ORDER BY r.{0}", partitionKey),

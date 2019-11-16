@@ -250,7 +250,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 if (!TryParseContinuationToken(continuationToken, out CompositeContinuationToken[] tokens))
                 {
                     return TryCatch<ParallelInitInfo>.FromException(
-                        new Exception($"Invalid format for continuation token {continuationToken} for {nameof(CosmosParallelItemQueryExecutionContext)}"));
+                        new MalformedContinuationTokenException($"Invalid format for continuation token {continuationToken} for {nameof(CosmosParallelItemQueryExecutionContext)}"));
                 }
 
                 return CosmosCrossPartitionQueryExecutionContext.TryFindTargetRangeAndExtractContinuationTokens(

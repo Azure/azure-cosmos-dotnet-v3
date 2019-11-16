@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// <para>
         /// Every resource within an Azure Cosmos DB database account needs to have a unique identifier. 
-        /// Unlike <see cref="Resource.ResourceId"/>, which is set internally, this Id is settable by the user and is not immutable.
+        /// Unlike <see cref="Documents.Resource.ResourceId"/>, which is set internally, this Id is settable by the user and is not immutable.
         /// </para>
         /// <para>
         /// When working with document resources, they too have this settable Id property. 

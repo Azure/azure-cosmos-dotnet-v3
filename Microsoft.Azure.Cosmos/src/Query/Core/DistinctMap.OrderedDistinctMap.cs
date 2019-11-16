@@ -79,7 +79,8 @@ namespace Microsoft.Azure.Cosmos.Query
                     if (!UInt128.TryParse(continuationToken, out lastHash))
                     {
                         return TryCatch<DistinctMap>.FromException(
-                            new Exception($"Malformed {nameof(OrderedDistinctMap)} continuation token: {continuationToken}."));
+                            new MalformedContinuationTokenException(
+                                $"Malformed {nameof(OrderedDistinctMap)} continuation token: {continuationToken}."));
                     }
                 }
                 else

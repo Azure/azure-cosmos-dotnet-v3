@@ -5,8 +5,8 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
 {
     using System;
     using System.Globalization;
-    using System.Net;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
     /// <summary>
@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
                 if (!long.TryParse(continuationToken, out partialCount))
                 {
                     return TryCatch<IAggregator>.FromException(
-                        new Exception($@"Invalid count continuation token: ""{continuationToken}""."));
+                        new MalformedContinuationTokenException($@"Invalid count continuation token: ""{continuationToken}""."));
                 }
             }
             else

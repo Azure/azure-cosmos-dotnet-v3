@@ -47,11 +47,11 @@ namespace Microsoft.Azure.Cosmos
                 // load resource
                 if (typeof(TValue) == typeof(Document) || typeof(Document).IsAssignableFrom(typeof(TValue)))
                 {
-                    this.responseBody = Resource.LoadFromWithConstructor<TValue>(response.ResponseBody, () => (TValue)(object)new Document(), this.serializerSettings);
+                    this.responseBody = Documents.Resource.LoadFromWithConstructor<TValue>(response.ResponseBody, () => (TValue)(object)new Document(), this.serializerSettings);
                 }
                 else if (typeof(TValue) == typeof(Attachment) || typeof(Attachment).IsAssignableFrom(typeof(TValue)))
                 {
-                    this.responseBody = Resource.LoadFromWithConstructor<TValue>(response.ResponseBody, () => (TValue)(object)new Attachment(), this.serializerSettings);
+                    this.responseBody = Documents.Resource.LoadFromWithConstructor<TValue>(response.ResponseBody, () => (TValue)(object)new Attachment(), this.serializerSettings);
                 }
                 else
                 {

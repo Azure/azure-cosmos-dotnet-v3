@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos.Query
             }
             catch (Documents.DocumentClientException exception)
             {
-                response = exception.ToCosmosResponseMessage(request: null);
+                response = exception.ToCosmosResponseMessage(requestMessage: null);
             }
             catch (CosmosException exception)
             {

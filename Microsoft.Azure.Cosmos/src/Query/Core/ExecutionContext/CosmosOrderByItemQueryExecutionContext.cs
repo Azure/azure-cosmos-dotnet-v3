@@ -490,7 +490,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 if (suppliedOrderByContinuationTokens.Length == 0)
                 {
                     return TryCatch<OrderByContinuationToken[]>.FromException(
-                        new Exception($"Order by continuation token cannot be empty: {requestContinuation}."));
+                        new MalformedContinuationTokenException($"Order by continuation token cannot be empty: {requestContinuation}."));
                 }
 
                 foreach (OrderByContinuationToken suppliedOrderByContinuationToken in suppliedOrderByContinuationTokens)
@@ -498,7 +498,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     if (suppliedOrderByContinuationToken.OrderByItems.Count != sortOrders.Length)
                     {
                         return TryCatch<OrderByContinuationToken[]>.FromException(
-                            new Exception($"Invalid order-by items in continuation token {requestContinuation} for OrderBy~Context."));
+                            new MalformedContinuationTokenException($"Invalid order-by items in continuation token {requestContinuation} for OrderBy~Context."));
                     }
                 }
 
@@ -507,7 +507,7 @@ namespace Microsoft.Azure.Cosmos.Query
             catch (JsonException ex)
             {
                 return TryCatch<OrderByContinuationToken[]>.FromException(
-                    new Exception($"Invalid JSON in continuation token {requestContinuation} for OrderBy~Context: {ex.Message}"));
+                    new MalformedContinuationTokenException($"Invalid JSON in continuation token {requestContinuation} for OrderBy~Context: {ex.Message}"));
             }
         }
 
@@ -538,7 +538,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 if (!ResourceId.TryParse(continuationToken.Rid, out ResourceId continuationRid))
                 {
                     return TryCatch<bool>.FromException(
-                        new Exception($"Invalid Rid in the continuation token {continuationToken.CompositeContinuationToken.Token} for OrderBy~Context."));
+                        new MalformedContinuationTokenException($"Invalid Rid in the continuation token {continuationToken.CompositeContinuationToken.Token} for OrderBy~Context."));
                 }
 
                 Dictionary<string, ResourceId> resourceIds = new Dictionary<string, ResourceId>();
@@ -582,7 +582,7 @@ namespace Microsoft.Azure.Cosmos.Query
                             if (!ResourceId.TryParse(orderByResult.Rid, out rid))
                             {
                                 return TryCatch<bool>.FromException(
-                                    new Exception($"Invalid Rid in the continuation token {continuationToken.CompositeContinuationToken.Token} for OrderBy~Context~TryParse."));
+                                    new MalformedContinuationTokenException($"Invalid Rid in the continuation token {continuationToken.CompositeContinuationToken.Token} for OrderBy~Context~TryParse."));
 
                             }
 
@@ -594,7 +594,7 @@ namespace Microsoft.Azure.Cosmos.Query
                             if (continuationRid.Database != rid.Database || continuationRid.DocumentCollection != rid.DocumentCollection)
                             {
                                 return TryCatch<bool>.FromException(
-                                    new Exception($"Invalid Rid in the continuation token {continuationToken.CompositeContinuationToken.Token} for OrderBy~Context."));
+                                    new MalformedContinuationTokenException($"Invalid Rid in the continuation token {continuationToken.CompositeContinuationToken.Token} for OrderBy~Context."));
                             }
 
                             continuationRidVerified = true;
