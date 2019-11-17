@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Net;
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
@@ -91,7 +92,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [ExpectedException(typeof(CosmosException))]
         public async Task TestCosmosQueryPartitionKeyDefinition()
         {
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition();
@@ -110,6 +110,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CancellationToken cancellationtoken = cancellationTokenSource.Token;
 
             Mock<CosmosQueryClient> client = new Mock<CosmosQueryClient>();
+            string exceptionMessage = "Verified that the PartitionKeyDefinition was correctly set. Cancel the rest of the query";
             client
                 .Setup(x => x.GetCachedContainerQueryPropertiesAsync(It.IsAny<Uri>(), It.IsAny<Cosmos.PartitionKey?>(), cancellationtoken))
                 .ReturnsAsync(new ContainerQueryProperties("mockContainer", null, partitionKeyDefinition));
@@ -127,7 +128,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(TryCatch<PartitionedQueryExecutionInfo>.FromException(
                     new InvalidOperationException(
-                        "Verified that the PartitionKeyDefinition was correctly set. Cancel the rest of the query")));
+                        exceptionMessage)));
 
             CosmosQueryExecutionContextFactory.InputParameters inputParameters = new CosmosQueryExecutionContextFactory.InputParameters(
                 sqlQuerySpec: sqlQuerySpec,
@@ -156,7 +157,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                 cosmosQueryContext,
                 inputParameters);
 
-            await context.ExecuteNextAsync(cancellationtoken);
+            QueryResponseCore queryResponse = await context.ExecuteNextAsync(cancellationtoken);
+            Assert.AreEqual(HttpStatusCode.BadRequest, queryResponse.StatusCode);
+            Assert.IsTrue(queryResponse.ErrorMessage.Contains(exceptionMessage));
         }
 
         private async Task<(IList<IDocumentQueryExecutionComponent> components, QueryResponseCore response)> GetAllExecutionComponents()
