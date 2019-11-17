@@ -196,7 +196,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     inputParameters.PartitionKey,
                     inputParameters.Properties,
                     inputParameters.PartitionedQueryExecutionInfo,
-                    inputParameters.ExecutionEnvironment);
+                    inputParameters.ExecutionEnvironment,
+                    inputParameters.TestInjections);
             }
 
             return await CosmosQueryExecutionContextFactory.TryCreateSpecializedDocumentQueryExecutionContextAsync(
@@ -254,7 +255,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 initialPageSize: (int)optimalPageSize,
                 maxConcurrency: inputParameters.MaxConcurrency,
                 maxItemCount: inputParameters.MaxItemCount,
-                maxBufferedItemCount: inputParameters.MaxBufferedItemCount);
+                maxBufferedItemCount: inputParameters.MaxBufferedItemCount,
+                testSettings: inputParameters.TestInjections);
 
             return await PipelinedDocumentQueryExecutionContext.TryCreateAsync(
                 inputParameters.ExecutionEnvironment,
@@ -342,7 +344,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 PartitionKey? partitionKey,
                 IReadOnlyDictionary<string, object> properties,
                 PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
-                ExecutionEnvironment? executionEnvironment)
+                ExecutionEnvironment? executionEnvironment,
+                TestInjections testInjections)
             {
                 if (sqlQuerySpec == null)
                 {
@@ -379,6 +382,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
                 ExecutionEnvironment resolvedExecutionEnvironment = executionEnvironment.GetValueOrDefault(InputParameters.DefaultExecutionEnvironment);
                 this.ExecutionEnvironment = resolvedExecutionEnvironment;
+                this.TestInjections = testInjections;
             }
 
             public SqlQuerySpec SqlQuerySpec { get; }
@@ -390,6 +394,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             public IReadOnlyDictionary<string, object> Properties { get; }
             public PartitionedQueryExecutionInfo PartitionedQueryExecutionInfo { get; }
             public ExecutionEnvironment ExecutionEnvironment { get; }
+            public TestInjections TestInjections { get; }
         }
     }
 }

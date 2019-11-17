@@ -76,7 +76,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     initialPageSize: maxPageSize,
                     maxConcurrency: null,
                     maxItemCount: maxPageSize,
-                    maxBufferedItemCount: null);
+                    maxBufferedItemCount: null,
+                    testSettings: new Query.Core.TestInjections(simulate429s: false, simulateEmptyPages: false));
 
                 CosmosParallelItemQueryExecutionContext executionContext = (await CosmosParallelItemQueryExecutionContext.TryCreateAsync(
                     context,
@@ -159,7 +160,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     initialPageSize: maxPageSize,
                     maxConcurrency: null,
                     maxItemCount: maxPageSize,
-                    maxBufferedItemCount: null);
+                    maxBufferedItemCount: null,
+                    testSettings: new Query.Core.TestInjections(simulate429s: false, simulateEmptyPages: false));
 
                 CosmosParallelItemQueryExecutionContext executionContext = (await CosmosParallelItemQueryExecutionContext.TryCreateAsync(
                     context,
@@ -242,7 +244,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                     };
 
                     OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
-                        queryClient: mockQueryClient.Object,
                         compositeContinuationToken: compositeContinuation,
                         orderByItems: orderByItems,
                         rid: itemToRepresentPreviousQuery._rid,
@@ -287,7 +288,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     initialPageSize: maxPageSize,
                     maxConcurrency: null,
                     maxItemCount: maxPageSize,
-                    maxBufferedItemCount: null);
+                    maxBufferedItemCount: null,
+                    testSettings: new Query.Core.TestInjections(simulate429s: false, simulateEmptyPages: false));
 
                 CosmosOrderByItemQueryExecutionContext executionContext = (await CosmosOrderByItemQueryExecutionContext.TryCreateAsync(
                     context,
@@ -365,7 +367,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                     };
 
                     OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
-                        queryClient: mockQueryClient.Object,
                         compositeContinuationToken: compositeContinuation,
                         orderByItems: orderByItems,
                         rid: itemToRepresentPreviousQuery._rid,
@@ -410,48 +411,60 @@ namespace Microsoft.Azure.Cosmos.Tests
                     initialPageSize: maxPageSize,
                     maxConcurrency: null,
                     maxItemCount: maxPageSize,
-                    maxBufferedItemCount: null);
+                    maxBufferedItemCount: null,
+                    testSettings: new Query.Core.TestInjections(simulate429s: false, simulateEmptyPages: false));
 
-                CosmosOrderByItemQueryExecutionContext executionContext = (await CosmosOrderByItemQueryExecutionContext.TryCreateAsync(
+                TryCatch<CosmosOrderByItemQueryExecutionContext> tryCreate = await CosmosOrderByItemQueryExecutionContext.TryCreateAsync(
                     context,
                     initParams,
                     fullConitnuationToken,
-                    this.cancellationToken)).Result;
+                    this.cancellationToken);
 
-                Assert.IsTrue(!executionContext.IsDone);
-
-                // Read all the pages from both splits
-                List<ToDoItem> itemsRead = new List<ToDoItem>();
-                QueryResponseCore? failure = null;
-                while (!executionContext.IsDone)
+                if (tryCreate.Succeeded)
                 {
-                    QueryResponseCore queryResponse = await executionContext.DrainAsync(
-                        maxPageSize,
-                        this.cancellationToken);
-                    if (queryResponse.IsSuccess)
+                    CosmosOrderByItemQueryExecutionContext executionContext = tryCreate.Result;
+
+                    Assert.IsTrue(!executionContext.IsDone);
+
+                    // Read all the pages from both splits
+                    List<ToDoItem> itemsRead = new List<ToDoItem>();
+                    QueryResponseCore? failure = null;
+                    while (!executionContext.IsDone)
                     {
-                        string responseContinuationToken = queryResponse.ContinuationToken;
-                        foreach (CosmosElement element in queryResponse.CosmosElements)
+                        QueryResponseCore queryResponse = await executionContext.DrainAsync(
+                            maxPageSize,
+                            this.cancellationToken);
+                        if (queryResponse.IsSuccess)
                         {
-                            string jsonValue = element.ToString();
-                            ToDoItem item = JsonConvert.DeserializeObject<ToDoItem>(jsonValue);
-                            itemsRead.Add(item);
+                            string responseContinuationToken = queryResponse.ContinuationToken;
+                            foreach (CosmosElement element in queryResponse.CosmosElements)
+                            {
+                                string jsonValue = element.ToString();
+                                ToDoItem item = JsonConvert.DeserializeObject<ToDoItem>(jsonValue);
+                                itemsRead.Add(item);
+                            }
+                        }
+                        else
+                        {
+                            Assert.IsNull(failure, "There should only be one error");
+                            failure = queryResponse;
                         }
                     }
-                    else
-                    {
-                        Assert.IsNull(failure, "There should only be one error");
-                        failure = queryResponse;
-                    }
+
+                    Assert.IsNotNull(failure);
+                    Assert.AreEqual((HttpStatusCode)429, failure.Value.StatusCode);
+                    Assert.IsNull(failure.Value.ErrorMessage);
+
+                    Assert.AreEqual(0 /*We don't get any items, since we don't buffer the failure anymore*/, itemsRead.Count);
+
+                    //CollectionAssert.AreEqual(allItems.ToList(), itemsRead, new ToDoItemComparer());
                 }
-
-                Assert.IsNotNull(failure);
-                Assert.AreEqual((HttpStatusCode)429, failure.Value.StatusCode);
-                Assert.IsNull(failure.Value.ErrorMessage);
-
-                Assert.AreEqual(allItems.Count, itemsRead.Count);
-
-                CollectionAssert.AreEqual(allItems.ToList(), itemsRead, new ToDoItemComparer());
+                else
+                {
+                    CosmosException cosmosException = tryCreate.Exception as CosmosException;
+                    Assert.IsNotNull(cosmosException);
+                    Assert.AreEqual((HttpStatusCode)429, cosmosException.StatusCode);
+                }
             }
         }
 

@@ -73,7 +73,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 partitionKey: queryRequestOptions.PartitionKey,
                 properties: queryRequestOptions.Properties,
                 partitionedQueryExecutionInfo: partitionedQueryExecutionInfo,
-                executionEnvironment: queryRequestOptions.ExecutionEnvironment);
+                executionEnvironment: queryRequestOptions.ExecutionEnvironment,
+                testInjections: queryRequestOptions.TestSettings);
 
             return new QueryIterator(
                 cosmosQueryContext,

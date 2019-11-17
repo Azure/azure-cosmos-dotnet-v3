@@ -668,8 +668,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     requestOptions: options);
 
             FeedIterators.Add(queryIterator);
-            string previousResult = null;
-
             foreach (FeedIterator iterator in FeedIterators)
             {
                 int count = 0;
@@ -702,15 +700,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             Assert.IsNotNull(item["_etag"]);
                             Assert.IsNotNull(item["_attachments"]);
                             Assert.IsNotNull(item["_ts"]);
-                        }
-
-                        if (previousResult != null)
-                        {
-                            Assert.AreEqual(previousResult, jObject.ToString());
-                        }
-                        else
-                        {
-                            previousResult = jObject.ToString(); ;
                         }
                     }
                 }
