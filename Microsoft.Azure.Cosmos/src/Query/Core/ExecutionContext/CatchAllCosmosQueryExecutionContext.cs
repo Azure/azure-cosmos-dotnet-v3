@@ -61,12 +61,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
         public override bool TryGetContinuationToken(out string continuationToken)
         {
-            if (this.IsDone)
-            {
-                throw new InvalidOperationException(
-                    $"Can not {nameof(TryGetContinuationToken)} from a {nameof(CosmosQueryExecutionContext)} where {nameof(this.IsDone)}.");
-            }
-
             return this.cosmosQueryExecutionContext.TryGetContinuationToken(out continuationToken);
         }
     }
