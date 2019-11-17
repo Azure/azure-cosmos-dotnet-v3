@@ -732,7 +732,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             "Max Item Count is not being honored");
                     }
 
-                    continuationTokenForRetries = page.ContinuationToken;
+                    try
+                    {
+                        continuationTokenForRetries = page.ContinuationToken;
+                    }
+                    catch (Exception)
+                    {
+                        // Grabbing a continuation token is not supported on all queries.
+                    }
+
                     if (continuationTokenForRetries != null)
                     {
                         Assert.IsTrue(continuationTokenForRetries.All((character) => character < 128));
@@ -744,6 +752,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         queryText: query,
                         requestOptions: queryRequestOptions,
                         continuationToken: continuationTokenForRetries);
+
+                    if (continuationTokenForRetries == null)
+                    {
+                        // The query failed and we don't have a save point, so just restart the whole thing.
+                        results = new List<T>();
+                    }
                 }
             }
 
