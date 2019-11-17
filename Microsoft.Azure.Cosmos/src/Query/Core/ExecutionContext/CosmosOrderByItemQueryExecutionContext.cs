@@ -278,6 +278,11 @@ namespace Microsoft.Azure.Cosmos.Query
                                 break;
                             }
 
+                            if (currentItemProducerTree.IsAtBeginningOfPage)
+                            {
+                                break;
+                            }
+
                             if (currentItemProducerTree.TryMoveNextDocumentWithinPage())
                             {
                                 break;
@@ -637,6 +642,11 @@ namespace Microsoft.Azure.Cosmos.Query
                                             requestCharge: 0));
                                 }
 
+                                break;
+                            }
+
+                            if (tree.IsAtBeginningOfPage)
+                            {
                                 break;
                             }
 

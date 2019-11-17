@@ -369,7 +369,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Gets a value indicating whether the document producer tree has split.
         /// </summary>
-        public bool HasSplit => this.children.Count != 0;
+        private bool HasSplit => this.children.Count != 0;
 
         /// <summary>
         /// Gets the document producers that need their continuation token return to the user.
@@ -485,6 +485,14 @@ namespace Microsoft.Azure.Cosmos.Query
             return ex.StatusCode == HttpStatusCode.Gone && ex.SubStatusCode == Documents.SubStatusCodes.PartitionKeyRangeGone;
         }
 
+        public void UpdatePriority()
+        {
+            if (this.children.Count != 0)
+            {
+                this.children.Enqueue(this.children.Dequeue());
+            }
+        }
+
         public async Task<(bool movedToNextPage, QueryResponseCore? failureResponse)> TryMoveNextPageAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -520,21 +528,7 @@ namespace Microsoft.Azure.Cosmos.Query
             }
             else
             {
-                // Keep track of the current tree
-                ItemProducerTree itemProducerTree = this.CurrentItemProducerTree;
-                bool movedNext = itemProducerTree.TryMoveNextDocumentWithinPage();
-
-                // Update the priority queue for the new values
-                this.children.Enqueue(this.children.Dequeue());
-
-                // If the current tree is done, but other trees still have a result
-                // then return true.
-                if (!movedNext && this.HasMoreResults)
-                {
-                    return true;
-                }
-
-                return movedNext;
+                return this.CurrentItemProducerTree.TryMoveNextDocumentWithinPage();
             }
         }
 
@@ -547,23 +541,7 @@ namespace Microsoft.Azure.Cosmos.Query
             }
             else
             {
-                // Keep track of the current tree
-                ItemProducerTree itemProducerTree = this.CurrentItemProducerTree;
-                (bool successfullyMovedNext, QueryResponseCore? failureResponse) response = await itemProducerTree.TryMoveNextPageAsync(cancellationToken);
-
-                // Update the priority queue for the new values
-                this.children.Enqueue(this.children.Dequeue());
-
-                // If the current tree is done, but other trees still have a result
-                // then return true.
-                if (!response.successfullyMovedNext &&
-                    response.failureResponse == null &&
-                    this.HasMoreResults)
-                {
-                    return ItemProducer.IsSuccessResponse;
-                }
-
-                return response;
+                return await this.CurrentItemProducerTree.TryMoveNextPageAsync(cancellationToken);
             }
         }
 
@@ -694,8 +672,19 @@ namespace Microsoft.Azure.Cosmos.Query
 
                     if (!this.deferFirstPage)
                     {
-                        // We don't want to call move next async again, since we already did when creating the document producers
-                        return ItemProducer.IsSuccessResponse;
+                        (bool, QueryResponseCore?) fakeResponse;
+                        if (splitItemProducerTree.children.Count == 0)
+                        {
+                            // None of the children had results
+                            fakeResponse = ItemProducer.IsDoneResponse;
+                        }
+                        else
+                        {
+                            // We don't want to call move next async again, since we already did when creating the document producers
+                            fakeResponse = ItemProducer.IsSuccessResponse;
+                        }
+
+                        return fakeResponse;
                     }
                 }
                 finally

@@ -273,6 +273,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         public void PushCurrentItemProducerTree(ItemProducerTree itemProducerTree)
         {
+            itemProducerTree.UpdatePriority();
             this.itemProducerForest.Enqueue(itemProducerTree);
         }
 
@@ -393,9 +394,8 @@ namespace Microsoft.Azure.Cosmos.Query
                             break;
                         }
 
-                        if (itemProducerTree.HasSplit)
+                        if (itemProducerTree.IsAtBeginningOfPage)
                         {
-                            // If we got a split, then don't call moveNext again, since we already did in the split proofing.
                             break;
                         }
 

@@ -134,6 +134,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                             itemsRead.Add(item);
                         }
                     }
+
+                    itemProducerTree.UpdatePriority();
                 }
 
                 Assert.IsFalse(itemProducerTree.HasMoreResults);

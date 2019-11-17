@@ -391,6 +391,7 @@ namespace Microsoft.Azure.Cosmos.Query
             this.CurrentPage = queryResponse.CosmosElements.GetEnumerator();
             this.itemsLeftInCurrentPage = queryResponse.CosmosElements.Count;
             this.enumeratorPrimed = false;
+            this.IsAtBeginningOfPage = false;
 
             return ItemProducer.IsSuccessResponse;
         }
