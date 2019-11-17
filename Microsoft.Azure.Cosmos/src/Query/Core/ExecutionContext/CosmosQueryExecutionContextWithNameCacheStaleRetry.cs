@@ -19,6 +19,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             CosmosQueryContext cosmosQueryContext,
             Func<CosmosQueryExecutionContext> cosmosQueryExecutionContextFactory)
         {
+            if (cosmosQueryContext == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosQueryContext));
+            }
+
+            if (cosmosQueryExecutionContextFactory == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosQueryExecutionContextFactory));
+            }
+
             this.cosmosQueryContext = cosmosQueryContext;
             this.cosmosQueryExecutionContextFactory = cosmosQueryExecutionContextFactory;
             this.currentCosmosQueryExecutionContext = cosmosQueryExecutionContextFactory();
@@ -46,18 +56,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 (queryResponse.SubStatusCode == Documents.SubStatusCodes.NameCacheIsStale) &&
                 !this.alreadyRetried)
             {
-                try
-                {
-                    await this.cosmosQueryContext.QueryClient.ForceRefreshCollectionCacheAsync(
+                await this.cosmosQueryContext.QueryClient.ForceRefreshCollectionCacheAsync(
                         this.cosmosQueryContext.ResourceLink.OriginalString,
                         cancellationToken);
-                }
-                finally
-                {
-                    this.alreadyRetried = true;
-                    this.currentCosmosQueryExecutionContext.Dispose();
-                }
-
+                this.alreadyRetried = true;
+                this.currentCosmosQueryExecutionContext.Dispose();
                 this.currentCosmosQueryExecutionContext = this.cosmosQueryExecutionContextFactory();
                 return await this.ExecuteNextAsync(cancellationToken);
             }

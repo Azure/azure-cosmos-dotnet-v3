@@ -49,7 +49,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     return lazyCosmosQueryExecutionContext;
                 });
 
-            return cosmosQueryExecutionContextWithNameCacheStaleRetry;
+            CatchAllCosmosQueryExecutionContext catchAllCosmosQueryExecutionContext = new CatchAllCosmosQueryExecutionContext(cosmosQueryExecutionContextWithNameCacheStaleRetry);
+
+            return catchAllCosmosQueryExecutionContext;
         }
 
         private static async Task<TryCatch<CosmosQueryExecutionContext>> TryCreateCoreContextAsync(

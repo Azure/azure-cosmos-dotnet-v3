@@ -87,73 +87,51 @@ namespace Microsoft.Azure.Cosmos.Query
         public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             // This catches exception thrown by the pipeline and converts it to QueryResponse
-            ResponseMessage response;
-            try
+            QueryResponseCore responseCore = await this.cosmosQueryExecutionContext.ExecuteNextAsync(cancellationToken);
+            CosmosQueryContext cosmosQueryContext = this.cosmosQueryContext;
+            QueryAggregateDiagnostics diagnostics = new QueryAggregateDiagnostics(responseCore.Diagnostics);
+            QueryResponse queryResponse;
+            if (responseCore.IsSuccess)
             {
-                QueryResponseCore responseCore = await this.cosmosQueryExecutionContext.ExecuteNextAsync(cancellationToken);
-                CosmosQueryContext cosmosQueryContext = this.cosmosQueryContext;
-                QueryAggregateDiagnostics diagnostics = new QueryAggregateDiagnostics(responseCore.Diagnostics);
-                QueryResponse queryResponse;
-                if (responseCore.IsSuccess)
-                {
-                    queryResponse = QueryResponse.CreateSuccess(
-                        result: responseCore.CosmosElements,
-                        count: responseCore.CosmosElements.Count,
-                        responseLengthBytes: responseCore.ResponseLengthBytes,
-                        diagnostics: diagnostics,
-                        responseHeaders: new CosmosQueryResponseMessageHeaders(
-                            responseCore.ContinuationToken,
-                            responseCore.DisallowContinuationTokenMessage,
-                            cosmosQueryContext.ResourceTypeEnum,
-                            cosmosQueryContext.ContainerResourceId)
-                        {
-                            RequestCharge = responseCore.RequestCharge,
-                            ActivityId = responseCore.ActivityId,
-                            SubStatusCode = responseCore.SubStatusCode ?? Documents.SubStatusCodes.Unknown
-                        });
-                }
-                else
-                {
-                    queryResponse = QueryResponse.CreateFailure(
-                        statusCode: responseCore.StatusCode,
-                        error: null,
-                        errorMessage: responseCore.ErrorMessage,
-                        requestMessage: null,
-                        diagnostics: diagnostics,
-                        responseHeaders: new CosmosQueryResponseMessageHeaders(
-                            responseCore.ContinuationToken,
-                            responseCore.DisallowContinuationTokenMessage,
-                            cosmosQueryContext.ResourceTypeEnum,
-                            cosmosQueryContext.ContainerResourceId)
-                        {
-                            RequestCharge = responseCore.RequestCharge,
-                            ActivityId = responseCore.ActivityId,
-                            SubStatusCode = responseCore.SubStatusCode ?? Documents.SubStatusCodes.Unknown
-                        });
-                }
-
-                queryResponse.CosmosSerializationOptions = this.cosmosSerializationFormatOptions;
-
-                response = queryResponse;
+                queryResponse = QueryResponse.CreateSuccess(
+                    result: responseCore.CosmosElements,
+                    count: responseCore.CosmosElements.Count,
+                    responseLengthBytes: responseCore.ResponseLengthBytes,
+                    diagnostics: diagnostics,
+                    responseHeaders: new CosmosQueryResponseMessageHeaders(
+                        responseCore.ContinuationToken,
+                        responseCore.DisallowContinuationTokenMessage,
+                        cosmosQueryContext.ResourceTypeEnum,
+                        cosmosQueryContext.ContainerResourceId)
+                    {
+                        RequestCharge = responseCore.RequestCharge,
+                        ActivityId = responseCore.ActivityId,
+                        SubStatusCode = responseCore.SubStatusCode ?? Documents.SubStatusCodes.Unknown
+                    });
             }
-            catch (Documents.DocumentClientException exception)
+            else
             {
-                response = exception.ToCosmosResponseMessage(requestMessage: null);
-            }
-            catch (CosmosException exception)
-            {
-                response = exception.ToCosmosResponseMessage(request: null);
-            }
-            catch (AggregateException ae)
-            {
-                response = TransportHandler.AggregateExceptionConverter(ae, null);
-                if (response == null)
-                {
-                    throw;
-                }
+                queryResponse = QueryResponse.CreateFailure(
+                    statusCode: responseCore.StatusCode,
+                    error: null,
+                    errorMessage: responseCore.ErrorMessage,
+                    requestMessage: null,
+                    diagnostics: diagnostics,
+                    responseHeaders: new CosmosQueryResponseMessageHeaders(
+                        responseCore.ContinuationToken,
+                        responseCore.DisallowContinuationTokenMessage,
+                        cosmosQueryContext.ResourceTypeEnum,
+                        cosmosQueryContext.ContainerResourceId)
+                    {
+                        RequestCharge = responseCore.RequestCharge,
+                        ActivityId = responseCore.ActivityId,
+                        SubStatusCode = responseCore.SubStatusCode ?? Documents.SubStatusCodes.Unknown
+                    });
             }
 
-            return response;
+            queryResponse.CosmosSerializationOptions = this.cosmosSerializationFormatOptions;
+
+            return queryResponse;
         }
 
         internal bool TryGetContinuationToken(out string state)

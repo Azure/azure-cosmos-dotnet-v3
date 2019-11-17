@@ -55,21 +55,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 // Querying after delete should be a gone exception even after the retry.
                 FeedIterator crossPartitionQueryIterator = container.GetItemQueryStreamIterator(
-                "select * from t where true",
-                requestOptions: new QueryRequestOptions() { MaxConcurrency = 2 });
+                    "select * from t where true",
+                    requestOptions: new QueryRequestOptions() { MaxConcurrency = 2 });
 
                 await this.VerifyQueryNotFoundResponse(crossPartitionQueryIterator);
             }
 
             {
-                // Creating another query after the refresh should just be a regular not found.
+                // Also try with partition key.
                 FeedIterator queryIterator = container.GetItemQueryStreamIterator(
-                "select * from t where true",
-                requestOptions: new QueryRequestOptions()
-                {
-                    MaxConcurrency = 1,
-                    PartitionKey = new Cosmos.PartitionKey("testpk"),
-                });
+                    "select * from t where true",
+                    requestOptions: new QueryRequestOptions()
+                    {
+                        MaxConcurrency = 1,
+                        PartitionKey = new Cosmos.PartitionKey("testpk"),
+                    });
 
                 await this.VerifyQueryNotFoundResponse(queryIterator);
             }
@@ -77,16 +77,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 // Recreate the collection with the same name on a different client.
                 CosmosClient newClient = TestCommon.CreateCosmosClient();
-                Container container2 = await db.CreateContainerAsync("NotFoundTest" + Guid.NewGuid().ToString(), "/pk", 500);
+                Database db2 = newClient.GetDatabase(db.Id);
+                Container container2 = await db2.CreateContainerAsync(
+                    id: container.Id,
+                    partitionKeyPath: "/pk",
+                    throughput: 500);
                 await container2.CreateItemAsync(randomItem);
 
                 FeedIterator queryIterator = container.GetItemQueryStreamIterator(
-                "select * from t where true",
-                requestOptions: new QueryRequestOptions()
-                {
-                    MaxConcurrency = 1,
-                    PartitionKey = new Cosmos.PartitionKey("testpk"),
-                });
+                    "select * from t where true",
+                    requestOptions: new QueryRequestOptions() { MaxConcurrency = 2 });
 
                 ResponseMessage response = await queryIterator.ReadNextAsync();
                 Assert.IsNotNull(response);

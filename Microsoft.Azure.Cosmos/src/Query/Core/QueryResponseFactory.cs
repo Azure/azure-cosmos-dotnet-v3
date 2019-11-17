@@ -14,6 +14,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
         public static QueryResponseCore CreateFromException(Exception exception)
         {
+            // Get the inner most exception
+            while (exception.InnerException != null) exception = exception.InnerException;
+
             QueryResponseCore queryResponseCore;
             if (exception is CosmosException cosmosException)
             {
