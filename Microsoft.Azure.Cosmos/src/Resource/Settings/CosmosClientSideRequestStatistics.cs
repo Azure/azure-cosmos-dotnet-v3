@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos
         internal const int MaxSupplementalRequestsForToString = 10;
 
         internal DateTime requestStartTime;
-        internal DateTime requestEndTime;
+        internal DateTime? requestEndTime;
 
         private object lockObject = new object();
 
@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos
         public CosmosClientSideRequestStatistics()
         {
             this.requestStartTime = DateTime.UtcNow;
-            this.requestEndTime = DateTime.UtcNow;
+            this.requestEndTime = null;
             this.responseStatisticsList = new List<StoreResponseStatistics>();
             this.supplementalResponseStatisticsList = new List<StoreResponseStatistics>();
             this.addressResolutionStatistics = new Dictionary<string, AddressResolutionStatistics>();
@@ -51,7 +51,12 @@ namespace Microsoft.Azure.Cosmos
         {
             get
             {
-                return this.requestEndTime - this.requestStartTime;
+                if (this.requestEndTime.HasValue)
+                {
+                    return this.requestEndTime.Value - this.requestStartTime;
+                }
+
+                return TimeSpan.Zero;
             }
         }
 
@@ -91,7 +96,7 @@ namespace Microsoft.Azure.Cosmos
 
             lock (this.lockObject)
             {
-                if (responseTime > this.requestEndTime)
+                if (!this.requestEndTime.HasValue || responseTime > this.requestEndTime)
                 {
                     this.requestEndTime = responseTime;
                 }
@@ -145,7 +150,7 @@ namespace Microsoft.Azure.Cosmos
                     throw new ArgumentException("Identifier {0} does not exist. Please call start before calling end.", identifier);
                 }
 
-                if (responseTime > this.requestEndTime)
+                if (!this.requestEndTime.HasValue || responseTime > this.requestEndTime)
                 {
                     this.requestEndTime = responseTime;
                 }
@@ -175,11 +180,12 @@ namespace Microsoft.Azure.Cosmos
                 stringBuilder.AppendLine();
 
                 //first trace request start time, as well as total non-head/headfeed requests made.
+                string endTime = this.requestEndTime.HasValue ? this.requestEndTime.Value.ToString("o", CultureInfo.InvariantCulture) : "Not set";
                 stringBuilder.AppendFormat(
                    CultureInfo.InvariantCulture,
                    "RequestStartTime: {0}, RequestEndTime: {1},  Number of regions attempted:{2}",
                    this.requestStartTime.ToString("o", CultureInfo.InvariantCulture),
-                   this.requestEndTime.ToString("o", CultureInfo.InvariantCulture),
+                   endTime,
                    this.RegionsContacted.Count == 0 ? 1 : this.RegionsContacted.Count);
                 stringBuilder.AppendLine();
 
