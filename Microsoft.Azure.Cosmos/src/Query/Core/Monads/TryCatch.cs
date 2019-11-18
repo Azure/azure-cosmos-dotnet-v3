@@ -181,7 +181,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
 
         public static TryCatch<TResult> FromException(Exception exception)
         {
-            return new TryCatch<TResult>(new ExceptionWithStackTrace(exception));
+            if (exception.StackTrace != null)
+            {
+                // If the exception already has a stack trace, then let's preserve it
+            }
         }
 
         /// <summary>
@@ -207,9 +210,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
 
             public static void SetStackTrace(Exception target)
             {
-                var getStackTraceString = TRACE_TO_STRING_MI.Invoke(stack, new object[] { Enum.GetValues(TRACE_FORMAT_TI).GetValue(0) });
-                STACK_TRACE_STRING_FI.SetValue(target, getStackTraceString);
-                return target;
+                // Create stack trace, but skip 2 frames (SetStackTrace + TryCatch<TResult>.FromException)
+                StackTrace stackTrace = new StackTrace(skipFrames: 2);
+
+                object getStackTraceString = TraceToStringMethodInfo.Invoke(
+                    stackTrace,
+                    new object[]
+                    {
+                        Enum.GetValues(TraceFormatTypeInfo).GetValue(0)
+                    });
+                StrackTraceStringFieldInfo.SetValue(target, getStackTraceString);
             }
         }
 
