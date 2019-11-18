@@ -28,6 +28,8 @@ namespace Microsoft.Azure.Cosmos
                 errorMessage: null,
                 method: HttpMethod.Get,
                 requestUri: new System.Uri("https://localhost:8081"),
+                requestSessionToken: null,
+                responseSessionToken: null,
                 clientSideRequestStatistics: cosmosClientSideRequestStatistics);
 
             pointOperationStatistics.ToString();
@@ -51,6 +53,8 @@ namespace Microsoft.Azure.Cosmos
                 errorMessage: null,
                 method: HttpMethod.Get,
                 requestUri: new System.Uri("https://localhost:8081"),
+                requestSessionToken: null,
+                responseSessionToken: null,
                 clientSideRequestStatistics: cosmosClientSideRequestStatistics);
             pointOperationStatistics.ToString();
             Assert.AreEqual(5, pointOperationStatistics.supplementalResponseStatisticsList.Count);
@@ -73,6 +77,8 @@ namespace Microsoft.Azure.Cosmos
                 errorMessage: null,
                 method: HttpMethod.Get,
                 requestUri: new System.Uri("https://localhost:8081"),
+                requestSessionToken: null,
+                responseSessionToken: null,
                 clientSideRequestStatistics:  cosmosClientSideRequestStatistics);
             pointOperationStatistics.ToString();
             Assert.AreEqual(10, pointOperationStatistics.supplementalResponseStatisticsList.Count);
@@ -92,6 +98,8 @@ namespace Microsoft.Azure.Cosmos
                 errorMessage: null,
                 method: HttpMethod.Get,
                 requestUri: new System.Uri("https://localhost:8081"),
+                requestSessionToken: null,
+                responseSessionToken: null,
                 clientSideRequestStatistics:  cosmosClientSideRequestStatistics);
             pointOperationStatistics.ToString();
             Assert.AreEqual(10, pointOperationStatistics.supplementalResponseStatisticsList.Count);
