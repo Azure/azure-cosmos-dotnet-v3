@@ -23,13 +23,12 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public static string GetMemberName(this MemberInfo memberInfo, CosmosSerializationOptions cosmosSerializationOptions = null)
         {
-            string memberName = null;
             // Json.Net honors JsonPropertyAttribute more than DataMemberAttribute
             // So we check for JsonPropertyAttribute first.
             JsonPropertyAttribute jsonPropertyAttribute = memberInfo.GetCustomAttribute<JsonPropertyAttribute>(true);
             if (jsonPropertyAttribute != null && !string.IsNullOrEmpty(jsonPropertyAttribute.PropertyName))
             {
-                memberName = jsonPropertyAttribute.PropertyName;
+                return jsonPropertyAttribute.PropertyName;
             }
             else
             {
@@ -39,15 +38,12 @@ namespace Microsoft.Azure.Cosmos.Linq
                     DataMemberAttribute dataMemberAttribute = memberInfo.GetCustomAttribute<DataMemberAttribute>(true);
                     if (dataMemberAttribute != null && !string.IsNullOrEmpty(dataMemberAttribute.Name))
                     {
-                        memberName = dataMemberAttribute.Name;
+                        return dataMemberAttribute.Name;
                     }
                 }
             }
 
-            if (memberName == null)
-            {
-                memberName = memberInfo.Name;
-            }
+            string memberName = memberInfo.Name;
 
             if (cosmosSerializationOptions != null)
             {
