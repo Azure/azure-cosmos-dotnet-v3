@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
     using ParallelQuery;
     using PartitionKeyRange = Documents.PartitionKeyRange;
     using ResourceId = Documents.ResourceId;
@@ -47,6 +48,11 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         private static readonly Func<ItemProducerTree, int> FetchPriorityFunction = itemProducerTree => itemProducerTree.BufferedItemCount;
 
+        private static readonly JsonSerializerSettings NoAsciiCharactersSerializerSettings = new JsonSerializerSettings()
+        {
+            StringEscapeHandling = StringEscapeHandling.EscapeNonAscii,
+        };
+
         /// <summary>
         /// Skip count used for JOIN queries.
         /// You can read up more about this in the documentation for the continuation token.
@@ -57,6 +63,8 @@ namespace Microsoft.Azure.Cosmos.Query
         /// We need to keep track of the previousRid, since order by queries don't drain full pages.
         /// </summary>
         private string previousRid;
+
+        private IList<OrderByItem> previousOrderByItems;
 
         /// <summary>
         /// Initializes a new instance of the CosmosOrderByItemQueryExecutionContext class.
@@ -74,12 +82,14 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="maxBufferedItemCount">The max buffered item count</param>
         /// <param name="maxItemCount">Max item count</param>
         /// <param name="consumeComparer">Comparer used to internally compare documents from different sorted partitions.</param>
+        /// <param name="testSettings">Test settings.</param>
         private CosmosOrderByItemQueryExecutionContext(
             CosmosQueryContext initPararms,
             int? maxConcurrency,
             int? maxItemCount,
             int? maxBufferedItemCount,
-            OrderByConsumeComparer consumeComparer)
+            OrderByConsumeComparer consumeComparer,
+            TestInjections testSettings)
             : base(
                 queryContext: initPararms,
                 maxConcurrency: maxConcurrency,
@@ -87,7 +97,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 maxBufferedItemCount: maxBufferedItemCount,
                 moveNextComparer: consumeComparer,
                 fetchPrioirtyFunction: CosmosOrderByItemQueryExecutionContext.FetchPriorityFunction,
-                equalityComparer: new OrderByEqualityComparer(consumeComparer))
+                equalityComparer: new OrderByEqualityComparer(consumeComparer),
+                testSettings: testSettings)
         {
         }
 
@@ -108,34 +119,40 @@ namespace Microsoft.Azure.Cosmos.Query
             // With this information we have captured the progress for all partitions in a single continuation token.
             get
             {
-                if (this.IsDone)
+                IEnumerable<ItemProducer> activeItemProducers = this.GetActiveItemProducers();
+                string continuationToken;
+                if (activeItemProducers.Any())
                 {
-                    return null;
+                    IEnumerable<OrderByContinuationToken> orderByContinuationTokens = activeItemProducers.Select((itemProducer) =>
+                    {
+                        OrderByQueryResult orderByQueryResult = new OrderByQueryResult(itemProducer.Current);
+                        string filter = itemProducer.Filter;
+                        OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
+                            new CompositeContinuationToken
+                            {
+                                Token = itemProducer.PreviousContinuationToken,
+                                Range = itemProducer.PartitionKeyRange.ToRange(),
+                            },
+                            orderByQueryResult.OrderByItems,
+                            orderByQueryResult.Rid,
+                            this.ShouldIncrementSkipCount(itemProducer) ? this.skipCount + 1 : 0,
+                            filter);
+
+                        return orderByContinuationToken;
+                    });
+
+                    continuationToken = JsonConvert.SerializeObject(orderByContinuationTokens, NoAsciiCharactersSerializerSettings);
+
+                    // Newtonsoft has a bug where non ascii characters aren't escaped for custom POGOs
+                    // so the workaround is to double serialize
+                    continuationToken = JsonConvert.SerializeObject(JToken.Parse(continuationToken), NoAsciiCharactersSerializerSettings);
+                }
+                else
+                {
+                    continuationToken = null;
                 }
 
-                IEnumerable<ItemProducer> activeItemProducers = this.GetActiveItemProducers();
-                return activeItemProducers.Count() > 0 ? JsonConvert.SerializeObject(
-                    activeItemProducers.Select(
-                        (itemProducer) =>
-                {
-                    OrderByQueryResult orderByQueryResult = new OrderByQueryResult(itemProducer.Current);
-                    string filter = itemProducer.Filter;
-                    return new OrderByContinuationToken(
-                        this.queryClient,
-                        new CompositeContinuationToken
-                        {
-                            Token = itemProducer.PreviousContinuationToken,
-                            Range = itemProducer.PartitionKeyRange.ToRange(),
-                        },
-                        orderByQueryResult.OrderByItems,
-                        orderByQueryResult.Rid,
-                        this.ShouldIncrementSkipCount(itemProducer) ? this.skipCount + 1 : 0,
-                        filter);
-                }),
-                    new JsonSerializerSettings()
-                    {
-                        StringEscapeHandling = StringEscapeHandling.EscapeNonAscii,
-                    }) : null;
+                return continuationToken;
             }
         }
 
@@ -161,7 +178,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 maxConcurrency: initParams.MaxConcurrency,
                 maxItemCount: initParams.MaxItemCount,
                 maxBufferedItemCount: initParams.MaxBufferedItemCount,
-                consumeComparer: new OrderByConsumeComparer(initParams.PartitionedQueryExecutionInfo.QueryInfo.OrderBy));
+                consumeComparer: new OrderByConsumeComparer(initParams.PartitionedQueryExecutionInfo.QueryInfo.OrderBy),
+                testSettings: initParams.TestSettings);
 
             return (await context.TryInitializeAsync(
                 sqlQuerySpec: initParams.SqlQuerySpec,
@@ -181,8 +199,10 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="maxElements">The maximum number of elements.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task that when awaited on return a page of documents.</returns>
-        public override async Task<IReadOnlyList<CosmosElement>> InternalDrainAsync(int maxElements, CancellationToken cancellationToken)
+        public override async Task<QueryResponseCore> DrainAsync(int maxElements, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             //// In order to maintain the continuation token for the user we must drain with a few constraints
             //// 1) We always drain from the partition, which has the highest priority item first
             //// 2) If multiple partitions have the same priority item then we drain from the left most first
@@ -209,38 +229,81 @@ namespace Microsoft.Azure.Cosmos.Query
             ////  2) <i, j> always come before <i, k> where j < k
 
             List<CosmosElement> results = new List<CosmosElement>();
-            bool isSuccessToMoveNext = true;
-            while (!this.IsDone && results.Count < maxElements && isSuccessToMoveNext)
+            while (results.Count < maxElements)
             {
                 // Only drain from the highest priority document producer 
                 // We need to pop and push back the document producer tree, since the priority changes according to the sort order.
                 ItemProducerTree currentItemProducerTree = this.PopCurrentItemProducerTree();
-
-                OrderByQueryResult orderByQueryResult = new OrderByQueryResult(currentItemProducerTree.Current);
-
-                // Only add the payload, since other stuff is garbage from the caller's perspective.
-                results.Add(orderByQueryResult.Payload);
-
-                // If we are at the beginning of the page and seeing an rid from the previous page we should increment the skip count
-                // due to the fact that JOINs can make a document appear multiple times and across continuations, so we don't want to
-                // surface this more than needed. More information can be found in the continuation token docs.
-                if (this.ShouldIncrementSkipCount(currentItemProducerTree.CurrentItemProducerTree.Root))
+                try
                 {
-                    ++this.skipCount;
+                    if (!currentItemProducerTree.HasMoreResults)
+                    {
+                        // This means there are no more items to drain
+                        break;
+                    }
+
+                    OrderByQueryResult orderByQueryResult = new OrderByQueryResult(currentItemProducerTree.Current);
+
+                    // Only add the payload, since other stuff is garbage from the caller's perspective.
+                    results.Add(orderByQueryResult.Payload);
+
+                    // If we are at the beginning of the page and seeing an rid from the previous page we should increment the skip count
+                    // due to the fact that JOINs can make a document appear multiple times and across continuations, so we don't want to
+                    // surface this more than needed. More information can be found in the continuation token docs.
+                    if (this.ShouldIncrementSkipCount(currentItemProducerTree.CurrentItemProducerTree.Root))
+                    {
+                        ++this.skipCount;
+                    }
+                    else
+                    {
+                        this.skipCount = 0;
+                    }
+
+                    this.previousRid = orderByQueryResult.Rid;
+                    this.previousOrderByItems = orderByQueryResult.OrderByItems;
+
+                    if (!currentItemProducerTree.TryMoveNextDocumentWithinPage())
+                    {
+                        while (true)
+                        {
+                            (bool movedToNextPage, QueryResponseCore? failureResponse) = await currentItemProducerTree.TryMoveNextPageAsync(cancellationToken);
+                            if (!movedToNextPage)
+                            {
+                                if (failureResponse.HasValue)
+                                {
+                                    // TODO: We can buffer this failure so that the user can still get the pages we already got.
+                                    return failureResponse.Value;
+                                }
+
+                                break;
+                            }
+
+                            if (currentItemProducerTree.IsAtBeginningOfPage)
+                            {
+                                break;
+                            }
+
+                            if (currentItemProducerTree.TryMoveNextDocumentWithinPage())
+                            {
+                                break;
+                            }
+                        }
+                    }
                 }
-                else
+                finally
                 {
-                    this.skipCount = 0;
+                    this.PushCurrentItemProducerTree(currentItemProducerTree);
                 }
-
-                this.previousRid = orderByQueryResult.Rid;
-
-                isSuccessToMoveNext = await this.MoveNextHelperAsync(currentItemProducerTree, cancellationToken);
-
-                this.PushCurrentItemProducerTree(currentItemProducerTree);
             }
 
-            return results;
+            return QueryResponseCore.CreateSuccess(
+                result: results,
+                requestCharge: this.requestChargeTracker.GetAndResetCharge(),
+                activityId: null,
+                responseLengthBytes: this.GetAndResetResponseLengthBytes(),
+                disallowContinuationTokenMessage: null,
+                continuationToken: this.ContinuationToken,
+                diagnostics: this.GetAndResetDiagnostics());
         }
 
         /// <summary>
@@ -311,7 +374,6 @@ namespace Microsoft.Azure.Cosmos.Query
                     deferFirstPage: false,
                     filter: null,
                     tryFilterAsync: null);
-
                 if (!tryInitialize.Succeeded)
                 {
                     return tryInitialize;
@@ -365,7 +427,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         sqlQuerySpec.QueryText.Replace(FormatPlaceHolder, info.Filter),
                         sqlQuerySpec.Parameters);
 
-                    await base.TryInitializeAsync(
+                    TryCatch<bool> tryInitialize = await base.TryInitializeAsync(
                         collectionRid,
                         partialRanges,
                         initialPageSize,
@@ -396,6 +458,10 @@ namespace Microsoft.Azure.Cosmos.Query
                             return TryCatch<bool>.FromResult(true);
                         },
                         cancellationToken);
+                    if (!tryInitialize.Succeeded)
+                    {
+                        return tryInitialize;
+                    }
                 }
             }
 
@@ -486,6 +552,12 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 while (true)
                 {
+                    if (tree.Current == null)
+                    {
+                        // This document producer doesn't have anymore items.
+                        break;
+                    }
+
                     OrderByQueryResult orderByResult = new OrderByQueryResult(tree.Current);
                     // Throw away documents until it matches the item from the continuation token.
                     int cmp = 0;
@@ -552,15 +624,37 @@ namespace Microsoft.Azure.Cosmos.Query
                         }
                     }
 
-                    (bool successfullyMovedNext, QueryResponseCore? failureResponse) moveNextResponse = await tree.MoveNextAsync(cancellationToken);
-                    if (!moveNextResponse.successfullyMovedNext)
+                    if (!tree.TryMoveNextDocumentWithinPage())
                     {
-                        if (moveNextResponse.failureResponse != null)
+                        while (true)
                         {
-                            this.FailureResponse = moveNextResponse.failureResponse;
-                        }
+                            (bool successfullyMovedNext, QueryResponseCore? failureResponse) = await tree.TryMoveNextPageAsync(cancellationToken);
+                            if (!successfullyMovedNext)
+                            {
+                                if (failureResponse.HasValue)
+                                {
+                                    return TryCatch<bool>.FromException(
+                                        new CosmosException(
+                                            statusCode: failureResponse.Value.StatusCode,
+                                            subStatusCode: (int)failureResponse.Value.SubStatusCode.GetValueOrDefault(0),
+                                            message: failureResponse.Value.ErrorMessage,
+                                            activityId: failureResponse.Value.ActivityId,
+                                            requestCharge: 0));
+                                }
 
-                        break;
+                                break;
+                            }
+
+                            if (tree.IsAtBeginningOfPage)
+                            {
+                                break;
+                            }
+
+                            if (tree.TryMoveNextDocumentWithinPage())
+                            {
+                                break;
+                            }
+                        }
                     }
                 }
             }

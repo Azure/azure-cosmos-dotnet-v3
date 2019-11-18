@@ -411,7 +411,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 initialPageSize: (int)initialPageSize,
                 maxConcurrency: inputParameters.MaxConcurrency,
                 maxItemCount: inputParameters.MaxItemCount,
-                maxBufferedItemCount: inputParameters.MaxBufferedItemCount);
+                maxBufferedItemCount: inputParameters.MaxBufferedItemCount,
+                testSettings: inputParameters.TestSettings);
 
             return await PipelinedDocumentQueryExecutionContext.TryCreateAsync(
                 inputParameters.ExecutionEnvironment,
@@ -503,6 +504,7 @@ namespace Microsoft.Azure.Cosmos.Query
             internal IDictionary<string, object> Properties { get; set; }
             internal PartitionedQueryExecutionInfo PartitionedQueryExecutionInfo { get; set; }
             internal ExecutionEnvironment ExecutionEnvironment { get; set; }
+            internal TestInjections TestSettings { get; set; }
         }
     }
 }

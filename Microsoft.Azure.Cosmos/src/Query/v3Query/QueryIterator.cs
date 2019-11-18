@@ -65,6 +65,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 PartitionedQueryExecutionInfo = partitionedQueryExecutionInfo,
                 ExecutionEnvironment = queryRequestOptions.ExecutionEnvironment.GetValueOrDefault(Core.ExecutionContext.ExecutionEnvironment.Client),
                 ResponseContinuationTokenLimitInKb = queryRequestOptions.ResponseContinuationTokenLimitInKb,
+                TestSettings = queryRequestOptions.TestSettings,
             };
 
             return new QueryIterator(

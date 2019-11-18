@@ -48,11 +48,13 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="maxConcurrency">The max concurrency</param>
         /// <param name="maxBufferedItemCount">The max buffered item count</param>
         /// <param name="maxItemCount">Max item count</param>
+        /// <param name="testSettings">Test settings.</param>
         private CosmosParallelItemQueryExecutionContext(
             CosmosQueryContext queryContext,
             int? maxConcurrency,
             int? maxItemCount,
-            int? maxBufferedItemCount)
+            int? maxBufferedItemCount,
+            TestInjections testSettings)
             : base(
                 queryContext: queryContext,
                 maxConcurrency: maxConcurrency,
@@ -60,7 +62,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 maxBufferedItemCount: maxBufferedItemCount,
                 moveNextComparer: CosmosParallelItemQueryExecutionContext.MoveNextComparer,
                 fetchPrioirtyFunction: CosmosParallelItemQueryExecutionContext.FetchPriorityFunction,
-                equalityComparer: CosmosParallelItemQueryExecutionContext.EqualityComparer)
+                equalityComparer: CosmosParallelItemQueryExecutionContext.EqualityComparer,
+                testSettings: testSettings)
         {
         }
 
@@ -77,19 +80,23 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             get
             {
-                if (this.IsDone)
+                IEnumerable<ItemProducer> activeItemProducers = this.GetActiveItemProducers();
+                string continuationToken;
+                if (activeItemProducers.Any())
                 {
-                    return null;
+                    IEnumerable<CompositeContinuationToken> compositeContinuationTokens = activeItemProducers.Select((documentProducer) => new CompositeContinuationToken
+                    {
+                        Token = documentProducer.CurrentContinuationToken,
+                        Range = documentProducer.PartitionKeyRange.ToRange()
+                    });
+                    continuationToken = JsonConvert.SerializeObject(compositeContinuationTokens, DefaultJsonSerializationSettings.Value);
+                }
+                else
+                {
+                    continuationToken = null;
                 }
 
-                IEnumerable<ItemProducer> activeItemProducers = this.GetActiveItemProducers();
-                return activeItemProducers.Count() > 0 ? JsonConvert.SerializeObject(
-                    activeItemProducers.Select((documentProducer) => new CompositeContinuationToken
-                    {
-                        Token = documentProducer.PreviousContinuationToken,
-                        Range = documentProducer.PartitionKeyRange.ToRange()
-                    }),
-                    DefaultJsonSerializationSettings.Value) : null;
+                return continuationToken;
             }
         }
 
@@ -109,7 +116,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 queryContext: queryContext,
                 maxConcurrency: initParams.MaxConcurrency,
                 maxItemCount: initParams.MaxItemCount,
-                maxBufferedItemCount: initParams.MaxBufferedItemCount);
+                maxBufferedItemCount: initParams.MaxBufferedItemCount,
+                testSettings: initParams.TestSettings);
 
             return await context.TryInitializeAsync(
                 sqlQuerySpec: initParams.SqlQuerySpec,
@@ -120,15 +128,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 cancellationToken: cancellationToken);
         }
 
-        /// <summary>
-        /// Drains documents from this execution context.
-        /// </summary>
-        /// <param name="maxElements">The maximum number of documents to drains.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>A task that when awaited on returns a DoucmentFeedResponse of results.</returns>
-        public override async Task<IReadOnlyList<CosmosElement>> InternalDrainAsync(
-            int maxElements,
-            CancellationToken cancellationToken)
+        public override async Task<QueryResponseCore> DrainAsync(int maxElements, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -139,30 +139,42 @@ namespace Microsoft.Azure.Cosmos.Query
 
             // Only drain from the leftmost (current) document producer tree
             ItemProducerTree currentItemProducerTree = this.PopCurrentItemProducerTree();
-
-            // This might be the first time we have seen this document producer tree so we need to buffer documents
-            if (currentItemProducerTree.Current == null)
-            {
-                await this.MoveNextHelperAsync(currentItemProducerTree, cancellationToken);
-            }
-
-            int itemsLeftInCurrentPage = currentItemProducerTree.ItemsLeftInCurrentPage;
-
-            // Only drain full pages or less if this is a top query.
             List<CosmosElement> results = new List<CosmosElement>();
-            for (int i = 0; i < Math.Min(itemsLeftInCurrentPage, maxElements); i++)
+            try
             {
-                results.Add(currentItemProducerTree.Current);
-                if (!await this.MoveNextHelperAsync(currentItemProducerTree, cancellationToken))
+                (bool gotNextPage, QueryResponseCore? failureResponse) = await currentItemProducerTree.TryMoveNextPageAsync(cancellationToken);
+                if (failureResponse != null)
                 {
-                    break;
+                    return failureResponse.Value;
+                }
+
+                if (gotNextPage)
+                {
+                    int itemsLeftInCurrentPage = currentItemProducerTree.ItemsLeftInCurrentPage;
+
+                    // Only drain full pages or less if this is a top query.
+                    currentItemProducerTree.TryMoveNextDocumentWithinPage();
+                    int numberOfItemsToDrain = Math.Min(itemsLeftInCurrentPage, maxElements);
+                    for (int i = 0; i < numberOfItemsToDrain; i++)
+                    {
+                        results.Add(currentItemProducerTree.Current);
+                        currentItemProducerTree.TryMoveNextDocumentWithinPage();
+                    }
                 }
             }
+            finally
+            {
+                this.PushCurrentItemProducerTree(currentItemProducerTree);
+            }
 
-            this.PushCurrentItemProducerTree(currentItemProducerTree);
-
-            // At this point the document producer tree should have internally called MoveNextPage, since we fully drained a page.
-            return results;
+            return QueryResponseCore.CreateSuccess(
+                    result: results,
+                    requestCharge: this.requestChargeTracker.GetAndResetCharge(),
+                    activityId: null,
+                    responseLengthBytes: this.GetAndResetResponseLengthBytes(),
+                    disallowContinuationTokenMessage: null,
+                    continuationToken: this.ContinuationToken,
+                    diagnostics: this.GetAndResetDiagnostics());
         }
 
         /// <summary>
