@@ -9,26 +9,12 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// The cosmos resource response class
     /// </summary>
-    public abstract class Response<T>
+    public abstract class Response
     {
         /// <summary>
         /// Gets the current <see cref="ResponseMessage"/> HTTP headers.
         /// </summary>
         public abstract Headers Headers { get; }
-
-        /// <summary>
-        /// The content of the response.
-        /// </summary>
-        public abstract T Resource { get; }
-
-        /// <summary>
-        /// Get Resource implicitly from <see cref="Response{T}"/>
-        /// </summary>
-        /// <param name="response">The Azure Cosmos DB service response.</param>
-        public static implicit operator T(Response<T> response)
-        {
-            return response.Resource;
-        }
 
         /// <summary>
         /// Gets the request completion status code from the Azure Cosmos DB service.
@@ -93,5 +79,25 @@ namespace Microsoft.Azure.Cosmos
         /// cosmosResponse.Headers.GetHeaderValue("x-ms-resource-usage")
         /// </remarks>
         internal abstract string CurrentResourceQuotaUsage { get; }
+    }
+
+    /// <summary>
+    /// The cosmos resource response class
+    /// </summary>
+    public abstract class Response<T> : Response
+    {
+        /// <summary>
+        /// The content of the response.
+        /// </summary>
+        public abstract T Resource { get; }
+
+        /// <summary>
+        /// Get Resource implicitly from <see cref="Response{T}"/>
+        /// </summary>
+        /// <param name="response">The Azure Cosmos DB service response.</param>
+        public static implicit operator T(Response<T> response)
+        {
+            return response.Resource;
+        }
     }
 }
