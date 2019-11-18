@@ -6,10 +6,10 @@ namespace Microsoft.Azure.Cosmos.Query
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Aggregation;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
     /// <summary>
@@ -188,7 +188,8 @@ namespace Microsoft.Azure.Cosmos.Query
                     if (!CosmosElement.TryParse(continuationToken, out aliasToContinuationToken))
                     {
                         return TryCatch<SingleGroupAggregator>.FromException(
-                            new Exception($"{nameof(SelectListAggregateValues)} continuation token is malformed: {continuationToken}."));
+                            new MalformedContinuationTokenException(
+                                $"{nameof(SelectListAggregateValues)} continuation token is malformed: {continuationToken}."));
                     }
                 }
                 else
@@ -207,7 +208,8 @@ namespace Microsoft.Azure.Cosmos.Query
                         if (!(aliasToContinuationToken[alias] is CosmosString parsedAliasContinuationToken))
                         {
                             return TryCatch<SingleGroupAggregator>.FromException(
-                                new Exception($"{nameof(SelectListAggregateValues)} continuation token is malformed: {continuationToken}."));
+                                new MalformedContinuationTokenException(
+                                    $"{nameof(SelectListAggregateValues)} continuation token is malformed: {continuationToken}."));
                         }
 
                         aliasContinuationToken = parsedAliasContinuationToken.Value;
@@ -406,7 +408,7 @@ namespace Microsoft.Azure.Cosmos.Query
                             out CosmosObject rawContinuationToken))
                         {
                             return TryCatch<AggregateValue>.FromException(
-                                new ArgumentException($"Invalid {nameof(ScalarAggregateValue)}: {continuationToken}"));
+                                new MalformedContinuationTokenException($"Invalid {nameof(ScalarAggregateValue)}: {continuationToken}"));
                         }
 
                         if (!rawContinuationToken.TryGetValue<CosmosBoolean>(
@@ -414,7 +416,7 @@ namespace Microsoft.Azure.Cosmos.Query
                             out CosmosBoolean rawInitialized))
                         {
                             return TryCatch<AggregateValue>.FromException(
-                                new ArgumentException($"Invalid {nameof(ScalarAggregateValue)}: {continuationToken}"));
+                                new MalformedContinuationTokenException($"Invalid {nameof(ScalarAggregateValue)}: {continuationToken}"));
                         }
 
                         if (!rawContinuationToken.TryGetValue(nameof(ScalarAggregateValue.value), out value))

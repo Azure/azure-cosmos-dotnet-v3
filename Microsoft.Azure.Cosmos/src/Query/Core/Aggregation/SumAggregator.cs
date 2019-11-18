@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
     using System;
     using System.Globalization;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
     /// <summary>
@@ -81,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
                 if (!double.TryParse(continuationToken, out partialSum))
                 {
                     return TryCatch<IAggregator>.FromException(
-                        new Exception($"Malformed {nameof(SumAggregator)} continuation token: {continuationToken}"));
+                        new MalformedContinuationTokenException($"Malformed {nameof(SumAggregator)} continuation token: {continuationToken}"));
                 }
             }
             else

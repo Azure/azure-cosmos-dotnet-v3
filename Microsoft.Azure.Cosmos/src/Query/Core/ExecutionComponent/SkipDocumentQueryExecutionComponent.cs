@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                 if (!OffsetContinuationToken.TryParse(continuationToken, out offsetContinuationToken))
                 {
                     return TryCatch<IDocumentQueryExecutionComponent>.FromException(
-                        new Exception($"Invalid {nameof(SkipDocumentQueryExecutionComponent)}: {continuationToken}."));
+                        new MalformedContinuationTokenException($"Invalid {nameof(SkipDocumentQueryExecutionComponent)}: {continuationToken}."));
                 }
             }
             else
@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
             if (offsetContinuationToken.Offset > offsetCount)
             {
                 return TryCatch<IDocumentQueryExecutionComponent>.FromException(
-                        new Exception("offset count in continuation token can not be greater than the offsetcount in the query."));
+                        new MalformedContinuationTokenException("offset count in continuation token can not be greater than the offsetcount in the query."));
             }
 
             return (await tryCreateSourceAsync(offsetContinuationToken.SourceToken))

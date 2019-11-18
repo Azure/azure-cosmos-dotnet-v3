@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -667,8 +668,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     requestOptions: options);
 
             FeedIterators.Add(queryIterator);
-            string previousResult = null;
-
             foreach (FeedIterator iterator in FeedIterators)
             {
                 int count = 0;
@@ -701,15 +700,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             Assert.IsNotNull(item["_etag"]);
                             Assert.IsNotNull(item["_attachments"]);
                             Assert.IsNotNull(item["_ts"]);
-                        }
-
-                        if (previousResult != null)
-                        {
-                            Assert.AreEqual(previousResult, jObject.ToString());
-                        }
-                        else
-                        {
-                            previousResult = jObject.ToString(); ;
                         }
                     }
                 }

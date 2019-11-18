@@ -284,7 +284,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                         groupingTableContinuationToken,
                         out CosmosObject parsedGroupingTableContinuations))
                     {
-                        return TryCatch<GroupingTable>.FromException(new Exception($"Invalid GroupingTableContinuationToken"));
+                        return TryCatch<GroupingTable>.FromException(
+                            new MalformedContinuationTokenException($"Invalid GroupingTableContinuationToken"));
                     }
 
                     foreach (KeyValuePair<string, CosmosElement> kvp in parsedGroupingTableContinuations)
@@ -294,12 +295,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
 
                         if (!UInt128.TryParse(key, out UInt128 groupByKey))
                         {
-                            return TryCatch<GroupingTable>.FromException(new Exception($"Invalid GroupingTableContinuationToken"));
+                            return TryCatch<GroupingTable>.FromException(
+                                new MalformedContinuationTokenException($"Invalid GroupingTableContinuationToken"));
                         }
 
                         if (!(value is CosmosString singleGroupAggregatorContinuationToken))
                         {
-                            return TryCatch<GroupingTable>.FromException(new Exception($"Invalid GroupingTableContinuationToken"));
+                            return TryCatch<GroupingTable>.FromException(
+                                new MalformedContinuationTokenException($"Invalid GroupingTableContinuationToken"));
                         }
 
                         TryCatch<SingleGroupAggregator> tryCreateSingleGroupAggregator = SingleGroupAggregator.TryCreate(

@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
 
     internal abstract partial class AggregateDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase
     {
@@ -41,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                     if (!AggregateContinuationToken.TryParse(requestContinuation, out AggregateContinuationToken aggregateContinuationToken))
                     {
                         return TryCatch<IDocumentQueryExecutionComponent>.FromException(
-                            new Exception($"Malfomed {nameof(AggregateContinuationToken)}: '{requestContinuation}'"));
+                            new MalformedContinuationTokenException($"Malfomed {nameof(AggregateContinuationToken)}: '{requestContinuation}'"));
                     }
 
                     sourceContinuationToken = aggregateContinuationToken.SourceContinuationToken;

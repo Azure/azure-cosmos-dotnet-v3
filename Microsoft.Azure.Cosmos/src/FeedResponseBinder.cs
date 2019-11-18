@@ -6,8 +6,6 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Runtime.InteropServices;
-    using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Documents;
@@ -84,7 +82,7 @@ namespace Microsoft.Azure.Cosmos
             // If the resource type is an offer and the requested type is either a Offer or OfferV2 or dynamic
             // create a OfferV2 object and cast it to T. This is a temporary fix until offers is moved to v3 API. 
             if (resourceType == ResourceType.Offer &&
-                (typeof(T).IsSubclassOf(typeof(Resource)) || typeof(T) == typeof(object)))
+                (typeof(T).IsSubclassOf(typeof(Documents.Resource)) || typeof(T) == typeof(object)))
             {
                 typedResults = JsonConvert.DeserializeObject<List<OfferV2>>(jsonText, settings).Cast<T>();
             }
