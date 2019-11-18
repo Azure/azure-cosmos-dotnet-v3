@@ -281,6 +281,11 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The default value is PortReuseMode.ReuseUnicastPort.
         /// </value>
+        /// <remarks>
+        /// ReuseUnicastPort and PrivatePortPool are not mutually exclusive.
+        /// When PrivatePortPool is enabled, the client first tries to reuse a port it already has.
+        /// It falls back to allocating a new port if the initial attempts failed. If this fails, too, the client then falls back to ReuseUnicastPort.
+        /// </remarks>
         public PortReuseMode? PortReuseMode
         {
             get => this.portReuseMode;
