@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 {
     using System;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
 
     internal static class QueryResponseFactory
@@ -14,8 +15,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
         public static QueryResponseCore CreateFromException(Exception exception)
         {
-            // Get the inner most exception
-            while (exception.InnerException != null) exception = exception.InnerException;
+            // Get the inner most exception (except if it's an exception with artifical stack trace).
+            while ((!(exception is ExceptionWithStackTraceException)) && (exception.InnerException != null)) exception = exception.InnerException;
 
             QueryResponseCore queryResponseCore;
             if (exception is CosmosException cosmosException)
@@ -30,6 +31,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             {
                 CosmosException convertedException = queryException.Accept(QueryExceptionConverter.Singleton);
                 queryResponseCore = CreateFromCosmosException(convertedException);
+            }
+            else if (exception is ExceptionWithStackTraceException exceptionWithStackTrace)
+            {
+                QueryResponseCore innerExceptionResponse = QueryResponseFactory.CreateFromException(exceptionWithStackTrace.InnerException);
+                queryResponseCore = QueryResponseCore.CreateFailure(
+                    statusCode: innerExceptionResponse.StatusCode,
+                    subStatusCodes: innerExceptionResponse.SubStatusCode,
+                    errorMessage: exceptionWithStackTrace.ToString(),
+                    requestCharge: innerExceptionResponse.RequestCharge,
+                    activityId: innerExceptionResponse.ActivityId,
+                    diagnostics: innerExceptionResponse.Diagnostics);
             }
             else
             {
@@ -51,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             QueryResponseCore queryResponseCore = QueryResponseCore.CreateFailure(
                 statusCode: cosmosException.StatusCode,
                 subStatusCodes: (Microsoft.Azure.Documents.SubStatusCodes)cosmosException.SubStatusCode,
-                errorMessage: cosmosException.Message,
+                errorMessage: cosmosException.ToString(),
                 requestCharge: 0,
                 activityId: cosmosException.ActivityId,
                 diagnostics: QueryResponseCore.EmptyDiagnostics);
@@ -64,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             QueryResponseCore queryResponseCore = QueryResponseCore.CreateFailure(
                 statusCode: documentClientException.StatusCode.GetValueOrDefault(System.Net.HttpStatusCode.InternalServerError),
                 subStatusCodes: null,
-                errorMessage: documentClientException.Message,
+                errorMessage: documentClientException.ToString(),
                 requestCharge: 0,
                 activityId: documentClientException.ActivityId,
                 diagnostics: QueryResponseCore.EmptyDiagnostics);

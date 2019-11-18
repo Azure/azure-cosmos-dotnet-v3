@@ -177,7 +177,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
 
             components.Add((await AggregateDocumentQueryExecutionComponent.TryCreateAsync(
-                Query.Core.ExecutionContext.ExecutionEnvironment.Client,
+                ExecutionEnvironment.Client,
                 operators.ToArray(),
                 new Dictionary<string, AggregateOperator?>()
                 {
@@ -189,7 +189,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 setupContext.func)).Result);
 
             components.Add((await DistinctDocumentQueryExecutionComponent.TryCreateAsync(
-                Query.Core.ExecutionContext.ExecutionEnvironment.Client,
+                ExecutionEnvironment.Client,
                 null,
                 setupContext.func,
                 DistinctQueryType.Ordered)).Result);

@@ -181,61 +181,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
 
         public static TryCatch<TResult> FromException(Exception exception)
         {
-            if (exception.StackTrace != null)
-            {
-                // If the exception already has a stack trace, then let's preserve it
-            }
-        }
-
-        /// <summary>
-        /// https://stackoverflow.com/questions/37093261/attach-stacktrace-to-exception-without-throwing-in-c-sharp-net
-        /// </summary>
-        private static class ExceptionStackTraceModifer
-        {
-            private static readonly FieldInfo StrackTraceStringFieldInfo = typeof(Exception).GetField(
-                "_stackTraceString",
-                BindingFlags.NonPublic | BindingFlags.Instance);
-            private static readonly Type TraceFormatTypeInfo = Type.GetType("System.Diagnostics.StackTrace").GetNestedType(
-                "TraceFormat",
-                BindingFlags.NonPublic);
-            private static readonly MethodInfo TraceToStringMethodInfo = typeof(StackTrace).GetMethod(
-                "ToString",
-                BindingFlags.NonPublic | BindingFlags.Instance,
-                null,
-                new[]
-                {
-                    TraceFormatTypeInfo
-                },
-                null);
-
-            public static void SetStackTrace(Exception target)
-            {
-                // Create stack trace, but skip 2 frames (SetStackTrace + TryCatch<TResult>.FromException)
-                StackTrace stackTrace = new StackTrace(skipFrames: 2);
-
-                object getStackTraceString = TraceToStringMethodInfo.Invoke(
-                    stackTrace,
-                    new object[]
-                    {
-                        Enum.GetValues(TraceFormatTypeInfo).GetValue(0)
-                    });
-                StrackTraceStringFieldInfo.SetValue(target, getStackTraceString);
-            }
-        }
-
-        private sealed class ExceptionWithStackTrace : Exception
-        {
-            private readonly StackTrace stackTrace;
-
-            public ExceptionWithStackTrace(Exception ex)
-                : base(message: $"{nameof(TryCatch<object>)} monad ended in exception.", innerException: ex)
-            {
-                // Create stack trace, but skip 2 frames (constructor + TryCatch<TResult>.FromException)
-                StackTrace stackTrace = new StackTrace(skipFrames: 2);
-                this.stackTrace = stackTrace;
-            }
-
-            public override string StackTrace => this.stackTrace.ToString();
+            // Skipping a stack frame, since we don't want this method showing up in the stack trace.
+            StackTrace stackTrace = new StackTrace(skipFrames: 1);
+            return new TryCatch<TResult>(
+                new ExceptionWithStackTraceException(
+                    message: $"{nameof(TryCatch<TResult>)} resulted in an exception.",
+                    innerException: exception,
+                    stackTrace: stackTrace));
         }
     }
 }
