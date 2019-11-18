@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         {
             IEnumerator queryIter, dataIter;
             for (queryIter = queryResults.GetEnumerator(), dataIter = dataResults.GetEnumerator();
-                queryIter.MoveNext() && dataIter.MoveNext(); )
+                queryIter.MoveNext() && dataIter.MoveNext();)
             {
                 IEnumerable queryEnumerable = queryIter.Current as IEnumerable;
                 IEnumerable dataEnumerable = dataIter.Current as IEnumerable;
@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 else if (queryEnumerable == null || dataEnumerable == null)
                 {
                     return false;
-                } 
+                }
 
                 else
                 {
@@ -166,7 +166,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             // execution validation
             IEnumerator queryEnumerator = queryResults.GetEnumerator();
             List<object> queryResultsList = new List<object>();
-            while (queryEnumerator.MoveNext()) 
+            while (queryEnumerator.MoveNext())
             {
                 queryResultsList.Add(queryEnumerator.Current);
             }
@@ -296,7 +296,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             }
 
             FeedOptions feedOptions = new FeedOptions() { EnableScanInQuery = true, EnableCrossPartitionQuery = true };
-            IOrderedQueryable<T> query = container.GetItemLinqQueryable<T>(allowSynchronousQueryExecution : true);
+            IOrderedQueryable<T> query = container.GetItemLinqQueryable<T>(allowSynchronousQueryExecution: true);
 
             // To cover both query against backend and queries on the original data using LINQ nicely, 
             // the LINQ expression should be written once and they should be compiled and executed against the two sources.
@@ -483,7 +483,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             }
 
             FeedOptions feedOptions = new FeedOptions() { EnableScanInQuery = true, EnableCrossPartitionQuery = true };
-            IOrderedQueryable<Data> query = container.GetItemLinqQueryable<Data>(allowSynchronousQueryExecution : true);
+            IOrderedQueryable<Data> query = container.GetItemLinqQueryable<Data>(allowSynchronousQueryExecution: true);
 
             // To cover both query against backend and queries on the original data using LINQ nicely, 
             // the LINQ expression should be written once and they should be compiled and executed against the two sources.
@@ -515,16 +515,16 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             }
             catch (Exception e)
             {
-                while (!(e is DocumentClientException) && e.InnerException != null)
-                {
-                    e = e.InnerException;
-                }
+                while (e.InnerException != null) e = e.InnerException;
 
-                string message = null;
-                DocumentClientException dce = e as DocumentClientException;
-                if (dce != null)
+                string message;
+                if (e is CosmosException cosmosException)
                 {
-                    message = dce.RawErrorMessage;
+                    message = $"Status Code: {cosmosException.StatusCode}";
+                }
+                else if(e is DocumentClientException documentClientException)
+                {
+                    message = documentClientException.RawErrorMessage;
                 }
                 else
                 {
@@ -555,7 +555,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
 
         public override bool Equals(object obj)
         {
-            if (!(obj is LinqTestObject && 
+            if (!(obj is LinqTestObject &&
                 obj.GetType().IsAssignableFrom(this.GetType()) &&
                 this.GetType().IsAssignableFrom(obj.GetType()))) return false;
             if (obj == null) return false;

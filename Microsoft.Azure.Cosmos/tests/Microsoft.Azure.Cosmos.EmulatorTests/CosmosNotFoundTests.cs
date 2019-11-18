@@ -52,27 +52,46 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await container.DeleteContainerAsync();
 
-            FeedIterator crossPartitionQueryIterator = container.GetItemQueryStreamIterator(
-                "select * from t where true",
-                requestOptions: new QueryRequestOptions() { MaxConcurrency = 2 });
+            {
+                // Querying after delete should be a gone exception even after the retry.
+                FeedIterator crossPartitionQueryIterator = container.GetItemQueryStreamIterator(
+                    "select * from t where true",
+                    requestOptions: new QueryRequestOptions() { MaxConcurrency = 2 });
 
-            await this.VerifyQueryNotFoundResponse(crossPartitionQueryIterator);
+                await this.VerifyQueryNotFoundResponse(crossPartitionQueryIterator);
+            }
 
-            FeedIterator queryIterator = container.GetItemQueryStreamIterator(
-                "select * from t where true",
-                requestOptions: new QueryRequestOptions()
-                {
-                    MaxConcurrency = 1,
-                    PartitionKey = new Cosmos.PartitionKey("testpk"),
-                });
+            {
+                // Also try with partition key.
+                FeedIterator queryIterator = container.GetItemQueryStreamIterator(
+                    "select * from t where true",
+                    requestOptions: new QueryRequestOptions()
+                    {
+                        MaxConcurrency = 1,
+                        PartitionKey = new Cosmos.PartitionKey("testpk"),
+                    });
 
-            await this.VerifyQueryNotFoundResponse(queryIterator);
+                await this.VerifyQueryNotFoundResponse(queryIterator);
+            }
 
-            FeedIterator crossPartitionQueryIterator2 = container.GetItemQueryStreamIterator(
-                "select * from t where true",
-                requestOptions: new QueryRequestOptions() { MaxConcurrency = 2 });
+            {
+                // Recreate the collection with the same name on a different client.
+                CosmosClient newClient = TestCommon.CreateCosmosClient();
+                Database db2 = newClient.GetDatabase(db.Id);
+                Container container2 = await db2.CreateContainerAsync(
+                    id: container.Id,
+                    partitionKeyPath: "/pk",
+                    throughput: 500);
+                await container2.CreateItemAsync(randomItem);
 
-            await this.VerifyQueryNotFoundResponse(crossPartitionQueryIterator2);
+                FeedIterator queryIterator = container.GetItemQueryStreamIterator(
+                    "select * from t where true",
+                    requestOptions: new QueryRequestOptions() { MaxConcurrency = 2 });
+
+                ResponseMessage response = await queryIterator.ReadNextAsync();
+                Assert.IsNotNull(response);
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            }
 
             await db.DeleteAsync();
         }
@@ -144,14 +163,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task VerifyQueryNotFoundResponse(FeedIterator iterator)
         {
-            // Verify that even if the user ignores the HasMoreResults it still returns the exception
-            for(int i = 0; i < 3; i++)
-            {
-                ResponseMessage response = await iterator.ReadNextAsync();
-                Assert.IsNotNull(response);
-                Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
-                Assert.IsFalse(iterator.HasMoreResults);
-            }
+            ResponseMessage response = await iterator.ReadNextAsync();
+            Assert.IsNotNull(response);
+            Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
+            Assert.IsFalse(iterator.HasMoreResults);
         }
 
         private void VerifyNotFoundResponse(ResponseMessage response)
