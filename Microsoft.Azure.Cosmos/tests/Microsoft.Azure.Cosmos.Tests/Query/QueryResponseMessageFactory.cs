@@ -135,6 +135,12 @@ namespace Microsoft.Azure.Cosmos.Tests
             return message;
         }
 
+        public static QueryResponse<TItem> CreateQueryResponse<TItem>(
+            QueryResponse queryResponse)
+        {
+            return QueryResponse<TItem>.CreateResponse<TItem>(queryResponse, cosmosSerializer);
+        }
+
         public static QueryResponseCore CreateFailureResponse(
             HttpStatusCode httpStatusCode,
             SubStatusCodes subStatusCodes,
