@@ -189,11 +189,8 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (this.resources == null)
                 {
-                    if (typeof(T) == typeof(CosmosElement))
-                    {
-                        this.resources = this.cosmosElements.Cast<T>();
-                    }
-                    else
+                    this.resources = this.cosmosElements as IEnumerable<T>;
+                    if (this.resources == null)
                     {
                         this.resources = CosmosElementSerializer.Deserialize<T>(
                             this.QueryHeaders.ContainerRid,
