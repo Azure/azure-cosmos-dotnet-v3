@@ -4697,8 +4697,1069 @@
       },
       "NestedTypes": {}
     },
-    "Response`1": {
-      "Subclasses": {},
+    "Response": {
+      "Subclasses": {
+        "ContainerResponse": {
+          "Subclasses": {},
+          "Members": {
+            "Double get_RequestCharge()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "Double get_RequestCharge()"
+            },
+            "Double RequestCharge": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "Microsoft.Azure.Cosmos.Container Container": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "Microsoft.Azure.Cosmos.Container get_Container()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Microsoft.Azure.Cosmos.Container get_Container()"
+            },
+            "Microsoft.Azure.Cosmos.Container op_Implicit(Microsoft.Azure.Cosmos.ContainerResponse)": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "Microsoft.Azure.Cosmos.Container op_Implicit(Microsoft.Azure.Cosmos.ContainerResponse)"
+            },
+            "Microsoft.Azure.Cosmos.ContainerProperties get_Resource()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Microsoft.Azure.Cosmos.ContainerProperties get_Resource()"
+            },
+            "Microsoft.Azure.Cosmos.ContainerProperties Resource": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()"
+            },
+            "Microsoft.Azure.Cosmos.Headers get_Headers()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Microsoft.Azure.Cosmos.Headers get_Headers()"
+            },
+            "Microsoft.Azure.Cosmos.Headers Headers": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.Net.HttpStatusCode get_StatusCode()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "System.Net.HttpStatusCode get_StatusCode()"
+            },
+            "System.Net.HttpStatusCode StatusCode": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.String ActivityId": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.String ETag": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.String get_ActivityId()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.String get_ActivityId()"
+            },
+            "System.String get_ETag()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.String get_ETag()"
+            }
+          },
+          "NestedTypes": {}
+        },
+        "DatabaseResponse": {
+          "Subclasses": {},
+          "Members": {
+            "Double get_RequestCharge()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "Double get_RequestCharge()"
+            },
+            "Double RequestCharge": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()"
+            },
+            "Microsoft.Azure.Cosmos.Database Database": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "Microsoft.Azure.Cosmos.Database get_Database()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Microsoft.Azure.Cosmos.Database get_Database()"
+            },
+            "Microsoft.Azure.Cosmos.Database op_Implicit(Microsoft.Azure.Cosmos.DatabaseResponse)": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "Microsoft.Azure.Cosmos.Database op_Implicit(Microsoft.Azure.Cosmos.DatabaseResponse)"
+            },
+            "Microsoft.Azure.Cosmos.DatabaseProperties get_Resource()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Microsoft.Azure.Cosmos.DatabaseProperties get_Resource()"
+            },
+            "Microsoft.Azure.Cosmos.DatabaseProperties Resource": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "Microsoft.Azure.Cosmos.Headers get_Headers()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Microsoft.Azure.Cosmos.Headers get_Headers()"
+            },
+            "Microsoft.Azure.Cosmos.Headers Headers": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.Net.HttpStatusCode get_StatusCode()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "System.Net.HttpStatusCode get_StatusCode()"
+            },
+            "System.Net.HttpStatusCode StatusCode": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.String ActivityId": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.String ETag": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.String get_ActivityId()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.String get_ActivityId()"
+            },
+            "System.String get_ETag()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.String get_ETag()"
+            }
+          },
+          "NestedTypes": {}
+        },
+        "FeedResponse`1": {
+          "Subclasses": {},
+          "Members": {
+            "Double get_RequestCharge()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "Double get_RequestCharge()"
+            },
+            "Double RequestCharge": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "Int32 Count": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "Int32 get_Count()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "Int32 get_Count()"
+            },
+            "System.Collections.Generic.IEnumerator`1[T] GetEnumerator()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.Collections.Generic.IEnumerator`1[T] GetEnumerator()"
+            },
+            "System.String ActivityId": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.String ContinuationToken": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.String ETag": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.String get_ActivityId()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.String get_ActivityId()"
+            },
+            "System.String get_ContinuationToken()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.String get_ContinuationToken()"
+            },
+            "System.String get_ETag()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.String get_ETag()"
+            }
+          },
+          "NestedTypes": {}
+        },
+        "ItemResponse`1": {
+          "Subclasses": {},
+          "Members": {
+            "Double get_RequestCharge()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "Double get_RequestCharge()"
+            },
+            "Double RequestCharge": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()"
+            },
+            "Microsoft.Azure.Cosmos.Headers get_Headers()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Microsoft.Azure.Cosmos.Headers get_Headers()"
+            },
+            "Microsoft.Azure.Cosmos.Headers Headers": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.Net.HttpStatusCode get_StatusCode()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "System.Net.HttpStatusCode get_StatusCode()"
+            },
+            "System.Net.HttpStatusCode StatusCode": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.String ActivityId": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.String ETag": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.String get_ActivityId()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.String get_ActivityId()"
+            },
+            "System.String get_ETag()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.String get_ETag()"
+            },
+            "T get_Resource()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "T get_Resource()"
+            },
+            "T Resource": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            }
+          },
+          "NestedTypes": {}
+        },
+        "PermissionResponse": {
+          "Subclasses": {},
+          "Members": {
+            "Double get_RequestCharge()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "Double get_RequestCharge()"
+            },
+            "Double RequestCharge": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()"
+            },
+            "Microsoft.Azure.Cosmos.Headers get_Headers()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Microsoft.Azure.Cosmos.Headers get_Headers()"
+            },
+            "Microsoft.Azure.Cosmos.Headers Headers": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "Microsoft.Azure.Cosmos.Permission get_Permission()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Microsoft.Azure.Cosmos.Permission get_Permission()"
+            },
+            "Microsoft.Azure.Cosmos.Permission op_Implicit(Microsoft.Azure.Cosmos.PermissionResponse)": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "Microsoft.Azure.Cosmos.Permission op_Implicit(Microsoft.Azure.Cosmos.PermissionResponse)"
+            },
+            "Microsoft.Azure.Cosmos.Permission Permission": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "Microsoft.Azure.Cosmos.PermissionProperties get_Resource()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Microsoft.Azure.Cosmos.PermissionProperties get_Resource()"
+            },
+            "Microsoft.Azure.Cosmos.PermissionProperties Resource": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.Net.HttpStatusCode get_StatusCode()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "System.Net.HttpStatusCode get_StatusCode()"
+            },
+            "System.Net.HttpStatusCode StatusCode": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.String ActivityId": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.String ETag": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.String get_ActivityId()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.String get_ActivityId()"
+            },
+            "System.String get_ETag()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.String get_ETag()"
+            }
+          },
+          "NestedTypes": {}
+        },
+        "Response`1": {
+          "Subclasses": {},
+          "Members": {
+            "T get_Resource()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "T get_Resource()"
+            },
+            "T op_Implicit(Microsoft.Azure.Cosmos.Response`1[T])": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "T op_Implicit(Microsoft.Azure.Cosmos.Response`1[T])"
+            },
+            "T Resource": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            }
+          },
+          "NestedTypes": {}
+        },
+        "StoredProcedureExecuteResponse`1": {
+          "Subclasses": {},
+          "Members": {
+            "Double get_RequestCharge()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "Double get_RequestCharge()"
+            },
+            "Double RequestCharge": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()"
+            },
+            "Microsoft.Azure.Cosmos.Headers get_Headers()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Microsoft.Azure.Cosmos.Headers get_Headers()"
+            },
+            "Microsoft.Azure.Cosmos.Headers Headers": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.Net.HttpStatusCode get_StatusCode()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "System.Net.HttpStatusCode get_StatusCode()"
+            },
+            "System.Net.HttpStatusCode StatusCode": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.String ActivityId": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.String ETag": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.String get_ActivityId()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.String get_ActivityId()"
+            },
+            "System.String get_ETag()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.String get_ETag()"
+            },
+            "System.String get_ScriptLog()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.String get_ScriptLog()"
+            },
+            "System.String get_SessionToken()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.String get_SessionToken()"
+            },
+            "System.String ScriptLog": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.String SessionToken": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "T get_Resource()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "T get_Resource()"
+            },
+            "T Resource": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            }
+          },
+          "NestedTypes": {}
+        },
+        "StoredProcedureResponse": {
+          "Subclasses": {},
+          "Members": {
+            "Double get_RequestCharge()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "Double get_RequestCharge()"
+            },
+            "Double RequestCharge": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()"
+            },
+            "Microsoft.Azure.Cosmos.Headers get_Headers()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Microsoft.Azure.Cosmos.Headers get_Headers()"
+            },
+            "Microsoft.Azure.Cosmos.Headers Headers": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "Microsoft.Azure.Cosmos.Scripts.StoredProcedureProperties get_Resource()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Microsoft.Azure.Cosmos.Scripts.StoredProcedureProperties get_Resource()"
+            },
+            "Microsoft.Azure.Cosmos.Scripts.StoredProcedureProperties op_Implicit(Microsoft.Azure.Cosmos.Scripts.StoredProcedureResponse)": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "Microsoft.Azure.Cosmos.Scripts.StoredProcedureProperties op_Implicit(Microsoft.Azure.Cosmos.Scripts.StoredProcedureResponse)"
+            },
+            "Microsoft.Azure.Cosmos.Scripts.StoredProcedureProperties Resource": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.Net.HttpStatusCode get_StatusCode()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "System.Net.HttpStatusCode get_StatusCode()"
+            },
+            "System.Net.HttpStatusCode StatusCode": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.String ActivityId": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.String ETag": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.String get_ActivityId()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.String get_ActivityId()"
+            },
+            "System.String get_ETag()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.String get_ETag()"
+            },
+            "System.String get_SessionToken()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.String get_SessionToken()"
+            },
+            "System.String SessionToken": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            }
+          },
+          "NestedTypes": {}
+        },
+        "TriggerResponse": {
+          "Subclasses": {},
+          "Members": {
+            "Double get_RequestCharge()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "Double get_RequestCharge()"
+            },
+            "Double RequestCharge": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()"
+            },
+            "Microsoft.Azure.Cosmos.Headers get_Headers()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Microsoft.Azure.Cosmos.Headers get_Headers()"
+            },
+            "Microsoft.Azure.Cosmos.Headers Headers": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "Microsoft.Azure.Cosmos.Scripts.TriggerProperties get_Resource()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Microsoft.Azure.Cosmos.Scripts.TriggerProperties get_Resource()"
+            },
+            "Microsoft.Azure.Cosmos.Scripts.TriggerProperties op_Implicit(Microsoft.Azure.Cosmos.Scripts.TriggerResponse)": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "Microsoft.Azure.Cosmos.Scripts.TriggerProperties op_Implicit(Microsoft.Azure.Cosmos.Scripts.TriggerResponse)"
+            },
+            "Microsoft.Azure.Cosmos.Scripts.TriggerProperties Resource": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.Net.HttpStatusCode get_StatusCode()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "System.Net.HttpStatusCode get_StatusCode()"
+            },
+            "System.Net.HttpStatusCode StatusCode": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.String ActivityId": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.String ETag": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.String get_ActivityId()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.String get_ActivityId()"
+            },
+            "System.String get_ETag()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.String get_ETag()"
+            }
+          },
+          "NestedTypes": {}
+        },
+        "UserDefinedFunctionResponse": {
+          "Subclasses": {},
+          "Members": {
+            "Double get_RequestCharge()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "Double get_RequestCharge()"
+            },
+            "Double RequestCharge": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()"
+            },
+            "Microsoft.Azure.Cosmos.Headers get_Headers()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Microsoft.Azure.Cosmos.Headers get_Headers()"
+            },
+            "Microsoft.Azure.Cosmos.Headers Headers": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "Microsoft.Azure.Cosmos.Scripts.UserDefinedFunctionProperties get_Resource()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Microsoft.Azure.Cosmos.Scripts.UserDefinedFunctionProperties get_Resource()"
+            },
+            "Microsoft.Azure.Cosmos.Scripts.UserDefinedFunctionProperties op_Implicit(Microsoft.Azure.Cosmos.Scripts.UserDefinedFunctionResponse)": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "Microsoft.Azure.Cosmos.Scripts.UserDefinedFunctionProperties op_Implicit(Microsoft.Azure.Cosmos.Scripts.UserDefinedFunctionResponse)"
+            },
+            "Microsoft.Azure.Cosmos.Scripts.UserDefinedFunctionProperties Resource": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.Net.HttpStatusCode get_StatusCode()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "System.Net.HttpStatusCode get_StatusCode()"
+            },
+            "System.Net.HttpStatusCode StatusCode": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.String ActivityId": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.String ETag": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.String get_ActivityId()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.String get_ActivityId()"
+            },
+            "System.String get_ETag()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.String get_ETag()"
+            }
+          },
+          "NestedTypes": {}
+        },
+        "ThroughputResponse": {
+          "Subclasses": {},
+          "Members": {
+            "Double get_RequestCharge()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "Double get_RequestCharge()"
+            },
+            "Double RequestCharge": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()"
+            },
+            "Microsoft.Azure.Cosmos.Headers get_Headers()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Microsoft.Azure.Cosmos.Headers get_Headers()"
+            },
+            "Microsoft.Azure.Cosmos.Headers Headers": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "Microsoft.Azure.Cosmos.ThroughputProperties get_Resource()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Microsoft.Azure.Cosmos.ThroughputProperties get_Resource()"
+            },
+            "Microsoft.Azure.Cosmos.ThroughputProperties op_Implicit(Microsoft.Azure.Cosmos.ThroughputResponse)": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "Microsoft.Azure.Cosmos.ThroughputProperties op_Implicit(Microsoft.Azure.Cosmos.ThroughputResponse)"
+            },
+            "Microsoft.Azure.Cosmos.ThroughputProperties Resource": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.Net.HttpStatusCode get_StatusCode()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "System.Net.HttpStatusCode get_StatusCode()"
+            },
+            "System.Net.HttpStatusCode StatusCode": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.Nullable`1[System.Boolean] get_IsReplacePending()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.Nullable`1[System.Boolean] get_IsReplacePending()"
+            },
+            "System.Nullable`1[System.Boolean] IsReplacePending": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.Nullable`1[System.Int32] get_MinThroughput()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.Nullable`1[System.Int32] get_MinThroughput()"
+            },
+            "System.Nullable`1[System.Int32] MinThroughput": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.String ActivityId": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.String ETag": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.String get_ActivityId()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.String get_ActivityId()"
+            },
+            "System.String get_ETag()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.String get_ETag()"
+            }
+          },
+          "NestedTypes": {}
+        },
+        "UserResponse": {
+          "Subclasses": {},
+          "Members": {
+            "Double get_RequestCharge()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "Double get_RequestCharge()"
+            },
+            "Double RequestCharge": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()"
+            },
+            "Microsoft.Azure.Cosmos.Headers get_Headers()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Microsoft.Azure.Cosmos.Headers get_Headers()"
+            },
+            "Microsoft.Azure.Cosmos.Headers Headers": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "Microsoft.Azure.Cosmos.User get_User()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Microsoft.Azure.Cosmos.User get_User()"
+            },
+            "Microsoft.Azure.Cosmos.User op_Implicit(Microsoft.Azure.Cosmos.UserResponse)": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "Microsoft.Azure.Cosmos.User op_Implicit(Microsoft.Azure.Cosmos.UserResponse)"
+            },
+            "Microsoft.Azure.Cosmos.User User": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "Microsoft.Azure.Cosmos.UserProperties get_Resource()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Microsoft.Azure.Cosmos.UserProperties get_Resource()"
+            },
+            "Microsoft.Azure.Cosmos.UserProperties Resource": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.Net.HttpStatusCode get_StatusCode()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "System.Net.HttpStatusCode get_StatusCode()"
+            },
+            "System.Net.HttpStatusCode StatusCode": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.String ActivityId": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.String ETag": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.String get_ActivityId()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.String get_ActivityId()"
+            },
+            "System.String get_ETag()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.String get_ETag()"
+            }
+          },
+          "NestedTypes": {}
+        }
+      },
       "Members": {
         "Double get_RequestCharge()": {
           "Type": "Method",
@@ -4759,7 +5820,13 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "System.String get_ETag()"
-        },
+        }
+      },
+      "NestedTypes": {}
+    },
+    "Response`1": {
+      "Subclasses": {},
+      "Members": {
         "T get_Resource()": {
           "Type": "Method",
           "Attributes": [],
