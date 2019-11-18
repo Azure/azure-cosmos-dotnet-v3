@@ -189,16 +189,14 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (this.resources == null)
                 {
-                    this.resources = this.cosmosElements as IEnumerable<T>;
-                    if (this.resources == null)
-                    {
-                        this.resources = CosmosElementSerializer.Deserialize<T>(
+                    this.resources = (this.cosmosElements is IEnumerable<T> resourcesTemp)
+                        ? resourcesTemp
+                        : CosmosElementSerializer.Deserialize<T>(
                             this.QueryHeaders.ContainerRid,
                             this.cosmosElements,
                             this.QueryHeaders.ResourceType,
                             this.jsonSerializer,
                             this.serializationOptions);
-                    }
                 }
 
                 return this.resources;
