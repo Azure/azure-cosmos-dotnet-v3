@@ -543,11 +543,6 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder GetChangeFeedEstimatorBuilder(System.String, ChangesEstimationHandler, System.Nullable`1[System.TimeSpan])"
         },
-        "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder(System.String, ChangesStreamHandler)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder(System.String, ChangesStreamHandler)"
-        },
         "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder[T](System.String, ChangesHandler`1)": {
           "Type": "Method",
           "Attributes": [],
@@ -569,11 +564,6 @@
           "MethodInfo": null
         },
         "Microsoft.Azure.Cosmos.Container+ChangesHandler`1[T]": {
-          "Type": "NestedType",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "Microsoft.Azure.Cosmos.Container+ChangesStreamHandler": {
           "Type": "NestedType",
           "Attributes": [],
           "MethodInfo": null
@@ -771,32 +761,6 @@
             }
           },
           "NestedTypes": {}
-        },
-        "ChangesStreamHandler": {
-          "Subclasses": {},
-          "Members": {
-            "System.IAsyncResult BeginInvoke(System.IO.Stream, System.Threading.CancellationToken, System.AsyncCallback, System.Object)": {
-              "Type": "Method",
-              "Attributes": [],
-              "MethodInfo": "System.IAsyncResult BeginInvoke(System.IO.Stream, System.Threading.CancellationToken, System.AsyncCallback, System.Object)"
-            },
-            "System.Threading.Tasks.Task EndInvoke(System.IAsyncResult)": {
-              "Type": "Method",
-              "Attributes": [],
-              "MethodInfo": "System.Threading.Tasks.Task EndInvoke(System.IAsyncResult)"
-            },
-            "System.Threading.Tasks.Task Invoke(System.IO.Stream, System.Threading.CancellationToken)": {
-              "Type": "Method",
-              "Attributes": [],
-              "MethodInfo": "System.Threading.Tasks.Task Invoke(System.IO.Stream, System.Threading.CancellationToken)"
-            },
-            "Void .ctor(System.Object, IntPtr)": {
-              "Type": "Constructor",
-              "Attributes": [],
-              "MethodInfo": "Void .ctor(System.Object, IntPtr)"
-            }
-          },
-          "NestedTypes": {}
         }
       }
     },
@@ -843,32 +807,6 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.Task Invoke(System.Collections.Generic.IReadOnlyCollection`1[T], System.Threading.CancellationToken)"
-        },
-        "Void .ctor(System.Object, IntPtr)": {
-          "Type": "Constructor",
-          "Attributes": [],
-          "MethodInfo": "Void .ctor(System.Object, IntPtr)"
-        }
-      },
-      "NestedTypes": {}
-    },
-    "ChangesStreamHandler": {
-      "Subclasses": {},
-      "Members": {
-        "System.IAsyncResult BeginInvoke(System.IO.Stream, System.Threading.CancellationToken, System.AsyncCallback, System.Object)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "System.IAsyncResult BeginInvoke(System.IO.Stream, System.Threading.CancellationToken, System.AsyncCallback, System.Object)"
-        },
-        "System.Threading.Tasks.Task EndInvoke(System.IAsyncResult)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "System.Threading.Tasks.Task EndInvoke(System.IAsyncResult)"
-        },
-        "System.Threading.Tasks.Task Invoke(System.IO.Stream, System.Threading.CancellationToken)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "System.Threading.Tasks.Task Invoke(System.IO.Stream, System.Threading.CancellationToken)"
         },
         "Void .ctor(System.Object, IntPtr)": {
           "Type": "Constructor",
