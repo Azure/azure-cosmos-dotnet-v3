@@ -15,18 +15,49 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
         [TestMethod]
         public void TestStackTrace()
         {
-            TryCatch<object> tryCatch = this.SomeNestedMethod();
+            TryCatch<object> tryCatch = this.MethodWhereExceptionWasCaught();
             Assert.IsFalse(tryCatch.Succeeded);
             Exception exception = tryCatch.Exception;
             Assert.IsNotNull(exception.StackTrace);
+            // exception.ToString() >>
+            //Microsoft.Azure.Cosmos.Query.Core.Monads.ExceptionWithStackTraceException: TryCatch resulted in an exception. --->System.Exception: Exception of type 'System.Exception' was thrown.
+            //   at Microsoft.Azure.Cosmos.Tests.Query.TryCatchTests.MethodWhereExceptionWasThrown() in C:\azure - cosmos - dotnet - v3\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\Query\TryCatchTests.cs:line 43
+            //   at Microsoft.Azure.Cosmos.Tests.Query.TryCatchTests.MethodWhereExceptionWasCaught() in C:\azure - cosmos - dotnet - v3\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\Query\TryCatchTests.cs:line 30
+            //         -- - End of inner exception stack trace-- -
+            //          at Microsoft.Azure.Cosmos.Tests.Query.TryCatchTests.MethodWhereExceptionWasCaught()
+            //   at Microsoft.Azure.Cosmos.Tests.Query.TryCatchTests.TestStackTrace()
+            //   at System.RuntimeMethodHandle.InvokeMethod(Object target, Object[] arguments, Signature sig, Boolean constructor, Boolean wrapExceptions)
+            //   at System.Reflection.RuntimeMethodInfo.Invoke(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+            //   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Extensions.MethodInfoExtensions.InvokeAsSynchronousTask(MethodInfo methodInfo, Object classInstance, Object[] parameters)
+            //   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestMethodInfo.ExecuteInternal(Object[] arguments)
+            //   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestMethodInfo.Invoke(Object[] arguments)
+            //   at Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute.Execute(ITestMethod testMethod)
+            //   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestMethodRunner.RunTestMethod()
+            //   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestMethodRunner.Execute()
+            //   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.UnitTestRunner.RunSingleTest(TestMethod testMethod, IDictionary`2 testRunParameters)
+            //   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestExecutionManager.ExecuteTestsWithTestRunner(IEnumerable`1 tests, IRunContext runContext, ITestExecutionRecorder testExecutionRecorder, String source, UnitTestRunner testRunner)
+            //   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestExecutionManager.ExecuteTestsInSource(IEnumerable`1 tests, IRunContext runContext, IFrameworkHandle frameworkHandle, String source, Boolean isDeploymentDone)
+            //   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestExecutionManager.ExecuteTests(IEnumerable`1 tests, IRunContext runContext, IFrameworkHandle frameworkHandle, Boolean isDeploymentDone)
+            //   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestExecutionManager.RunTests(IEnumerable`1 tests, IRunContext runContext, IFrameworkHandle frameworkHandle, TestRunCancellationToken runCancellationToken)
+            //   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.MSTestExecutor.RunTests(IEnumerable`1 tests, IRunContext runContext, IFrameworkHandle frameworkHandle)
+            //   at Microsoft.VisualStudio.TestPlatform.CrossPlatEngine.Execution.BaseRunTests.RunTestInternalWithExecutors(IEnumerable`1 executorUriExtensionMap, Int64 totalTests)
+            //   at Microsoft.VisualStudio.TestPlatform.CrossPlatEngine.Execution.BaseRunTests.RunTestsInternal()
+            //   at Microsoft.VisualStudio.TestPlatform.CrossPlatEngine.Execution.BaseRunTests.RunTests()
+            //   at Microsoft.VisualStudio.TestPlatform.CrossPlatEngine.Execution.ExecutionManager.StartTestRun(IEnumerable`1 tests, String package, String runSettings, TestExecutionContext testExecutionContext, ITestCaseEventsHandler testCaseEventsHandler, ITestRunEventsHandler runEventsHandler)
+            //   at Microsoft.VisualStudio.TestPlatform.CommunicationUtilities.TestRequestHandler.<> c__DisplayClass30_4.< OnMessageReceived > b__4()
+            //   at Microsoft.VisualStudio.TestPlatform.Utilities.JobQueue`1.SafeProcessJob(T job)
+            //   at Microsoft.VisualStudio.TestPlatform.Utilities.JobQueue`1.BackgroundJobProcessor()
+            //   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+            //   at System.Threading.Tasks.Task.ExecuteWithThreadLocal(Task & currentTaskSlot)
+            //   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
         }
 
-        private TryCatch<object> SomeNestedMethod()
+        private TryCatch<object> MethodWhereExceptionWasCaught()
         {
             TryCatch<object> tryCatch;
             try
             {
-                this.SomeNestedMethod2();
+                this.MethodWhereExceptionWasThrown();
                 tryCatch = TryCatch<object>.FromResult(null);
             }
             catch (Exception ex)
@@ -37,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             return tryCatch;
         }
 
-        private void SomeNestedMethod2()
+        private void MethodWhereExceptionWasThrown()
         {
             throw new Exception();
         }
