@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                     if (!GroupByContinuationToken.TryParse(requestContinuation, out groupByContinuationToken))
                     {
                         return TryCatch<IDocumentQueryExecutionComponent>.FromException(
-                            new Exception($"Invalid {nameof(GroupByContinuationToken)}: '{requestContinuation}'"));
+                            new MalformedContinuationTokenException($"Invalid {nameof(GroupByContinuationToken)}: '{requestContinuation}'"));
                     }
                 }
                 else

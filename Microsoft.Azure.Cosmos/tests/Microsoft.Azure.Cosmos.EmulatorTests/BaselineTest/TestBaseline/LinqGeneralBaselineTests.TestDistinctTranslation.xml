@@ -148,7 +148,7 @@ FROM (
     FROM root
 ) AS r0 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":38,"end":44},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: ({"errors":[{"severity":"Error","location":{"start":38,"end":44},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -189,7 +189,7 @@ FROM (
 ) AS r1 
 ORDER BY r1 ASC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":38,"end":44},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: ({"errors":[{"severity":"Error","location":{"start":38,"end":44},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -206,7 +206,7 @@ FROM (
     ORDER BY root["Int"] ASC
 ) AS r1 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":73,"end":97},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":38,"end":44},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: ({"errors":[{"severity":"Error","location":{"start":73,"end":97},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":38,"end":44},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -477,7 +477,7 @@ FROM (
     ORDER BY v2 ASC
 ) AS r0 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":224,"end":239},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":47,"end":52},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: ({"errors":[{"severity":"Error","location":{"start":224,"end":239},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":47,"end":52},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -520,7 +520,7 @@ FROM (
     ORDER BY v2 ASC
 ) AS r0 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":186,"end":201},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":47,"end":52},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: ({"errors":[{"severity":"Error","location":{"start":186,"end":201},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":47,"end":52},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -560,7 +560,7 @@ FROM (
     WHERE (LENGTH(v2["FamilyName"]) > 10)
 ) AS r0 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":47,"end":52},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: ({"errors":[{"severity":"Error","location":{"start":47,"end":52},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>

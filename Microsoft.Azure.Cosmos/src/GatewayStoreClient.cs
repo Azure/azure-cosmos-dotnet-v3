@@ -166,7 +166,7 @@ namespace Microsoft.Azure.Cosmos
             if (string.Equals(responseMessage.Content?.Headers?.ContentType?.MediaType, "application/json", StringComparison.OrdinalIgnoreCase))
             {
                 Stream readStream = await responseMessage.Content.ReadAsStreamAsync();
-                Error error = Resource.LoadFrom<Error>(readStream);
+                Error error = Documents.Resource.LoadFrom<Error>(readStream);
                 return new DocumentClientException(
                     error,
                     responseMessage.Headers,
