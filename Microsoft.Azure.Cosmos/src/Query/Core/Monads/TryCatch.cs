@@ -78,14 +78,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
             TryCatch<T> matchResult;
             if (this.Succeeded)
             {
-                try
-                {
-                    matchResult = TryCatch<T>.FromResult(onSuccess(this.either.FromRight(default)));
-                }
-                catch (Exception ex)
-                {
-                    matchResult = TryCatch<T>.FromException(ex);
-                }
+                matchResult = TryCatch<T>.FromResult(onSuccess(this.either.FromRight(default)));
             }
             else
             {
@@ -101,14 +94,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
             TryCatch<T> matchResult;
             if (this.Succeeded)
             {
-                try
-                {
-                    matchResult = TryCatch<T>.FromResult(await onSuccess(this.either.FromRight(default)));
-                }
-                catch (Exception ex)
-                {
-                    matchResult = TryCatch<T>.FromException(ex);
-                }
+                matchResult = TryCatch<T>.FromResult(await onSuccess(this.either.FromRight(default)));
             }
             else
             {

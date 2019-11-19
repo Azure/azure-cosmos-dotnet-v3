@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     public class RequestOptions
     {
-        internal IDictionary<string, object> Properties { get; set; }
+        internal Dictionary<string, object> Properties { get; set; }
 
         /// <summary>
         /// Gets or sets the If-Match (ETag) associated with the request in the Azure Cosmos DB service.
