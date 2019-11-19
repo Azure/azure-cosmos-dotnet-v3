@@ -4,7 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
- 
+
     using System;
     using System.Collections.Generic;
     using System.Net.Http;
@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
     [TestClass]
     public class CosmosGatewayTimeoutTests
-    { 
+    {
         [TestMethod]
         public async Task GatewayStoreClientTimeout()
         {
@@ -47,16 +47,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 GatewayStoreClient storeClient = (GatewayStoreClient)gatewayStoreClientProperty.GetValue(gatewayStore);
 
                 // Set the http request timeout to 10 ms to cause a timeout exception
+                HttpClient httpClient = new HttpClient(new TimeOutHttpClientHandler());
                 FieldInfo httpClientProperty = storeClient.GetType().GetField("httpClient", BindingFlags.NonPublic | BindingFlags.Instance);
-                HttpClient gatewayStoreHttpClient = (HttpClient)httpClientProperty.GetValue(storeClient);
-                gatewayStoreHttpClient.Timeout = TimeSpan.FromMilliseconds(1);
-
+                httpClientProperty.SetValue(storeClient, httpClient);
+                
                 // Verify the failure has the required info
                 CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
                 try
                 {
                     await client.CreateDatabaseAsync("TestGatewayTimeoutDb" + Guid.NewGuid().ToString());
-                    Assert.Fail("Operation should have timed out:" + gatewayStoreHttpClient.Timeout);
+                    Assert.Fail("Operation should have timed out:");
                 }
                 catch (CosmosException rte)
                 {
@@ -66,6 +66,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Assert.IsTrue(message.Contains("Http Client Timeout"), "Http Client Timeout:" + message);
                     Assert.IsTrue(message.Contains("Activity id"), "Activity id:" + message);
                 }
+            }
+        }
+
+        private class TimeOutHttpClientHandler : DelegatingHandler
+        {
+            protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                throw new TaskCanceledException();
             }
         }
     }
