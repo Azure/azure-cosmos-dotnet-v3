@@ -4,15 +4,11 @@
 
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
-
     using System;
-    using System.Collections.Generic;
     using System.Net.Http;
-    using System.Net.Http.Headers;
     using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -50,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 HttpClient httpClient = new HttpClient(new TimeOutHttpClientHandler());
                 FieldInfo httpClientProperty = storeClient.GetType().GetField("httpClient", BindingFlags.NonPublic | BindingFlags.Instance);
                 httpClientProperty.SetValue(storeClient, httpClient);
-                
+
                 // Verify the failure has the required info
                 CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
                 try
