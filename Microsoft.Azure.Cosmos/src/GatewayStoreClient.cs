@@ -340,7 +340,7 @@ namespace Microsoft.Azure.Cosmos
                         requestMessage.Headers);
 
                     TimeSpan durationTimeSpan;
-                    string recordAddressReslutionId = clientSideRequestStatistics.RecordAddressResolutionStart(requestMessage.RequestUri);
+                    string recordAddressResolutionId = clientSideRequestStatistics.RecordAddressResolutionStart(requestMessage.RequestUri);
                     try
                     {
                         HttpResponseMessage responseMessage = await this.httpClient.SendAsync(requestMessage, cancellationToken);
@@ -395,7 +395,7 @@ namespace Microsoft.Azure.Cosmos
                     }
                     finally
                     {
-                        clientSideRequestStatistics.RecordAddressResolutionEnd(recordAddressReslutionId);
+                        clientSideRequestStatistics.RecordAddressResolutionEnd(recordAddressResolutionId);
                     }
                 }
             };
