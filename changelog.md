@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - [#995](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/995) Included session token in diagnostics
+- [#1017](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1017) Adding ClientSideRequestStatistics to gateway calls and making endtime nullable
 
 ### Fixed
 
