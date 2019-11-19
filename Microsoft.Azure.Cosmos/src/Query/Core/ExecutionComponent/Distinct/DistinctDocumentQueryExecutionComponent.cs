@@ -32,12 +32,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
             IDocumentQueryExecutionComponent source)
             : base(source)
         {
-            if (distinctMap == null)
-            {
-                throw new ArgumentNullException(nameof(distinctMap));
-            }
-
-            this.distinctMap = distinctMap;
+            this.distinctMap = distinctMap ?? throw new ArgumentNullException(nameof(distinctMap));
         }
 
         public static async Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
@@ -100,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                 string value,
                 out DistinctContinuationToken distinctContinuationToken)
             {
-                distinctContinuationToken = default(DistinctContinuationToken);
+                distinctContinuationToken = default;
                 if (string.IsNullOrWhiteSpace(value))
                 {
                     return false;

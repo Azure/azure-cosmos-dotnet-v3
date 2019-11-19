@@ -20,18 +20,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             CosmosQueryContext cosmosQueryContext,
             Func<CosmosQueryExecutionContext> cosmosQueryExecutionContextFactory)
         {
-            if (cosmosQueryContext == null)
-            {
-                throw new ArgumentNullException(nameof(cosmosQueryContext));
-            }
-
-            if (cosmosQueryExecutionContextFactory == null)
-            {
-                throw new ArgumentNullException(nameof(cosmosQueryExecutionContextFactory));
-            }
-
-            this.cosmosQueryContext = cosmosQueryContext;
-            this.cosmosQueryExecutionContextFactory = cosmosQueryExecutionContextFactory;
+            this.cosmosQueryContext = cosmosQueryContext ?? throw new ArgumentNullException(nameof(cosmosQueryContext));
+            this.cosmosQueryExecutionContextFactory = cosmosQueryExecutionContextFactory ?? throw new ArgumentNullException(nameof(cosmosQueryExecutionContextFactory));
             this.currentCosmosQueryExecutionContext = cosmosQueryExecutionContextFactory();
         }
 

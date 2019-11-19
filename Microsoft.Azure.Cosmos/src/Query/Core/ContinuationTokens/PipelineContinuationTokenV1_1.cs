@@ -24,14 +24,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
             string sourceContinuationToken)
             : base(PipelineContinuationTokenV1_1.VersionNumber)
         {
-            // Query Plan is allowed to be null.
-            if (sourceContinuationToken == null)
-            {
-                throw new ArgumentNullException(nameof(sourceContinuationToken));
-            }
-
             this.QueryPlan = queryPlan;
-            this.SourceContinuationToken = sourceContinuationToken;
+            this.SourceContinuationToken = sourceContinuationToken ?? throw new ArgumentNullException(nameof(sourceContinuationToken));
         }
 
         public string SourceContinuationToken { get; }
@@ -86,13 +80,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
                 parsedContinuationToken,
                 out Version version))
             {
-                pipelinedContinuationToken = default(PipelineContinuationTokenV1_1);
+                pipelinedContinuationToken = default;
                 return false;
             }
 
             if (version != PipelineContinuationTokenV1_1.VersionNumber)
             {
-                pipelinedContinuationToken = default(PipelineContinuationTokenV1_1);
+                pipelinedContinuationToken = default;
                 return false;
             }
 
@@ -100,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
                 parsedContinuationToken,
                 out PartitionedQueryExecutionInfo queryPlan))
             {
-                pipelinedContinuationToken = default(PipelineContinuationTokenV1_1);
+                pipelinedContinuationToken = default;
                 return false;
             }
 
@@ -108,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
                 parsedContinuationToken,
                 out string sourceContinuationToken))
             {
-                pipelinedContinuationToken = default(PipelineContinuationTokenV1_1);
+                pipelinedContinuationToken = default;
                 return false;
             }
 
@@ -129,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
                 PipelineContinuationTokenV1_1.QueryPlanPropertyName,
                 out CosmosElement parsedQueryPlan))
             {
-                queryPlan = default(PartitionedQueryExecutionInfo);
+                queryPlan = default;
                 return false;
             }
 
@@ -142,13 +136,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
             {
                 if (!PartitionedQueryExecutionInfo.TryParse(queryPlanString.Value, out queryPlan))
                 {
-                    queryPlan = default(PartitionedQueryExecutionInfo);
+                    queryPlan = default;
                     return false;
                 }
             }
             else
             {
-                queryPlan = default(PartitionedQueryExecutionInfo);
+                queryPlan = default;
                 return false;
             }
 
@@ -168,7 +162,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
                 PipelineContinuationTokenV1_1.SourceContinuationTokenPropertyName,
                 out CosmosString parsedSourceContinuationToken))
             {
-                sourceContinuationToken = default(string);
+                sourceContinuationToken = default;
                 return false;
             }
 

@@ -80,9 +80,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         /// </summary>
         private readonly TestInjections testSettings;
 
-        private CosmosQueryContext queryContext;
+        private readonly CosmosQueryContext queryContext;
 
-        protected CosmosQueryClient queryClient;
+        protected readonly CosmosQueryClient queryClient;
 
         /// <summary>
         /// This stores the running query metrics.
@@ -136,22 +136,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 throw new ArgumentNullException(nameof(moveNextComparer));
             }
 
-            if (fetchPrioirtyFunction == null)
-            {
-                throw new ArgumentNullException(nameof(fetchPrioirtyFunction));
-            }
-
-            if (equalityComparer == null)
-            {
-                throw new ArgumentNullException(nameof(equalityComparer));
-            }
-
             this.queryContext = queryContext ?? throw new ArgumentNullException(nameof(queryContext));
             this.queryClient = queryContext.QueryClient ?? throw new ArgumentNullException(nameof(queryContext.QueryClient));
             this.itemProducerForest = new PriorityQueue<ItemProducerTree>(moveNextComparer, isSynchronized: true);
-            this.fetchPrioirtyFunction = fetchPrioirtyFunction;
+            this.fetchPrioirtyFunction = fetchPrioirtyFunction ?? throw new ArgumentNullException(nameof(fetchPrioirtyFunction));
             this.comparableTaskScheduler = new ComparableTaskScheduler(maxConcurrency.GetValueOrDefault(0));
-            this.equalityComparer = equalityComparer;
+            this.equalityComparer = equalityComparer ?? throw new ArgumentNullException(nameof(equalityComparer));
             this.testSettings = testSettings;
             this.requestChargeTracker = new RequestChargeTracker();
             this.diagnosticsPages = new ConcurrentBag<QueryPageDiagnostics>();
@@ -594,7 +584,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 new ItemProducerTreeComparableTask(
                     itemProducerTree,
                     this.fetchPrioirtyFunction),
-                default(TimeSpan));
+                default);
         }
 
         /// <summary>
@@ -702,11 +692,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     throw new ArgumentException($"{nameof(collectionRid)} can not be null, empty, or white space.");
                 }
 
-                if (partitionedQueryExecutionInfo == null)
-                {
-                    throw new ArgumentNullException($"{nameof(partitionedQueryExecutionInfo)} can not be null.");
-                }
-
                 if (partitionKeyRanges == null)
                 {
                     throw new ArgumentNullException($"{nameof(partitionKeyRanges)} can not be null.");
@@ -725,15 +710,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     throw new ArgumentOutOfRangeException($"{nameof(initialPageSize)} must be at least 1.");
                 }
 
-                if (sqlQuerySpec == null)
-                {
-                    throw new ArgumentNullException($"{nameof(sqlQuerySpec)} can not be null.");
-                }
-
                 //// Request continuation is allowed to be null
-                this.SqlQuerySpec = sqlQuerySpec;
+                this.SqlQuerySpec = sqlQuerySpec ?? throw new ArgumentNullException($"{nameof(sqlQuerySpec)} can not be null.");
                 this.CollectionRid = collectionRid;
-                this.PartitionedQueryExecutionInfo = partitionedQueryExecutionInfo;
+                this.PartitionedQueryExecutionInfo = partitionedQueryExecutionInfo ?? throw new ArgumentNullException($"{nameof(partitionedQueryExecutionInfo)} can not be null.");
                 this.PartitionKeyRanges = partitionKeyRanges;
                 this.InitialPageSize = initialPageSize;
                 this.MaxBufferedItemCount = maxBufferedItemCount;

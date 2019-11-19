@@ -182,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 new ContainerProperties
                 {
                     Id = Guid.NewGuid().ToString() + "container",
-                    IndexingPolicy = indexingPolicy == null ? new Cosmos.IndexingPolicy
+                    IndexingPolicy = indexingPolicy ?? new Cosmos.IndexingPolicy
                     {
                         IncludedPaths = new Collection<Cosmos.IncludedPath>
                         {
@@ -196,7 +196,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                 }
                             }
                         }
-                    } : indexingPolicy,
+                    },
                     PartitionKey = partitionKey == null ? null : new PartitionKeyDefinition
                     {
                         Paths = new Collection<string> { partitionKey },
@@ -4500,8 +4500,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             public override bool Equals(object obj)
             {
-                Headers headers = obj as Headers;
-                if (headers != null)
+                if (obj is Headers headers)
                 {
                     return Headers.Equals(this, headers);
                 }

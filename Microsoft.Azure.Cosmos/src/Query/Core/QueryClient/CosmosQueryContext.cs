@@ -38,30 +38,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             bool allowNonValueAggregateQuery,
             string containerResourceId = null)
         {
-            if (client == null)
-            {
-                throw new ArgumentNullException(nameof(client));
-            }
-
-            if (resourceType == null)
-            {
-                throw new ArgumentNullException(nameof(resourceType));
-            }
-
-            if (correlatedActivityId == Guid.Empty)
-            {
-                throw new ArgumentException(nameof(correlatedActivityId));
-            }
-
             this.OperationTypeEnum = operationType;
-            this.QueryClient = client;
+            this.QueryClient = client ?? throw new ArgumentNullException(nameof(client));
             this.ResourceTypeEnum = resourceTypeEnum;
-            this.ResourceType = resourceType;
+            this.ResourceType = resourceType ?? throw new ArgumentNullException(nameof(resourceType));
             this.ResourceLink = resourceLink;
             this.ContainerResourceId = containerResourceId;
             this.IsContinuationExpected = isContinuationExpected;
             this.AllowNonValueAggregateQuery = allowNonValueAggregateQuery;
-            this.CorrelatedActivityId = correlatedActivityId;
+            this.CorrelatedActivityId = (correlatedActivityId == Guid.Empty) ? throw new ArgumentOutOfRangeException(nameof(correlatedActivityId)) : correlatedActivityId;
         }
 
         internal abstract Task<QueryResponseCore> ExecuteQueryAsync(

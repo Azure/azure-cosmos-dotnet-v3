@@ -528,7 +528,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 jsonSerializerSettings,
                 toStreamCallBack: (itemValue) =>
                 {
-                    Type itemType = itemValue != null ? itemValue.GetType() : null;
+                    Type itemType = itemValue?.GetType();
                     if (itemValue == null
                         || itemType == typeof(int)
                         || itemType == typeof(double)
@@ -1670,8 +1670,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             try
             {
-                ToDoActivity t = new ToDoActivity();
-                t.status = "AutoID";
+                ToDoActivity t = new ToDoActivity
+                {
+                    status = "AutoID"
+                };
                 ItemResponse<ToDoActivity> responseAstype = await this.Container.CreateItemAsync<ToDoActivity>(
                     partitionKey: new Cosmos.PartitionKey(t.status), item: t);
 
@@ -1685,8 +1687,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task AutoGenerateIdPatternTest()
         {
-            ToDoActivity itemWithoutId = new ToDoActivity();
-            itemWithoutId.status = "AutoID";
+            ToDoActivity itemWithoutId = new ToDoActivity
+            {
+                status = "AutoID"
+            };
 
             ToDoActivity createdItem = await this.AutoGenerateIdPatternTest<ToDoActivity>(
                 new Cosmos.PartitionKey(itemWithoutId.status), itemWithoutId);

@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
             public override bool TryGetValue(string key, out CosmosElement value)
             {
-                value = default(CosmosElement);
+                value = default;
                 bool gotValue;
                 if (this.jsonNavigator.TryGetObjectProperty(
                     this.jsonNavigatorNode,

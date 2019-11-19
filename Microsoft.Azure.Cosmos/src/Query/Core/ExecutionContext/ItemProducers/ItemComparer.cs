@@ -292,7 +292,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
             public static readonly MinValueItem Singleton = new MinValueItem();
 
             private MinValueItem()
-                : base(default(CosmosElementType))
+                : base(default)
             {
             }
 
@@ -310,7 +310,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
             public static readonly MaxValueItem Singleton = new MaxValueItem();
 
             private MaxValueItem()
-                : base(default(CosmosElementType))
+                : base(default)
             {
             }
 

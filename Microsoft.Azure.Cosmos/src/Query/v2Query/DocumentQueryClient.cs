@@ -22,12 +22,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public DocumentQueryClient(DocumentClient innerClient)
         {
-            if (innerClient == null)
-            {
-                throw new ArgumentNullException("innerClient");
-            }
-
-            this.innerClient = innerClient;
+            this.innerClient = innerClient ?? throw new ArgumentNullException("innerClient");
             this.semaphore = new SemaphoreSlim(1, 1);
         }
 

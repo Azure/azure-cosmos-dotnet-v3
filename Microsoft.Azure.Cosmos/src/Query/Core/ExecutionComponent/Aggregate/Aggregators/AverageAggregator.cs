@@ -215,7 +215,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
 
                 if (!CosmosElement.TryParse(serializedAverageInfo, out CosmosElement cosmosElementAverageInfo))
                 {
-                    averageInfo = default(AverageInfo);
+                    averageInfo = default;
                     return false;
                 }
 

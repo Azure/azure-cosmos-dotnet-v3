@@ -50,19 +50,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Collections
 
         private PriorityQueue(List<T> queue, IComparer<T> comparer, bool isSynchronized)
         {
-            if (queue == null)
-            {
-                throw new ArgumentNullException("queue");
-            }
-
-            if (comparer == null)
-            {
-                throw new ArgumentNullException("comparer");
-            }
-
             this.IsSynchronized = isSynchronized;
-            this.queue = queue;
-            this.Comparer = comparer;
+            this.queue = queue ?? throw new ArgumentNullException(nameof(queue));
+            this.Comparer = comparer ?? throw new ArgumentNullException(nameof(comparer));
         }
 
         public int Count
@@ -254,7 +244,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Collections
         {
             if (this.queue.Count <= 0)
             {
-                item = default(T);
+                item = default;
                 return false;
             }
 

@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         private readonly Guid correlatedActivityId;
 
-        private IDocumentQueryExecutionContext innerExecutionContext;
+        private readonly IDocumentQueryExecutionContext innerExecutionContext;
 
         private ProxyDocumentQueryExecutionContext(
             IDocumentQueryExecutionContext innerExecutionContext,

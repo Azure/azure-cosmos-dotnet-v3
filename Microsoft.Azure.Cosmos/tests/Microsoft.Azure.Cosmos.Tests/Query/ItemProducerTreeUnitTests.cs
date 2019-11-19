@@ -161,14 +161,14 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             SqlQuerySpec sqlQuerySpec = new SqlQuerySpec("Select * from t");
             PartitionKeyRange partitionKeyRange = new PartitionKeyRange { Id = "0", MinInclusive = "A", MaxExclusive = "B" };
-            ItemProducerTree.ProduceAsyncCompleteDelegate produceAsyncCompleteCallback = (
+            void produceAsyncCompleteCallback(
                 ItemProducerTree producer,
                 int itemsBuffered,
                 double resourceUnitUsage,
                 IReadOnlyCollection<QueryPageDiagnostics> queryPageDiagnostics,
                 long responseLengthBytes,
-                CancellationToken token) =>
-            { callBackCount++; };
+                CancellationToken token)
+            { callBackCount++; }
 
             Mock<IComparer<ItemProducerTree>> comparer = new Mock<IComparer<ItemProducerTree>>();
             Mock<IEqualityComparer<CosmosElement>> cosmosElementComparer = new Mock<IEqualityComparer<CosmosElement>>();

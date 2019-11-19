@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             }
             catch (JsonException)
             {
-                partitionedQueryExecutionInfo = default(PartitionedQueryExecutionInfo);
+                partitionedQueryExecutionInfo = default;
                 return false;
             }
         }

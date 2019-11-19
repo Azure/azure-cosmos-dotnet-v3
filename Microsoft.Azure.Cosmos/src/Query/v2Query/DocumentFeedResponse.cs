@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos
         public DocumentFeedResponse(IEnumerable<T> result)
             : this()
         {
-            this.inner = result != null ? result : Enumerable.Empty<T>();
+            this.inner = result ?? Enumerable.Empty<T>();
         }
 
         internal DocumentFeedResponse(

@@ -32,14 +32,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             double requestCharge,
             IEnumerable<FetchExecutionRange> fetchExecutionRanges)
         {
-            if (fetchExecutionRanges == null)
-            {
-                throw new ArgumentNullException("fetchExecutionRanges");
-            }
-
             this.Retries = retries;
             this.RequestCharge = requestCharge;
-            this.FetchExecutionRanges = fetchExecutionRanges;
+            this.FetchExecutionRanges = fetchExecutionRanges ?? throw new ArgumentNullException("fetchExecutionRanges");
         }
 
         /// <summary>

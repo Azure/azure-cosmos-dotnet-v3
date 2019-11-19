@@ -124,8 +124,7 @@ namespace Microsoft.Azure.Cosmos
             SchedulingStopwatch schedulingStopwatch,
             CancellationToken cancellationToken)
         {
-            QueryRequestOptions queryRequestOptions = requestOptions as QueryRequestOptions;
-            if (queryRequestOptions == null)
+            if (!(requestOptions is QueryRequestOptions queryRequestOptions))
             {
                 throw new InvalidOperationException($"CosmosQueryClientCore.ExecuteItemQueryAsync only supports RequestOptionType of QueryRequestOptions");
             }

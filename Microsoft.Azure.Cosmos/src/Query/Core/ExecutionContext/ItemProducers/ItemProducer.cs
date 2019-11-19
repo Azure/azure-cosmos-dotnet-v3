@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
         /// <summary>
         /// Over the duration of the life time of a document producer the page size will change, since we have an adaptive page size.
         /// </summary>
-        private long pageSize;
+        private readonly long pageSize;
 
         /// <summary>
         /// The current page that is being enumerated.
@@ -119,26 +119,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
             // We use a binary semaphore to get the behavior of a mutex,
             // since fetching documents from the backend using a continuation token is a critical section.
             this.fetchSemaphore = new SemaphoreSlim(1, 1);
-            if (partitionKeyRange == null)
-            {
-                throw new ArgumentNullException(nameof(partitionKeyRange));
-            }
-
-            if (produceAsyncCompleteCallback == null)
-            {
-                throw new ArgumentNullException(nameof(produceAsyncCompleteCallback));
-            }
-
-            if (equalityComparer == null)
-            {
-                throw new ArgumentNullException(nameof(equalityComparer));
-            }
-
             this.queryContext = queryContext;
             this.querySpecForInit = querySpecForInit;
-            this.PartitionKeyRange = partitionKeyRange;
-            this.produceAsyncCompleteCallback = produceAsyncCompleteCallback;
-            this.equalityComparer = equalityComparer;
+            this.PartitionKeyRange = partitionKeyRange ?? throw new ArgumentNullException(nameof(partitionKeyRange));
+            this.produceAsyncCompleteCallback = produceAsyncCompleteCallback ?? throw new ArgumentNullException(nameof(produceAsyncCompleteCallback));
+            this.equalityComparer = equalityComparer ?? throw new ArgumentNullException(nameof(equalityComparer));
             this.pageSize = initialPageSize;
             this.CurrentContinuationToken = initialContinuationToken;
             this.BackendContinuationToken = initialContinuationToken;

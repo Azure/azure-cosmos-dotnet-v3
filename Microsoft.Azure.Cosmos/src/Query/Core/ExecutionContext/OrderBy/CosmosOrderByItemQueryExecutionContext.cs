@@ -956,12 +956,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
             /// <param name="orderByConsumeComparer">The order by consume comparer.</param>
             public OrderByEqualityComparer(OrderByConsumeComparer orderByConsumeComparer)
             {
-                if (orderByConsumeComparer == null)
-                {
-                    throw new ArgumentNullException($"{nameof(orderByConsumeComparer)} can not be null.");
-                }
-
-                this.orderByConsumeComparer = orderByConsumeComparer;
+                this.orderByConsumeComparer = orderByConsumeComparer ?? throw new ArgumentNullException($"{nameof(orderByConsumeComparer)} can not be null.");
             }
 
             /// <summary>

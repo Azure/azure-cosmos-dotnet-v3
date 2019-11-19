@@ -19,12 +19,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
         public LazyCosmosQueryExecutionContext(AsyncLazy<TryCatch<CosmosQueryExecutionContext>> lazyTryCreateCosmosQueryExecutionContext)
         {
-            if (lazyTryCreateCosmosQueryExecutionContext == null)
-            {
-                throw new ArgumentNullException(nameof(lazyTryCreateCosmosQueryExecutionContext));
-            }
-
-            this.lazyTryCreateCosmosQueryExecutionContext = lazyTryCreateCosmosQueryExecutionContext;
+            this.lazyTryCreateCosmosQueryExecutionContext = lazyTryCreateCosmosQueryExecutionContext ?? throw new ArgumentNullException(nameof(lazyTryCreateCosmosQueryExecutionContext));
         }
 
         public override bool IsDone

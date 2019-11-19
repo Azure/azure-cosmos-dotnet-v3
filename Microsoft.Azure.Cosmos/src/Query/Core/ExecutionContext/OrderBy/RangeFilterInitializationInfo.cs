@@ -29,12 +29,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
             int startIndex,
             int endIndex)
         {
-            if (filter == null)
-            {
-                throw new ArgumentNullException("filter");
-            }
-
-            this.Filter = filter;
+            this.Filter = filter ?? throw new ArgumentNullException("filter");
             this.StartIndex = startIndex;
             this.EndIndex = endIndex;
         }

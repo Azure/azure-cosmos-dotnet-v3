@@ -191,7 +191,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <summary>
         /// Executes the query to retrieve the next page of results.
         /// </summary>
-        public Task<DocumentFeedResponse<dynamic>> ExecuteNextAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public Task<DocumentFeedResponse<dynamic>> ExecuteNextAsync(CancellationToken cancellationToken = default)
         {
             return this.ExecuteNextAsync<dynamic>(cancellationToken);
         }
@@ -199,7 +199,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <summary>
         /// Executes the query to retrieve the next page of results.
         /// </summary>
-        public Task<DocumentFeedResponse<TResponse>> ExecuteNextAsync<TResponse>(CancellationToken cancellationToken = default(CancellationToken))
+        public Task<DocumentFeedResponse<TResponse>> ExecuteNextAsync<TResponse>(CancellationToken cancellationToken = default)
         {
             try
             {
@@ -296,7 +296,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 this.CorrelatedActivityId);
         }
 
-        internal async Task<List<T>> ExecuteAllAsync(CancellationToken cancellationToken = default(CancellationToken))
+        internal async Task<List<T>> ExecuteAllAsync(CancellationToken cancellationToken = default)
         {
             List<T> result = new List<T>();
             using (IDocumentQueryExecutionContext localQueryExecutionContext =

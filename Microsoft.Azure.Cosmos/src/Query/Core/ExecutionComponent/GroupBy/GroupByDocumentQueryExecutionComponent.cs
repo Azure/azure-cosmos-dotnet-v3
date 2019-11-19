@@ -53,12 +53,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
             GroupingTable groupingTable)
             : base(source)
         {
-            if (groupingTable == null)
-            {
-                throw new ArgumentNullException(nameof(groupingTable));
-            }
-
-            this.groupingTable = groupingTable;
+            this.groupingTable = groupingTable ?? throw new ArgumentNullException(nameof(groupingTable));
         }
 
         public override bool IsDone => this.groupingTable.IsDone;
@@ -191,12 +186,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                 IReadOnlyList<string> orderedAliases,
                 bool hasSelectValue)
             {
-                if (groupByAliasToAggregateType == null)
-                {
-                    throw new ArgumentNullException(nameof(groupByAliasToAggregateType));
-                }
-
-                this.groupByAliasToAggregateType = groupByAliasToAggregateType;
+                this.groupByAliasToAggregateType = groupByAliasToAggregateType ?? throw new ArgumentNullException(nameof(groupByAliasToAggregateType));
                 this.orderedAliases = orderedAliases;
                 this.hasSelectValue = hasSelectValue;
                 this.table = new Dictionary<UInt128, SingleGroupAggregator>();

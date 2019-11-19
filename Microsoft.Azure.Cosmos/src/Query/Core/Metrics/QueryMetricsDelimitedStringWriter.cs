@@ -43,12 +43,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
         public QueryMetricsDelimitedStringWriter(StringBuilder stringBuilder)
         {
-            if (stringBuilder == null)
-            {
-                throw new ArgumentNullException($"{nameof(stringBuilder)} must not be null.");
-            }
-
-            this.stringBuilder = stringBuilder;
+            this.stringBuilder = stringBuilder ?? throw new ArgumentNullException($"{nameof(stringBuilder)} must not be null.");
         }
 
         protected override void WriteBeforeQueryMetrics()

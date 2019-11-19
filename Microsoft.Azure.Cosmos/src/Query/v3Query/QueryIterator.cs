@@ -25,18 +25,8 @@ namespace Microsoft.Azure.Cosmos.Query
             CosmosQueryExecutionContext cosmosQueryExecutionContext,
             CosmosSerializationFormatOptions cosmosSerializationFormatOptions)
         {
-            if (cosmosQueryContext == null)
-            {
-                throw new ArgumentNullException(nameof(cosmosQueryContext));
-            }
-
-            if (cosmosQueryExecutionContext == null)
-            {
-                throw new ArgumentNullException(nameof(cosmosQueryExecutionContext));
-            }
-
-            this.cosmosQueryContext = cosmosQueryContext;
-            this.cosmosQueryExecutionContext = cosmosQueryExecutionContext;
+            this.cosmosQueryContext = cosmosQueryContext ?? throw new ArgumentNullException(nameof(cosmosQueryContext));
+            this.cosmosQueryExecutionContext = cosmosQueryExecutionContext ?? throw new ArgumentNullException(nameof(cosmosQueryExecutionContext));
             this.cosmosSerializationFormatOptions = cosmosSerializationFormatOptions;
         }
 
@@ -86,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public override bool HasMoreResults => !this.cosmosQueryExecutionContext.IsDone;
 
-        public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
             // This catches exception thrown by the pipeline and converts it to QueryResponse
             QueryResponseCore responseCore = await this.cosmosQueryExecutionContext.ExecuteNextAsync(cancellationToken);

@@ -41,13 +41,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         /// <param name="parameters">The <see cref="T:Microsoft.Azure.Documents.SqlParameterCollection"/> instance, which represents the collection of query parameters.</param>
         public SqlQuerySpec(string queryText, SqlParameterCollection parameters)
         {
-            if (parameters == null)
-            {
-                throw new ArgumentNullException("parameters");
-            }
-
             this.QueryText = queryText;
-            this.parameters = parameters;
+            this.parameters = parameters ?? throw new ArgumentNullException("parameters");
         }
 
         /// <summary>
@@ -70,12 +65,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             }
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException("value");
-                }
-
-                this.parameters = value;
+                this.parameters = value ?? throw new ArgumentNullException("value");
             }
         }
 

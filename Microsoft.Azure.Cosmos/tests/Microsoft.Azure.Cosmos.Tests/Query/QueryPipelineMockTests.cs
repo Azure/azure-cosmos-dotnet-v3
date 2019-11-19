@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     [TestClass]
     public class QueryPipelineMockTests
     {
-        private CancellationToken cancellationToken = new CancellationTokenSource().Token;
+        private readonly CancellationToken cancellationToken = new CancellationTokenSource().Token;
 
         [TestMethod]
         [DataRow(true)]

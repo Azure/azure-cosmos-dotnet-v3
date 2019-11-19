@@ -175,7 +175,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
             /// <returns>Whether or not the LimitContinuationToken was successfully parsed out.</returns>
             public static bool TryParse(string value, out OffsetContinuationToken offsetContinuationToken)
             {
-                offsetContinuationToken = default(OffsetContinuationToken);
+                offsetContinuationToken = default;
                 if (string.IsNullOrWhiteSpace(value))
                 {
                     return false;

@@ -352,12 +352,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 ExecutionEnvironment? executionEnvironment,
                 TestInjections testInjections)
             {
-                if (sqlQuerySpec == null)
-                {
-                    throw new ArgumentNullException(nameof(sqlQuerySpec));
-                }
-
-                this.SqlQuerySpec = sqlQuerySpec;
+                this.SqlQuerySpec = sqlQuerySpec ?? throw new ArgumentNullException(nameof(sqlQuerySpec));
                 this.InitialUserContinuationToken = initialUserContinuationToken;
 
                 int resolvedMaxConcurrency = maxConcurrency.GetValueOrDefault(InputParameters.DefaultMaxConcurrency);

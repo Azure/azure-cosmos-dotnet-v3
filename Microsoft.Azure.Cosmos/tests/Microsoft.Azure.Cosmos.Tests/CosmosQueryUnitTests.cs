@@ -33,13 +33,13 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void VerifyCosmosQueryResponseStream()
         {
             string contianerRid = "mockContainerRid";
-            (QueryResponseCore response, IList<ToDoItem> items) factoryResponse = QueryResponseMessageFactory.Create(
+            (QueryResponseCore response, IList<ToDoItem> items) = QueryResponseMessageFactory.Create(
                        itemIdPrefix: $"TestPage",
                        continuationToken: "SomeContinuationToken",
                        collectionRid: contianerRid,
                        itemCount: 100);
 
-            QueryResponseCore responseCore = factoryResponse.response;
+            QueryResponseCore responseCore = response;
 
             QueryResponse queryResponse = QueryResponse.CreateSuccess(
                         result: responseCore.CosmosElements,
@@ -171,7 +171,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private async Task<(IList<IDocumentQueryExecutionComponent> components, QueryResponseCore response)> GetAllExecutionComponents()
         {
-            (Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> func, QueryResponseCore response) setupContext = this.SetupBaseContextToVerifyFailureScenario();
+            (Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> func, QueryResponseCore response) = this.SetupBaseContextToVerifyFailureScenario();
 
             List<IDocumentQueryExecutionComponent> components = new List<IDocumentQueryExecutionComponent>();
             List<AggregateOperator> operators = new List<AggregateOperator>()
@@ -193,30 +193,30 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new List<string>() { "test" },
                 false,
                 null,
-                setupContext.func)).Result);
+                func)).Result);
 
             components.Add((await DistinctDocumentQueryExecutionComponent.TryCreateAsync(
                 Query.Core.ExecutionContext.ExecutionEnvironment.Client,
                 null,
-                setupContext.func,
+                func,
                 DistinctQueryType.Ordered)).Result);
 
             components.Add((await SkipDocumentQueryExecutionComponent.TryCreateAsync(
                 5,
                 null,
-                setupContext.func)).Result);
+                func)).Result);
 
             components.Add((await TakeDocumentQueryExecutionComponent.TryCreateLimitDocumentQueryExecutionComponentAsync(
                 5,
                 null,
-                setupContext.func)).Result);
+                func)).Result);
 
             components.Add((await TakeDocumentQueryExecutionComponent.TryCreateTopDocumentQueryExecutionComponentAsync(
                 5,
                 null,
-                setupContext.func)).Result);
+                func)).Result);
 
-            return (components, setupContext.response);
+            return (components, response);
         }
 
         private (Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>>, QueryResponseCore) SetupBaseContextToVerifyFailureScenario()
@@ -251,7 +251,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Mock<IDocumentQueryExecutionComponent> baseContext = new Mock<IDocumentQueryExecutionComponent>();
             baseContext.Setup(x => x.DrainAsync(It.IsAny<int>(), It.IsAny<CancellationToken>())).Returns(Task.FromResult<QueryResponseCore>(failure));
-            Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> callBack = x => Task.FromResult<TryCatch<IDocumentQueryExecutionComponent>>(TryCatch<IDocumentQueryExecutionComponent> .FromResult(baseContext.Object));
+            Task<TryCatch<IDocumentQueryExecutionComponent>> callBack(string x) => Task.FromResult<TryCatch<IDocumentQueryExecutionComponent>>(TryCatch<IDocumentQueryExecutionComponent>.FromResult(baseContext.Object));
             return (callBack, failure);
         }
     }

@@ -51,12 +51,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
             bool isValueAggregateQuery)
             : base(source)
         {
-            if (singleGroupAggregator == null)
-            {
-                throw new ArgumentNullException(nameof(singleGroupAggregator));
-            }
-
-            this.singleGroupAggregator = singleGroupAggregator;
+            this.singleGroupAggregator = singleGroupAggregator ?? throw new ArgumentNullException(nameof(singleGroupAggregator));
             this.isValueAggregateQuery = isValueAggregateQuery;
         }
 
@@ -138,13 +133,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
                         throw new InvalidOperationException($"Underlying object does not have an 'payload' field.");
                     }
 
-                    // SELECT {"$1": {"item": {"sum": SUM(c.blah), "count": COUNT(c.blah)}}} AS payload
-                    if (cosmosPayload == null)
-                    {
-                        throw new ArgumentException($"{nameof(RewrittenAggregateProjections)} does not have a 'payload' property.");
-                    }
-
-                    this.Payload = cosmosPayload;
+                    this.Payload = cosmosPayload ?? throw new ArgumentException($"{nameof(RewrittenAggregateProjections)} does not have a 'payload' property.");
                 }
             }
 

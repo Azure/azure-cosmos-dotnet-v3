@@ -121,8 +121,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// <returns>The summed up partitioned query metrics.</returns>
         public PartitionedQueryMetrics Add(params PartitionedQueryMetrics[] partitionedQueryMetricsList)
         {
-            List<PartitionedQueryMetrics> combinedPartitionedQueryMetricsList = new List<PartitionedQueryMetrics>(partitionedQueryMetricsList.Length + 1);
-            combinedPartitionedQueryMetricsList.Add(this);
+            List<PartitionedQueryMetrics> combinedPartitionedQueryMetricsList = new List<PartitionedQueryMetrics>(partitionedQueryMetricsList.Length + 1)
+            {
+                this
+            };
             combinedPartitionedQueryMetricsList.AddRange(partitionedQueryMetricsList);
             return PartitionedQueryMetrics.CreateFromIEnumerable(combinedPartitionedQueryMetricsList);
         }

@@ -159,49 +159,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                 HashSet<UInt128> objects,
                 SimpleValues simpleValues)
             {
-                if (numbers == null)
-                {
-                    throw new ArgumentNullException(nameof(numbers));
-                }
-
-                if (stringsLength4 == null)
-                {
-                    throw new ArgumentNullException(nameof(stringsLength4));
-                }
-
-                if (stringsLength8 == null)
-                {
-                    throw new ArgumentNullException(nameof(stringsLength8));
-                }
-
-                if (stringsLength16 == null)
-                {
-                    throw new ArgumentNullException(nameof(stringsLength16));
-                }
-
-                if (stringsLength16Plus == null)
-                {
-                    throw new ArgumentNullException(nameof(stringsLength16Plus));
-                }
-
-                if (arrays == null)
-                {
-                    throw new ArgumentNullException(nameof(arrays));
-                }
-
-                if (objects == null)
-                {
-                    throw new ArgumentNullException(nameof(objects));
-                }
-
                 this.utf8Buffer = new byte[UnorderdDistinctMap.UInt128Length];
-                this.numbers = numbers;
-                this.stringsLength4 = stringsLength4;
-                this.stringsLength8 = stringsLength8;
-                this.stringsLength16 = stringsLength16;
-                this.stringsLength16Plus = stringsLength16Plus;
-                this.arrays = arrays;
-                this.objects = objects;
+                this.numbers = numbers ?? throw new ArgumentNullException(nameof(numbers));
+                this.stringsLength4 = stringsLength4 ?? throw new ArgumentNullException(nameof(stringsLength4));
+                this.stringsLength8 = stringsLength8 ?? throw new ArgumentNullException(nameof(stringsLength8));
+                this.stringsLength16 = stringsLength16 ?? throw new ArgumentNullException(nameof(stringsLength16));
+                this.stringsLength16Plus = stringsLength16Plus ?? throw new ArgumentNullException(nameof(stringsLength16Plus));
+                this.arrays = arrays ?? throw new ArgumentNullException(nameof(arrays));
+                this.objects = objects ?? throw new ArgumentNullException(nameof(objects));
                 this.simpleValues = simpleValues;
             }
 

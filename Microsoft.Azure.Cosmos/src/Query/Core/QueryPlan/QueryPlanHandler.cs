@@ -20,12 +20,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
         public QueryPlanHandler(CosmosQueryClient queryClient)
         {
-            if (queryClient == null)
-            {
-                throw new ArgumentNullException($"{nameof(queryClient)}");
-            }
-
-            this.queryClient = queryClient;
+            this.queryClient = queryClient ?? throw new ArgumentNullException($"{nameof(queryClient)}");
         }
 
         public async Task<TryCatch<PartitionedQueryExecutionInfo>> TryGetQueryPlanAsync(
@@ -76,7 +71,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             SqlQuerySpec sqlQuerySpec,
             PartitionKeyDefinition partitionKeyDefinition,
             bool hasLogicalPartitionKey,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (sqlQuerySpec == null)
             {
@@ -111,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             SqlQuerySpec sqlQuerySpec,
             PartitionKeyDefinition partitionKeyDefinition,
             bool hasLogicalPartitionKey,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
 

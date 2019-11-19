@@ -361,7 +361,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new ArgumentException("objectNavigatorNode must actually be an array node");
                 }
 
-                objectProperty = default(ObjectProperty);
+                objectProperty = default;
                 IReadOnlyList<ObjectProperty> properties = ((ObjectNode)objectNode).Properties;
                 foreach (ObjectProperty property in properties)
                 {

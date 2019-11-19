@@ -51,36 +51,16 @@ namespace Microsoft.Azure.Cosmos.Query
                 bool getLazyFeedResponse,
                 Guid correlatedActivityId)
             {
-                if (client == null)
-                {
-                    throw new ArgumentNullException($"{nameof(client)} can not be null.");
-                }
-
-                if (resourceType == null)
-                {
-                    throw new ArgumentNullException($"{nameof(resourceType)} can not be null.");
-                }
-
-                if (expression == null)
-                {
-                    throw new ArgumentNullException($"{nameof(expression)} can not be null.");
-                }
-
-                if (feedOptions == null)
-                {
-                    throw new ArgumentNullException($"{nameof(feedOptions)} can not be null.");
-                }
-
                 if (correlatedActivityId == Guid.Empty)
                 {
                     throw new ArgumentException($"{nameof(correlatedActivityId)} can not be empty.");
                 }
 
-                this.Client = client;
+                this.Client = client ?? throw new ArgumentNullException($"{nameof(client)} can not be null.");
                 this.ResourceTypeEnum = resourceTypeEnum;
-                this.ResourceType = resourceType;
-                this.Expression = expression;
-                this.FeedOptions = feedOptions;
+                this.ResourceType = resourceType ?? throw new ArgumentNullException($"{nameof(resourceType)} can not be null.");
+                this.Expression = expression ?? throw new ArgumentNullException($"{nameof(expression)} can not be null.");
+                this.FeedOptions = feedOptions ?? throw new ArgumentNullException($"{nameof(feedOptions)} can not be null.");
                 this.ResourceLink = resourceLink;
                 this.GetLazyFeedResponse = getLazyFeedResponse;
                 this.CorrelatedActivityId = correlatedActivityId;
@@ -138,7 +118,7 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        protected PartitionKeyInternal PartitionKeyInternal => this.feedOptions.PartitionKey == null ? null : this.feedOptions.PartitionKey.InternalKey;
+        protected PartitionKeyInternal PartitionKeyInternal => this.feedOptions.PartitionKey?.InternalKey;
 
         protected int MaxBufferedItemCount => this.feedOptions.MaxBufferedItemCount;
 
@@ -191,8 +171,10 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public FeedOptions GetFeedOptions(string continuationToken)
         {
-            FeedOptions options = new FeedOptions(this.feedOptions);
-            options.RequestContinuationToken = continuationToken;
+            FeedOptions options = new FeedOptions(this.feedOptions)
+            {
+                RequestContinuationToken = continuationToken
+            };
             return options;
         }
 

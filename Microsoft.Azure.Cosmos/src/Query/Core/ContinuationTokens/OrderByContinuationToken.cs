@@ -67,16 +67,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
             int skipCount,
             string filter)
         {
-            if (compositeContinuationToken == null)
-            {
-                throw new ArgumentNullException($"{nameof(compositeContinuationToken)} can not be null.");
-            }
-
-            if (orderByItems == null)
-            {
-                throw new ArgumentNullException($"{nameof(orderByItems)} can not be null.");
-            }
-
             if (orderByItems.Count == 0)
             {
                 throw new ArgumentException($"{nameof(orderByItems)} can not be empty.");
@@ -93,8 +83,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
             }
 
             //// filter is allowed to be null.
-            this.CompositeContinuationToken = compositeContinuationToken;
-            this.OrderByItems = orderByItems;
+            this.CompositeContinuationToken = compositeContinuationToken ?? throw new ArgumentNullException(nameof(compositeContinuationToken));
+            this.OrderByItems = orderByItems ?? throw new ArgumentNullException(nameof(orderByItems));
             this.Rid = rid;
             this.SkipCount = skipCount;
         }
@@ -211,7 +201,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
         /// <returns>Whether or not the TopContinuationToken was successfully parsed out.</returns>
         public static bool TryParse(string value, out OrderByContinuationToken orderByContinuationToken)
         {
-            orderByContinuationToken = default(OrderByContinuationToken);
+            orderByContinuationToken = default;
             if (string.IsNullOrWhiteSpace(value))
             {
                 return false;

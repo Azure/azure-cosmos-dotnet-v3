@@ -37,18 +37,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             bool filterExpressionPrecision,
             bool indexPlanFullFidelity)
         {
-            if (filterExpression == null)
-            {
-                throw new ArgumentNullException(nameof(filterExpression));
-            }
-
-            if (indexDocumentExpression == null)
-            {
-                throw new ArgumentNullException(nameof(indexDocumentExpression));
-            }
-
-            this.FilterExpression = filterExpression;
-            this.IndexDocumentExpression = indexDocumentExpression;
+            this.FilterExpression = filterExpression ?? throw new ArgumentNullException(nameof(filterExpression));
+            this.IndexDocumentExpression = indexDocumentExpression ?? throw new ArgumentNullException(nameof(indexDocumentExpression));
             this.FilterExpressionPrecision = filterExpressionPrecision;
             this.IndexPlanFullFidelity = indexPlanFullFidelity;
         }

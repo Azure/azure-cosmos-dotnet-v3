@@ -39,13 +39,13 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <typeparam name="TResult">The type of the object returned in the query result.</typeparam>
         /// <param name="token">(Optional) The <see cref="CancellationToken"/> allows for notification that operations should be cancelled.</param>
         /// <returns>The Task object for the asynchronous response from query execution.</returns>
-        Task<DocumentFeedResponse<TResult>> ExecuteNextAsync<TResult>(CancellationToken token = default(CancellationToken));
+        Task<DocumentFeedResponse<TResult>> ExecuteNextAsync<TResult>(CancellationToken token = default);
 
         /// <summary>
         /// Executes the query and retrieves the next page of results as dynamic objects in the Azure Cosmos DB service.
         /// </summary>
         /// <param name="token">(Optional) The <see cref="CancellationToken"/> allows for notification that operations should be cancelled.</param>
         /// <returns>The Task object for the asynchronous response from query execution.</returns>
-        Task<DocumentFeedResponse<dynamic>> ExecuteNextAsync(CancellationToken token = default(CancellationToken));
+        Task<DocumentFeedResponse<dynamic>> ExecuteNextAsync(CancellationToken token = default);
     }
 }

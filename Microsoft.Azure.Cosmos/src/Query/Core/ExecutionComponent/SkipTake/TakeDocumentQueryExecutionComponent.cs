@@ -186,13 +186,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                 }
                 else
                 {
-                    state = default(string);
+                    state = default;
                     return false;
                 }
             }
             else
             {
-                state = default(string);
+                state = default;
                 return true;
             }
         }
@@ -323,7 +323,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
             /// <returns>Whether or not the TopContinuationToken was successfully parsed out.</returns>
             public static bool TryParse(string value, out TopContinuationToken topContinuationToken)
             {
-                topContinuationToken = default(TopContinuationToken);
+                topContinuationToken = default;
                 if (string.IsNullOrWhiteSpace(value))
                 {
                     return false;

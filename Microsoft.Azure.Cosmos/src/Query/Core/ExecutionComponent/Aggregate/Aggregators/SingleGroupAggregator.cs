@@ -85,12 +85,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
 
             private SelectValueAggregateValues(AggregateValue aggregateValue)
             {
-                if (aggregateValue == null)
-                {
-                    throw new ArgumentNullException(nameof(AggregateValue));
-                }
-
-                this.aggregateValue = aggregateValue;
+                this.aggregateValue = aggregateValue ?? throw new ArgumentNullException(nameof(AggregateValue));
             }
 
             public static TryCatch<SingleGroupAggregator> TryCreate(AggregateOperator? aggregateOperator, string continuationToken)
@@ -134,18 +129,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
                 IReadOnlyDictionary<string, AggregateValue> aliasToValue,
                 IReadOnlyList<string> orderedAliases)
             {
-                if (aliasToValue == null)
-                {
-                    throw new ArgumentNullException(nameof(aliasToValue));
-                }
-
-                if (orderedAliases == null)
-                {
-                    throw new ArgumentNullException(nameof(orderedAliases));
-                }
-
-                this.aliasToValue = aliasToValue;
-                this.orderedAliases = orderedAliases;
+                this.aliasToValue = aliasToValue ?? throw new ArgumentNullException(nameof(aliasToValue));
+                this.orderedAliases = orderedAliases ?? throw new ArgumentNullException(nameof(orderedAliases));
             }
 
             public override CosmosElement GetResult()
@@ -301,12 +286,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
 
                 private AggregateAggregateValue(IAggregator aggregator)
                 {
-                    if (aggregator == null)
-                    {
-                        throw new ArgumentNullException(nameof(aggregator));
-                    }
-
-                    this.aggregator = aggregator;
+                    this.aggregator = aggregator ?? throw new ArgumentNullException(nameof(aggregator));
                 }
 
                 public override void AddValue(CosmosElement aggregateValue)

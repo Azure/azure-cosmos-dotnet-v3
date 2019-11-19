@@ -67,21 +67,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             TimeSpan documentWriteTime,
             ClientSideMetrics clientSideMetrics)
         {
-            if (queryPreparationTimes == null)
-            {
-                throw new ArgumentNullException($"{nameof(queryPreparationTimes)} can not be null.");
-            }
-
-            if (runtimeExecutionTimes == null)
-            {
-                throw new ArgumentNullException($"{nameof(runtimeExecutionTimes)} can not be null.");
-            }
-
-            if (clientSideMetrics == null)
-            {
-                throw new ArgumentNullException($"{nameof(clientSideMetrics)} can not be null.");
-            }
-
             this.RetrievedDocumentCount = retrievedDocumentCount;
             this.RetrievedDocumentSize = retrievedDocumentSize;
             this.OutputDocumentCount = outputDocumentCount;
@@ -89,13 +74,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             this.IndexHitDocumentCount = indexHitDocumentCount;
             this.IndexUtilizationInfo = indexUtilizationInfo;
             this.TotalTime = totalQueryExecutionTime;
-            this.QueryPreparationTimes = queryPreparationTimes;
+            this.QueryPreparationTimes = queryPreparationTimes ?? throw new ArgumentNullException($"{nameof(queryPreparationTimes)} can not be null.");
             this.IndexLookupTime = indexLookupTime;
             this.DocumentLoadTime = documentLoadTime;
             this.VMExecutionTime = vmExecutionTime;
-            this.RuntimeExecutionTimes = runtimeExecutionTimes;
+            this.RuntimeExecutionTimes = runtimeExecutionTimes ?? throw new ArgumentNullException($"{nameof(runtimeExecutionTimes)} can not be null.");
             this.DocumentWriteTime = documentWriteTime;
-            this.ClientSideMetrics = clientSideMetrics;
+            this.ClientSideMetrics = clientSideMetrics ?? throw new ArgumentNullException($"{nameof(clientSideMetrics)} can not be null.");
             this.QueryEngineTimes = new QueryEngineTimes(indexLookupTime, documentLoadTime, vmExecutionTime, documentWriteTime, runtimeExecutionTimes);
         }
 

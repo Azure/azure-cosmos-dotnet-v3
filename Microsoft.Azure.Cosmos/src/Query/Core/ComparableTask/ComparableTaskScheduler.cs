@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ComparableTask
             this.delayedTasks.Clear();
         }
 
-        public bool TryQueueTask(IComparableTask comparableTask, TimeSpan delay = default(TimeSpan))
+        public bool TryQueueTask(IComparableTask comparableTask, TimeSpan delay = default)
         {
             if (comparableTask == null)
             {
@@ -117,16 +117,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ComparableTask
 
         private async Task QueueDelayedTaskAsync(IComparableTask comparableTask, TimeSpan delay)
         {
-            Task task;
-            if (this.delayedTasks.TryRemove(comparableTask, out task) && !task.IsCanceled)
+            if (this.delayedTasks.TryRemove(comparableTask, out Task task) && !task.IsCanceled)
             {
                 if (delay > default(TimeSpan))
                 {
                     await Task.Delay(delay, this.CancellationToken);
                 }
 
-                IComparableTask firstComparableTask;
-                if (this.taskQueue.TryPeek(out firstComparableTask) && comparableTask.CompareTo(firstComparableTask) <= 0)
+                if (this.taskQueue.TryPeek(out IComparableTask firstComparableTask) && (comparableTask.CompareTo(firstComparableTask) <= 0))
                 {
                     await this.ExecuteComparableTaskAsync(comparableTask);
                 }

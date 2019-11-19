@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A query response from cosmos service</returns>
-        public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
             Stream stream = null;
             OperationType operation = OperationType.ReadFeed;
@@ -146,7 +146,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A query response from cosmos service</returns>
-        public override async Task<FeedResponse<T>> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public override async Task<FeedResponse<T>> ReadNextAsync(CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -156,14 +156,12 @@ namespace Microsoft.Azure.Cosmos
 
         internal bool TryGetContinuationToken(out string state)
         {
-            QueryIterator queryIterator = this.feedIterator as QueryIterator;
-            if (queryIterator != null)
+            if (this.feedIterator is QueryIterator queryIterator)
             {
                 return queryIterator.TryGetContinuationToken(out state);
             }
 
-            FeedIteratorCore feedIteratorCore = this.feedIterator as FeedIteratorCore;
-            if (feedIteratorCore != null)
+            if (this.feedIterator is FeedIteratorCore feedIteratorCore)
             {
                 return feedIteratorCore.TryGetContinuationToken(out state);
             }

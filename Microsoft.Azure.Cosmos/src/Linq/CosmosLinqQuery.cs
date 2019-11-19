@@ -171,7 +171,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             throw new NotImplementedException();
         }
 
-        internal async Task<Response<T>> AggregateResultAsync(CancellationToken cancellationToken = default(CancellationToken))
+        internal async Task<Response<T>> AggregateResultAsync(CancellationToken cancellationToken = default)
         {
             List<T> result = new List<T>();
             CosmosDiagnosticsAggregate cosmosDiagnostics = new CosmosDiagnosticsAggregate();

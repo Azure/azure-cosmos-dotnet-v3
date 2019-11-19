@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             SqlQuerySpec sqlQuerySpec,
             PartitionKeyDefinition partitionKeyDefinition,
             bool hasLogicalPartitionKey,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (queryClient == null)
             {
@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             CosmosQueryClient client,
             SqlQuerySpec sqlQuerySpec,
             Uri resourceLink,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (client == null)
             {

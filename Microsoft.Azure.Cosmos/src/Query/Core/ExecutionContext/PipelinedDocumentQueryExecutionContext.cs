@@ -104,18 +104,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             IDocumentQueryExecutionComponent component,
             int actualPageSize)
         {
-            if (component == null)
-            {
-                throw new ArgumentNullException($"{nameof(component)} can not be null.");
-            }
-
-            if (actualPageSize < 0)
-            {
-                throw new ArgumentException($"{nameof(actualPageSize)} can not be negative.");
-            }
-
-            this.component = component;
-            this.actualPageSize = actualPageSize;
+            this.component = component ?? throw new ArgumentNullException($"{nameof(component)} can not be null.");
+            this.actualPageSize = (actualPageSize < 0) ? throw new ArgumentOutOfRangeException($"{nameof(actualPageSize)} can not be negative.") : actualPageSize;
         }
 
         /// <summary>
