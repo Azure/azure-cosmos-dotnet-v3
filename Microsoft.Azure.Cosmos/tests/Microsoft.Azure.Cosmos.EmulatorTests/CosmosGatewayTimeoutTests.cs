@@ -20,6 +20,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     public class CosmosGatewayTimeoutTests
     { 
         [TestMethod]
+        [TestCategory("Quarantine")] // Flaky test
         public async Task GatewayStoreClientTimeout()
         {
             using (CosmosClient client = TestCommon.CreateCosmosClient(useGateway: true))
