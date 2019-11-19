@@ -15,12 +15,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
         public AsyncLazy(Func<CancellationToken, Task<T>> valueFactory)
         {
-            if (valueFactory == null)
-            {
-                throw new ArgumentNullException(nameof(valueFactory));
-            }
-
-            this.valueFactory = valueFactory;
+            this.valueFactory = valueFactory ?? throw new ArgumentNullException(nameof(valueFactory));
         }
 
         public bool ValueInitialized { get; private set; }
