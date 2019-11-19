@@ -49,14 +49,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 // Set the http request timeout to 10 ms to cause a timeout exception
                 FieldInfo httpClientProperty = storeClient.GetType().GetField("httpClient", BindingFlags.NonPublic | BindingFlags.Instance);
                 HttpClient gatewayStoreHttpClient = (HttpClient)httpClientProperty.GetValue(storeClient);
-                gatewayStoreHttpClient.Timeout = TimeSpan.FromMilliseconds(10);
+                gatewayStoreHttpClient.Timeout = TimeSpan.FromMilliseconds(1);
 
                 // Verify the failure has the required info
                 CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
                 try
                 {
-                    await client.CreateDatabaseAsync("TestGatewayTimeoutDb");
-                    Assert.Fail("Operation should have timed out");
+                    await client.CreateDatabaseAsync("TestGatewayTimeoutDb" + Guid.NewGuid().ToString());
+                    Assert.Fail("Operation should have timed out:" + gatewayStoreHttpClient.Timeout);
                 }
                 catch (CosmosException rte)
                 {
