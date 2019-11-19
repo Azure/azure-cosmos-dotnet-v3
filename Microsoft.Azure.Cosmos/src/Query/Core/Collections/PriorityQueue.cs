@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Collections.Generic
+namespace Microsoft.Azure.Cosmos.Query.Core.Collections
 {
     using System;
     using System.Collections;
@@ -266,7 +266,7 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
         {
             if (this.queue.Count <= 0)
             {
-                item = default(T);
+                item = default;
                 return false;
             }
 

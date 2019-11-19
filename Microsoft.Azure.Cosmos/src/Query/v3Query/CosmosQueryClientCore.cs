@@ -13,8 +13,11 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
@@ -289,8 +292,7 @@ namespace Microsoft.Azure.Cosmos
                         diagnostics: pageDiagnostics);
                 }
 
-                MemoryStream memoryStream = cosmosResponseMessage.Content as MemoryStream;
-                if (memoryStream == null)
+                if (!(cosmosResponseMessage.Content is MemoryStream memoryStream))
                 {
                     memoryStream = new MemoryStream();
                     cosmosResponseMessage.Content.CopyTo(memoryStream);

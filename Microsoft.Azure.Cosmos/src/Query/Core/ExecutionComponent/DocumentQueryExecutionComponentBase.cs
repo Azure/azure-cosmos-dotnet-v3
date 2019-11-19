@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
 
     /// <summary>
     /// Base class for all DocumentQueryExecutionComponents that implements and IDocumentQueryExecutionComponent

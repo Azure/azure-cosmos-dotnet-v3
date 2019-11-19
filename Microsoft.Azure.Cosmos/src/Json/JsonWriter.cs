@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.IO;
     using System.Linq;
     using System.Text;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using RMResources = Documents.RMResources;
 
     /// <summary>

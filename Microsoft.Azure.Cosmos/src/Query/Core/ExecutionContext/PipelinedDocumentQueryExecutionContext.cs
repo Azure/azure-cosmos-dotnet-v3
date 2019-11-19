@@ -11,7 +11,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Documents.Collections;
 
     /// <summary>

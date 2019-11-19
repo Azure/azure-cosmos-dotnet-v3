@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Collections.Generic
+namespace Microsoft.Azure.Cosmos.Query.Core.Collections
 {
     using System;
     using System.Collections.Concurrent;
@@ -177,9 +177,9 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
 
         public async Task<IReadOnlyList<T>> DrainAsync(
             int maxElements = int.MaxValue,
-            TimeSpan timeout = default(TimeSpan),
+            TimeSpan timeout = default,
             Func<T, bool> callback = null,
-            CancellationToken token = default(CancellationToken))
+            CancellationToken token = default)
         {
             if (maxElements < 1)
             {

@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
     using System;
     using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
 
     /// <summary>
     /// Pipelined continuation where we start versioning.

@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 {
     using System;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
 
     internal static class QueryResponseFactory

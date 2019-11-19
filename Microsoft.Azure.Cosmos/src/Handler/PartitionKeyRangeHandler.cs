@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
@@ -124,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    SetOriginalContinuationToken(request, response, originalContinuation);
+                    this.SetOriginalContinuationToken(request, response, originalContinuation);
                 }
                 else
                 {
@@ -147,18 +148,18 @@ namespace Microsoft.Azure.Cosmos.Handlers
             catch (DocumentClientException ex)
             {
                 ResponseMessage errorResponse = ex.ToCosmosResponseMessage(request);
-                SetOriginalContinuationToken(request, errorResponse, originalContinuation);
+                this.SetOriginalContinuationToken(request, errorResponse, originalContinuation);
                 return errorResponse;
             }
             catch (CosmosException ex)
             {
                 ResponseMessage errorResponse = ex.ToCosmosResponseMessage(request);
-                SetOriginalContinuationToken(request, errorResponse, originalContinuation);
+                this.SetOriginalContinuationToken(request, errorResponse, originalContinuation);
                 return errorResponse;
             }
             catch (AggregateException ex)
             {
-                SetOriginalContinuationToken(request, response, originalContinuation);
+                this.SetOriginalContinuationToken(request, response, originalContinuation);
 
                 // TODO: because the SDK underneath this path uses ContinueWith or task.Result we need to catch AggregateExceptions here
                 // in order to ensure that underlying DocumentClientExceptions get propagated up correctly. Once all ContinueWith and .Result 

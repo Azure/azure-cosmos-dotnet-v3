@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos.Query.Core
 {
     using System;
     using System.Runtime.Serialization;
@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos
     [DataContract]
     internal sealed class SqlQuerySpec
     {
-        private string queryText;
         private SqlParameterCollection parameters;
 
         /// <summary>
@@ -47,7 +46,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("parameters");
             }
 
-            this.queryText = queryText;
+            this.QueryText = queryText;
             this.parameters = parameters;
         }
 
@@ -56,11 +55,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <value>The text of the database query.</value>
         [DataMember(Name = "query")]
-        public string QueryText
-        {
-            get { return this.queryText; }
-            set { this.queryText = value; }
-        }
+        public string QueryText { get; set; }
 
         /// <summary>
         /// Gets or sets the <see cref="T:Microsoft.Azure.Documents.SqlParameterCollection"/> instance, which represents the collection of Azure Cosmos DB query parameters.
