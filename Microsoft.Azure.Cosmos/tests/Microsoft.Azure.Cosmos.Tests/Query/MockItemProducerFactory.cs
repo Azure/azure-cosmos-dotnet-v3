@@ -90,6 +90,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 partitionKeyRange,
                 completeDelegate,
                 CosmosElementEqualityComparer.Value,
+                new Query.Core.TestInjections(simulate429s: false, simulateEmptyPages: false),
                 maxPageSize,
                 initialContinuationToken: continuationToken);
 
@@ -171,6 +172,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 completeDelegate,
                 itemProducerTreeComparer,
                 CosmosElementEqualityComparer.Value,
+                new Query.Core.TestInjections(simulate429s: false, simulateEmptyPages: false),
                 deferFirstPage,
                 collectionRid,
                 maxPageSize,

@@ -1269,7 +1269,7 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// <para>
         /// The example shown uses ID-based links, where the link is composed of the ID properties used when the resources were created.
-        /// You can still use the <see cref="Resource.SelfLink"/> property of the Database if you prefer. A self-link is a URI for a resource that is made up of Resource Identifiers  (or the _rid properties).
+        /// You can still use the <see cref="Documents.Resource.SelfLink"/> property of the Database if you prefer. A self-link is a URI for a resource that is made up of Resource Identifiers  (or the _rid properties).
         /// ID-based links and SelfLink will both work.
         /// The format for <paramref name="databaseLink"/> is always "/dbs/{db identifier}" only
         /// the values within the {} change depending on which method you wish to use to address the resource.
@@ -1364,7 +1364,7 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// <para>
         /// The example shown uses ID-based links, where the link is composed of the ID properties used when the resources were created.
-        /// You can still use the <see cref="Resource.SelfLink"/> property of the DocumentCollection if you prefer. A self-link is a URI for a resource that is made up of Resource Identifiers  (or the _rid properties).
+        /// You can still use the <see cref="Documents.Resource.SelfLink"/> property of the DocumentCollection if you prefer. A self-link is a URI for a resource that is made up of Resource Identifiers  (or the _rid properties).
         /// ID-based links and SelfLink will both work.
         /// The format for <paramref name="documentCollectionLink"/> is always "/dbs/{db identifier}/colls/{coll identifier}" only
         /// the values within the {} change depending on which method you wish to use to address the resource.
@@ -1462,7 +1462,7 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// <para>
         /// The example shown uses ID-based links, where the link is composed of the ID properties used when the resources were created.
-        /// You can still use the <see cref="Resource.SelfLink"/> property of the Document if you prefer. A self-link is a URI for a resource that is made up of Resource Identifiers  (or the _rid properties).
+        /// You can still use the <see cref="Documents.Resource.SelfLink"/> property of the Document if you prefer. A self-link is a URI for a resource that is made up of Resource Identifiers  (or the _rid properties).
         /// ID-based links and SelfLink will both work.
         /// The format for <paramref name="documentLink"/> is always "dbs/{db identifier}/colls/{coll identifier}/docs/{doc identifier}" only
         /// the values within the {} change depending on which method you wish to use to address the resource.
@@ -1562,7 +1562,7 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// <para>
         /// The example shown uses ID-based links, where the link is composed of the ID properties used when the resources were created.
-        /// You can still use the <see cref="Resource.SelfLink"/> property of the Document if you prefer. A self-link is a URI for a resource that is made up of Resource Identifiers  (or the _rid properties).
+        /// You can still use the <see cref="Documents.Resource.SelfLink"/> property of the Document if you prefer. A self-link is a URI for a resource that is made up of Resource Identifiers  (or the _rid properties).
         /// ID-based links and SelfLink will both work.
         /// The format for <paramref name="documentLink"/> is always "dbs/{db identifier}/colls/{coll identifier}/docs/{doc identifier}" only
         /// the values within the {} change depending on which method you wish to use to address the resource.
@@ -1661,7 +1661,7 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// <para>
         /// The example shown uses ID-based links, where the link is composed of the ID properties used when the resources were created.
-        /// You can still use the <see cref="Resource.SelfLink"/> property of the Stored Procedure if you prefer. A self-link is a URI for a resource that is made up of Resource Identifiers  (or the _rid properties).
+        /// You can still use the <see cref="Documents.Resource.SelfLink"/> property of the Stored Procedure if you prefer. A self-link is a URI for a resource that is made up of Resource Identifiers  (or the _rid properties).
         /// ID-based links and SelfLink will both work.
         /// The format for <paramref name="storedProcedureLink"/> is always "/dbs/{db identifier}/colls/{coll identifier}/sprocs/{sproc identifier}"
         /// only the values within the {...} change depending on which method you wish to use to address the resource.
@@ -1759,7 +1759,7 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// <para>
         /// The example shown uses ID-based links, where the link is composed of the ID properties used when the resources were created.
-        /// You can still use the <see cref="Resource.SelfLink"/> property of the Trigger if you prefer. A self-link is a URI for a resource that is made up of Resource Identifiers  (or the _rid properties).
+        /// You can still use the <see cref="Documents.Resource.SelfLink"/> property of the Trigger if you prefer. A self-link is a URI for a resource that is made up of Resource Identifiers  (or the _rid properties).
         /// ID-based links and SelfLink will both work.
         /// The format for <paramref name="triggerLink"/> is always "/dbs/{db identifier}/colls/{coll identifier}/triggers/{trigger identifier}"
         /// only the values within the {...} change depending on which method you wish to use to address the resource.
@@ -1857,7 +1857,7 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// <para>
         /// The example shown uses ID-based links, where the link is composed of the ID properties used when the resources were created.
-        /// You can still use the <see cref="Resource.SelfLink"/> property of the User Defined Function if you prefer. A self-link is a URI for a resource that is made up of Resource Identifiers  (or the _rid properties).
+        /// You can still use the <see cref="Documents.Resource.SelfLink"/> property of the User Defined Function if you prefer. A self-link is a URI for a resource that is made up of Resource Identifiers  (or the _rid properties).
         /// ID-based links and SelfLink will both work.
         /// The format for <paramref name="functionLink"/> is always "/dbs/{db identifier}/colls/{coll identifier}/udfs/{udf identifier}"
         /// only the values within the {...} change depending on which method you wish to use to address the resource.
@@ -1955,7 +1955,7 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// <para>
         /// The example shown uses ID-based links, where the link is composed of the ID properties used when the resources were created.
-        /// You can still use the <see cref="Resource.SelfLink"/> property of the Conflict if you prefer. A self-link is a URI for a resource that is made up of Resource Identifiers  (or the _rid properties).
+        /// You can still use the <see cref="Documents.Resource.SelfLink"/> property of the Conflict if you prefer. A self-link is a URI for a resource that is made up of Resource Identifiers  (or the _rid properties).
         /// ID-based links and SelfLink will both work.
         /// The format for <paramref name="conflictLink"/> is always "/dbs/{db identifier}/colls/{collectioon identifier}/conflicts/{conflict identifier}"
         /// only the values within the {...} change depending on which method you wish to use to address the resource.
