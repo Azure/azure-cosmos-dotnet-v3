@@ -96,7 +96,6 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.batchOperations.Count == this.maxBatchOperationCount)
             {
-                DefaultTrace.TraceInformation($"Batch is full - Max operation count {this.maxBatchOperationCount} reached.");
                 return false;
             }
 
@@ -104,7 +103,6 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.batchOperations.Count > 0 && itemByteSize + this.currentSize > this.maxBatchByteSize)
             {
-                DefaultTrace.TraceInformation($"Batch is full - Max byte size {this.maxBatchByteSize} reached.");
                 return false;
             }
 

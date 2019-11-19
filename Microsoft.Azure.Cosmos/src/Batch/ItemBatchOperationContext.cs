@@ -19,13 +19,13 @@ namespace Microsoft.Azure.Cosmos
 
         public BatchAsyncBatcher CurrentBatcher { get; set; }
 
-        public Task<TransactionalBatchOperationResult> OperationTask => this.taskCompletionSource.Task;
+        public Task<ResponseMessage> OperationTask => this.taskCompletionSource.Task;
 
         public ItemBatchOperationStatistics Diagnostics { get; } = new ItemBatchOperationStatistics();
 
         private readonly IDocumentClientRetryPolicy retryPolicy;
 
-        private TaskCompletionSource<TransactionalBatchOperationResult> taskCompletionSource = new TaskCompletionSource<TransactionalBatchOperationResult>();
+        private TaskCompletionSource<ResponseMessage> taskCompletionSource = new TaskCompletionSource<ResponseMessage>();
 
         public ItemBatchOperationContext(
             string partitionKeyRangeId,
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.Diagnostics.Complete();
                 result.Diagnostics = this.Diagnostics;
-                this.taskCompletionSource.SetResult(result);
+                this.taskCompletionSource.SetResult(result.ToResponseMessage());
             }
 
             this.Dispose();

@@ -93,11 +93,15 @@ namespace Microsoft.Azure.Cosmos
                 {
                     // Batcher is full
                     toDispatch = this.GetBatchToDispatchAndCreate();
+
                 }
             }
 
             if (toDispatch != null)
             {
+                this.currentTimer.CancelTimer();
+                this.ResetTimer();
+
                 // Discarded for Fire & Forget
                 _ = toDispatch.DispatchAsync(this.cancellationTokenSource.Token);
             }
@@ -118,7 +122,8 @@ namespace Microsoft.Azure.Cosmos
             this.timerTask = this.currentTimer.StartTimerAsync().ContinueWith((task) =>
             {
                 this.DispatchTimer();
-            }, this.cancellationTokenSource.Token);
+            },
+            TaskContinuationOptions.NotOnCanceled);
         }
 
         private void DispatchTimer()

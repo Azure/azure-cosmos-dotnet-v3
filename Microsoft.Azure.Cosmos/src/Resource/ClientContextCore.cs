@@ -198,7 +198,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private async Task<ResponseMessage> ProcessResourceOperationAsBulkStreamAsync(
+        private Task<ResponseMessage> ProcessResourceOperationAsBulkStreamAsync(
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
@@ -213,8 +213,7 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions itemRequestOptions = requestOptions as ItemRequestOptions;
             TransactionalBatchItemRequestOptions batchItemRequestOptions = TransactionalBatchItemRequestOptions.FromItemRequestOptions(itemRequestOptions);
             ItemBatchOperation itemBatchOperation = new ItemBatchOperation(operationType, /* index */ 0, partitionKey, itemId, streamPayload, batchItemRequestOptions);
-            TransactionalBatchOperationResult batchOperationResult = await cosmosContainerCore.BatchExecutor.AddAsync(itemBatchOperation, itemRequestOptions, cancellationToken);
-            return batchOperationResult.ToResponseMessage();
+            return cosmosContainerCore.BatchExecutor.AddAsync(itemBatchOperation, itemRequestOptions, cancellationToken);
         }
 
         private bool IsBulkOperationSupported(

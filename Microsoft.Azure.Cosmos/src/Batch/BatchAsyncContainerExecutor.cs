@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
 
@@ -38,9 +39,11 @@ namespace Microsoft.Azure.Cosmos
         private readonly ConcurrentDictionary<string, SemaphoreSlim> limitersByPartitionkeyRange = new ConcurrentDictionary<string, SemaphoreSlim>();
         private readonly TimerPool timerPool;
         private readonly RetryOptions retryOptions;
-
         private readonly Stopwatch stopwatch = new Stopwatch();
-        private readonly ConcurrentBag<(int, bool, double)> countsAndLatencies = new ConcurrentBag<(int, bool, double)>();
+        private readonly ConcurrentBag<(int, bool, double, double)> countsAndLatencies = new ConcurrentBag<(int, bool, double, double)>();
+
+        private PartitionKeyDefinition partitionKeyDefinition;
+        private CollectionRoutingMap collectionRoutingMap;
 
         /// <summary>
         /// For unit testing.
@@ -86,7 +89,7 @@ namespace Microsoft.Azure.Cosmos
             this.stopwatch.Start();
         }
 
-        public virtual async Task<TransactionalBatchOperationResult> AddAsync(
+        public virtual Task<ResponseMessage> AddAsync(
             ItemBatchOperation operation,
             ItemRequestOptions itemRequestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -96,14 +99,13 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(operation));
             }
 
-            await this.ValidateOperationAsync(operation, itemRequestOptions, cancellationToken);
+            Task<ResponseMessage> response = this.TryAddAsync(operation, itemRequestOptions, cancellationToken);
+            if(response != null)
+            {
+                return response;
+            }
 
-            string resolvedPartitionKeyRangeId = await this.ResolvePartitionKeyRangeIdAsync(operation, cancellationToken).ConfigureAwait(false);
-            BatchAsyncStreamer streamer = this.GetOrAddStreamerForPartitionKeyRange(resolvedPartitionKeyRangeId);
-            ItemBatchOperationContext context = new ItemBatchOperationContext(resolvedPartitionKeyRangeId, BatchAsyncContainerExecutor.GetRetryPolicy(this.retryOptions));
-            operation.AttachContext(context);
-            streamer.Add(operation);
-            return await context.OperationTask;
+            return this.AddImplAsync(operation, itemRequestOptions, cancellationToken);
         }
 
         public void Dispose()
@@ -120,17 +122,69 @@ namespace Microsoft.Azure.Cosmos
 
             this.timerPool.Dispose();
 
-            IEnumerable<IGrouping<int, (int, bool, double)>> gs = this.countsAndLatencies.GroupBy(i => i.Item1);
-            foreach (IGrouping<int, (int, bool, double)> g in gs)
+            IEnumerable<IGrouping<int, (int, bool, double, double)>> gs = this.countsAndLatencies.GroupBy(i => i.Item1);
+            double totalCharge = 0;
+            foreach (IGrouping<int, (int, bool, double, double)> g in gs)
             {
-                Console.WriteLine($"BatchItemCount: {g.Key} BatchCount: {g.Count()} RateLimitedBatches: {g.Count(h => h.Item2)} AvgLatency: {g.Average(h => h.Item3)}");
+                Console.WriteLine($"BatchItemCount: {g.Key} BatchCount: {g.Count()} RateLimitedBatches: {g.Count(h => h.Item2)} AvgLatency: {g.Average(h => h.Item4)}");
+                totalCharge += g.Sum(h => h.Item3);
             }
+
+            Console.WriteLine($"TotalCharge: {totalCharge}");
         }
 
-        internal virtual async Task ValidateOperationAsync(
+        private Task<ResponseMessage> TryAddAsync(
             ItemBatchOperation operation,
             ItemRequestOptions itemRequestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
+        {
+            BatchAsyncContainerExecutor.ValidateOperation(operation, itemRequestOptions);
+
+            if(this.collectionRoutingMap == null || this.partitionKeyDefinition == null)
+            {
+                return null;
+            }
+
+            // None partition key needs special resolution based on container partition key definition.
+            if (object.ReferenceEquals(operation.PartitionKey, PartitionKey.None))
+            {
+                return null;
+            }
+
+            if (!operation.TryMaterializeResource(this.cosmosClientContext.CosmosSerializer))
+            {
+                return null;
+            }
+
+            string resolvedPartitionKeyRangeId = this.ResolvePartitionKeyRangeId(operation);
+            return this.AddImplAsync(operation, resolvedPartitionKeyRangeId);
+        }
+
+        private async Task<ResponseMessage> AddImplAsync(
+            ItemBatchOperation operation,
+            ItemRequestOptions itemRequestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            await operation.MaterializeResourceAsync(this.cosmosClientContext.CosmosSerializer, cancellationToken);
+
+            string resolvedPartitionKeyRangeId = await this.ResolvePartitionKeyRangeIdAsync(operation, cancellationToken).ConfigureAwait(false);
+            return await this.AddImplAsync(operation, resolvedPartitionKeyRangeId);
+        }
+
+        private Task<ResponseMessage> AddImplAsync(
+            ItemBatchOperation operation,
+            string resolvedPartitionKeyRangeId)
+        {
+            BatchAsyncStreamer streamer = this.GetOrAddStreamerForPartitionKeyRange(resolvedPartitionKeyRangeId);
+            ItemBatchOperationContext context = new ItemBatchOperationContext(resolvedPartitionKeyRangeId, BatchAsyncContainerExecutor.GetRetryPolicy(this.retryOptions));
+            operation.AttachContext(context);
+            streamer.Add(operation);
+            return context.OperationTask;
+        }
+
+        private static void ValidateOperation(
+            ItemBatchOperation operation,
+            ItemRequestOptions itemRequestOptions = null)
         {
             if (itemRequestOptions != null)
             {
@@ -144,8 +198,6 @@ namespace Microsoft.Azure.Cosmos
 
                 Debug.Assert(BatchAsyncContainerExecutor.ValidateOperationEPK(operation, itemRequestOptions));
             }
-
-            await operation.MaterializeResourceAsync(this.cosmosClientContext.CosmosSerializer, cancellationToken);
         }
 
         private static IDocumentClientRetryPolicy GetRetryPolicy(RetryOptions retryOptions)
@@ -199,17 +251,26 @@ namespace Microsoft.Azure.Cosmos
             streamer.Add(operation);
         }
 
+        private string ResolvePartitionKeyRangeId(ItemBatchOperation operation)
+        {
+            Debug.Assert(operation.RequestOptions?.Properties?.TryGetValue(WFConstants.BackendHeaders.EffectivePartitionKeyString, out object epkObj) == null, "EPK is not supported");
+            Debug.Assert(!object.ReferenceEquals(operation.PartitionKey, PartitionKey.None));
+            Debug.Assert(this.partitionKeyDefinition != null);
+            Debug.Assert(this.collectionRoutingMap != null);
+            operation.PartitionKeyJson = operation.PartitionKey.Value.ToString();
+            return BatchExecUtils.GetPartitionKeyRangeId(operation.PartitionKey.Value, this.partitionKeyDefinition, this.collectionRoutingMap);
+        }
+
         private async Task<string> ResolvePartitionKeyRangeIdAsync(
             ItemBatchOperation operation,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            PartitionKeyDefinition partitionKeyDefinition = await this.cosmosContainer.GetPartitionKeyDefinitionAsync(cancellationToken);
-            CollectionRoutingMap collectionRoutingMap = await this.cosmosContainer.GetRoutingMapAsync(cancellationToken);
-
             Debug.Assert(operation.RequestOptions?.Properties?.TryGetValue(WFConstants.BackendHeaders.EffectivePartitionKeyString, out object epkObj) == null, "EPK is not supported");
             await this.FillOperationPropertiesAsync(operation, cancellationToken);
-            return BatchExecUtils.GetPartitionKeyRangeId(operation.PartitionKey.Value, partitionKeyDefinition, collectionRoutingMap);
+            this.partitionKeyDefinition = await this.cosmosContainer.GetPartitionKeyDefinitionAsync();
+            this.collectionRoutingMap = await this.cosmosContainer.GetRoutingMapAsync(CancellationToken.None);
+            return BatchExecUtils.GetPartitionKeyRangeId(operation.PartitionKey.Value, this.partitionKeyDefinition, this.collectionRoutingMap);
         }
 
         private async Task FillOperationPropertiesAsync(ItemBatchOperation operation, CancellationToken cancellationToken)
@@ -238,20 +299,24 @@ namespace Microsoft.Azure.Cosmos
                     Debug.Assert(serverRequestPayload != null, "Server request payload expected to be non-null");
 
                     TimeSpan start = this.stopwatch.Elapsed;
-                    ResponseMessage responseMessage = await this.cosmosClientContext.ProcessResourceOperationStreamAsync(
-                        this.cosmosContainer.LinkUri,
-                        ResourceType.Document,
-                        OperationType.Batch,
-                        new RequestOptions(),
-                        cosmosContainerCore: this.cosmosContainer,
-                        partitionKey: null,
-                        streamPayload: serverRequestPayload,
-                        requestEnricher: requestMessage => BatchAsyncContainerExecutor.AddHeadersToRequestMessage(requestMessage, serverRequest.PartitionKeyRangeId),
-                        cancellationToken: cancellationToken).ConfigureAwait(false);
-                    TransactionalBatchResponse serverResponse = await TransactionalBatchResponse.FromResponseMessageAsync(responseMessage, serverRequest, this.cosmosClientContext.CosmosSerializer).ConfigureAwait(false);
+                    //ResponseMessage responseMessage = await this.cosmosClientContext.ProcessResourceOperationStreamAsync(
+                    //    this.cosmosContainer.LinkUri,
+                    //    ResourceType.Document,
+                    //    OperationType.Batch,
+                    //    new RequestOptions(),
+                    //    cosmosContainerCore: this.cosmosContainer,
+                    //    partitionKey: null,
+                    //    streamPayload: serverRequestPayload,
+                    //    requestEnricher: requestMessage => BatchAsyncContainerExecutor.AddHeadersToRequestMessage(requestMessage, serverRequest.PartitionKeyRangeId),
+                    //    cancellationToken: cancellationToken).ConfigureAwait(false);
+                    await Task.CompletedTask.ConfigureAwait(false);
+                    TransactionalBatchResponse serverResponse =
+                        new TransactionalBatchResponse(System.Net.HttpStatusCode.OK, SubStatusCodes.Unknown, null, serverRequest.Operations);
+                        //await TransactionalBatchResponse.FromResponseMessageAsync(responseMessage, serverRequest, this.cosmosClientContext.CosmosSerializer).ConfigureAwait(false);
                     this.countsAndLatencies.Add(
                         (serverRequest.Operations.Count,
                         serverResponse.Any(r => r.StatusCode == (System.Net.HttpStatusCode)429),
+                        serverResponse.RequestCharge,
                         (this.stopwatch.Elapsed - start).TotalMilliseconds));
                     return new PartitionKeyRangeBatchExecutionResult(serverRequest.PartitionKeyRangeId, serverRequest.Operations, serverResponse);
                 }

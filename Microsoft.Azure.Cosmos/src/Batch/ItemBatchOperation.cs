@@ -284,6 +284,16 @@ namespace Microsoft.Azure.Cosmos
             return length;
         }
 
+        internal virtual bool TryMaterializeResource(CosmosSerializer serializer)
+        {
+            if (this.body.IsEmpty && this.ResourceStream != null)
+            {
+                return BatchExecUtils.TryConvertMemoryStreamToMemory(this.ResourceStream, out this.body);
+            }
+
+            return false;
+        }
+
         /// <summary>
         /// Materializes the operation's resource into a Memory{byte} wrapping a byte array.
         /// </summary>
@@ -357,6 +367,17 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public T Resource { get; private set; }
+
+        internal override bool TryMaterializeResource(CosmosSerializer serializer)
+        {
+            if (this.body.IsEmpty && this.Resource != null)
+            {
+                this.ResourceStream = serializer.ToStream(this.Resource);
+                return BatchExecUtils.TryConvertMemoryStreamToMemory(this.ResourceStream, out this.body);
+            }
+
+            return false;
+        }
 
         /// <summary>
         /// Materializes the operation's resource into a Memory{byte} wrapping a byte array.

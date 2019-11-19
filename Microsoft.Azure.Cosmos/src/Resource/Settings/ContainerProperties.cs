@@ -335,6 +335,13 @@ namespace Microsoft.Azure.Cosmos
         public int? DefaultTimeToLive { get; set; }
 
         /// <summary>
+        /// Yes.
+        /// </summary>
+        //[JsonProperty(PropertyName = Constants.Properties.AnalyticalStorageTimeToLive, NullValueHandling = NullValueHandling.Ignore)]
+        [JsonIgnore]
+        public int? AnalyticalStorageTimeToLive { get; set; }
+
+        /// <summary>
         /// The function selects the right partition key constant mapping for <see cref="PartitionKey.None"/>
         /// </summary>
         internal PartitionKeyInternal GetNoneValue()

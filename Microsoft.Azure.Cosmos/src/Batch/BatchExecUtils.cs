@@ -19,8 +19,41 @@ namespace Microsoft.Azure.Cosmos
         // Using the same buffer size as the Stream.DefaultCopyBufferSize
         private const int BufferSize = 81920;
 
+        public static bool TryConvertMemoryStreamToMemory(Stream stream, out Memory<byte> memory)
+        {
+            MemoryStream memStream = stream as MemoryStream;
+            if(memStream == null)
+            {
+                memory = null;
+                return false;
+            }
+
+            // Some derived implementations of MemoryStream (such as versions of RecyclableMemoryStream prior to 1.2.2 that we may be using)
+            // return an incorrect response from TryGetBuffer. Use TryGetBuffer only on the MemoryStream type and not derived types.
+            if (memStream.GetType() == typeof(MemoryStream) && memStream.TryGetBuffer(out ArraySegment<byte> memBuffer))
+            {
+                memory = memBuffer;
+            }
+            else
+            {
+                byte[] bytes = new byte[stream.Length];
+                int sum = 0;
+                int count;
+                while ((count = memStream.Read(bytes, sum, bytes.Length - sum)) > 0)
+                {
+                    sum += count;
+                }
+
+                memory = bytes;
+            }
+
+            return true;
+        }
+
         /// <summary>
         /// Converts a Stream to a Memory{byte} wrapping a byte array.
+        /// This implementation expects that the caller has already called TryConvertMemoryStreamToMemory which is
+        /// more efficient if the source Stream is a MemoryStream.
         /// </summary>
         /// <param name="stream">Stream to be converted to bytes.</param>
         /// <param name="cancellationToken"><see cref="CancellationToken"/> to cancel the operation.</param>
@@ -29,48 +62,23 @@ namespace Microsoft.Azure.Cosmos
             Stream stream,
             CancellationToken cancellationToken)
         {
-            if (stream.CanSeek)
-            {
-                // Some derived implementations of MemoryStream (such as versions of RecyclableMemoryStream prior to 1.2.2 that we may be using)
-                // return an incorrect response from TryGetBuffer. Use TryGetBuffer only on the MemoryStream type and not derived types.
-                MemoryStream memStream = stream as MemoryStream;
-                if (memStream != null
-                     && memStream.GetType() == typeof(MemoryStream)
-                     && memStream.TryGetBuffer(out ArraySegment<byte> memBuffer))
-                {
-                    return memBuffer;
-                }
+            int bufferSize = BatchExecUtils.BufferSize;
+            byte[] buffer = new byte[bufferSize];
 
-                byte[] bytes = new byte[stream.Length];
+            using (MemoryStream memoryStream = new MemoryStream(bufferSize)) // using bufferSize as initial capacity as well
+            {
                 int sum = 0;
                 int count;
-                while ((count = await stream.ReadAsync(bytes, sum, bytes.Length - sum, cancellationToken)) > 0)
+                while ((count = await stream.ReadAsync(buffer, 0, bufferSize, cancellationToken)) > 0)
                 {
                     sum += count;
-                }
-
-                return bytes;
-            }
-            else
-            {
-                int bufferSize = BatchExecUtils.BufferSize;
-                byte[] buffer = new byte[bufferSize];
-
-                using (MemoryStream memoryStream = new MemoryStream(bufferSize)) // using bufferSize as initial capacity as well
-                {
-                    int sum = 0;
-                    int count;
-                    while ((count = await stream.ReadAsync(buffer, 0, bufferSize, cancellationToken)) > 0)
-                    {
-                        sum += count;
 
 #pragma warning disable VSTHRD103 // Call async methods when in an async method
-                        memoryStream.Write(buffer, 0, count);
+                    memoryStream.Write(buffer, 0, count);
 #pragma warning restore VSTHRD103 // Call async methods when in an async method
-                    }
-
-                    return new Memory<byte>(memoryStream.GetBuffer(), 0, (int)memoryStream.Length);
                 }
+
+                return new Memory<byte>(memoryStream.GetBuffer(), 0, (int)memoryStream.Length);
             }
         }
 

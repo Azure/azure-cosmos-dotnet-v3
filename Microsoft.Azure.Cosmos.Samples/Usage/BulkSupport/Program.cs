@@ -41,11 +41,11 @@
             {
                 // Make sure this is >= 2 * physical_partition_count * (2MB / docSize) when useBulk is true
                 // for best perf.
-                int concurrency = args.Length > 0 ? int.Parse(args[0]) : 20000;
+                int concurrency = args.Length > 0 ? int.Parse(args[0]) : 200000;
                 int docSize = args.Length > 1 ? int.Parse(args[1]) : 1024;
                 int runtimeInSeconds = args.Length > 2 ? int.Parse(args[2]) : 30;
                 bool useBulk = args.Length > 3 ? bool.Parse(args[3]) : true;
-                int workerCount = args.Length > 4 ? int.Parse(args[4]) : 1;
+                int workerCount = args.Length > 4 ? int.Parse(args[4]) : 20;
 
                 // Read the Cosmos endpointUrl and authorisationKeys from configuration
                 // These values are available from the Azure Management Portal on the Cosmos Account Blade under "Keys"
@@ -149,6 +149,8 @@
                                     semaphore.Release();
                                     dataSource.DoneWithItemStream(stream);
                                     HttpStatusCode resultCode = task.Result.StatusCode;
+                                    if (task.Result.Content != null) { task.Result.Content.Dispose(); }
+                                    task.Dispose();
                                     countsByStatus.AddOrUpdate(resultCode, 1, (_, old) => old + 1);
                                 });
                         }
