@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.Generic;
     using System.Net.Http;
     using System.Net.Http.Headers;
+    using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Fluent;
@@ -21,33 +22,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task GatewayStoreClientTimeout()
         {
-            using (CosmosClient client = TestCommon.CreateCosmosClient())
+            using (CosmosClient client = TestCommon.CreateCosmosClient(useGateway: true))
             {
-                HttpClient httpClient = new HttpClient();
-                httpClient.Timeout = TimeSpan.FromMilliseconds(50);
-                httpClient.DefaultRequestHeaders.CacheControl = new CacheControlHeaderValue { NoCache = true };
+                // Creates the store clients in the document client
+                await client.DocumentClient.EnsureValidClientAsync();
 
-                httpClient.AddApiTypeHeader(ApiType.None);
-
-                // Set requested API version header that can be used for
-                // version enforcement.
-                httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.Version,
-                    HttpConstants.Versions.CurrentVersion);
-
-                httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.Accept, RuntimeConstants.MediaTypes.Json);
-
-                GatewayStoreClient gatewayStoreClient = new GatewayStoreClient(
-                    httpClient,
-                    DocumentClientEventSource.Instance,
-                    null);
-
-                CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
-                try
-                {
-
-                    using (new ActivityScope(Guid.NewGuid()))
-                    {
-                        using (DocumentServiceRequest serviceRequest = new DocumentServiceRequest(
+                // Get the GatewayStoreModel
+                GatewayStoreModel gatewayStore;
+                using (DocumentServiceRequest serviceRequest = new DocumentServiceRequest(
                                 operationType: OperationType.Read,
                                 resourceIdOrFullName: null,
                                 resourceType: ResourceType.Database,
@@ -55,32 +37,34 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                 headers: null,
                                 isNameBased: false,
                                 authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey))
-                        {
-                            string authorization = ((IAuthorizationTokenProvider)client.DocumentClient).GetUserAuthorizationToken(
-                                serviceRequest.ResourceAddress,
-                                PathsHelper.GetResourcePath(serviceRequest.ResourceType),
-                                HttpMethod.Get.ToString(),
-                                serviceRequest.Headers,
-                                AuthorizationTokenType.PrimaryMasterKey,
-                                payload: out _);
-
-                            serviceRequest.Headers[HttpConstants.HttpHeaders.Authorization] = authorization;
-
-                            await gatewayStoreClient.InvokeAsync(
-                                serviceRequest,
-                                ResourceType.Database,
-                                new Uri("https://127.0.0.1:8081/dbs/97c0b8d0-9c6f-462f-8ea8-3374ab788273"),
-                                cancellationTokenSource.Token);
-                        }
-                    }
+                {
+                    serviceRequest.UseGatewayMode = true;
+                    gatewayStore = (GatewayStoreModel)client.DocumentClient.GetStoreProxy(serviceRequest);
                 }
-                catch (RequestTimeoutException rte)
+
+                // Get the GatewayStoreClient
+                FieldInfo gatewayStoreClientProperty = gatewayStore.GetType().GetField("gatewayStoreClient", BindingFlags.NonPublic | BindingFlags.Instance);
+                GatewayStoreClient storeClient = (GatewayStoreClient)gatewayStoreClientProperty.GetValue(gatewayStore);
+
+                // Set the http request timeout to 10 ms to cause a timeout exception
+                FieldInfo httpClientProperty = storeClient.GetType().GetField("httpClient", BindingFlags.NonPublic | BindingFlags.Instance);
+                HttpClient gatewayStoreHttpClient = (HttpClient)httpClientProperty.GetValue(storeClient);
+                gatewayStoreHttpClient.Timeout = TimeSpan.FromMilliseconds(10);
+
+                // Verify the failure has the required info
+                CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+                try
+                {
+                    await client.CreateDatabaseAsync("TestGatewayTimeoutDb");
+                    Assert.Fail("Operation should have timed out");
+                }
+                catch (CosmosException rte)
                 {
                     string message = rte.ToString();
-                    Assert.IsTrue(message.Contains("Start Time"));
-                    Assert.IsTrue(message.Contains("Total Duration"));
-                    Assert.IsTrue(message.Contains("Http Client Timeout"));
-                    Assert.IsTrue(message.Contains("Activity id"));
+                    Assert.IsTrue(message.Contains("Start Time"), "Start Time:" + message);
+                    Assert.IsTrue(message.Contains("Total Duration"), "Total Duration:" + message);
+                    Assert.IsTrue(message.Contains("Http Client Timeout"), "Http Client Timeout:" + message);
+                    Assert.IsTrue(message.Contains("Activity id"), "Activity id:" + message);
                 }
             }
         }
