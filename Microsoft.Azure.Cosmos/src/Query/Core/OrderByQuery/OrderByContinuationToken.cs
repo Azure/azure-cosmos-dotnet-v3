@@ -55,14 +55,12 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Initializes a new instance of the OrderByContinuationToken struct.
         /// </summary>
-        /// <param name="queryClient">The query client</param>
         /// <param name="compositeContinuationToken">The composite continuation token (refer to property documentation).</param>
         /// <param name="orderByItems">The order by items (refer to property documentation).</param>
         /// <param name="rid">The rid (refer to property documentation).</param>
         /// <param name="skipCount">The skip count (refer to property documentation).</param>
         /// <param name="filter">The filter (refer to property documentation).</param>
         public OrderByContinuationToken(
-            CosmosQueryClient queryClient,
             CompositeContinuationToken compositeContinuationToken,
             IList<OrderByItem> orderByItems,
             string rid,

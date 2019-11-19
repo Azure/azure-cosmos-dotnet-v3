@@ -20,7 +20,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Xml;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
@@ -30,7 +29,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Newtonsoft.Json.Converters;
     using Newtonsoft.Json.Linq;
     using Query;
-    using Query.ParallelQuery;
     using UInt128 = Query.Core.UInt128;
 
     /// <summary>
@@ -609,7 +607,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             List<T> resultsFromTryGetContinuationToken = new List<T>();
-            string state = null;
+            string continuationToken = null;
             do
             {
                 QueryRequestOptions computeRequestOptions = queryRequestOptions.Clone();
@@ -618,21 +616,34 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 FeedIteratorCore<T> itemQuery = (FeedIteratorCore<T>)container.GetItemQueryIterator<T>(
                    queryText: query,
                    requestOptions: computeRequestOptions,
-                   continuationToken: state);
-
-                FeedResponse<T> cosmosQueryResponse = await itemQuery.ReadNextAsync();
-                if (queryRequestOptions.MaxItemCount.HasValue)
+                   continuationToken: continuationToken);
+                try
                 {
-                    Assert.IsTrue(
-                        cosmosQueryResponse.Count <= queryRequestOptions.MaxItemCount.Value,
-                        "Max Item Count is not being honored");
-                }
+                    FeedResponse<T> cosmosQueryResponse = await itemQuery.ReadNextAsync();
+                    if (queryRequestOptions.MaxItemCount.HasValue)
+                    {
+                        Assert.IsTrue(
+                            cosmosQueryResponse.Count <= queryRequestOptions.MaxItemCount.Value,
+                            "Max Item Count is not being honored");
+                    }
 
-                resultsFromTryGetContinuationToken.AddRange(cosmosQueryResponse);
-                Assert.IsTrue(
-                    itemQuery.TryGetContinuationToken(out state),
-                    "Failed to get state for query");
-            } while (state != null);
+                    resultsFromTryGetContinuationToken.AddRange(cosmosQueryResponse);
+                    Assert.IsTrue(
+                        itemQuery.TryGetContinuationToken(out continuationToken),
+                        "Failed to get state for query");
+                    if (continuationToken != null)
+                    {
+                        Assert.IsTrue(continuationToken.All((character) => character < 128));
+                    }
+                }
+                catch (CosmosException cosmosException) when (cosmosException.StatusCode == (HttpStatusCode)429)
+                {
+                    itemQuery = (FeedIteratorCore<T>)container.GetItemQueryIterator<T>(
+                            queryText: query,
+                            requestOptions: queryRequestOptions,
+                            continuationToken: continuationToken);
+                }
+            } while (continuationToken != null);
 
             return resultsFromTryGetContinuationToken;
         }
@@ -656,16 +667,34 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                    requestOptions: queryRequestOptions,
                    continuationToken: continuationToken);
 
-                FeedResponse<T> cosmosQueryResponse = await itemQuery.ReadNextAsync();
-                if (queryRequestOptions.MaxItemCount.HasValue)
+                while (true)
                 {
-                    Assert.IsTrue(
-                        cosmosQueryResponse.Count <= queryRequestOptions.MaxItemCount.Value,
-                        "Max Item Count is not being honored");
-                }
+                    try
+                    {
+                        FeedResponse<T> cosmosQueryResponse = await itemQuery.ReadNextAsync();
+                        if (queryRequestOptions.MaxItemCount.HasValue)
+                        {
+                            Assert.IsTrue(
+                                cosmosQueryResponse.Count <= queryRequestOptions.MaxItemCount.Value,
+                                "Max Item Count is not being honored");
+                        }
 
-                resultsFromContinuationToken.AddRange(cosmosQueryResponse);
-                continuationToken = cosmosQueryResponse.ContinuationToken;
+                        resultsFromContinuationToken.AddRange(cosmosQueryResponse);
+                        continuationToken = cosmosQueryResponse.ContinuationToken;
+                        if (continuationToken != null)
+                        {
+                            Assert.IsTrue(continuationToken.All((character) => character < 128));
+                        }
+                        break;
+                    }
+                    catch (CosmosException cosmosException) when (cosmosException.StatusCode == (HttpStatusCode)429)
+                    {
+                        itemQuery = container.GetItemQueryIterator<T>(
+                            queryText: query,
+                            requestOptions: queryRequestOptions,
+                            continuationToken: continuationToken);
+                    }
+                }
             } while (continuationToken != null);
 
             return resultsFromContinuationToken;
@@ -686,16 +715,47 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 queryText: query,
                 requestOptions: queryRequestOptions);
 
+            string continuationTokenForRetries = null;
             while (itemQuery.HasMoreResults)
             {
-                FeedResponse<T> page = await itemQuery.ReadNextAsync();
-                results.AddRange(page);
-
-                if (queryRequestOptions.MaxItemCount.HasValue)
+                try
                 {
-                    Assert.IsTrue(
-                        page.Count <= queryRequestOptions.MaxItemCount.Value,
-                        "Max Item Count is not being honored");
+                    FeedResponse<T> page = await itemQuery.ReadNextAsync();
+                    results.AddRange(page);
+
+                    if (queryRequestOptions.MaxItemCount.HasValue)
+                    {
+                        Assert.IsTrue(
+                            page.Count <= queryRequestOptions.MaxItemCount.Value,
+                            "Max Item Count is not being honored");
+                    }
+
+                    try
+                    {
+                        continuationTokenForRetries = page.ContinuationToken;
+                    }
+                    catch (Exception)
+                    {
+                        // Grabbing a continuation token is not supported on all queries.
+                    }
+
+                    if (continuationTokenForRetries != null)
+                    {
+                        Assert.IsTrue(continuationTokenForRetries.All((character) => character < 128));
+                    }
+                }
+                catch (CosmosException cosmosException) when (cosmosException.StatusCode == (HttpStatusCode)429)
+                {
+                    itemQuery = container.GetItemQueryIterator<T>(
+                        queryText: query,
+                        requestOptions: queryRequestOptions,
+                        continuationToken: continuationTokenForRetries);
+
+                    if (continuationTokenForRetries == null)
+                    {
+                        // The query failed and we don't have a save point, so just restart the whole thing.
+                        results = new List<T>();
+                    }
                 }
             }
 
@@ -737,7 +797,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             byte[] bytes = Encoding.UTF8.GetBytes(orderByItemSerialized);
             OrderByItem orderByItem = new OrderByItem(CosmosElement.CreateFromBuffer(bytes));
             OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
-                new Mock<CosmosQueryClient>().Object,
                 compositeContinuationToken,
                 new List<OrderByItem> { orderByItem },
                 "asdf",
@@ -1069,7 +1128,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             SpecialPropertyDocument specialPropertyDocument = new SpecialPropertyDocument
             {
-                id = Guid.NewGuid().ToString()
+                Id = Guid.NewGuid().ToString()
             };
 
             specialPropertyDocument.GetType().GetProperty(args.Name).SetValue(specialPropertyDocument, args.Value);
@@ -1080,7 +1139,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(args.Value, getPropertyValueFunction((SpecialPropertyDocument)returnedDoc));
 
             PartitionKey key = new PartitionKey(args.ValueToPartitionKey(args.Value));
-            response = await container.ReadItemAsync<SpecialPropertyDocument>(response.Resource.id, new Cosmos.PartitionKey(key));
+            response = await container.ReadItemAsync<SpecialPropertyDocument>(response.Resource.Id, new Cosmos.PartitionKey(key));
             returnedDoc = response.Resource;
             Assert.AreEqual(args.Value, getPropertyValueFunction((SpecialPropertyDocument)returnedDoc));
 
@@ -1129,7 +1188,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private sealed class SpecialPropertyDocument
         {
-            public string id
+            public string Id
             {
                 get;
                 set;
@@ -1323,7 +1382,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 foreach (int maxItemCount in new int[] { 10, 100 })
                 {
-                    foreach (string query in new string[] { "SELECT * FROM c", "SELECT * FROM c ORDER BY c._ts" })
+                    foreach (string query in new string[] { "SELECT c.id FROM c", "SELECT c._ts, c.id FROM c ORDER BY c._ts" })
                     {
                         QueryRequestOptions feedOptions = new QueryRequestOptions
                         {
@@ -1342,6 +1401,94 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             queryResults.Count,
                             $"query: {query} failed with {nameof(maxDegreeOfParallelism)}: {maxDegreeOfParallelism}, {nameof(maxItemCount)}: {maxItemCount}");
                     }
+                }
+            }
+        }
+
+        [TestMethod]
+        public async Task TestExceptionlessFailures()
+        {
+            int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+            uint numberOfDocuments = 100;
+            QueryOracle.QueryOracleUtil util = new QueryOracle.QueryOracle2(seed);
+            IEnumerable<string> documents = util.GetDocuments(numberOfDocuments);
+
+            await this.CreateIngestQueryDelete(
+                ConnectionModes.Direct,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
+                documents,
+                this.TestExceptionlessFailuresHelper);
+        }
+
+        private async Task TestExceptionlessFailuresHelper(
+            Container container,
+            IEnumerable<Document> documents)
+        {
+            foreach (int maxItemCount in new int[] { 10, 100 })
+            {
+                foreach (string query in new string[] { "SELECT c.id FROM c", "SELECT c._ts, c.id FROM c ORDER BY c._ts" })
+                {
+                    QueryRequestOptions feedOptions = new QueryRequestOptions
+                    {
+                        MaxBufferedItemCount = 7000,
+                        MaxConcurrency = 2,
+                        MaxItemCount = maxItemCount,
+                        TestSettings = new TestInjections(simulate429s: true, simulateEmptyPages: false)
+                    };
+
+                    List<JToken> queryResults = await CrossPartitionQueryTests.RunQuery<JToken>(
+                        container,
+                        query,
+                        feedOptions);
+
+                    Assert.AreEqual(
+                        documents.Count(),
+                        queryResults.Count,
+                        $"query: {query} failed with {nameof(maxItemCount)}: {maxItemCount}");
+                }
+            }
+        }
+
+        [TestMethod]
+        public async Task TestEmptyPages()
+        {
+            int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+            uint numberOfDocuments = 100;
+            QueryOracle.QueryOracleUtil util = new QueryOracle.QueryOracle2(seed);
+            IEnumerable<string> documents = util.GetDocuments(numberOfDocuments);
+
+            await this.CreateIngestQueryDelete(
+                ConnectionModes.Direct,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
+                documents,
+                this.TestEmptyPagesHelper);
+        }
+
+        private async Task TestEmptyPagesHelper(
+            Container container,
+            IEnumerable<Document> documents)
+        {
+            foreach (int maxItemCount in new int[] { 10, 100 })
+            {
+                foreach (string query in new string[] { "SELECT c.id FROM c", "SELECT c._ts, c.id FROM c ORDER BY c._ts" })
+                {
+                    QueryRequestOptions feedOptions = new QueryRequestOptions
+                    {
+                        MaxBufferedItemCount = 7000,
+                        MaxConcurrency = 2,
+                        MaxItemCount = maxItemCount,
+                        TestSettings = new TestInjections(simulate429s: false, simulateEmptyPages: true)
+                    };
+
+                    List<JToken> queryResults = await CrossPartitionQueryTests.RunQuery<JToken>(
+                        container,
+                        query,
+                        feedOptions);
+
+                    Assert.AreEqual(
+                        documents.Count(),
+                        queryResults.Count,
+                        $"query: {query} failed with {nameof(maxItemCount)}: {maxItemCount}");
                 }
             }
         }
@@ -3223,7 +3370,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task TestQueryCrossPartitionOffsetLimit()
         {
             int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
-            uint numberOfDocuments = 100;
+            uint numberOfDocuments = 10;
 
             Random rand = new Random(seed);
             List<Person> people = new List<Person>();
@@ -3248,7 +3395,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             await this.CreateIngestQueryDelete(
-                ConnectionModes.Direct | ConnectionModes.Gateway,
+                ConnectionModes.Direct,
                 CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
                 this.TestQueryCrossPartitionOffsetLimit,
@@ -3259,11 +3406,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Container container,
             IEnumerable<Document> documents)
         {
-            foreach (int offsetCount in new int[] { 0, 1, 10, 100, documents.Count() })
+            foreach (int offsetCount in new int[] { 0, 1, 10, documents.Count() })
             {
-                foreach (int limitCount in new int[] { 0, 1, 10, 100, documents.Count() })
+                foreach (int limitCount in new int[] { 0, 1, 10, documents.Count() })
                 {
-                    foreach (int pageSize in new int[] { 1, 10, 100, documents.Count() })
+                    foreach (int pageSize in new int[] { 1, 10, documents.Count() })
                     {
                         string query = $@"
                             SELECT VALUE c.guid
@@ -4602,9 +4749,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                         Assert.IsTrue(
                             queryDrainingModeAsJTokens1.SequenceEqual(queryDrainingModeAsJTokens2, JsonTokenEqualityComparer.Value),
-                            $"{query} returned different results." +
-                            $"{queryDrainingMode1}: {JsonConvert.SerializeObject(queryDrainingModeAsJTokens1)}" +
-                            $"{queryDrainingMode2}: {JsonConvert.SerializeObject(queryDrainingModeAsJTokens2)}");
+                            $"{query} returned different results.\n" +
+                            $"{queryDrainingMode1}: {JsonConvert.SerializeObject(queryDrainingModeAsJTokens1)}\n" +
+                            $"{queryDrainingMode2}: {JsonConvert.SerializeObject(queryDrainingModeAsJTokens2)}\n");
                     }
                 }
             }

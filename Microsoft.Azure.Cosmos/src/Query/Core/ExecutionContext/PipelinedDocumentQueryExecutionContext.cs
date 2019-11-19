@@ -153,7 +153,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     initialPageSize: int.MaxValue,
                     maxConcurrency: initParams.MaxConcurrency,
                     maxItemCount: int.MaxValue,
-                    maxBufferedItemCount: initParams.MaxBufferedItemCount);
+                    maxBufferedItemCount: initParams.MaxBufferedItemCount,
+                    testSettings: initParams.TestSettings);
             }
 
             async Task<TryCatch<IDocumentQueryExecutionComponent>> tryCreateOrderByComponentAsync(string continuationToken)
