@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using System.IO;
+    using System.Linq;
     using System.Net;
     using System.Net.Http;
     using Microsoft.Azure.Cosmos.Client.Core.Tests;
@@ -44,6 +45,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             TimeSpan openTcpConnectionTimeout = new TimeSpan(0, 0, 5);
             int maxRequestsPerTcpConnection = 30;
             int maxTcpConnectionsPerEndpoint = 65535;
+            Cosmos.PortReuseMode portReuseMode = Cosmos.PortReuseMode.PrivatePortPool;
             IWebProxy webProxy = new TestWebProxy();
 
             CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
@@ -131,7 +133,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 idleTcpConnectionTimeout,
                 openTcpConnectionTimeout,
                 maxRequestsPerTcpConnection,
-                maxTcpConnectionsPerEndpoint
+                maxTcpConnectionsPerEndpoint,
+                portReuseMode
             );
 
             cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
@@ -142,6 +145,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(openTcpConnectionTimeout, clientOptions.OpenTcpConnectionTimeout);
             Assert.AreEqual(maxRequestsPerTcpConnection, clientOptions.MaxRequestsPerTcpConnection);
             Assert.AreEqual(maxTcpConnectionsPerEndpoint, clientOptions.MaxTcpConnectionsPerEndpoint);
+            Assert.AreEqual(portReuseMode, clientOptions.PortReuseMode);
 
             //Verify GetConnectionPolicy returns the correct values
             policy = clientOptions.GetConnectionPolicy();
@@ -149,6 +153,21 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(openTcpConnectionTimeout, policy.OpenTcpConnectionTimeout);
             Assert.AreEqual(maxRequestsPerTcpConnection, policy.MaxRequestsPerTcpConnection);
             Assert.AreEqual(maxTcpConnectionsPerEndpoint, policy.MaxTcpConnectionsPerEndpoint);
+            Assert.AreEqual(portReuseMode, policy.PortReuseMode);
+        }
+
+        [TestMethod]
+        public void VerifyPortReuseModeIsSyncedWithDirect()
+        {
+            CollectionAssert.AreEqual(
+                Enum.GetNames(typeof(PortReuseMode)).OrderBy(x => x).ToArray(),
+                Enum.GetNames(typeof(Cosmos.PortReuseMode)).OrderBy(x => x).ToArray()
+            );
+
+            CollectionAssert.AreEqual(
+                Enum.GetValues(typeof(PortReuseMode)).Cast<int>().ToArray(),
+                Enum.GetValues(typeof(Cosmos.PortReuseMode)).Cast<int>().ToArray()
+            );
         }
 
         [TestMethod]

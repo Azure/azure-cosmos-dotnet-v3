@@ -230,6 +230,10 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Together with MaxRequestsPerTcpConnection, this setting limits the number of requests that are simultaneously sent to a single Cosmos DB back-end(MaxRequestsPerTcpConnection x MaxTcpConnectionPerEndpoint).
         /// The default value is 65,535. Value must be greater than or equal to 16.
         /// </param>
+        /// <param name="portReuseMode">
+        /// (Direct/TCP) Controls the client port reuse policy used by the transport stack.
+        /// The default value is PortReuseMode.ReuseUnicastPort.
+        /// </param>
         /// <remarks>
         /// For more information, see <see href="https://docs.microsoft.com/azure/documentdb/documentdb-performance-tips#direct-connection">Connection policy: Use direct connection mode</see>.
         /// </remarks>
@@ -238,12 +242,14 @@ namespace Microsoft.Azure.Cosmos.Fluent
         internal CosmosClientBuilder WithConnectionModeDirect(TimeSpan? idleTcpConnectionTimeout = null,
             TimeSpan? openTcpConnectionTimeout = null,
             int? maxRequestsPerTcpConnection = null,
-            int? maxTcpConnectionsPerEndpoint = null)
+            int? maxTcpConnectionsPerEndpoint = null,
+            Cosmos.PortReuseMode? portReuseMode = null)
         {
             this.clientOptions.IdleTcpConnectionTimeout = idleTcpConnectionTimeout;
             this.clientOptions.OpenTcpConnectionTimeout = openTcpConnectionTimeout;
             this.clientOptions.MaxRequestsPerTcpConnection = maxRequestsPerTcpConnection;
             this.clientOptions.MaxTcpConnectionsPerEndpoint = maxTcpConnectionsPerEndpoint;
+            this.clientOptions.PortReuseMode = portReuseMode;
 
             this.clientOptions.ConnectionMode = ConnectionMode.Direct;
             this.clientOptions.ConnectionProtocol = Protocol.Tcp;
