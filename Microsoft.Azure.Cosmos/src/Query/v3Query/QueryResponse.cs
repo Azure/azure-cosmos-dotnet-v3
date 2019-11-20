@@ -199,12 +199,19 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (this.resources == null)
                 {
-                    this.resources = CosmosElementSerializer.Deserialize<T>(
-                        this.QueryHeaders.ContainerRid,
-                        this.cosmosElements,
-                        this.QueryHeaders.ResourceType,
-                        this.jsonSerializer,
-                        this.serializationOptions);
+                    if (typeof(T) == typeof(CosmosElement))
+                    {
+                        this.resources = this.cosmosElements.Cast<T>();
+                    }
+                    else
+                    {
+                        this.resources = CosmosElementSerializer.Deserialize<T>(
+                            this.QueryHeaders.ContainerRid,
+                            this.cosmosElements,
+                            this.QueryHeaders.ResourceType,
+                            this.jsonSerializer,
+                            this.serializationOptions);
+                    }
                 }
 
                 return this.resources;
