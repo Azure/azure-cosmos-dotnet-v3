@@ -9,15 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- [#995](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/995) Included session token in diagnostics
+- [#995](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/995) Included session token in diagnostics.
+- [#1000](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1000) Add PortReuseMode to CosmosClientOptions.
 - [#1017](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1017) Adding ClientSideRequestStatistics to gateway calls and making endtime nullable
 
 ### Fixed
 
 - [#944](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/944) Change Feed Processor won't use user serializer for internal operations
 - [#988](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/988) Fixed query mutating due to retry of gone / name cache is stale.
-- [#999](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/999) Fixed grabbing extra page and updated continuation token on exception path.
+- [#999](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/999) Fixed grabbing extra page, updated continuation token on exception path, and non ascii character in order by continuation token.
 - [#1013](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1013) Gateway OperationCanceledException are now returned as request timeouts
+- [#1023](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1023) Fixed ThroughputResponse.IsReplacePending header mapping
 
 ## <a name="3.4.1"/> [3.4.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.4.1) - 2019-11-06
 
