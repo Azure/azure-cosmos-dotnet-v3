@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos
                     return this.requestEndTime.Value - this.requestStartTime;
                 }
 
-                return TimeSpan.Zero;
+                return TimeSpan.MaxValue;
             }
         }
 
