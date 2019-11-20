@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Net;
     using System.Net.Http;
+    using System.Text;
     using Newtonsoft.Json;
     using static Microsoft.Azure.Cosmos.CosmosClientSideRequestStatistics;
 
@@ -18,12 +19,16 @@ namespace Microsoft.Azure.Cosmos
             NullValueHandling = NullValueHandling.Ignore,
             Formatting = Formatting.None
         };
+
+        public string ActivityId { get; }
         public HttpStatusCode StatusCode { get; }
         public Documents.SubStatusCodes SubStatusCode { get; }
         public double RequestCharge { get; }
         public string ErrorMessage { get; }
         public HttpMethod Method { get; }
         public Uri RequestUri { get; }
+        public string RequestSessionToken { get; }
+        public string ResponseSessionToken { get; }
 
         public DateTime requestStartTime { get; private set; }
 
@@ -44,20 +49,26 @@ namespace Microsoft.Azure.Cosmos
         public TimeSpan requestLatency { get; private set; }
 
         internal PointOperationStatistics(
+            string activityId,
             HttpStatusCode statusCode,
             Documents.SubStatusCodes subStatusCode,
             double requestCharge,
             string errorMessage,
             HttpMethod method,
             Uri requestUri,
+            string requestSessionToken,
+            string responseSessionToken,
             CosmosClientSideRequestStatistics clientSideRequestStatistics)
         {
+            this.ActivityId = activityId;
             this.StatusCode = statusCode;
             this.SubStatusCode = subStatusCode;
             this.RequestCharge = requestCharge;
             this.ErrorMessage = errorMessage;
             this.Method = method;
             this.RequestUri = requestUri;
+            this.RequestSessionToken = requestSessionToken;
+            this.ResponseSessionToken = responseSessionToken;
             if (clientSideRequestStatistics != null)
             {
                 this.requestStartTime = clientSideRequestStatistics.requestStartTime;

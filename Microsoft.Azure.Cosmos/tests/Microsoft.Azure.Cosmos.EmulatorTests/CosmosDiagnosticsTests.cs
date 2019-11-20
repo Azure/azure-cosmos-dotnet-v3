@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json.Linq;
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
@@ -44,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //Checking point operation diagnostics on typed operations
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
             ItemResponse<ToDoActivity> createResponse = await this.Container.CreateItemAsync<ToDoActivity>(item: testItem);
-            Assert.IsNotNull(createResponse.Diagnostics);
+            CosmosDiagnosticsTests.VerifyPointDiagnostics(createResponse.Diagnostics);
 
             ItemResponse<ToDoActivity> readResponse = await this.Container.ReadItemAsync<ToDoActivity>(id: testItem.id, partitionKey: new PartitionKey(testItem.status));
             Assert.IsNotNull(readResponse.Diagnostics);
@@ -52,33 +53,41 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             testItem.description = "NewDescription";
             ItemResponse<ToDoActivity> replaceResponse = await this.Container.ReplaceItemAsync<ToDoActivity>(item: testItem, id: testItem.id, partitionKey: new PartitionKey(testItem.status));
             Assert.AreEqual(replaceResponse.Resource.description, "NewDescription");
-            Assert.IsNotNull(replaceResponse.Diagnostics);
+            CosmosDiagnosticsTests.VerifyPointDiagnostics(replaceResponse.Diagnostics);
 
             ItemResponse<ToDoActivity> deleteResponse = await this.Container.DeleteItemAsync<ToDoActivity>(partitionKey: new Cosmos.PartitionKey(testItem.status), id: testItem.id);
             Assert.IsNotNull(deleteResponse);
-            Assert.IsNotNull(deleteResponse.Diagnostics);
+            CosmosDiagnosticsTests.VerifyPointDiagnostics(deleteResponse.Diagnostics);
 
             //Checking point operation diagnostics on stream operations
-            ResponseMessage createStreamResponse =  await this.Container.CreateItemStreamAsync(
+            ResponseMessage createStreamResponse = await this.Container.CreateItemStreamAsync(
                 partitionKey: new PartitionKey(testItem.status),
                 streamPayload: TestCommon.Serializer.ToStream<ToDoActivity>(testItem));
-            Assert.IsNotNull(createStreamResponse.Diagnostics);
+            CosmosDiagnosticsTests.VerifyPointDiagnostics(createStreamResponse.Diagnostics);
 
             ResponseMessage readStreamResponse = await this.Container.ReadItemStreamAsync(
                 id: testItem.id,
                 partitionKey: new PartitionKey(testItem.status));
-            Assert.IsNotNull(readStreamResponse.Diagnostics);
+            CosmosDiagnosticsTests.VerifyPointDiagnostics(readStreamResponse.Diagnostics);
 
             ResponseMessage replaceStreamResponse = await this.Container.ReplaceItemStreamAsync(
                streamPayload: TestCommon.Serializer.ToStream<ToDoActivity>(testItem),
                id: testItem.id,
                partitionKey: new PartitionKey(testItem.status));
-            Assert.IsNotNull(replaceStreamResponse.Diagnostics);
+            CosmosDiagnosticsTests.VerifyPointDiagnostics(replaceStreamResponse.Diagnostics);
 
             ResponseMessage deleteStreamResponse = await this.Container.DeleteItemStreamAsync(
                id: testItem.id,
                partitionKey: new PartitionKey(testItem.status));
-            Assert.IsNotNull(deleteStreamResponse.Diagnostics);
+            CosmosDiagnosticsTests.VerifyPointDiagnostics(deleteStreamResponse.Diagnostics);
+
+            // Ensure diagnostics are set even on failed operations
+            testItem.description = new string('x', Microsoft.Azure.Documents.Constants.MaxResourceSizeInBytes + 1);
+            ResponseMessage createTooBigStreamResponse = await this.Container.CreateItemStreamAsync(
+                partitionKey: new PartitionKey(testItem.status),
+                streamPayload: TestCommon.Serializer.ToStream<ToDoActivity>(testItem));
+            Assert.IsFalse(createTooBigStreamResponse.IsSuccessStatusCode);
+            CosmosDiagnosticsTests.VerifyPointDiagnostics(createTooBigStreamResponse.Diagnostics);
         }
 
         [TestMethod]
@@ -130,6 +139,51 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(diagnostics.Contains("Method"));
         }
 
+        public static void VerifyQueryDiagnostics(CosmosDiagnostics diagnostics)
+        {
+            string info = diagnostics.ToString();
+            Assert.IsNotNull(info);
+            JArray jArray = JArray.Parse(info);
+            foreach (JToken jObject in jArray)
+            {
+                string queryMetrics = jObject["QueryMetricText"].ToString();
+                Assert.IsNotNull(queryMetrics);
+                Assert.IsNotNull(jObject["IndexUtilizationText"].ToString());
+                Assert.IsNotNull(jObject["PartitionKeyRangeId"].ToString());
+                JObject requestDiagnostics = jObject["RequestDiagnostics"].Value<JObject>();
+                Assert.IsNotNull(requestDiagnostics);
+                Assert.IsNotNull(requestDiagnostics["ActivityId"].ToString());
+            }
+        }
+
+        public static void VerifyPointDiagnostics(CosmosDiagnostics diagnostics)
+        {
+            string info = diagnostics.ToString();
+            Assert.IsNotNull(info);
+            JObject jObject = JObject.Parse(info);
+            Assert.IsNotNull(jObject["ActivityId"].ToString());
+            Assert.IsNotNull(jObject["StatusCode"].ToString());
+            Assert.IsNotNull(jObject["RequestCharge"].ToString());
+            Assert.IsNotNull(jObject["RequestUri"].ToString());
+            Assert.IsNotNull(jObject["requestStartTime"].ToString());
+            Assert.IsNotNull(jObject["requestEndTime"].ToString());
+            Assert.IsNotNull(jObject["responseStatisticsList"].ToString());
+            Assert.IsNotNull(jObject["supplementalResponseStatisticsList"].ToString());
+            Assert.IsNotNull(jObject["addressResolutionStatistics"].ToString());
+            Assert.IsNotNull(jObject["contactedReplicas"].ToString());
+            Assert.IsNotNull(jObject["failedReplicas"].ToString());
+            Assert.IsNotNull(jObject["regionsContacted"].ToString());
+            Assert.IsNotNull(jObject["requestLatency"].ToString());
+
+            int statusCode = jObject["StatusCode"].ToObject<int>();
+
+            // Session token only expected on success
+            if (statusCode >= 200 && statusCode < 300)
+            {
+                Assert.IsNotNull(jObject["ResponseSessionToken"].ToString());
+            }
+        }
+
         private async Task<long> ExecuteQueryAndReturnOutputDocumentCount(string queryText, int expectedItemCount)
         {
             QueryDefinition sql = new QueryDefinition(queryText);
@@ -151,10 +205,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 FeedResponse<ToDoActivity> response = await feedIterator.ReadNextAsync();
                 results.AddRange(response);
-                if (response.Diagnostics != null)
-                {
-                    totalOutDocumentCount += ((QueryOperationStatistics)response.Diagnostics).queryMetrics.Values.First().OutputDocumentCount;
-                }
+                VerifyQueryDiagnostics(response.Diagnostics);
             }
 
             Assert.AreEqual(expectedItemCount, results.Count);
@@ -171,17 +222,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ResponseMessage response = await streamIterator.ReadNextAsync();
                 Collection<ToDoActivity> result = TestCommon.Serializer.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(response.Content).Data;
                 streamResults.AddRange(result);
-
-                if (response.Diagnostics != null)
-                {
-                    streamTotalOutDocumentCount += ((QueryOperationStatistics)response.Diagnostics).queryMetrics.Values.First().OutputDocumentCount;
-                }
+                VerifyQueryDiagnostics(response.Diagnostics);
             }
 
             Assert.AreEqual(expectedItemCount, streamResults.Count);
             Assert.AreEqual(totalOutDocumentCount, streamTotalOutDocumentCount);
 
-            return totalOutDocumentCount;
+            return results.Count;
         }
     }
 }

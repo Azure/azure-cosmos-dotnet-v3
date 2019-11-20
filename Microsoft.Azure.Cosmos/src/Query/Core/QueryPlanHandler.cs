@@ -5,10 +5,12 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using PartitionKeyDefinition = Documents.PartitionKeyDefinition;
 
     internal sealed class QueryPlanHandler
@@ -25,7 +27,7 @@ namespace Microsoft.Azure.Cosmos
             this.queryClient = queryClient;
         }
 
-        public async Task<PartitionedQueryExecutionInfo> GetQueryPlanAsync(
+        public async Task<TryCatch<PartitionedQueryExecutionInfo>> TryGetQueryPlanAsync(
             SqlQuerySpec sqlQuerySpec,
             PartitionKeyDefinition partitionKeyDefinition,
             QueryFeatures supportedQueryFeatures,
@@ -44,103 +46,108 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException($"{nameof(partitionKeyDefinition)}");
             }
 
-            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = await this.queryClient
-                .GetPartitionedQueryExecutionInfoAsync(
-                    sqlQuerySpec: sqlQuerySpec,
-                    partitionKeyDefinition: partitionKeyDefinition,
-                    requireFormattableOrderByQuery: true,
-                    isContinuationExpected: false,
-                    allowNonValueAggregateQuery: true,
-                    hasLogicalPartitionKey: hasLogicalPartitionKey,
-                    cancellationToken: cancellationToken);
-
-            if (partitionedQueryExecutionInfo == null ||
-                partitionedQueryExecutionInfo.QueryRanges == null ||
-                partitionedQueryExecutionInfo.QueryInfo == null ||
-                partitionedQueryExecutionInfo.QueryRanges.Any(range => range.Min == null || range.Max == null))
+            TryCatch<PartitionedQueryExecutionInfo> tryGetQueryInfo = await this.TryGetQueryInfoAsync(
+                sqlQuerySpec,
+                partitionKeyDefinition,
+                hasLogicalPartitionKey,
+                cancellationToken);
+            if (!tryGetQueryInfo.Succeeded)
             {
-                throw new InvalidOperationException($"{nameof(partitionedQueryExecutionInfo)} has invalid properties");
+                return tryGetQueryInfo;
             }
 
-            QueryInfo queryInfo = partitionedQueryExecutionInfo.QueryInfo;
-            QueryPlanHandler.QueryPlanExceptionFactory.ThrowIfNotSupported(
-                queryInfo,
-                supportedQueryFeatures);
+            if (QueryPlanExceptionFactory.TryGetUnsupportedException(
+                tryGetQueryInfo.Result.QueryInfo,
+                supportedQueryFeatures,
+                out Exception queryPlanHandlerException))
+            {
+                return TryCatch<PartitionedQueryExecutionInfo>.FromException(queryPlanHandlerException);
+            }
 
-            return partitionedQueryExecutionInfo;
+            return tryGetQueryInfo;
         }
 
-        private static class QueryPlanExceptionFactory
+        /// <summary>
+        /// Used in the compute gateway to support legacy gateways query execution pattern.
+        /// </summary>
+        public async Task<((Exception, PartitionedQueryExecutionInfo), bool)> TryGetQueryInfoAndIfSupportedAsync(
+            QueryFeatures supportedQueryFeatures,
+            SqlQuerySpec sqlQuerySpec,
+            PartitionKeyDefinition partitionKeyDefinition,
+            bool hasLogicalPartitionKey,
+            CancellationToken cancellationToken = default(CancellationToken))
         {
-            private static readonly ArgumentException QueryContainsUnsupportedAggregates = new ArgumentException(
-                QueryPlanExceptionFactory.FormatExceptionMessage(nameof(QueryFeatures.Aggregate)));
+            if (sqlQuerySpec == null)
+            {
+                throw new ArgumentNullException(nameof(sqlQuerySpec));
+            }
 
-            private static readonly ArgumentException QueryContainsUnsupportedCompositeAggregate = new ArgumentException(
-                QueryPlanExceptionFactory.FormatExceptionMessage(nameof(QueryFeatures.CompositeAggregate)));
+            if (partitionKeyDefinition == null)
+            {
+                throw new ArgumentNullException(nameof(partitionKeyDefinition));
+            }
 
-            private static readonly ArgumentException QueryContainsUnsupportedMultipleAggregates = new ArgumentException(
-                QueryPlanExceptionFactory.FormatExceptionMessage(nameof(QueryFeatures.MultipleAggregates)));
+            cancellationToken.ThrowIfCancellationRequested();
 
-            private static readonly ArgumentException QueryContainsUnsupportedDistinct = new ArgumentException(
-                QueryPlanExceptionFactory.FormatExceptionMessage(nameof(QueryFeatures.Distinct)));
+            TryCatch<PartitionedQueryExecutionInfo> tryGetQueryInfo = await this.TryGetQueryInfoAsync(
+                sqlQuerySpec,
+                partitionKeyDefinition,
+                hasLogicalPartitionKey,
+                cancellationToken);
+            if (!tryGetQueryInfo.Succeeded)
+            {
+                // Failed to get QueryInfo, so vacously not supported.
+                return ((tryGetQueryInfo.Exception, null), false);
+            }
 
-            private static readonly ArgumentException QueryContainsUnsupportedOffsetAndLimit = new ArgumentException(
-                QueryPlanExceptionFactory.FormatExceptionMessage(nameof(QueryFeatures.OffsetAndLimit)));
+            QueryFeatures neededQueryFeatures = QueryPlanSupportChecker.GetNeededQueryFeatures(
+                tryGetQueryInfo.Result.QueryInfo,
+                supportedQueryFeatures);
+            return ((null, tryGetQueryInfo.Result), neededQueryFeatures == QueryFeatures.None);
+        }
 
-            private static readonly ArgumentException QueryContainsUnsupportedOrderBy = new ArgumentException(
-                QueryPlanExceptionFactory.FormatExceptionMessage(nameof(QueryFeatures.OrderBy)));
+        private async Task<TryCatch<PartitionedQueryExecutionInfo>> TryGetQueryInfoAsync(
+            SqlQuerySpec sqlQuerySpec,
+            PartitionKeyDefinition partitionKeyDefinition,
+            bool hasLogicalPartitionKey,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
 
-            private static readonly ArgumentException QueryContainsUnsupportedMultipleOrderBy = new ArgumentException(
-                QueryPlanExceptionFactory.FormatExceptionMessage(nameof(QueryFeatures.MultipleOrderBy)));
+            TryCatch<PartitionedQueryExecutionInfo> tryGetPartitoinedQueryExecutionInfo = await this.queryClient.TryGetPartitionedQueryExecutionInfoAsync(
+                sqlQuerySpec: sqlQuerySpec,
+                partitionKeyDefinition: partitionKeyDefinition,
+                requireFormattableOrderByQuery: true,
+                isContinuationExpected: false,
+                allowNonValueAggregateQuery: true,
+                hasLogicalPartitionKey: hasLogicalPartitionKey,
+                cancellationToken: cancellationToken);
 
-            private static readonly ArgumentException QueryContainsUnsupportedTop = new ArgumentException(
-                QueryPlanExceptionFactory.FormatExceptionMessage(nameof(QueryFeatures.Top)));
+            return tryGetPartitoinedQueryExecutionInfo;
+        }
 
-            private static readonly ArgumentException QueryContainsUnsupportedNonValueAggregate = new ArgumentException(
-               QueryPlanExceptionFactory.FormatExceptionMessage(nameof(QueryFeatures.NonValueAggregate)));
-
-            public static void ThrowIfNotSupported(
+        private static class QueryPlanSupportChecker
+        {
+            public static QueryFeatures GetNeededQueryFeatures(
                 QueryInfo queryInfo,
                 QueryFeatures supportedQueryFeatures)
             {
-                Lazy<List<Exception>> exceptions = new Lazy<List<Exception>>(() => { return new List<Exception>(); });
+                QueryFeatures neededQueryFeatures = QueryFeatures.None;
+                neededQueryFeatures |= QueryPlanSupportChecker.GetNeededQueryFeaturesIfAggregateQuery(queryInfo, supportedQueryFeatures);
+                neededQueryFeatures |= QueryPlanSupportChecker.GetNeededQueryFeaturesIfDistinctQuery(queryInfo, supportedQueryFeatures);
+                neededQueryFeatures |= QueryPlanSupportChecker.GetNeedQueryFeaturesIfGroupByQuery(queryInfo, supportedQueryFeatures);
+                neededQueryFeatures |= QueryPlanSupportChecker.GetNeededQueryFeaturesIfOffsetLimitQuery(queryInfo, supportedQueryFeatures);
+                neededQueryFeatures |= QueryPlanSupportChecker.GetNeededQueryFeaturesIfOrderByQuery(queryInfo, supportedQueryFeatures);
+                neededQueryFeatures |= QueryPlanSupportChecker.GetNeededQueryFeaturesIfTopQuery(queryInfo, supportedQueryFeatures);
 
-                QueryPlanExceptionFactory.AddExceptionsForAggregateQueries(
-                    queryInfo,
-                    supportedQueryFeatures,
-                    exceptions);
-
-                QueryPlanExceptionFactory.AddExceptionsForDistinctQueries(
-                    queryInfo,
-                    supportedQueryFeatures,
-                    exceptions);
-
-                QueryPlanExceptionFactory.AddExceptionsForTopQueries(
-                    queryInfo,
-                    supportedQueryFeatures,
-                    exceptions);
-
-                QueryPlanExceptionFactory.AddExceptionsForOrderByQueries(
-                    queryInfo,
-                    supportedQueryFeatures,
-                    exceptions);
-
-                QueryPlanExceptionFactory.AddExceptionsForOffsetLimitQueries(
-                    queryInfo,
-                    supportedQueryFeatures,
-                    exceptions);
-
-                if (exceptions.IsValueCreated)
-                {
-                    throw new QueryPlanHandlerException(exceptions.Value);
-                }
+                return neededQueryFeatures;
             }
 
-            private static void AddExceptionsForAggregateQueries(
+            private static QueryFeatures GetNeededQueryFeaturesIfAggregateQuery(
                 QueryInfo queryInfo,
-                QueryFeatures supportedQueryFeatures,
-                Lazy<List<Exception>> exceptions)
+                QueryFeatures supportedQueryFeatures)
             {
+                QueryFeatures neededQueryFeatures = QueryFeatures.None;
                 if (queryInfo.HasAggregates)
                 {
                     bool isSingleAggregate = (queryInfo.Aggregates.Length == 1)
@@ -151,14 +158,14 @@ namespace Microsoft.Azure.Cosmos
                         {
                             if (!supportedQueryFeatures.HasFlag(QueryFeatures.Aggregate))
                             {
-                                exceptions.Value.Add(QueryContainsUnsupportedAggregates);
+                                neededQueryFeatures |= QueryFeatures.Aggregate;
                             }
                         }
                         else
                         {
                             if (!supportedQueryFeatures.HasFlag(QueryFeatures.NonValueAggregate))
                             {
-                                exceptions.Value.Add(QueryContainsUnsupportedNonValueAggregate);
+                                neededQueryFeatures |= QueryFeatures.NonValueAggregate;
                             }
                         }
                     }
@@ -166,99 +173,163 @@ namespace Microsoft.Azure.Cosmos
                     {
                         if (!supportedQueryFeatures.HasFlag(QueryFeatures.NonValueAggregate))
                         {
-                            exceptions.Value.Add(QueryContainsUnsupportedNonValueAggregate);
+                            neededQueryFeatures |= QueryFeatures.NonValueAggregate;
                         }
 
                         if (!supportedQueryFeatures.HasFlag(QueryFeatures.MultipleAggregates))
                         {
-                            exceptions.Value.Add(QueryContainsUnsupportedMultipleAggregates);
+                            neededQueryFeatures |= QueryFeatures.MultipleAggregates;
                         }
                     }
                 }
+
+                return neededQueryFeatures;
             }
 
-            private static void AddExceptionsForDistinctQueries(
+            private static QueryFeatures GetNeededQueryFeaturesIfDistinctQuery(
                 QueryInfo queryInfo,
-                QueryFeatures supportedQueryFeatures,
-                Lazy<List<Exception>> exceptions)
+                QueryFeatures supportedQueryFeatures)
             {
+                QueryFeatures neededQueryFeatures = QueryFeatures.None;
                 if (queryInfo.HasDistinct)
                 {
                     if (!supportedQueryFeatures.HasFlag(QueryFeatures.Distinct))
                     {
-                        exceptions.Value.Add(QueryContainsUnsupportedDistinct);
+                        neededQueryFeatures |= QueryFeatures.Distinct;
                     }
                 }
+
+                return neededQueryFeatures;
             }
 
-            private static void AddExceptionsForOffsetLimitQueries(
+            private static QueryFeatures GetNeededQueryFeaturesIfTopQuery(
                 QueryInfo queryInfo,
-                QueryFeatures supportedQueryFeatures,
-                Lazy<List<Exception>> exceptions)
+                QueryFeatures supportedQueryFeatures)
             {
+                QueryFeatures neededQueryFeatures = QueryFeatures.None;
+                if (queryInfo.HasTop)
+                {
+                    if (!supportedQueryFeatures.HasFlag(QueryFeatures.Top))
+                    {
+                        neededQueryFeatures |= QueryFeatures.Top;
+                    }
+                }
+
+                return neededQueryFeatures;
+            }
+
+            private static QueryFeatures GetNeededQueryFeaturesIfOffsetLimitQuery(
+                QueryInfo queryInfo,
+                QueryFeatures supportedQueryFeatures)
+            {
+                QueryFeatures neededQueryFeatures = QueryFeatures.None;
                 if (queryInfo.HasLimit || queryInfo.HasOffset)
                 {
                     if (!supportedQueryFeatures.HasFlag(QueryFeatures.OffsetAndLimit))
                     {
-                        exceptions.Value.Add(QueryContainsUnsupportedOffsetAndLimit);
+                        neededQueryFeatures |= QueryFeatures.OffsetAndLimit;
                     }
                 }
+
+                return neededQueryFeatures;
             }
 
-            private static void AddExceptionsForOrderByQueries(
+            private static QueryFeatures GetNeedQueryFeaturesIfGroupByQuery(
                 QueryInfo queryInfo,
-                QueryFeatures supportedQueryFeatures,
-                Lazy<List<Exception>> exceptions)
+                QueryFeatures supportedQueryFeatures)
             {
+                QueryFeatures neededQueryFeatures = QueryFeatures.None;
+                if (queryInfo.HasGroupBy)
+                {
+                    if (!supportedQueryFeatures.HasFlag(QueryFeatures.GroupBy))
+                    {
+                        neededQueryFeatures |= QueryFeatures.GroupBy;
+                    }
+                }
+
+                return neededQueryFeatures;
+            }
+
+            private static QueryFeatures GetNeededQueryFeaturesIfOrderByQuery(
+                QueryInfo queryInfo,
+                QueryFeatures supportedQueryFeatures)
+            {
+                QueryFeatures neededQueryFeatures = QueryFeatures.None;
                 if (queryInfo.HasOrderBy)
                 {
                     if (queryInfo.OrderByExpressions.Length == 1)
                     {
                         if (!supportedQueryFeatures.HasFlag(QueryFeatures.OrderBy))
                         {
-                            exceptions.Value.Add(QueryContainsUnsupportedOrderBy);
+                            neededQueryFeatures |= QueryFeatures.OrderBy;
                         }
                     }
                     else
                     {
                         if (!supportedQueryFeatures.HasFlag(QueryFeatures.MultipleOrderBy))
                         {
-                            exceptions.Value.Add(QueryContainsUnsupportedMultipleOrderBy);
+                            neededQueryFeatures |= QueryFeatures.MultipleOrderBy;
                         }
                     }
                 }
-            }
 
-            private static void AddExceptionsForTopQueries(
+                return neededQueryFeatures;
+            }
+        }
+
+        private static class QueryPlanExceptionFactory
+        {
+            private static readonly IReadOnlyList<QueryFeatures> QueryFeatureList = (QueryFeatures[])Enum.GetValues(typeof(QueryFeatures));
+            private static readonly ReadOnlyDictionary<QueryFeatures, ArgumentException> FeatureToUnsupportedException = new ReadOnlyDictionary<QueryFeatures, ArgumentException>(
+                QueryFeatureList
+                .ToDictionary(
+                    x => x,
+                    x => new ArgumentException(QueryPlanExceptionFactory.FormatExceptionMessage(x.ToString()))));
+
+            public static bool TryGetUnsupportedException(
                 QueryInfo queryInfo,
                 QueryFeatures supportedQueryFeatures,
-                Lazy<List<Exception>> exceptions)
+                out Exception queryPlanHandlerException)
             {
-                if (queryInfo.HasTop)
+                QueryFeatures neededQueryFeatures = QueryPlanSupportChecker.GetNeededQueryFeatures(
+                    queryInfo,
+                    supportedQueryFeatures);
+                if (neededQueryFeatures != QueryFeatures.None)
                 {
-                    if (!supportedQueryFeatures.HasFlag(QueryFeatures.Top))
+                    List<Exception> queryPlanHandlerExceptions = new List<Exception>();
+                    foreach (QueryFeatures queryFeature in QueryPlanExceptionFactory.QueryFeatureList)
                     {
-                        exceptions.Value.Add(QueryContainsUnsupportedTop);
+                        if ((neededQueryFeatures & queryFeature) == queryFeature)
+                        {
+                            Exception unsupportedFeatureException = QueryPlanExceptionFactory.FeatureToUnsupportedException[queryFeature];
+                            queryPlanHandlerExceptions.Add(unsupportedFeatureException);
+                        }
                     }
+
+                    queryPlanHandlerException = new QueryPlanHandlerException(queryPlanHandlerExceptions);
+                    return true;
                 }
+
+                queryPlanHandlerException = default;
+                return false;
             }
 
             private static string FormatExceptionMessage(string feature)
             {
                 return $"Query contained {feature}, which the calling client does not support.";
             }
-        }
 
-        private sealed class QueryPlanHandlerException : AggregateException
-        {
-            private const string QueryContainsUnsupportedFeaturesExceptionMessage = "Query contains 1 or more unsupported features. Upgrade your SDK to a version that does support the requested features:";
-            public QueryPlanHandlerException(IEnumerable<Exception> innerExceptions)
-                : base(
-                      QueryContainsUnsupportedFeaturesExceptionMessage
-                          + Environment.NewLine
-                          + string.Join(Environment.NewLine, innerExceptions.Select(innerException => innerException.Message)),
-                      innerExceptions)
+            private sealed class QueryPlanHandlerException : AggregateException
             {
+                private const string QueryContainsUnsupportedFeaturesExceptionMessage = "Query contains 1 or more unsupported features. Upgrade your SDK to a version that does support the requested features:";
+                public QueryPlanHandlerException(IEnumerable<Exception> innerExceptions)
+                    : base(
+                          QueryContainsUnsupportedFeaturesExceptionMessage
+                              + Environment.NewLine
+                              + string.Join(Environment.NewLine, innerExceptions.Select(innerException => innerException.Message)),
+                          innerExceptions)
+                {
+                }
             }
         }
     }

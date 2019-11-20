@@ -582,8 +582,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 JToken.Parse(Documents.Routing.PartitionKeyInternal.Undefined.ToString());
                 Assert.IsTrue(new JTokenEqualityComparer().Equals(
                         JToken.Parse(Documents.Routing.PartitionKeyInternal.Undefined.ToString()),
-                        JToken.Parse(request.Headers.PartitionKey.ToString())),
-                        "Arguments {0} {1} ", Documents.Routing.PartitionKeyInternal.Undefined.ToString(), request.Headers.PartitionKey.ToString());
+                        JToken.Parse(request.Headers.PartitionKey)),
+                        "Arguments {0} {1} ", Documents.Routing.PartitionKeyInternal.Undefined.ToString(), request.Headers.PartitionKey);
 
                 return Task.FromResult(new ResponseMessage(HttpStatusCode.OK));
             });
@@ -746,7 +746,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 this.MockedExecutor
                     .Setup(e => e.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()))
-                    .ReturnsAsync(new BatchOperationResult(HttpStatusCode.OK));
+                    .ReturnsAsync(new TransactionalBatchOperationResult(HttpStatusCode.OK));
             }
 
             internal override BatchAsyncContainerExecutor InitializeBatchExecutorForContainer() => this.MockedExecutor.Object;
@@ -762,8 +762,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 this.MockedExecutor
                     .SetupSequence(e => e.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()))
-                    .ReturnsAsync(new BatchOperationResult((HttpStatusCode) StatusCodes.TooManyRequests))
-                    .ReturnsAsync(new BatchOperationResult(HttpStatusCode.OK));
+                    .ReturnsAsync(new TransactionalBatchOperationResult((HttpStatusCode) StatusCodes.TooManyRequests))
+                    .ReturnsAsync(new TransactionalBatchOperationResult(HttpStatusCode.OK));
             }
 
             internal override BatchAsyncContainerExecutor InitializeBatchExecutorForContainer() => this.MockedExecutor.Object;

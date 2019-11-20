@@ -15,7 +15,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
     using System.Runtime.CompilerServices;
     using System.Text;
     using System.Text.RegularExpressions;
-    using System.Transactions;
     using System.Xml;
     using Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest;
     using Microsoft.Azure.Documents;
@@ -46,28 +45,28 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         {
             IEnumerator queryIter, dataIter;
             for (queryIter = queryResults.GetEnumerator(), dataIter = dataResults.GetEnumerator();
-                queryIter.MoveNext() && dataIter.MoveNext(); )
+                queryIter.MoveNext() && dataIter.MoveNext();)
             {
                 IEnumerable queryEnumerable = queryIter.Current as IEnumerable;
                 IEnumerable dataEnumerable = dataIter.Current as IEnumerable;
                 if (queryEnumerable == null && dataEnumerable == null)
                 {
-                    if (!(queryIter.Current.Equals(dataIter.Current))) return false;
+                    if (!queryIter.Current.Equals(dataIter.Current)) return false;
 
                 }
 
                 else if (queryEnumerable == null || dataEnumerable == null)
                 {
                     return false;
-                } 
+                }
 
                 else
                 {
-                    if (!(LinqTestsCommon.NestedListsSequenceEqual(queryEnumerable, dataEnumerable))) return false;
+                    if (!LinqTestsCommon.NestedListsSequenceEqual(queryEnumerable, dataEnumerable)) return false;
                 }
             }
 
-            return (!(queryIter.MoveNext() || dataIter.MoveNext()));
+            return !(queryIter.MoveNext() || dataIter.MoveNext());
         }
 
         /// <summary>
@@ -85,11 +84,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
 
             // dataResults contains type ConcatIterator whereas queryResults may contain IEnumerable
             // therefore it's simpler to just cast them into List<INumerable<object>> manually for simplify the verification
-            var l1 = new List<List<object>>();
+            List<List<object>> l1 = new List<List<object>>();
             foreach (IEnumerable list in dataResults)
             {
-                var l = new List<object>();
-                var iterator = list.GetEnumerator();
+                List<object> l = new List<object>();
+                IEnumerator iterator = list.GetEnumerator();
                 while (iterator.MoveNext())
                 {
                     l.Add(iterator.Current);
@@ -98,11 +97,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 l1.Add(l);
             }
 
-            var l2 = new List<List<object>>();
+            List<List<object>> l2 = new List<List<object>>();
             foreach (IEnumerable list in queryResults)
             {
-                var l = new List<object>();
-                var iterator = list.GetEnumerator();
+                List<object> l = new List<object>();
+                IEnumerator iterator = list.GetEnumerator();
                 while (iterator.MoveNext())
                 {
                     l.Add(iterator.Current);
@@ -167,7 +166,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             // execution validation
             IEnumerator queryEnumerator = queryResults.GetEnumerator();
             List<object> queryResultsList = new List<object>();
-            while (queryEnumerator.MoveNext()) 
+            while (queryEnumerator.MoveNext())
             {
                 queryResultsList.Add(queryEnumerator.Current);
             }
@@ -221,8 +220,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 }
                 else
                 {
-                    var dataNotQuery = dataResultsList.Except(queryResultsList).ToList();
-                    var queryNotData = queryResultsList.Except(dataResultsList).ToList();
+                    List<dynamic> dataNotQuery = dataResultsList.Except(queryResultsList).ToList();
+                    List<dynamic> queryNotData = queryResultsList.Except(dataResultsList).ToList();
                     resultMatched &= !dataNotQuery.Any() && !queryNotData.Any();
                 }
             }
@@ -296,8 +295,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 ItemResponse<T> response = container.CreateItemAsync(obj, new Cosmos.PartitionKey("Test")).Result;
             }
 
-            var feedOptions = new FeedOptions() { EnableScanInQuery = true, EnableCrossPartitionQuery = true };
-            var query = container.GetItemLinqQueryable<T>(allowSynchronousQueryExecution : true);
+            FeedOptions feedOptions = new FeedOptions() { EnableScanInQuery = true, EnableCrossPartitionQuery = true };
+            IOrderedQueryable<T> query = container.GetItemLinqQueryable<T>(allowSynchronousQueryExecution: true);
 
             // To cover both query against backend and queries on the original data using LINQ nicely, 
             // the LINQ expression should be written once and they should be compiled and executed against the two sources.
@@ -315,7 +314,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             // The test collection should have range index on string properties
             // for the orderby tests
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/Pk" }), Kind = PartitionKind.Hash };
-            var newCol = new ContainerProperties()
+            ContainerProperties newCol = new ContainerProperties()
             {
                 Id = Guid.NewGuid().ToString(),
                 PartitionKey = partitionKeyDefinition,
@@ -377,7 +376,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             int MaxTransactionType = Enum.GetValues(typeof(TransactionType)).Length;
             Family createDataObj(Random random)
             {
-                var obj = new Family
+                Family obj = new Family
                 {
                     FamilyId = random.NextDouble() < 0.05 ? "some id" : Guid.NewGuid().ToString(),
                     IsRegistered = random.NextDouble() < 0.5,
@@ -440,11 +439,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 };
                 for (int i = 0; i < obj.Records.Transactions.Length; ++i)
                 {
-                    var transaction = new Transaction()
+                    Transaction transaction = new Transaction()
                     {
                         Amount = random.Next(),
                         Date = DateTime.Now.AddMinutes(random.Next(MaxTransactionMinuteRange)),
-                        Type = (TransactionType)(random.Next(MaxTransactionType))
+                        Type = (TransactionType)random.Next(MaxTransactionType)
                     };
                     obj.Records.Transactions[i] = transaction;
                 }
@@ -484,7 +483,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             }
 
             FeedOptions feedOptions = new FeedOptions() { EnableScanInQuery = true, EnableCrossPartitionQuery = true };
-            var query = container.GetItemLinqQueryable<Data>(allowSynchronousQueryExecution : true);
+            IOrderedQueryable<Data> query = container.GetItemLinqQueryable<Data>(allowSynchronousQueryExecution: true);
 
             // To cover both query against backend and queries on the original data using LINQ nicely, 
             // the LINQ expression should be written once and they should be compiled and executed against the two sources.
@@ -497,18 +496,18 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
 
         public static LinqTestOutput ExecuteTest(LinqTestInput input)
         {
-            var querySqlStr = string.Empty;
+            string querySqlStr = string.Empty;
             try
             {
-                var compiledQuery = input.Expression.Compile();
+                Func<bool, IQueryable> compiledQuery = input.Expression.Compile();
 
-                var queryResults = compiledQuery(true);
+                IQueryable queryResults = compiledQuery(true);
                 querySqlStr = JObject.Parse(queryResults.ToString()).GetValue("query", StringComparison.Ordinal).ToString();
 
                 // we skip unordered query because the LinQ results vs actual query results are non-deterministic
                 if (!input.skipVerification)
                 {
-                    var dataResults = compiledQuery(false);
+                    IQueryable dataResults = compiledQuery(false);
                     LinqTestsCommon.ValidateResults(queryResults, dataResults);
                 }
 
@@ -516,16 +515,16 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             }
             catch (Exception e)
             {
-                while (!(e is DocumentClientException) && e.InnerException != null)
-                {
-                    e = e.InnerException;
-                }
+                while (e.InnerException != null) e = e.InnerException;
 
-                string message = null;
-                DocumentClientException dce = e as DocumentClientException;
-                if (dce != null)
+                string message;
+                if (e is CosmosException cosmosException)
                 {
-                    message = dce.RawErrorMessage;
+                    message = $"Status Code: {cosmosException.StatusCode}";
+                }
+                else if(e is DocumentClientException documentClientException)
+                {
+                    message = documentClientException.RawErrorMessage;
                 }
                 else
                 {
@@ -556,7 +555,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
 
         public override bool Equals(object obj)
         {
-            if (!(obj is LinqTestObject && 
+            if (!(obj is LinqTestObject &&
                 obj.GetType().IsAssignableFrom(this.GetType()) &&
                 this.GetType().IsAssignableFrom(obj.GetType()))) return false;
             if (obj == null) return false;
@@ -598,12 +597,12 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
 
         public static string FilterInputExpression(string input)
         {
-            var expressionSb = new StringBuilder(input);
+            StringBuilder expressionSb = new StringBuilder(input);
             // simplify full qualified class name
             // e.g. before: value(Microsoft.Azure.Documents.Services.Management.Tests.LinqSQLTranslationTest+<>c__DisplayClass7_0), after: DisplayClass
             // before: <>f__AnonymousType14`2(, after: AnonymousType(
             // value(Microsoft.Azure.Documents.Services.Management.Tests.LinqProviderTests.LinqTranslationBaselineTests +<> c__DisplayClass24_0`1[System.String]).value
-            var match = classNameRegex.Match(expressionSb.ToString());
+            Match match = classNameRegex.Match(expressionSb.ToString());
             while (match.Success)
             {
                 expressionSb = expressionSb.Replace(match.Groups[0].Value, match.Groups[2].Value);
@@ -640,7 +639,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             xmlWriter.WriteCData(this.Description);
             xmlWriter.WriteEndElement();
             xmlWriter.WriteStartElement("Expression");
-            xmlWriter.WriteCData(expressionStr);
+            xmlWriter.WriteCData(this.expressionStr);
             xmlWriter.WriteEndElement();
         }
     }
@@ -689,7 +688,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             const string subqueryCue = "(SELECT";
             bool hasSubquery = sqlQuery.IndexOf(subqueryCue, StringComparison.OrdinalIgnoreCase) > 0;
 
-            var sb = new StringBuilder(sqlQuery);
+            StringBuilder sb = new StringBuilder(sqlQuery);
             foreach (KeyValuePair<string, string> kv in newlineKeywords)
             {
                 sb.Replace(kv.Key, kv.Value);
@@ -701,7 +700,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             const string startCue = "SELECT";
             const string endCue = ")";
 
-            var tokens = sb.ToString().Split('\n');
+            string[] tokens = sb.ToString().Split('\n');
             bool firstSelect = true;
             sb.Length = 0;
             StringBuilder indentSb = new StringBuilder();
@@ -725,13 +724,13 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
 
         public override void SerializeAsXml(XmlWriter xmlWriter)
         {
-            xmlWriter.WriteStartElement(nameof(SqlQuery));
+            xmlWriter.WriteStartElement(nameof(this.SqlQuery));
             xmlWriter.WriteCData(this.SqlQuery);
             xmlWriter.WriteEndElement();
             if (this.ErrorMessage != null)
             {
                 xmlWriter.WriteStartElement("ErrorMessage");
-                xmlWriter.WriteCData(LinqTestOutput.FormatErrorMessage(ErrorMessage));
+                xmlWriter.WriteCData(LinqTestOutput.FormatErrorMessage(this.ErrorMessage));
                 xmlWriter.WriteEndElement();
             }
         }

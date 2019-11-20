@@ -7,10 +7,14 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Net;
+    using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query;
-    using Microsoft.Azure.Cosmos.Query.ExecutionComponent;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -34,7 +38,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                         result: responseCore.CosmosElements,
                         count: responseCore.CosmosElements.Count,
                         responseLengthBytes: responseCore.ResponseLengthBytes,
-                        queryMetrics: responseCore.QueryMetrics,
                         responseHeaders: new CosmosQueryResponseMessageHeaders(
                             responseCore.ContinuationToken,
                             responseCore.DisallowContinuationTokenMessage,
@@ -43,7 +46,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                         {
                             RequestCharge = responseCore.RequestCharge,
                             ActivityId = responseCore.ActivityId
-                        });
+                        },
+                        diagnostics: null);
 
             using (Stream stream = queryResponse.Content)
             {
@@ -57,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task TestCosmosQueryExecutionComponentOnFailure()
         {
-            (IList<DocumentQueryExecutionComponentBase> components, QueryResponseCore response) setupContext = await this.GetAllExecutionComponents();
+            (IList<IDocumentQueryExecutionComponent> components, QueryResponseCore response) setupContext = await this.GetAllExecutionComponents();
 
             foreach (DocumentQueryExecutionComponentBase component in setupContext.components)
             {
@@ -69,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task TestCosmosQueryExecutionComponentCancellation()
         {
-            (IList<DocumentQueryExecutionComponentBase> components, QueryResponseCore response) setupContext = await this.GetAllExecutionComponents();
+            (IList<IDocumentQueryExecutionComponent> components, QueryResponseCore response) setupContext = await this.GetAllExecutionComponents();
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
             cancellationTokenSource.Cancel();
 
@@ -88,16 +92,15 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [ExpectedException(typeof(InvalidOperationException))]
         public async Task TestCosmosQueryPartitionKeyDefinition()
         {
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition();
             QueryRequestOptions queryRequestOptions = new QueryRequestOptions
             {
                 Properties = new Dictionary<string, object>()
-            {
-                {"x-ms-query-partitionkey-definition", partitionKeyDefinition }
-            }
+                {
+                    {"x-ms-query-partitionkey-definition", partitionKeyDefinition }
+                }
             };
 
             SqlQuerySpec sqlQuerySpec = new SqlQuerySpec(@"select * from t where t.something = 42 ");
@@ -107,27 +110,37 @@ namespace Microsoft.Azure.Cosmos.Tests
             CancellationToken cancellationtoken = cancellationTokenSource.Token;
 
             Mock<CosmosQueryClient> client = new Mock<CosmosQueryClient>();
-            client.Setup(x => x.GetCachedContainerQueryPropertiesAsync(It.IsAny<Uri>(), It.IsAny<Cosmos.PartitionKey?>(), cancellationtoken)).Returns(Task.FromResult(new ContainerQueryProperties("mockContainer", null, partitionKeyDefinition)));
-            client.Setup(x => x.ByPassQueryParsing()).Returns(false);
-            client.Setup(x => x.GetPartitionedQueryExecutionInfoAsync(
-                sqlQuerySpec,
-                partitionKeyDefinition,
-                true,
-                isContinuationExpected,
-                allowNonValueAggregateQuery,
-                false, // has logical partition key
-                cancellationtoken)).Throws(new InvalidOperationException("Verified that the PartitionKeyDefinition was correctly set. Cancel the rest of the query"));
+            string exceptionMessage = "Verified that the PartitionKeyDefinition was correctly set. Cancel the rest of the query";
+            client
+                .Setup(x => x.GetCachedContainerQueryPropertiesAsync(It.IsAny<Uri>(), It.IsAny<Cosmos.PartitionKey?>(), cancellationtoken))
+                .ReturnsAsync(new ContainerQueryProperties("mockContainer", null, partitionKeyDefinition));
+            client
+                .Setup(x => x.ByPassQueryParsing())
+                .Returns(false);
+            client
+                .Setup(x => x.TryGetPartitionedQueryExecutionInfoAsync(
+                    It.IsAny<SqlQuerySpec>(),
+                    It.IsAny<PartitionKeyDefinition>(),
+                    It.IsAny<bool>(),
+                    It.IsAny<bool>(),
+                    It.IsAny<bool>(),
+                    It.IsAny<bool>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(TryCatch<PartitionedQueryExecutionInfo>.FromException(
+                    new InvalidOperationException(
+                        exceptionMessage)));
 
-            CosmosQueryExecutionContextFactory.InputParameters inputParameters = new CosmosQueryExecutionContextFactory.InputParameters()
-            {
-                SqlQuerySpec = sqlQuerySpec,
-                InitialUserContinuationToken = null,
-                MaxBufferedItemCount = queryRequestOptions?.MaxBufferedItemCount,
-                MaxConcurrency = queryRequestOptions?.MaxConcurrency,
-                MaxItemCount = queryRequestOptions?.MaxItemCount,
-                PartitionKey = queryRequestOptions?.PartitionKey,
-                Properties = queryRequestOptions?.Properties
-            };
+            CosmosQueryExecutionContextFactory.InputParameters inputParameters = new CosmosQueryExecutionContextFactory.InputParameters(
+                sqlQuerySpec: sqlQuerySpec,
+                initialUserContinuationToken: null,
+                maxConcurrency: queryRequestOptions?.MaxConcurrency,
+                maxItemCount: queryRequestOptions?.MaxItemCount,
+                maxBufferedItemCount: queryRequestOptions?.MaxBufferedItemCount,
+                partitionKey: queryRequestOptions?.PartitionKey,
+                properties: queryRequestOptions?.Properties,
+                partitionedQueryExecutionInfo: null,
+                executionEnvironment: queryRequestOptions?.ExecutionEnvironment,
+                testInjections: queryRequestOptions?.TestSettings);
 
             CosmosQueryContext cosmosQueryContext = new CosmosQueryContextCore(
                 client: client.Object,
@@ -140,18 +153,20 @@ namespace Microsoft.Azure.Cosmos.Tests
                 allowNonValueAggregateQuery: allowNonValueAggregateQuery,
                 correlatedActivityId: new Guid("221FC86C-1825-4284-B10E-A6029652CCA6"));
 
-            CosmosQueryExecutionContextFactory factory = new CosmosQueryExecutionContextFactory(
-                cosmosQueryContext: cosmosQueryContext,
-                inputParameters: inputParameters);
+            CosmosQueryExecutionContext context = CosmosQueryExecutionContextFactory.Create(
+                cosmosQueryContext,
+                inputParameters);
 
-            await factory.ExecuteNextAsync(cancellationtoken);
+            QueryResponseCore queryResponse = await context.ExecuteNextAsync(cancellationtoken);
+            Assert.AreEqual(HttpStatusCode.BadRequest, queryResponse.StatusCode);
+            Assert.IsTrue(queryResponse.ErrorMessage.Contains(exceptionMessage));
         }
 
-        private async Task<(IList<DocumentQueryExecutionComponentBase> components, QueryResponseCore response)> GetAllExecutionComponents()
+        private async Task<(IList<IDocumentQueryExecutionComponent> components, QueryResponseCore response)> GetAllExecutionComponents()
         {
-            (Func<string, Task<IDocumentQueryExecutionComponent>> func, QueryResponseCore response) setupContext = this.SetupBaseContextToVerifyFailureScenario();
+            (Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> func, QueryResponseCore response) setupContext = this.SetupBaseContextToVerifyFailureScenario();
 
-            List<DocumentQueryExecutionComponentBase> components = new List<DocumentQueryExecutionComponentBase>();
+            List<IDocumentQueryExecutionComponent> components = new List<IDocumentQueryExecutionComponent>();
             List<AggregateOperator> operators = new List<AggregateOperator>()
             {
                 AggregateOperator.Average,
@@ -161,56 +176,75 @@ namespace Microsoft.Azure.Cosmos.Tests
                 AggregateOperator.Sum
             };
 
-            components.Add(await AggregateDocumentQueryExecutionComponent.CreateAsync(
+            components.Add((await AggregateDocumentQueryExecutionComponent.TryCreateAsync(
+                Query.Core.ExecutionContext.ExecutionEnvironment.Client,
                 operators.ToArray(),
                 new Dictionary<string, AggregateOperator?>()
                 {
                     { "test", AggregateOperator.Count }
                 },
+                new List<string>() { "test" },
                 false,
                 null,
-                setupContext.func));
+                setupContext.func)).Result);
 
-            components.Add(await DistinctDocumentQueryExecutionComponent.CreateAsync(
-                new Mock<CosmosQueryClient>().Object,
+            components.Add((await DistinctDocumentQueryExecutionComponent.TryCreateAsync(
+                Query.Core.ExecutionContext.ExecutionEnvironment.Client,
                 null,
                 setupContext.func,
-                DistinctQueryType.Ordered));
+                DistinctQueryType.Ordered)).Result);
 
-            components.Add(await SkipDocumentQueryExecutionComponent.CreateAsync(
+            components.Add((await SkipDocumentQueryExecutionComponent.TryCreateAsync(
                 5,
                 null,
-                setupContext.func));
+                setupContext.func)).Result);
 
-            components.Add(await TakeDocumentQueryExecutionComponent.CreateLimitDocumentQueryExecutionComponentAsync(
-                new Mock<CosmosQueryClient>().Object,
+            components.Add((await TakeDocumentQueryExecutionComponent.TryCreateLimitDocumentQueryExecutionComponentAsync(
                 5,
                 null,
-                setupContext.func));
+                setupContext.func)).Result);
 
-            components.Add(await TakeDocumentQueryExecutionComponent.CreateTopDocumentQueryExecutionComponentAsync(
-                new Mock<CosmosQueryClient>().Object,
+            components.Add((await TakeDocumentQueryExecutionComponent.TryCreateTopDocumentQueryExecutionComponentAsync(
                 5,
                 null,
-                setupContext.func));
+                setupContext.func)).Result);
 
             return (components, setupContext.response);
         }
 
-        private (Func<string, Task<IDocumentQueryExecutionComponent>>, QueryResponseCore) SetupBaseContextToVerifyFailureScenario()
+        private (Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>>, QueryResponseCore) SetupBaseContextToVerifyFailureScenario()
         {
+            IReadOnlyCollection<QueryPageDiagnostics> diagnostics = new List<QueryPageDiagnostics>()
+            {
+                new QueryPageDiagnostics(
+                    "0",
+                    "SomeQueryMetricText",
+                    "SomeIndexUtilText",
+                new PointOperationStatistics(
+                    Guid.NewGuid().ToString(),
+                    System.Net.HttpStatusCode.Unauthorized,
+                    subStatusCode: SubStatusCodes.PartitionKeyMismatch,
+                    requestCharge: 4,
+                    errorMessage: null,
+                    method: HttpMethod.Post,
+                    requestUri: new Uri("http://localhost.com"),
+                    requestSessionToken: null,
+                    responseSessionToken: null,
+                    clientSideRequestStatistics: null),
+                new SchedulingStopwatch())
+            };
+
             QueryResponseCore failure = QueryResponseCore.CreateFailure(
                 System.Net.HttpStatusCode.Unauthorized,
                 SubStatusCodes.PartitionKeyMismatch,
                 "Random error message",
                 42.89,
                 "TestActivityId",
-                null,
-                null);
+                diagnostics);
 
             Mock<IDocumentQueryExecutionComponent> baseContext = new Mock<IDocumentQueryExecutionComponent>();
             baseContext.Setup(x => x.DrainAsync(It.IsAny<int>(), It.IsAny<CancellationToken>())).Returns(Task.FromResult<QueryResponseCore>(failure));
-            Func<string, Task<IDocumentQueryExecutionComponent>> callBack = x => Task.FromResult<IDocumentQueryExecutionComponent>(baseContext.Object);
+            Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> callBack = x => Task.FromResult<TryCatch<IDocumentQueryExecutionComponent>>(TryCatch<IDocumentQueryExecutionComponent> .FromResult(baseContext.Object));
             return (callBack, failure);
         }
     }

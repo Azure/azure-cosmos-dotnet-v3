@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.Contracts;
     using System.Globalization;
     using System.IO;
     using System.Linq;
@@ -247,6 +248,87 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: requestOptions);
         }
 
+        /// <summary>
+        /// Used in the compute gateway to support legacy gateway interface.
+        /// </summary>
+        internal async Task<((Exception, PartitionedQueryExecutionInfo), (bool, QueryIterator))> TryExecuteQueryAsync(
+            QueryFeatures supportedQueryFeatures,
+            QueryDefinition queryDefinition,
+            string continuationToken,
+            QueryRequestOptions requestOptions,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (queryDefinition == null)
+            {
+                throw new ArgumentNullException(nameof(queryDefinition));
+            }
+
+            if (requestOptions == null)
+            {
+                throw new ArgumentNullException(nameof(requestOptions));
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+
+            Documents.PartitionKeyDefinition partitionKeyDefinition;
+            if (requestOptions.Properties != null
+                && requestOptions.Properties.TryGetValue("x-ms-query-partitionkey-definition", out object partitionKeyDefinitionObject))
+            {
+                if (partitionKeyDefinitionObject is Documents.PartitionKeyDefinition definition)
+                {
+                    partitionKeyDefinition = definition;
+                }
+                else
+                {
+                    throw new ArgumentException(
+                        "partitionkeydefinition has invalid type",
+                        nameof(partitionKeyDefinitionObject));
+                }
+            }
+            else
+            {
+                ContainerQueryProperties containerQueryProperties = await this.queryClient.GetCachedContainerQueryPropertiesAsync(
+                    this.LinkUri,
+                    requestOptions.PartitionKey,
+                    cancellationToken);
+                partitionKeyDefinition = containerQueryProperties.PartitionKeyDefinition;
+            }
+
+            QueryPlanHandler queryPlanHandler = new QueryPlanHandler(this.queryClient);
+
+            ((Exception exception, PartitionedQueryExecutionInfo partitionedQueryExecutionInfo), bool supported) = await queryPlanHandler.TryGetQueryInfoAndIfSupportedAsync(
+                supportedQueryFeatures,
+                queryDefinition.ToSqlQuerySpec(),
+                partitionKeyDefinition,
+                requestOptions.PartitionKey.HasValue,
+                cancellationToken);
+
+            if (exception != null)
+            {
+                return ((exception, null), (false, null));
+            }
+
+            QueryIterator queryIterator;
+            if (supported)
+            {
+                queryIterator = QueryIterator.Create(
+                    client: this.queryClient,
+                    sqlQuerySpec: queryDefinition.ToSqlQuerySpec(),
+                    continuationToken: continuationToken,
+                    queryRequestOptions: requestOptions,
+                    resourceLink: this.LinkUri,
+                    isContinuationExpected: false,
+                    allowNonValueAggregateQuery: true,
+                    partitionedQueryExecutionInfo: partitionedQueryExecutionInfo);
+            }
+            else
+            {
+                queryIterator = null;
+            }
+
+            return ((null, partitionedQueryExecutionInfo), (supported, queryIterator));
+        }
+
         public override FeedIterator<T> GetItemQueryIterator<T>(
            string queryText = null,
            string continuationToken = null,
@@ -349,12 +431,10 @@ namespace Microsoft.Azure.Cosmos
                 applyBuilderConfiguration: changeFeedEstimatorCore.ApplyBuildConfiguration);
         }
 
-#if PREVIEW
-        public override Batch CreateBatch(PartitionKey partitionKey)
+        public override TransactionalBatch CreateTransactionalBatch(PartitionKey partitionKey)
         {
             return new BatchCore(this, partitionKey);
         }
-#endif
 
         internal async Task<IEnumerable<string>> GetChangeFeedTokensAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -417,14 +497,15 @@ namespace Microsoft.Azure.Cosmos
                     options: requestOptions);
             }
 
-            return new QueryIterator(
+            return QueryIterator.Create(
                 client: this.queryClient,
                 sqlQuerySpec: sqlQuerySpec,
                 continuationToken: continuationToken,
                 queryRequestOptions: requestOptions,
                 resourceLink: this.LinkUri,
                 isContinuationExpected: isContinuationExcpected,
-                allowNonValueAggregateQuery: true);
+                allowNonValueAggregateQuery: true,
+                partitionedQueryExecutionInfo: null);
         }
 
         // Extracted partition key might be invalid as CollectionCache might be stale.
@@ -531,15 +612,13 @@ namespace Microsoft.Azure.Cosmos
                 string[] tokens = await this.GetPartitionKeyPathTokensAsync(cancellation);
                 for (int i = 0; i < tokens.Length - 1; i++)
                 {
-                    pathTraversal = pathTraversal[tokens[i]] as CosmosObject;
-                    if (pathTraversal == null)
+                    if (!pathTraversal.TryGetValue(tokens[i], out pathTraversal))
                     {
                         return PartitionKey.None;
                     }
                 }
 
-                CosmosElement partitionKeyValue = pathTraversal[tokens[tokens.Length - 1]];
-                if (partitionKeyValue == null)
+                if (!pathTraversal.TryGetValue(tokens[tokens.Length - 1], out CosmosElement partitionKeyValue))
                 {
                     return PartitionKey.None;
                 }

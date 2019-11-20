@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos
             this.retryOptions = cosmosClientContext.ClientOptions.GetConnectionPolicy().RetryOptions;
         }
 
-        public virtual async Task<BatchOperationResult> AddAsync(
+        public virtual async Task<TransactionalBatchOperationResult> AddAsync(
             ItemBatchOperation operation,
             ItemRequestOptions itemRequestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -128,20 +128,13 @@ namespace Microsoft.Azure.Cosmos
                                 || itemRequestOptions.PostTriggers != null
                                 || itemRequestOptions.SessionToken != null)
                 {
-                    throw new InvalidOperationException(ClientResources.UnsupportedBatchRequestOptions);
+                    throw new InvalidOperationException(ClientResources.UnsupportedBulkRequestOptions);
                 }
 
                 Debug.Assert(BatchAsyncContainerExecutor.ValidateOperationEPK(operation, itemRequestOptions));
             }
 
             await operation.MaterializeResourceAsync(this.cosmosClientContext.CosmosSerializer, cancellationToken);
-
-            int itemByteSize = operation.GetApproximateSerializedLength();
-
-            if (itemByteSize > this.maxServerRequestBodyLength)
-            {
-                throw new ArgumentException(RMResources.RequestTooLarge);
-            }
         }
 
         private static IDocumentClientRetryPolicy GetRetryPolicy(RetryOptions retryOptions)
@@ -244,7 +237,7 @@ namespace Microsoft.Azure.Cosmos
                         requestEnricher: requestMessage => BatchAsyncContainerExecutor.AddHeadersToRequestMessage(requestMessage, serverRequest.PartitionKeyRangeId),
                         cancellationToken: cancellationToken).ConfigureAwait(false);
 
-                    BatchResponse serverResponse = await BatchResponse.FromResponseMessageAsync(responseMessage, serverRequest, this.cosmosClientContext.CosmosSerializer).ConfigureAwait(false);
+                    TransactionalBatchResponse serverResponse = await TransactionalBatchResponse.FromResponseMessageAsync(responseMessage, serverRequest, this.cosmosClientContext.CosmosSerializer).ConfigureAwait(false);
 
                     return new PartitionKeyRangeBatchExecutionResult(serverRequest.PartitionKeyRangeId, serverRequest.Operations, serverResponse);
                 }

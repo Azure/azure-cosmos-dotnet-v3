@@ -166,7 +166,7 @@ namespace Microsoft.Azure.Cosmos
             if (string.Equals(responseMessage.Content?.Headers?.ContentType?.MediaType, "application/json", StringComparison.OrdinalIgnoreCase))
             {
                 Stream readStream = await responseMessage.Content.ReadAsStreamAsync();
-                Error error = Resource.LoadFrom<Error>(readStream);
+                Error error = Documents.Resource.LoadFrom<Error>(readStream);
                 return new DocumentClientException(
                     error,
                     responseMessage.Headers,
@@ -324,19 +324,21 @@ namespace Microsoft.Azure.Cosmos
                     DateTime sendTimeUtc = DateTime.UtcNow;
                     Guid localGuid = Guid.NewGuid();  // For correlating HttpRequest and HttpResponse Traces
 
+                    Guid requestedActivityId = Trace.CorrelationManager.ActivityId;
                     this.eventSource.Request(
-                        Guid.Empty,
+                        requestedActivityId,
                         localGuid,
                         requestMessage.RequestUri.ToString(),
                         resourceType.ToResourceTypeString(),
                         requestMessage.Headers);
 
+                    TimeSpan durationTimeSpan;
                     try
                     {
                         HttpResponseMessage responseMessage = await this.httpClient.SendAsync(requestMessage, cancellationToken);
 
                         DateTime receivedTimeUtc = DateTime.UtcNow;
-                        double durationInMilliSeconds = (receivedTimeUtc - sendTimeUtc).TotalMilliseconds;
+                        durationTimeSpan = receivedTimeUtc - sendTimeUtc;
 
                         IEnumerable<string> headerValues;
                         Guid activityId = Guid.Empty;
@@ -350,7 +352,7 @@ namespace Microsoft.Azure.Cosmos
                             activityId,
                             localGuid,
                             (short)responseMessage.StatusCode,
-                            durationInMilliSeconds,
+                            durationTimeSpan.TotalMilliseconds,
                             responseMessage.Headers);
 
                         return responseMessage;
@@ -360,7 +362,23 @@ namespace Microsoft.Azure.Cosmos
                         if (!cancellationToken.IsCancellationRequested)
                         {
                             // throw timeout if the cancellationToken is not canceled (i.e. httpClient timed out)
-                            throw new RequestTimeoutException(ex, requestMessage.RequestUri);
+                            durationTimeSpan = DateTime.UtcNow - sendTimeUtc;
+                            string message = $"GatewayStoreClient Request Timeout. Start Time:{sendTimeUtc}; Total Duration:{durationTimeSpan}; Http Client Timeout:{this.httpClient.Timeout}; Activity id: {requestedActivityId}; Inner Message: {ex.Message};";
+                            throw new RequestTimeoutException(message, ex, requestMessage.RequestUri);
+                        }
+                        else
+                        {
+                            throw;
+                        }
+                    }
+                    catch (OperationCanceledException ex)
+                    {
+                        if (!cancellationToken.IsCancellationRequested)
+                        {
+                            // throw timeout if the cancellationToken is not canceled (i.e. httpClient timed out)
+                            durationTimeSpan = DateTime.UtcNow - sendTimeUtc;
+                            string message = $"GatewayStoreClient Request Timeout. Start Time:{sendTimeUtc}; Total Duration:{durationTimeSpan}; Http Client Timeout:{this.httpClient.Timeout}; Activity id: {requestedActivityId}; Inner Message: {ex.Message};";
+                            throw new RequestTimeoutException(message, ex, requestMessage.RequestUri);
                         }
                         else
                         {

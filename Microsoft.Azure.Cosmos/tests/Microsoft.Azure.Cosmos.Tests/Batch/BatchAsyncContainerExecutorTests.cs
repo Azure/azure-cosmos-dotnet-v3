@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 string.Empty);
             mockContainer.Setup(x => x.GetRoutingMapAsync(It.IsAny<CancellationToken>())).Returns(Task.FromResult(routingMap));
             BatchAsyncContainerExecutor executor = new BatchAsyncContainerExecutor(mockContainer.Object, mockedContext.Object, 20, Constants.MaxDirectModeBatchRequestBodySizeInBytes, 1);
-            BatchOperationResult result = await executor.AddAsync(itemBatchOperation);
+            TransactionalBatchOperationResult result = await executor.AddAsync(itemBatchOperation);
 
             Mock.Get(mockContainer.Object)
                 .Verify(x => x.GetPartitionKeyDefinitionAsync(It.IsAny<CancellationToken>()), Times.Exactly(2));
@@ -124,7 +124,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 string.Empty);
             mockContainer.Setup(x => x.GetRoutingMapAsync(It.IsAny<CancellationToken>())).Returns(Task.FromResult(routingMap));
             BatchAsyncContainerExecutor executor = new BatchAsyncContainerExecutor(mockContainer.Object, mockedContext.Object, 20, Constants.MaxDirectModeBatchRequestBodySizeInBytes, 1);
-            BatchOperationResult result = await executor.AddAsync(itemBatchOperation);
+            TransactionalBatchOperationResult result = await executor.AddAsync(itemBatchOperation);
 
             Mock.Get(mockContainer.Object)
                 .Verify(x => x.GetPartitionKeyDefinitionAsync(It.IsAny<CancellationToken>()), Times.Exactly(2));
@@ -190,7 +190,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 string.Empty);
             mockContainer.Setup(x => x.GetRoutingMapAsync(It.IsAny<CancellationToken>())).Returns(Task.FromResult(routingMap));
             BatchAsyncContainerExecutor executor = new BatchAsyncContainerExecutor(mockContainer.Object, mockedContext.Object, 20, Constants.MaxDirectModeBatchRequestBodySizeInBytes, 1);
-            BatchOperationResult result = await executor.AddAsync(itemBatchOperation);
+            TransactionalBatchOperationResult result = await executor.AddAsync(itemBatchOperation);
 
             Mock.Get(mockContainer.Object)
                 .Verify(x => x.GetPartitionKeyDefinitionAsync(It.IsAny<CancellationToken>()), Times.Exactly(2));
@@ -255,7 +255,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 string.Empty);
             mockContainer.Setup(x => x.GetRoutingMapAsync(It.IsAny<CancellationToken>())).Returns(Task.FromResult(routingMap));
             BatchAsyncContainerExecutor executor = new BatchAsyncContainerExecutor(mockContainer.Object, mockedContext.Object, 20, Constants.MaxDirectModeBatchRequestBodySizeInBytes, 1);
-            BatchOperationResult result = await executor.AddAsync(itemBatchOperation);
+            TransactionalBatchOperationResult result = await executor.AddAsync(itemBatchOperation);
 
             Mock.Get(mockContainer.Object)
                 .Verify(x => x.GetPartitionKeyDefinitionAsync(It.IsAny<CancellationToken>()), Times.Once);
@@ -275,10 +275,10 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private async Task<ResponseMessage> GenerateSplitResponseAsync(ItemBatchOperation itemBatchOperation)
         {
-            List<BatchOperationResult> results = new List<BatchOperationResult>();
+            List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
             ItemBatchOperation[] arrayOperations = new ItemBatchOperation[1];
             results.Add(
-                new BatchOperationResult(HttpStatusCode.Gone)
+                new TransactionalBatchOperationResult(HttpStatusCode.Gone)
                 {
                     ETag = itemBatchOperation.Id,
                     SubStatusCode = SubStatusCodes.PartitionKeyRangeGone
@@ -291,22 +291,34 @@ namespace Microsoft.Azure.Cosmos.Tests
             SinglePartitionKeyServerBatchRequest batchRequest = await SinglePartitionKeyServerBatchRequest.CreateAsync(
                 partitionKey: null,
                 operations: new ArraySegment<ItemBatchOperation>(arrayOperations),
-                maxBodyLength: 100,
-                maxOperationCount: 1,
                 serializer: new CosmosJsonDotNetSerializer(),
             cancellationToken: CancellationToken.None);
 
-            ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.Gone) { Content = responseContent, Diagnostics = new PointOperationStatistics(HttpStatusCode.OK, SubStatusCodes.Unknown, 0, string.Empty, HttpMethod.Get, new Uri("http://localhost"), new CosmosClientSideRequestStatistics()) };
+            ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.Gone)
+            {
+                Content = responseContent,
+                Diagnostics = new PointOperationStatistics(
+                    activityId: Guid.NewGuid().ToString(),
+                    statusCode: HttpStatusCode.Gone,
+                    subStatusCode: SubStatusCodes.Unknown,
+                    requestCharge: 0,
+                    errorMessage: string.Empty,
+                    method: HttpMethod.Get,
+                    requestUri: new Uri("http://localhost"),
+                    requestSessionToken: null,
+                    responseSessionToken: null,
+                    clientSideRequestStatistics: new CosmosClientSideRequestStatistics())
+            };
             responseMessage.Headers.SubStatusCode = SubStatusCodes.PartitionKeyRangeGone;
             return responseMessage;
         }
 
         private async Task<ResponseMessage> GenerateCacheStaleResponseAsync(ItemBatchOperation itemBatchOperation)
         {
-            List<BatchOperationResult> results = new List<BatchOperationResult>();
+            List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
             ItemBatchOperation[] arrayOperations = new ItemBatchOperation[1];
             results.Add(
-                new BatchOperationResult(HttpStatusCode.Gone)
+                new TransactionalBatchOperationResult(HttpStatusCode.Gone)
                 {
                     ETag = itemBatchOperation.Id,
                     SubStatusCode = SubStatusCodes.NameCacheIsStale
@@ -319,22 +331,34 @@ namespace Microsoft.Azure.Cosmos.Tests
             SinglePartitionKeyServerBatchRequest batchRequest = await SinglePartitionKeyServerBatchRequest.CreateAsync(
                 partitionKey: null,
                 operations: new ArraySegment<ItemBatchOperation>(arrayOperations),
-                maxBodyLength: 100,
-                maxOperationCount: 1,
                 serializer: new CosmosJsonDotNetSerializer(),
             cancellationToken: CancellationToken.None);
 
-            ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.Gone) { Content = responseContent, Diagnostics = new PointOperationStatistics(HttpStatusCode.OK, SubStatusCodes.Unknown, 0, string.Empty, HttpMethod.Get, new Uri("http://localhost"), new CosmosClientSideRequestStatistics()) };
+            ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.Gone)
+            {
+                Content = responseContent,
+                Diagnostics = new PointOperationStatistics(
+                    activityId: Guid.NewGuid().ToString(),
+                    statusCode: HttpStatusCode.Gone,
+                    subStatusCode: SubStatusCodes.Unknown,
+                    requestCharge: 0,
+                    errorMessage: string.Empty,
+                    method: HttpMethod.Get,
+                    requestUri: new Uri("http://localhost"),
+                    requestSessionToken: null,
+                    responseSessionToken: null,
+                    clientSideRequestStatistics: new CosmosClientSideRequestStatistics())
+            };
             responseMessage.Headers.SubStatusCode = SubStatusCodes.NameCacheIsStale;
             return responseMessage;
         }
 
         private async Task<ResponseMessage> Generate429ResponseAsync(ItemBatchOperation itemBatchOperation)
         {
-            List<BatchOperationResult> results = new List<BatchOperationResult>();
+            List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
             ItemBatchOperation[] arrayOperations = new ItemBatchOperation[1];
             results.Add(
-                new BatchOperationResult((HttpStatusCode) StatusCodes.TooManyRequests)
+                new TransactionalBatchOperationResult((HttpStatusCode) StatusCodes.TooManyRequests)
                 {
                     ETag = itemBatchOperation.Id
                 });
@@ -346,21 +370,33 @@ namespace Microsoft.Azure.Cosmos.Tests
             SinglePartitionKeyServerBatchRequest batchRequest = await SinglePartitionKeyServerBatchRequest.CreateAsync(
                 partitionKey: null,
                 operations: new ArraySegment<ItemBatchOperation>(arrayOperations),
-                maxBodyLength: 100,
-                maxOperationCount: 1,
                 serializer: new CosmosJsonDotNetSerializer(),
             cancellationToken: CancellationToken.None);
 
-            ResponseMessage responseMessage = new ResponseMessage((HttpStatusCode)StatusCodes.TooManyRequests) { Content = responseContent, Diagnostics = new PointOperationStatistics(HttpStatusCode.OK, SubStatusCodes.Unknown, 0, string.Empty, HttpMethod.Get, new Uri("http://localhost"), new CosmosClientSideRequestStatistics()) };
+            ResponseMessage responseMessage = new ResponseMessage((HttpStatusCode)StatusCodes.TooManyRequests)
+            {
+                Content = responseContent,
+                Diagnostics = new PointOperationStatistics(
+                    activityId: Guid.NewGuid().ToString(),
+                    statusCode: (HttpStatusCode)StatusCodes.TooManyRequests,
+                    subStatusCode: SubStatusCodes.Unknown,
+                    requestCharge: 0,
+                    errorMessage: string.Empty,
+                    method: HttpMethod.Get,
+                    requestUri: new Uri("http://localhost"),
+                    requestSessionToken: null,
+                    responseSessionToken: null,
+                    clientSideRequestStatistics: new CosmosClientSideRequestStatistics())
+            };
             return responseMessage;
         }
 
         private async Task<ResponseMessage> GenerateOkResponseAsync(ItemBatchOperation itemBatchOperation)
         {
-            List<BatchOperationResult> results = new List<BatchOperationResult>();
+            List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
             ItemBatchOperation[] arrayOperations = new ItemBatchOperation[1];
             results.Add(
-                new BatchOperationResult(HttpStatusCode.OK)
+                new TransactionalBatchOperationResult(HttpStatusCode.OK)
                 {
                     ETag = itemBatchOperation.Id
                 });
@@ -372,12 +408,24 @@ namespace Microsoft.Azure.Cosmos.Tests
             SinglePartitionKeyServerBatchRequest batchRequest = await SinglePartitionKeyServerBatchRequest.CreateAsync(
                 partitionKey: null,
                 operations: new ArraySegment<ItemBatchOperation>(arrayOperations),
-                maxBodyLength: 100,
-                maxOperationCount: 1,
                 serializer: new CosmosJsonDotNetSerializer(),
             cancellationToken: CancellationToken.None);
 
-            ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.OK) { Content = responseContent, Diagnostics = new PointOperationStatistics(HttpStatusCode.OK, SubStatusCodes.Unknown, 0, string.Empty, HttpMethod.Get, new Uri("http://localhost"), new CosmosClientSideRequestStatistics()) };
+            ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.OK)
+            {
+                Content = responseContent,
+                Diagnostics = new PointOperationStatistics(
+                     activityId: Guid.NewGuid().ToString(),
+                     statusCode: HttpStatusCode.OK,
+                     subStatusCode: SubStatusCodes.Unknown,
+                     requestCharge: 0,
+                     errorMessage: string.Empty,
+                     method: HttpMethod.Get,
+                     requestUri: new Uri("http://localhost"),
+                     requestSessionToken: null,
+                     responseSessionToken: null,
+                     clientSideRequestStatistics: new CosmosClientSideRequestStatistics())
+            };
             return responseMessage;
         }
 

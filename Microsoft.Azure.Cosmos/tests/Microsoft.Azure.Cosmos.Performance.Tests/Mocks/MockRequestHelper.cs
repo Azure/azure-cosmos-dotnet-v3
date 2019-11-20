@@ -12,6 +12,18 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
     internal static class MockRequestHelper
     {
+        private static readonly byte[] testPayload;
+
+        static MockRequestHelper()
+        {
+            MemoryStream ms = new MemoryStream();
+            using (FileStream fs = File.OpenRead("samplepayload.json"))
+            {
+                fs.CopyTo(ms);
+                MockRequestHelper.testPayload = ms.ToArray();
+            }
+        }
+
         /// <summary>
         /// For mocking a Gateway response
         /// </summary>
@@ -25,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 if (request.ResourceAddress.EndsWith(Constants.ValidOperationId))
                 {
                     response = new DocumentServiceResponse(
-                        File.OpenRead("samplepayload.json"),
+                        new MemoryStream(MockRequestHelper.testPayload),
                         new DictionaryNameValueCollection(),
                         System.Net.HttpStatusCode.OK
                     );
@@ -45,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 if (request.ResourceAddress.EndsWith(Tests.Constants.ValidOperationId))
                 {
                     response = new DocumentServiceResponse(
-                        File.OpenRead("samplepayload.json"),
+                        new MemoryStream(MockRequestHelper.testPayload),
                         new DictionaryNameValueCollection(),
                         System.Net.HttpStatusCode.OK
                     );
@@ -66,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 || request.OperationType == OperationType.Patch)
             {
                 response = new DocumentServiceResponse(
-                        File.OpenRead("samplepayload.json"),
+                        new MemoryStream(MockRequestHelper.testPayload),
                         new DictionaryNameValueCollection(),
                         System.Net.HttpStatusCode.OK
                     );
@@ -89,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 {
                     response = new StoreResponse()
                     {
-                        ResponseBody = File.OpenRead("samplepayload.json"),
+                        ResponseBody = new MemoryStream(MockRequestHelper.testPayload),
                         Status = (int)System.Net.HttpStatusCode.OK,
                         ResponseHeaderNames = new string[] { WFConstants.BackendHeaders.LSN },
                         ResponseHeaderValues = new string[] { "1" }
@@ -113,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 {
                     response = new StoreResponse()
                     {
-                        ResponseBody = File.OpenRead("samplepayload.json"),
+                        ResponseBody = new MemoryStream(MockRequestHelper.testPayload),
                         Status = (int)System.Net.HttpStatusCode.OK,
                         ResponseHeaderNames = Array.Empty<string>(),
                         ResponseHeaderValues = Array.Empty<string>()
@@ -138,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             {
                 response = new StoreResponse()
                 {
-                    ResponseBody = File.OpenRead("samplepayload.json"),
+                    ResponseBody = new MemoryStream(MockRequestHelper.testPayload),
                     Status = (int)System.Net.HttpStatusCode.OK,
                     ResponseHeaderNames = Array.Empty<string>(),
                     ResponseHeaderValues = Array.Empty<string>()

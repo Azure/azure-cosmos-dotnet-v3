@@ -16,135 +16,165 @@ namespace Microsoft.Azure.Cosmos
 
     internal static class Extensions
     {
+        private static readonly char[] NewLineCharacters = new[] { '\r', '\n' };
+
         internal static ResponseMessage ToCosmosResponseMessage(this DocumentServiceResponse response, RequestMessage requestMessage)
         {
             Debug.Assert(requestMessage != null, nameof(requestMessage));
 
-            ResponseMessage cosmosResponse = new ResponseMessage(response.StatusCode, requestMessage);
-            if (response.ResponseBody != null)
+            ResponseMessage responseMessage = new ResponseMessage(documentServiceResponse.StatusCode, requestMessage);
+            if (documentServiceResponse.ResponseBody != null)
             {
-                cosmosResponse.Content = response.ResponseBody;
+                responseMessage.Content = documentServiceResponse.ResponseBody;
             }
 
-            if (response.Headers != null)
+            if (documentServiceResponse.Headers != null)
             {
-                foreach (string key in response.Headers)
+                foreach (string key in documentServiceResponse.Headers)
                 {
-                    cosmosResponse.Headers.Add(key, response.Headers[key]);
+                    responseMessage.Headers.Add(key, documentServiceResponse.Headers[key]);
                 }
             }
 
-            CosmosClientSideRequestStatistics cosmosClientSideRequestStatistics = response.RequestStats as CosmosClientSideRequestStatistics;
-            cosmosResponse.Diagnostics = new PointOperationStatistics(
-                statusCode: response.StatusCode,
-                subStatusCode: response.SubStatusCode,
-                requestCharge: cosmosResponse.Headers.RequestCharge,
-                errorMessage: cosmosResponse.ErrorMessage,
+            CosmosClientSideRequestStatistics cosmosClientSideRequestStatistics = documentServiceResponse.RequestStats as CosmosClientSideRequestStatistics;
+            responseMessage.Diagnostics = new PointOperationStatistics(
+                activityId: responseMessage.Headers.ActivityId,
+                statusCode: documentServiceResponse.StatusCode,
+                subStatusCode: documentServiceResponse.SubStatusCode,
+                requestCharge: responseMessage.Headers.RequestCharge,
+                errorMessage: responseMessage.ErrorMessage,
                 method: requestMessage?.Method,
                 requestUri: requestMessage?.RequestUri,
+                requestSessionToken: requestMessage?.Headers?.Session,
+                responseSessionToken: responseMessage.Headers.Session,
                 clientSideRequestStatistics: cosmosClientSideRequestStatistics);
 
-            return cosmosResponse;
+            return responseMessage;
         }
 
-        internal static ResponseMessage ToCosmosResponseMessage(this DocumentClientException dce, RequestMessage request)
+        internal static ResponseMessage ToCosmosResponseMessage(this DocumentClientException documentClientException, RequestMessage requestMessage)
         {
             // if StatusCode is null it is a client business logic error and it never hit the backend, so throw
-            if (dce.StatusCode == null)
+            if (documentClientException.StatusCode == null)
             {
-                throw dce;
+                throw documentClientException;
             }
 
             // if there is a status code then it came from the backend, return error as http error instead of throwing the exception
-            ResponseMessage cosmosResponse = new ResponseMessage(dce.StatusCode ?? HttpStatusCode.InternalServerError, request);
-            cosmosResponse.ErrorMessage = dce.ToString();
-
-            if (dce.Headers != null)
+            ResponseMessage responseMessage = new ResponseMessage(documentClientException.StatusCode ?? HttpStatusCode.InternalServerError, requestMessage);
+            string reasonPhraseString = documentClientException.ToString();
+            if (!string.IsNullOrEmpty(reasonPhraseString))
             {
-                foreach (string header in dce.Headers.AllKeys())
+                if (documentClientException.Message.IndexOfAny(Extensions.NewLineCharacters) >= 0)
                 {
-                    cosmosResponse.Headers.Add(header, dce.Headers[header]);
+                    StringBuilder sb = new StringBuilder(reasonPhraseString);
+                    sb = sb.Replace("\r", string.Empty);
+                    sb = sb.Replace("\n", string.Empty);
+                    reasonPhraseString = sb.ToString();
                 }
             }
 
-            if (request != null)
+            responseMessage.ErrorMessage = reasonPhraseString;
+            responseMessage.Error = documentClientException.Error;
+
+            if (documentClientException.Headers != null)
             {
-                request.Properties.Remove(nameof(DocumentClientException));
-                request.Properties.Add(nameof(DocumentClientException), dce);
+                foreach (string header in documentClientException.Headers.AllKeys())
+                {
+                    responseMessage.Headers.Add(header, documentClientException.Headers[header]);
+                }
             }
 
-            return cosmosResponse;
+            responseMessage.Diagnostics = new PointOperationStatistics(
+                activityId: responseMessage.Headers.ActivityId,
+                statusCode: documentClientException.StatusCode.Value,
+                subStatusCode: SubStatusCodes.Unknown,
+                requestCharge: responseMessage.Headers.RequestCharge,
+                errorMessage: responseMessage.ErrorMessage,
+                method: requestMessage?.Method,
+                requestUri: requestMessage?.RequestUri,
+                requestSessionToken: requestMessage?.Headers?.Session,
+                responseSessionToken: responseMessage.Headers.Session,
+                clientSideRequestStatistics: documentClientException.RequestStatistics as CosmosClientSideRequestStatistics);
+
+            if (requestMessage != null)
+            {
+                requestMessage.Properties.Remove(nameof(DocumentClientException));
+                requestMessage.Properties.Add(nameof(DocumentClientException), documentClientException);
+            }
+
+            return responseMessage;
         }
 
-        internal static ResponseMessage ToCosmosResponseMessage(this StoreResponse response, RequestMessage request)
+        internal static ResponseMessage ToCosmosResponseMessage(this StoreResponse storeResponse, RequestMessage requestMessage)
         {
             // Is status code conversion lossy? 
-            ResponseMessage httpResponse = new ResponseMessage((HttpStatusCode)response.Status, request);
-            if (response.ResponseBody != null)
+            ResponseMessage responseMessage = new ResponseMessage((HttpStatusCode)storeResponse.Status, requestMessage);
+            if (storeResponse.ResponseBody != null)
             {
-                httpResponse.Content = response.ResponseBody;
+                responseMessage.Content = storeResponse.ResponseBody;
             }
 
-            for (int i = 0; i < response.ResponseHeaderNames.Length; i++)
+            for (int i = 0; i < storeResponse.ResponseHeaderNames.Length; i++)
             {
-                httpResponse.Headers.Add(response.ResponseHeaderNames[i], response.ResponseHeaderValues[i]);
+                responseMessage.Headers.Add(storeResponse.ResponseHeaderNames[i], storeResponse.ResponseHeaderValues[i]);
             }
 
-            return httpResponse;
+            return responseMessage;
         }
 
-        internal static void TraceException(Exception e)
+        internal static void TraceException(Exception exception)
         {
-            AggregateException aggregateException = e as AggregateException;
+            AggregateException aggregateException = exception as AggregateException;
             if (aggregateException != null)
             {
-                foreach (Exception exception in aggregateException.InnerExceptions)
+                foreach (Exception tempException in aggregateException.InnerExceptions)
                 {
-                    Extensions.TraceExceptionInternal(exception);
+                    Extensions.TraceExceptionInternal(tempException);
                 }
             }
             else
             {
-                Extensions.TraceExceptionInternal(e);
+                Extensions.TraceExceptionInternal(exception);
             }
         }
 
         public static async Task<IDisposable> UsingWaitAsync(
             this SemaphoreSlim semaphoreSlim,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken)
         {
             await semaphoreSlim.WaitAsync(cancellationToken).ConfigureAwait(false);
             return new UsableSemaphoreWrapper(semaphoreSlim);
         }
 
-        private static void TraceExceptionInternal(Exception e)
+        private static void TraceExceptionInternal(Exception exception)
         {
-            while (e != null)
+            while (exception != null)
             {
                 Uri requestUri = null;
 
-                SocketException socketException = e as SocketException;
+                SocketException socketException = exception as SocketException;
                 if (socketException != null)
                 {
                     DefaultTrace.TraceWarning(
                         "Exception {0}: RequesteUri: {1}, SocketErrorCode: {2}, {3}, {4}",
-                        e.GetType(),
+                        exception.GetType(),
                         requestUri,
                         socketException.SocketErrorCode,
-                        e.Message,
-                        e.StackTrace);
+                        exception.Message,
+                        exception.StackTrace);
                 }
                 else
                 {
                     DefaultTrace.TraceWarning(
                         "Exception {0}: RequestUri: {1}, {2}, {3}",
-                        e.GetType(),
+                        exception.GetType(),
                         requestUri,
-                        e.Message,
-                        e.StackTrace);
+                        exception.Message,
+                        exception.StackTrace);
                 }
 
-                e = e.InnerException;
+                exception = exception.InnerException;
             }
         }
     }

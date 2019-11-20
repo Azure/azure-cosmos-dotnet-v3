@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public static readonly PartitionKeyRange DefaultPartitionKeyRange = new PartitionKeyRange() { MinInclusive = "A", MaxExclusive = "B", Id = "0" };
         public static readonly int[] DefaultResponseSizes = { 3, 0, 3 };
         public static readonly CancellationToken DefaultCancellationToken = new CancellationTokenSource().Token;
-        
+
         /// <summary>
         /// Create a item producer with a list of responses mocked
         /// </summary>
@@ -90,6 +90,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 partitionKeyRange,
                 completeDelegate,
                 CosmosElementEqualityComparer.Value,
+                new Query.Core.TestInjections(simulate429s: false, simulateEmptyPages: false),
                 maxPageSize,
                 initialContinuationToken: continuationToken);
 
@@ -99,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public static void DefaultProduceAsyncCompleteDelegate(
             int numberOfDocuments,
             double requestCharge,
-            QueryMetrics queryMetrics,
+            IReadOnlyCollection<QueryPageDiagnostics> diagnostics,
             long responseLengthInBytes,
             CancellationToken token)
         {
@@ -171,6 +172,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 completeDelegate,
                 itemProducerTreeComparer,
                 CosmosElementEqualityComparer.Value,
+                new Query.Core.TestInjections(simulate429s: false, simulateEmptyPages: false),
                 deferFirstPage,
                 collectionRid,
                 maxPageSize,
@@ -183,7 +185,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ItemProducerTree itemProducerTree,
             int numberOfDocuments,
             double requestCharge,
-            QueryMetrics queryMetrics,
+            IReadOnlyCollection<QueryPageDiagnostics> diagnostics,
             long responseLengthInBytes,
             CancellationToken token)
         {
@@ -233,6 +235,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         It.Is<PartitionKeyRangeIdentity>(rangeId => string.Equals(rangeId.PartitionKeyRangeId, partitionKeyRange.Id) && string.Equals(rangeId.CollectionRid, collectionRid)),
                         It.IsAny<bool>(),
                         maxPageSize,
+                        It.IsAny<SchedulingStopwatch>(),
                         cancellationToken))
                         .Callback(() => executeCallback?.Invoke())
                         .Returns(Task.FromResult(queryResponse.response));
@@ -286,8 +289,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                         It.Is<PartitionKeyRangeIdentity>(rangeId => string.Equals(rangeId.PartitionKeyRangeId, partitionKeyRange.Id) && string.Equals(rangeId.CollectionRid, collectionRid)),
                         It.IsAny<bool>(),
                         maxPageSize,
+                        It.IsAny<SchedulingStopwatch>(),
                         cancellationToken))
-                        .Callback(() =>executeCallback?.Invoke())
+                        .Callback(() => executeCallback?.Invoke())
                         .Returns(Task.FromResult(queryResponse.response));
                 previousContinuationToken = newContinuationToken;
             }

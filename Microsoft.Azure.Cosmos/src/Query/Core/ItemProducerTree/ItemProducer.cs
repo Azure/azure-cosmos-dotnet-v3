@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Collections.Generic;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using PartitionKeyRange = Documents.PartitionKeyRange;
     using PartitionKeyRangeIdentity = Documents.PartitionKeyRangeIdentity;
 
@@ -26,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Query
     {
         /// <summary>
         /// The buffered pages that is thread safe, since the producer and consumer of the queue can be on different threads.
-        /// We buffer TryMonad of DoucmentFeedResponse of T, since we want to buffer exceptions,
+        /// We buffer TryCatch of DoucmentFeedResponse of T, since we want to buffer exceptions,
         /// so that the exception is thrown on the consumer thread (instead of the background producer thread), thus observing the exception.
         /// </summary>
         private readonly AsyncCollection<QueryResponseCore> bufferedPages;
@@ -48,11 +49,6 @@ namespace Microsoft.Azure.Cosmos.Query
         private readonly SchedulingStopwatch fetchSchedulingMetrics;
 
         /// <summary>
-        /// Keeps track of fetch ranges.
-        /// </summary>
-        private readonly FetchExecutionRangeAccumulator fetchExecutionRangeAccumulator;
-
-        /// <summary>
         /// Equality comparer to determine if you have come across a distinct document according to the sort order.
         /// </summary>
         private readonly IEqualityComparer<CosmosElement> equalityComparer;
@@ -61,16 +57,12 @@ namespace Microsoft.Azure.Cosmos.Query
 
         private readonly SqlQuerySpec querySpecForInit;
 
+        private readonly TestInjections testFlags;
+
         /// <summary>
         /// Over the duration of the life time of a document producer the page size will change, since we have an adaptive page size.
         /// </summary>
         private long pageSize;
-
-        /// <summary>
-        /// The current continuation token that the user has read from the document producer tree.
-        /// This is used for determining whether there are more results.
-        /// </summary>
-        private string currentContinuationToken;
 
         /// <summary>
         /// The current page that is being enumerated.
@@ -97,6 +89,8 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         private bool hitException;
 
+        private bool enumeratorPrimed;
+
         /// <summary>
         /// Initializes a new instance of the ItemProducer class.
         /// </summary>
@@ -105,6 +99,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="partitionKeyRange">The partition key range.</param>
         /// <param name="produceAsyncCompleteCallback">The callback to call once you are done fetching.</param>
         /// <param name="equalityComparer">The comparer to use to determine whether the producer has seen a new document.</param>
+        /// <param name="testFlags">Flags used to help faciliate testing.</param>
         /// <param name="initialPageSize">The initial page size.</param>
         /// <param name="initialContinuationToken">The initial continuation token.</param>
         public ItemProducer(
@@ -113,6 +108,7 @@ namespace Microsoft.Azure.Cosmos.Query
             PartitionKeyRange partitionKeyRange,
             ProduceAsyncCompleteDelegate produceAsyncCompleteCallback,
             IEqualityComparer<CosmosElement> equalityComparer,
+            TestInjections testFlags,
             long initialPageSize = 50,
             string initialContinuationToken = null)
         {
@@ -142,7 +138,7 @@ namespace Microsoft.Azure.Cosmos.Query
             this.produceAsyncCompleteCallback = produceAsyncCompleteCallback;
             this.equalityComparer = equalityComparer;
             this.pageSize = initialPageSize;
-            this.currentContinuationToken = initialContinuationToken;
+            this.CurrentContinuationToken = initialContinuationToken;
             this.BackendContinuationToken = initialContinuationToken;
             this.PreviousContinuationToken = initialContinuationToken;
             if (!string.IsNullOrEmpty(initialContinuationToken))
@@ -153,7 +149,8 @@ namespace Microsoft.Azure.Cosmos.Query
 
             this.fetchSchedulingMetrics = new SchedulingStopwatch();
             this.fetchSchedulingMetrics.Ready();
-            this.fetchExecutionRangeAccumulator = new FetchExecutionRangeAccumulator();
+
+            this.testFlags = testFlags;
 
             this.HasMoreResults = true;
         }
@@ -161,7 +158,7 @@ namespace Microsoft.Azure.Cosmos.Query
         public delegate void ProduceAsyncCompleteDelegate(
             int numberOfDocuments,
             double requestCharge,
-            QueryMetrics queryMetrics,
+            IReadOnlyCollection<QueryPageDiagnostics> diagnostics,
             long responseLengthInBytes,
             CancellationToken token);
 
@@ -182,6 +179,12 @@ namespace Microsoft.Azure.Cosmos.Query
         /// Gets the previous continuation token.
         /// </summary>
         public string PreviousContinuationToken { get; private set; }
+
+        /// <summary>
+        /// The current continuation token that the user has read from the document producer tree.
+        /// This is used for determining whether there are more results.
+        /// </summary>
+        public string CurrentContinuationToken { get; private set; }
 
         /// <summary>
         /// Gets the backend continuation token.
@@ -232,7 +235,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Gets the current document in this producer.
         /// </summary>
-        public CosmosElement Current { get; private set; }
+        public CosmosElement Current => this.CurrentPage?.Current;
 
         /// <summary>
         /// A static object representing that the move next operation succeeded, and was able to load the next page
@@ -243,26 +246,6 @@ namespace Microsoft.Azure.Cosmos.Query
         /// A static object representing that there is no more pages to load. 
         /// </summary>
         internal static readonly (bool successfullyMovedNext, QueryResponseCore? failureResponse) IsDoneResponse = (false, null);
-
-        /// <summary>
-        /// Moves to the next document in the producer.
-        /// </summary>
-        /// <param name="token">The cancellation token.</param>
-        /// <returns>Whether or not we successfully moved to the next document.</returns>
-        public async Task<(bool successfullyMovedNext, QueryResponseCore? failureResponse)> MoveNextAsync(CancellationToken token)
-        {
-            token.ThrowIfCancellationRequested();
-
-            CosmosElement originalCurrent = this.Current;
-            (bool successfullyMovedNext, QueryResponseCore? failureResponse) movedNext = await this.MoveNextAsyncImplementationAsync(token);
-
-            if (!movedNext.successfullyMovedNext || (originalCurrent != null && !this.equalityComparer.Equals(originalCurrent, this.Current)))
-            {
-                this.IsActive = false;
-            }
-
-            return movedNext;
-        }
 
         /// <summary>
         /// Buffers more documents if the producer is empty.
@@ -297,8 +280,6 @@ namespace Microsoft.Azure.Cosmos.Query
                     return;
                 }
 
-                this.fetchSchedulingMetrics.Start();
-                this.fetchExecutionRangeAccumulator.BeginFetchRange();
                 int pageSize = (int)Math.Min(this.pageSize, int.MaxValue);
 
                 QueryResponseCore feedResponse = await this.queryContext.ExecuteQueryAsync(
@@ -309,17 +290,42 @@ namespace Microsoft.Azure.Cosmos.Query
                             this.PartitionKeyRange.Id),
                     isContinuationExpected: this.queryContext.IsContinuationExpected,
                     pageSize: pageSize,
+                    schedulingStopwatch: this.fetchSchedulingMetrics,
                     cancellationToken: token);
 
-                this.fetchExecutionRangeAccumulator.EndFetchRange(
-                    partitionIdentifier: this.PartitionKeyRange.Id,
-                    activityId: feedResponse.ActivityId,
-                    numberOfDocuments: feedResponse.CosmosElements.Count,
-                    retryCount: -1);
+                if ((this.testFlags != null) && this.testFlags.SimulateThrottles)
+                {
+                    Random random = new Random();
+                    if (random.Next() % 2 == 0)
+                    {
+                        feedResponse = QueryResponseCore.CreateFailure(
+                            statusCode: (System.Net.HttpStatusCode)429,
+                            subStatusCodes: null,
+                            errorMessage: "Request Rate Too Large",
+                            requestCharge: 0,
+                            activityId: QueryResponseCore.EmptyGuidString,
+                            diagnostics: QueryResponseCore.EmptyDiagnostics);
+                    }
+                }
 
-                this.fetchSchedulingMetrics.Stop();
+                // Can not simulate an empty page on the first page, since we would return a null continuation token, which will end the query early.
+                if ((this.testFlags != null) && this.testFlags.SimulateEmptyPages && (this.BackendContinuationToken != null))
+                {
+                    Random random = new Random();
+                    if (random.Next() % 2 == 0)
+                    {
+                        feedResponse = QueryResponseCore.CreateSuccess(
+                            result: new List<CosmosElement>(),
+                            requestCharge: 0,
+                            activityId: QueryResponseCore.EmptyGuidString,
+                            responseLengthBytes: 0,
+                            disallowContinuationTokenMessage: null,
+                            continuationToken: this.BackendContinuationToken,
+                            diagnostics: QueryResponseCore.EmptyDiagnostics);
+                    }
+                }
+
                 this.hasStartedFetching = true;
-
                 this.ActivityId = Guid.Parse(feedResponse.ActivityId);
                 await this.bufferedPages.AddAsync(feedResponse);
                 if (!feedResponse.IsSuccess)
@@ -334,35 +340,11 @@ namespace Microsoft.Azure.Cosmos.Query
                 this.BackendContinuationToken = feedResponse.ContinuationToken;
 
                 Interlocked.Add(ref this.bufferedItemCount, feedResponse.CosmosElements.Count);
-                QueryMetrics queryMetrics = QueryMetrics.Zero;
-
-                if (feedResponse.QueryMetricsText != null)
-                {
-                    queryMetrics = QueryMetrics.CreateFromDelimitedStringAndClientSideMetrics(
-                        feedResponse.QueryMetricsText,
-                        new ClientSideMetrics(
-                            -1,
-                            feedResponse.RequestCharge,
-                            this.fetchExecutionRangeAccumulator.GetExecutionRanges(),
-                            new List<Tuple<string, SchedulingTimeSpan>>()));
-                }
-
-                if (!this.HasMoreBackendResults)
-                {
-                    queryMetrics = QueryMetrics.CreateWithSchedulingMetrics(
-                        queryMetrics: queryMetrics,
-                        partitionSchedulingTimeSpans: new List<Tuple<string, SchedulingTimeSpan>>
-                        {
-                                        new Tuple<string, SchedulingTimeSpan>(
-                                            this.PartitionKeyRange.Id,
-                                            this.fetchSchedulingMetrics.Elapsed)
-                        });
-                }
 
                 this.produceAsyncCompleteCallback(
                     feedResponse.CosmosElements.Count,
                     feedResponse.RequestCharge,
-                    queryMetrics,
+                    feedResponse.Diagnostics,
                     feedResponse.ResponseLengthBytes,
                     token);
 
@@ -379,127 +361,75 @@ namespace Microsoft.Azure.Cosmos.Query
             this.HasMoreResults = false;
         }
 
-        /// <summary>
-        /// Implementation of move next async.
-        /// After this function is called the wrapper function determines if a distinct document has been read and updates the 'IsActive' flag.
-        /// </summary>
-        /// <param name="token">The cancellation token.</param>
-        /// <returns>Whether or not we successfully moved to the next document in the producer.</returns>
-        private async Task<(bool successfullyMovedNext, QueryResponseCore? failureResponse)> MoveNextAsyncImplementationAsync(CancellationToken token)
+        public async Task<(bool movedToNextPage, QueryResponseCore? failureReponse)> TryMoveNextPageAsync(CancellationToken cancellationToken)
         {
-            token.ThrowIfCancellationRequested();
-
-            if (!this.HasMoreResults)
+            cancellationToken.ThrowIfCancellationRequested();
+            if (this.itemsLeftInCurrentPage != 0)
             {
+                throw new InvalidOperationException("Tried to move onto the next page before finishing the first page.");
+            }
+
+            // We need to buffer pages if empty, since thats how we know there are no more pages left.
+            await this.BufferMoreIfEmptyAsync(cancellationToken);
+            if (this.bufferedPages.Count == 0)
+            {
+                this.HasMoreResults = false;
                 return ItemProducer.IsDoneResponse;
             }
 
-            // Always try reading from current page first
-            if (this.MoveNextDocumentWithinCurrentPage())
+            // Pull a FeedResponse using TryCatch (we could have buffered an exception).
+            QueryResponseCore queryResponse = await this.bufferedPages.TakeAsync(cancellationToken);
+            if (!queryResponse.IsSuccess)
             {
-                return ItemProducer.IsSuccessResponse;
+                this.HasMoreResults = false;
+                return (false, queryResponse);
             }
-            else
-            {
-                // We might be at a continuation boundary so we need to move to the next page
-                (bool successfullyMovedNext, QueryResponseCore? failureResponse) response = await this.TryMoveNextPageAsync(token);
-                if (!response.successfullyMovedNext)
-                {
-                    this.HasMoreResults = false;
-                }
 
-                return response;
-            }
+            // Update the state.
+            this.PreviousContinuationToken = this.CurrentContinuationToken;
+            this.CurrentContinuationToken = queryResponse.ContinuationToken;
+            this.CurrentPage = queryResponse.CosmosElements.GetEnumerator();
+            this.itemsLeftInCurrentPage = queryResponse.CosmosElements.Count;
+            this.enumeratorPrimed = false;
+            this.IsAtBeginningOfPage = false;
+
+            return ItemProducer.IsSuccessResponse;
         }
 
-        private bool MoveToFirstDocumentInPage()
-        {
-            if (this.CurrentPage == null || !this.CurrentPage.MoveNext())
-            {
-                return false;
-            }
-
-            this.Current = this.CurrentPage.Current;
-            this.IsAtBeginningOfPage = true;
-
-            return true;
-        }
-
-        /// <summary>
-        /// Tries to moved to the next document within the current page that we are reading from.
-        /// </summary>
-        /// <returns>Whether the operation was successful.</returns>
-        private bool MoveNextDocumentWithinCurrentPage()
+        public bool TryMoveNextDocumentWithinPage()
         {
             if (this.CurrentPage == null)
             {
                 return false;
             }
 
+            CosmosElement originalCurrent = this.Current;
             bool movedNext = this.CurrentPage.MoveNext();
-            this.Current = this.CurrentPage.Current;
-            this.IsAtBeginningOfPage = false;
 
-            Interlocked.Decrement(ref this.bufferedItemCount);
-            Interlocked.Decrement(ref this.itemsLeftInCurrentPage);
-
-            return movedNext;
-        }
-
-        /// <summary>
-        /// Tries to the move to the next page in the document producer.
-        /// </summary>
-        /// <param name="token">The cancellation token.</param>
-        /// <returns>Whether the operation was successful.</returns>
-        private async Task<(bool successfullyMovedNext, QueryResponseCore? failureResponse)> TryMoveNextPageAsync(CancellationToken token)
-        {
-            token.ThrowIfCancellationRequested();
-
-            if (this.itemsLeftInCurrentPage != 0)
+            if (!movedNext || ((originalCurrent != null) && !this.equalityComparer.Equals(originalCurrent, this.Current)))
             {
-                throw new InvalidOperationException("Tried to move onto the next page before finishing the first page.");
+                this.IsActive = false;
             }
 
-            // We need to buffer pages if empty, since that how we know there are no more pages left.
-            await this.BufferMoreIfEmptyAsync(token);
-
-            if (this.bufferedPages.Count == 0)
-            {
-                return ItemProducer.IsDoneResponse;
-            }
-
-            // Pull a FeedResponse using TryMonad (we could have buffered an exception).
-            QueryResponseCore queryResponse = await this.bufferedPages.TakeAsync(token);
-
-            // Update the state.
-            this.PreviousContinuationToken = this.currentContinuationToken;
-            this.currentContinuationToken = queryResponse.ContinuationToken;
-            this.CurrentPage = queryResponse.CosmosElements.GetEnumerator();
-            this.IsAtBeginningOfPage = true;
-            this.itemsLeftInCurrentPage = queryResponse.CosmosElements.Count;
-
-            if (!queryResponse.IsSuccess)
-            {
-                return (false, queryResponse);
-            }
-
-            // Prime the enumerator,
-            // so that current is pointing to the first document instead of one before.
-            if (this.MoveToFirstDocumentInPage())
+            if (!this.enumeratorPrimed)
             {
                 this.IsAtBeginningOfPage = true;
-                return ItemProducer.IsSuccessResponse;
+                this.enumeratorPrimed = true;
             }
             else
             {
-                // We got an empty page
-                if (this.currentContinuationToken != null)
-                {
-                    return await this.TryMoveNextPageAsync(token);
-                }
+                Interlocked.Decrement(ref this.bufferedItemCount);
+                Interlocked.Decrement(ref this.itemsLeftInCurrentPage);
 
-                return ItemProducer.IsDoneResponse;
+                this.IsAtBeginningOfPage = false;
             }
+
+            if (!movedNext && (this.CurrentContinuationToken == null))
+            {
+                this.HasMoreResults = false;
+            }
+
+            return movedNext;
         }
     }
 }
