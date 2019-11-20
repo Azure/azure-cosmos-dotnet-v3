@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#988](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/988) Fixed query mutating due to retry of gone / name cache is stale.
 - [#999](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/999) Fixed grabbing extra page and updated continuation token on exception path.
 - [#954](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/954) Support "Start from Beginning" for Change Feed Processor in multi master accounts
-
+- [#1013](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1013) Gateway OperationCanceledException are now returned as request timeouts
 
 ## <a name="3.4.1"/> [3.4.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.4.1) - 2019-11-06
 
