@@ -5,15 +5,14 @@ namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
     using System.Net;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using IClientSideRequestStatistics = Documents.IClientSideRequestStatistics;
     using SubStatusCodes = Documents.SubStatusCodes;
 
     internal struct QueryResponseCore
     {
         private static readonly IReadOnlyList<CosmosElement> EmptyList = new List<CosmosElement>().AsReadOnly();
+        internal static readonly string EmptyGuidString = Guid.Empty.ToString();
         internal static readonly IReadOnlyCollection<QueryPageDiagnostics> EmptyDiagnostics = new List<QueryPageDiagnostics>();
 
         private QueryResponseCore(

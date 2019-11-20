@@ -64,7 +64,7 @@ JOIN (
 ) AS v0 
 ORDER BY v0 ASC, root["Int"] DESC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -84,7 +84,7 @@ JOIN (
 ) AS v0 
 ORDER BY root["FamilyId"] ASC, v0 DESC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -110,7 +110,7 @@ JOIN (
 ) AS v1 
 ORDER BY v0 DESC, v1 ASC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -123,7 +123,7 @@ ORDER BY v0 DESC, v1 ASC
 SELECT VALUE root 
 FROM root 
 ORDER BY root["FamilyId"] ASC, root["FamilyId"] ASC ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"Errors":["The order by query does not have a corresponding composite index that it can be served from."]}]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -136,7 +136,7 @@ ORDER BY root["FamilyId"] ASC, root["FamilyId"] ASC ]]></SqlQuery>
 SELECT VALUE root 
 FROM root 
 ORDER BY root["FamilyId"] ASC, root["FamilyId"] DESC ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"Errors":["The order by query does not have a corresponding composite index that it can be served from."]}]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -162,7 +162,7 @@ JOIN (
 ) AS v1 
 ORDER BY v0 DESC, v1 ASC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -175,7 +175,7 @@ ORDER BY v0 DESC, v1 ASC
 SELECT VALUE root 
 FROM root 
 ORDER BY (root["Int"] * 2) ASC, SUBSTRING(root["FamilyId"], 2, 3) ASC ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -188,7 +188,7 @@ ORDER BY (root["Int"] * 2) ASC, SUBSTRING(root["FamilyId"], 2, 3) ASC ]]></SqlQu
 SELECT VALUE root 
 FROM root 
 ORDER BY (NOT IS_DEFINED(root["NullableInt"])) ASC, (ARRAY_LENGTH(root["Tags"]) % 2) DESC ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -209,7 +209,7 @@ JOIN (
 ) AS v0 
 ORDER BY (root["IsRegistered"] ? root["FamilyId"] : root["Int"]) DESC, (v0[0] % 1000) ASC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -259,7 +259,7 @@ JOIN (
 ) AS v1 
 ORDER BY v0 ASC, v1 ASC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -285,7 +285,7 @@ JOIN (
 ) AS v1 
 ORDER BY root["FamilyId"] ASC, v0 DESC, v1 ASC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -307,7 +307,7 @@ JOIN (
 ) AS v0 
 ORDER BY root["FamilyId"] ASC, v0 DESC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":141,"end":192},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -337,7 +337,7 @@ JOIN (
 ) AS v1 
 ORDER BY v0 ASC, v1 DESC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":107,"end":156},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":280,"end":331},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -359,7 +359,7 @@ JOIN (
 ) AS v1 
 ORDER BY root["FamilyId"] ASC, v1 DESC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":147,"end":198},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":60,"end":65},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -393,7 +393,7 @@ JOIN (
 ) AS v2 
 ORDER BY v1 ASC, v2 DESC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":136,"end":186},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":82,"end":88},"code":"SC2203","message":"'TOP' is not supported in subqueries."},{"severity":"Error","location":{"start":195,"end":242},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":366,"end":417},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -415,7 +415,7 @@ FROM (
 ) AS r1 
 ORDER BY r1["FamilyId"] ASC, r1["FamilyNumber"] ASC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Underlying object does not have an '_rid' field.]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: InternalServerError]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -443,7 +443,7 @@ JOIN (
     ORDER BY r0["FamilyId"] ASC, r0["FamilyNumber"] ASC
 ) AS v1 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":374,"end":425},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -467,7 +467,7 @@ FROM (
 ) AS r0 
 ORDER BY r0["FamilyId"] ASC, r0["FamilyNumber"] ASC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Underlying object does not have an '_rid' field.]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: InternalServerError]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -497,7 +497,7 @@ FROM (
 ) AS r0 
 ORDER BY ARRAY_LENGTH(r0["ChildrenWithPets"]) DESC, r0["TotalExpenses"] DESC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -536,7 +536,7 @@ FROM (
 ) AS r2 
 ORDER BY r2["GoodChildrenCount"] DESC, r2["UniquePetsNameCount"] ASC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -564,7 +564,7 @@ FROM root
 JOIN f0 IN root["Children"] 
 WHERE (ARRAY_LENGTH(root["Children"]) > 0) 
 ORDER BY f0["Grade"] ASC, ARRAY_LENGTH(f0["Pets"]) DESC ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -594,7 +594,7 @@ FROM (
     WHERE (v2 > 0)
 ) AS r1 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":163,"end":209},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":210,"end":227},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -618,7 +618,7 @@ FROM (
 ) AS r2 
 ORDER BY r2["Length"] ASC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":170,"end":225},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":60,"end":66},"code":"SC2203","message":"'TOP' is not supported in subqueries."},{"severity":"Error","location":{"start":234,"end":259},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -633,7 +633,7 @@ FROM root
 JOIN f0 IN root["Records"]["Transactions"] 
 WHERE (ARRAY_LENGTH(root["Children"]) > 0) 
 ORDER BY f0["Type"] ASC, f0["Amount"] ASC ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"Errors":["Order-by over correlated collections is not supported."]}]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -650,7 +650,7 @@ FROM (
 ) AS r0 
 ORDER BY r0["IsRegistered"] ASC, r0["Int"] DESC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":29,"end":36},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -668,7 +668,7 @@ FROM (
 ORDER BY r0["IsRegistered"] ASC, r0["Int"] DESC 
 OFFSET 5 LIMIT 2147483647 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":29,"end":36},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -705,7 +705,7 @@ FROM (
 ) AS r0 
 ORDER BY r0["Name"] DESC, r0["PetWithLongNames"] ASC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -735,7 +735,7 @@ JOIN (
 ) AS v1 
 ORDER BY v0 ASC, v1 DESC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -775,7 +775,7 @@ JOIN (
 ) AS v3 
 ORDER BY v0[0] ASC, v1[0] DESC, v2 ASC, v3[0] DESC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
 </Results>

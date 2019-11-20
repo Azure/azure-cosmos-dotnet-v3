@@ -15,9 +15,7 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
     internal sealed class PriorityQueue<T> : IProducerConsumerCollection<T>
     {
         private const int DefaultInitialCapacity = 17;
-        private readonly bool isSynchronized;
         private readonly List<T> queue;
-        private readonly IComparer<T> comparer;
 
         public PriorityQueue(bool isSynchronized = false)
             : this(DefaultInitialCapacity, isSynchronized)
@@ -62,9 +60,9 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
                 throw new ArgumentNullException("comparer");
             }
 
-            this.isSynchronized = isSynchronized;
+            this.IsSynchronized = isSynchronized;
             this.queue = queue;
-            this.comparer = comparer;
+            this.Comparer = comparer;
         }
 
         public int Count
@@ -75,18 +73,9 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
             }
         }
 
-        public IComparer<T> Comparer
-        {
-            get
-            {
-                return this.comparer;
-            }
-        }
+        public IComparer<T> Comparer { get; }
 
-        public bool IsSynchronized
-        {
-            get { return this.isSynchronized; }
-        }
+        public bool IsSynchronized { get; }
 
         public object SyncRoot
         {
@@ -95,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
 
         public void CopyTo(T[] array, int index)
         {
-            if (this.isSynchronized)
+            if (this.IsSynchronized)
             {
                 lock (this.SyncRoot)
                 {
@@ -115,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
 
         public bool TryTake(out T item)
         {
-            if (this.isSynchronized)
+            if (this.IsSynchronized)
             {
                 lock (this.SyncRoot)
                 {
@@ -128,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
 
         public bool TryPeek(out T item)
         {
-            if (this.isSynchronized)
+            if (this.IsSynchronized)
             {
                 lock (this.SyncRoot)
                 {
@@ -146,7 +135,7 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
 
         public void Clear()
         {
-            if (this.isSynchronized)
+            if (this.IsSynchronized)
             {
                 lock (this.SyncRoot)
                 {
@@ -160,7 +149,7 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
 
         public bool Contains(T item)
         {
-            if (this.isSynchronized)
+            if (this.IsSynchronized)
             {
                 lock (this.SyncRoot)
                 {
@@ -173,7 +162,7 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
 
         public T Dequeue()
         {
-            if (this.isSynchronized)
+            if (this.IsSynchronized)
             {
                 lock (this.SyncRoot)
                 {
@@ -186,7 +175,7 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
 
         public void Enqueue(T item)
         {
-            if (this.isSynchronized)
+            if (this.IsSynchronized)
             {
                 lock (this.SyncRoot)
                 {
@@ -200,7 +189,7 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
 
         public void EnqueueRange(IEnumerable<T> items)
         {
-            if (this.isSynchronized)
+            if (this.IsSynchronized)
             {
                 lock (this.SyncRoot)
                 {
@@ -214,7 +203,7 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
 
         public T Peek()
         {
-            if (this.isSynchronized)
+            if (this.IsSynchronized)
             {
                 lock (this.SyncRoot)
                 {
@@ -227,7 +216,7 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
 
         public T[] ToArray()
         {
-            if (this.isSynchronized)
+            if (this.IsSynchronized)
             {
                 lock (this.SyncRoot)
                 {
@@ -240,7 +229,7 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
 
         public IEnumerator<T> GetEnumerator()
         {
-            if (this.isSynchronized)
+            if (this.IsSynchronized)
             {
                 lock (this.SyncRoot)
                 {
@@ -377,7 +366,7 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
 
                 T item = this.queue[itemIndex];
 
-                if (this.comparer.Compare(item, parent) >= 0)
+                if (this.Comparer.Compare(item, parent) >= 0)
                 {
                     break;
                 }
@@ -395,13 +384,13 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
             int smallestChildIndex = parentIndex;
 
             if (leftChildIndex < this.queue.Count
-                && this.comparer.Compare(this.queue[smallestChildIndex], this.queue[leftChildIndex]) > 0)
+                && this.Comparer.Compare(this.queue[smallestChildIndex], this.queue[leftChildIndex]) > 0)
             {
                 smallestChildIndex = leftChildIndex;
             }
 
             if (rightChildIndex < this.queue.Count
-                && this.comparer.Compare(this.queue[smallestChildIndex], this.queue[rightChildIndex]) > 0)
+                && this.Comparer.Compare(this.queue[smallestChildIndex], this.queue[rightChildIndex]) > 0)
             {
                 smallestChildIndex = rightChildIndex;
             }

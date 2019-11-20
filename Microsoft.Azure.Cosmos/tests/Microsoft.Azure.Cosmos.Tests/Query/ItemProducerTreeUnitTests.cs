@@ -54,6 +54,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                    produceAsyncCompleteCallback: MockItemProducerFactory.DefaultTreeProduceAsyncCompleteDelegate,
                    itemProducerTreeComparer: new ParallelItemProducerTreeComparer(),
                    equalityComparer: CosmosElementEqualityComparer.Value,
+                   testSettings: new Query.Core.TestInjections(simulate429s: false, simulateEmptyPages: false),
                    deferFirstPage: true,
                    collectionRid: MockQueryFactory.DefaultCollectionRid,
                    initialPageSize: maxPageSize,
@@ -62,12 +63,15 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.IsTrue(itemProducerTree.HasMoreResults);
 
                 List<ToDoItem> itemsRead = new List<ToDoItem>();
-                while ((await itemProducerTree.MoveNextAsync(this.cancellationToken)).successfullyMovedNext)
+                while ((await itemProducerTree.TryMoveNextPageAsync(this.cancellationToken)).movedToNextPage)
                 {
-                    Assert.IsTrue(itemProducerTree.HasMoreResults);
-                    string jsonValue = itemProducerTree.Current.ToString();
-                    ToDoItem item = JsonConvert.DeserializeObject<ToDoItem>(jsonValue);
-                    itemsRead.Add(item);
+                    while (itemProducerTree.TryMoveNextDocumentWithinPage())
+                    {
+                        Assert.IsTrue(itemProducerTree.HasMoreResults);
+                        string jsonValue = itemProducerTree.Current.ToString();
+                        ToDoItem item = JsonConvert.DeserializeObject<ToDoItem>(jsonValue);
+                        itemsRead.Add(item);
+                    }
                 }
 
                 Assert.IsFalse(itemProducerTree.HasMoreResults);
@@ -109,6 +113,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                    MockItemProducerFactory.DefaultTreeProduceAsyncCompleteDelegate,
                    new ParallelItemProducerTreeComparer(),
                    CosmosElementEqualityComparer.Value,
+                   new Query.Core.TestInjections(simulate429s: false, simulateEmptyPages: false),
                    true,
                    MockQueryFactory.DefaultCollectionRid,
                    maxPageSize,
@@ -117,15 +122,20 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.IsTrue(itemProducerTree.HasMoreResults);
 
                 List<ToDoItem> itemsRead = new List<ToDoItem>();
-                while ((await itemProducerTree.MoveNextAsync(this.cancellationToken)).successfullyMovedNext)
+                while ((await itemProducerTree.TryMoveNextPageAsync(this.cancellationToken)).movedToNextPage)
                 {
-                    Assert.IsTrue(itemProducerTree.HasMoreResults);
-                    if (itemProducerTree.Current != null)
+                    while (itemProducerTree.TryMoveNextDocumentWithinPage())
                     {
-                        string jsonValue = itemProducerTree.Current.ToString();
-                        ToDoItem item = JsonConvert.DeserializeObject<ToDoItem>(jsonValue);
-                        itemsRead.Add(item);
+                        Assert.IsTrue(itemProducerTree.HasMoreResults);
+                        if (itemProducerTree.Current != null)
+                        {
+                            string jsonValue = itemProducerTree.Current.ToString();
+                            ToDoItem item = JsonConvert.DeserializeObject<ToDoItem>(jsonValue);
+                            itemsRead.Add(item);
+                        }
                     }
+
+                    itemProducerTree.UpdatePriority();
                 }
 
                 Assert.IsFalse(itemProducerTree.HasMoreResults);
@@ -176,6 +186,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                         errorMessage: null,
                         method: HttpMethod.Post,
                         requestUri: new Uri("http://localhost.com"),
+                        requestSessionToken: null,
+                        responseSessionToken: null,
                         clientSideRequestStatistics: null),
                    schedulingStopwatch: new SchedulingStopwatch());
             IReadOnlyCollection<QueryPageDiagnostics> pageDiagnostics = new List<QueryPageDiagnostics>() { diagnostics };
@@ -205,6 +217,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 produceAsyncCompleteCallback: produceAsyncCompleteCallback,
                 itemProducerTreeComparer: comparer.Object,
                 equalityComparer: cosmosElementComparer.Object,
+                testSettings: new Query.Core.TestInjections(simulate429s: false, simulateEmptyPages: false),
                 deferFirstPage: false,
                 collectionRid: "collectionRid",
                 initialContinuationToken: null,
@@ -226,6 +239,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                         errorMessage: "Error message",
                         method: HttpMethod.Post,
                         requestUri: new Uri("http://localhost.com"),
+                        requestSessionToken: null,
+                        responseSessionToken: null,
                         clientSideRequestStatistics: null),
                    schedulingStopwatch: new SchedulingStopwatch());
             pageDiagnostics = new List<QueryPageDiagnostics>() { diagnostics };
@@ -250,22 +265,32 @@ namespace Microsoft.Azure.Cosmos.Tests
             await itemProducerTree.BufferMoreDocumentsAsync(cancellationTokenSource.Token);
 
             // First item should be a success
-            (bool successfullyMovedNext, QueryResponseCore? failureResponse) result = await itemProducerTree.MoveNextAsync(cancellationTokenSource.Token);
-            Assert.IsTrue(result.successfullyMovedNext);
-            Assert.IsNull(result.failureResponse);
-            Assert.IsTrue(itemProducerTree.HasMoreResults);
+            {
+                (bool movedToNextPage, QueryResponseCore? failureResponse) = await itemProducerTree.TryMoveNextPageAsync(cancellationTokenSource.Token);
+                Assert.IsTrue(movedToNextPage);
+                Assert.IsNull(failureResponse);
+                Assert.IsTrue(itemProducerTree.TryMoveNextDocumentWithinPage());
+                Assert.IsFalse(itemProducerTree.TryMoveNextDocumentWithinPage());
+                Assert.IsTrue(itemProducerTree.HasMoreResults);
+            }
 
             // Second item should be a success
-            result = await itemProducerTree.MoveNextAsync(cancellationTokenSource.Token);
-            Assert.IsTrue(result.successfullyMovedNext);
-            Assert.IsNull(result.failureResponse);
-            Assert.IsTrue(itemProducerTree.HasMoreResults);
+            {
+                (bool movedToNextPage, QueryResponseCore? failureResponse) = await itemProducerTree.TryMoveNextPageAsync(cancellationTokenSource.Token);
+                Assert.IsTrue(movedToNextPage);
+                Assert.IsNull(failureResponse);
+                Assert.IsTrue(itemProducerTree.TryMoveNextDocumentWithinPage());
+                Assert.IsFalse(itemProducerTree.TryMoveNextDocumentWithinPage());
+                Assert.IsTrue(itemProducerTree.HasMoreResults);
+            }
 
             // Third item should be a failure
-            result = await itemProducerTree.MoveNextAsync(cancellationTokenSource.Token);
-            Assert.IsFalse(result.successfullyMovedNext);
-            Assert.IsNotNull(result.failureResponse);
-            Assert.IsFalse(itemProducerTree.HasMoreResults);
+            {
+                (bool movedToNextPage, QueryResponseCore? failureResponse) = await itemProducerTree.TryMoveNextPageAsync(cancellationTokenSource.Token);
+                Assert.IsFalse(movedToNextPage);
+                Assert.IsNotNull(failureResponse);
+                Assert.IsFalse(itemProducerTree.HasMoreResults);
+            }
 
             // Try to buffer after failure. It should return the previous cached failure and not try to buffer again.
             mockQueryContext.Setup(x => x.ExecuteQueryAsync(
@@ -279,8 +304,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Throws(new Exception("Previous buffer failed. Operation should return original failure and not try again"));
 
             await itemProducerTree.BufferMoreDocumentsAsync(cancellationTokenSource.Token);
-            Assert.IsFalse(result.successfullyMovedNext);
-            Assert.IsNotNull(result.failureResponse);
             Assert.IsFalse(itemProducerTree.HasMoreResults);
         }
     }

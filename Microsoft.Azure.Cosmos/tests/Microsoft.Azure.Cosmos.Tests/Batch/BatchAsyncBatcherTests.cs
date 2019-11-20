@@ -62,14 +62,16 @@ namespace Microsoft.Azure.Cosmos.Tests
                     {
                         Content = responseContent,
                         Diagnostics = new PointOperationStatistics(
-                            Guid.NewGuid().ToString(),
-                            HttpStatusCode.OK,
-                            SubStatusCodes.Unknown,
-                            0,
-                            string.Empty,
-                            HttpMethod.Get,
-                            new Uri("http://localhost"),
-                            new CosmosClientSideRequestStatistics())
+                            activityId: Guid.NewGuid().ToString(),
+                            statusCode: HttpStatusCode.OK,
+                            subStatusCode: SubStatusCodes.Unknown,
+                            requestCharge: 0,
+                            errorMessage: string.Empty,
+                            method: HttpMethod.Get,
+                            requestUri: new Uri("http://localhost"),
+                            requestSessionToken: null,
+                            responseSessionToken: null,
+                            clientSideRequestStatistics: new CosmosClientSideRequestStatistics())
                     },
                     batchRequest,
                     new CosmosJsonDotNetSerializer());
@@ -107,14 +109,16 @@ namespace Microsoft.Azure.Cosmos.Tests
                 {
                     Content = responseContent,
                     Diagnostics = new PointOperationStatistics(
-                        Guid.NewGuid().ToString(),
-                        HttpStatusCode.Gone,
-                        SubStatusCodes.NameCacheIsStale,
-                        0,
-                        string.Empty,
-                        HttpMethod.Get,
-                        new Uri("http://localhost"),
-                        new CosmosClientSideRequestStatistics())
+                        activityId: Guid.NewGuid().ToString(),
+                        statusCode: HttpStatusCode.Gone,
+                        subStatusCode: SubStatusCodes.NameCacheIsStale,
+                        requestCharge: 0,
+                        errorMessage: string.Empty,
+                        method: HttpMethod.Get,
+                        requestUri: new Uri("http://localhost"),
+                        requestSessionToken: null,
+                        responseSessionToken: null,
+                        clientSideRequestStatistics: new CosmosClientSideRequestStatistics())
                 };
                 responseMessage.Headers.SubStatusCode = SubStatusCodes.PartitionKeyRangeGone;
 

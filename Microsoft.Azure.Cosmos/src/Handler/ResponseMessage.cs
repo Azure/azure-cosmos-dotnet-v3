@@ -220,7 +220,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 try
                 {
-                    Error error = Resource.LoadFrom<Error>(this.content);
+                    Error error = Documents.Resource.LoadFrom<Error>(this.content);
                     if (error != null)
                     {
                         // Error format is not consistent across modes
