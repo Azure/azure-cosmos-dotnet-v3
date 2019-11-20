@@ -98,6 +98,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     count: responseCore.CosmosElements.Count,
                     responseLengthBytes: responseCore.ResponseLengthBytes,
                     diagnostics: diagnostics,
+                    serializationOptions: this.cosmosSerializationFormatOptions,
                     responseHeaders: new CosmosQueryResponseMessageHeaders(
                         responseCore.ContinuationToken,
                         responseCore.DisallowContinuationTokenMessage,
@@ -128,8 +129,6 @@ namespace Microsoft.Azure.Cosmos.Query
                         SubStatusCode = responseCore.SubStatusCode ?? Documents.SubStatusCodes.Unknown
                     });
             }
-
-            queryResponse.CosmosSerializationOptions = this.cosmosSerializationFormatOptions;
 
             return queryResponse;
         }
