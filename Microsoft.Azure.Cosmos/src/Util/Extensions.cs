@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos
     {
         private static readonly char[] NewLineCharacters = new[] { '\r', '\n' };
 
-        internal static ResponseMessage ToCosmosResponseMessage(this DocumentServiceResponse response, RequestMessage requestMessage)
+        internal static ResponseMessage ToCosmosResponseMessage(this DocumentServiceResponse documentServiceResponse, RequestMessage requestMessage)
         {
             Debug.Assert(requestMessage != null, nameof(requestMessage));
 
