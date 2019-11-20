@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (this.Headers.GetHeaderValue<string>(WFConstants.BackendHeaders.OfferReplacePending) != null)
                 {
-                    return Boolean.Parse(this.Headers.GetHeaderValue<string>(WFConstants.BackendHeaders.MinimumRUsForOffer));
+                    return Boolean.Parse(this.Headers.GetHeaderValue<string>(WFConstants.BackendHeaders.OfferReplacePending));
                 }
                 return null;
             }
