@@ -443,7 +443,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 "Stored Procedure id do not match");
             Assert.AreEqual(body, settings.Body,
                 "Stored Procedure functions do not match");
-            Assert.IsNotNull(cosmosResponse.Resource.SelfLink);
             SelflinkValidator.ValidateSprocSelfLink(cosmosResponse.Resource.SelfLink);
         }
 

@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System;
     using System.Collections.Generic;
     using System.Net;
-    using System.Text.RegularExpressions;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Cosmos.Utils;
