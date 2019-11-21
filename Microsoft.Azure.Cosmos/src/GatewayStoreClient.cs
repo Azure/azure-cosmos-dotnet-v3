@@ -324,6 +324,13 @@ namespace Microsoft.Azure.Cosmos
                     DateTime sendTimeUtc = DateTime.UtcNow;
                     Guid localGuid = Guid.NewGuid();  // For correlating HttpRequest and HttpResponse Traces
 
+                    IClientSideRequestStatistics clientSideRequestStatistics = request.RequestContext.ClientRequestStatistics;
+                    if (clientSideRequestStatistics == null)
+                    {
+                        clientSideRequestStatistics = new CosmosClientSideRequestStatistics();
+                        request.RequestContext.ClientRequestStatistics = clientSideRequestStatistics;
+                    }
+
                     Guid requestedActivityId = Trace.CorrelationManager.ActivityId;
                     this.eventSource.Request(
                         requestedActivityId,
@@ -333,6 +340,7 @@ namespace Microsoft.Azure.Cosmos
                         requestMessage.Headers);
 
                     TimeSpan durationTimeSpan;
+                    string recordAddressResolutionId = clientSideRequestStatistics.RecordAddressResolutionStart(requestMessage.RequestUri);
                     try
                     {
                         HttpResponseMessage responseMessage = await this.httpClient.SendAsync(requestMessage, cancellationToken);
@@ -384,6 +392,10 @@ namespace Microsoft.Azure.Cosmos
                         {
                             throw;
                         }
+                    }
+                    finally
+                    {
+                        clientSideRequestStatistics.RecordAddressResolutionEnd(recordAddressResolutionId);
                     }
                 }
             };
