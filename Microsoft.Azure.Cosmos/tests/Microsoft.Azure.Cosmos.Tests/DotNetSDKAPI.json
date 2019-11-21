@@ -116,21 +116,7 @@
           ],
           "MethodInfo": "System.String get_Id()"
         },
-        "System.String get_SelfLink()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "System.String get_SelfLink()"
-        },
         "System.String Id[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"id\")]": {
-          "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
-          "MethodInfo": null
-        },
-        "System.String SelfLink[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"_self\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -354,7 +340,7 @@
           ],
           "MethodInfo": null
         },
-        "System.String SelfLink[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"_self\")]": {
+        "System.String SelfLink[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"_self\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -981,7 +967,7 @@
           ],
           "MethodInfo": null
         },
-        "System.String SelfLink[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"_self\")]": {
+        "System.String SelfLink[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"_self\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -2027,7 +2013,7 @@
           ],
           "MethodInfo": null
         },
-        "System.String SelfLink[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"_self\")]": {
+        "System.String SelfLink[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"_self\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -3689,7 +3675,7 @@
           ],
           "MethodInfo": null
         },
-        "System.String SelfLink[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"_self\")]": {
+        "System.String SelfLink[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"_self\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -5371,7 +5357,7 @@
           ],
           "MethodInfo": null
         },
-        "System.String SelfLink[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"_self\")]": {
+        "System.String SelfLink[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"_self\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -5682,7 +5668,7 @@
           ],
           "MethodInfo": null
         },
-        "System.String SelfLink[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"_self\")]": {
+        "System.String SelfLink[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"_self\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -5887,7 +5873,7 @@
           ],
           "MethodInfo": null
         },
-        "System.String SelfLink[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"_self\")]": {
+        "System.String SelfLink[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"_self\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -7154,7 +7140,7 @@
           ],
           "MethodInfo": "System.String get_SelfLink()"
         },
-        "System.String SelfLink[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"_self\")]": {
+        "System.String SelfLink[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"_self\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -7754,7 +7740,7 @@
           ],
           "MethodInfo": null
         },
-        "System.String SelfLink[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"_self\")]": {
+        "System.String SelfLink[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"_self\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
