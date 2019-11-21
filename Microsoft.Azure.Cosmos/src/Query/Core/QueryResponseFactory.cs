@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                 queryResponseCore = QueryResponseCore.CreateFailure(
                     statusCode: System.Net.HttpStatusCode.InternalServerError,
                     subStatusCodes: null,
-                    errorMessage: exception.ToString(),
+                    errorMessage: exception?.ToString(),
                     requestCharge: 0,
                     activityId: QueryResponseCore.EmptyGuidString,
                     diagnostics: QueryResponseCore.EmptyDiagnostics);
