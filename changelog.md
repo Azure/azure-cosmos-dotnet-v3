@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [#995](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/995) Included session token in diagnostics.
 - [#1000](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1000) Add PortReuseMode to CosmosClientOptions.
+- [#1038](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1038) Add Selflink to resource properties
 
 ### Fixed
 
