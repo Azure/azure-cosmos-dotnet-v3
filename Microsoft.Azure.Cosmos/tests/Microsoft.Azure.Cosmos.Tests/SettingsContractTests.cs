@@ -518,7 +518,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             JObject jObjectDocumentCollection = JObject.Parse(documentJsonString);
             JObject jObjectContainer = JObject.Parse(cosmosJsonString);
-            Assert.IsTrue(JToken.DeepEquals(jObjectDocumentCollection, jObjectContainer));
+            Assert.IsTrue(JToken.DeepEquals(jObjectDocumentCollection, jObjectContainer), $"v2:{documentJsonString}; v3:{cosmosJsonString}");
         }
 
         [TestMethod]

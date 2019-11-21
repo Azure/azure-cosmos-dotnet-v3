@@ -195,6 +195,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(createResponse.Database.Id, readResponse.Database.Id);
             Assert.AreEqual(createResponse.Resource.Id, readResponse.Resource.Id);
             Assert.AreNotEqual(createResponse.ActivityId, readResponse.ActivityId);
+            Assert.IsNotNull(createResponse.Resource.SelfLink);
+            Assert.IsNotNull(readResponse.Resource.SelfLink);
+            Assert.AreEqual(createResponse.Resource.SelfLink, readResponse.Resource.SelfLink);
+            SelflinkValidator.ValidateDbSelfLink(readResponse.Resource.SelfLink);
+
             this.ValidateHeaders(readResponse);
             await createResponse.Database.DeleteAsync(cancellationToken: this.cancellationToken);
         }
