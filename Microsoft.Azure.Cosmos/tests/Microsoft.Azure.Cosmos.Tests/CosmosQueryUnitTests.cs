@@ -159,7 +159,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             QueryResponseCore queryResponse = await context.ExecuteNextAsync(cancellationtoken);
             Assert.AreEqual(HttpStatusCode.BadRequest, queryResponse.StatusCode);
-            Assert.IsTrue(queryResponse.ErrorMessage.Contains(exceptionMessage));
+            Assert.IsTrue(queryResponse.ErrorMessage.Contains(exceptionMessage), "response error message did not contain the proper substring.");
         }
 
         private async Task<(IList<IDocumentQueryExecutionComponent> components, QueryResponseCore response)> GetAllExecutionComponents()
