@@ -262,7 +262,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
 
         public static TryCatch FromResult()
         {
-            return new TryCatch(TryCatch<Void>.FromResult(Void.Singleton));
+            return new TryCatch(TryCatch<Void>.FromResult(default));
         }
 
         public static TryCatch FromException(Exception exception)
