@@ -334,7 +334,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ResponseMessage response = TransportHandler.AggregateExceptionConverter(ae, null);
             Assert.IsNotNull(response);
             Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
-            Assert.IsTrue(response.ErrorMessage.StartsWith(errorMessage));
+            Assert.IsTrue(response.ErrorMessage.Contains(errorMessage));
         }
 
         private class SomePayload

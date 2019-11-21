@@ -38,5 +38,19 @@ namespace Microsoft.Azure.Cosmos.Scenarios
             Assert.ThrowsException<ArgumentException>(
                 () => this.DeserializeModifyAndSerializeVertexDocumentTest(this.SerializationFormat));
         }
+
+        [TestMethod]
+        public override void GetCosmosElementsFromQueryResponse()
+        {
+            Assert.ThrowsException<ArgumentException>(
+                () => this.GetCosmosElementsFromQueryResponseTest(this.SerializationFormat));
+        }
+
+        [TestMethod]
+        public override void GetDeserializedObjectsFromQueryResponse()
+        {
+            Assert.ThrowsException<ArgumentException>(
+                () => this.GetDeserializedObjectsFromQueryResponseTest(this.SerializationFormat));
+        }
     }
 }

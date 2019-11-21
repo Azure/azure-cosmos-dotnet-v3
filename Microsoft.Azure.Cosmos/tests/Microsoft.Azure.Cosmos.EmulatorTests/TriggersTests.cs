@@ -286,6 +286,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(cosmosResponse.RequestCharge > 0);
             Assert.IsNotNull(cosmosResponse.Headers.GetHeaderValue<string>(Documents.HttpConstants.HttpHeaders.MaxResourceQuota));
             Assert.IsNotNull(cosmosResponse.Headers.GetHeaderValue<string>(Documents.HttpConstants.HttpHeaders.CurrentResourceQuotaUsage));
+            SelflinkValidator.ValidateTriggerSelfLink(cosmosResponse.Resource.SelfLink);
         }
 
         private class Job
