@@ -462,9 +462,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 }
                 else
                 {
-                    CosmosException cosmosException = tryCreate.Exception as CosmosException;
-                    Assert.IsNotNull(cosmosException);
-                    Assert.AreEqual((HttpStatusCode)429, cosmosException.StatusCode);
+                    QueryResponseCore queryResponseCore = QueryResponseFactory.CreateFromException(tryCreate.Exception);
+                    Assert.AreEqual((HttpStatusCode)429, queryResponseCore.StatusCode);
                 }
             }
         }
