@@ -111,6 +111,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         result: cosmosElements,
                         count: cosmosElements.Count,
                         responseLengthBytes: responseCore.ResponseLengthBytes,
+                        serializationOptions: null,
                         responseHeaders: new CosmosQueryResponseMessageHeaders(
                             responseCore.ContinuationToken,
                             responseCore.DisallowContinuationTokenMessage,
@@ -151,6 +152,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         result: cosmosElements,
                         count: cosmosElements.Count,
                         responseLengthBytes: responseCore.ResponseLengthBytes,
+                        serializationOptions: null,
                         responseHeaders: new CosmosQueryResponseMessageHeaders(
                             responseCore.ContinuationToken,
                             responseCore.DisallowContinuationTokenMessage,
