@@ -62,19 +62,15 @@ namespace Microsoft.Azure.Cosmos
 
             // if there is a status code then it came from the backend, return error as http error instead of throwing the exception
             ResponseMessage responseMessage = new ResponseMessage(documentClientException.StatusCode ?? HttpStatusCode.InternalServerError, requestMessage);
-            string reasonPhraseString = string.Empty;
-            if (!string.IsNullOrEmpty(documentClientException.Message))
+            string reasonPhraseString = documentClientException.ToString();
+            if (!string.IsNullOrEmpty(reasonPhraseString))
             {
                 if (documentClientException.Message.IndexOfAny(Extensions.NewLineCharacters) >= 0)
                 {
-                    StringBuilder sb = new StringBuilder(documentClientException.Message);
+                    StringBuilder sb = new StringBuilder(reasonPhraseString);
                     sb = sb.Replace("\r", string.Empty);
                     sb = sb.Replace("\n", string.Empty);
                     reasonPhraseString = sb.ToString();
-                }
-                else
-                {
-                    reasonPhraseString = documentClientException.Message;
                 }
             }
 
