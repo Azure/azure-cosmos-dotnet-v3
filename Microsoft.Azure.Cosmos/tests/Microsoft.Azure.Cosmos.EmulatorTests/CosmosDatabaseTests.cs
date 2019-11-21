@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.Generic;
     using System.Linq;
     using System.Net;
+    using System.Text.RegularExpressions;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
@@ -198,6 +199,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(createResponse.Resource.SelfLink);
             Assert.IsNotNull(readResponse.Resource.SelfLink);
             Assert.AreEqual(createResponse.Resource.SelfLink, readResponse.Resource.SelfLink);
+            SelflinkValidator.ValidateDbSelfLink(readResponse.Resource.SelfLink);
 
             this.ValidateHeaders(readResponse);
             await createResponse.Database.DeleteAsync(cancellationToken: this.cancellationToken);

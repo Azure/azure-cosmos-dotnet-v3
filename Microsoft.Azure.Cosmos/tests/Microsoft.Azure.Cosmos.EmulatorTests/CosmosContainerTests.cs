@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.ObjectModel;
     using System.Linq;
     using System.Net;
+    using System.Text.RegularExpressions;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -147,7 +148,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string diagnostics = containerResponse.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
             Assert.IsTrue(diagnostics.Contains("StatusCode"));
-            Assert.IsNotNull(containerResponse.Resource.SelfLink);
+            SelflinkValidator.ValidateContainerSelfLink(containerResponse.Resource.SelfLink);
 
             ContainerProperties settings = new ContainerProperties(containerName, partitionKeyPath)
             {
@@ -169,7 +170,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             diagnostics = containerResponse.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
             Assert.IsTrue(diagnostics.Contains("StatusCode"));
-            Assert.IsNotNull(containerResponse.Resource.SelfLink);
+            SelflinkValidator.ValidateContainerSelfLink(containerResponse.Resource.SelfLink);
 
             containerResponse = await container.ReadContainerAsync();
             Assert.AreEqual(HttpStatusCode.OK, containerResponse.StatusCode);
@@ -182,7 +183,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             diagnostics = containerResponse.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
             Assert.IsTrue(diagnostics.Contains("StatusCode"));
-            Assert.IsNotNull(containerResponse.Resource.SelfLink);
+            SelflinkValidator.ValidateContainerSelfLink(containerResponse.Resource.SelfLink);
 
             containerResponse = await containerResponse.Container.DeleteContainerAsync();
             Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
@@ -648,6 +649,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(containerThroughputResponse.MinThroughput);
             Assert.IsNotNull(containerThroughputResponse.Resource.Throughput);
             Assert.AreEqual(containerThroughput, containerThroughputResponse.Resource.Throughput.Value);
+            SelflinkValidator.ValidateTroughputSelfLink(containerThroughputResponse.Resource.SelfLink);
 
             containerThroughput += 500;
             containerThroughputResponse = await container.ReplaceThroughputAsync(containerThroughput, new RequestOptions());
@@ -655,6 +657,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(containerThroughputResponse.Resource);
             Assert.IsNotNull(containerThroughputResponse.Resource.Throughput);
             Assert.AreEqual(containerThroughput, containerThroughputResponse.Resource.Throughput.Value);
+            SelflinkValidator.ValidateTroughputSelfLink(containerThroughputResponse.Resource.SelfLink);
 
             Assert.AreEqual(0, toStreamCount, "Custom serializer to stream should not be used for offer operations");
             Assert.AreEqual(0, fromStreamCount, "Custom serializer from stream should not be used for offer operations");
@@ -759,7 +762,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             containerResponse = await container.DeleteContainerAsync();
             Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
         }
-
+        
         private void ValidateCreateContainerResponseContract(ContainerResponse containerResponse)
         {
             Assert.IsNotNull(containerResponse);

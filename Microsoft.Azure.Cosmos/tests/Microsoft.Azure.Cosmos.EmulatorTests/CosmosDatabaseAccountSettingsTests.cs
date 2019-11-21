@@ -46,6 +46,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(accountProperties.ReadableRegions.Count() > 0);
             Assert.IsNotNull(accountProperties.WritableRegions);
             Assert.IsTrue(accountProperties.WritableRegions.Count() > 0);
+            SelflinkValidator.ValidateAccountSelfLink(accountProperties.SelfLink);
         }
     }
 }

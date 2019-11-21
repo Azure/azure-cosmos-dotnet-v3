@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.ObjectModel;
     using System.Linq;
     using System.Net;
+    using System.Text.RegularExpressions;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -55,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, userResponse.StatusCode);
             Assert.AreEqual(userId, userResponse.Resource.Id);
             Assert.IsNotNull(userResponse.Resource.ResourceId);
-            Assert.IsNotNull(userResponse.Resource.SelfLink);
+            SelflinkValidator.ValidateUserSelfLink(userResponse.Resource.SelfLink);
 
             string newUserId = Guid.NewGuid().ToString();
             userResponse.Resource.Id = newUserId;
@@ -63,12 +64,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             userResponse = await this.cosmosDatabase.GetUser(userId).ReplaceAsync(userResponse.Resource);
             Assert.AreEqual(HttpStatusCode.OK, userResponse.StatusCode);
             Assert.AreEqual(newUserId, userResponse.Resource.Id);
-            Assert.IsNotNull(userResponse.Resource.SelfLink);
+            SelflinkValidator.ValidateUserSelfLink(userResponse.Resource.SelfLink);
 
             userResponse = await this.cosmosDatabase.GetUser(userResponse.Resource.Id).ReadAsync();
             Assert.AreEqual(HttpStatusCode.OK, userResponse.StatusCode);
             Assert.AreEqual(newUserId, userResponse.Resource.Id);
-            Assert.IsNotNull(userResponse.Resource.SelfLink);
+            SelflinkValidator.ValidateUserSelfLink(userResponse.Resource.SelfLink);
 
             userResponse = await this.cosmosDatabase.GetUser(newUserId).DeleteAsync();
             Assert.AreEqual(HttpStatusCode.NoContent, userResponse.StatusCode);
@@ -78,13 +79,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, userResponse.StatusCode);
             Assert.AreEqual(userId, userResponse.Resource.Id);
             Assert.IsNotNull(userResponse.Resource.ResourceId);
-            Assert.IsNotNull(userResponse.Resource.SelfLink);
+            SelflinkValidator.ValidateUserSelfLink(userResponse.Resource.SelfLink);
 
             newUserId = Guid.NewGuid().ToString();
             userResponse.Resource.Id = newUserId;
             userResponse = await this.cosmosDatabase.UpsertUserAsync(userResponse.Resource.Id);
             Assert.AreEqual(newUserId, userResponse.Resource.Id);
-            Assert.IsNotNull(userResponse.Resource.SelfLink);
+            SelflinkValidator.ValidateUserSelfLink(userResponse.Resource.SelfLink);
         }
     }
 }

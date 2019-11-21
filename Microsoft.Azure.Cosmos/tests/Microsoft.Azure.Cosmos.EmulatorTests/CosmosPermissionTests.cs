@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System;
     using System.Collections.Generic;
     using System.Net;
+    using System.Text.RegularExpressions;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Cosmos.Utils;
@@ -63,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(permissionId, permissionResponse.Resource.Id);
             Assert.AreEqual(permissionProperties.PermissionMode, permissionResponse.Resource.PermissionMode);
             Assert.IsNotNull(permissionResponse.Resource.Token);
-            Assert.IsNotNull(permissionResponse.Resource.SelfLink);
+            SelflinkValidator.ValidatePermissionSelfLink(permissionResponse.Resource.SelfLink);
 
             PermissionProperties newPermissionProperties = new PermissionProperties(permissionId, PermissionMode.All, containerResponse.Container);
             permissionResponse = await user.GetPermission(permissionId).ReplaceAsync(newPermissionProperties);
@@ -71,12 +72,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, userResponse.StatusCode);
             Assert.AreEqual(permissionId, permissionResponse.Resource.Id);
             Assert.AreEqual(newPermissionProperties.PermissionMode, permissionResponse.Resource.PermissionMode);
-            Assert.IsNotNull(permissionResponse.Resource.SelfLink);
+            SelflinkValidator.ValidatePermissionSelfLink(permissionResponse.Resource.SelfLink);
 
             permissionResponse = await user.GetPermission(permissionId).ReadAsync();
             Assert.AreEqual(HttpStatusCode.OK, permissionResponse.StatusCode);
             Assert.AreEqual(permissionId, permissionResponse.Resource.Id);
-            Assert.IsNotNull(permissionResponse.Resource.SelfLink);
+            SelflinkValidator.ValidatePermissionSelfLink(permissionResponse.Resource.SelfLink);
 
             permissionResponse = await user.GetPermission(permissionId).DeleteAsync();
             Assert.AreEqual(HttpStatusCode.NoContent, permissionResponse.StatusCode);
