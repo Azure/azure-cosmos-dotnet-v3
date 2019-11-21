@@ -147,6 +147,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string diagnostics = containerResponse.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
             Assert.IsTrue(diagnostics.Contains("StatusCode"));
+            Assert.IsNotNull(containerResponse.Resource.SelfLink);
 
             ContainerProperties settings = new ContainerProperties(containerName, partitionKeyPath)
             {
@@ -168,6 +169,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             diagnostics = containerResponse.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
             Assert.IsTrue(diagnostics.Contains("StatusCode"));
+            Assert.IsNotNull(containerResponse.Resource.SelfLink);
 
             containerResponse = await container.ReadContainerAsync();
             Assert.AreEqual(HttpStatusCode.OK, containerResponse.StatusCode);
@@ -180,6 +182,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             diagnostics = containerResponse.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
             Assert.IsTrue(diagnostics.Contains("StatusCode"));
+            Assert.IsNotNull(containerResponse.Resource.SelfLink);
 
             containerResponse = await containerResponse.Container.DeleteContainerAsync();
             Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
