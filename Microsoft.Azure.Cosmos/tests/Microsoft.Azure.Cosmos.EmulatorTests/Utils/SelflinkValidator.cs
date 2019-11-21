@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal static void ValidateTriggerSelfLink(string selfLink)
         {
-            Assert.IsTrue(Regex.IsMatch(selfLink, "dbs/(.*)/colls/(.*)/triggers/(.*)/")));
+            Assert.IsTrue(Regex.IsMatch(selfLink, "dbs/(.*)/colls/(.*)/triggers/(.*)/"));
         }
 
         internal static void ValidateUserSelfLink(string selflink)
@@ -50,11 +50,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         internal static void ValidateTroughputSelfLink(string selflink)
         {
             Assert.IsTrue(Regex.IsMatch(selflink, "offers/(.*)/"));
-        }
-
-        internal static void ValidateAccountSelfLink(string selflink)
-        {
-            Assert.AreEqual(string.Empty, selflink);
         }
     }
 }

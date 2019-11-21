@@ -392,7 +392,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task ContainerSettingsIndexTest()
         {
-            string containerJsonString = "{\"indexingPolicy\":{\"automatic\":true,\"indexingMode\":\"Consistent\",\"includedPaths\":[{\"path\":\"/*\",\"indexes\":[{\"dataType\":\"Number\",\"precision\":-1,\"kind\":\"Range\"},{\"dataType\":\"String\",\"precision\":-1,\"kind\":\"Range\"}]}],\"excludedPaths\":[{\"path\":\"/\\\"_etag\\\"/?\"}],\"compositeIndexes\":[],\"spatialIndexes\":[]},\"id\":\"MigrationTest\",\"_self\":null,\"partitionKey\":{\"paths\":[\"/id\"],\"kind\":\"Hash\"}}";
+            string containerJsonString = "{\"indexingPolicy\":{\"automatic\":true,\"indexingMode\":\"Consistent\",\"includedPaths\":[{\"path\":\"/*\",\"indexes\":[{\"dataType\":\"Number\",\"precision\":-1,\"kind\":\"Range\"},{\"dataType\":\"String\",\"precision\":-1,\"kind\":\"Range\"}]}],\"excludedPaths\":[{\"path\":\"/\\\"_etag\\\"/?\"}],\"compositeIndexes\":[],\"spatialIndexes\":[]},\"id\":\"MigrationTest\",\"partitionKey\":{\"paths\":[\"/id\"],\"kind\":\"Hash\"}}";
 
             CosmosJsonDotNetSerializer cosmosSerializer = new CosmosJsonDotNetSerializer();
             ContainerProperties containerProperties = null;
@@ -518,7 +518,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             JObject jObjectDocumentCollection = JObject.Parse(documentJsonString);
             JObject jObjectContainer = JObject.Parse(cosmosJsonString);
-            Assert.IsTrue(JToken.DeepEquals(jObjectDocumentCollection, jObjectContainer));
+            Assert.IsTrue(JToken.DeepEquals(jObjectDocumentCollection, jObjectContainer), $"v2:{documentJsonString}; v3:{cosmosJsonString}");
         }
 
         [TestMethod]
