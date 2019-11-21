@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1013](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1013) Gateway OperationCanceledException are now returned as request timeouts
 - [#1020](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1020) Direct package update removes debug statements
 - [#1023](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1023) Fixed ThroughputResponse.IsReplacePending header mapping
+- [#1036](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1036) Fixed query responses to return null Content if it is a failure
 
 ## <a name="3.4.1"/> [3.4.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.4.1) - 2019-11-06
 

@@ -24,6 +24,40 @@ namespace Microsoft.Azure.Cosmos.Tests
     public class CosmosQueryUnitTests
     {
         [TestMethod]
+        public void VerifyNegativeCosmosQueryResponseStream()
+        {
+            string contianerRid = "mockContainerRid";
+            string errorMessage = "TestErrorMessage";
+            string activityId = "TestActivityId";
+            double requestCharge = 42.42;
+
+            Mock<CosmosDiagnostics> mockDiagnostics = new Mock<CosmosDiagnostics>();
+            CosmosDiagnostics diagnostics = mockDiagnostics.Object;
+            QueryResponse queryResponse = QueryResponse.CreateFailure(
+                        statusCode: HttpStatusCode.NotFound,
+                        errorMessage: errorMessage,
+                        requestMessage: null,
+                        error: null,
+                        responseHeaders: new CosmosQueryResponseMessageHeaders(
+                            null,
+                            null,
+                            ResourceType.Document,
+                            contianerRid)
+                        {
+                            RequestCharge = requestCharge,
+                            ActivityId = activityId
+                        },
+                        diagnostics: diagnostics);
+
+            Assert.AreEqual(HttpStatusCode.NotFound, queryResponse.StatusCode);
+            Assert.AreEqual(errorMessage, queryResponse.ErrorMessage);
+            Assert.AreEqual(requestCharge, queryResponse.Headers.RequestCharge);
+            Assert.AreEqual(activityId, queryResponse.Headers.ActivityId);
+            Assert.AreEqual(diagnostics, queryResponse.Diagnostics);
+            Assert.IsNull(queryResponse.Content);
+        }
+
+        [TestMethod]
         public void VerifyCosmosQueryResponseStream()
         {
             string contianerRid = "mockContainerRid";
@@ -39,6 +73,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         result: responseCore.CosmosElements,
                         count: responseCore.CosmosElements.Count,
                         responseLengthBytes: responseCore.ResponseLengthBytes,
+                        serializationOptions: null,
                         responseHeaders: new CosmosQueryResponseMessageHeaders(
                             responseCore.ContinuationToken,
                             responseCore.DisallowContinuationTokenMessage,
@@ -52,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             using (Stream stream = queryResponse.Content)
             {
-                using(Stream innerStream = queryResponse.Content)
+                using (Stream innerStream = queryResponse.Content)
                 {
                     Assert.IsTrue(object.ReferenceEquals(stream, innerStream), "Content should return the same stream");
                 }
@@ -76,6 +111,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         result: cosmosElements,
                         count: cosmosElements.Count,
                         responseLengthBytes: responseCore.ResponseLengthBytes,
+                        serializationOptions: null,
                         responseHeaders: new CosmosQueryResponseMessageHeaders(
                             responseCore.ContinuationToken,
                             responseCore.DisallowContinuationTokenMessage,
@@ -116,6 +152,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         result: cosmosElements,
                         count: cosmosElements.Count,
                         responseLengthBytes: responseCore.ResponseLengthBytes,
+                        serializationOptions: null,
                         responseHeaders: new CosmosQueryResponseMessageHeaders(
                             responseCore.ContinuationToken,
                             responseCore.DisallowContinuationTokenMessage,
@@ -323,7 +360,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Mock<IDocumentQueryExecutionComponent> baseContext = new Mock<IDocumentQueryExecutionComponent>();
             baseContext.Setup(x => x.DrainAsync(It.IsAny<int>(), It.IsAny<CancellationToken>())).Returns(Task.FromResult<QueryResponseCore>(failure));
-            Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> callBack = x => Task.FromResult<TryCatch<IDocumentQueryExecutionComponent>>(TryCatch<IDocumentQueryExecutionComponent> .FromResult(baseContext.Object));
+            Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> callBack = x => Task.FromResult<TryCatch<IDocumentQueryExecutionComponent>>(TryCatch<IDocumentQueryExecutionComponent>.FromResult(baseContext.Object));
             return (callBack, failure);
         }
     }
