@@ -392,7 +392,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task ContainerSettingsIndexTest()
         {
-            string containerJsonString = "{\"indexingPolicy\":{\"automatic\":true,\"indexingMode\":\"Consistent\",\"includedPaths\":[{\"path\":\"/*\",\"indexes\":[{\"dataType\":\"Number\",\"precision\":-1,\"kind\":\"Range\"},{\"dataType\":\"String\",\"precision\":-1,\"kind\":\"Range\"}]}],\"excludedPaths\":[{\"path\":\"/\\\"_etag\\\"/?\"}],\"compositeIndexes\":[],\"spatialIndexes\":[]},\"id\":\"MigrationTest\",\"partitionKey\":{\"paths\":[\"/id\"],\"kind\":\"Hash\"}}";
+            string containerJsonString = "{\"indexingPolicy\":{\"automatic\":true,\"indexingMode\":\"Consistent\",\"includedPaths\":[{\"path\":\"/*\",\"indexes\":[{\"dataType\":\"Number\",\"precision\":-1,\"kind\":\"Range\"},{\"dataType\":\"String\",\"precision\":-1,\"kind\":\"Range\"}]}],\"excludedPaths\":[{\"path\":\"/\\\"_etag\\\"/?\"}],\"compositeIndexes\":[],\"spatialIndexes\":[]},\"id\":\"MigrationTest\",\"_self\":null,\"partitionKey\":{\"paths\":[\"/id\"],\"kind\":\"Hash\"}}";
 
             CosmosJsonDotNetSerializer cosmosSerializer = new CosmosJsonDotNetSerializer();
             ContainerProperties containerProperties = null;
