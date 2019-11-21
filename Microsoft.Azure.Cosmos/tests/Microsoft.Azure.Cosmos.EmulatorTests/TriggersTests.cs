@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.IO;
     using System.Linq;
     using System.Net;
-    using System.Text.RegularExpressions;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -287,8 +286,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(cosmosResponse.RequestCharge > 0);
             Assert.IsNotNull(cosmosResponse.Headers.GetHeaderValue<string>(Documents.HttpConstants.HttpHeaders.MaxResourceQuota));
             Assert.IsNotNull(cosmosResponse.Headers.GetHeaderValue<string>(Documents.HttpConstants.HttpHeaders.CurrentResourceQuotaUsage));
-            Assert.IsNotNull(cosmosResponse.Resource.SelfLink);
-            Assert.IsTrue(Regex.IsMatch(cosmosResponse.Resource.SelfLink, "dbs/(.*)/colls/(.*)/triggers/(.*)/"));
+            SelflinkValidator.ValidateTriggerSelfLink(cosmosResponse.Resource.SelfLink);
         }
 
         private class Job

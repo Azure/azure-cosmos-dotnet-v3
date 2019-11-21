@@ -22,9 +22,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(Regex.IsMatch(selflink, "dbs/(.*)/colls/(.*)/"));
         }
 
-        public static void ValidateUdfSelfLink(string selfLink)
+        internal static void ValidateUdfSelfLink(string selfLink)
         {
             Assert.IsTrue(Regex.IsMatch(selfLink, "dbs/(.*)/colls/(.*)/udfs/(.*)/"));
+        }
+
+        internal static void ValidateSprocSelfLink(string selfLink)
+        {
+            Assert.IsTrue(Regex.IsMatch(selfLink, "dbs/(.*)/colls/(.*)/sprocs/(.*)/"));
+        }
+
+        internal static void ValidateTriggerSelfLink(string selfLink)
+        {
+            Assert.IsTrue(Regex.IsMatch(selfLink, "dbs/(.*)/colls/(.*)/triggers/(.*)/")));
         }
 
         internal static void ValidateUserSelfLink(string selflink)

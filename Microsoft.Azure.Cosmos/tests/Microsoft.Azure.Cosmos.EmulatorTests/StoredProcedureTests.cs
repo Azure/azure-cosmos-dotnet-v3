@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.Generic;
     using System.IO;
     using System.Net;
-    using System.Text.RegularExpressions;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Fluent;
@@ -445,7 +444,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(body, settings.Body,
                 "Stored Procedure functions do not match");
             Assert.IsNotNull(cosmosResponse.Resource.SelfLink);
-            Assert.IsTrue(Regex.IsMatch(cosmosResponse.Resource.SelfLink, "dbs/(.*)/colls/(.*)/sprocs/(.*)/"));
+            SelflinkValidator.ValidateSprocSelfLink(cosmosResponse.Resource.SelfLink);
         }
 
         private void ValidateStoredProcedureSettings(StoredProcedureProperties storedProcedureSettings, StoredProcedureResponse cosmosResponse)
