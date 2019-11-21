@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Test
                     }
                 }
 
-                bool completionStatus = Task.WaitAll(tasks.ToArray(), TimeSpan.FromSeconds(1));
+                bool completionStatus = Task.WaitAll(tasks.ToArray(), TimeSpan.FromSeconds(5));
                 Assert.IsTrue(completionStatus);
 
                 foreach (Task task in tasks)
