@@ -7,12 +7,12 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Collections.Generic;
     using System.Net;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using IClientSideRequestStatistics = Documents.IClientSideRequestStatistics;
     using SubStatusCodes = Documents.SubStatusCodes;
 
     internal struct QueryResponseCore
     {
-        private static readonly IReadOnlyList<CosmosElement> EmptyList = new List<CosmosElement>();
+        private static readonly IReadOnlyList<CosmosElement> EmptyList = new List<CosmosElement>().AsReadOnly();
+        internal static readonly string EmptyGuidString = Guid.Empty.ToString();
         internal static readonly IReadOnlyCollection<QueryPageDiagnostics> EmptyDiagnostics = new List<QueryPageDiagnostics>();
 
         private QueryResponseCore(
@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Query
             this.CosmosElements = result;
             this.StatusCode = statusCode;
             this.ActivityId = activityId;
-            this.diagnostics = diagnostics ?? throw new ArgumentNullException(nameof(diagnostics));
+            this.Diagnostics = diagnostics ?? throw new ArgumentNullException(nameof(diagnostics));
             this.ResponseLengthBytes = responseLengthBytes;
             this.RequestCharge = requestCharge;
             this.DisallowContinuationTokenMessage = disallowContinuationTokenMessage;
@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         internal string ActivityId { get; }
 
-        internal IReadOnlyCollection<QueryPageDiagnostics> diagnostics { get; }
+        internal IReadOnlyCollection<QueryPageDiagnostics> Diagnostics { get; }
 
         internal long ResponseLengthBytes { get; }
 

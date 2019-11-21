@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Routing;
@@ -48,16 +49,19 @@ namespace Microsoft.Azure.Cosmos.Routing
                 throw new ArgumentNullException(nameof(queryPartitionProvider));
             }
 
-            PartitionedQueryExecutionInfo queryExecutionInfo = null;
-            queryExecutionInfo = queryPartitionProvider.GetPartitionedQueryExecutionInfo(
-                createBadRequestException: createBadRequestException,
+            TryCatch<PartitionedQueryExecutionInfo> tryGetPartitionQueryExecutionInfo = queryPartitionProvider.TryGetPartitionedQueryExecutionInfo(
                 querySpec: querySpec,
                 partitionKeyDefinition: partitionKeyDefinition,
                 requireFormattableOrderByQuery: VersionUtility.IsLaterThan(clientApiVersion, HttpConstants.Versions.v2016_11_14),
                 isContinuationExpected: isContinuationExpected,
                 allowNonValueAggregateQuery: false,
                 hasLogicalPartitionKey: hasLogicalPartitionKey);
+            if (!tryGetPartitionQueryExecutionInfo.Succeeded)
+            {
+                throw new BadRequestException(tryGetPartitionQueryExecutionInfo.Exception);
+            }
 
+            PartitionedQueryExecutionInfo queryExecutionInfo = tryGetPartitionQueryExecutionInfo.Result;
             if (queryExecutionInfo == null ||
                 queryExecutionInfo.QueryRanges == null ||
                 queryExecutionInfo.QueryInfo == null ||

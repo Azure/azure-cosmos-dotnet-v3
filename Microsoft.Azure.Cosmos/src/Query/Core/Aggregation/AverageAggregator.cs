@@ -5,6 +5,8 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
 {
     using System;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
     /// <summary>
     /// Concrete implementation of IAggregator that can take the global weighted average from the local weighted average of multiple partitions and continuations.
@@ -18,7 +20,12 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
         /// <summary>
         /// The running weighted average for this aggregator.
         /// </summary>
-        private AverageInfo globalAverage = new AverageInfo(0, 0);
+        private AverageInfo globalAverage;
+
+        private AverageAggregator(AverageInfo globalAverage)
+        {
+            this.globalAverage = globalAverage;
+        }
 
         /// <summary>
         /// Averages the supplied item with the previously supplied items.
@@ -38,6 +45,30 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
         public CosmosElement GetResult()
         {
             return this.globalAverage.GetAverage();
+        }
+
+        public string GetContinuationToken()
+        {
+            return this.globalAverage.ToString();
+        }
+
+        public static TryCatch<IAggregator> TryCreate(string continuationToken)
+        {
+            AverageInfo averageInfo;
+            if (continuationToken != null)
+            {
+                if (!AverageInfo.TryParse(continuationToken, out averageInfo))
+                {
+                    return TryCatch<IAggregator>.FromException(
+                        new MalformedContinuationTokenException($"Invalid continuation token: {continuationToken}"));
+                }
+            }
+            else
+            {
+                averageInfo = new AverageInfo(0, 0);
+            }
+
+            return TryCatch<IAggregator>.FromResult(new AverageAggregator(averageInfo));
         }
 
         /// <summary>
@@ -165,6 +196,31 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
                 }
 
                 return CosmosNumber64.Create(this.Sum.Value / this.Count);
+            }
+
+            public override string ToString()
+            {
+                return $@"{{
+                    {(this.Sum.HasValue ? $@"""{SumName}"" : {this.Sum.Value}," : string.Empty)}
+                    ""{CountName}"" : {this.Count}
+                }}";
+            }
+
+            public static bool TryParse(string serializedAverageInfo, out AverageInfo averageInfo)
+            {
+                if (serializedAverageInfo == null)
+                {
+                    throw new ArgumentNullException(nameof(serializedAverageInfo));
+                }
+
+                if (!CosmosElement.TryParse(serializedAverageInfo, out CosmosElement cosmosElementAverageInfo))
+                {
+                    averageInfo = default(AverageInfo);
+                    return false;
+                }
+
+                averageInfo = AverageInfo.Create(cosmosElementAverageInfo);
+                return true;
             }
         }
     }

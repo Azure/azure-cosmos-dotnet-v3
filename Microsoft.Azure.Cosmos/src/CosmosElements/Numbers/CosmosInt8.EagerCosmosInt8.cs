@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 this.number = number;
             }
 
-            protected override sbyte GetValue()
+            public override sbyte GetValue()
             {
                 return this.number;
             }

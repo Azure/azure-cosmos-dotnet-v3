@@ -1,15 +1,16 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
+namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
 {
     using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using ClientSideRequestStatistics = Documents.ClientSideRequestStatistics;
 
     /// <summary>
@@ -22,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
     /// The reason why we have multiple continuations is because for a long running query we have to break up the results into multiple continuations.
     /// Fortunately all the aggregates can be aggregated across continuations and partitions.
     /// </summary>
-    internal sealed class AggregateDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase
+    internal abstract partial class AggregateDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase
     {
         /// <summary>
         /// This class does most of the work, since a query like:
@@ -46,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         /// <param name="singleGroupAggregator">The single group aggregator that we will feed results into.</param>
         /// <param name="isValueAggregateQuery">Whether or not the query has the 'VALUE' keyword.</param>
         /// <remarks>This constructor is private since there is some async initialization that needs to happen in CreateAsync().</remarks>
-        private AggregateDocumentQueryExecutionComponent(
+        protected AggregateDocumentQueryExecutionComponent(
             IDocumentQueryExecutionComponent source,
             SingleGroupAggregator singleGroupAggregator,
             bool isValueAggregateQuery)
@@ -61,94 +62,48 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             this.isValueAggregateQuery = isValueAggregateQuery;
         }
 
-        /// <summary>
-        /// Creates a AggregateDocumentQueryExecutionComponent.
-        /// </summary>
-        /// <param name="aggregates">The aggregates.</param>
-        /// <param name="aliasToAggregateType">The alias to aggregate type.</param>
-        /// <param name="hasSelectValue">Whether or not the query has the 'VALUE' keyword.</param>
-        /// <param name="requestContinuation">The continuation token to resume from.</param>
-        /// <param name="createSourceCallback">The callback to create the source component that supplies the local aggregates.</param>
-        /// <returns>The AggregateDocumentQueryExecutionComponent.</returns>
-        public static async Task<AggregateDocumentQueryExecutionComponent> CreateAsync(
+        public static async Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
+            ExecutionEnvironment executionEnvironment,
             AggregateOperator[] aggregates,
             IReadOnlyDictionary<string, AggregateOperator?> aliasToAggregateType,
+            IReadOnlyList<string> orderedAliases,
             bool hasSelectValue,
-            string requestContinuation,
-            Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback)
+            string continuationToken,
+            Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync)
         {
-            return new AggregateDocumentQueryExecutionComponent(
-                await createSourceCallback(requestContinuation),
-                SingleGroupAggregator.Create(aggregates, aliasToAggregateType, hasSelectValue),
-                aggregates != null && aggregates.Count() == 1);
-        }
-
-        /// <summary>
-        /// Drains at most 'maxElements' documents from the AggregateDocumentQueryExecutionComponent.
-        /// </summary>
-        /// <param name="maxElements">This value is ignored, since the aggregates are aggregated for you.</param>
-        /// <param name="token">The cancellation token.</param>
-        /// <returns>The aggregate result after all the continuations have been followed.</returns>
-        /// <remarks>
-        /// Note that this functions follows all continuations meaning that it won't return until all continuations are drained.
-        /// This means that if you have a long running query this function will take a very long time to return.
-        /// </remarks>
-        public override async Task<QueryResponseCore> DrainAsync(int maxElements, CancellationToken token)
-        {
-            // Note-2016-10-25-felixfan: Given what we support now, we should expect to return only 1 document.
-            // Note-2019-07-11-brchon: We can return empty pages until all the documents are drained,
-            // but then we will have to design a continuation token.
-
-            double requestCharge = 0;
-            long responseLengthBytes = 0;
-            List<QueryPageDiagnostics> diagnosticsPages = new List<QueryPageDiagnostics>();
-            while (!this.IsDone)
+            if (tryCreateSourceAsync == null)
             {
-                QueryResponseCore result = await base.DrainAsync(int.MaxValue, token);
-                if (!result.IsSuccess)
-                {
-                    return result;
-                }
-
-                requestCharge += result.RequestCharge;
-                responseLengthBytes += result.ResponseLengthBytes;
-                // DEVNOTE: Add when query metrics is supported
-                // partitionedQueryMetrics += new PartitionedQueryMetrics(results.QueryMetrics);
-                if (result.diagnostics != null)
-                {
-                    diagnosticsPages.AddRange(result.diagnostics);
-                }
-
-                foreach (CosmosElement element in result.CosmosElements)
-                {
-                    RewrittenAggregateProjections rewrittenAggregateProjections = new RewrittenAggregateProjections(
-                        this.isValueAggregateQuery,
-                        element);
-                    this.singleGroupAggregator.AddValues(rewrittenAggregateProjections.Payload);
-                }
+                throw new ArgumentNullException(nameof(tryCreateSourceAsync));
             }
 
-            List<CosmosElement> finalResult = new List<CosmosElement>();
-            CosmosElement aggregationResult = this.singleGroupAggregator.GetResult();
-            if (aggregationResult != null)
+            TryCatch<IDocumentQueryExecutionComponent> tryCreateAggregate;
+            switch (executionEnvironment)
             {
-                finalResult.Add(aggregationResult);
+                case ExecutionEnvironment.Client:
+                    tryCreateAggregate = await ClientAggregateDocumentQueryExecutionComponent.TryCreateAsync(
+                        aggregates,
+                        aliasToAggregateType,
+                        orderedAliases,
+                        hasSelectValue,
+                        continuationToken,
+                        tryCreateSourceAsync);
+                    break;
+
+                case ExecutionEnvironment.Compute:
+                    tryCreateAggregate = await ComputeAggregateDocumentQueryExecutionComponent.TryCreateAsync(
+                        aggregates,
+                        aliasToAggregateType,
+                        orderedAliases,
+                        hasSelectValue,
+                        continuationToken,
+                        tryCreateSourceAsync);
+                    break;
+
+                default:
+                    throw new ArgumentException($"Unknown {nameof(ExecutionEnvironment)}: {executionEnvironment}.");
             }
 
-            return QueryResponseCore.CreateSuccess(
-                result: finalResult,
-                continuationToken: null,
-                activityId: null,
-                disallowContinuationTokenMessage: null,
-                requestCharge: requestCharge,
-                diagnostics: diagnosticsPages,
-                responseLengthBytes: responseLengthBytes);
-        }
-
-        public override bool TryGetContinuationToken(out string state)
-        {
-            state = null;
-            return true;
+            return tryCreateAggregate;
         }
 
         /// <summary>
@@ -166,8 +121,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                 if (isValueAggregateQuery)
                 {
                     // SELECT VALUE [{"item": {"sum": SUM(c.blah), "count": COUNT(c.blah)}}]
-                    CosmosArray aggregates = raw as CosmosArray;
-                    if (aggregates == null)
+                    if (!(raw is CosmosArray aggregates))
                     {
                         throw new ArgumentException($"{nameof(RewrittenAggregateProjections)} was not an array for a value aggregate query. Type is: {raw.Type}");
                     }
@@ -176,8 +130,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                 }
                 else
                 {
-                    CosmosObject cosmosObject = raw as CosmosObject;
-                    if (cosmosObject == null)
+                    if (!(raw is CosmosObject cosmosObject))
                     {
                         throw new ArgumentException($"{nameof(raw)} must not be an object.");
                     }

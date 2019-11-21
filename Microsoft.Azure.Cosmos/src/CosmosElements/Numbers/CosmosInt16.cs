@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             jsonWriter.WriteInt16Value(this.GetValue());
         }
 
-        protected abstract short GetValue();
+        public abstract short GetValue();
     }
 #if INTERNAL
 #pragma warning restore SA1601 // Partial elements should be documented

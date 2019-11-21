@@ -58,12 +58,6 @@ namespace Microsoft.Azure.Cosmos
         /// <inheritdoc/>
         public override string ETag => this.Headers?.ETag;
 
-        /// <inheritdoc/>
-        internal override string MaxResourceQuota => this.Headers?.GetHeaderValue<string>(HttpConstants.HttpHeaders.MaxResourceQuota);
-
-        /// <inheritdoc/>
-        internal override string CurrentResourceQuotaUsage => this.Headers?.GetHeaderValue<string>(HttpConstants.HttpHeaders.CurrentResourceQuotaUsage);
-
         /// <summary>
         /// Gets minimum throughput in measurement of request units per second in the Azure Cosmos service.
         /// </summary>
@@ -88,7 +82,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (this.Headers.GetHeaderValue<string>(WFConstants.BackendHeaders.OfferReplacePending) != null)
                 {
-                    return Boolean.Parse(this.Headers.GetHeaderValue<string>(WFConstants.BackendHeaders.MinimumRUsForOffer));
+                    return Boolean.Parse(this.Headers.GetHeaderValue<string>(WFConstants.BackendHeaders.OfferReplacePending));
                 }
                 return null;
             }

@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
     internal abstract class CosmosQueryClient
     {
@@ -31,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Query
             Documents.Routing.Range<string> range,
             bool forceRefresh = false);
 
-        internal abstract Task<PartitionedQueryExecutionInfo> GetPartitionedQueryExecutionInfoAsync(
+        internal abstract Task<TryCatch<PartitionedQueryExecutionInfo>> TryGetPartitionedQueryExecutionInfoAsync(
             SqlQuerySpec sqlQuerySpec,
             Documents.PartitionKeyDefinition partitionKeyDefinition,
             bool requireFormattableOrderByQuery,
@@ -78,7 +79,5 @@ namespace Microsoft.Azure.Cosmos.Query
         internal abstract Task ForceRefreshCollectionCacheAsync(
             string collectionLink,
             CancellationToken cancellationToken);
-
-        internal abstract Exception CreateBadRequestException(string message);
     }
 }

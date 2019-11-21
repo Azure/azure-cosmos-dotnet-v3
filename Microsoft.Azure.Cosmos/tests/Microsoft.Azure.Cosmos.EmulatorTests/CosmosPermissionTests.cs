@@ -63,6 +63,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(permissionId, permissionResponse.Resource.Id);
             Assert.AreEqual(permissionProperties.PermissionMode, permissionResponse.Resource.PermissionMode);
             Assert.IsNotNull(permissionResponse.Resource.Token);
+            SelflinkValidator.ValidatePermissionSelfLink(permissionResponse.Resource.SelfLink);
 
             PermissionProperties newPermissionProperties = new PermissionProperties(permissionId, PermissionMode.All, containerResponse.Container);
             permissionResponse = await user.GetPermission(permissionId).ReplaceAsync(newPermissionProperties);
@@ -70,10 +71,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, userResponse.StatusCode);
             Assert.AreEqual(permissionId, permissionResponse.Resource.Id);
             Assert.AreEqual(newPermissionProperties.PermissionMode, permissionResponse.Resource.PermissionMode);
+            SelflinkValidator.ValidatePermissionSelfLink(permissionResponse.Resource.SelfLink);
 
             permissionResponse = await user.GetPermission(permissionId).ReadAsync();
             Assert.AreEqual(HttpStatusCode.OK, permissionResponse.StatusCode);
             Assert.AreEqual(permissionId, permissionResponse.Resource.Id);
+            SelflinkValidator.ValidatePermissionSelfLink(permissionResponse.Resource.SelfLink);
 
             permissionResponse = await user.GetPermission(permissionId).DeleteAsync();
             Assert.AreEqual(HttpStatusCode.NoContent, permissionResponse.StatusCode);

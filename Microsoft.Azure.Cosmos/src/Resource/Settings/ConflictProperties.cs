@@ -42,6 +42,17 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = Documents.Constants.Properties.OperationType)]
         public OperationKind OperationKind { get; internal set; }
 
+        /// <summary>
+        /// Gets the self-link associated with the resource from the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>The self-link associated with the resource.</value> 
+        /// <remarks>
+        /// A self-link is a static addressable Uri for each resource within a database account and follows the Azure Cosmos DB resource model.
+        /// E.g. a self-link for a document could be dbs/db_resourceid/colls/coll_resourceid/documents/doc_resourceid
+        /// </remarks>
+        [JsonProperty(PropertyName = Documents.Constants.Properties.SelfLink, NullValueHandling = NullValueHandling.Ignore)]
+        public string SelfLink { get; private set; }
+
         [JsonConverter(typeof(ConflictResourceTypeJsonConverter))]
         [JsonProperty(PropertyName = Documents.Constants.Properties.ResourceType)]
         internal Type ResourceType { get; set; }
