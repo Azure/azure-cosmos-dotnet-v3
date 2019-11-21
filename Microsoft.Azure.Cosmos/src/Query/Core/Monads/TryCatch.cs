@@ -275,7 +275,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
         /// </summary>
         private readonly struct Void
         {
-            public static readonly Void Singleton = new Void();
         }
     }
 }
