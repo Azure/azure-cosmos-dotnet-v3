@@ -32,26 +32,51 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 throw new ArgumentNullException(nameof(inputParameters));
             }
 
-            CosmosQueryExecutionContextWithNameCacheStaleRetry cosmosQueryExecutionContextWithNameCacheStaleRetry = new CosmosQueryExecutionContextWithNameCacheStaleRetry(
-                cosmosQueryContext: cosmosQueryContext,
-                cosmosQueryExecutionContextFactory: () =>
+            CosmosQueryExecutionContext CreateLazyExecutionContext()
+            {
+                // Query Iterator requires that the creation of the query context is defered until the user calls ReadNextAsync
+                AsyncLazy<TryCatch<CosmosQueryExecutionContext>> lazyTryCreateCosmosQueryExecutionContext = new AsyncLazy<TryCatch<CosmosQueryExecutionContext>>(valueFactory: (innerCancellationToken) =>
                 {
-                    // Query Iterator requires that the creation of the query context is defered until the user calls ReadNextAsync
-                    AsyncLazy<TryCatch<CosmosQueryExecutionContext>> lazyTryCreateCosmosQueryExecutionContext = new AsyncLazy<TryCatch<CosmosQueryExecutionContext>>(valueFactory: (innerCancellationToken) =>
-                    {
-                        innerCancellationToken.ThrowIfCancellationRequested();
-                        return CosmosQueryExecutionContextFactory.TryCreateCoreContextAsync(
-                            cosmosQueryContext,
-                            inputParameters,
-                            innerCancellationToken);
-                    });
-                    LazyCosmosQueryExecutionContext lazyCosmosQueryExecutionContext = new LazyCosmosQueryExecutionContext(lazyTryCreateCosmosQueryExecutionContext);
-                    return lazyCosmosQueryExecutionContext;
+                    innerCancellationToken.ThrowIfCancellationRequested();
+                    return CosmosQueryExecutionContextFactory.TryCreateCoreContextAsync(
+                        cosmosQueryContext,
+                        inputParameters,
+                        innerCancellationToken);
                 });
+                LazyCosmosQueryExecutionContext lazyCosmosQueryExecutionContext = new LazyCosmosQueryExecutionContext(lazyTryCreateCosmosQueryExecutionContext);
+                return lazyCosmosQueryExecutionContext;
+            }
 
-            CatchAllCosmosQueryExecutionContext catchAllCosmosQueryExecutionContext = new CatchAllCosmosQueryExecutionContext(cosmosQueryExecutionContextWithNameCacheStaleRetry);
+            CosmosQueryExecutionContext cosmosQueryExecutionContext;
+            if (inputParameters.Properties.ContainsKey("x-ms-schema-owner-rid"))
+            {
+                // For Cassandra we can not automatically retry the query on gone exception.
+                // Scenario:
+                //      Cassandra: Send query to collection with Name "asdf" and rid "rid1"
+                //          SDK: OK
+                //      Cassandra: Delete collection with Name "asdf"
+                //          SDK: OK
+                //      Cassandra: Recreate collection with Name "asdf"
+                //          SDK: OK created collection with Name "asdf" and rid "rid2"
+                //      Cassandra: Send query to collection with Name "asdf" and rid "rid1"
+                //          SDK: Sorry that collection does not exist
+                //              -> name cache is stale retry
+                //              -> retry on collection with Name "asdf" and rid "rid2" but with schema owner rid "rid1"
+                //              -> schema owner rid mismatch
+                // So instead we bubble up the Not Found exception and let Cassandra retry
+                cosmosQueryExecutionContext = CreateLazyExecutionContext();
+            }
+            else
+            {
+                CosmosQueryExecutionContextWithNameCacheStaleRetry cosmosQueryExecutionContextWithNameCacheStaleRetry = new CosmosQueryExecutionContextWithNameCacheStaleRetry(
+                cosmosQueryContext: cosmosQueryContext,
+                cosmosQueryExecutionContextFactory: CreateLazyExecutionContext);
+                cosmosQueryExecutionContext = cosmosQueryExecutionContextWithNameCacheStaleRetry;
+            }
 
-            return catchAllCosmosQueryExecutionContext;
+            CatchAllCosmosQueryExecutionContext catchAllCosmosQueryExecutionContext = new CatchAllCosmosQueryExecutionContext(cosmosQueryExecutionContext);
+
+            return cosmosQueryExecutionContext;
         }
 
         private static async Task<TryCatch<CosmosQueryExecutionContext>> TryCreateCoreContextAsync(
