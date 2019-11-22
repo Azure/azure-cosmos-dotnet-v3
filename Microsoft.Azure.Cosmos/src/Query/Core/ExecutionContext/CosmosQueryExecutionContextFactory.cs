@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             }
 
             CosmosQueryExecutionContext cosmosQueryExecutionContext;
-            if (inputParameters.Properties.ContainsKey("x-ms-schema-owner-rid"))
+            if ((inputParameters.Properties != null) && inputParameters.Properties.ContainsKey("x-ms-schema-owner-rid"))
             {
                 // For Cassandra we can not automatically retry the query on gone exception.
                 // Scenario:
