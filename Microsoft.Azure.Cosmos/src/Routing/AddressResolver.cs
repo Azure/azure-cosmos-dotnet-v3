@@ -241,7 +241,6 @@ namespace Microsoft.Azure.Cosmos
                     serviceIdentity,
                     forceRefreshPartitionAddresses,
                     cancellationToken);
-
                 if (addresses == null)
                 {
                     // This shouldn't really happen.

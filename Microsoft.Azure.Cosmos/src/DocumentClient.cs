@@ -110,7 +110,6 @@ namespace Microsoft.Azure.Cosmos
         private const bool EnableAuthFailureTraces = false;
 
         private readonly IDictionary<string, List<PartitionKeyAndResourceTokenPair>> resourceTokens;
-        private ConnectionPolicy connectionPolicy;
         private RetryPolicy retryPolicy;
         private bool allowOverrideStrongerConsistency = false;
         private int maxConcurrentConnectionOpenRequests = Environment.ProcessorCount * MaxConcurrentConnectionOpenRequestsPerProcessor;
@@ -6841,14 +6840,14 @@ namespace Microsoft.Azure.Cosmos
 
             this.AddressResolver = new GlobalAddressResolver(
                 this.GlobalEndpointManager,
-                this.connectionPolicy.ConnectionProtocol,
+                this.ConnectionPolicy.ConnectionProtocol,
                 this,
                 this.collectionCache,
                 this.partitionKeyRangeCache,
-                this.connectionPolicy.UserAgentContainer,
+                this.ConnectionPolicy.UserAgentContainer,
                 this.accountServiceConfiguration,
                 this.httpMessageHandler,
-                this.connectionPolicy,
+                this.ConnectionPolicy,
                 this.ApiType);
 
             this.CreateStoreModel(subscribeRntbdStatus: true);
@@ -6865,7 +6864,7 @@ namespace Microsoft.Azure.Cosmos
                 this.accountServiceConfiguration,
                 this,
                 true,
-                this.connectionPolicy.EnableReadRequestsFallback ?? (this.accountServiceConfiguration.DefaultConsistencyLevel != Documents.ConsistencyLevel.BoundedStaleness),
+                this.ConnectionPolicy.EnableReadRequestsFallback ?? (this.accountServiceConfiguration.DefaultConsistencyLevel != Documents.ConsistencyLevel.BoundedStaleness),
                 !this.enableRntbdChannel,
                 this.UseMultipleWriteLocations && (this.accountServiceConfiguration.DefaultConsistencyLevel != Documents.ConsistencyLevel.Strong),
                 true);
@@ -6894,7 +6893,7 @@ namespace Microsoft.Azure.Cosmos
                     this.authKeyHashFunction,
                     this.hasAuthKeyResourceToken,
                     this.authKeyResourceToken,
-                    this.connectionPolicy,
+                    this.ConnectionPolicy,
                     this.ApiType,
                     this.httpMessageHandler);
 
@@ -6902,7 +6901,7 @@ namespace Microsoft.Azure.Cosmos
 
             await this.accountServiceConfiguration.InitializeAsync();
             AccountProperties accountProperties = this.accountServiceConfiguration.AccountProperties;
-            this.UseMultipleWriteLocations = this.connectionPolicy.UseMultipleWriteLocations && accountProperties.EnableMultipleWriteLocations;
+            this.UseMultipleWriteLocations = this.ConnectionPolicy.UseMultipleWriteLocations && accountProperties.EnableMultipleWriteLocations;
 
             await this.GlobalEndpointManager.RefreshLocationAsync(accountProperties);
         }

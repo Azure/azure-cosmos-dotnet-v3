@@ -598,9 +598,9 @@ namespace Microsoft.Azure.Cosmos.Query
 
         private DocumentServiceRequest CreateReadFeedDocumentServiceRequest(INameValueCollection requestHeaders)
         {
-            if (this.resourceTypeEnum == Microsoft.Azure.Documents.ResourceType.Database
-                || this.resourceTypeEnum == Microsoft.Azure.Documents.ResourceType.Offer
-                || this.resourceTypeEnum == Microsoft.Azure.Documents.ResourceType.Snapshot)
+            if (this.ResourceTypeEnum == Microsoft.Azure.Documents.ResourceType.Database
+                || this.ResourceTypeEnum == Microsoft.Azure.Documents.ResourceType.Offer
+                || this.ResourceTypeEnum == Microsoft.Azure.Documents.ResourceType.Snapshot)
             {
                 return DocumentServiceRequest.Create(
                     OperationType.ReadFeed,
