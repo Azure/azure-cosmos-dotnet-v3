@@ -139,7 +139,7 @@ namespace Microsoft.Azure.Cosmos
         ///
         /// </para>
         /// </remarks>
-        internal string SessionToken { get; set; }
+        public string SessionToken { get; set; }
 
         internal CosmosSerializationFormatOptions CosmosSerializationFormatOptions { get; set; }
 
