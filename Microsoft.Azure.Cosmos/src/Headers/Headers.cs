@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos
         {
             get
             {
-                return ((int)this.SubStatusCode).ToString(CultureInfo.InvariantCulture);
+                return this.subStatusCode.HasValue ? ((int)this.SubStatusCode).ToString(CultureInfo.InvariantCulture) : null;
             }
             set
             {
