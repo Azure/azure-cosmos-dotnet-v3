@@ -58,24 +58,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                     serializer: new CosmosJsonDotNetSerializer(),
                 cancellationToken: cancellationToken);
 
-                TransactionalBatchResponse batchresponse;
-
-                CosmosDiagnosticsCore diagnosticsScope = new CosmosDiagnosticsCore();
-                diagnosticsScope.AddJsonAttribute("Point", new PointOperationStatistics(
-                        Guid.NewGuid().ToString(),
-                        HttpStatusCode.OK,
-                        SubStatusCodes.Unknown,
-                        0,
-                        string.Empty,
-                        HttpMethod.Get,
-                        new Uri("http://localhost"),
-                        new CosmosClientSideRequestStatistics()));
-
-                batchresponse = await TransactionalBatchResponse.FromResponseMessageAsync(
+                TransactionalBatchResponse batchresponse = await TransactionalBatchResponse.FromResponseMessageAsync(
                     new ResponseMessage(HttpStatusCode.OK)
                     {
-                        Content = responseContent,
-                        DiagnosticsCore = diagnosticsScope
+                        Content = responseContent
                     },
                     batchRequest,
                     new CosmosJsonDotNetSerializer());
@@ -109,21 +95,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                     serializer: new CosmosJsonDotNetSerializer(),
                 cancellationToken: cancellationToken);
 
-                CosmosDiagnosticsCore diagnosticsScope = new CosmosDiagnosticsCore();
-                diagnosticsScope.AddJsonAttribute("Point", new PointOperationStatistics(
-                    Guid.NewGuid().ToString(),
-                    HttpStatusCode.Gone,
-                    SubStatusCodes.NameCacheIsStale,
-                    0,
-                    string.Empty,
-                    HttpMethod.Get,
-                    new Uri("http://localhost"),
-                    new CosmosClientSideRequestStatistics()));
-
                 ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.Gone)
                 {
-                    Content = responseContent,
-                    DiagnosticsCore = diagnosticsScope
+                    Content = responseContent
                 };
                 responseMessage.Headers.SubStatusCode = SubStatusCodes.PartitionKeyRangeGone;
 

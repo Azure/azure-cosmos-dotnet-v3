@@ -27,10 +27,12 @@ namespace Microsoft.Azure.Cosmos
         public string ErrorMessage { get; }
         public HttpMethod Method { get; }
         public Uri RequestUri { get; }
+        public string RequestSessionToken { get; }
+        public string ResponseSessionToken { get; }
 
-        public DateTime requestStartTime { get; private set; }
+        public DateTime requestStartTimeUtc { get; private set; }
 
-        public DateTime requestEndTime { get; private set; }
+        public DateTime? requestEndTimeUtc { get; private set; }
 
         public List<StoreResponseStatistics> responseStatisticsList { get; private set; }
 
@@ -54,6 +56,8 @@ namespace Microsoft.Azure.Cosmos
             string errorMessage,
             HttpMethod method,
             Uri requestUri,
+            string requestSessionToken,
+            string responseSessionToken,
             CosmosClientSideRequestStatistics clientSideRequestStatistics)
         {
             this.ActivityId = activityId;
@@ -63,10 +67,12 @@ namespace Microsoft.Azure.Cosmos
             this.ErrorMessage = errorMessage;
             this.Method = method;
             this.RequestUri = requestUri;
+            this.RequestSessionToken = requestSessionToken;
+            this.ResponseSessionToken = responseSessionToken;
             if (clientSideRequestStatistics != null)
             {
-                this.requestStartTime = clientSideRequestStatistics.requestStartTime;
-                this.requestEndTime = clientSideRequestStatistics.requestEndTime;
+                this.requestStartTimeUtc = clientSideRequestStatistics.requestStartTime;
+                this.requestEndTimeUtc = clientSideRequestStatistics.requestEndTime;
                 this.responseStatisticsList = clientSideRequestStatistics.responseStatisticsList;
                 this.supplementalResponseStatisticsList = clientSideRequestStatistics.supplementalResponseStatisticsList;
                 this.addressResolutionStatistics = clientSideRequestStatistics.addressResolutionStatistics;

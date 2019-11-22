@@ -8,6 +8,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
     internal abstract partial class AggregateDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase
     {
@@ -22,28 +24,39 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                 // all the work is done in the base constructor.
             }
 
-            public static async Task<IDocumentQueryExecutionComponent> CreateAsync(
-                CosmosQueryClient queryClient,
+            public static async Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
                 AggregateOperator[] aggregates,
                 IReadOnlyDictionary<string, AggregateOperator?> aliasToAggregateType,
                 IReadOnlyList<string> orderedAliases,
                 bool hasSelectValue,
-                string requestContinuation,
-                Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback)
+                string continuationToken,
+                Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync)
             {
-                IDocumentQueryExecutionComponent source = await createSourceCallback(requestContinuation);
-                SingleGroupAggregator singleGroupAggregator = SingleGroupAggregator.Create(
-                    queryClient,
-                    aggregates,
-                    aliasToAggregateType,
-                    orderedAliases,
-                    hasSelectValue,
-                    continuationToken: null);
+                if (tryCreateSourceAsync == null)
+                {
+                    throw new ArgumentNullException(nameof(tryCreateSourceAsync));
+                }
 
-                return new ClientAggregateDocumentQueryExecutionComponent(
-                    source,
-                    singleGroupAggregator,
-                    hasSelectValue);
+                TryCatch<SingleGroupAggregator> tryCreateSingleGroupAggregator = SingleGroupAggregator.TryCreate(
+                            aggregates,
+                            aliasToAggregateType,
+                            orderedAliases,
+                            hasSelectValue,
+                            continuationToken: null);
+
+                if (!tryCreateSingleGroupAggregator.Succeeded)
+                {
+                    return TryCatch<IDocumentQueryExecutionComponent>.FromException(tryCreateSingleGroupAggregator.Exception);
+                }
+
+                return (await tryCreateSourceAsync(continuationToken))
+                    .Try<IDocumentQueryExecutionComponent>((source) =>
+                    {
+                        return new ClientAggregateDocumentQueryExecutionComponent(
+                            source,
+                            tryCreateSingleGroupAggregator.Result,
+                            hasSelectValue);
+                    });
             }
 
             public override async Task<QueryResponseCore> DrainAsync(

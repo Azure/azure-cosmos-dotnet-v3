@@ -13,6 +13,9 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -73,13 +76,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                     initialPageSize: maxPageSize,
                     maxConcurrency: null,
                     maxItemCount: maxPageSize,
-                    maxBufferedItemCount: null);
+                    maxBufferedItemCount: null,
+                    testSettings: new Query.Core.TestInjections(simulate429s: false, simulateEmptyPages: false));
 
-                CosmosParallelItemQueryExecutionContext executionContext = await CosmosParallelItemQueryExecutionContext.CreateAsync(
+                CosmosParallelItemQueryExecutionContext executionContext = (await CosmosParallelItemQueryExecutionContext.TryCreateAsync(
                     context,
                     initParams,
                     fullConitnuationToken,
-                    this.cancellationToken);
+                    this.cancellationToken)).Result;
 
                 // Read all the pages from both splits
                 List<ToDoItem> itemsRead = new List<ToDoItem>();
@@ -156,13 +160,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                     initialPageSize: maxPageSize,
                     maxConcurrency: null,
                     maxItemCount: maxPageSize,
-                    maxBufferedItemCount: null);
+                    maxBufferedItemCount: null,
+                    testSettings: new Query.Core.TestInjections(simulate429s: false, simulateEmptyPages: false));
 
-                CosmosParallelItemQueryExecutionContext executionContext = await CosmosParallelItemQueryExecutionContext.CreateAsync(
+                CosmosParallelItemQueryExecutionContext executionContext = (await CosmosParallelItemQueryExecutionContext.TryCreateAsync(
                     context,
                     initParams,
                     fullConitnuationToken,
-                    this.cancellationToken);
+                    this.cancellationToken)).Result;
 
                 // Read all the pages from both splits
                 List<ToDoItem> itemsRead = new List<ToDoItem>();
@@ -239,7 +244,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                     };
 
                     OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
-                        queryClient: mockQueryClient.Object,
                         compositeContinuationToken: compositeContinuation,
                         orderByItems: orderByItems,
                         rid: itemToRepresentPreviousQuery._rid,
@@ -284,13 +288,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                     initialPageSize: maxPageSize,
                     maxConcurrency: null,
                     maxItemCount: maxPageSize,
-                    maxBufferedItemCount: null);
+                    maxBufferedItemCount: null,
+                    testSettings: new Query.Core.TestInjections(simulate429s: false, simulateEmptyPages: false));
 
-                CosmosOrderByItemQueryExecutionContext executionContext = await CosmosOrderByItemQueryExecutionContext.CreateAsync(
+                CosmosOrderByItemQueryExecutionContext executionContext = (await CosmosOrderByItemQueryExecutionContext.TryCreateAsync(
                     context,
                     initParams,
                     fullConitnuationToken,
-                    this.cancellationToken);
+                    this.cancellationToken)).Result;
 
                 // For order by it will drain all the pages till it gets a value.
                 if (allItems.Count == 0)
@@ -362,7 +367,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                     };
 
                     OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
-                        queryClient: mockQueryClient.Object,
                         compositeContinuationToken: compositeContinuation,
                         orderByItems: orderByItems,
                         rid: itemToRepresentPreviousQuery._rid,
@@ -407,49 +411,117 @@ namespace Microsoft.Azure.Cosmos.Tests
                     initialPageSize: maxPageSize,
                     maxConcurrency: null,
                     maxItemCount: maxPageSize,
-                    maxBufferedItemCount: null);
+                    maxBufferedItemCount: null,
+                    testSettings: new Query.Core.TestInjections(simulate429s: false, simulateEmptyPages: false));
 
-                CosmosOrderByItemQueryExecutionContext executionContext = await CosmosOrderByItemQueryExecutionContext.CreateAsync(
+                TryCatch<CosmosOrderByItemQueryExecutionContext> tryCreate = await CosmosOrderByItemQueryExecutionContext.TryCreateAsync(
                     context,
                     initParams,
                     fullConitnuationToken,
                     this.cancellationToken);
 
-                Assert.IsTrue(!executionContext.IsDone);
-
-                // Read all the pages from both splits
-                List<ToDoItem> itemsRead = new List<ToDoItem>();
-                QueryResponseCore? failure = null;
-                while (!executionContext.IsDone)
+                if (tryCreate.Succeeded)
                 {
-                    QueryResponseCore queryResponse = await executionContext.DrainAsync(
-                        maxPageSize,
-                        this.cancellationToken);
-                    if (queryResponse.IsSuccess)
+                    CosmosOrderByItemQueryExecutionContext executionContext = tryCreate.Result;
+
+                    Assert.IsTrue(!executionContext.IsDone);
+
+                    // Read all the pages from both splits
+                    List<ToDoItem> itemsRead = new List<ToDoItem>();
+                    QueryResponseCore? failure = null;
+                    while (!executionContext.IsDone)
                     {
-                        string responseContinuationToken = queryResponse.ContinuationToken;
-                        foreach (CosmosElement element in queryResponse.CosmosElements)
+                        QueryResponseCore queryResponse = await executionContext.DrainAsync(
+                            maxPageSize,
+                            this.cancellationToken);
+                        if (queryResponse.IsSuccess)
                         {
-                            string jsonValue = element.ToString();
-                            ToDoItem item = JsonConvert.DeserializeObject<ToDoItem>(jsonValue);
-                            itemsRead.Add(item);
+                            string responseContinuationToken = queryResponse.ContinuationToken;
+                            foreach (CosmosElement element in queryResponse.CosmosElements)
+                            {
+                                string jsonValue = element.ToString();
+                                ToDoItem item = JsonConvert.DeserializeObject<ToDoItem>(jsonValue);
+                                itemsRead.Add(item);
+                            }
+                        }
+                        else
+                        {
+                            Assert.IsNull(failure, "There should only be one error");
+                            failure = queryResponse;
                         }
                     }
-                    else
-                    {
-                        Assert.IsNull(failure, "There should only be one error");
-                        failure = queryResponse;
-                    }
+
+                    Assert.IsNotNull(failure);
+                    Assert.AreEqual((HttpStatusCode)429, failure.Value.StatusCode);
+                    Assert.IsNull(failure.Value.ErrorMessage);
+
+                    Assert.AreEqual(0 /*We don't get any items, since we don't buffer the failure anymore*/, itemsRead.Count);
+
+                    //CollectionAssert.AreEqual(allItems.ToList(), itemsRead, new ToDoItemComparer());
                 }
-
-                Assert.IsNotNull(failure);
-                Assert.AreEqual((HttpStatusCode)429, failure.Value.StatusCode);
-                Assert.IsNull(failure.Value.ErrorMessage);
-
-                Assert.AreEqual(allItems.Count, itemsRead.Count);
-
-                CollectionAssert.AreEqual(allItems.ToList(), itemsRead, new ToDoItemComparer());
+                else
+                {
+                    CosmosException cosmosException = tryCreate.Exception as CosmosException;
+                    Assert.IsNotNull(cosmosException);
+                    Assert.AreEqual((HttpStatusCode)429, cosmosException.StatusCode);
+                }
             }
+        }
+
+        [TestMethod]
+        public async Task TestNegativeAggreateComponentCreation()
+        {
+            TryCatch<IDocumentQueryExecutionComponent> tryCreateWhenSourceFails = await AggregateDocumentQueryExecutionComponent.TryCreateAsync(
+                ExecutionEnvironment.Client,
+                new AggregateOperator[] { },
+                new Dictionary<string, AggregateOperator?>(),
+                new string[] { },
+                false,
+                null,
+                FailToCreateSource);
+
+            Assert.IsFalse(tryCreateWhenSourceFails.Succeeded);
+
+            TryCatch<IDocumentQueryExecutionComponent> tryCreateWhenInvalidContinuationToken = await AggregateDocumentQueryExecutionComponent.TryCreateAsync(
+                ExecutionEnvironment.Client,
+                new AggregateOperator[] { },
+                new Dictionary<string, AggregateOperator?>(),
+                new string[] { },
+                false,
+                null,
+                FailToCreateSource);
+
+            Assert.IsFalse(tryCreateWhenInvalidContinuationToken.Succeeded);
+        }
+
+        [TestMethod]
+        public async Task TestNegativeDistinctComponentCreation()
+        {
+            TryCatch<IDocumentQueryExecutionComponent> tryCreateWhenSourceFails = await DistinctDocumentQueryExecutionComponent.TryCreateAsync(
+                ExecutionEnvironment.Client,
+                null,
+                FailToCreateSource,
+                DistinctQueryType.Ordered);
+
+            Assert.IsFalse(tryCreateWhenSourceFails.Succeeded);
+
+            TryCatch<IDocumentQueryExecutionComponent> tryCreateWhenInvalidContinuationToken = await DistinctDocumentQueryExecutionComponent.TryCreateAsync(
+                ExecutionEnvironment.Client,
+                "This is not a valid continuation token",
+                CreateSource,
+                DistinctQueryType.Unordered);
+
+            Assert.IsFalse(tryCreateWhenInvalidContinuationToken.Succeeded);
+        }
+
+        private static Task<TryCatch<IDocumentQueryExecutionComponent>> FailToCreateSource(string continuationToken)
+        {
+            return Task.FromResult(TryCatch<IDocumentQueryExecutionComponent>.FromException(new Exception()));
+        }
+
+        private static Task<TryCatch<IDocumentQueryExecutionComponent>> CreateSource(string continuationToken)
+        {
+            return Task.FromResult(TryCatch<IDocumentQueryExecutionComponent>.FromResult(new Mock<IDocumentQueryExecutionComponent>().Object));
         }
     }
 }

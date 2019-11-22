@@ -70,7 +70,18 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void ToResponseMessage_MapsProperties()
         {
             CosmosDiagnosticsCore scope = new CosmosDiagnosticsCore();
-            scope.AddJsonAttribute("info", new PointOperationStatistics(Guid.NewGuid().ToString(), HttpStatusCode.OK, SubStatusCodes.Unknown, 0, string.Empty, HttpMethod.Get, new Uri("http://localhost"), new CosmosClientSideRequestStatistics()));
+            scope.AddJsonAttribute("info", new PointOperationStatistics(
+                activityId: Guid.NewGuid().ToString(),
+                statusCode: HttpStatusCode.OK,
+                subStatusCode: SubStatusCodes.Unknown,
+                requestCharge: 0,
+                errorMessage: string.Empty,
+                method: HttpMethod.Get,
+                requestUri: new Uri("http://localhost"),
+                requestSessionToken: null,
+                responseSessionToken: null,
+                clientSideRequestStatistics: new CosmosClientSideRequestStatistics()));
+
             TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.OK)
             {
                 ResourceStream = new MemoryStream(new byte[] { 0x41, 0x42 }, index: 0, count: 2, writable: false, publiclyVisible: true),

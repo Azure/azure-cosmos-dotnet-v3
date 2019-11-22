@@ -17,8 +17,9 @@ namespace Microsoft.Azure.Cosmos
         internal CosmosException(
             HttpStatusCode statusCode,
             string message,
-            Error error = null)
-            : base(message)
+            Error error = null,
+            Exception inner = null)
+            : base(message, inner)
         {
             this.StatusCode = statusCode;
             this.Error = error;

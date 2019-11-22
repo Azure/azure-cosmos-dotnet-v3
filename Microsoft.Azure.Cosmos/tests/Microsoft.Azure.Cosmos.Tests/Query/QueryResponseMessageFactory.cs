@@ -60,6 +60,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     errorMessage: null,
                     method: HttpMethod.Post,
                     requestUri: new Uri("http://localhost.com"),
+                    requestSessionToken: null,
+                    responseSessionToken: null,
                     clientSideRequestStatistics: null),
                 new SchedulingStopwatch())
             };
@@ -115,6 +117,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     errorMessage: null,
                     method: HttpMethod.Post,
                     requestUri: new Uri("http://localhost.com"),
+                    requestSessionToken: null,
+                    responseSessionToken: null,
                     clientSideRequestStatistics: null),
                 new SchedulingStopwatch())
             };
@@ -129,6 +133,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                     continuationToken: continuationToken);
 
             return message;
+        }
+
+        public static QueryResponse<TItem> CreateQueryResponse<TItem>(
+            QueryResponse queryResponse)
+        {
+            return QueryResponse<TItem>.CreateResponse<TItem>(queryResponse, cosmosSerializer);
         }
 
         public static QueryResponseCore CreateFailureResponse(
@@ -149,6 +159,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     errorMessage: null,
                     method: HttpMethod.Post,
                     requestUri: new Uri("http://localhost.com"),
+                    requestSessionToken: null,
+                    responseSessionToken: null,
                     clientSideRequestStatistics: null),
                 new SchedulingStopwatch())
             };

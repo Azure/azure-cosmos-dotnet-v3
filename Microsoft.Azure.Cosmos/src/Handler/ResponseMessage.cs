@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos
             this.RequestMessage = requestMessage;
             this.ErrorMessage = errorMessage;
             this.Headers = new Headers();
-            this.DiagnosticsCore = default(CosmosDiagnosticsCore);
+            this.DiagnosticsCore = requestMessage?.DiagnosticsCore ?? new CosmosDiagnosticsCore();
         }
 
         /// <summary>
@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos
             this.ErrorMessage = errorMessage;
             this.Error = error;
             this.Headers = headers;
-            this.DiagnosticsCore = diagnostics;
+            this.DiagnosticsCore = diagnostics ?? throw new ArgumentNullException(nameof(diagnostics));
         }
 
         /// <summary>
@@ -223,7 +223,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 try
                 {
-                    Error error = Resource.LoadFrom<Error>(this.content);
+                    Error error = Documents.Resource.LoadFrom<Error>(this.content);
                     if (error != null)
                     {
                         // Error format is not consistent across modes

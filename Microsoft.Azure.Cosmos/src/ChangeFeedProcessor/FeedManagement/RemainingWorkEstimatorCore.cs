@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json.Linq;
@@ -24,7 +25,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
         private const char PKRangeIdSeparator = ':';
         private const char SegmentSeparator = '#';
         private const string LSNPropertyName = "_lsn";
-        private static readonly CosmosSerializer DefaultSerializer = new CosmosJsonDotNetSerializer();
         private readonly Func<string, string, bool, FeedIterator> feedCreator;
         private readonly DocumentServiceLeaseContainer leaseContainer;
         private readonly int degreeOfParallelism;
@@ -174,7 +174,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
                 return new Collection<JObject>();
             }
 
-            return RemainingWorkEstimatorCore.DefaultSerializer.FromStream<CosmosFeedResponseUtil<JObject>>(response.Content).Data;
+            return CosmosContainerExtensions.DefaultJsonSerializer.FromStream<CosmosFeedResponseUtil<JObject>>(response.Content).Data;
         }
 
         private async Task<long> GetRemainingWorkAsync(DocumentServiceLease existingLease, CancellationToken cancellationToken)

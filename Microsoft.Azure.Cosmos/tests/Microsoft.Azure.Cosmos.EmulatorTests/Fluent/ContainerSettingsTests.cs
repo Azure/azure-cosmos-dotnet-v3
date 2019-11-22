@@ -184,6 +184,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Verify v3 can add composite indexes and update the container
             Container container = this.database.GetContainer(containerName);
             ContainerProperties containerProperties = await container.ReadContainerAsync();
+            Assert.IsNotNull(containerProperties.SelfLink);
             string cPath0 = "/address/city";
             string cPath1 = "/address/state";
             containerProperties.IndexingPolicy.CompositeIndexes.Add(new Collection<CompositePath>()

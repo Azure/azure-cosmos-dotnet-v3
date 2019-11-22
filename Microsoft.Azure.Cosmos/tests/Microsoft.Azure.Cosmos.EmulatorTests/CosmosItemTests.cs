@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -61,10 +62,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
             ItemResponse<ToDoActivity> response = await this.Container.CreateItemAsync<ToDoActivity>(item: testItem);
             Assert.IsNotNull(response);
-            Assert.IsNotNull(response.MaxResourceQuota);
-            Assert.IsNotNull(response.CurrentResourceQuotaUsage);
+            Assert.IsNotNull(response.Headers.GetHeaderValue<string>(Documents.HttpConstants.HttpHeaders.MaxResourceQuota));
+            Assert.IsNotNull(response.Headers.GetHeaderValue<string>(Documents.HttpConstants.HttpHeaders.CurrentResourceQuotaUsage));
             ItemResponse<ToDoActivity> deleteResponse = await this.Container.DeleteItemAsync<ToDoActivity>(partitionKey: new Cosmos.PartitionKey(testItem.status), id: testItem.id);
             Assert.IsNotNull(deleteResponse);
+        }
+
+        [TestMethod]
+        public async Task NegativeCreateDropItemTest()
+        {
+            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+            ResponseMessage response = await this.Container.CreateItemStreamAsync(streamPayload: TestCommon.Serializer.ToStream(testItem), new Cosmos.PartitionKey("BadKey"));
+            Assert.IsNotNull(response);
+            Assert.IsNull(response.Content);
+            Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
         }
 
         [TestMethod]
@@ -124,8 +135,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ItemResponse<dynamic> response = await this.Container.CreateItemAsync<dynamic>(item: testItem, partitionKey: new Cosmos.PartitionKey(Undefined.Value));
             Assert.IsNotNull(response);
             Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
-            Assert.IsNotNull(response.MaxResourceQuota);
-            Assert.IsNotNull(response.CurrentResourceQuotaUsage);
+            Assert.IsNotNull(response.Headers.GetHeaderValue<string>(Documents.HttpConstants.HttpHeaders.MaxResourceQuota));
+            Assert.IsNotNull(response.Headers.GetHeaderValue<string>(Documents.HttpConstants.HttpHeaders.CurrentResourceQuotaUsage));
 
             ItemResponse<dynamic> deleteResponse = await this.Container.DeleteItemAsync<dynamic>(id: testItem.id, partitionKey: new Cosmos.PartitionKey(Undefined.Value));
             Assert.IsNotNull(deleteResponse);
@@ -143,8 +154,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ItemResponse<dynamic> response = await this.Container.CreateItemAsync<dynamic>(item: testItem);
             Assert.IsNotNull(response);
             Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
-            Assert.IsNotNull(response.MaxResourceQuota);
-            Assert.IsNotNull(response.CurrentResourceQuotaUsage);
+            Assert.IsNotNull(response.Headers.GetHeaderValue<string>(Documents.HttpConstants.HttpHeaders.MaxResourceQuota));
+            Assert.IsNotNull(response.Headers.GetHeaderValue<string>(Documents.HttpConstants.HttpHeaders.CurrentResourceQuotaUsage));
 
             ItemResponse<dynamic> readResponse = await this.Container.ReadItemAsync<dynamic>(id: testItem.id, partitionKey: Cosmos.PartitionKey.None);
             Assert.IsNotNull(readResponse);
@@ -667,8 +678,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     requestOptions: options);
 
             FeedIterators.Add(queryIterator);
-            string previousResult = null;
-
             foreach (FeedIterator iterator in FeedIterators)
             {
                 int count = 0;
@@ -701,15 +710,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             Assert.IsNotNull(item["_etag"]);
                             Assert.IsNotNull(item["_attachments"]);
                             Assert.IsNotNull(item["_ts"]);
-                        }
-
-                        if (previousResult != null)
-                        {
-                            Assert.AreEqual(previousResult, jObject.ToString());
-                        }
-                        else
-                        {
-                            previousResult = jObject.ToString(); ;
                         }
                     }
                 }

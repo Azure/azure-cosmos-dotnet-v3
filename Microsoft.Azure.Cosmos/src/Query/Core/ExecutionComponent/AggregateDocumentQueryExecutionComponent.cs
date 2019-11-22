@@ -10,6 +10,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using ClientSideRequestStatistics = Documents.ClientSideRequestStatistics;
 
     /// <summary>
     /// Execution component that is able to aggregate local aggregates from multiple continuations and partitions.
@@ -60,58 +62,48 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
             this.isValueAggregateQuery = isValueAggregateQuery;
         }
 
-        /// <summary>
-        /// Creates a AggregateDocumentQueryExecutionComponent.
-        /// </summary>
-        /// <param name="executionEnvironment">The environment to execute on.</param>
-        /// <param name="queryClient">The query client.</param>
-        /// <param name="aggregates">The aggregates.</param>
-        /// <param name="aliasToAggregateType">The alias to aggregate type.</param>
-        /// <param name="orderedAliases">The ordering of the aliases.</param>
-        /// <param name="hasSelectValue">Whether or not the query has the 'VALUE' keyword.</param>
-        /// <param name="requestContinuation">The continuation token to resume from.</param>
-        /// <param name="createSourceCallback">The callback to create the source component that supplies the local aggregates.</param>
-        /// <returns>The AggregateDocumentQueryExecutionComponent.</returns>
-        public static async Task<IDocumentQueryExecutionComponent> CreateAsync(
+        public static async Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
             ExecutionEnvironment executionEnvironment,
-            CosmosQueryClient queryClient,
             AggregateOperator[] aggregates,
             IReadOnlyDictionary<string, AggregateOperator?> aliasToAggregateType,
             IReadOnlyList<string> orderedAliases,
             bool hasSelectValue,
-            string requestContinuation,
-            Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback)
+            string continuationToken,
+            Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync)
         {
-            IDocumentQueryExecutionComponent aggregateDocumentQueryExecutionComponent;
+            if (tryCreateSourceAsync == null)
+            {
+                throw new ArgumentNullException(nameof(tryCreateSourceAsync));
+            }
+
+            TryCatch<IDocumentQueryExecutionComponent> tryCreateAggregate;
             switch (executionEnvironment)
             {
                 case ExecutionEnvironment.Client:
-                    aggregateDocumentQueryExecutionComponent = await ClientAggregateDocumentQueryExecutionComponent.CreateAsync(
-                        queryClient,
+                    tryCreateAggregate = await ClientAggregateDocumentQueryExecutionComponent.TryCreateAsync(
                         aggregates,
                         aliasToAggregateType,
                         orderedAliases,
                         hasSelectValue,
-                        requestContinuation,
-                        createSourceCallback);
+                        continuationToken,
+                        tryCreateSourceAsync);
                     break;
 
                 case ExecutionEnvironment.Compute:
-                    aggregateDocumentQueryExecutionComponent = await ComputeAggregateDocumentQueryExecutionComponent.CreateAsync(
-                        queryClient,
+                    tryCreateAggregate = await ComputeAggregateDocumentQueryExecutionComponent.TryCreateAsync(
                         aggregates,
                         aliasToAggregateType,
                         orderedAliases,
                         hasSelectValue,
-                        requestContinuation,
-                        createSourceCallback);
+                        continuationToken,
+                        tryCreateSourceAsync);
                     break;
 
                 default:
                     throw new ArgumentException($"Unknown {nameof(ExecutionEnvironment)}: {executionEnvironment}.");
             }
 
-            return aggregateDocumentQueryExecutionComponent;
+            return tryCreateAggregate;
         }
 
         /// <summary>

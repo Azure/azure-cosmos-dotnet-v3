@@ -86,5 +86,30 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
         }
+
+        [TestMethod]
+        public void VerifyDocumentClientExceptionToResponseMessage()
+        {
+            string errorMessage = "Test Exception!";
+            DocumentClientException dce = null;
+            try
+            {
+                throw new DocumentClientException(
+                    message: errorMessage,
+                    statusCode: HttpStatusCode.BadRequest,
+                    subStatusCode: SubStatusCodes.WriteForbidden);
+            }
+            catch (DocumentClientException exception)
+            {
+                dce = exception;
+            }
+
+            ResponseMessage responseMessage = dce.ToCosmosResponseMessage(null);
+            Assert.IsFalse(responseMessage.IsSuccessStatusCode);
+            Assert.AreEqual(HttpStatusCode.BadRequest, responseMessage.StatusCode);
+            Assert.AreEqual(SubStatusCodes.WriteForbidden, responseMessage.Headers.SubStatusCode);
+            Assert.IsTrue(responseMessage.ErrorMessage.Contains(errorMessage));
+            Assert.IsTrue(responseMessage.ErrorMessage.Contains("VerifyDocumentClientExceptionToResponseMessage"), $"Message should have method name for the stack trace {responseMessage.ErrorMessage}");
+        }
     }
 }

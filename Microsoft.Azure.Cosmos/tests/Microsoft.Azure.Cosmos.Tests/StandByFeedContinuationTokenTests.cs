@@ -245,6 +245,18 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
+        public void ChangeFeedRequestOptions_StartFromBeginning()
+        {
+            RequestMessage request = new RequestMessage();
+            ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue.ToUniversalTime() };
+
+            requestOptions.PopulateRequestOptions(request);
+
+            Assert.IsNull(request.Headers.IfNoneMatch);
+            Assert.IsNull(request.Headers[Documents.HttpConstants.HttpHeaders.IfModifiedSince]);
+        }
+
+        [TestMethod]
         public void ChangeFeedRequestOptions_MaxItemSizeIsSet()
         {
             RequestMessage request = new RequestMessage();

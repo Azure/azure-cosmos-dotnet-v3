@@ -35,7 +35,9 @@ namespace Microsoft.Azure.Cosmos
             RequestMessage requestMessage,
             CosmosDiagnosticsCore diagnostics,
             string errorMessage,
-            Error error)
+            Error error,
+            Lazy<MemoryStream> memoryStream,
+            CosmosSerializationFormatOptions serializationOptions)
             : base(
                 statusCode: statusCode,
                 requestMessage: requestMessage,
@@ -47,11 +49,8 @@ namespace Microsoft.Azure.Cosmos
             this.CosmosElements = result;
             this.Count = count;
             this.ResponseLengthBytes = responseLengthBytes;
-            this.memoryStream = new Lazy<MemoryStream>(() => CosmosElementSerializer.ToStream(
-                        this.QueryHeaders.ContainerRid,
-                        this.CosmosElements,
-                        this.QueryHeaders.ResourceType,
-                        this.CosmosSerializationOptions));
+            this.memoryStream = memoryStream;
+            this.CosmosSerializationOptions = serializationOptions;
         }
 
         public int Count { get; }
@@ -60,7 +59,7 @@ namespace Microsoft.Azure.Cosmos
         {
             get
             {
-                return this.memoryStream.Value;
+                return this.memoryStream?.Value;
             }
         }
 
@@ -76,7 +75,7 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         internal long ResponseLengthBytes { get; }
 
-        internal virtual CosmosSerializationFormatOptions CosmosSerializationOptions { get; set; }
+        internal virtual CosmosSerializationFormatOptions CosmosSerializationOptions { get; }
 
         internal bool GetHasMoreResults()
         {
@@ -88,7 +87,8 @@ namespace Microsoft.Azure.Cosmos
             int count,
             long responseLengthBytes,
             CosmosQueryResponseMessageHeaders responseHeaders,
-            CosmosDiagnosticsCore diagnostics)
+            CosmosDiagnosticsCore diagnostics,
+            CosmosSerializationFormatOptions serializationOptions)
         {
             if (count < 0)
             {
@@ -100,6 +100,12 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentOutOfRangeException("responseLengthBytes must be positive");
             }
 
+            Lazy<MemoryStream> memoryStream = new Lazy<MemoryStream>(() => CosmosElementSerializer.ToStream(
+                       responseHeaders.ContainerRid,
+                       result,
+                       responseHeaders.ResourceType,
+                       serializationOptions));
+
             QueryResponse cosmosQueryResponse = new QueryResponse(
                result: result,
                count: count,
@@ -109,7 +115,9 @@ namespace Microsoft.Azure.Cosmos
                statusCode: HttpStatusCode.OK,
                errorMessage: null,
                error: null,
-               requestMessage: null);
+               requestMessage: null,
+               memoryStream: memoryStream,
+               serializationOptions: serializationOptions);
 
             return cosmosQueryResponse;
         }
@@ -123,15 +131,17 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsCore diagnostics)
         {
             QueryResponse cosmosQueryResponse = new QueryResponse(
-                result: Enumerable.Empty<CosmosElement>(),
-                count: 0,
-                responseLengthBytes: 0,
-                responseHeaders: responseHeaders,
-                diagnostics: diagnostics,
-                statusCode: statusCode,
-                errorMessage: errorMessage,
-                error: error,
-                requestMessage: requestMessage);
+                    result: Enumerable.Empty<CosmosElement>(),
+                    count: 0,
+                    responseLengthBytes: 0,
+                    responseHeaders: responseHeaders,
+                    diagnostics: diagnostics,
+                    statusCode: statusCode,
+                    errorMessage: errorMessage,
+                    error: error,
+                    requestMessage: requestMessage,
+                    memoryStream: null,
+                    serializationOptions: null);
 
             return cosmosQueryResponse;
         }
@@ -189,12 +199,19 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (this.resources == null)
                 {
-                    this.resources = CosmosElementSerializer.Deserialize<T>(
-                        this.QueryHeaders.ContainerRid,
-                        this.cosmosElements,
-                        this.QueryHeaders.ResourceType,
-                        this.jsonSerializer,
-                        this.serializationOptions);
+                    if (typeof(T) == typeof(CosmosElement))
+                    {
+                        this.resources = this.cosmosElements.Cast<T>();
+                    }
+                    else
+                    {
+                        this.resources = CosmosElementSerializer.Deserialize<T>(
+                            this.QueryHeaders.ContainerRid,
+                            this.cosmosElements,
+                            this.QueryHeaders.ResourceType,
+                            this.jsonSerializer,
+                            this.serializationOptions);
+                    }
                 }
 
                 return this.resources;

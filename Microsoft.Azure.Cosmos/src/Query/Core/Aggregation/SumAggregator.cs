@@ -6,6 +6,8 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
     using System;
     using System.Globalization;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
     /// <summary>
     /// Concrete implementation of IAggregator that can take the global sum from the local sum of multiple partitions and continuations.
@@ -72,19 +74,24 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
             return this.globalSum.ToString("G17", CultureInfo.InvariantCulture);
         }
 
-        public static SumAggregator Create(string continuationToken)
+        public static TryCatch<IAggregator> TryCreate(string continuationToken)
         {
             double partialSum;
             if (continuationToken != null)
             {
-                partialSum = double.Parse(continuationToken, CultureInfo.InvariantCulture);
+                if (!double.TryParse(continuationToken, out partialSum))
+                {
+                    return TryCatch<IAggregator>.FromException(
+                        new MalformedContinuationTokenException($"Malformed {nameof(SumAggregator)} continuation token: {continuationToken}"));
+                }
             }
             else
             {
                 partialSum = 0.0;
             }
 
-            return new SumAggregator(partialSum);
+            return TryCatch<IAggregator>.FromResult(
+                new SumAggregator(partialSum));
         }
     }
 }
