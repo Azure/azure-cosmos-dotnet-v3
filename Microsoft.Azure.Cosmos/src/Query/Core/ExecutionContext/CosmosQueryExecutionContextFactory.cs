@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
             CatchAllCosmosQueryExecutionContext catchAllCosmosQueryExecutionContext = new CatchAllCosmosQueryExecutionContext(cosmosQueryExecutionContext);
 
-            return cosmosQueryExecutionContext;
+            return catchAllCosmosQueryExecutionContext;
         }
 
         private static async Task<TryCatch<CosmosQueryExecutionContext>> TryCreateCoreContextAsync(
