@@ -395,7 +395,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     }
                     else
                     {
-                        UInt128 uInt128Value = UInt128.FromByteArray(this.utf8Buffer, 0);
+                        UInt128 uInt128Value = UInt128.FromByteArray(this.utf8Buffer);
                         added = this.stringsLength16.Add(uInt128Value);
                     }
                 }
@@ -571,8 +571,7 @@ namespace Microsoft.Azure.Cosmos.Query
                             $"{nameof(UnorderdDistinctMap)} continuation token was malformed.");
                     }
 
-                    // Todo have this method work with span<byte> instead to avoid the allocation.
-                    UInt128 uint128 = UInt128.FromByteArray(binary.Value.ToArray());
+                    UInt128 uint128 = UInt128.FromByteArray(binary.Value);
                     hashSet.Add(uint128);
                 }
 

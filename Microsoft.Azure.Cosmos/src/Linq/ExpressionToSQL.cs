@@ -314,7 +314,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     }
                 }
 
-                return SqlFunctionCallScalarExpression.Create(methodName, true, arguments.ToArray());
+                return SqlFunctionCallScalarExpression.Create(methodName, true, arguments);
             }
             else
             {
@@ -706,7 +706,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     arrayItems.Add(ExpressionToSql.VisitConstant(Expression.Constant(item), context));
                 }
 
-                return SqlArrayCreateScalarExpression.Create(arrayItems.ToArray());
+                return SqlArrayCreateScalarExpression.Create(arrayItems);
             }
 
             return ConvertCosmosElementToSqlScalarExpression(
@@ -1955,7 +1955,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     properties.Add(property);
                 }
 
-                sqlScalarExpression = SqlObjectCreateScalarExpression.Create(properties.ToArray());
+                sqlScalarExpression = SqlObjectCreateScalarExpression.Create(properties);
             }
             else if (element is CosmosArray cosmosArray)
             {
@@ -1965,7 +1965,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     items.Add(ConvertCosmosElementToSqlScalarExpression(item));
                 }
 
-                sqlScalarExpression = SqlArrayCreateScalarExpression.Create(items.ToArray());
+                sqlScalarExpression = SqlArrayCreateScalarExpression.Create(items);
             }
             else if (element is CosmosNumber64 cosmosNumber)
             {
