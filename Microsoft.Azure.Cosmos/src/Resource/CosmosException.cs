@@ -180,9 +180,6 @@ namespace Microsoft.Azure.Cosmos
             stringBuilder.AppendFormat("RequestCharge = {0}", this.RequestCharge);
             stringBuilder.AppendLine();
 
-            stringBuilder.AppendFormat("RequestCharge = {0}", this.RequestCharge);
-            stringBuilder.AppendLine();
-
             if (this.Diagnostics != null)
             {
                 stringBuilder.Append(this.Diagnostics);
