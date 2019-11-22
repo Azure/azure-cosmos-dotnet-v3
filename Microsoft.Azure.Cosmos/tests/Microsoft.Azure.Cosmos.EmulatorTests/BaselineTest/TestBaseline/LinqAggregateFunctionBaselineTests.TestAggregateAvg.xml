@@ -111,7 +111,7 @@ FROM (
     OFFSET 90 LIMIT 2147483647
 ) AS r0 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (CosmosException;StatusCode=BadRequest;SubStatusCode=0;ActivityId=;RequestCharge=0;Message=TryCatch resulted in an exception.;Diagnostics).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -128,7 +128,7 @@ FROM (
     OFFSET 90 LIMIT 5
 ) AS r0 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (CosmosException;StatusCode=BadRequest;SubStatusCode=0;ActivityId=;RequestCharge=0;Message=TryCatch resulted in an exception.;Diagnostics).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -145,7 +145,7 @@ FROM (
     OFFSET 5 LIMIT 5
 ) AS r0 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (CosmosException;StatusCode=BadRequest;SubStatusCode=0;ActivityId=;RequestCharge=0;Message=TryCatch resulted in an exception.;Diagnostics).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -167,7 +167,7 @@ FROM (
     OFFSET 10 LIMIT 20
 ) AS r1 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (CosmosException;StatusCode=BadRequest;SubStatusCode=0;ActivityId=;RequestCharge=0;Message=TryCatch resulted in an exception.;Diagnostics).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -253,7 +253,7 @@ FROM (
     ) AS r8
 ) AS r9 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (CosmosException;StatusCode=BadRequest;SubStatusCode=0;ActivityId=;RequestCharge=0;Message=TryCatch resulted in an exception.;Diagnostics).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
 </Results>
