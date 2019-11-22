@@ -222,7 +222,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                 Assert.AreEqual(value, (string)knownHeaderProperty.GetValue(Headers)); // Verify getter
 
-                value = "9876543210";
+                value = "987654321";
                 knownHeaderProperty.SetValue(Headers, value);
                 Assert.AreEqual(value, Headers[header]);
             }
