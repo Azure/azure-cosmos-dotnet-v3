@@ -259,11 +259,6 @@ namespace Microsoft.Azure.Cosmos.Query
                 requestHeaders[HttpConstants.HttpHeaders.ResponseContinuationTokenLimitInKB] = this.feedOptions.ResponseContinuationTokenLimitInKb.ToString();
             }
 
-            if (this.feedOptions.DisableRUPerMinuteUsage)
-            {
-                requestHeaders[HttpConstants.HttpHeaders.DisableRUPerMinuteUsage] = bool.TrueString;
-            }
-
             if (this.feedOptions.ConsistencyLevel.HasValue)
             {
                 await this.Client.EnsureValidOverwriteAsync((Documents.ConsistencyLevel)feedOptions.ConsistencyLevel.Value);

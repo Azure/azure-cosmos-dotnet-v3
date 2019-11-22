@@ -361,25 +361,6 @@ namespace Microsoft.Azure.Cosmos
                     this.responseHeaders[HttpConstants.HttpHeaders.Continuation];
 
         /// <summary>
-        /// Gets the flag associated with the response from the Azure Cosmos DB service whether this feed request is served from Request Units(RUs)/minute capacity or not.
-        /// </summary>
-        /// <value>
-        /// True if this request is served from RUs/minute capacity. Otherwise, false.
-        /// </value>
-        public bool IsRUPerMinuteUsed
-        {
-            get
-            {
-                if (Helpers.GetHeaderValueByte(this.responseHeaders, HttpConstants.HttpHeaders.IsRUPerMinuteUsed, 0) != 0)
-                {
-                    return true;
-                }
-
-                return false;
-            }
-        }
-
-        /// <summary>
         /// Gets a dump for troubleshooting the request.
         /// </summary>
         public string RequestDiagnosticsString
