@@ -286,7 +286,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             TransactionalBatchResponse batchResponse = await batch.ExecuteAsync();
 
             BatchSinglePartitionKeyTests.VerifyBatchProcessed(
-                batchResponse, 
+                batchResponse,
                 numberOfOperations: operationCount,
                 expectedStatusCode: HttpStatusCode.RequestEntityTooLarge);
 
@@ -425,9 +425,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     maxRetryAttemptsOnThrottledRequests: 0)
                 .Build();
 
-            Container containerWithNoThrottleRetry = 
+            Container containerWithNoThrottleRetry =
                 clientWithNoThrottleRetry.GetContainer(BatchTestBase.Database.Id, BatchTestBase.LowThroughputJsonContainer.Id);
-            
+
             // The second batch started should be rate limited by the backend in admission control.
             {
                 TransactionalBatchResponse[] batchResponses = await this.RunTwoLargeBatchesAsync(containerWithNoThrottleRetry);
@@ -511,7 +511,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Container container = BatchTestBase.JsonContainer;
             await this.RunWithErrorAsync(
                 container,
-                batch => batch.ReadItem(Guid.NewGuid().ToString()), 
+                batch => batch.ReadItem(Guid.NewGuid().ToString()),
                 HttpStatusCode.NotFound);
         }
 
@@ -570,9 +570,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task<Container> RunWithErrorAsync(
             Container container,
-            Action<TransactionalBatch> appendOperation, 
+            Action<TransactionalBatch> appendOperation,
             HttpStatusCode expectedFailedOperationStatusCode)
-        { 
+        {
             TestDoc testDocToCreate = BatchTestBase.PopulateTestDoc(this.PartitionKey1);
             TestDoc anotherTestDocToCreate = BatchTestBase.PopulateTestDoc(this.PartitionKey1);
 
@@ -586,7 +586,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .ExecuteAsync();
 
             BatchSinglePartitionKeyTests.VerifyBatchProcessed(
-                batchResponse, 
+                batchResponse,
                 numberOfOperations: 3,
                 expectedStatusCode: expectedFailedOperationStatusCode);
 
@@ -602,13 +602,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private static void VerifyBatchProcessed(TransactionalBatchResponse batchResponse, int numberOfOperations, HttpStatusCode expectedStatusCode = HttpStatusCode.OK)
         {
             Assert.IsNotNull(batchResponse);
-            Assert.AreEqual(
-                expectedStatusCode, 
-                batchResponse.StatusCode,
-                string.Format("Batch server response had StatusCode {0} instead of {1} expected and had ErrorMessage {2}",
-                        batchResponse.StatusCode,
-                        expectedStatusCode,
-                        batchResponse.ErrorMessage));
+            foreach (TransactionalBatchOperationResult result in batchResponse)
+            {
+                if (result.StatusCode != (HttpStatusCode)StatusCodes.FailedDependency)
+                {
+                    Assert.AreEqual(
+                    expectedStatusCode,
+                    result.StatusCode,
+                    string.Format("Batch server response had StatusCode {0} instead of {1} expected and had ErrorMessage {2}",
+                            batchResponse.StatusCode,
+                            expectedStatusCode,
+                            batchResponse.ErrorMessage));
+                    break;
+                }
+            }
 
             Assert.AreEqual(numberOfOperations, batchResponse.Count);
 

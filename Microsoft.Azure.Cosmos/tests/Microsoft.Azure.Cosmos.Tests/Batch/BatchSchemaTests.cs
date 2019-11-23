@@ -98,7 +98,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 serializer);
 
             Assert.IsNotNull(batchRequest);
-            Assert.AreEqual(HttpStatusCode.Conflict, batchResponse.StatusCode);
+            Assert.AreEqual((HttpStatusCode)207, batchResponse.StatusCode);
+            Assert.AreEqual(HttpStatusCode.Conflict, batchResponse[0].StatusCode);
             Assert.AreEqual(2, batchResponse.Count);
 
             CosmosBatchOperationResultEqualityComparer comparer = new CosmosBatchOperationResultEqualityComparer();
