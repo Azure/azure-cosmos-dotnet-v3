@@ -194,7 +194,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 TestDoc testDocToUpsert = await BatchTestBase.CreateSchematizedTestDocAsync(container, this.PartitionKey1, ttlInSeconds: ttlInSeconds);
                 testDocToUpsert.Cost++;
 
-                BatchCore batch = (BatchCore)(new BatchCore((ContainerCore)container, BatchTestBase.GetPartitionKey(this.PartitionKey1))
+                BatchCore batch = (BatchCore)new BatchCore((ContainerCore)container, BatchTestBase.GetPartitionKey(this.PartitionKey1))
                        .CreateItemStream(
                             BatchTestBase.TestDocToStream(testDocToCreate, isSchematized),
                             BatchTestBase.GetBatchItemRequestOptions(testDocToCreate, isSchematized, ttlInSeconds: ttlInSeconds))
@@ -207,7 +207,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             BatchTestBase.GetBatchItemRequestOptions(testDocToReplace, isSchematized, ttlInSeconds: ttlInSeconds))
                        .UpsertItemStream(
                             BatchTestBase.TestDocToStream(testDocToUpsert, isSchematized),
-                            BatchTestBase.GetBatchItemRequestOptions(testDocToUpsert, isSchematized, ttlInSeconds: infiniteTtl)));
+                            BatchTestBase.GetBatchItemRequestOptions(testDocToUpsert, isSchematized, ttlInSeconds: infiniteTtl));
 
                 TransactionalBatchResponse batchResponse = await batch.ExecuteAsync(BatchTestBase.GetUpdatedBatchRequestOptions(isSchematized: true));
 
@@ -357,7 +357,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             else
             {
-                BatchCore batch = (BatchCore)(new BatchCore((ContainerCore)container, BatchTestBase.GetPartitionKey(this.PartitionKey1))
+                BatchCore batch = (BatchCore)new BatchCore((ContainerCore)container, BatchTestBase.GetPartitionKey(this.PartitionKey1))
                     .CreateItemStream(
                         BatchTestBase.TestDocToStream(testDocToCreate, isSchematized),
                         BatchTestBase.GetBatchItemRequestOptions(testDocToCreate, isSchematized))
@@ -376,7 +376,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         BatchTestBase.GetBatchItemRequestOptions(anotherTestDocToUpsert, isSchematized))
                     .DeleteItem(
                         BatchTestBase.GetId(this.TestDocPk1ExistingD, isSchematized),
-                        BatchTestBase.GetBatchItemRequestOptions(this.TestDocPk1ExistingD, isSchematized)));
+                        BatchTestBase.GetBatchItemRequestOptions(this.TestDocPk1ExistingD, isSchematized));
 
                 batchResponse = await batch.ExecuteAsync(batchOptions);
             }
@@ -599,21 +599,31 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return container;
         }
 
-        private static void VerifyBatchProcessed(TransactionalBatchResponse batchResponse, int numberOfOperations, HttpStatusCode expectedStatusCode = HttpStatusCode.OK)
+        private static void VerifyBatchProcessed(TransactionalBatchResponse batchResponse, int numberOfOperations, HttpStatusCode? expectedStatusCode = null)
         {
             Assert.IsNotNull(batchResponse);
-            foreach (TransactionalBatchOperationResult result in batchResponse)
+            if (expectedStatusCode.HasValue)
             {
-                if (result.StatusCode != (HttpStatusCode)StatusCodes.FailedDependency)
+                foreach (TransactionalBatchOperationResult result in batchResponse)
                 {
-                    Assert.AreEqual(
-                    expectedStatusCode,
-                    result.StatusCode,
-                    string.Format("Batch server response had StatusCode {0} instead of {1} expected and had ErrorMessage {2}",
-                            batchResponse.StatusCode,
-                            expectedStatusCode,
-                            batchResponse.ErrorMessage));
-                    break;
+                    if (result.StatusCode != (HttpStatusCode)StatusCodes.FailedDependency)
+                    {
+                        Assert.AreEqual(
+                        expectedStatusCode.Value,
+                        result.StatusCode,
+                        string.Format("Batch server response had StatusCode {0} instead of {1} expected and had ErrorMessage {2}",
+                                batchResponse.StatusCode,
+                                expectedStatusCode.Value,
+                                batchResponse.ErrorMessage));
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                foreach (TransactionalBatchOperationResult result in batchResponse)
+                {
+                    Assert.IsTrue(result.IsSuccessStatusCode, "Batch and all it's children should have succeeded.");
                 }
             }
 
