@@ -343,27 +343,9 @@ namespace Microsoft.Azure.Cosmos
                 return null;
             }
 
-            HttpStatusCode responseStatusCode = responseMessage.StatusCode;
-            SubStatusCodes responseSubStatusCode = responseMessage.Headers.SubStatusCode;
-
-            // Promote the operation error status as the Batch response error status if we have a MultiStatus response
-            // to provide users with status codes they are used to.
-            if ((int)responseMessage.StatusCode == (int)StatusCodes.MultiStatus)
-            {
-                foreach (TransactionalBatchOperationResult result in results)
-                {
-                    if ((int)result.StatusCode != (int)StatusCodes.FailedDependency)
-                    {
-                        responseStatusCode = result.StatusCode;
-                        responseSubStatusCode = result.SubStatusCode;
-                        break;
-                    }
-                }
-            }
-
             TransactionalBatchResponse response = new TransactionalBatchResponse(
-                responseStatusCode,
-                responseSubStatusCode,
+                responseMessage.StatusCode,
+                responseMessage.Headers.SubStatusCode,
                 responseMessage.ErrorMessage,
                 responseMessage.Headers.RequestCharge,
                 responseMessage.Headers.RetryAfter,
