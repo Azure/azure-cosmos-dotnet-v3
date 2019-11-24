@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Reads a <see cref="ContainerProperties"/> from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
-        /// <param name="requestOptions">(Optional) The <see cref="RequestOptions"/> for the container request.</param>
+        /// <param name="requestOptions">(Optional) The options for the container request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="ContainerResponse"/> which wraps a <see cref="ContainerProperties"/> containing the read resource record.
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Reads a <see cref="ContainerProperties"/> from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
-        /// <param name="requestOptions">(Optional) The <see cref="RequestOptions"/> for the container request.</param>
+        /// <param name="requestOptions">(Optional) The options for the container request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="ResponseMessage"/> containing the read resource record.
@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos
         /// Replace a <see cref="ContainerProperties"/> from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
         /// <param name="containerProperties">The <see cref="ContainerProperties"/> object.</param>
-        /// <param name="requestOptions">(Optional) The <see cref="RequestOptions"/> for the container request.</param>
+        /// <param name="requestOptions">(Optional) The options for the container request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="ContainerResponse"/> which wraps a <see cref="ContainerProperties"/> containing the replace resource record.
@@ -137,7 +137,7 @@ namespace Microsoft.Azure.Cosmos
         /// Replace a <see cref="ContainerProperties"/> from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
         /// <param name="containerProperties">The <see cref="ContainerProperties"/>.</param>
-        /// <param name="requestOptions">(Optional) The <see cref="RequestOptions"/> for the container request.</param>
+        /// <param name="requestOptions">(Optional) The options for the container request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="ResponseMessage"/> containing the replace resource record.
@@ -160,7 +160,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Delete a <see cref="ContainerProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
-        /// <param name="requestOptions">(Optional) The <see cref="RequestOptions"/> for the container request.</param>
+        /// <param name="requestOptions">(Optional) The options for the container request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="ContainerResponse"/> which will contain information about the request issued.</returns>
         /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
@@ -188,7 +188,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Delete a <see cref="ContainerProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
-        /// <param name="requestOptions">(Optional) The <see cref="RequestOptions"/> for the container request.</param>
+        /// <param name="requestOptions">(Optional) The options for the container request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <example>
         /// <code language="c#">
