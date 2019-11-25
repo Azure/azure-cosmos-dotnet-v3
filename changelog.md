@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+
+- [#1050](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1050) Add mocking constructors to TransactionalBatchOperationResult
+
 ## <a name="3.5.0"/> [3.5.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.5.0) - 2019-11-21
 
 ### Added
