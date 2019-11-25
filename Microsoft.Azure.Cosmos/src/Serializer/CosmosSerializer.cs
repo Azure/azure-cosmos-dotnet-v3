@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Convert the object to a Stream. 
         /// The caller will take ownership of the stream and ensure it is correctly disposed of.
-        /// <see href="https://docs.microsoft.com/dotnet/api/system.io.stream.canread?view=netcore-2.0">Stream.CanRead</see> must be true.
+        /// <see href="https://docs.microsoft.com/dotnet/api/system.io.stream.canread">Stream.CanRead</see> must be true.
         /// </summary>
         /// <param name="input">Any type passed to <see cref="Container"/>.</param>
         /// <returns>A readable Stream containing JSON of the serialized object.</returns>
