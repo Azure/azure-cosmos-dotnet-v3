@@ -34,18 +34,15 @@ namespace Microsoft.Azure.Cosmos
             StringBuilder builder = new StringBuilder();
             builder.Append("{");
             this.AppendJsonRetryInfo(builder);
-            builder.Append(",\"Scopes\":[");
             if (this.Scopes != null && this.Scopes.Count > 0)
             {
                 foreach (ICosmosDiagnosticsJsonWriter scope in this.Scopes)
                 {
-                    scope.AppendJson(builder);
                     builder.Append(",");
+                    scope.AppendJson(builder); 
                 }
-                // remove extra comma
-                builder.Length -= 1;
             }
-            builder.Append("]}");
+            builder.Append("}");
 
             return builder.ToString();
         }
@@ -104,11 +101,10 @@ namespace Microsoft.Azure.Cosmos
 
             public void AppendJson(StringBuilder stringBuilder)
             {
-                stringBuilder.Append("{\"");
+                stringBuilder.Append("\"");
                 stringBuilder.Append(this.name);
                 stringBuilder.Append("\":");
                 stringBuilder.Append(this.jsonValue);
-                stringBuilder.Append("}");
             }
         }
 
@@ -138,9 +134,9 @@ namespace Microsoft.Azure.Cosmos
 
             public void AppendJson(StringBuilder stringBuilder)
             {
-                stringBuilder.Append("{\"Name\":\"");
+                stringBuilder.Append("\"");
                 stringBuilder.Append(this.Name);
-                stringBuilder.Append("\",\"StartTime\":\"");
+                stringBuilder.Append("\": {\"StartTime\":\"");
                 stringBuilder.Append(this.StartTime);
                 stringBuilder.Append("\",\"ElapsedTime\":\"");
                 stringBuilder.Append(this.ElapsedTime.Elapsed);

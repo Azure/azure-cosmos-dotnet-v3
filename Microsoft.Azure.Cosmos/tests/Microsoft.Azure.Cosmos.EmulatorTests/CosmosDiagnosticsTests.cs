@@ -161,6 +161,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string info = diagnostics.ToString();
             Assert.IsNotNull(info);
             JObject jObject = JObject.Parse(info);
+            Assert.IsNotNull(jObject["RetryCount"].ToString());
+
+            jObject = jObject["DSR"].ToObject<JObject>();
             Assert.IsNotNull(jObject["ActivityId"].ToString());
             Assert.IsNotNull(jObject["StatusCode"].ToString());
             Assert.IsNotNull(jObject["RequestCharge"].ToString());
