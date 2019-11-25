@@ -84,5 +84,24 @@ namespace Microsoft.Azure.Cosmos
                 Assert.AreEqual(success, result.IsSuccessStatusCode);
             }
         }
+
+        [TestMethod]
+        public void CanBeMocked()
+        {
+            Mock<TransactionalBatchOperationResult> mockResult = new Mock<TransactionalBatchOperationResult>();
+            TransactionalBatchOperationResult result = mockResult.Object;
+
+            Assert.AreEqual(default(HttpStatusCode), result.StatusCode);
+        }
+
+        [TestMethod]
+        public void GenericCanBeMocked()
+        {
+            Mock<TransactionalBatchOperationResult<object>> mockResult = new Mock<TransactionalBatchOperationResult<object>>();
+            TransactionalBatchOperationResult<object> result = mockResult.Object;
+
+            Assert.AreEqual(default(HttpStatusCode), result.StatusCode);
+            Assert.AreEqual(default(object), result.Resource);
+        }
     }
 }
