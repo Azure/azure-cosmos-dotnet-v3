@@ -116,13 +116,15 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
             using (diagnosticsCore.CreateScope("RequestInvokerHandler"))
             {
-                RequestMessage request = new RequestMessage(method, resourceUri)
+                RequestMessage request = new RequestMessage(
+                    method,
+                    resourceUri,
+                    diagnosticsCore)
                 {
                     OperationType = operationType,
                     ResourceType = resourceType,
                     RequestOptions = requestOptions,
                     Content = streamPayload,
-                    DiagnosticsCore = diagnosticsCore
                 };
 
                 if (partitionKey.HasValue)
