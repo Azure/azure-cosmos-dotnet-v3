@@ -571,7 +571,7 @@ namespace Microsoft.Azure.Cosmos.Query
                             $"{nameof(UnorderdDistinctMap)} continuation token was malformed.");
                     }
 
-                    UInt128 uint128 = UInt128.FromByteArray(binary.Value);
+                    UInt128 uint128 = UInt128.FromByteArray(binary.Value.Span);
                     hashSet.Add(uint128);
                 }
 
