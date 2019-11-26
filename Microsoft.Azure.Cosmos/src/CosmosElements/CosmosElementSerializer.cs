@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             }
             else
             {
-                content = buffer.ToArray();
+                content = memoryStream.ToArray();
             }
 
             IJsonNavigator jsonNavigator;

@@ -667,7 +667,7 @@ namespace Microsoft.Azure.Cosmos.Query
             }
             else
             {
-                content = buffer.ToArray();
+                content = memoryStream.ToArray();
             }
 
             IJsonNavigator jsonNavigator = null;
