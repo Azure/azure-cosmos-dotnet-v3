@@ -659,7 +659,17 @@ namespace Microsoft.Azure.Cosmos.Query
             MemoryStream memoryStream = new MemoryStream();
             documentServiceResponse.ResponseBody.CopyTo(memoryStream);
             long responseLengthBytes = memoryStream.Length;
-            byte[] content = memoryStream.ToArray();
+
+            ReadOnlyMemory<byte> content;
+            if (memoryStream.TryGetBuffer(out ArraySegment<byte> buffer))
+            {
+                content = buffer;
+            }
+            else
+            {
+                content = memoryStream.ToArray();
+            }
+
             IJsonNavigator jsonNavigator = null;
 
             // Use the users custom navigator first. If it returns null back try the
@@ -674,7 +684,7 @@ namespace Microsoft.Azure.Cosmos.Query
             }
             else
             {
-                jsonNavigator = JsonNavigator.Create(new ArraySegment<byte>(content));
+                jsonNavigator = JsonNavigator.Create(content);
             }
 
             string resourceName = this.GetRootNodeName(documentServiceRequest.ResourceType);
