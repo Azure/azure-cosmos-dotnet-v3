@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
@@ -22,6 +23,40 @@ namespace Microsoft.Azure.Cosmos.Tests
     [TestClass]
     public class CosmosQueryUnitTests
     {
+        [TestMethod]
+        public void VerifyNegativeCosmosQueryResponseStream()
+        {
+            string contianerRid = "mockContainerRid";
+            string errorMessage = "TestErrorMessage";
+            string activityId = "TestActivityId";
+            double requestCharge = 42.42;
+
+            Mock<CosmosDiagnostics> mockDiagnostics = new Mock<CosmosDiagnostics>();
+            CosmosDiagnostics diagnostics = mockDiagnostics.Object;
+            QueryResponse queryResponse = QueryResponse.CreateFailure(
+                        statusCode: HttpStatusCode.NotFound,
+                        errorMessage: errorMessage,
+                        requestMessage: null,
+                        error: null,
+                        responseHeaders: new CosmosQueryResponseMessageHeaders(
+                            null,
+                            null,
+                            ResourceType.Document,
+                            contianerRid)
+                        {
+                            RequestCharge = requestCharge,
+                            ActivityId = activityId
+                        },
+                        diagnostics: diagnostics);
+
+            Assert.AreEqual(HttpStatusCode.NotFound, queryResponse.StatusCode);
+            Assert.AreEqual(errorMessage, queryResponse.ErrorMessage);
+            Assert.AreEqual(requestCharge, queryResponse.Headers.RequestCharge);
+            Assert.AreEqual(activityId, queryResponse.Headers.ActivityId);
+            Assert.AreEqual(diagnostics, queryResponse.Diagnostics);
+            Assert.IsNull(queryResponse.Content);
+        }
+
         [TestMethod]
         public void VerifyCosmosQueryResponseStream()
         {
@@ -38,6 +73,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         result: responseCore.CosmosElements,
                         count: responseCore.CosmosElements.Count,
                         responseLengthBytes: responseCore.ResponseLengthBytes,
+                        serializationOptions: null,
                         responseHeaders: new CosmosQueryResponseMessageHeaders(
                             responseCore.ContinuationToken,
                             responseCore.DisallowContinuationTokenMessage,
@@ -51,10 +87,90 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             using (Stream stream = queryResponse.Content)
             {
-                using(Stream innerStream = queryResponse.Content)
+                using (Stream innerStream = queryResponse.Content)
                 {
                     Assert.IsTrue(object.ReferenceEquals(stream, innerStream), "Content should return the same stream");
                 }
+            }
+        }
+
+        [TestMethod]
+        public void VerifyItemQueryResponseResult()
+        {
+            string contianerRid = "mockContainerRid";
+            (QueryResponseCore response, IList<ToDoItem> items) factoryResponse = QueryResponseMessageFactory.Create(
+                       itemIdPrefix: $"TestPage",
+                       continuationToken: "SomeContinuationToken",
+                       collectionRid: contianerRid,
+                       itemCount: 100);
+
+            QueryResponseCore responseCore = factoryResponse.response;
+            List<CosmosElement> cosmosElements = new List<CosmosElement>(responseCore.CosmosElements);
+
+            QueryResponse queryResponse = QueryResponse.CreateSuccess(
+                        result: cosmosElements,
+                        count: cosmosElements.Count,
+                        responseLengthBytes: responseCore.ResponseLengthBytes,
+                        serializationOptions: null,
+                        responseHeaders: new CosmosQueryResponseMessageHeaders(
+                            responseCore.ContinuationToken,
+                            responseCore.DisallowContinuationTokenMessage,
+                            ResourceType.Document,
+                            contianerRid)
+                        {
+                            RequestCharge = responseCore.RequestCharge,
+                            ActivityId = responseCore.ActivityId
+                        },
+                        diagnostics: null);
+
+            QueryResponse<ToDoItem> itemQueryResponse = QueryResponseMessageFactory.CreateQueryResponse<ToDoItem>(queryResponse);
+            List<ToDoItem> resultItems = new List<ToDoItem>(itemQueryResponse.Resource);
+            ToDoItemComparer comparer = new ToDoItemComparer();
+
+            Assert.AreEqual(factoryResponse.items.Count, resultItems.Count);
+            for (int i = 0; i < factoryResponse.items.Count; i++)
+            {
+                Assert.AreNotSame(factoryResponse.items[i], resultItems[i]);
+                Assert.AreEqual(0, comparer.Compare(factoryResponse.items[i], resultItems[i]));
+            }
+        }
+
+        [TestMethod]
+        public void VerifyItemQueryResponseCosmosElements()
+        {
+            string containerRid = "mockContainerRid";
+            (QueryResponseCore response, IList<ToDoItem> items) factoryResponse = QueryResponseMessageFactory.Create(
+                       itemIdPrefix: $"TestPage",
+                       continuationToken: "SomeContinuationToken",
+                       collectionRid: containerRid,
+                       itemCount: 100);
+
+            QueryResponseCore responseCore = factoryResponse.response;
+            List<CosmosElement> cosmosElements = new List<CosmosElement>(responseCore.CosmosElements);
+
+            QueryResponse queryResponse = QueryResponse.CreateSuccess(
+                        result: cosmosElements,
+                        count: cosmosElements.Count,
+                        responseLengthBytes: responseCore.ResponseLengthBytes,
+                        serializationOptions: null,
+                        responseHeaders: new CosmosQueryResponseMessageHeaders(
+                            responseCore.ContinuationToken,
+                            responseCore.DisallowContinuationTokenMessage,
+                            ResourceType.Document,
+                            containerRid)
+                        {
+                            RequestCharge = responseCore.RequestCharge,
+                            ActivityId = responseCore.ActivityId
+                        },
+                        diagnostics: null);
+
+            QueryResponse<CosmosElement> itemQueryResponse = QueryResponseMessageFactory.CreateQueryResponse<CosmosElement>(queryResponse);
+            List<CosmosElement> resultItems = new List<CosmosElement>(itemQueryResponse.Resource);
+
+            Assert.AreEqual(cosmosElements.Count, resultItems.Count);
+            for (int i = 0; i < cosmosElements.Count; i++)
+            {
+                Assert.AreSame(cosmosElements[i], resultItems[i]);
             }
         }
 
@@ -244,7 +360,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Mock<IDocumentQueryExecutionComponent> baseContext = new Mock<IDocumentQueryExecutionComponent>();
             baseContext.Setup(x => x.DrainAsync(It.IsAny<int>(), It.IsAny<CancellationToken>())).Returns(Task.FromResult<QueryResponseCore>(failure));
-            Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> callBack = x => Task.FromResult<TryCatch<IDocumentQueryExecutionComponent>>(TryCatch<IDocumentQueryExecutionComponent> .FromResult(baseContext.Object));
+            Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> callBack = x => Task.FromResult<TryCatch<IDocumentQueryExecutionComponent>>(TryCatch<IDocumentQueryExecutionComponent>.FromResult(baseContext.Object));
             return (callBack, failure);
         }
     }

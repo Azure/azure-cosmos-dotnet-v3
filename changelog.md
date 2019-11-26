@@ -7,16 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## <a name="3.5.0"/> [3.5.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.5.0) - 2019-11-21
+
 ### Added
 
-- [#995](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/995) Included session token in diagnostics
-
+- [#979](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/979) Make SessionToken on QueryRequestOptions public.
+- [#995](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/995) Included session token in diagnostics.
+- [#1000](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1000) Add PortReuseMode to CosmosClientOptions.
+- [#1017](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1017) Adding ClientSideRequestStatistics to gateway calls and making endtime nullable
+- [#1038](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1038) Add Selflink to resource properties
+ 
 ### Fixed
 
+- [#921](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/921) Fixed error handling to preserve stack trace in certain scenarios
 - [#944](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/944) Change Feed Processor won't use user serializer for internal operations
 - [#988](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/988) Fixed query mutating due to retry of gone / name cache is stale.
-- [#999](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/999) Fixed grabbing extra page and updated continuation token on exception path.
-
+- [#954](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/954) Support "Start from Beginning" for Change Feed Processor in multi master accounts
+- [#999](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/999) Fixed grabbing extra page, updated continuation token on exception path, and non ascii character in order by continuation token.
+- [#1013](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1013) Gateway OperationCanceledException are now returned as request timeouts
+- [#1020](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1020) Direct package update removes debug statements
+- [#1023](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1023) Fixed ThroughputResponse.IsReplacePending header mapping
+- [#1036](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1036) Fixed query responses to return null Content if it is a failure
+ 
 ## <a name="3.4.1"/> [3.4.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.4.1) - 2019-11-06
 
 ### Fixed
@@ -40,13 +52,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#918](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/918) Fixed serializer being used for Scripts, Permissions, and Conflict related iterators
 - [#936](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/936) Fixed bulk requests with large resources to have natural exception 
 
-
 ## <a name="3.3.3"/> [3.3.3](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.3.3) - 2019-10-30
 
 - [#837](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/837) Fixed group by bug for non-Windows platforms
 - [#927](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/927) Fixed query returning partial results instead of error
-flow.
-
 
 ## <a name="3.3.2"/> [3.3.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.3.2) - 2019-10-16
 

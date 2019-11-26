@@ -9,8 +9,10 @@ namespace Microsoft.Azure.Cosmos.Scenarios
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>
@@ -19,6 +21,8 @@ namespace Microsoft.Azure.Cosmos.Scenarios
     [TestClass]
     public abstract class GremlinScenarioTests
     {
+        private const string PartitionKeyPropertyName = "myPartitionKey";
+
         /// <summary>
         /// Gremlin keywords for use in creating scenario Json document structure.
         /// </summary>
@@ -47,8 +51,8 @@ namespace Microsoft.Azure.Cosmos.Scenarios
 
         /// <summary>
         /// Test read path for Gremlin edge documents by:
-        /// - Creating a serialized edge document using eager CosmosElements.
-        /// - Navigating and verifying the structure and values of the serialized edge document using lazy CosmosElements.
+        /// - Creating a serialized edge document using eager <see cref="CosmosElement"/>s.
+        /// - Navigating and verifying the structure and values of the serialized edge document using lazy <see cref="CosmosElement"/>s.
         /// </summary>
         [TestMethod]
         public virtual void SerializeAndDeserializeGremlinEdgeDocument()
@@ -58,8 +62,8 @@ namespace Microsoft.Azure.Cosmos.Scenarios
 
         /// <summary>
         /// Test read path for Gremlin vertex documents by:
-        /// - Creating a serialized vertex document using eager CosmosElements.
-        /// - Navigating and verifying structure and values of the serialized vertex document using lazy CosmosElements.
+        /// - Creating a serialized vertex document using eager <see cref="CosmosElement"/>s.
+        /// - Navigating and verifying structure and values of the serialized vertex document using lazy <see cref="CosmosElement"/>s.
         /// </summary>
         [TestMethod]
         public virtual void SerializeAndDeserializeGremlinVertexDocument()
@@ -69,9 +73,9 @@ namespace Microsoft.Azure.Cosmos.Scenarios
 
         /// <summary>
         /// Test write path for Gremlin vertex documents by:
-        /// - Creating a serialized vertex document using eager CosmosElements.
-        /// - Navigating the serialized vertex document using lazy CosmosElements.
-        /// - Assembling a modified vertex document structure using a mix of lazy and eager CosmosElements.
+        /// - Creating a serialized vertex document using eager <see cref="CosmosElement"/>s.
+        /// - Navigating the serialized vertex document using lazy <see cref="CosmosElement"/>s.
+        /// - Assembling a modified vertex document structure using a mix of lazy and eager <see cref="CosmosElement"/>s.
         /// - Serializing and verifying the contents of the modified vertex document.
         /// </summary>
         [TestMethod]
@@ -80,12 +84,29 @@ namespace Microsoft.Azure.Cosmos.Scenarios
             this.DeserializeModifyAndSerializeVertexDocumentTest(this.SerializationFormat);
         }
 
+        /// <summary>
+        /// Test getting the internal <see cref="CosmosElement"/>s directly from a <see cref="QueryResponse{T}"/> without re-serializing them.
+        /// </summary>
+        [TestMethod]
+        public virtual void GetCosmosElementsFromQueryResponse()
+        {
+            this.GetCosmosElementsFromQueryResponseTest(this.SerializationFormat);
+        }
+
+        /// <summary>
+        /// Test getting other re-serialized objects besides CosmosElement from a <see cref="QueryResponse{T}"/>.
+        /// </summary>
+        [TestMethod]
+        public virtual void GetDeserializedObjectsFromQueryResponse()
+        {
+            this.GetDeserializedObjectsFromQueryResponseTest(this.SerializationFormat);
+        }
+
         internal void SerializeAndDeserializeEdgeDocumentTest(JsonSerializationFormat jsonSerializationFormat)
         {
             // Constants to use for vertex document property key/values
             const string idName = "id";
             const string idValue = "e_0";
-            const string pkName = "myPartitionKey";
             const string pkValue = "pk_0";
             const string labelName = "label";
             const string labelValue = "l_0";
@@ -112,7 +133,7 @@ namespace Microsoft.Azure.Cosmos.Scenarios
             Dictionary<string, CosmosElement> edgeDocumentProperties = new Dictionary<string, CosmosElement>()
             {
                 { idName, CosmosString.Create(idValue) },
-                { pkName, CosmosString.Create(pkValue) },
+                { GremlinScenarioTests.PartitionKeyPropertyName, CosmosString.Create(pkValue) },
                 { labelName, CosmosString.Create(labelValue) },
                 { GremlinKeywords.KW_EDGEDOC_VERTEXID, CosmosString.Create(vertexIdValue) },
                 { GremlinKeywords.KW_EDGEDOC_VERTEXLABEL, CosmosString.Create(vertexLabelValue) },
@@ -151,7 +172,7 @@ namespace Microsoft.Azure.Cosmos.Scenarios
             CosmosString idLazyString = this.GetAndAssertObjectProperty<CosmosString>(edgeLazyObject, idName);
             Assert.AreEqual(idValue, idLazyString.Value);
 
-            CosmosString pkLazyString = this.GetAndAssertObjectProperty<CosmosString>(edgeLazyObject, pkName);
+            CosmosString pkLazyString = this.GetAndAssertObjectProperty<CosmosString>(edgeLazyObject, GremlinScenarioTests.PartitionKeyPropertyName);
             Assert.AreEqual(pkValue, pkLazyString.Value);
 
             CosmosString labelLazyString = this.GetAndAssertObjectProperty<CosmosString>(edgeLazyObject, labelName);
@@ -212,7 +233,6 @@ namespace Microsoft.Azure.Cosmos.Scenarios
             // Constants to use for vertex document property key/values
             const string idName = "id";
             const string idValue = "v_0";
-            const string pkName = "myPartitionKey";
             const string pkValue = "pk_0";
             const string labelName = "label";
             const string labelValue = "l_0";
@@ -241,7 +261,7 @@ namespace Microsoft.Azure.Cosmos.Scenarios
             Dictionary<string, CosmosElement> vertexDocumentProperties = new Dictionary<string, CosmosElement>()
             {
                 { idName, CosmosString.Create(idValue) },
-                { pkName, CosmosString.Create(pkValue) },
+                { GremlinScenarioTests.PartitionKeyPropertyName, CosmosString.Create(pkValue) },
                 { labelName, CosmosString.Create(labelValue) },
                 {
                     boolName,
@@ -309,7 +329,7 @@ namespace Microsoft.Azure.Cosmos.Scenarios
             CosmosString idLazyString = this.GetAndAssertObjectProperty<CosmosString>(vertexLazyObject, idName);
             Assert.AreEqual(idValue, idLazyString.Value);
 
-            CosmosString pkLazyString = this.GetAndAssertObjectProperty<CosmosString>(vertexLazyObject, pkName);
+            CosmosString pkLazyString = this.GetAndAssertObjectProperty<CosmosString>(vertexLazyObject, GremlinScenarioTests.PartitionKeyPropertyName);
             Assert.AreEqual(pkValue, pkLazyString.Value);
 
             CosmosString labelLazyString = this.GetAndAssertObjectProperty<CosmosString>(vertexLazyObject, labelName);
@@ -394,7 +414,6 @@ namespace Microsoft.Azure.Cosmos.Scenarios
             // Constants to use for vertex document property key/values
             const string idName = "id";
             const string idValue = "v_0";
-            const string pkName = "myPartitionKey";
             const string pkValue = "pk_0";
             const string labelName = "label";
             const string labelValue = "l_0";
@@ -417,7 +436,7 @@ namespace Microsoft.Azure.Cosmos.Scenarios
             Dictionary<string, CosmosElement> initialVertexDocumentProperties = new Dictionary<string, CosmosElement>()
             {
                 { idName, CosmosString.Create(idValue) },
-                { pkName, CosmosString.Create(pkValue) },
+                { GremlinScenarioTests.PartitionKeyPropertyName, CosmosString.Create(pkValue) },
                 { labelName, CosmosString.Create(labelValue) },
                 {
                     property1Name,
@@ -465,7 +484,7 @@ namespace Microsoft.Azure.Cosmos.Scenarios
             Assert.AreEqual(initialVertexDocumentProperties.Count, vertexLazyObject.Count);
 
             CosmosString idLazyString = this.GetAndAssertObjectProperty<CosmosString>(vertexLazyObject, idName);
-            CosmosString pkLazyString = this.GetAndAssertObjectProperty<CosmosString>(vertexLazyObject, pkName);
+            CosmosString pkLazyString = this.GetAndAssertObjectProperty<CosmosString>(vertexLazyObject, GremlinScenarioTests.PartitionKeyPropertyName);
             CosmosString labelLazyString = this.GetAndAssertObjectProperty<CosmosString>(vertexLazyObject, labelName);
             CosmosArray property2Array = this.GetAndAssertObjectProperty<CosmosArray>(vertexLazyObject, property2Name);
 
@@ -473,7 +492,7 @@ namespace Microsoft.Azure.Cosmos.Scenarios
             Dictionary<string, CosmosElement> modifiedVertexDocumentProperties = new Dictionary<string, CosmosElement>()
             {
                 { idName, idLazyString },
-                { pkName, pkLazyString },
+                { GremlinScenarioTests.PartitionKeyPropertyName, pkLazyString },
                 { labelName, labelLazyString },
 
                 // Property 1 is modified with a new value
@@ -516,7 +535,7 @@ namespace Microsoft.Azure.Cosmos.Scenarios
             Dictionary<string, CosmosElement> expectedVertexDocumentProperties = new Dictionary<string, CosmosElement>()
             {
                 { idName, CosmosString.Create(idValue) },
-                { pkName, CosmosString.Create(pkValue) },
+                { GremlinScenarioTests.PartitionKeyPropertyName, CosmosString.Create(pkValue) },
                 { labelName, CosmosString.Create(labelValue) },
                 {
                     property1Name,
@@ -559,6 +578,200 @@ namespace Microsoft.Azure.Cosmos.Scenarios
             Assert.IsTrue(modifiedJsonWriterResult.Span.SequenceEqual(expectedJsonWriterResult.Span));
         }
 
+        internal void GetCosmosElementsFromQueryResponseTest(JsonSerializationFormat jsonSerializationFormat)
+        {
+            // Constants to use for vertex document property key/values
+            const string vertex1Id = "v_0";
+            const string vertex2Id = "v_1";
+            const string vertex1Label = "l_0";
+            const string vertex2Label = "l_1";
+            const string vertex1PkValue = "pk_0";
+            const string vertex2PkValue = "pk_1";
+            const string property1Name = "p_0";
+            const string vertex1Property1Value = "v_0_p_0_v_0";
+            const string vertex2Property1Value = "v_1_p_0_v_0";
+            const string property2Name = "p_1";
+            const double vertex1Property2Value = 12.34;
+            const long vertex2Property2Value = 5678;
+
+            // Compose two initial vertex documents using eager CosmosElements
+            CosmosObject initialVertex1EagerObject = this.CreateVertexDocument(
+                vertex1Id,
+                vertex1Label,
+                GremlinScenarioTests.PartitionKeyPropertyName,
+                vertex1PkValue,
+                new Tuple<string, IEnumerable<object>>[]
+                {
+                    Tuple.Create<string, IEnumerable<object>>(property1Name, new object[] { vertex1Property1Value }),
+                    Tuple.Create<string, IEnumerable<object>>(property2Name, new object[] { vertex1Property2Value }),
+                });
+            CosmosObject initialVertex2EagerObject = this.CreateVertexDocument(
+                vertex2Id,
+                vertex2Label,
+                GremlinScenarioTests.PartitionKeyPropertyName,
+                vertex2PkValue,
+                new Tuple<string, IEnumerable<object>>[]
+                {
+                    Tuple.Create<string, IEnumerable<object>>(property1Name, new object[] { vertex2Property1Value }),
+                    Tuple.Create<string, IEnumerable<object>>(property2Name, new object[] { vertex2Property2Value }),
+                });
+
+            // Serialize the initial vertex object into a document using the specified serialization format
+            IJsonWriter jsonWriter = JsonWriter.Create(jsonSerializationFormat);
+            initialVertex1EagerObject.WriteTo(jsonWriter);
+            ReadOnlyMemory<byte> vertex1JsonWriterResult = jsonWriter.GetResult();
+            Assert.IsTrue(vertex1JsonWriterResult.Length > 0, "IJsonWriter result data is empty.");
+
+            jsonWriter = JsonWriter.Create(jsonSerializationFormat);
+            initialVertex2EagerObject.WriteTo(jsonWriter);
+            ReadOnlyMemory<byte> vertex2JsonWriterResult = jsonWriter.GetResult();
+            Assert.IsTrue(vertex2JsonWriterResult.Length > 0, "IJsonWriter result data is empty.");
+
+            // Navigate into the serialized vertex documents using lazy CosmosElements
+            CosmosElement vertex1LazyObject = CosmosElement.CreateFromBuffer(vertex1JsonWriterResult);
+            CosmosElement vertex2LazyObject = CosmosElement.CreateFromBuffer(vertex2JsonWriterResult);
+
+            // Create a CosmosElement-typed QueryResponse backed by the vertex document CosmosElements
+            CosmosArray vertexArray = CosmosArray.Create(
+                new CosmosElement[]
+                {
+                    vertex1LazyObject,
+                    vertex2LazyObject,
+                });
+            QueryResponse queryResponse = QueryResponse.CreateSuccess(
+                vertexArray,
+                count: 2,
+                responseLengthBytes: vertex1JsonWriterResult.Length + vertex2JsonWriterResult.Length,
+                serializationOptions: null,
+                responseHeaders: CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(
+                    sourceHeaders: null,
+                    resourceType: ResourceType.Document,
+                    containerRid: GremlinScenarioTests.CreateRandomString(10)),
+                diagnostics: null);
+            QueryResponse<CosmosElement> cosmosElementQueryResponse =
+                QueryResponse<CosmosElement>.CreateResponse<CosmosElement>(
+                    queryResponse,
+                    new CosmosJsonSerializerWrapper(new CosmosJsonDotNetSerializer()));
+
+            // Assert that we are directly returned the lazy CosmosElements that we created earlier
+            List<CosmosElement> responseCosmosElements = new List<CosmosElement>(cosmosElementQueryResponse.Resource);
+            Assert.AreEqual(vertexArray.Count, responseCosmosElements.Count);
+            Assert.AreSame(vertex1LazyObject, responseCosmosElements[0]);
+            Assert.AreSame(vertex2LazyObject, responseCosmosElements[1]);
+        }
+
+        internal void GetDeserializedObjectsFromQueryResponseTest(JsonSerializationFormat jsonSerializationFormat)
+        {
+            // Constants to use for vertex document property key/values
+            const string vertex1Id = "v_0";
+            const string vertex2Id = "v_1";
+            const string vertex1Label = "l_0";
+            const string vertex2Label = "l_1";
+            const string vertex1PkValue = "pk_0";
+            const string vertex2PkValue = "pk_1";
+            const string property1Name = "p_0";
+            const string vertex1Property1Value = "v_0_p_0_v_0";
+            const string vertex2Property1Value = "v_1_p_0_v_0";
+            const string property2Name = "p_1";
+            const double vertex1Property2Value = 12.34;
+            const long vertex2Property2Value = 5678;
+
+            // Compose two initial vertex documents using eager CosmosElements
+            CosmosObject initialVertex1EagerObject = this.CreateVertexDocument(
+                vertex1Id,
+                vertex1Label,
+                GremlinScenarioTests.PartitionKeyPropertyName,
+                vertex1PkValue,
+                new Tuple<string, IEnumerable<object>>[]
+                {
+                    Tuple.Create<string, IEnumerable<object>>(property1Name, new object[] { vertex1Property1Value }),
+                    Tuple.Create<string, IEnumerable<object>>(property2Name, new object[] { vertex1Property2Value }),
+                });
+            CosmosObject initialVertex2EagerObject = this.CreateVertexDocument(
+                vertex2Id,
+                vertex2Label,
+                GremlinScenarioTests.PartitionKeyPropertyName,
+                vertex2PkValue,
+                new Tuple<string, IEnumerable<object>>[]
+                {
+                    Tuple.Create<string, IEnumerable<object>>(property1Name, new object[] { vertex2Property1Value }),
+                    Tuple.Create<string, IEnumerable<object>>(property2Name, new object[] { vertex2Property2Value }),
+                });
+
+            // Serialize the initial vertex object into a document using the specified serialization format
+            IJsonWriter jsonWriter = JsonWriter.Create(jsonSerializationFormat);
+            initialVertex1EagerObject.WriteTo(jsonWriter);
+            ReadOnlyMemory<byte> vertex1JsonWriterResult = jsonWriter.GetResult();
+            Assert.IsTrue(vertex1JsonWriterResult.Length > 0, "IJsonWriter result data is empty.");
+
+            jsonWriter = JsonWriter.Create(jsonSerializationFormat);
+            initialVertex2EagerObject.WriteTo(jsonWriter);
+            ReadOnlyMemory<byte> vertex2JsonWriterResult = jsonWriter.GetResult();
+            Assert.IsTrue(vertex2JsonWriterResult.Length > 0, "IJsonWriter result data is empty.");
+
+            // Navigate into the serialized vertex documents using lazy CosmosElements
+            CosmosElement vertex1LazyObject = CosmosElement.CreateFromBuffer(vertex1JsonWriterResult);
+            CosmosElement vertex2LazyObject = CosmosElement.CreateFromBuffer(vertex2JsonWriterResult);
+
+            // Create a dynamically-typed QueryResponse backed by the vertex document CosmosElements
+            CosmosArray vertexArray = CosmosArray.Create(
+                new CosmosElement[]
+                {
+                    vertex1LazyObject,
+                    vertex2LazyObject,
+                });
+            QueryResponse queryResponse = QueryResponse.CreateSuccess(
+                vertexArray,
+                count: 2,
+                responseLengthBytes: vertex1JsonWriterResult.Length + vertex2JsonWriterResult.Length,
+                serializationOptions: null,
+                responseHeaders: CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(
+                    sourceHeaders: null,
+                    resourceType: ResourceType.Document,
+                    containerRid: GremlinScenarioTests.CreateRandomString(10)),
+                diagnostics: null);
+            QueryResponse<dynamic> cosmosElementQueryResponse =
+                QueryResponse<dynamic>.CreateResponse<dynamic>(
+                    queryResponse,
+                    new CosmosJsonSerializerWrapper(new CosmosJsonDotNetSerializer()));
+
+            // Assert that other objects (anything besides the lazy CosmosElements that we created earlier) are deserialized
+            // from the backing CosmosElement contents rather than being directly returned as CosmosElements
+            List<dynamic> responseCosmosElements = new List<dynamic>(cosmosElementQueryResponse.Resource);
+            Assert.AreEqual(vertexArray.Count, responseCosmosElements.Count);
+            Assert.AreNotSame(vertex1LazyObject, responseCosmosElements[0]);
+            Assert.AreNotSame(vertex2LazyObject, responseCosmosElements[1]);
+        }
+
+        private CosmosObject CreateVertexDocument(string id, string label, string pkName, string pkValue, IEnumerable<Tuple<string, IEnumerable<object>>> userProperties)
+        {
+            Dictionary<string, CosmosElement> vertexDocumentProperties = new Dictionary<string, CosmosElement>()
+            {
+                { GremlinKeywords.KW_DOC_ID, CosmosString.Create(id) },
+                { GremlinKeywords.KW_VERTEX_LABEL, CosmosString.Create(label) },
+            };
+
+            if (!string.IsNullOrEmpty(pkName) && !string.IsNullOrEmpty(pkValue))
+            {
+                vertexDocumentProperties.Add(pkName, CosmosString.Create(pkValue));
+            }
+
+            foreach (Tuple<string, IEnumerable<object>> userProperty in userProperties)
+            {
+                List<CosmosElement> singleValues = new List<CosmosElement>();
+                foreach (object userPropertyValue in userProperty.Item2)
+                {
+                    string propertyId = Guid.NewGuid().ToString();
+                    singleValues.Add(
+                        this.CreateVertexPropertySingleComplexValue(
+                            CosmosString.Create(propertyId),
+                            this.CreateVertexPropertyPrimitiveValueElement(userPropertyValue)));
+                }
+            }
+
+            return CosmosObject.Create(vertexDocumentProperties);
+        }
+
         private CosmosElement CreateVertexPropertySingleComplexValue(
             CosmosString propertyIdElement,
             CosmosElement propertyValueElement,
@@ -580,6 +793,49 @@ namespace Microsoft.Azure.Cosmos.Scenarios
             }
 
             return CosmosObject.Create(propertyValueMembers);
+        }
+
+        private CosmosElement CreateVertexPropertyPrimitiveValueElement(object value)
+        {
+            switch (value)
+            {
+                case bool boolValue:
+                    return CosmosBoolean.Create(boolValue);
+
+                case double doubleValue:
+                    return CosmosNumber64.Create(doubleValue);
+
+                case float floatValue:
+                    return CosmosNumber64.Create(floatValue);
+
+                case int intValue:
+                    return CosmosNumber64.Create(intValue);
+
+                case long longValue:
+                    return CosmosNumber64.Create(longValue);
+
+                case string stringValue:
+                    return CosmosString.Create(stringValue);
+
+                default:
+                    throw new AssertFailedException($"Invalid Gremlin property value object type: {value.GetType().Name}.");
+            }
+        }
+
+        private static string CreateRandomString(int stringLength)
+        {
+            Assert.IsTrue(stringLength > 0, $"Random string length ({stringLength}) must be a positive value");
+
+            const string validChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789=";
+
+            Random rand = new Random();
+            StringBuilder sb = new StringBuilder(stringLength);
+            for (int i = 0; i < stringLength; i++)
+            {
+                sb.Append(validChars[rand.Next(validChars.Length)]);
+            }
+
+            return sb.ToString();
         }
 
         private T GetAndAssertObjectProperty<T>(CosmosObject cosmosObject, string propertyName)
