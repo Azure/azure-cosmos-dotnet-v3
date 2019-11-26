@@ -11,9 +11,6 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
-    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
-    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
@@ -165,10 +162,11 @@ namespace Microsoft.Azure.Cosmos.Query
 
                         // Figure out what partition you are going to based on the range from the continuation token
                         // If token is null then just start at partitionKeyRangeId "0"
+                        List<CompositeContinuationToken> suppliedTokens;
                         Range<string> rangeFromContinuationToken =
                             this.partitionRoutingHelper.ExtractPartitionKeyRangeFromContinuationToken(
                                 request.Headers,
-                                out List<CompositeContinuationToken> suppliedTokens);
+                                out suppliedTokens);
                         Tuple<PartitionRoutingHelper.ResolvedRangeInfo, IReadOnlyList<Range<string>>> queryRoutingInfo =
                             await this.TryGetTargetPartitionKeyRangeAsync(
                                 request,
@@ -277,7 +275,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 }
             }
 
-            if (!this.providedRangesCache.TryGetValue(collection.ResourceId, out IReadOnlyList<Range<string>> providedRanges))
+            IReadOnlyList<Range<string>> providedRanges;
+            if (!this.providedRangesCache.TryGetValue(collection.ResourceId, out providedRanges))
             {
                 if (this.ShouldExecuteQueryRequest)
                 {

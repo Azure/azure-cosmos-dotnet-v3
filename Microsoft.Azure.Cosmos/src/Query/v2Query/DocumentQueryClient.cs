@@ -9,8 +9,6 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
-    using Microsoft.Azure.Cosmos.Query.Core.ComparableTask;
-    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
 
@@ -22,7 +20,12 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public DocumentQueryClient(DocumentClient innerClient)
         {
-            this.innerClient = innerClient ?? throw new ArgumentNullException("innerClient");
+            if (innerClient == null)
+            {
+                throw new ArgumentNullException("innerClient");
+            }
+
+            this.innerClient = innerClient;
             this.semaphore = new SemaphoreSlim(1, 1);
         }
 

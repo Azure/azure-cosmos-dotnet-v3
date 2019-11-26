@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
@@ -37,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         private readonly Guid correlatedActivityId;
 
-        private readonly IDocumentQueryExecutionContext innerExecutionContext;
+        private IDocumentQueryExecutionContext innerExecutionContext;
 
         private ProxyDocumentQueryExecutionContext(
             IDocumentQueryExecutionContext innerExecutionContext,
@@ -135,10 +134,10 @@ namespace Microsoft.Azure.Cosmos.Query
 
             List<PartitionKeyRange> partitionKeyRanges =
                 await
-                    queryExecutionContext.GetTargetPartitionKeyRangesAsync(this.collection.ResourceId,
+                    queryExecutionContext.GetTargetPartitionKeyRangesAsync(collection.ResourceId,
                         partitionedQueryExecutionInfo.QueryRanges);
 
-            DocumentQueryExecutionContextBase.InitParams constructorParams = new DocumentQueryExecutionContextBase.InitParams(this.client, this.resourceTypeEnum, this.resourceType, this.expression, this.feedOptions, this.resourceLink, false, this.correlatedActivityId);
+            DocumentQueryExecutionContextBase.InitParams constructorParams = new DocumentQueryExecutionContextBase.InitParams(this.client, this.resourceTypeEnum, this.resourceType, this.expression, this.feedOptions, this.resourceLink, false, correlatedActivityId);
             // Devnote this will get replace by the new v3 to v2 logic
             throw new NotSupportedException("v2 query excution context is currently not supported.");
 
