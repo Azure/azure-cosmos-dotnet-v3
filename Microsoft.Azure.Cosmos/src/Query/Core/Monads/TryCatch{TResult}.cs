@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.Monads
 {
     using System;
+    using System.Diagnostics;
     using System.Threading.Tasks;
 
     internal readonly struct TryCatch<TResult>
@@ -179,7 +180,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
 
         public static TryCatch<TResult> FromException(Exception exception)
         {
-            return new TryCatch<TResult>(exception);
+            // Skipping a stack frame, since we don't want this method showing up in the stack trace.
+            StackTrace stackTrace = new StackTrace(skipFrames: 1);
+            return new TryCatch<TResult>(
+                new ExceptionWithStackTraceException(
+                    message: $"{nameof(TryCatch<TResult>)} resulted in an exception.",
+                    innerException: exception,
+                    stackTrace: stackTrace));
         }
     }
 }
