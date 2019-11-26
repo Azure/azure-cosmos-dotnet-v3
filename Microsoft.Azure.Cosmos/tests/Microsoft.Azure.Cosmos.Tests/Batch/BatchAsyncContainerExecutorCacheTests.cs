@@ -30,7 +30,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 sqlQuerySpecSerializer: null,
                 cosmosResponseFactory: null,
                 requestHandler: null,
-                documentClient: null);
+                documentClient: null,
+                userAgent: null);
 
             DatabaseCore db = new DatabaseCore(context, "test");
 
@@ -66,7 +67,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 sqlQuerySpecSerializer: null,
                 cosmosResponseFactory: null,
                 requestHandler: null,
-                documentClient: null);
+                documentClient: null,
+                userAgent: null);
 
             DatabaseCore db = new DatabaseCore(context, "test");
 
@@ -105,7 +107,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 sqlQuerySpecSerializer: null,
                 cosmosResponseFactory: null,
                 requestHandler: null,
-                documentClient: null);
+                documentClient: null,
+                userAgent: null);
 
             DatabaseCore db = new DatabaseCore(context, "test");
             ContainerCore container = (ContainerCore)db.GetContainer("test");

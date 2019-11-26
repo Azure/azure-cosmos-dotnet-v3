@@ -24,7 +24,8 @@ namespace Microsoft.Azure.Cosmos
             CosmosSerializer sqlQuerySpecSerializer,
             CosmosResponseFactory cosmosResponseFactory,
             RequestInvokerHandler requestHandler,
-            DocumentClient documentClient)
+            DocumentClient documentClient,
+            string userAgent)
         {
             this.Client = client;
             this.ClientOptions = clientOptions;
@@ -34,7 +35,7 @@ namespace Microsoft.Azure.Cosmos
             this.ResponseFactory = cosmosResponseFactory;
             this.RequestHandler = requestHandler;
             this.DocumentClient = documentClient;
-            this.UserAgent = documentClient.ConnectionPolicy.UserAgentContainer.UserAgent;
+            this.UserAgent = userAgent;
         }
 
         /// <summary>

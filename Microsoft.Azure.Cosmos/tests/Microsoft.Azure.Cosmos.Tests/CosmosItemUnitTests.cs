@@ -176,8 +176,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new CosmosJsonDotNetSerializer(),
                 null,
                 null,
-                new MockDocumentClient()
-                );
+                new MockDocumentClient(),
+                null);
 
             DatabaseCore db = new DatabaseCore(clientContextCore, "test");
             ExecutorContainerCore container = new ExecutorContainerCore(clientContextCore, db, "test");
@@ -212,8 +212,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new CosmosJsonDotNetSerializer(),
                 null,
                 null,
-                new MockDocumentClient()
-                );
+                new MockDocumentClient(),
+                null);
 
             DatabaseCore db = new DatabaseCore(clientContextCore, "test");
             ExecutorContainerCore container = new ExecutorContainerCore(clientContextCore, db, "test");
@@ -248,8 +248,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new CosmosJsonDotNetSerializer(),
                 null,
                 null,
-                new MockDocumentClient()
-                );
+                new MockDocumentClient(),
+                null);
 
             DatabaseCore db = new DatabaseCore(clientContextCore, "test");
             ExecutorContainerCore container = new ExecutorContainerCore(clientContextCore, db, "test");
@@ -285,8 +285,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new CosmosJsonDotNetSerializer(),
                 null,
                 null,
-                new MockDocumentClient()
-                );
+                new MockDocumentClient(),
+                null);
 
             DatabaseCore db = new DatabaseCore(clientContextCore, "test");
             ExecutorContainerCore container = new ExecutorContainerCore(clientContextCore, db, "test");
@@ -321,8 +321,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new CosmosJsonDotNetSerializer(),
                 null,
                 null,
-                new MockDocumentClient()
-                );
+                new MockDocumentClient(),
+                null);
 
             DatabaseCore db = new DatabaseCore(clientContextCore, "test");
             ExecutorContainerCore container = new ExecutorContainerCore(clientContextCore, db, "test");
@@ -355,8 +355,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 null,
                 cosmosClient.ResponseFactory,
                 null,
-                new MockDocumentClient()
-                );
+                new MockDocumentClient(),
+                null);
 
             DatabaseCore db = new DatabaseCore(clientContextCore, "test");
             ExecutorContainerCore container = new ExecutorContainerCore(clientContextCore, db, "test");
@@ -386,8 +386,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 null,
                 cosmosClient.ResponseFactory,
                 null,
-                new MockDocumentClient()
-                );
+                new MockDocumentClient(),
+                null);
 
             DatabaseCore db = new DatabaseCore(clientContextCore, "test");
             ExecutorContainerCore container = new ExecutorContainerCore(clientContextCore, db, "test");
@@ -417,8 +417,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 null,
                 cosmosClient.ResponseFactory,
                 null,
-                new MockDocumentClient()
-                );
+                new MockDocumentClient(),
+                null);
 
             DatabaseCore db = new DatabaseCore(clientContextCore, "test");
             ExecutorContainerCore container = new ExecutorContainerCore(clientContextCore, db, "test");
@@ -448,8 +448,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 null,
                 cosmosClient.ResponseFactory,
                 null,
-                new MockDocumentClient()
-                );
+                new MockDocumentClient(),
+                null);
 
             DatabaseCore db = new DatabaseCore(clientContextCore, "test");
             ExecutorContainerCore container = new ExecutorContainerCore(clientContextCore, db, "test");
@@ -479,8 +479,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 null,
                 cosmosClient.ResponseFactory,
                 null,
-                new MockDocumentClient()
-                );
+                new MockDocumentClient(),
+                null);
 
             DatabaseCore db = new DatabaseCore(clientContextCore, "test");
             ExecutorContainerCore container = new ExecutorContainerCore(clientContextCore, db, "test");
