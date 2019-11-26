@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos
                 responseSessionToken: responseMessage.Headers.Session,
                 clientSideRequestStatistics: cosmosClientSideRequestStatistics);
 
-            requestMessage.DiagnosticsCore.AddJsonAttribute("DSR", pointOperationStatistics);
+            requestMessage.DiagnosticsCore.AddJsonAttribute("PointOperationStatistics", pointOperationStatistics);
             return responseMessage;
         }
 
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos
                 responseSessionToken: responseMessage.Headers.Session,
                 clientSideRequestStatistics: documentClientException.RequestStatistics as CosmosClientSideRequestStatistics);
 
-            responseMessage.DiagnosticsCore.AddJsonAttribute("DSR", pointOperationStatistics);
+            responseMessage.DiagnosticsCore.AddJsonAttribute("PointOperationStatistics", pointOperationStatistics);
             if (requestMessage != null)
             {
                 requestMessage.Properties.Remove(nameof(DocumentClientException));

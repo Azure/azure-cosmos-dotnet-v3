@@ -159,7 +159,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(jObject["PartitionKeyRangeId"].ToString());
                 JObject requestDiagnostics = jObject["RequestDiagnostics"].ToObject<JObject>();
                 Assert.IsNotNull(requestDiagnostics);
-                JObject documentServiceResponse = requestDiagnostics["DSR"].ToObject<JObject>();
+                JObject documentServiceResponse = requestDiagnostics["PointOperationStatistics"].ToObject<JObject>();
                 Assert.IsNotNull(documentServiceResponse);
                 Assert.IsNotNull(documentServiceResponse["ActivityId"].ToString());
             }
@@ -173,7 +173,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(jObject["RetryCount"].ToString());
             Assert.IsNotNull(jObject["UserAgent"].ToString());
 
-            jObject = jObject["DSR"].ToObject<JObject>();
+            jObject = jObject["PointOperationStatistics"].ToObject<JObject>();
             Assert.IsNotNull(jObject["ActivityId"].ToString());
             Assert.IsNotNull(jObject["StatusCode"].ToString());
             Assert.IsNotNull(jObject["RequestCharge"].ToString());
