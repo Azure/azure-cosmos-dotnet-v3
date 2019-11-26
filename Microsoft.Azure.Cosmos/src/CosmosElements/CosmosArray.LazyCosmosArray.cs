@@ -22,6 +22,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             private readonly IJsonNavigator jsonNavigator;
             private readonly IJsonNavigatorNode jsonNavigatorNode;
             private readonly Lazy<Lazy<CosmosElement>[]> lazyCosmosElementArray;
+
             public LazyCosmosArray(
                 IJsonNavigator jsonNavigator,
                 IJsonNavigatorNode jsonNavigatorNode)
