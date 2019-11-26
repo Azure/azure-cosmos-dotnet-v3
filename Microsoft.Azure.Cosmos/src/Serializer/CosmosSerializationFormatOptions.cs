@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class CosmosSerializationFormatOptions
     {
-        public delegate IJsonNavigator CreateCustomNavigator(byte[] content);
+        public delegate IJsonNavigator CreateCustomNavigator(ReadOnlyMemory<byte> content);
 
         public delegate IJsonWriter CreateCustomWriter();
 

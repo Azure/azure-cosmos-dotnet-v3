@@ -172,7 +172,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             List<string[]> pathParts = new List<string[]>();
             paths.ForEach(path =>
                 {
-                    pathParts.Add(PathParser.GetPathParts(path).ToArray());
+                    pathParts.Add(PathParser.GetPathParts(path));
                 });
 
             string[] allParts = pathParts.SelectMany(parts => parts).ToArray();

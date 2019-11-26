@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             {
                 throw new CosmosException(
                     System.Net.HttpStatusCode.BadRequest,
-                    tryGetQueryPlan.Exception.Message);
+                    tryGetQueryPlan.Exception.ToString());
             }
 
             return tryGetQueryPlan.Result;

@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task NegativeCreateDropItemTest()
         {
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
-            ResponseMessage response = await this.Container.CreateItemStreamAsync(streamPayload: TestCommon.Serializer.ToStream(testItem), new Cosmos.PartitionKey("BadKey"));
+            ResponseMessage response = await this.Container.CreateItemStreamAsync(streamPayload: TestCommon.Serializer.ToStream(testItem), partitionKey: new Cosmos.PartitionKey("BadKey"));
             Assert.IsNotNull(response);
             Assert.IsNull(response.Content);
             Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);

@@ -55,8 +55,17 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             // And you should execute the callback on each document in "Documents".
 
             long responseLengthBytes = memoryStream.Length;
-            byte[] content = memoryStream.ToArray();
-            IJsonNavigator jsonNavigator = null;
+            ReadOnlyMemory<byte> content;
+            if (memoryStream.TryGetBuffer(out ArraySegment<byte> buffer))
+            {
+                content = buffer;
+            }
+            else
+            {
+                content = memoryStream.ToArray();
+            }
+
+            IJsonNavigator jsonNavigator;
 
             // Use the users custom navigator
             if (cosmosSerializationOptions != null)
@@ -69,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             }
             else
             {
-                jsonNavigator = JsonNavigator.Create(new ArraySegment<byte>(content));
+                jsonNavigator = JsonNavigator.Create(content);
             }
 
             string resourceName = CosmosElementSerializer.GetRootNodeName(resourceType);
