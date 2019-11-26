@@ -168,16 +168,16 @@ namespace Microsoft.Azure.Cosmos
                 stringBuilder.AppendLine();
             }
 
-            stringBuilder.AppendFormat("StatusCode = {0}", this.StatusCode);
+            stringBuilder.AppendFormat("StatusCode = {0};", this.StatusCode);
             stringBuilder.AppendLine();
 
-            stringBuilder.AppendFormat("SubStatusCode = {0}", this.SubStatusCode);
+            stringBuilder.AppendFormat("SubStatusCode = {0};", this.SubStatusCode);
             stringBuilder.AppendLine();
 
-            stringBuilder.AppendFormat("ActivityId = {0}", this.ActivityId ?? Guid.Empty.ToString());
+            stringBuilder.AppendFormat("ActivityId = {0};", this.ActivityId ?? Guid.Empty.ToString());
             stringBuilder.AppendLine();
 
-            stringBuilder.AppendFormat("RequestCharge = {0}", this.RequestCharge);
+            stringBuilder.AppendFormat("RequestCharge = {0};", this.RequestCharge);
             stringBuilder.AppendLine();
 
             if (this.Diagnostics != null)
@@ -193,9 +193,9 @@ namespace Microsoft.Azure.Cosmos
                 stringBuilder.AppendLine();
                 stringBuilder.Append("   ");
                 stringBuilder.Append("--- End of inner exception stack trace ---");
+                stringBuilder.AppendLine();
             }
 
-            stringBuilder.AppendLine();
             stringBuilder.Append(this.StackTrace);
 
             return stringBuilder.ToString();
