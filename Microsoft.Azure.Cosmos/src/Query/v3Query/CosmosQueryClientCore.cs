@@ -309,7 +309,7 @@ namespace Microsoft.Azure.Cosmos
                     requestCharge: cosmosResponseMessage.Headers.RequestCharge,
                     activityId: cosmosResponseMessage.Headers.ActivityId,
                     diagnostics: pageDiagnostics,
-                    responseLengthBytes: cosmosResponseMessage.Headers.ContentLengthAsLong,
+                    responseLengthBytes: responseLengthBytes,
                     disallowContinuationTokenMessage: null,
                     continuationToken: cosmosResponseMessage.Headers.ContinuationToken);
             }

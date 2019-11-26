@@ -218,7 +218,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
             public IReadOnlyList<CosmosElement> Drain(int maxItemCount)
             {
                 List<UInt128> keys = this.table.Keys.Take(maxItemCount).ToList();
-                List<SingleGroupAggregator> singleGroupAggregators = new List<SingleGroupAggregator>(maxItemCount);
+                List<SingleGroupAggregator> singleGroupAggregators = new List<SingleGroupAggregator>(keys.Count);
                 foreach (UInt128 key in keys)
                 {
                     SingleGroupAggregator singleGroupAggregator = this.table[key];

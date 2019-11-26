@@ -211,7 +211,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
             ParallelInitInfo initializationInfo = tryGetInitInfo.Result;
             IReadOnlyList<PartitionKeyRange> filteredPartitionKeyRanges = initializationInfo.PartialRanges;
             IReadOnlyDictionary<string, CompositeContinuationToken> targetIndicesForFullContinuation = initializationInfo.ContinuationTokens;
-            TryCatch<bool> tryInitialize = await base.TryInitializeAsync(
+            TryCatch tryInitialize = await base.TryInitializeAsync(
                 collectionRid,
                 filteredPartitionKeyRanges,
                 initialPageSize,

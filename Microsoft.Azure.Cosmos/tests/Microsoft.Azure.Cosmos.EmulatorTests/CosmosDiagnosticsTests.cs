@@ -166,8 +166,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(jObject["StatusCode"].ToString());
             Assert.IsNotNull(jObject["RequestCharge"].ToString());
             Assert.IsNotNull(jObject["RequestUri"].ToString());
-            Assert.IsNotNull(jObject["requestStartTime"].ToString());
-            Assert.IsNotNull(jObject["requestEndTime"].ToString());
+            Assert.IsNotNull(jObject["requestStartTimeUtc"].ToString()); 
             Assert.IsNotNull(jObject["responseStatisticsList"].ToString());
             Assert.IsNotNull(jObject["supplementalResponseStatisticsList"].ToString());
             Assert.IsNotNull(jObject["addressResolutionStatistics"].ToString());
@@ -181,6 +180,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Session token only expected on success
             if (statusCode >= 200 && statusCode < 300)
             {
+                Assert.IsNotNull(jObject["requestEndTimeUtc"].ToString());
                 Assert.IsNotNull(jObject["ResponseSessionToken"].ToString());
             }
         }

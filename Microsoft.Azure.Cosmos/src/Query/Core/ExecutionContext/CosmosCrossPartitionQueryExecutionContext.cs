@@ -311,7 +311,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         /// <param name="tryFilterAsync">The callback used to filter each partition.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task to await on.</returns>
-        protected async Task<TryCatch<bool>> TryInitializeAsync(
+        protected async Task<TryCatch> TryInitializeAsync(
             string collectionRid,
             IReadOnlyList<PartitionKeyRange> partitionKeyRanges,
             int initialPageSize,
@@ -319,7 +319,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             IReadOnlyDictionary<string, string> targetRangeToContinuationMap,
             bool deferFirstPage,
             string filter,
-            Func<ItemProducerTree, Task<TryCatch<bool>>> tryFilterAsync,
+            Func<ItemProducerTree, Task<TryCatch>> tryFilterAsync,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -376,7 +376,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
                         if (failureResponse.HasValue)
                         {
-                            return TryCatch<bool>.FromException(
+                            return TryCatch.FromException(
                                 new CosmosException(
                                     statusCode: failureResponse.Value.StatusCode,
                                     subStatusCode: (int)failureResponse.Value.SubStatusCode.GetValueOrDefault(0),
@@ -404,7 +404,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
                 if (tryFilterAsync != null)
                 {
-                    TryCatch<bool> tryFilter = await tryFilterAsync(itemProducerTree);
+                    TryCatch tryFilter = await tryFilterAsync(itemProducerTree);
                     if (!tryFilter.Succeeded)
                     {
                         return tryFilter;
@@ -414,7 +414,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 this.itemProducerForest.Enqueue(itemProducerTree);
             }
 
-            return TryCatch<bool>.FromResult(true);
+            return TryCatch.FromResult();
         }
 
         /// <summary>

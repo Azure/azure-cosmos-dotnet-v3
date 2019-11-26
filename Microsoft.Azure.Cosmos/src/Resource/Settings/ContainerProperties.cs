@@ -335,6 +335,17 @@ namespace Microsoft.Azure.Cosmos
         public int? DefaultTimeToLive { get; set; }
 
         /// <summary>
+        /// Gets the self-link associated with the resource from the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>The self-link associated with the resource.</value> 
+        /// <remarks>
+        /// A self-link is a static addressable Uri for each resource within a database account and follows the Azure Cosmos DB resource model.
+        /// E.g. a self-link for a document could be dbs/db_resourceid/colls/coll_resourceid/documents/doc_resourceid
+        /// </remarks>
+        [JsonProperty(PropertyName = Constants.Properties.SelfLink, NullValueHandling = NullValueHandling.Ignore)]
+        public string SelfLink { get; private set; }
+
+        /// <summary>
         /// The function selects the right partition key constant mapping for <see cref="PartitionKey.None"/>
         /// </summary>
         internal PartitionKeyInternal GetNoneValue()

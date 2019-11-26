@@ -380,6 +380,18 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// (Direct/TCP) Controls the client port reuse policy used by the transport stack.
+        /// </summary>
+        /// <value>
+        /// The default value is PortReuseMode.ReuseUnicastPort.
+        /// </value>
+        public PortReuseMode? PortReuseMode
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
         /// (Direct/TCP) This is an advanced setting that controls the number of TCP connections that will be opened eagerly to each Cosmos DB back-end.
         /// </summary>
         /// <value>

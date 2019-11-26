@@ -71,6 +71,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task NegativeCreateDropItemTest()
+        {
+            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+            ResponseMessage response = await this.Container.CreateItemStreamAsync(streamPayload: TestCommon.Serializer.ToStream(testItem), new Cosmos.PartitionKey("BadKey"));
+            Assert.IsNotNull(response);
+            Assert.IsNull(response.Content);
+            Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
+        }
+
+        [TestMethod]
         public async Task CustomSerilizerTest()
         {
             string id1 = "MyCustomSerilizerTestId1";
