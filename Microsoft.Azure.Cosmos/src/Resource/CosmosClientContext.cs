@@ -39,6 +39,8 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract CosmosClientOptions ClientOptions { get; }
 
+        internal abstract string UserAgent { get; }
+
         /// <summary>
         /// Generates the URI link for the resource
         /// </summary>

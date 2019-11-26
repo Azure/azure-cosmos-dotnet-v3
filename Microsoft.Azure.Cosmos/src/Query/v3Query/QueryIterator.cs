@@ -92,7 +92,11 @@ namespace Microsoft.Azure.Cosmos.Query
                 // This catches exception thrown by the pipeline and converts it to QueryResponse
                 QueryResponseCore responseCore = await this.cosmosQueryExecutionContext.ExecuteNextAsync(cancellationToken);
                 CosmosQueryContext cosmosQueryContext = this.cosmosQueryContext;
-                diagnostics.AddJsonAttribute("QueryDiagnostics", responseCore.Diagnostics);
+
+                foreach (QueryPageDiagnostics queryPage in responseCore.Diagnostics)
+                {
+                    diagnostics.AddJsonAttribute(queryPage.PartitionKeyRangeId, queryPage);
+                }
 
                 QueryResponse queryResponse;
                 if (responseCore.IsSuccess)

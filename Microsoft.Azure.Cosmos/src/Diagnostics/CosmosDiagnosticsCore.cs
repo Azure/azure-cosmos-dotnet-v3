@@ -13,20 +13,34 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class CosmosDiagnosticsCore : CosmosDiagnostics
     {
-        private List<ICosmosDiagnosticsJsonWriter> Scopes { get; } = new List<ICosmosDiagnosticsJsonWriter>();
+        private static string DefaultUserAgentString { get; }
+        private List<ICosmosDiagnosticsJsonWriter> scopes { get; } = new List<ICosmosDiagnosticsJsonWriter>();
         private long retryCount = 0;
         private TimeSpan retryBackoffTimeSpan;
+        private string userAgent;
+
+        static CosmosDiagnosticsCore()
+        {
+            // Default user agent string does not contain client id or features.
+            UserAgentContainer userAgentContainer = new UserAgentContainer();
+            CosmosDiagnosticsCore.DefaultUserAgentString = userAgentContainer.UserAgent;
+        }
+
+        internal CosmosDiagnosticsCore()
+        {
+            this.userAgent = CosmosDiagnosticsCore.DefaultUserAgentString;
+        }
 
         internal CosmosDiagnosticsScope CreateScope(string name)
         {
             CosmosDiagnosticsScope scope = new CosmosDiagnosticsScope(this, name);
-            this.Scopes.Add(scope);
+            this.scopes.Add(scope);
             return scope;
         }
 
         internal void JoinScopes(CosmosDiagnosticsCore leafScope)
         {
-            this.Scopes.AddRange(leafScope.Scopes);
+            this.scopes.AddRange(leafScope.scopes);
         }
 
         public override string ToString()
@@ -34,9 +48,11 @@ namespace Microsoft.Azure.Cosmos
             StringBuilder builder = new StringBuilder();
             builder.Append("{");
             this.AppendJsonRetryInfo(builder);
-            if (this.Scopes != null && this.Scopes.Count > 0)
+            builder.Append(",");
+            this.AppendJsonUserAgentInfo(builder);
+            if (this.scopes != null && this.scopes.Count > 0)
             {
-                foreach (ICosmosDiagnosticsJsonWriter scope in this.Scopes)
+                foreach (ICosmosDiagnosticsJsonWriter scope in this.scopes)
                 {
                     builder.Append(",");
                     scope.AppendJson(builder); 
@@ -45,6 +61,11 @@ namespace Microsoft.Azure.Cosmos
             builder.Append("}");
 
             return builder.ToString();
+        }
+
+        internal void SetSdkUserAgent(string userAgent)
+        {
+            this.userAgent = userAgent ?? throw new ArgumentNullException(nameof(userAgent));
         }
 
         internal void AddSdkRetry(TimeSpan backOffTimeSpan)
@@ -60,12 +81,12 @@ namespace Microsoft.Azure.Cosmos
 
         internal void AddScope(CosmosDiagnosticsScope diagnosticsScope)
         {
-            this.Scopes.Add(diagnosticsScope);
+            this.scopes.Add(diagnosticsScope);
         }
 
         internal void AddJsonAttribute(string name, dynamic property)
         {
-            this.Scopes.Add(new CosmosDiagnosticScopeAttribute(name, property));
+            this.scopes.Add(new CosmosDiagnosticScopeAttribute(name, property));
         }
 
         private void AppendJsonRetryInfo(StringBuilder stringBuilder)
@@ -79,6 +100,13 @@ namespace Microsoft.Azure.Cosmos
                 stringBuilder.Append(this.retryBackoffTimeSpan);
                 stringBuilder.Append("\"");
             }
+        }
+
+        private void AppendJsonUserAgentInfo(StringBuilder stringBuilder)
+        {
+            stringBuilder.Append("\"UserAgent\":\"");
+            stringBuilder.Append(this.userAgent);
+            stringBuilder.Append("\"");
         }
 
         private interface ICosmosDiagnosticsJsonWriter

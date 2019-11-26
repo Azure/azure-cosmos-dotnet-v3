@@ -139,20 +139,29 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(diagnostics.Contains("Method"));
         }
 
-        public static void VerifyQueryDiagnostics(CosmosDiagnostics diagnostics)
+        public static void VerifyQueryDiagnostics(CosmosDiagnostics diagnostics, bool isFirstPage)
         {
             string info = diagnostics.ToString();
             Assert.IsNotNull(info);
-            JArray jArray = JArray.Parse(info);
-            foreach (JToken jObject in jArray)
+            JObject jObject = JObject.Parse(info);
+            Assert.IsNotNull(jObject["RetryCount"].ToString());
+            Assert.IsNotNull(jObject["UserAgent"].ToString());
+            JToken page = jObject["0"];
+
+            // First page will have a request
+            // Query might use cache pages which don't have the following info. It was returned in the previous call.
+            if(isFirstPage || page != null)
             {
+                jObject = jObject["0"].ToObject<JObject>();
                 string queryMetrics = jObject["QueryMetricText"].ToString();
                 Assert.IsNotNull(queryMetrics);
                 Assert.IsNotNull(jObject["IndexUtilizationText"].ToString());
                 Assert.IsNotNull(jObject["PartitionKeyRangeId"].ToString());
-                JObject requestDiagnostics = jObject["RequestDiagnostics"].Value<JObject>();
+                JObject requestDiagnostics = jObject["RequestDiagnostics"].ToObject<JObject>();
                 Assert.IsNotNull(requestDiagnostics);
-                Assert.IsNotNull(requestDiagnostics["ActivityId"].ToString());
+                JObject documentServiceResponse = requestDiagnostics["DSR"].ToObject<JObject>();
+                Assert.IsNotNull(documentServiceResponse);
+                Assert.IsNotNull(documentServiceResponse["ActivityId"].ToString());
             }
         }
 
@@ -162,13 +171,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(info);
             JObject jObject = JObject.Parse(info);
             Assert.IsNotNull(jObject["RetryCount"].ToString());
+            Assert.IsNotNull(jObject["UserAgent"].ToString());
 
             jObject = jObject["DSR"].ToObject<JObject>();
             Assert.IsNotNull(jObject["ActivityId"].ToString());
             Assert.IsNotNull(jObject["StatusCode"].ToString());
             Assert.IsNotNull(jObject["RequestCharge"].ToString());
             Assert.IsNotNull(jObject["RequestUri"].ToString());
-            Assert.IsNotNull(jObject["requestStartTimeUtc"].ToString()); 
+            Assert.IsNotNull(jObject["requestStartTimeUtc"].ToString());
             Assert.IsNotNull(jObject["responseStatisticsList"].ToString());
             Assert.IsNotNull(jObject["supplementalResponseStatisticsList"].ToString());
             Assert.IsNotNull(jObject["addressResolutionStatistics"].ToString());
@@ -204,11 +214,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             List<ToDoActivity> results = new List<ToDoActivity>();
             long totalOutDocumentCount = 0;
+            bool isFirst = true;
             while (feedIterator.HasMoreResults)
             {
                 FeedResponse<ToDoActivity> response = await feedIterator.ReadNextAsync();
                 results.AddRange(response);
-                VerifyQueryDiagnostics(response.Diagnostics);
+                VerifyQueryDiagnostics(response.Diagnostics, isFirst);
+                isFirst = false;
             }
 
             Assert.AreEqual(expectedItemCount, results.Count);
@@ -220,12 +232,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             List<ToDoActivity> streamResults = new List<ToDoActivity>();
             long streamTotalOutDocumentCount = 0;
+            isFirst = true;
             while (streamIterator.HasMoreResults)
             {
                 ResponseMessage response = await streamIterator.ReadNextAsync();
                 Collection<ToDoActivity> result = TestCommon.Serializer.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(response.Content).Data;
                 streamResults.AddRange(result);
-                VerifyQueryDiagnostics(response.Diagnostics);
+                VerifyQueryDiagnostics(response.Diagnostics, isFirst);
+                isFirst = false;
             }
 
             Assert.AreEqual(expectedItemCount, streamResults.Count);

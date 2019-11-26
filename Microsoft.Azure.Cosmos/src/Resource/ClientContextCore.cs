@@ -34,6 +34,7 @@ namespace Microsoft.Azure.Cosmos
             this.ResponseFactory = cosmosResponseFactory;
             this.RequestHandler = requestHandler;
             this.DocumentClient = documentClient;
+            this.UserAgent = documentClient.ConnectionPolicy.UserAgentContainer.UserAgent;
         }
 
         /// <summary>
@@ -54,6 +55,8 @@ namespace Microsoft.Azure.Cosmos
         internal override RequestInvokerHandler RequestHandler { get; }
 
         internal override CosmosClientOptions ClientOptions { get; }
+
+        internal override string UserAgent { get; }
 
         /// <summary>
         /// Generates the URI link for the resource
