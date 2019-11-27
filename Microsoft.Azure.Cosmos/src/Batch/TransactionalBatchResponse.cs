@@ -33,20 +33,20 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="subStatusCode">Provides further details about why the batch was not processed.</param>
         /// <param name="errorMessage">The reason for failure.</param>
         /// <param name="operations">Operations that were to be executed.</param>
-        /// <param name="cosmosDiagnostics">Diagnostics for the operation</param>
+        /// <param name="diagnosticsCore">Diagnostics for the operation</param>
         internal TransactionalBatchResponse(
             HttpStatusCode statusCode,
             SubStatusCodes subStatusCode,
             string errorMessage,
             IReadOnlyList<ItemBatchOperation> operations,
-            CosmosDiagnosticsCore cosmosDiagnostics)
+            CosmosDiagnosticsCore diagnosticsCore)
             : this(statusCode,
                   subStatusCode,
                   errorMessage,
                   requestCharge: 0,
                   retryAfter: null,
                   activityId: Guid.Empty.ToString(),
-                  cosmosDiagnostics: cosmosDiagnostics,
+                  diagnosticsCore: diagnosticsCore,
                   operations: operations,
                   serializer: null)
         {
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos
             double requestCharge,
             TimeSpan? retryAfter,
             string activityId,
-            CosmosDiagnosticsCore cosmosDiagnostics,
+            CosmosDiagnosticsCore diagnosticsCore,
             IReadOnlyList<ItemBatchOperation> operations,
             CosmosSerializer serializer)
         {
@@ -79,8 +79,8 @@ namespace Microsoft.Azure.Cosmos
             this.RequestCharge = requestCharge;
             this.RetryAfter = retryAfter;
             this.ActivityId = activityId;
-            this.Diagnostics = cosmosDiagnostics;
-            this.DiagnosticsScope = cosmosDiagnostics;
+            this.Diagnostics = diagnosticsCore;
+            this.DiagnosticsCore = diagnosticsCore ?? throw new ArgumentNullException(nameof(diagnosticsCore));
         }
 
         /// <summary>
@@ -135,7 +135,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public virtual CosmosDiagnostics Diagnostics { get; }
 
-        internal virtual CosmosDiagnosticsCore DiagnosticsScope { get; }
+        internal virtual CosmosDiagnosticsCore DiagnosticsCore { get; }
 
         internal virtual SubStatusCodes SubStatusCode { get; }
 
@@ -310,7 +310,7 @@ namespace Microsoft.Azure.Cosmos
             for (int i = 0; i < operations.Count; i++)
             {
                 this.results.Add(
-                    new TransactionalBatchOperationResult(this.StatusCode)
+                    new TransactionalBatchOperationResult(this.StatusCode, this.DiagnosticsCore)
                     {
                         SubStatusCode = this.SubStatusCode,
                         RetryAfter = TimeSpan.FromMilliseconds(retryAfterMilliseconds),
@@ -332,7 +332,7 @@ namespace Microsoft.Azure.Cosmos
             Result res = await content.ReadRecordIOAsync(
                 record =>
                 {
-                    Result r = TransactionalBatchOperationResult.ReadOperationResult(record, out TransactionalBatchOperationResult operationResult);
+                    Result r = TransactionalBatchOperationResult.ReadOperationResult(record, responseMessage.DiagnosticsCore, out TransactionalBatchOperationResult operationResult);
                     if (r != Result.Success)
                     {
                         return r;

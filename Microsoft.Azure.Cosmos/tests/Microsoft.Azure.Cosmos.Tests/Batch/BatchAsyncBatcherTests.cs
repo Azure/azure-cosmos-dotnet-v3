@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 foreach (ItemBatchOperation operation in request.Operations)
                 {
                     results.Add(
-                    new TransactionalBatchOperationResult(HttpStatusCode.OK)
+                    new TransactionalBatchOperationResult(HttpStatusCode.OK, new CosmosDiagnosticsCore())
                     {
                         ResourceStream = new MemoryStream(new byte[] { 0x41, 0x42 }, index: 0, count: 2, writable: false, publiclyVisible: true),
                         ETag = operation.Id
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 foreach (ItemBatchOperation operation in request.Operations)
                 {
                     results.Add(
-                    new TransactionalBatchOperationResult(HttpStatusCode.Gone)
+                    new TransactionalBatchOperationResult(HttpStatusCode.Gone, new CosmosDiagnosticsCore())
                     {
                         ETag = operation.Id,
                         SubStatusCode = SubStatusCodes.PartitionKeyRangeGone
@@ -120,7 +120,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 foreach (ItemBatchOperation operation in request.Operations.Skip(1).Take(operationCount))
                 {
                     results.Add(
-                    new TransactionalBatchOperationResult(HttpStatusCode.OK)
+                    new TransactionalBatchOperationResult(HttpStatusCode.OK, new CosmosDiagnosticsCore())
                     {
                         ResourceStream = new MemoryStream(new byte[] { 0x41, 0x42 }, index: 0, count: 2, writable: false, publiclyVisible: true),
                         ETag = operation.Id

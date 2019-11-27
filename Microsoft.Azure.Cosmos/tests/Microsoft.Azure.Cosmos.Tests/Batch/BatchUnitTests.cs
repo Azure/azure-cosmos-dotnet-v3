@@ -295,13 +295,13 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
 
             expectedResults.Add(
-                new TransactionalBatchOperationResult(HttpStatusCode.OK)
+                new TransactionalBatchOperationResult(HttpStatusCode.OK, new CosmosDiagnosticsCore())
                 {
                     ETag = "theETag",
                     SubStatusCode = (SubStatusCodes)1100,
                     ResourceStream = resourceStream
                 });
-            expectedResults.Add(new TransactionalBatchOperationResult(HttpStatusCode.Conflict));
+            expectedResults.Add(new TransactionalBatchOperationResult(HttpStatusCode.Conflict, new CosmosDiagnosticsCore()));
 
             double requestCharge = 3.6;
 

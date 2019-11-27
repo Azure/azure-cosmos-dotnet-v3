@@ -76,10 +76,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<CosmosDiagnosticsCore>(),
                     It.IsAny<CancellationToken>()), Times.Exactly(2));
             Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
-            Assert.IsNotNull(result.Diagnostics);
+            Assert.IsNotNull(result.DiagnosticsCore);
 
             int diagnosticsLines = 0;
-            string diagnosticsString = result.Diagnostics.ToString();
+            string diagnosticsString = result.DiagnosticsCore.ToString();
             int index = diagnosticsString.IndexOf(Environment.NewLine);
             while(index > -1)
             {
@@ -144,10 +144,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<CosmosDiagnosticsCore>(),
                     It.IsAny<CancellationToken>()), Times.Exactly(2));
             Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
-            Assert.IsNotNull(result.Diagnostics);
+            Assert.IsNotNull(result.DiagnosticsCore);
 
             int diagnosticsLines = 0;
-            string diagnosticsString = result.Diagnostics.ToString();
+            string diagnosticsString = result.DiagnosticsCore.ToString();
             int index = diagnosticsString.IndexOf(Environment.NewLine);
             while (index > -1)
             {
@@ -212,10 +212,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<CosmosDiagnosticsCore>(),
                     It.IsAny<CancellationToken>()), Times.Exactly(2));
             Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
-            Assert.IsNotNull(result.Diagnostics);
+            Assert.IsNotNull(result.DiagnosticsCore);
 
             int diagnosticsLines = 0;
-            string diagnosticsString = result.Diagnostics.ToString();
+            string diagnosticsString = result.DiagnosticsCore.ToString();
             int index = diagnosticsString.IndexOf(Environment.NewLine);
             while (index > -1)
             {
@@ -286,7 +286,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
             ItemBatchOperation[] arrayOperations = new ItemBatchOperation[1];
             results.Add(
-                new TransactionalBatchOperationResult(HttpStatusCode.Gone)
+                new TransactionalBatchOperationResult(HttpStatusCode.Gone, new CosmosDiagnosticsCore())
                 {
                     ETag = itemBatchOperation.Id,
                     SubStatusCode = SubStatusCodes.PartitionKeyRangeGone
@@ -328,7 +328,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
             ItemBatchOperation[] arrayOperations = new ItemBatchOperation[1];
             results.Add(
-                new TransactionalBatchOperationResult(HttpStatusCode.Gone)
+                new TransactionalBatchOperationResult(HttpStatusCode.Gone, new CosmosDiagnosticsCore())
                 {
                     ETag = itemBatchOperation.Id,
                     SubStatusCode = SubStatusCodes.NameCacheIsStale
@@ -370,7 +370,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
             ItemBatchOperation[] arrayOperations = new ItemBatchOperation[1];
             results.Add(
-                new TransactionalBatchOperationResult((HttpStatusCode) StatusCodes.TooManyRequests)
+                new TransactionalBatchOperationResult((HttpStatusCode) StatusCodes.TooManyRequests, new CosmosDiagnosticsCore())
                 {
                     ETag = itemBatchOperation.Id
                 });
@@ -410,7 +410,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
             ItemBatchOperation[] arrayOperations = new ItemBatchOperation[1];
             results.Add(
-                new TransactionalBatchOperationResult(HttpStatusCode.OK)
+                new TransactionalBatchOperationResult(HttpStatusCode.OK, new CosmosDiagnosticsCore())
                 {
                     ETag = itemBatchOperation.Id
                 });

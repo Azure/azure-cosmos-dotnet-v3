@@ -21,6 +21,7 @@ namespace Microsoft.Azure.Cosmos
         public ResponseMessage()
         {
             this.Headers = new Headers();
+            this.DiagnosticsCore = new CosmosDiagnosticsCore();
         }
 
         /// <summary>
@@ -67,7 +68,7 @@ namespace Microsoft.Azure.Cosmos
             this.RequestMessage = requestMessage;
             this.ErrorMessage = errorMessage;
             this.Error = error;
-            this.Headers = headers;
+            this.Headers = headers ?? new Headers();
             this.DiagnosticsCore = diagnostics ?? throw new ArgumentNullException(nameof(diagnostics));
         }
 
@@ -117,7 +118,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public virtual CosmosDiagnostics Diagnostics => this.DiagnosticsCore;
 
-        internal CosmosDiagnosticsCore DiagnosticsCore { get; set; }
+        internal CosmosDiagnosticsCore DiagnosticsCore { get; }
 
         /// <summary>
         /// Gets the internal error object.

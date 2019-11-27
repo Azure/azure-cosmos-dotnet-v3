@@ -16,9 +16,12 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     public class TransactionalBatchOperationResult
     {
-        internal TransactionalBatchOperationResult(HttpStatusCode statusCode)
+        internal TransactionalBatchOperationResult(
+            HttpStatusCode statusCode,
+            CosmosDiagnosticsCore diagnosticsCore)
         {
             this.StatusCode = statusCode;
+            this.DiagnosticsCore = diagnosticsCore ?? throw new ArgumentNullException(nameof(diagnosticsCore));
         }
 
         internal TransactionalBatchOperationResult(TransactionalBatchOperationResult other)
@@ -29,10 +32,12 @@ namespace Microsoft.Azure.Cosmos
             this.ResourceStream = other.ResourceStream;
             this.RequestCharge = other.RequestCharge;
             this.RetryAfter = other.RetryAfter;
+            this.DiagnosticsCore = other.DiagnosticsCore;
         }
 
-        private TransactionalBatchOperationResult()
+        private TransactionalBatchOperationResult(CosmosDiagnosticsCore diagnosticsCore)
         {
+            this.DiagnosticsCore = diagnosticsCore ?? throw new ArgumentNullException(nameof(diagnosticsCore));
         }
 
         /// <summary>
@@ -89,9 +94,9 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the cosmos diagnostic information for the current request to Azure Cosmos DB service
         /// </summary>
-        internal virtual CosmosDiagnosticsCore Diagnostics { get; set; }
+        internal virtual CosmosDiagnosticsCore DiagnosticsCore { get; set; }
 
-        internal static Result ReadOperationResult(Memory<byte> input, out TransactionalBatchOperationResult batchOperationResult)
+        internal static Result ReadOperationResult(Memory<byte> input, CosmosDiagnosticsCore diagnosticsCore, out TransactionalBatchOperationResult batchOperationResult)
         {
             RowBuffer row = new RowBuffer(input.Length);
             if (!row.ReadFrom(
@@ -104,7 +109,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             RowReader reader = new RowReader(ref row);
-            Result result = TransactionalBatchOperationResult.ReadOperationResult(ref reader, out batchOperationResult);
+            Result result = TransactionalBatchOperationResult.ReadOperationResult(diagnosticsCore, ref reader, out batchOperationResult);
             if (result != Result.Success)
             {
                 return result;
@@ -119,9 +124,9 @@ namespace Microsoft.Azure.Cosmos
             return Result.Success;
         }
 
-        private static Result ReadOperationResult(ref RowReader reader, out TransactionalBatchOperationResult batchOperationResult)
+        private static Result ReadOperationResult(CosmosDiagnosticsCore diagnosticsCore, ref RowReader reader, out TransactionalBatchOperationResult batchOperationResult)
         {
-            batchOperationResult = new TransactionalBatchOperationResult();
+            batchOperationResult = new TransactionalBatchOperationResult(diagnosticsCore);
             while (reader.Read())
             {
                 Result r;
@@ -197,13 +202,25 @@ namespace Microsoft.Azure.Cosmos
 
         internal ResponseMessage ToResponseMessage()
         {
-            ResponseMessage responseMessage = new ResponseMessage(this.StatusCode);
-            responseMessage.Headers.SubStatusCode = this.SubStatusCode;
-            responseMessage.Headers.ETag = this.ETag;
-            responseMessage.Headers.RetryAfter = this.RetryAfter;
-            responseMessage.Headers.RequestCharge = this.RequestCharge;
-            responseMessage.Content = this.ResourceStream;
-            responseMessage.DiagnosticsCore = this.Diagnostics;
+            Headers headers = new Headers()
+            {
+                SubStatusCode = this.SubStatusCode,
+                ETag = this.ETag,
+                RetryAfter = this.RetryAfter,
+                RequestCharge = this.RequestCharge,
+            };
+
+            ResponseMessage responseMessage = new ResponseMessage(
+                statusCode: this.StatusCode,
+                requestMessage: null,
+                errorMessage: null,
+                error: null,
+                headers: headers,
+                diagnostics: this.DiagnosticsCore)
+            {
+                Content = this.ResourceStream
+            };
+
             return responseMessage;
         }
     }
