@@ -377,7 +377,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 {
                     // Zero out the array since you want all trailing bytes to be 0 for the conversions that happen next.
                     Array.Clear(this.utf8Buffer, 0, this.utf8Buffer.Length);
-                    Encoding.UTF8.GetBytes(value, 0, utf8Length, this.utf8Buffer, 0);
+                    Encoding.UTF8.GetBytes(value, 0, value.Length, this.utf8Buffer, 0);
 
                     if (utf8Length == 0)
                     {
