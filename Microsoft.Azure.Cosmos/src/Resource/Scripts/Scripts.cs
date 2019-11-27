@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Scripts
 {
     using System;
+    using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -413,6 +414,73 @@ namespace Microsoft.Azure.Cosmos.Scripts
             string storedProcedureId,
             PartitionKey partitionKey,
             dynamic[] parameters,
+            StoredProcedureRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
+        /// Executes a stored procedure against a container as an asynchronous operation in the Azure Cosmos service and obtains a Stream as response.
+        /// </summary>
+        /// <param name="storedProcedureId">The identifier of the Stored Procedure to execute.</param>
+        /// <param name="streamPayload">(Optional) An optional <see cref="Stream"/> containing the payload, which should represent an array of parameters for the stored procedure.</param>
+        /// <param name="partitionKey">The partition key for the item.</param>
+        /// <param name="requestOptions">(Optional) The options for the stored procedure request.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>The task object representing the service response for the asynchronous operation which would contain any response set in the stored procedure.</returns>
+        /// <exception cref="ArgumentNullException">If <paramref name="storedProcedureId"/> or <paramref name="partitionKey"/>  are not set.</exception>
+        /// <example>
+        ///  This creates and executes a stored procedure that appends a string to the first item returned from the query.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// string sprocBody = @"function simple(prefix, postfix)
+        ///    {
+        ///        var collection = getContext().getCollection();
+        ///
+        ///        // Query documents and take 1st item.
+        ///        var isAccepted = collection.queryDocuments(
+        ///        collection.getSelfLink(),
+        ///        'SELECT * FROM root r',
+        ///        function(err, feed, options) {
+        ///            if (err)throw err;
+        ///
+        ///            // Check the feed and if it's empty, set the body to 'no docs found',
+        ///            // Otherwise just take 1st element from the feed.
+        ///            if (!feed || !feed.length) getContext().getResponse().setBody(""no docs found"");
+        ///            else getContext().getResponse().setBody(prefix + JSON.stringify(feed[0]) + postfix);
+        ///        });
+        ///
+        ///        if (!isAccepted) throw new Error(""The query wasn't accepted by the server. Try again/use continuation token between API and script."");
+        ///    }";
+        ///    
+        /// Scripts scripts = this.container.Scripts;
+        /// string sprocId = "appendString";
+        /// StoredProcedureResponse storedProcedureResponse = await scripts.CreateStoredProcedureAsync(
+        ///         sprocId,
+        ///         sprocBody);
+        ///
+        /// // Serialize the parameters into a stream
+        /// string[] parameters = new string[] { "myPrefixString", "myPostfixString" };
+        /// byte[] serializedBytes = JsonSerializer.SerializeToUtf8Bytes(parameters);
+        /// MemoryStream streamPayload = new MemoryStream(serializedBytes);
+        /// 
+        /// // Execute the stored procedure
+        /// ResponseMessage sprocResponse = await scripts.ExecuteStoredProcedureStreamAsync(
+        ///                         sprocId,
+        ///                         streamPayload,
+        ///                         new PartitionKey(testPartitionId));
+        ///                         
+        /// using (StreamReader sr = new StreamReader(sprocResponse.Content))
+        /// {
+        ///     string stringResponse = await sr.ReadToEndAsync();
+        ///     Console.WriteLine(stringResponse);
+        ///  }
+        /// 
+        /// /// ]]>
+        /// </code>
+        /// </example>
+        public abstract Task<ResponseMessage> ExecuteStoredProcedureStreamAsync(
+            string storedProcedureId,
+            Stream streamPayload,
+            PartitionKey partitionKey,
             StoredProcedureRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
