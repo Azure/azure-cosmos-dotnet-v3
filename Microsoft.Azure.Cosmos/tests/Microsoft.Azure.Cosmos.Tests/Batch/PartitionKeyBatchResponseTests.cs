@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ItemBatchOperation operation = new ItemBatchOperation(OperationType.AddComputeGatewayRequestCharges, 0, "0");
 
             results.Add(
-                    new TransactionalBatchOperationResult(HttpStatusCode.OK, new CosmosDiagnosticsCore())
+                    new TransactionalBatchOperationResult(HttpStatusCode.OK)
                     {
                         ResourceStream = new MemoryStream(new byte[] { 0x41, 0x42 }, index: 0, count: 2, writable: false, publiclyVisible: true),
                         ETag = operation.Id
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ItemBatchOperation operation = new ItemBatchOperation(OperationType.AddComputeGatewayRequestCharges, 0, "0");
 
             results.Add(
-                    new TransactionalBatchOperationResult(HttpStatusCode.OK, new CosmosDiagnosticsCore())
+                    new TransactionalBatchOperationResult(HttpStatusCode.OK)
                     {
                         ResourceStream = new MemoryStream(new byte[] { 0x41, 0x42 }, index: 0, count: 2, writable: false, publiclyVisible: true),
                         ETag = operation.Id

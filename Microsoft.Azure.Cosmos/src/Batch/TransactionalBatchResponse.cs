@@ -310,7 +310,7 @@ namespace Microsoft.Azure.Cosmos
             for (int i = 0; i < operations.Count; i++)
             {
                 this.results.Add(
-                    new TransactionalBatchOperationResult(this.StatusCode, this.DiagnosticsCore)
+                    new TransactionalBatchOperationResult(this.StatusCode)
                     {
                         SubStatusCode = this.SubStatusCode,
                         RetryAfter = TimeSpan.FromMilliseconds(retryAfterMilliseconds),
@@ -332,7 +332,7 @@ namespace Microsoft.Azure.Cosmos
             Result res = await content.ReadRecordIOAsync(
                 record =>
                 {
-                    Result r = TransactionalBatchOperationResult.ReadOperationResult(record, responseMessage.DiagnosticsCore, out TransactionalBatchOperationResult operationResult);
+                    Result r = TransactionalBatchOperationResult.ReadOperationResult(record, out TransactionalBatchOperationResult operationResult);
                     if (r != Result.Success)
                     {
                         return r;

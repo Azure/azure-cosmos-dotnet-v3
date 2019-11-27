@@ -68,10 +68,10 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
            List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
 
-            results.Add(new TransactionalBatchOperationResult(HttpStatusCode.Conflict, new CosmosDiagnosticsCore()));
+            results.Add(new TransactionalBatchOperationResult(HttpStatusCode.Conflict));
 
             results.Add(
-                new TransactionalBatchOperationResult(HttpStatusCode.OK, new CosmosDiagnosticsCore())
+                new TransactionalBatchOperationResult(HttpStatusCode.OK)
                 {
                     ResourceStream = new MemoryStream(new byte[] { 0x41, 0x42 }, index: 0, count: 2, writable: false, publiclyVisible: true),
                     RequestCharge = 2.5,

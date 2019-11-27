@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                             RequestCharge = responseCore.RequestCharge,
                             ActivityId = responseCore.ActivityId
                         },
-                        diagnostics: null);
+                        diagnostics: new CosmosDiagnosticsCore());
 
             QueryResponse<ToDoItem> itemQueryResponse = QueryResponseMessageFactory.CreateQueryResponse<ToDoItem>(queryResponse);
             List<ToDoItem> resultItems = new List<ToDoItem>(itemQueryResponse.Resource);
@@ -162,7 +162,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                             RequestCharge = responseCore.RequestCharge,
                             ActivityId = responseCore.ActivityId
                         },
-                        diagnostics: null);
+                        diagnostics: new CosmosDiagnosticsCore());
 
             QueryResponse<CosmosElement> itemQueryResponse = QueryResponseMessageFactory.CreateQueryResponse<CosmosElement>(queryResponse);
             List<CosmosElement> resultItems = new List<CosmosElement>(itemQueryResponse.Resource);

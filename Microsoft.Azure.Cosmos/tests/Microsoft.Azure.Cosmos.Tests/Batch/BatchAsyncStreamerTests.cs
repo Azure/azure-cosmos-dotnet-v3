@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 foreach (ItemBatchOperation operation in request.Operations)
                 {
                     results.Add(
-                    new TransactionalBatchOperationResult(HttpStatusCode.OK, new CosmosDiagnosticsCore())
+                    new TransactionalBatchOperationResult(HttpStatusCode.OK)
                     {
                         ResourceStream = new MemoryStream(new byte[] { 0x41, 0x42 }, index: 0, count: 2, writable: false, publiclyVisible: true),
                         ETag = operation.Id

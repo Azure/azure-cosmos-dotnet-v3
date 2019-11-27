@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             IDocumentClientRetryPolicy retryPolicy = new BulkPartitionKeyRangeGoneRetryPolicy(
                 new ResourceThrottleRetryPolicy(1));
 
-            TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.OK, new CosmosDiagnosticsCore());
+            TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.OK);
             ShouldRetryResult shouldRetryResult = await retryPolicy.ShouldRetryAsync(result.ToResponseMessage(), default(CancellationToken));
             Assert.IsFalse(shouldRetryResult.ShouldRetry);            
         }
@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             IDocumentClientRetryPolicy retryPolicy = new BulkPartitionKeyRangeGoneRetryPolicy(
                 new ResourceThrottleRetryPolicy(1));
 
-            TransactionalBatchOperationResult result = new TransactionalBatchOperationResult((HttpStatusCode)StatusCodes.TooManyRequests, new CosmosDiagnosticsCore());
+            TransactionalBatchOperationResult result = new TransactionalBatchOperationResult((HttpStatusCode)StatusCodes.TooManyRequests);
             ShouldRetryResult shouldRetryResult = await retryPolicy.ShouldRetryAsync(result.ToResponseMessage(), default(CancellationToken));
             Assert.IsTrue(shouldRetryResult.ShouldRetry);
         }
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             IDocumentClientRetryPolicy retryPolicy = new BulkPartitionKeyRangeGoneRetryPolicy(
                 new ResourceThrottleRetryPolicy(1));
 
-            TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.Gone, new CosmosDiagnosticsCore()) { SubStatusCode = SubStatusCodes.PartitionKeyRangeGone };
+            TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.Gone) { SubStatusCode = SubStatusCodes.PartitionKeyRangeGone };
             ShouldRetryResult shouldRetryResult = await retryPolicy.ShouldRetryAsync(result.ToResponseMessage(), default(CancellationToken));
             Assert.IsTrue(shouldRetryResult.ShouldRetry);
         }

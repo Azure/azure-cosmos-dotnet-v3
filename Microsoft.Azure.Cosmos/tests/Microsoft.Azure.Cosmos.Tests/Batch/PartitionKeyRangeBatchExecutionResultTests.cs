@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ItemBatchOperation operation = new ItemBatchOperation(OperationType.Read, 0, "0");
 
             results.Add(
-                    new TransactionalBatchOperationResult(HttpStatusCode.OK, new CosmosDiagnosticsCore())
+                    new TransactionalBatchOperationResult(HttpStatusCode.OK)
                     {
                         ResourceStream = new MemoryStream(new byte[] { 0x41, 0x42 }, index: 0, count: 2, writable: false, publiclyVisible: true),
                         ETag = operation.Id
@@ -82,14 +82,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseSessionToken: null,
                 clientSideRequestStatistics: new CosmosClientSideRequestStatistics()));
 
-            TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.OK, new CosmosDiagnosticsCore())
+            TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.OK)
             {
                 ResourceStream = new MemoryStream(new byte[] { 0x41, 0x42 }, index: 0, count: 2, writable: false, publiclyVisible: true),
                 ETag = "1234",
                 SubStatusCode = SubStatusCodes.CompletingSplit,
                 RetryAfter = TimeSpan.FromSeconds(10),
                 RequestCharge = 4.3,
-                DiagnosticsCore = scope
+                Diagnostics = scope
             };
 
             ResponseMessage response = result.ToResponseMessage();
@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(result.RetryAfter, response.Headers.RetryAfter);
             Assert.AreEqual(result.StatusCode, response.StatusCode);
             Assert.AreEqual(result.RequestCharge, response.Headers.RequestCharge);
-            Assert.AreEqual(result.DiagnosticsCore, response.Diagnostics);
+            Assert.AreEqual(result.Diagnostics, response.Diagnostics);
         }
 
         private async Task<bool> ConstainsSplitIsTrueInternal(HttpStatusCode statusCode, SubStatusCodes subStatusCode)
@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ItemBatchOperation operation = new ItemBatchOperation(OperationType.Read, 0, "0");
 
             results.Add(
-                    new TransactionalBatchOperationResult(HttpStatusCode.OK, new CosmosDiagnosticsCore())
+                    new TransactionalBatchOperationResult(HttpStatusCode.OK)
                     {
                         ResourceStream = new MemoryStream(new byte[] { 0x41, 0x42 }, index: 0, count: 2, writable: false, publiclyVisible: true),
                         ETag = operation.Id
