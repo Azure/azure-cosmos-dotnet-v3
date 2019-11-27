@@ -4989,11 +4989,9 @@
           "Attributes": [],
           "MethodInfo": null
         },
-        "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()": {
           "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()"
         },
         "Microsoft.Azure.Cosmos.Headers get_Headers()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
