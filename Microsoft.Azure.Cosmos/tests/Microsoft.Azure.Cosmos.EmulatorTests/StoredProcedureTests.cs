@@ -469,20 +469,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ItemResponse<dynamic> createItemResponse = await this.container.CreateItemAsync<dynamic>(payload);
             Assert.AreEqual(HttpStatusCode.Created, createItemResponse.StatusCode);
 
-            StoredProcedureExecuteResponse<string> sprocResponse = await this.scripts.ExecuteStoredProcedureAsync<string>(
-                sprocId,
-                new Cosmos.PartitionKey(testPartitionId),
-                parameters: new dynamic[] { "one" });
-
-            Assert.AreEqual(HttpStatusCode.OK, sprocResponse.StatusCode);
-
-            string stringResponse = sprocResponse.Resource;
-            Assert.IsNotNull(stringResponse);
-            Assert.AreEqual("one", stringResponse);
-
-            MemoryStream streamPayload = new MemoryStream(Encoding.UTF8.GetBytes("[null]"));
+            MemoryStream streamPayload = new MemoryStream(Encoding.UTF8.GetBytes(@"""one"""));
 
             ResponseMessage response = await this.scripts.ExecuteStoredProcedureStreamAsync(
+                sprocId,
+                streamPayload: streamPayload,
+                new Cosmos.PartitionKey(testPartitionId));
+
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+
+            using (StreamReader reader = new StreamReader(response.Content))
+            {
+                string text = await reader.ReadToEndAsync();
+                Assert.AreEqual(@"""one""", text);
+            }
+
+            streamPayload = new MemoryStream(Encoding.UTF8.GetBytes("[null]"));
+
+            response = await this.scripts.ExecuteStoredProcedureStreamAsync(
                  sprocId,
                  streamPayload,
                  new Cosmos.PartitionKey(testPartitionId));
