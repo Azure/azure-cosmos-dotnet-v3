@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- [#1061](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1061) Add Stream payload to ExecuteStoredProcedureStreamAsync
+
 ## 3.5.0 - TBD
 
 ### Added
