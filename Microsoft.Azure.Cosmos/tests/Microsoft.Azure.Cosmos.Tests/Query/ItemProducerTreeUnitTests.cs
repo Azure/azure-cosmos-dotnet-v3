@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -54,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                    produceAsyncCompleteCallback: MockItemProducerFactory.DefaultTreeProduceAsyncCompleteDelegate,
                    itemProducerTreeComparer: new ParallelItemProducerTreeComparer(),
                    equalityComparer: CosmosElementEqualityComparer.Value,
-                   testSettings: new Query.Core.TestInjections(simulate429s: false, simulateEmptyPages: false),
+                   testSettings: new TestInjections(simulate429s: false, simulateEmptyPages: false),
                    deferFirstPage: true,
                    collectionRid: MockQueryFactory.DefaultCollectionRid,
                    initialPageSize: maxPageSize,
@@ -113,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                    MockItemProducerFactory.DefaultTreeProduceAsyncCompleteDelegate,
                    new ParallelItemProducerTreeComparer(),
                    CosmosElementEqualityComparer.Value,
-                   new Query.Core.TestInjections(simulate429s: false, simulateEmptyPages: false),
+                   new TestInjections(simulate429s: false, simulateEmptyPages: false),
                    true,
                    MockQueryFactory.DefaultCollectionRid,
                    maxPageSize,
@@ -217,7 +218,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 produceAsyncCompleteCallback: produceAsyncCompleteCallback,
                 itemProducerTreeComparer: comparer.Object,
                 equalityComparer: cosmosElementComparer.Object,
-                testSettings: new Query.Core.TestInjections(simulate429s: false, simulateEmptyPages: false),
+                testSettings: new TestInjections(simulate429s: false, simulateEmptyPages: false),
                 deferFirstPage: false,
                 collectionRid: "collectionRid",
                 initialContinuationToken: null,

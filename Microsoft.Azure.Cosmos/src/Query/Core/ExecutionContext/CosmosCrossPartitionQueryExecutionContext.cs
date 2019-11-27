@@ -315,7 +315,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="tryFilterAsync">The callback used to filter each partition.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task to await on.</returns>
-        protected async Task<TryCatch<bool>> TryInitializeAsync(
+        protected async Task<TryCatch> TryInitializeAsync(
             string collectionRid,
             IReadOnlyList<PartitionKeyRange> partitionKeyRanges,
             int initialPageSize,
@@ -323,7 +323,7 @@ namespace Microsoft.Azure.Cosmos.Query
             IReadOnlyDictionary<string, string> targetRangeToContinuationMap,
             bool deferFirstPage,
             string filter,
-            Func<ItemProducerTree, Task<TryCatch<bool>>> tryFilterAsync,
+            Func<ItemProducerTree, Task<TryCatch>> tryFilterAsync,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -380,7 +380,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
                         if (failureResponse.HasValue)
                         {
-                            return TryCatch<bool>.FromException(
+                            return TryCatch.FromException(
                                 new CosmosException(
                                     statusCode: failureResponse.Value.StatusCode,
                                     subStatusCode: (int)failureResponse.Value.SubStatusCode.GetValueOrDefault(0),
@@ -408,7 +408,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 if (tryFilterAsync != null)
                 {
-                    TryCatch<bool> tryFilter = await tryFilterAsync(itemProducerTree);
+                    TryCatch tryFilter = await tryFilterAsync(itemProducerTree);
                     if (!tryFilter.Succeeded)
                     {
                         return tryFilter;
@@ -418,7 +418,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 this.itemProducerForest.Enqueue(itemProducerTree);
             }
 
-            return TryCatch<bool>.FromResult(true);
+            return TryCatch.FromResult();
         }
 
         /// <summary>
