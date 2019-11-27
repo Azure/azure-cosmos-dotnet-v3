@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos
         /// Reads a <see cref="PermissionProperties"/> from the Azure Cosmos service as an asynchronous operation. Each read will return a new ResourceToken with its respective expiration. 
         /// </summary>
         /// <param name="tokenExpiryInSeconds">(Optional) The expiry time for resource token in seconds. This value can range from 10 seconds, to 24 hours (or 86,400 seconds). The default value for this is 1 hour (or 3,600 seconds). This does not change the default value for future tokens.</param>
-        /// <param name="requestOptions">(Optional) The options for the permission request <see cref="RequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the permission request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="PermissionResponse"/> which wraps a <see cref="PermissionProperties"/> containing the read resource record.
@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="permissionProperties">The <see cref="PermissionProperties"/> object.</param>
         /// <param name="tokenExpiryInSeconds">(Optional) The expiry time for resource token in seconds. This value can range from 10 seconds, to 24 hours (or 86,400 seconds). The default value for this is 1 hour (or 3,600 seconds). This does not change the default value for future tokens.</param>
-        /// <param name="requestOptions">(Optional) The options for the user request <see cref="RequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the user request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="PermissionResponse"/> which wraps a <see cref="PermissionProperties"/> containing the replace resource record.
@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Delete a <see cref="PermissionProperties"/> from the Azure Cosmos DB service as an asynchronous operation. This will not revoke existing ResourceTokens.
         /// </summary>
-        /// <param name="requestOptions">(Optional) The options for the user request <see cref="RequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the user request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="PermissionResponse"/> which will contain information about the request issued.</returns>
         /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a permission are:

@@ -1,4 +1,4 @@
-﻿namespace Cosmos.Samples
+﻿namespace Cosmos.Samples.TransactionalBatch
 {
     using System;
     using System.Collections.Generic;
