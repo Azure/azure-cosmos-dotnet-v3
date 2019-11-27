@@ -57,7 +57,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient((builder) => builder.AddCustomHandlers(preProcessHandler));
 
             Assert.IsTrue(typeof(RequestInvokerHandler).Equals(client.RequestHandler.GetType()));
-            Assert.IsTrue(typeof(PreProcessingTestHandler).Equals(client.RequestHandler.InnerHandler.GetType()));
+            Assert.IsTrue(typeof(CustomRequestHandlerWrapper).Equals(client.RequestHandler.InnerHandler.GetType()));
+            Assert.IsTrue(typeof(PreProcessingTestHandler).Equals(client.RequestHandler.InnerHandler.InnerHandler.GetType()));
 
             Container container = client.GetDatabase("testdb")
                                         .GetContainer("testcontainer");
