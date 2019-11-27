@@ -19,52 +19,55 @@ namespace Microsoft.Azure.Cosmos.Handlers
             RequestMessage request,
             CancellationToken cancellationToken)
         {
-            IDocumentClientRetryPolicy retryPolicyInstance = await this.GetRetryPolicyAsync(request);
-            request.OnBeforeSendRequestActions += retryPolicyInstance.OnBeforeSendRequest;
+            using (request.DiagnosticsCore.CreateScope(this.GetType().FullName))
+            {
+                IDocumentClientRetryPolicy retryPolicyInstance = await this.GetRetryPolicyAsync(request);
+                request.OnBeforeSendRequestActions += retryPolicyInstance.OnBeforeSendRequest;
 
-            try
-            {
-                return await RetryHandler.ExecuteHttpRequestAsync(
-                    callbackMethod: () =>
-                    {
-                        return base.SendAsync(request, cancellationToken);
-                    },
-                    callShouldRetry: (cosmosResponseMessage, token) =>
-                    {
-                        return retryPolicyInstance.ShouldRetryAsync(cosmosResponseMessage, cancellationToken);
-                    },
-                    callShouldRetryException: (exception, token) =>
-                    {
-                        return retryPolicyInstance.ShouldRetryAsync(exception, cancellationToken);
-                    },
-                    diagnosticsCore: request.DiagnosticsCore,
-                    cancellationToken: cancellationToken);
-            }
-            catch (DocumentClientException ex)
-            {
-                return ex.ToCosmosResponseMessage(request);
-            }
-            catch (CosmosException ex)
-            {
-                return ex.ToCosmosResponseMessage(request);
-            }
-            catch (AggregateException ex)
-            {
-                // TODO: because the SDK underneath this path uses ContinueWith or task.Result we need to catch AggregateExceptions here
-                // in order to ensure that underlying DocumentClientExceptions get propagated up correctly. Once all ContinueWith and .Result 
-                // is removed this catch can be safely removed.
-                AggregateException innerExceptions = ex.Flatten();
-                Exception docClientException = innerExceptions.InnerExceptions.FirstOrDefault(innerEx => innerEx is DocumentClientException);
-                if (docClientException != null)
+                try
                 {
-                    return ((DocumentClientException)docClientException).ToCosmosResponseMessage(request);
+                    return await RetryHandler.ExecuteHttpRequestAsync(
+                        callbackMethod: () =>
+                        {
+                            return base.SendAsync(request, cancellationToken);
+                        },
+                        callShouldRetry: (cosmosResponseMessage, token) =>
+                        {
+                            return retryPolicyInstance.ShouldRetryAsync(cosmosResponseMessage, cancellationToken);
+                        },
+                        callShouldRetryException: (exception, token) =>
+                        {
+                            return retryPolicyInstance.ShouldRetryAsync(exception, cancellationToken);
+                        },
+                        diagnosticsCore: request.DiagnosticsCore,
+                        cancellationToken: cancellationToken);
                 }
+                catch (DocumentClientException ex)
+                {
+                    return ex.ToCosmosResponseMessage(request);
+                }
+                catch (CosmosException ex)
+                {
+                    return ex.ToCosmosResponseMessage(request);
+                }
+                catch (AggregateException ex)
+                {
+                    // TODO: because the SDK underneath this path uses ContinueWith or task.Result we need to catch AggregateExceptions here
+                    // in order to ensure that underlying DocumentClientExceptions get propagated up correctly. Once all ContinueWith and .Result 
+                    // is removed this catch can be safely removed.
+                    AggregateException innerExceptions = ex.Flatten();
+                    Exception docClientException = innerExceptions.InnerExceptions.FirstOrDefault(innerEx => innerEx is DocumentClientException);
+                    if (docClientException != null)
+                    {
+                        return ((DocumentClientException)docClientException).ToCosmosResponseMessage(request);
+                    }
 
-                throw;
-            }
-            finally
-            {
-                request.OnBeforeSendRequestActions -= retryPolicyInstance.OnBeforeSendRequest;
+                    throw;
+                }
+                finally
+                {
+                    request.OnBeforeSendRequestActions -= retryPolicyInstance.OnBeforeSendRequest;
+                }
             }
         }
 

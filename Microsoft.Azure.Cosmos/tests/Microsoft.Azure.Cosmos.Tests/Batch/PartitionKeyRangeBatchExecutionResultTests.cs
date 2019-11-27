@@ -69,8 +69,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void ToResponseMessage_MapsProperties()
         {
-            CosmosDiagnosticsCore scope = new CosmosDiagnosticsCore();
-            scope.AddJsonAttribute("info", new PointOperationStatistics(
+            PointOperationStatistics pointOperationStatistics = new PointOperationStatistics(
                 activityId: Guid.NewGuid().ToString(),
                 statusCode: HttpStatusCode.OK,
                 subStatusCode: SubStatusCodes.Unknown,
@@ -80,7 +79,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                 requestUri: new Uri("http://localhost"),
                 requestSessionToken: null,
                 responseSessionToken: null,
-                clientSideRequestStatistics: new CosmosClientSideRequestStatistics()));
+                clientSideRequestStatistics: new CosmosClientSideRequestStatistics());
+            CosmosDiagnosticsCore scope = new CosmosDiagnosticsCore();
+            scope.AddJsonAttribute("info", pointOperationStatistics);
 
             TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.OK)
             {
@@ -99,7 +100,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(result.RetryAfter, response.Headers.RetryAfter);
             Assert.AreEqual(result.StatusCode, response.StatusCode);
             Assert.AreEqual(result.RequestCharge, response.Headers.RequestCharge);
-            Assert.AreEqual(result.Diagnostics, response.Diagnostics);
+            string diagnostics = response.Diagnostics.ToString();
+            Assert.IsNotNull(diagnostics);
+            Assert.IsTrue(diagnostics.Contains(pointOperationStatistics.ActivityId));
         }
 
         private async Task<bool> ConstainsSplitIsTrueInternal(HttpStatusCode statusCode, SubStatusCodes subStatusCode)
