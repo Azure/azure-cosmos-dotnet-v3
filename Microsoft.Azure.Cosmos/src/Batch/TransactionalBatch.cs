@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos
     /// ]]>
     /// </code>
     /// </example>
-    /// <seealso href="https://docs.microsoft.com/en-us/azure/cosmos-db/concepts-limits">Limits on TransactionalBatch requests</seealso>
+    /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/concepts-limits">Limits on TransactionalBatch requests</seealso>
     public abstract class TransactionalBatch
     {
         /// <summary>
