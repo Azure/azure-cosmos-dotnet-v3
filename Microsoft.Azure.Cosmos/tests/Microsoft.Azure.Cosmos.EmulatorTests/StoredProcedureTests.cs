@@ -469,7 +469,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ItemResponse<dynamic> createItemResponse = await this.container.CreateItemAsync<dynamic>(payload);
             Assert.AreEqual(HttpStatusCode.Created, createItemResponse.StatusCode);
 
-            MemoryStream streamPayload = new MemoryStream(Encoding.UTF8.GetBytes(@"""one"""));
+            MemoryStream streamPayload = new MemoryStream(Encoding.UTF8.GetBytes(@"[""one""]"));
 
             ResponseMessage response = await this.scripts.ExecuteStoredProcedureStreamAsync(
                 sprocId,
