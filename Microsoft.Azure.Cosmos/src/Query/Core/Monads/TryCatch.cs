@@ -5,147 +5,60 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.Monads
 {
     using System;
-    using System.Runtime.ExceptionServices;
+    using System.Diagnostics;
+    using System.Reflection;
     using System.Threading.Tasks;
 
-    internal readonly struct TryCatch<TResult>
+    internal readonly struct TryCatch
     {
-        private readonly Either<Exception, TResult> either;
+        private readonly TryCatch<Void> voidTryCatch;
 
-        private TryCatch(Either<Exception, TResult> either)
+        private TryCatch(TryCatch<Void> voidTryCatch)
         {
-            this.either = either;
+            this.voidTryCatch = voidTryCatch;
         }
 
-        public bool Succeeded
-        {
-            get { return this.either.IsRight; }
-        }
+        public Exception Exception => this.voidTryCatch.Exception;
 
-        public TResult Result
-        {
-            get
-            {
-                if (this.Succeeded)
-                {
-                    return this.either.FromRight(default);
-                }
-                else
-                {
-                    throw new InvalidOperationException(
-                        $"Tried to get the result of a {nameof(TryCatch<TResult>)} that ended in an exception.");
-                }
-            }
-        }
-
-        public Exception Exception
-        {
-            get
-            {
-                if (!this.Succeeded)
-                {
-                    return this.either.FromLeft(default);
-                }
-                else
-                {
-                    throw new InvalidOperationException(
-                        $"Tried to get the exception of a {nameof(TryCatch<TResult>)} that ended in a result.");
-                }
-            }
-        }
+        public bool Succeeded => this.voidTryCatch.Succeeded;
 
         public void Match(
-            Action<TResult> onSuccess,
+            Action onSuccess,
             Action<Exception> onError)
         {
-            this.either.Match(onLeft: onError, onRight: onSuccess);
+            this.voidTryCatch.Match(
+                onSuccess: (dummy) => { onSuccess(); },
+                onError: onError);
         }
 
-        public TryCatch<TResult> Try(
-            Action<TResult> onSuccess)
+        public TryCatch Try(
+            Action onSuccess)
         {
-            if (this.Succeeded)
-            {
-                onSuccess(this.either.FromRight(default));
-            }
-
-            return this;
+            return new TryCatch(this.voidTryCatch.Try(onSuccess: (dummy) => { onSuccess(); }));
         }
 
         public TryCatch<T> Try<T>(
-            Func<TResult, T> onSuccess)
+            Func<T> onSuccess)
         {
-            TryCatch<T> matchResult;
-            if (this.Succeeded)
-            {
-                matchResult = TryCatch<T>.FromResult(onSuccess(this.either.FromRight(default)));
-            }
-            else
-            {
-                matchResult = TryCatch<T>.FromException(this.either.FromLeft(default));
-            }
-
-            return matchResult;
+            return this.voidTryCatch.Try<T>(onSuccess: (dummy) => { return onSuccess(); });
         }
 
-        public async Task<TryCatch<T>> TryAsync<T>(
-            Func<TResult, Task<T>> onSuccess)
+        public Task<TryCatch<T>> TryAsync<T>(
+            Func<Task<T>> onSuccess)
         {
-            TryCatch<T> matchResult;
-            if (this.Succeeded)
-            {
-                matchResult = TryCatch<T>.FromResult(await onSuccess(this.either.FromRight(default)));
-            }
-            else
-            {
-                matchResult = TryCatch<T>.FromException(this.either.FromLeft(default));
-            }
-
-            return matchResult;
+            return this.voidTryCatch.TryAsync<T>(onSuccess: (dummy) => { return onSuccess(); });
         }
 
-        public TryCatch<TResult> Catch(
+        public TryCatch Catch(
             Action<Exception> onError)
         {
-            if (!this.Succeeded)
-            {
-                onError(this.either.FromLeft(default));
-            }
-
-            return this;
+            return new TryCatch(this.voidTryCatch.Catch(onError));
         }
 
-        public TryCatch<TResult> Catch(
-            Func<Exception, TryCatch<TResult>> onError)
-        {
-            if (!this.Succeeded)
-            {
-                return onError(this.either.FromLeft(default));
-            }
-
-            return this;
-        }
-
-        public async Task<TryCatch<TResult>> CatchAsync(
+        public async Task<TryCatch> CatchAsync(
             Func<Exception, Task> onError)
         {
-            if (!this.Succeeded)
-            {
-                await onError(this.either.FromLeft(default));
-            }
-
-            return this;
-        }
-
-        public async Task<TryCatch<TResult>> CatchAsync(
-            Func<Exception, Task<TryCatch<TResult>>> onError)
-        {
-            if (!this.Succeeded)
-            {
-                return await onError(this.either.FromLeft(default));
-            }
-
-            return this;
+            return new TryCatch(await this.voidTryCatch.CatchAsync(onError));
         }
 
         public override bool Equals(object obj)
@@ -155,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
                 return true;
             }
 
-            if (obj is TryCatch<TResult> other)
+            if (obj is TryCatch other)
             {
                 return this.Equals(other);
             }
@@ -163,24 +76,31 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
             return false;
         }
 
-        public bool Equals(TryCatch<TResult> other)
+        public bool Equals(TryCatch other)
         {
-            return this.either.Equals(other.either);
+            return this.voidTryCatch.Equals(other.voidTryCatch);
         }
 
         public override int GetHashCode()
         {
-            return this.either.GetHashCode();
+            return this.voidTryCatch.GetHashCode();
         }
 
-        public static TryCatch<TResult> FromResult(TResult result)
+        public static TryCatch FromResult()
         {
-            return new TryCatch<TResult>(result);
+            return new TryCatch(TryCatch<Void>.FromResult(default));
         }
 
-        public static TryCatch<TResult> FromException(Exception exception)
+        public static TryCatch FromException(Exception exception)
         {
-            return new TryCatch<TResult>(exception);
+            return new TryCatch(TryCatch<Void>.FromException(exception));
+        }
+
+        /// <summary>
+        /// Represents a void return type.
+        /// </summary>
+        private readonly struct Void
+        {
         }
     }
 }

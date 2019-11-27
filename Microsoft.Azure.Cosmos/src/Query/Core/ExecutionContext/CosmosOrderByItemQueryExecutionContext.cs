@@ -190,7 +190,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 sortOrders: initParams.PartitionedQueryExecutionInfo.QueryInfo.OrderBy,
                 orderByExpressions: initParams.PartitionedQueryExecutionInfo.QueryInfo.OrderByExpressions,
                 cancellationToken: cancellationToken))
-                .Try<CosmosOrderByItemQueryExecutionContext>((ignore) => context);
+                .Try<CosmosOrderByItemQueryExecutionContext>(() => context);
         }
 
         /// <summary>
@@ -321,7 +321,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     StringComparison.Ordinal);
         }
 
-        private async Task<TryCatch<bool>> TryInitializeAsync(
+        private async Task<TryCatch> TryInitializeAsync(
             SqlQuerySpec sqlQuerySpec,
             string requestContinuation,
             string collectionRid,
@@ -364,7 +364,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     sqlQuerySpec.QueryText.Replace(oldValue: FormatPlaceHolder, newValue: True),
                     sqlQuerySpec.Parameters);
 
-                TryCatch<bool> tryInitialize = await base.TryInitializeAsync(
+                TryCatch tryInitialize = await base.TryInitializeAsync(
                     collectionRid,
                     partitionKeyRanges,
                     initialPageSize,
@@ -387,7 +387,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     orderByExpressions);
                 if (!tryExtractContinuationTokens.Succeeded)
                 {
-                    return TryCatch<bool>.FromException(tryExtractContinuationTokens.Exception);
+                    return TryCatch.FromException(tryExtractContinuationTokens.Exception);
                 }
 
                 TryCatch<OrderByInitInfo> tryGetOrderByInitInfo = CosmosOrderByItemQueryExecutionContext.TryGetOrderByPartitionKeyRangesInitializationInfo(
@@ -397,7 +397,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     orderByExpressions);
                 if (!tryGetOrderByInitInfo.Succeeded)
                 {
-                    return TryCatch<bool>.FromException(tryGetOrderByInitInfo.Exception);
+                    return TryCatch.FromException(tryGetOrderByInitInfo.Exception);
                 }
 
                 OrderByInitInfo initiaizationInfo = tryGetOrderByInitInfo.Result;
@@ -427,7 +427,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         sqlQuerySpec.QueryText.Replace(FormatPlaceHolder, info.Filter),
                         sqlQuerySpec.Parameters);
 
-                    TryCatch<bool> tryInitialize = await base.TryInitializeAsync(
+                    TryCatch tryInitialize = await base.TryInitializeAsync(
                         collectionRid,
                         partialRanges,
                         initialPageSize,
@@ -443,7 +443,7 @@ namespace Microsoft.Azure.Cosmos.Query
                                 itemProducerTree.Root.PartitionKeyRange.Id,
                                 out OrderByContinuationToken continuationToken))
                             {
-                                TryCatch<bool> tryFilter = await this.TryFilterAsync(
+                                TryCatch tryFilter = await this.TryFilterAsync(
                                     itemProducerTree,
                                     sortOrders,
                                     continuationToken,
@@ -455,7 +455,7 @@ namespace Microsoft.Azure.Cosmos.Query
                                 }
                             }
 
-                            return TryCatch<bool>.FromResult(true);
+                            return TryCatch.FromResult();
                         },
                         cancellationToken);
                     if (!tryInitialize.Succeeded)
@@ -465,7 +465,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 }
             }
 
-            return TryCatch<bool>.FromResult(true);
+            return TryCatch.FromResult();
         }
 
         private static TryCatch<OrderByContinuationToken[]> TryExtractContinuationTokens(
@@ -524,7 +524,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="continuationToken">The continuation token.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task to await on.</returns>
-        private async Task<TryCatch<bool>> TryFilterAsync(
+        private async Task<TryCatch> TryFilterAsync(
             ItemProducerTree producer,
             SortOrder[] sortOrders,
             OrderByContinuationToken continuationToken,
@@ -542,7 +542,7 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 if (!ResourceId.TryParse(continuationToken.Rid, out ResourceId continuationRid))
                 {
-                    return TryCatch<bool>.FromException(
+                    return TryCatch.FromException(
                         new MalformedContinuationTokenException($"Invalid Rid in the continuation token {continuationToken.CompositeContinuationToken.Token} for OrderBy~Context."));
                 }
 
@@ -586,7 +586,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         {
                             if (!ResourceId.TryParse(orderByResult.Rid, out rid))
                             {
-                                return TryCatch<bool>.FromException(
+                                return TryCatch.FromException(
                                     new MalformedContinuationTokenException($"Invalid Rid in the continuation token {continuationToken.CompositeContinuationToken.Token} for OrderBy~Context~TryParse."));
 
                             }
@@ -598,7 +598,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         {
                             if (continuationRid.Database != rid.Database || continuationRid.DocumentCollection != rid.DocumentCollection)
                             {
-                                return TryCatch<bool>.FromException(
+                                return TryCatch.FromException(
                                     new MalformedContinuationTokenException($"Invalid Rid in the continuation token {continuationToken.CompositeContinuationToken.Token} for OrderBy~Context."));
                             }
 
@@ -633,7 +633,7 @@ namespace Microsoft.Azure.Cosmos.Query
                             {
                                 if (failureResponse.HasValue)
                                 {
-                                    return TryCatch<bool>.FromException(
+                                    return TryCatch.FromException(
                                         new CosmosException(
                                             statusCode: failureResponse.Value.StatusCode,
                                             subStatusCode: (int)failureResponse.Value.SubStatusCode.GetValueOrDefault(0),
@@ -659,7 +659,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 }
             }
 
-            return TryCatch<bool>.FromResult(true);
+            return TryCatch.FromResult();
         }
 
         /// <summary>
