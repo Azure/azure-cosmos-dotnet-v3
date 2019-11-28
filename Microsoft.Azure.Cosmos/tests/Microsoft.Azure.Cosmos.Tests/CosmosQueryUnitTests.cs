@@ -275,7 +275,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             QueryResponseCore queryResponse = await context.ExecuteNextAsync(cancellationtoken);
             Assert.AreEqual(HttpStatusCode.BadRequest, queryResponse.StatusCode);
-            Assert.IsTrue(queryResponse.ErrorMessage.Contains(exceptionMessage));
+            Assert.IsTrue(queryResponse.ErrorMessage.Contains(exceptionMessage), "response error message did not contain the proper substring.");
         }
 
         private async Task<(IList<IDocumentQueryExecutionComponent> components, QueryResponseCore response)> GetAllExecutionComponents()
@@ -293,7 +293,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
 
             components.Add((await AggregateDocumentQueryExecutionComponent.TryCreateAsync(
-                Query.Core.ExecutionContext.ExecutionEnvironment.Client,
+                ExecutionEnvironment.Client,
                 operators.ToArray(),
                 new Dictionary<string, AggregateOperator?>()
                 {
@@ -305,7 +305,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 setupContext.func)).Result);
 
             components.Add((await DistinctDocumentQueryExecutionComponent.TryCreateAsync(
-                Query.Core.ExecutionContext.ExecutionEnvironment.Client,
+                ExecutionEnvironment.Client,
                 null,
                 setupContext.func,
                 DistinctQueryType.Ordered)).Result);

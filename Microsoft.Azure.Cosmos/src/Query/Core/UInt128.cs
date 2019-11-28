@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 {
     using System;
     using System.Linq;
+    using System.Runtime.InteropServices;
 
     /// <summary>
     /// Struct that represents a 128 bit unsigned integer.
@@ -236,12 +237,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         /// Creates a UInt128 from a byte array.
         /// </summary>
         /// <param name="bytes">The bytes.</param>
-        /// <param name="start">The starting index.</param>
         /// <returns>The UInt128 from the byte array.</returns>
-        public static UInt128 FromByteArray(byte[] bytes, int start = 0)
+        public static UInt128 FromByteArray(ReadOnlySpan<byte> bytes)
         {
-            ulong low = BitConverter.ToUInt64(bytes, start);
-            ulong high = BitConverter.ToUInt64(bytes, start + 8);
+            ulong low = MemoryMarshal.Read<ulong>(bytes);
+            ulong high = MemoryMarshal.Read<ulong>(bytes.Slice(sizeof(ulong)));
 
             return new UInt128(low, high);
         }

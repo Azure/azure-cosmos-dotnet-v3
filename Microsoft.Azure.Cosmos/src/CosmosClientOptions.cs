@@ -19,7 +19,9 @@ namespace Microsoft.Azure.Cosmos
     /// Defines all the configurable options that the CosmosClient requires.
     /// </summary>
     /// <example>
-    /// An example on how to configure the serialization option to ignore null values
+    /// An example on how to configure the serialization option to ignore null values.
+    /// <code language="c#">
+    /// <![CDATA[
     /// CosmosClientOptions clientOptions = new CosmosClientOptions()
     /// {
     ///     SerializerOptions = new CosmosSerializationOptions(){
@@ -29,6 +31,8 @@ namespace Microsoft.Azure.Cosmos
     /// };
     /// 
     /// CosmosClient client = new CosmosClient("endpoint", "key", clientOptions);
+    /// ]]>
+    /// </code>
     /// </example>
     public class CosmosClientOptions
     {
@@ -98,10 +102,9 @@ namespace Microsoft.Azure.Cosmos
         /// When this property is specified, the SDK prefers the region to perform operations. Also SDK auto-selects 
         /// fallback geo-replicated regions for high availability. 
         /// When this property is not specified, the SDK uses the write region as the preferred region for all operations.
-        /// 
-        /// <seealso cref="CosmosClientBuilder.WithApplicationRegion(string)"/>
-        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/how-to-multi-master"/>
         /// </remarks>
+        /// <seealso cref="CosmosClientBuilder.WithApplicationRegion(string)"/>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/how-to-multi-master">Configure multi-master</seealso>
         public string ApplicationRegion { get; set; }
 
         /// <summary>
@@ -384,7 +387,7 @@ namespace Microsoft.Azure.Cosmos
         /// When set to true, availability is limited to the endpoint specified on the CosmosClient constructor.
         /// Defining the <see cref="ApplicationRegion"/> is not allowed when setting the value to true.
         /// </remarks>
-        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/high-availability"/>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/high-availability">High availability</seealso>
         public bool LimitToEndpoint { get; set; } = false;
 
         /// <summary>

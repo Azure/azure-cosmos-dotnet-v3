@@ -291,8 +291,7 @@ namespace Microsoft.Azure.Cosmos
                         diagnostics: pageDiagnostics);
                 }
 
-                MemoryStream memoryStream = cosmosResponseMessage.Content as MemoryStream;
-                if (memoryStream == null)
+                if (!(cosmosResponseMessage.Content is MemoryStream memoryStream))
                 {
                     memoryStream = new MemoryStream();
                     cosmosResponseMessage.Content.CopyTo(memoryStream);
