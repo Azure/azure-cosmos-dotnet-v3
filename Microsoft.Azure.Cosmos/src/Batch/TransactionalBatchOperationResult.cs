@@ -209,8 +209,13 @@ namespace Microsoft.Azure.Cosmos
                 RequestCharge = this.RequestCharge,
             };
 
-            CosmosDiagnosticsCore diagnosticsCore = new CosmosDiagnosticsCore();
-            diagnosticsCore.AddJsonAttribute("TransactionalBatchResponse", this.Diagnostics);
+            CosmosDiagnosticsCore diagnosticsCore = this.Diagnostics as CosmosDiagnosticsCore;
+            if (diagnosticsCore == null)
+            {
+                diagnosticsCore = new CosmosDiagnosticsCore();
+                diagnosticsCore.AddJsonAttribute("TransactionalBatchResponse", this.Diagnostics);
+            }
+             
             ResponseMessage responseMessage = new ResponseMessage(
                 statusCode: this.StatusCode,
                 requestMessage: null,

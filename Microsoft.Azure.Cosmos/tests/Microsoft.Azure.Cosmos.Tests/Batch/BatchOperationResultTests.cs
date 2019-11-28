@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos
             Assert.AreEqual(result.RequestCharge, response.Headers.RequestCharge);
             Assert.AreEqual(result.RetryAfter, response.Headers.RetryAfter);
             Assert.AreSame(result.ResourceStream, response.Content);
-            Assert.AreSame(result.Diagnostics, response.Diagnostics);
+            Assert.IsNotNull(response.Diagnostics);
         }
 
         [TestMethod]
