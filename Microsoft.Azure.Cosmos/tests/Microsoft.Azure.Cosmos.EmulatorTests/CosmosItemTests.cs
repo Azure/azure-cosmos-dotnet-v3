@@ -22,6 +22,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Converters;
     using Newtonsoft.Json.Linq;
     using JsonReader = Json.JsonReader;
     using JsonWriter = Json.JsonWriter;
@@ -61,12 +62,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
             ItemResponse<ToDoActivity> response = await this.Container.CreateItemAsync<ToDoActivity>(item: testItem);
+
             Assert.IsNotNull(response);
             Assert.IsNotNull(response.Headers.GetHeaderValue<string>(Documents.HttpConstants.HttpHeaders.MaxResourceQuota));
             Assert.IsNotNull(response.Headers.GetHeaderValue<string>(Documents.HttpConstants.HttpHeaders.CurrentResourceQuotaUsage));
             ItemResponse<ToDoActivity> deleteResponse = await this.Container.DeleteItemAsync<ToDoActivity>(partitionKey: new Cosmos.PartitionKey(testItem.status), id: testItem.id);
             Assert.IsNotNull(deleteResponse);
         }
+
 
         [TestMethod]
         public async Task NegativeCreateDropItemTest()
@@ -322,8 +325,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task CreateDropItemStreamTest()
         {
-            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
-            using (Stream stream = TestCommon.Serializer.ToStream<ToDoActivity>(testItem))
+            ToDoEnum testItem = new ToDoEnum();
+            using (Stream stream = TestCommon.Serializer.ToStream<ToDoEnum>(testItem))
             {
                 using (ResponseMessage response = await this.Container.CreateItemStreamAsync(partitionKey: new Cosmos.PartitionKey(testItem.status), streamPayload: stream))
                 {
@@ -332,16 +335,82 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Assert.IsTrue(response.Headers.RequestCharge > 0);
                     Assert.IsNotNull(response.Headers.ActivityId);
                     Assert.IsNotNull(response.Headers.ETag);
+                    using (StreamReader streamReader = new StreamReader(response.Content))
+                    {
+                        string item = await streamReader.ReadToEndAsync();
+                        Assert.IsNotNull(item);
+                    }
                 }
             }
 
-            using (ResponseMessage deleteResponse = await this.Container.DeleteItemStreamAsync(partitionKey: new Cosmos.PartitionKey(testItem.status), id: testItem.id))
+            string id = testItem.id.ToString();
+            using (ResponseMessage deleteResponse = await this.Container.DeleteItemStreamAsync(partitionKey: new Cosmos.PartitionKey(testItem.status), id: id))
             {
                 Assert.IsNotNull(deleteResponse);
                 Assert.AreEqual(HttpStatusCode.NoContent, deleteResponse.StatusCode);
                 Assert.IsTrue(deleteResponse.Headers.RequestCharge > 0);
                 Assert.IsNotNull(deleteResponse.Headers.ActivityId);
             }
+        }
+
+        [TestMethod]
+        public async Task CreateDropItemEnumStreamTest()
+        {
+            ToDoEnum testItem = new ToDoEnum();
+            ItemResponse<ToDoEnum> itemResponse = await this.Container.CreateItemAsync<ToDoEnum>(testItem, new Cosmos.PartitionKey(testItem.status));
+            Assert.AreEqual(testItem.id, itemResponse.Resource.id);
+
+            string id = testItem.id.ToString();
+            using (ResponseMessage response = await this.Container.ReadItemStreamAsync(id: id, partitionKey: new Cosmos.PartitionKey(testItem.status)))
+            {
+                Assert.IsNotNull(response);
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+                Assert.IsTrue(response.Headers.RequestCharge > 0);
+                Assert.IsNotNull(response.Headers.ActivityId);
+                Assert.IsNotNull(response.Headers.ETag);
+                using (StreamReader streamReader = new StreamReader(response.Content))
+                {
+                    string item = await streamReader.ReadToEndAsync();
+                    Assert.IsNotNull(item);
+                    Assert.IsTrue(item.Contains("\"id\":\"High\""));
+                }
+            }
+
+
+            using (ResponseMessage deleteResponse = await this.Container.DeleteItemStreamAsync(id: id, partitionKey: new Cosmos.PartitionKey(testItem.status)))
+            {
+                Assert.IsNotNull(deleteResponse);
+                Assert.AreEqual(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+                Assert.IsTrue(deleteResponse.Headers.RequestCharge > 0);
+                Assert.IsNotNull(deleteResponse.Headers.ActivityId);
+            }
+        }
+
+        [JsonConverter(typeof(StringEnumConverter))]
+        public enum Priority
+        {
+            None,
+            Low,
+            Medium,
+            High
+        }
+
+        public class ToDoEnum
+        {
+            public ToDoEnum()
+            {
+                this.id = Priority.High;
+                this.priority = Priority.Low;
+                this.status = Guid.NewGuid().ToString();
+            }
+
+            public Priority id { get; set; }
+            public int taskNum { get; set; }
+            public double cost { get; set; }
+            public string description { get; set; }
+            public string status { get; set; }
+            public string CamelCase { get; set; }
+            public Priority priority { get; set; }
         }
 
         [TestMethod]
@@ -1277,7 +1346,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 partitionKey: new Cosmos.PartitionKey(originalStatus),
                 item: testItem);
                 Assert.Fail("Replace changing partition key is not supported.");
-            }catch(CosmosException ce)
+            }
+            catch (CosmosException ce)
             {
                 Assert.AreEqual((HttpStatusCode)400, ce.StatusCode);
             }
