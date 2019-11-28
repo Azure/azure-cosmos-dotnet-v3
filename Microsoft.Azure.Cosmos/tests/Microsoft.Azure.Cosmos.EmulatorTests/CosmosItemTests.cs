@@ -325,8 +325,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task CreateDropItemStreamTest()
         {
-            ToDoEnum testItem = new ToDoEnum();
-            using (Stream stream = TestCommon.Serializer.ToStream<ToDoEnum>(testItem))
+            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+            using (Stream stream = TestCommon.Serializer.ToStream<ToDoActivity>(testItem))
             {
                 using (ResponseMessage response = await this.Container.CreateItemStreamAsync(partitionKey: new Cosmos.PartitionKey(testItem.status), streamPayload: stream))
                 {
@@ -335,16 +335,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Assert.IsTrue(response.Headers.RequestCharge > 0);
                     Assert.IsNotNull(response.Headers.ActivityId);
                     Assert.IsNotNull(response.Headers.ETag);
-                    using (StreamReader streamReader = new StreamReader(response.Content))
-                    {
-                        string item = await streamReader.ReadToEndAsync();
-                        Assert.IsNotNull(item);
-                    }
                 }
             }
 
-            string id = testItem.id.ToString();
-            using (ResponseMessage deleteResponse = await this.Container.DeleteItemStreamAsync(partitionKey: new Cosmos.PartitionKey(testItem.status), id: id))
+            using (ResponseMessage deleteResponse = await this.Container.DeleteItemStreamAsync(partitionKey: new Cosmos.PartitionKey(testItem.status), id: testItem.id))
             {
                 Assert.IsNotNull(deleteResponse);
                 Assert.AreEqual(HttpStatusCode.NoContent, deleteResponse.StatusCode);
