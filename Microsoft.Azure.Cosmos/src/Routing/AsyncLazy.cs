@@ -25,10 +25,5 @@ namespace Microsoft.Azure.Cosmos.Common
             : base(() => Task.Factory.StartNewOnCurrentTaskSchedulerAsync(taskFactory, cancellationToken).Unwrap()) // Task.Factory.StartNew() allows specifying task scheduler to use which is critical for compute gateway to track physical consumption.
         {
         }
-
-        public AsyncLazy(Func<Task<T>> taskFactory, LazyThreadSafetyMode mode, CancellationToken cancellationToken = default(CancellationToken))
-            : base(() => Task.Factory.StartNewOnCurrentTaskSchedulerAsync(taskFactory, cancellationToken).Unwrap(), mode) // Task.Factory.StartNew() allows specifying task scheduler to use which is critical for compute gateway to track physical consumption.
-        {
-        }
     }
 }

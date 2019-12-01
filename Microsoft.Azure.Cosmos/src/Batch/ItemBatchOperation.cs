@@ -291,7 +291,7 @@ namespace Microsoft.Azure.Cosmos
                 return BatchExecUtils.TryConvertMemoryStreamToMemory(this.ResourceStream, out this.body);
             }
 
-            return false;
+            return true;
         }
 
         /// <summary>
@@ -376,7 +376,7 @@ namespace Microsoft.Azure.Cosmos
                 return BatchExecUtils.TryConvertMemoryStreamToMemory(this.ResourceStream, out this.body);
             }
 
-            return false;
+            return true;
         }
 
         /// <summary>
