@@ -22,6 +22,8 @@ namespace Microsoft.Azure.Cosmos.Query
     /// </summary>
     internal sealed class DefaultDocumentQueryExecutionContext : DocumentQueryExecutionContextBase
     {
+        private const string InternalPartitionKeyDefinitionProperty = "x-ms-query-partitionkey-definition";
+
         /// <summary>
         /// Whether or not a continuation is expected.
         /// </summary>
@@ -280,8 +282,9 @@ namespace Microsoft.Azure.Cosmos.Query
                 {
                     FeedOptions feedOptions = this.GetFeedOptions(null);
                     PartitionKeyDefinition partitionKeyDefinition;
-                    object partitionKeyDefinitionObject;
-                    if (feedOptions.Properties != null && feedOptions.Properties.TryGetValue(CosmosQueryExecutionContextFactory.InternalPartitionKeyDefinitionProperty, out partitionKeyDefinitionObject))
+                    if ((feedOptions.Properties != null) && feedOptions.Properties.TryGetValue(
+                        DefaultDocumentQueryExecutionContext.InternalPartitionKeyDefinitionProperty,
+                        out object partitionKeyDefinitionObject))
                     {
                         if (partitionKeyDefinitionObject is PartitionKeyDefinition definition)
                         {
@@ -299,7 +302,6 @@ namespace Microsoft.Azure.Cosmos.Query
                         partitionKeyDefinition = collection.PartitionKey;
                     }
 
-                    QueryInfo queryInfo;
                     providedRanges = PartitionRoutingHelper.GetProvidedPartitionKeyRanges(
                         (errorMessage) => new BadRequestException(errorMessage),
                         this.QuerySpec,
@@ -310,7 +312,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         partitionKeyDefinition,
                         queryPartitionProvider,
                         version,
-                        out queryInfo);
+                        out QueryInfo queryInfo);
                 }
                 else if (request.Properties != null && request.Properties.TryGetValue(
                     WFConstants.BackendHeaders.EffectivePartitionKeyString,
@@ -367,7 +369,7 @@ namespace Microsoft.Azure.Cosmos.Query
             INameValueCollection requestHeaders = await this.CreateCommonHeadersAsync(
                     this.GetFeedOptions(this.ContinuationToken));
 
-            requestHeaders[HttpConstants.HttpHeaders.IsContinuationExpected] = isContinuationExpected.ToString();
+            requestHeaders[HttpConstants.HttpHeaders.IsContinuationExpected] = this.isContinuationExpected.ToString();
 
             return this.CreateDocumentServiceRequest(
                 requestHeaders,

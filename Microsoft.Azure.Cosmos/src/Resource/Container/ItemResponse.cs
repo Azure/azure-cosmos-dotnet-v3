@@ -56,12 +56,5 @@ namespace Microsoft.Azure.Cosmos
 
         /// <inheritdoc/>
         public override string ETag => this.Headers?.ETag;
-
-        /// <inheritdoc/>
-        internal override string MaxResourceQuota => this.Headers?.GetHeaderValue<string>(HttpConstants.HttpHeaders.MaxResourceQuota);
-
-        /// <inheritdoc/>
-        internal override string CurrentResourceQuotaUsage => this.Headers?.GetHeaderValue<string>(HttpConstants.HttpHeaders.CurrentResourceQuotaUsage);
-
     }
 }

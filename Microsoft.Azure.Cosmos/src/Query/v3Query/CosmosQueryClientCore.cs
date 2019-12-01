@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
@@ -70,7 +71,7 @@ namespace Microsoft.Azure.Cosmos
                 containerProperties.PartitionKey);
         }
 
-        internal override async Task<PartitionedQueryExecutionInfo> GetPartitionedQueryExecutionInfoAsync(
+        internal override async Task<TryCatch<PartitionedQueryExecutionInfo>> TryGetPartitionedQueryExecutionInfoAsync(
             SqlQuerySpec sqlQuerySpec,
             PartitionKeyDefinition partitionKeyDefinition,
             bool requireFormattableOrderByQuery,
@@ -98,8 +99,7 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            return this.queryPartitionProvider.GetPartitionedQueryExecutionInfo(
-                this.CreateBadRequestException,
+            return this.queryPartitionProvider.TryGetPartitionedQueryExecutionInfo(
                 sqlQuerySpec,
                 partitionKeyDefinition,
                 requireFormattableOrderByQuery,
@@ -289,8 +289,7 @@ namespace Microsoft.Azure.Cosmos
                         diagnostics: pageDiagnostics);
                 }
 
-                MemoryStream memoryStream = cosmosResponseMessage.Content as MemoryStream;
-                if (memoryStream == null)
+                if (!(cosmosResponseMessage.Content is MemoryStream memoryStream))
                 {
                     memoryStream = new MemoryStream();
                     cosmosResponseMessage.Content.CopyTo(memoryStream);
@@ -308,7 +307,7 @@ namespace Microsoft.Azure.Cosmos
                     requestCharge: cosmosResponseMessage.Headers.RequestCharge,
                     activityId: cosmosResponseMessage.Headers.ActivityId,
                     diagnostics: pageDiagnostics,
-                    responseLengthBytes: cosmosResponseMessage.Headers.ContentLengthAsLong,
+                    responseLengthBytes: responseLengthBytes,
                     disallowContinuationTokenMessage: null,
                     continuationToken: cosmosResponseMessage.Headers.ContinuationToken);
             }
@@ -365,11 +364,6 @@ namespace Microsoft.Azure.Cosmos
         private Task<PartitionKeyRangeCache> GetRoutingMapProviderAsync()
         {
             return this.documentClient.GetPartitionKeyRangeCacheAsync();
-        }
-
-        internal override Exception CreateBadRequestException(string message)
-        {
-            return new CosmosException(System.Net.HttpStatusCode.BadRequest, message);
         }
     }
 }

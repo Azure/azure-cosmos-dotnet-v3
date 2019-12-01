@@ -12,7 +12,7 @@ FROM (
     FROM root
 ) AS v0 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"Errors":["Compositions of aggregates and other expressions are not allowed."]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -29,7 +29,7 @@ FROM (
     WHERE root["Flag"]
 ) AS v0 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"Errors":["Compositions of aggregates and other expressions are not allowed."]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -46,7 +46,7 @@ FROM (
     WHERE (NOT root["Flag"])
 ) AS v0 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"Errors":["Compositions of aggregates and other expressions are not allowed."]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -62,7 +62,7 @@ FROM (
     FROM root
 ) AS v0 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"Errors":["Compositions of aggregates and other expressions are not allowed."]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -80,7 +80,7 @@ FROM (
     WHERE ((m0 % 3) = 0)
 ) AS v0 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"Errors":["Compositions of aggregates and other expressions are not allowed."]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -97,7 +97,7 @@ FROM (
     WHERE root["Flag"]
 ) AS v0 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"Errors":["Compositions of aggregates and other expressions are not allowed."]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -114,7 +114,7 @@ FROM (
     WHERE (root["Number"] < -7)
 ) AS v0 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"Errors":["Compositions of aggregates and other expressions are not allowed."]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -131,7 +131,7 @@ FROM (
     WHERE (root["Number"] < -13)
 ) AS v0 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"Errors":["Compositions of aggregates and other expressions are not allowed."]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -156,7 +156,7 @@ FROM (
     WHERE (v1 > 5)
 ) AS v2 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"Errors":["Compositions of aggregates and other expressions are not allowed."]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -189,7 +189,7 @@ FROM (
     WHERE (v1 > 150)
 ) AS v2 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"Errors":["Compositions of aggregates and other expressions are not allowed."]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -206,7 +206,7 @@ FROM (
     OFFSET 20 LIMIT 1
 ) AS v2 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":63,"end":80},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -224,7 +224,7 @@ FROM (
     OFFSET 4 LIMIT 2147483647
 ) AS v2 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":89,"end":114},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -311,7 +311,7 @@ FROM (
     OFFSET 1 LIMIT 10
 ) AS v26 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":285,"end":310},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."},{"severity":"Error","location":{"start":410,"end":426},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."},{"severity":"Error","location":{"start":501,"end":506},"code":"SC2203","message":"'TOP' is not supported in subqueries."},{"severity":"Error","location":{"start":562,"end":587},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."},{"severity":"Error","location":{"start":704,"end":729},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":730,"end":748},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."},{"severity":"Error","location":{"start":874,"end":898},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":899,"end":924},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."},{"severity":"Error","location":{"start":1070,"end":1094},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":1095,"end":1120},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."},{"severity":"Error","location":{"start":1211,"end":1227},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."},{"severity":"Error","location":{"start":969,"end":974},"code":"SC2203","message":"'TOP' is not supported in subqueries."},{"severity":"Error","location":{"start":1248,"end":1265},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."},{"severity":"Error","location":{"start":1274,"end":1291},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
 </Results>

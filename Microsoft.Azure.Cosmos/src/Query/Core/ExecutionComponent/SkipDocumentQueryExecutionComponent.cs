@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Newtonsoft.Json;
 
     internal sealed class SkipDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase
@@ -23,15 +24,24 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
             this.skipCount = skipCount;
         }
 
-        public static async Task<SkipDocumentQueryExecutionComponent> CreateAsync(
+        public static async Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
             int offsetCount,
             string continuationToken,
-            Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback)
+            Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync)
         {
+            if (tryCreateSourceAsync == null)
+            {
+                throw new ArgumentNullException(nameof(tryCreateSourceAsync));
+            }
+
             OffsetContinuationToken offsetContinuationToken;
             if (continuationToken != null)
             {
-                offsetContinuationToken = OffsetContinuationToken.Parse(continuationToken);
+                if (!OffsetContinuationToken.TryParse(continuationToken, out offsetContinuationToken))
+                {
+                    return TryCatch<IDocumentQueryExecutionComponent>.FromException(
+                        new MalformedContinuationTokenException($"Invalid {nameof(SkipDocumentQueryExecutionComponent)}: {continuationToken}."));
+                }
             }
             else
             {
@@ -40,12 +50,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
 
             if (offsetContinuationToken.Offset > offsetCount)
             {
-                throw new ArgumentException("offset count in continuation token can not be greater than the offsetcount in the query.");
+                return TryCatch<IDocumentQueryExecutionComponent>.FromException(
+                        new MalformedContinuationTokenException("offset count in continuation token can not be greater than the offsetcount in the query."));
             }
 
-            return new SkipDocumentQueryExecutionComponent(
-                await createSourceCallback(offsetContinuationToken.SourceToken),
-                offsetContinuationToken.Offset);
+            return (await tryCreateSourceAsync(offsetContinuationToken.SourceToken))
+                .Try<IDocumentQueryExecutionComponent>((source) => new SkipDocumentQueryExecutionComponent(
+                source,
+                offsetContinuationToken.Offset));
         }
 
         public override bool IsDone
@@ -154,24 +166,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
             }
 
             /// <summary>
-            /// Parses the OffsetContinuationToken from it's string form.
-            /// </summary>
-            /// <param name="value">The string form to parse from.</param>
-            /// <returns>The parsed OffsetContinuationToken.</returns>
-            public static OffsetContinuationToken Parse(string value)
-            {
-                OffsetContinuationToken result;
-                if (!TryParse(value, out result))
-                {
-                    throw new ArgumentException($"Invalid OffsetContinuationToken: {value}");
-                }
-                else
-                {
-                    return result;
-                }
-            }
-
-            /// <summary>
             /// Tries to parse out the OffsetContinuationToken.
             /// </summary>
             /// <param name="value">The value to parse from.</param>
@@ -192,7 +186,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                 }
                 catch (JsonException ex)
                 {
-                    DefaultTrace.TraceWarning($"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)} Invalid continuation token {value} for offset~Component, exception: {ex}");
+                    DefaultTrace.TraceWarning($"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)} Invalid continuation token {value} for offset~Component: {ex}");
                     return false;
                 }
             }

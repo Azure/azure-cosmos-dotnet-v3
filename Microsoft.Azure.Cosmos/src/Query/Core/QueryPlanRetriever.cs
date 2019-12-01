@@ -5,15 +5,12 @@
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
-    using System.Diagnostics.Contracts;
-    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
-    using HttpConstants = Documents.HttpConstants;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using OperationType = Documents.OperationType;
     using PartitionKeyDefinition = Documents.PartitionKeyDefinition;
     using ResourceType = Documents.ResourceType;
-    using RuntimeConstants = Documents.RuntimeConstants;
 
     internal static class QueryPlanRetriever
     {
@@ -30,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         private static readonly string SupportedQueryFeaturesString = SupportedQueryFeatures.ToString();
 
-        public static Task<PartitionedQueryExecutionInfo> GetQueryPlanWithServiceInteropAsync(
+        public static async Task<PartitionedQueryExecutionInfo> GetQueryPlanWithServiceInteropAsync(
             CosmosQueryClient queryClient,
             SqlQuerySpec sqlQuerySpec,
             PartitionKeyDefinition partitionKeyDefinition,
@@ -55,12 +52,21 @@ namespace Microsoft.Azure.Cosmos.Query
             cancellationToken.ThrowIfCancellationRequested();
             QueryPlanHandler queryPlanHandler = new QueryPlanHandler(queryClient);
 
-            return queryPlanHandler.GetQueryPlanAsync(
-                    sqlQuerySpec,
-                    partitionKeyDefinition,
-                    QueryPlanRetriever.SupportedQueryFeatures,
-                    hasLogicalPartitionKey,
-                    cancellationToken);
+            TryCatch<PartitionedQueryExecutionInfo> tryGetQueryPlan = await queryPlanHandler.TryGetQueryPlanAsync(
+                sqlQuerySpec,
+                partitionKeyDefinition,
+                QueryPlanRetriever.SupportedQueryFeatures,
+                hasLogicalPartitionKey,
+                cancellationToken);
+
+            if (!tryGetQueryPlan.Succeeded)
+            {
+                throw new CosmosException(
+                    System.Net.HttpStatusCode.BadRequest,
+                    tryGetQueryPlan.Exception.ToString());
+            }
+
+            return tryGetQueryPlan.Result;
         }
 
         public static Task<PartitionedQueryExecutionInfo> GetQueryPlanThroughGatewayAsync(

@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
 
         private string contentLength;
 
-        private string subStatusCodeLiteral;
+        private SubStatusCodes? subStatusCode;
 
         private string retryAfterInternal;
 
@@ -44,7 +44,17 @@ namespace Microsoft.Azure.Cosmos
 
         internal TimeSpan? RetryAfter;
 
-        internal SubStatusCodes SubStatusCode = SubStatusCodes.Unknown;
+        internal SubStatusCodes SubStatusCode
+        {
+            get
+            {
+                return this.subStatusCode.GetValueOrDefault(SubStatusCodes.Unknown);
+            }
+            set
+            {
+                this.subStatusCode = value;
+            }
+        }
 
         internal long ContentLengthAsLong;
 
@@ -126,12 +136,11 @@ namespace Microsoft.Azure.Cosmos
         {
             get
             {
-                return this.subStatusCodeLiteral;
+                return this.subStatusCode.HasValue ? ((int)this.SubStatusCode).ToString(CultureInfo.InvariantCulture) : null;
             }
             set
             {
                 this.SubStatusCode = Headers.GetSubStatusCodes(value);
-                this.subStatusCodeLiteral = value;
             }
         }
 

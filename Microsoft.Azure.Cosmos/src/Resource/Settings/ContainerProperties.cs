@@ -142,7 +142,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// <para>
         /// Every resource within an Azure Cosmos DB database account needs to have a unique identifier. 
-        /// Unlike <see cref="Resource.ResourceId"/>, which is set internally, this Id is settable by the user and is not immutable.
+        /// Unlike <see cref="Documents.Resource.ResourceId"/>, which is set internally, this Id is settable by the user and is not immutable.
         /// </para>
         /// <para>
         /// When working with document resources, they too have this settable Id property. 
@@ -335,11 +335,15 @@ namespace Microsoft.Azure.Cosmos
         public int? DefaultTimeToLive { get; set; }
 
         /// <summary>
-        /// Yes.
+        /// Gets the self-link associated with the resource from the Azure Cosmos DB service.
         /// </summary>
-        //[JsonProperty(PropertyName = Constants.Properties.AnalyticalStorageTimeToLive, NullValueHandling = NullValueHandling.Ignore)]
-        [JsonIgnore]
-        public int? AnalyticalStorageTimeToLive { get; set; }
+        /// <value>The self-link associated with the resource.</value> 
+        /// <remarks>
+        /// A self-link is a static addressable Uri for each resource within a database account and follows the Azure Cosmos DB resource model.
+        /// E.g. a self-link for a document could be dbs/db_resourceid/colls/coll_resourceid/documents/doc_resourceid
+        /// </remarks>
+        [JsonProperty(PropertyName = Constants.Properties.SelfLink, NullValueHandling = NullValueHandling.Ignore)]
+        public string SelfLink { get; private set; }
 
         /// <summary>
         /// The function selects the right partition key constant mapping for <see cref="PartitionKey.None"/>
@@ -383,7 +387,7 @@ namespace Microsoft.Azure.Cosmos
         /// Initializes a new instance of the <see cref="ContainerProperties"/> class for the Azure Cosmos DB service.
         /// </summary>
         /// <param name="id">The Id of the resource in the Azure Cosmos service.</param>
-        /// <param name="partitionKeyDefinition">The partition key <see cref="PartitionKeyDefinition"/></param>
+        /// <param name="partitionKeyDefinition">The partition key definition.</param>
         internal ContainerProperties(string id, PartitionKeyDefinition partitionKeyDefinition)
         {
             this.Id = id;

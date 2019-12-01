@@ -246,7 +246,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Used in the compute gateway to support legacy gateway interface.
         /// </summary>
-        internal async Task<(PartitionedQueryExecutionInfo, (bool, QueryIterator))> TryExecuteQueryAsync(
+        internal async Task<((Exception, PartitionedQueryExecutionInfo), (bool, QueryIterator))> TryExecuteQueryAsync(
             QueryFeatures supportedQueryFeatures,
             QueryDefinition queryDefinition,
             string continuationToken,
@@ -291,12 +291,17 @@ namespace Microsoft.Azure.Cosmos
 
             QueryPlanHandler queryPlanHandler = new QueryPlanHandler(this.queryClient);
 
-            (PartitionedQueryExecutionInfo partitionedQueryExecutionInfo, bool supported) = await queryPlanHandler.GetQueryInfoAndIfSupportedAsync(
+            ((Exception exception, PartitionedQueryExecutionInfo partitionedQueryExecutionInfo), bool supported) = await queryPlanHandler.TryGetQueryInfoAndIfSupportedAsync(
                 supportedQueryFeatures,
                 queryDefinition.ToSqlQuerySpec(),
                 partitionKeyDefinition,
                 requestOptions.PartitionKey.HasValue,
                 cancellationToken);
+
+            if (exception != null)
+            {
+                return ((exception, null), (false, null));
+            }
 
             QueryIterator queryIterator;
             if (supported)
@@ -316,7 +321,7 @@ namespace Microsoft.Azure.Cosmos
                 queryIterator = null;
             }
 
-            return (partitionedQueryExecutionInfo, (supported, queryIterator));
+            return ((null, partitionedQueryExecutionInfo), (supported, queryIterator));
         }
 
         public override FeedIterator<T> GetItemQueryIterator<T>(

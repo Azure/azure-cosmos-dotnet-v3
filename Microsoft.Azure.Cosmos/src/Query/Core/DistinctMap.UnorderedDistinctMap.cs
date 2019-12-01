@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
     /// <summary>
     /// Partial wrapper
@@ -394,7 +395,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     }
                     else
                     {
-                        UInt128 uInt128Value = UInt128.FromByteArray(this.utf8Buffer, 0);
+                        UInt128 uInt128Value = UInt128.FromByteArray(this.utf8Buffer);
                         added = this.stringsLength16.Add(uInt128Value);
                     }
                 }
@@ -431,7 +432,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 return this.objects.Add(hash);
             }
 
-            public static UnorderdDistinctMap Create(string continuationToken)
+            public static TryCatch<DistinctMap> TryCreate(string continuationToken)
             {
                 HashSet<Number64> numbers = new HashSet<Number64>();
                 HashSet<uint> stringsLength4 = new HashSet<uint>();
@@ -448,20 +449,26 @@ namespace Microsoft.Azure.Cosmos.Query
                     CosmosElement cosmosElement = CosmosElement.CreateFromBuffer(binaryBuffer);
                     if (!(cosmosElement is CosmosObject hashDictionary))
                     {
-                        throw new ArgumentException($"{nameof(UnorderdDistinctMap)} continuation token was malformed.");
+                        return TryCatch<DistinctMap>.FromException(
+                            new MalformedContinuationTokenException(
+                                $"{nameof(UnorderdDistinctMap)} continuation token was malformed."));
                     }
 
                     // Numbers
                     if (!hashDictionary.TryGetValue(UnorderdDistinctMap.NumbersName, out CosmosArray numbersArray))
                     {
-                        throw new ArgumentException($"{nameof(UnorderdDistinctMap)} continuation token was malformed.");
+                        return TryCatch<DistinctMap>.FromException(
+                            new MalformedContinuationTokenException(
+                                $"{nameof(UnorderdDistinctMap)} continuation token was malformed."));
                     }
 
                     foreach (CosmosElement rawNumber in numbersArray)
                     {
                         if (!(rawNumber is CosmosNumber64 number))
                         {
-                            throw new ArgumentException($"{nameof(UnorderdDistinctMap)} continuation token was malformed.");
+                            return TryCatch<DistinctMap>.FromException(
+                                new MalformedContinuationTokenException(
+                                    $"{nameof(UnorderdDistinctMap)} continuation token was malformed."));
                         }
 
                         numbers.Add(number.GetValue());
@@ -470,14 +477,18 @@ namespace Microsoft.Azure.Cosmos.Query
                     // Strings Length 4
                     if (!hashDictionary.TryGetValue(UnorderdDistinctMap.StringsLength4Name, out CosmosArray stringsLength4Array))
                     {
-                        throw new ArgumentException($"{nameof(UnorderdDistinctMap)} continuation token was malformed.");
+                        return TryCatch<DistinctMap>.FromException(
+                                new MalformedContinuationTokenException(
+                                    $"{nameof(UnorderdDistinctMap)} continuation token was malformed."));
                     }
 
                     foreach (CosmosElement rawStringLength4 in stringsLength4Array)
                     {
                         if (!(rawStringLength4 is CosmosUInt32 stringlength4))
                         {
-                            throw new ArgumentException($"{nameof(UnorderdDistinctMap)} continuation token was malformed.");
+                            return TryCatch<DistinctMap>.FromException(
+                                new MalformedContinuationTokenException(
+                                    $"{nameof(UnorderdDistinctMap)} continuation token was malformed."));
                         }
 
                         stringsLength4.Add(stringlength4.GetValue());
@@ -486,14 +497,18 @@ namespace Microsoft.Azure.Cosmos.Query
                     // Strings Length 8
                     if (!hashDictionary.TryGetValue(UnorderdDistinctMap.StringsLength8Name, out CosmosArray stringsLength8Array))
                     {
-                        throw new ArgumentException($"{nameof(UnorderdDistinctMap)} continuation token was malformed.");
+                        return TryCatch<DistinctMap>.FromException(
+                            new MalformedContinuationTokenException(
+                                $"{nameof(UnorderdDistinctMap)} continuation token was malformed."));
                     }
 
                     foreach (CosmosElement rawStringLength8 in stringsLength8Array)
                     {
                         if (!(rawStringLength8 is CosmosInt64 stringlength8))
                         {
-                            throw new ArgumentException($"{nameof(UnorderdDistinctMap)} continuation token was malformed.");
+                            return TryCatch<DistinctMap>.FromException(
+                                new MalformedContinuationTokenException(
+                                    $"{nameof(UnorderdDistinctMap)} continuation token was malformed."));
                         }
 
                         stringsLength8.Add((ulong)stringlength8.GetValue());
@@ -515,16 +530,20 @@ namespace Microsoft.Azure.Cosmos.Query
                     CosmosElement rawSimpleValues = hashDictionary[UnorderdDistinctMap.SimpleValuesName];
                     if (!(rawSimpleValues is CosmosString simpleValuesString))
                     {
-                        throw new ArgumentException($"{nameof(UnorderdDistinctMap)} continuation token was malformed.");
+                        return TryCatch<DistinctMap>.FromException(
+                            new MalformedContinuationTokenException(
+                                $"{nameof(UnorderdDistinctMap)} continuation token was malformed."));
                     }
 
                     if (!Enum.TryParse<SimpleValues>(simpleValuesString.Value, out simpleValues))
                     {
-                        throw new ArgumentException($"{nameof(UnorderdDistinctMap)} continuation token was malformed.");
+                        return TryCatch<DistinctMap>.FromException(
+                            new MalformedContinuationTokenException(
+                                $"{nameof(UnorderdDistinctMap)} continuation token was malformed."));
                     }
                 }
 
-                return new UnorderdDistinctMap(
+                return TryCatch<DistinctMap>.FromResult(new UnorderdDistinctMap(
                     numbers,
                     stringsLength4,
                     stringsLength8,
@@ -532,7 +551,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     stringsLength16Plus,
                     arrays,
                     objects,
-                    simpleValues);
+                    simpleValues));
             }
 
             private static HashSet<UInt128> Parse128BitHashes(CosmosObject hashDictionary, string propertyName)
@@ -540,18 +559,19 @@ namespace Microsoft.Azure.Cosmos.Query
                 HashSet<UInt128> hashSet = new HashSet<UInt128>();
                 if (!hashDictionary.TryGetValue(propertyName, out CosmosArray array))
                 {
-                    throw new ArgumentException($"{nameof(UnorderdDistinctMap)} continuation token was malformed.");
+                    throw new MalformedContinuationTokenException(
+                        $"{nameof(UnorderdDistinctMap)} continuation token was malformed.");
                 }
 
                 foreach (CosmosElement item in array)
                 {
                     if (!(item is CosmosBinary binary))
                     {
-                        throw new ArgumentException($"{nameof(UnorderdDistinctMap)} continuation token was malformed.");
+                        throw new MalformedContinuationTokenException(
+                            $"{nameof(UnorderdDistinctMap)} continuation token was malformed.");
                     }
 
-                    // Todo have this method work with span<byte> instead to avoid the allocation.
-                    UInt128 uint128 = UInt128.FromByteArray(binary.Value.ToArray());
+                    UInt128 uint128 = UInt128.FromByteArray(binary.Value.Span);
                     hashSet.Add(uint128);
                 }
 

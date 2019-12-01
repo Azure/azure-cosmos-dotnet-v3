@@ -111,7 +111,7 @@ FROM (
     OFFSET 90 LIMIT 2147483647
 ) AS r0 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":62,"end":88},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -128,7 +128,7 @@ FROM (
     OFFSET 90 LIMIT 5
 ) AS r0 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":62,"end":79},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -145,7 +145,7 @@ FROM (
     OFFSET 5 LIMIT 5
 ) AS r0 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":62,"end":78},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -167,7 +167,7 @@ FROM (
     OFFSET 10 LIMIT 20
 ) AS r1 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":86,"end":102},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."},{"severity":"Error","location":{"start":137,"end":155},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -253,7 +253,7 @@ FROM (
     ) AS r8
 ) AS r9 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":230,"end":247},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."},{"severity":"Error","location":{"start":367,"end":392},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."},{"severity":"Error","location":{"start":522,"end":538},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."},{"severity":"Error","location":{"start":648,"end":653},"code":"SC2203","message":"'TOP' is not supported in subqueries."},{"severity":"Error","location":{"start":707,"end":732},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."},{"severity":"Error","location":{"start":879,"end":904},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":905,"end":923},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."},{"severity":"Error","location":{"start":1079,"end":1103},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":1104,"end":1129},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."},{"severity":"Error","location":{"start":1190,"end":1207},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
 </Results>

@@ -27,11 +27,31 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             CosmosClientSideRequestStatistics cosmosClientSideRequestStatistics1 = new CosmosClientSideRequestStatistics();
             cosmosClientSideRequestStatistics1.ContactedReplicas.Add(new Uri("https://one.com"));
-            PointOperationStatistics pointOperation1 = new PointOperationStatistics(Guid.NewGuid().ToString(), HttpStatusCode.OK, SubStatusCodes.Unknown, 0, string.Empty, HttpMethod.Get, new Uri("http://localhost"), cosmosClientSideRequestStatistics1);
+            PointOperationStatistics pointOperation1 = new PointOperationStatistics(
+                activityId: Guid.NewGuid().ToString(),
+                statusCode: HttpStatusCode.OK,
+                subStatusCode: SubStatusCodes.Unknown,
+                requestCharge: 0,
+                errorMessage: string.Empty,
+                method: HttpMethod.Get,
+                requestUri: new Uri("http://localhost"),
+                requestSessionToken: null,
+                responseSessionToken: null,
+                clientSideRequestStatistics: cosmosClientSideRequestStatistics1);
 
             CosmosClientSideRequestStatistics cosmosClientSideRequestStatistics2 = new CosmosClientSideRequestStatistics();
             cosmosClientSideRequestStatistics2.ContactedReplicas.Add(new Uri("https://two.com"));
-            PointOperationStatistics pointOperation2 = new PointOperationStatistics(Guid.NewGuid().ToString(), HttpStatusCode.OK, SubStatusCodes.Unknown, 0, string.Empty, HttpMethod.Get, new Uri("http://localhost"), cosmosClientSideRequestStatistics2);
+            PointOperationStatistics pointOperation2 = new PointOperationStatistics(
+                activityId: Guid.NewGuid().ToString(),
+                statusCode: HttpStatusCode.OK,
+                subStatusCode: SubStatusCodes.Unknown,
+                requestCharge: 0,
+                errorMessage: string.Empty,
+                method: HttpMethod.Get,
+                requestUri: new Uri("http://localhost"),
+                requestSessionToken: null,
+                responseSessionToken: null,
+                clientSideRequestStatistics: cosmosClientSideRequestStatistics2);
 
             itemBatchOperationStatistics.AppendDiagnostics(pointOperation1);
             itemBatchOperationStatistics.AppendDiagnostics(pointOperation2);
@@ -49,11 +69,31 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             CosmosClientSideRequestStatistics cosmosClientSideRequestStatistics1 = new CosmosClientSideRequestStatistics();
             cosmosClientSideRequestStatistics1.ContactedReplicas.Add(new Uri("https://one.com"));
-            PointOperationStatistics pointOperation1 = new PointOperationStatistics(Guid.NewGuid().ToString(), HttpStatusCode.OK, SubStatusCodes.Unknown, 0, string.Empty, HttpMethod.Get, new Uri("http://localhost"), cosmosClientSideRequestStatistics1);
+            PointOperationStatistics pointOperation1 = new PointOperationStatistics(
+                activityId: Guid.NewGuid().ToString(),
+                statusCode: HttpStatusCode.OK,
+                subStatusCode: SubStatusCodes.Unknown,
+                requestCharge: 0,
+                errorMessage: string.Empty,
+                method: HttpMethod.Get,
+                requestUri: new Uri("http://localhost"),
+                requestSessionToken: null,
+                responseSessionToken: null,
+                clientSideRequestStatistics: cosmosClientSideRequestStatistics1);
 
             CosmosClientSideRequestStatistics cosmosClientSideRequestStatistics2 = new CosmosClientSideRequestStatistics();
             cosmosClientSideRequestStatistics2.ContactedReplicas.Add(new Uri("https://two.com"));
-            PointOperationStatistics pointOperation2 = new PointOperationStatistics(Guid.NewGuid().ToString(), HttpStatusCode.OK, SubStatusCodes.Unknown, 0, string.Empty, HttpMethod.Get, new Uri("http://localhost"), cosmosClientSideRequestStatistics2);
+            PointOperationStatistics pointOperation2 = new PointOperationStatistics(
+                activityId: Guid.NewGuid().ToString(),
+                statusCode: HttpStatusCode.OK,
+                subStatusCode: SubStatusCodes.Unknown,
+                requestCharge: 0,
+                errorMessage: string.Empty,
+                method: HttpMethod.Get,
+                requestUri: new Uri("http://localhost"),
+                requestSessionToken: null,
+                responseSessionToken: null,
+                clientSideRequestStatistics: cosmosClientSideRequestStatistics2);
 
             itemBatchOperationStatistics.AppendDiagnostics(pointOperation1);
             itemBatchOperationStatistics.AppendDiagnostics(pointOperation2);

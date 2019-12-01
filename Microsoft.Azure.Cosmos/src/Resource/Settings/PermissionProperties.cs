@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="id">The permission id.</param>
         /// <param name="permissionMode">The <see cref="PermissionMode"/>.</param>
         /// <param name="container">The <see cref="Container"/> object.</param>
-        /// <param name="resourcePartitionKey">(Optional) The partition key value for the permission in the Azure Cosmos DB service. see <see cref="PartitionKey"/></param>
+        /// <param name="resourcePartitionKey">(Optional) The partition key value for the permission in the Azure Cosmos DB service.</param>
         public PermissionProperties(string id,
             PermissionMode permissionMode,
             Container container,
@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.Id = id;
             this.PermissionMode = permissionMode;
-            ResourceUri = ((ContainerCore)container).ClientContext.CreateLink(
+            this.ResourceUri = ((ContainerCore)container).ClientContext.CreateLink(
                     parentLink: ((ContainerCore)container).LinkUri.OriginalString,
                     uriPathSegment: Paths.DocumentsPathSegment,
                     id: id).OriginalString;
@@ -174,6 +174,17 @@ namespace Microsoft.Azure.Cosmos
         [JsonConverter(typeof(UnixDateTimeConverter))]
         [JsonProperty(PropertyName = Constants.Properties.LastModified, NullValueHandling = NullValueHandling.Ignore)]
         public DateTime? LastModified { get; private set; }
+
+        /// <summary>
+        /// Gets the self-link associated with the resource from the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>The self-link associated with the resource.</value> 
+        /// <remarks>
+        /// A self-link is a static addressable Uri for each resource within a database account and follows the Azure Cosmos DB resource model.
+        /// E.g. a self-link for a document could be dbs/db_resourceid/colls/coll_resourceid/documents/doc_resourceid
+        /// </remarks>
+        [JsonProperty(PropertyName = Constants.Properties.SelfLink, NullValueHandling = NullValueHandling.Ignore)]
+        public string SelfLink { get; private set; }
 
         /// <summary>
         /// Gets the Resource Id associated with the resource in the Azure Cosmos DB service.

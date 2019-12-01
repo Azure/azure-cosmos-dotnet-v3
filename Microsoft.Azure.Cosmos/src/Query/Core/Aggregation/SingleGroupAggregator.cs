@@ -6,10 +6,11 @@ namespace Microsoft.Azure.Cosmos.Query
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Aggregation;
+    using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
     /// <summary>
     /// Aggregates all the projections for a single grouping.
@@ -29,42 +30,50 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public abstract string GetContinuationToken();
 
-        public static SingleGroupAggregator Create(
-            CosmosQueryClient queryClient,
+        public static TryCatch<SingleGroupAggregator> TryCreate(
             AggregateOperator[] aggregates,
             IReadOnlyDictionary<string, AggregateOperator?> aggregateAliasToAggregateType,
             IReadOnlyList<string> orderedAliases,
             bool hasSelectValue,
             string continuationToken)
         {
-            SingleGroupAggregator aggregateValues;
+            if (aggregates == null)
+            {
+                throw new ArgumentNullException(nameof(aggregates));
+            }
+
+            if (aggregateAliasToAggregateType == null)
+            {
+                throw new ArgumentNullException(nameof(aggregates));
+            }
+
+            TryCatch<SingleGroupAggregator> tryCreateSingleGroupAggregator;
             if (hasSelectValue)
             {
                 if (aggregates != null && aggregates.Any())
                 {
                     // SELECT VALUE <AGGREGATE>
-                    aggregateValues = SelectValueAggregateValues.Create(
+                    tryCreateSingleGroupAggregator = SelectValueAggregateValues.TryCreate(
                         aggregates[0],
                         continuationToken);
                 }
                 else
                 {
                     // SELECT VALUE <NON AGGREGATE>
-                    aggregateValues = SelectValueAggregateValues.Create(
+                    tryCreateSingleGroupAggregator = SelectValueAggregateValues.TryCreate(
                         aggregateOperator: null,
                         continuationToken: continuationToken);
                 }
             }
             else
             {
-                aggregateValues = SelectListAggregateValues.Create(
-                    queryClient,
+                tryCreateSingleGroupAggregator = SelectListAggregateValues.TryCreate(
                     aggregateAliasToAggregateType,
                     orderedAliases,
                     continuationToken);
             }
 
-            return aggregateValues;
+            return tryCreateSingleGroupAggregator;
         }
 
         /// <summary>
@@ -85,10 +94,10 @@ namespace Microsoft.Azure.Cosmos.Query
                 this.aggregateValue = aggregateValue;
             }
 
-            public static SelectValueAggregateValues Create(AggregateOperator? aggregateOperator, string continuationToken)
+            public static TryCatch<SingleGroupAggregator> TryCreate(AggregateOperator? aggregateOperator, string continuationToken)
             {
-                AggregateValue aggregateValue = AggregateValue.Create(aggregateOperator, continuationToken);
-                return new SelectValueAggregateValues(aggregateValue);
+                return AggregateValue.TryCreate(aggregateOperator, continuationToken)
+                    .Try((aggregateValue) => (SingleGroupAggregator)new SelectValueAggregateValues(aggregateValue));
             }
 
             public override void AddValues(CosmosElement values)
@@ -168,8 +177,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 return cosmosObject.ToString();
             }
 
-            public static SelectListAggregateValues Create(
-                CosmosQueryClient cosmosQueryClient,
+            public static TryCatch<SingleGroupAggregator> TryCreate(
                 IReadOnlyDictionary<string, AggregateOperator?> aggregateAliasToAggregateType,
                 IReadOnlyList<string> orderedAliases,
                 string continuationToken)
@@ -179,8 +187,9 @@ namespace Microsoft.Azure.Cosmos.Query
                 {
                     if (!CosmosElement.TryParse(continuationToken, out aliasToContinuationToken))
                     {
-                        throw cosmosQueryClient.CreateBadRequestException(
-                            $"{nameof(SelectListAggregateValues)} continuation token is malformed: {continuationToken}.");
+                        return TryCatch<SingleGroupAggregator>.FromException(
+                            new MalformedContinuationTokenException(
+                                $"{nameof(SelectListAggregateValues)} continuation token is malformed: {continuationToken}."));
                     }
                 }
                 else
@@ -198,8 +207,9 @@ namespace Microsoft.Azure.Cosmos.Query
                     {
                         if (!(aliasToContinuationToken[alias] is CosmosString parsedAliasContinuationToken))
                         {
-                            throw cosmosQueryClient.CreateBadRequestException(
-                            $"{nameof(SelectListAggregateValues)} continuation token is malformed: {continuationToken}.");
+                            return TryCatch<SingleGroupAggregator>.FromException(
+                                new MalformedContinuationTokenException(
+                                    $"{nameof(SelectListAggregateValues)} continuation token is malformed: {continuationToken}."));
                         }
 
                         aliasContinuationToken = parsedAliasContinuationToken.Value;
@@ -209,10 +219,20 @@ namespace Microsoft.Azure.Cosmos.Query
                         aliasContinuationToken = null;
                     }
 
-                    groupingTable[alias] = AggregateValue.Create(aggregateOperator, aliasContinuationToken);
+                    TryCatch<AggregateValue> tryCreateAggregateValue = AggregateValue.TryCreate(
+                        aggregateOperator,
+                        aliasContinuationToken);
+                    if (tryCreateAggregateValue.Succeeded)
+                    {
+                        groupingTable[alias] = tryCreateAggregateValue.Result;
+                    }
+                    else
+                    {
+                        return TryCatch<SingleGroupAggregator>.FromException(tryCreateAggregateValue.Exception);
+                    }
                 }
 
-                return new SelectListAggregateValues(groupingTable, orderedAliases);
+                return TryCatch<SingleGroupAggregator>.FromResult(new SelectListAggregateValues(groupingTable, orderedAliases));
             }
 
             public override void AddValues(CosmosElement values)
@@ -259,16 +279,16 @@ namespace Microsoft.Azure.Cosmos.Query
                 return this.Result.ToString();
             }
 
-            public static AggregateValue Create(AggregateOperator? aggregateOperator, string continuationToken)
+            public static TryCatch<AggregateValue> TryCreate(AggregateOperator? aggregateOperator, string continuationToken)
             {
-                AggregateValue value;
+                TryCatch<AggregateValue> value;
                 if (aggregateOperator.HasValue)
                 {
-                    value = AggregateAggregateValue.Create(aggregateOperator.Value, continuationToken);
+                    value = AggregateAggregateValue.TryCreate(aggregateOperator.Value, continuationToken);
                 }
                 else
                 {
-                    value = ScalarAggregateValue.Create(continuationToken);
+                    value = ScalarAggregateValue.TryCreate(continuationToken);
                 }
 
                 return value;
@@ -301,38 +321,38 @@ namespace Microsoft.Azure.Cosmos.Query
                     return this.aggregator.GetContinuationToken();
                 }
 
-                public static AggregateAggregateValue Create(
+                public static TryCatch<AggregateValue> TryCreate(
                     AggregateOperator aggregateOperator,
                     string continuationToken)
                 {
-                    IAggregator aggregator;
+                    TryCatch<IAggregator> tryCreateAggregator;
                     switch (aggregateOperator)
                     {
                         case AggregateOperator.Average:
-                            aggregator = AverageAggregator.Create(continuationToken);
+                            tryCreateAggregator = AverageAggregator.TryCreate(continuationToken);
                             break;
 
                         case AggregateOperator.Count:
-                            aggregator = CountAggregator.Create(continuationToken);
+                            tryCreateAggregator = CountAggregator.TryCreate(continuationToken);
                             break;
 
                         case AggregateOperator.Max:
-                            aggregator = MinMaxAggregator.CreateMaxAggregator(continuationToken);
+                            tryCreateAggregator = MinMaxAggregator.TryCreateMaxAggregator(continuationToken);
                             break;
 
                         case AggregateOperator.Min:
-                            aggregator = MinMaxAggregator.CreateMinAggregator(continuationToken);
+                            tryCreateAggregator = MinMaxAggregator.TryCreateMinAggregator(continuationToken);
                             break;
 
                         case AggregateOperator.Sum:
-                            aggregator = SumAggregator.Create(continuationToken);
+                            tryCreateAggregator = SumAggregator.TryCreate(continuationToken);
                             break;
 
                         default:
                             throw new ArgumentException($"Unknown {nameof(AggregateOperator)}: {aggregateOperator}.");
                     }
 
-                    return new AggregateAggregateValue(aggregator);
+                    return tryCreateAggregator.Try<AggregateValue>((aggregator) => new AggregateAggregateValue(aggregator));
                 }
             }
 
@@ -377,7 +397,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     return continuationToken;
                 }
 
-                public static ScalarAggregateValue Create(string continuationToken)
+                public static TryCatch<AggregateValue> TryCreate(string continuationToken)
                 {
                     CosmosElement value;
                     bool initialized;
@@ -387,14 +407,16 @@ namespace Microsoft.Azure.Cosmos.Query
                             continuationToken,
                             out CosmosObject rawContinuationToken))
                         {
-                            throw new ArgumentException($"Invalid {nameof(ScalarAggregateValue)}: {continuationToken}");
+                            return TryCatch<AggregateValue>.FromException(
+                                new MalformedContinuationTokenException($"Invalid {nameof(ScalarAggregateValue)}: {continuationToken}"));
                         }
 
                         if (!rawContinuationToken.TryGetValue<CosmosBoolean>(
                             nameof(ScalarAggregateValue.initialized),
                             out CosmosBoolean rawInitialized))
                         {
-                            throw new ArgumentException($"Invalid {nameof(ScalarAggregateValue)}: {continuationToken}");
+                            return TryCatch<AggregateValue>.FromException(
+                                new MalformedContinuationTokenException($"Invalid {nameof(ScalarAggregateValue)}: {continuationToken}"));
                         }
 
                         if (!rawContinuationToken.TryGetValue(nameof(ScalarAggregateValue.value), out value))
@@ -410,7 +432,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         initialized = false;
                     }
 
-                    return new ScalarAggregateValue(value, initialized);
+                    return TryCatch<AggregateValue>.FromResult(new ScalarAggregateValue(value, initialized));
                 }
 
                 public override void AddValue(CosmosElement aggregateValue)
