@@ -276,6 +276,25 @@
         }
 
         /// <summary>
+        /// MemoryStreams cannot be used after they are disposed.
+        /// However, disposal is not a requirement for MemoryStreams.
+        /// Use a derived implementation to allow re-use since the SDK
+        /// currently disposes the input streams while disposing the response.
+        /// </summary>
+        private class PoolableMemoryStream : MemoryStream
+        {
+           public PoolableMemoryStream(byte[] buffer, int index, int count, bool writable, bool publiclyVisible)
+                : base(buffer, index, count, writable, publiclyVisible)
+            {
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                // Don't invoke dispose on base. MemoryStream need not be disposed.
+            }
+        }
+
+        /// <summary>
         /// Simplistic implementation of a pool for MemoryStream to avoid repeated allocations.
         /// Expects that the requirement is for MemoryStreams all with fixed and similar buffer size,
         /// and that the buffer is publicly visible.
@@ -317,7 +336,7 @@
             {
                 byte[] buffer = new byte[this.streamSize];
                 buffer[this.streamSize - 1] = 0;
-                return new MemoryStream(buffer, index: 0, count: streamSize, writable: true, publiclyVisible: true);
+                return new PoolableMemoryStream(buffer, index: 0, count: streamSize, writable: true, publiclyVisible: true);
             }
         }
     }

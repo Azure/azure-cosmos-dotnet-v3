@@ -330,11 +330,11 @@ namespace Microsoft.Azure.Cosmos
             if (disposing && !this.isDisposed)
             {
                 this.isDisposed = true;
-                //if (this.ResourceStream != null)
-                //{
-                //    this.ResourceStream.Dispose();
-                //    this.ResourceStream = null;
-                //}
+                if (this.ResourceStream != null)
+                {
+                    this.ResourceStream.Dispose();
+                    this.ResourceStream = null;
+                }
             }
         }
     }

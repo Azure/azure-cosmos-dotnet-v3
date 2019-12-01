@@ -299,20 +299,19 @@ namespace Microsoft.Azure.Cosmos
                     Debug.Assert(serverRequestPayload != null, "Server request payload expected to be non-null");
 
                     TimeSpan start = this.stopwatch.Elapsed;
-                    //ResponseMessage responseMessage = await this.cosmosClientContext.ProcessResourceOperationStreamAsync(
-                    //    this.cosmosContainer.LinkUri,
-                    //    ResourceType.Document,
-                    //    OperationType.Batch,
-                    //    new RequestOptions(),
-                    //    cosmosContainerCore: this.cosmosContainer,
-                    //    partitionKey: null,
-                    //    streamPayload: serverRequestPayload,
-                    //    requestEnricher: requestMessage => BatchAsyncContainerExecutor.AddHeadersToRequestMessage(requestMessage, serverRequest.PartitionKeyRangeId),
-                    //    cancellationToken: cancellationToken).ConfigureAwait(false);
-                    await Task.CompletedTask.ConfigureAwait(false);
-                    TransactionalBatchResponse serverResponse =
-                        new TransactionalBatchResponse(System.Net.HttpStatusCode.OK, SubStatusCodes.Unknown, null, serverRequest.Operations);
-                        //await TransactionalBatchResponse.FromResponseMessageAsync(responseMessage, serverRequest, this.cosmosClientContext.CosmosSerializer).ConfigureAwait(false);
+                    ResponseMessage responseMessage = await this.cosmosClientContext.ProcessResourceOperationStreamAsync(
+                        this.cosmosContainer.LinkUri,
+                        ResourceType.Document,
+                        OperationType.Batch,
+                        new RequestOptions(),
+                        cosmosContainerCore: this.cosmosContainer,
+                        partitionKey: null,
+                        streamPayload: serverRequestPayload,
+                        requestEnricher: requestMessage => BatchAsyncContainerExecutor.AddHeadersToRequestMessage(requestMessage, serverRequest.PartitionKeyRangeId),
+                        cancellationToken: cancellationToken).ConfigureAwait(false);
+                    //await Task.CompletedTask.ConfigureAwait(false);
+                    TransactionalBatchResponse serverResponse = // new TransactionalBatchResponse(System.Net.HttpStatusCode.OK, SubStatusCodes.Unknown, null, serverRequest.Operations);
+                    await TransactionalBatchResponse.FromResponseMessageAsync(responseMessage, serverRequest, this.cosmosClientContext.CosmosSerializer).ConfigureAwait(false);
                     this.countsAndLatencies.Add(
                         (serverRequest.Operations.Count,
                         serverResponse.Any(r => r.StatusCode == (System.Net.HttpStatusCode)429),
