@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos
         public static bool TryConvertMemoryStreamToMemory(Stream stream, out Memory<byte> memory)
         {
             MemoryStream memStream = stream as MemoryStream;
-            if(memStream == null)
+            if (memStream == null)
             {
                 memory = null;
                 return false;

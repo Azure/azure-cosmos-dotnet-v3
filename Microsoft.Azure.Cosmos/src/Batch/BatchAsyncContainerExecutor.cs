@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             Task<ResponseMessage> response = this.TryAddAsync(operation, itemRequestOptions, cancellationToken);
-            if(response != null)
+            if (response != null)
             {
                 return response;
             }
@@ -140,7 +140,7 @@ namespace Microsoft.Azure.Cosmos
         {
             BatchAsyncContainerExecutor.ValidateOperation(operation, itemRequestOptions);
 
-            if(this.collectionRoutingMap == null || this.partitionKeyDefinition == null)
+            if (this.collectionRoutingMap == null || this.partitionKeyDefinition == null)
             {
                 return null;
             }
