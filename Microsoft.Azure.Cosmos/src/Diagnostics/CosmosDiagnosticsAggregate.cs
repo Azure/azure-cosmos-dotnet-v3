@@ -8,9 +8,22 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Text;
     using Newtonsoft.Json;
 
-    internal class CosmosDiagnosticsAggregate : CosmosDiagnostics
+    internal class CosmosDiagnosticsAggregate : CosmosDiagnostics, ICosmosDiagnosticsJsonWriter
     {
         public IList<CosmosDiagnostics> Diagnostics = new List<CosmosDiagnostics>();
+
+        public void AppendJson(StringBuilder stringBuilder)
+        {
+            if (this.Diagnostics.Count == 0)
+            {
+                return;
+            }
+
+            foreach (CosmosDiagnostics diagnostics in this.Diagnostics)
+            {
+                stringBuilder.Append(diagnostics.ToString());
+            }
+        }
 
         public override string ToString()
         {
@@ -20,11 +33,7 @@ namespace Microsoft.Azure.Cosmos.Query
             }
 
             StringBuilder stringBuilder = new StringBuilder();
-            foreach (CosmosDiagnostics diagnostics in this.Diagnostics)
-            {
-                stringBuilder.Append(diagnostics.ToString());
-            }
-
+            this.AppendJson(stringBuilder);
             return stringBuilder.ToString();
         }
     }

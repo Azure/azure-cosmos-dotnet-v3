@@ -78,6 +78,7 @@ namespace Microsoft.Azure.Cosmos
                         return true;
                     }
                 }
+
                 return false;
             }
         }

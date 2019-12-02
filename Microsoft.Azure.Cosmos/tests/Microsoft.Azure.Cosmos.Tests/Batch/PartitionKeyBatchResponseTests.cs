@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 serializer: new CosmosJsonDotNetSerializer(),
             cancellationToken: default(CancellationToken));
 
-            CosmosDiagnostics diagnostics = new PointOperationStatistics(
+            PointOperationStatistics diagnostics = new PointOperationStatistics(
                 activityId: Guid.NewGuid().ToString(),
                 statusCode: HttpStatusCode.OK,
                 subStatusCode: SubStatusCodes.Unknown,

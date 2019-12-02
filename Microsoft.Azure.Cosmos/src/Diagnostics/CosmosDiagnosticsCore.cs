@@ -9,7 +9,10 @@ namespace Microsoft.Azure.Cosmos
     using System.Text;
 
     /// <summary>
-    ///  Contains the cosmos diagnostic information for the current request to Azure Cosmos DB service.
+    /// This repesents the core diagnostics object used in the SDK.
+    /// This object gets created on the initial request and passed down
+    /// through the pipeline appending information as it goes into a list
+    /// where it is lazily converted to a JSON string.
     /// </summary>
     internal class CosmosDiagnosticsCore : CosmosDiagnostics
     {
@@ -84,9 +87,14 @@ namespace Microsoft.Azure.Cosmos
             this.scopes.Add(diagnosticsScope);
         }
 
-        internal void AddJsonAttribute(string name, dynamic property)
+        internal void AddJsonAttribute(string name, ICosmosDiagnosticsJsonWriter property)
         {
             this.scopes.Add(new CosmosDiagnosticScopeAttribute(name, property));
+        }
+
+        internal void AddStringAttribute(string name, string property)
+        {
+            this.scopes.Add(new CosmosDiagnosticScopeStringAttribute(name, property));
         }
 
         private void AppendJsonRetryInfo(StringBuilder stringBuilder)
@@ -109,19 +117,44 @@ namespace Microsoft.Azure.Cosmos
             stringBuilder.Append("\"");
         }
 
-        private interface ICosmosDiagnosticsJsonWriter
+        /// <summary>
+        /// Supports appending a single string value to the list
+        /// </summary>
+        private struct CosmosDiagnosticScopeStringAttribute : ICosmosDiagnosticsJsonWriter
         {
-            void AppendJson(StringBuilder stringBuilder);
+            private readonly string name;
+            private readonly string jsonValue;
+
+            internal CosmosDiagnosticScopeStringAttribute(
+                string name,
+                string jsonValue)
+            {
+                this.name = name;
+                this.jsonValue = jsonValue;
+            }
+
+            public void AppendJson(StringBuilder stringBuilder)
+            {
+                stringBuilder.Append("\"");
+                stringBuilder.Append(this.name);
+                stringBuilder.Append("\":\"");
+                stringBuilder.Append(this.jsonValue);
+                stringBuilder.Append("\"");
+            }
         }
 
+        /// <summary>
+        /// Supports appending an object that implements ICosmosDiagnosticsJsonWriter so
+        /// it can be lazy.
+        /// </summary>
         private struct CosmosDiagnosticScopeAttribute : ICosmosDiagnosticsJsonWriter
         {
             private readonly string name;
-            private readonly dynamic jsonValue;
+            private readonly ICosmosDiagnosticsJsonWriter jsonValue;
 
             internal CosmosDiagnosticScopeAttribute(
                 string name,
-                dynamic jsonValue)
+                ICosmosDiagnosticsJsonWriter jsonValue)
             {
                 this.name = name;
                 this.jsonValue = jsonValue;
@@ -132,10 +165,15 @@ namespace Microsoft.Azure.Cosmos
                 stringBuilder.Append("\"");
                 stringBuilder.Append(this.name);
                 stringBuilder.Append("\":");
-                stringBuilder.Append(this.jsonValue);
+                this.jsonValue.AppendJson(stringBuilder);
             }
         }
 
+        /// <summary>
+        /// This represents a single scope in the diagnostics.
+        /// A scope is a section of code that is important to track.
+        /// For example there is a scope for serialization, retry handlers, etc..
+        /// </summary>
         internal struct CosmosDiagnosticsScope : IDisposable, ICosmosDiagnosticsJsonWriter
         {
             private string Name { get; }

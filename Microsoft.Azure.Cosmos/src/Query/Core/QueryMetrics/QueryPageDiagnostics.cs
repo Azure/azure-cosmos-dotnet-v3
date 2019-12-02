@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System;
     using System.Text;
 
-    internal sealed class QueryPageDiagnostics
+    internal sealed class QueryPageDiagnostics : ICosmosDiagnosticsJsonWriter
     {
         public QueryPageDiagnostics(
             string partitionKeyRangeId,
@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         internal SchedulingTimeSpan SchedulingTimeSpan { get; }
 
-        public void AppendToBuilder(StringBuilder stringBuilder)
+        public void AppendJson(StringBuilder stringBuilder)
         {
             string requestDiagnosticsString = string.Empty;
             if (this.RequestDiagnostics != null)
@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Query
         public override string ToString()
         {
             StringBuilder stringBuilder = new StringBuilder();
-            this.AppendToBuilder(stringBuilder);
+            this.AppendJson(stringBuilder);
             return stringBuilder.ToString();
         }
     }

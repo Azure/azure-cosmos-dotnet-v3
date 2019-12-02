@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using Newtonsoft.Json;
     using static Microsoft.Azure.Cosmos.CosmosClientSideRequestStatistics;
 
-    internal class PointOperationStatistics : CosmosDiagnostics
+    internal class PointOperationStatistics : CosmosDiagnostics, ICosmosDiagnosticsJsonWriter
     {
         private static JsonSerializerSettings SerializerSettings = new JsonSerializerSettings()
         {
@@ -95,6 +95,11 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
             return JsonConvert.SerializeObject(this, PointOperationStatistics.SerializerSettings);
+        }
+
+        public void AppendJson(StringBuilder stringBuilder)
+        {
+            stringBuilder.Append(this.ToString());
         }
     }
 }

@@ -213,7 +213,11 @@ namespace Microsoft.Azure.Cosmos
             if (diagnosticsCore == null)
             {
                 diagnosticsCore = new CosmosDiagnosticsCore();
-                diagnosticsCore.AddJsonAttribute("TransactionalBatchResponse", this.Diagnostics);
+                ICosmosDiagnosticsJsonWriter cosmosDiagnosticsJsonWriter = this.Diagnostics as ICosmosDiagnosticsJsonWriter;
+                if (cosmosDiagnosticsJsonWriter == null)
+                {
+                    diagnosticsCore.AddJsonAttribute("TransactionalBatchResponse", cosmosDiagnosticsJsonWriter);
+                }
             }
              
             ResponseMessage responseMessage = new ResponseMessage(
