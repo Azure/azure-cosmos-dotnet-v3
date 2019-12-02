@@ -531,7 +531,7 @@ namespace Azure.Cosmos.EmulatorTests
         protected Random rand;
         public abstract IEnumerable<string> GetDocuments(uint numberOfDocuments);
         public abstract IEnumerable<Query> GetQueries(uint numberOfQueries, bool hasOrderBy = true);
-        internal abstract Task<int> QueryAndVerifyDocuments(Container container, IEnumerable<Query> queries, int pageSize = 1000, int retries = 0);
+        internal abstract Task<int> QueryAndVerifyDocuments(CosmosContainer container, IEnumerable<Query> queries, int pageSize = 1000, int retries = 0);
 
         protected QueryOracleUtil(int seed)
         {
@@ -629,7 +629,7 @@ namespace Azure.Cosmos.EmulatorTests
             return valid;
         }
 
-        internal virtual async Task<int> QueryAndVerifyDocuments(Container container, IEnumerable<Query> queries, int pageSize = 1000, int retries = 0, bool allowScan = false)
+        internal virtual async Task<int> QueryAndVerifyDocuments(CosmosContainer container, IEnumerable<Query> queries, int pageSize = 1000, int retries = 0, bool allowScan = false)
         {
             // First we make sure that all the queries are inserted
             {
@@ -884,7 +884,7 @@ namespace Azure.Cosmos.EmulatorTests
             return (int)date.Subtract(new DateTime(1970, 1, 1)).TotalSeconds;
         }
 
-        internal override async Task<int> QueryAndVerifyDocuments(Container container, IEnumerable<Query> queries, int pageSize = 1000, int retries = 0)
+        internal override async Task<int> QueryAndVerifyDocuments(CosmosContainer container, IEnumerable<Query> queries, int pageSize = 1000, int retries = 0)
         {
             return await QueryAndVerifyDocuments(container, queries, pageSize, retries, false);
         }
@@ -933,7 +933,7 @@ namespace Azure.Cosmos.EmulatorTests
             return GetQueries(fieldQueryBuilders, numberOfQueries, maxFilters, hasOrderBy ? fields : null);
         }
 
-        internal override async Task<int> QueryAndVerifyDocuments(Container container, IEnumerable<Query> queries, int pageSize = 1000, int retries = 0)
+        internal override async Task<int> QueryAndVerifyDocuments(CosmosContainer container, IEnumerable<Query> queries, int pageSize = 1000, int retries = 0)
         {
             return await QueryAndVerifyDocuments(container, queries, pageSize, retries, false);
         }

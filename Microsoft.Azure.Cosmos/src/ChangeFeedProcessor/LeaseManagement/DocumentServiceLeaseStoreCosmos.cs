@@ -10,6 +10,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
     using System;
     using System.Threading.Tasks;
+#if AZURECORE
+    using Container = CosmosContainer;
+#endif
     using Microsoft.Azure.Cosmos;
     using Newtonsoft.Json;
 

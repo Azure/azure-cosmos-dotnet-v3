@@ -21,14 +21,14 @@ namespace Azure.Cosmos.EmulatorTests
     public sealed class QueryOracle
     {
         private readonly int targetNumberOfQueriesToValidate;
-        private readonly Container container;
+        private readonly CosmosContainer container;
         private readonly Dictionary<SqlKeyValueQueryBuilder, HashSet<string>> invertedIndex;
         private readonly Dictionary<SqlKeyValueQueryBuilder, HashSet<string>> failedQueries;
         private int retryCount;
         //retry failed queries for a fixed number of times before bailing out
         private readonly bool enableRetries;
 
-        internal QueryOracle(Container container, bool enableRetries, int targetNumberOfQueriesToValidate = Int32.MaxValue)
+        internal QueryOracle(CosmosContainer container, bool enableRetries, int targetNumberOfQueriesToValidate = Int32.MaxValue)
         {
             this.targetNumberOfQueriesToValidate = targetNumberOfQueriesToValidate;
             this.invertedIndex = new Dictionary<SqlKeyValueQueryBuilder, HashSet<string>>();

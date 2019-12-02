@@ -14,7 +14,7 @@ namespace Azure.Cosmos.EmulatorTests
     {
 
         private CosmosClient cosmosClient = null;
-        private Cosmos.Database cosmosDatabase = null;
+        private Cosmos.CosmosDatabase cosmosDatabase = null;
 
         [TestInitialize]
         public async Task TestInit()

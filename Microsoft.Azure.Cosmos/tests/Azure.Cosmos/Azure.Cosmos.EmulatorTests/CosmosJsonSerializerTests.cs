@@ -14,7 +14,7 @@ namespace Azure.Cosmos.EmulatorTests
     [TestClass]
     public class CosmosJsonSerializerTests : BaseCosmosClientHelper
     {
-        private Container container = null;
+        private CosmosContainer container = null;
 
         [TestInitialize]
         public async Task TestInitialize()
@@ -55,7 +55,7 @@ namespace Azure.Cosmos.EmulatorTests
             //Create a new cosmos client with the mocked cosmos json serializer
             CosmosClient mockClient = TestCommon.CreateCosmosClient(
                 (cosmosClientBuilder) => cosmosClientBuilder.WithCustomSerializer(mockJsonSerializer.Object));
-            Container mockContainer = mockClient.GetContainer(this.database.Id, this.container.Id);
+            CosmosContainer mockContainer = mockClient.GetContainer(this.database.Id, this.container.Id);
 
             //Validate that the custom json serializer is used for creating the item
             ItemResponse<ToDoActivity> response = await mockContainer.CreateItemAsync<ToDoActivity>(item: testItem);

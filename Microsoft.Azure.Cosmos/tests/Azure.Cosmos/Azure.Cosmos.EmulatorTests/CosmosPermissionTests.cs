@@ -14,7 +14,7 @@ namespace Azure.Cosmos.EmulatorTests
     public class CosmosPermissionTests
     {
         private CosmosClient cosmosClient = null;
-        private Database cosmosDatabase = null;
+        private CosmosDatabase cosmosDatabase = null;
 
         [TestInitialize]
         public async Task TestInit()
@@ -115,7 +115,7 @@ namespace Azure.Cosmos.EmulatorTests
             string containerId = Guid.NewGuid().ToString();
             ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerAsync(containerId, "/id");
             Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
-            Container container = containerResponse.Container;
+            CosmosContainer container = containerResponse.Container;
             
             //create permission
             string permissionId = Guid.NewGuid().ToString();
@@ -173,7 +173,7 @@ namespace Azure.Cosmos.EmulatorTests
             string containerId = Guid.NewGuid().ToString();
             ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerAsync(containerId, "/id");
             Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
-            Container container = containerResponse.Container;
+            CosmosContainer container = containerResponse.Container;
             string itemId = Guid.NewGuid().ToString();
             PartitionKey partitionKey = new PartitionKey(itemId);
             ItemResponse<dynamic> itemRespnose = await container.CreateItemAsync<dynamic>(new { id = itemId }, partitionKey);

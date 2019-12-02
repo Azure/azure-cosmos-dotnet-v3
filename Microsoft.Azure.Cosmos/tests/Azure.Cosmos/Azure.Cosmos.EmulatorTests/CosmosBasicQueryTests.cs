@@ -30,7 +30,7 @@ namespace Azure.Cosmos.EmulatorTests
         {
             CosmosBasicQueryTests.DirectCosmosClient = TestCommon.CreateCosmosClient();
             CosmosBasicQueryTests.GatewayCosmosClient = TestCommon.CreateCosmosClient((builder) => builder.WithConnectionModeGateway());
-            Database database = await DirectCosmosClient.CreateDatabaseIfNotExistsAsync(DatabaseId);
+            CosmosDatabase database = await DirectCosmosClient.CreateDatabaseIfNotExistsAsync(DatabaseId);
             await database.CreateContainerIfNotExistsAsync(ContainerId, "/pk");
         }
 
@@ -42,7 +42,7 @@ namespace Azure.Cosmos.EmulatorTests
                 return;
             }
 
-            Database database = DirectCosmosClient.GetDatabase(DatabaseId);
+            CosmosDatabase database = DirectCosmosClient.GetDatabase(DatabaseId);
             await database.DeleteStreamAsync();
 
             CosmosBasicQueryTests.DirectCosmosClient.Dispose();
@@ -55,7 +55,7 @@ namespace Azure.Cosmos.EmulatorTests
         public async Task DatabaseTest(bool directMode)
         {
             CosmosClient client = directMode ? DirectCosmosClient : GatewayCosmosClient;
-            List<Database> deleteList = new List<Database>();
+            List<CosmosDatabase> deleteList = new List<CosmosDatabase>();
             List<string> createdIds = new List<string>();
 
             try
@@ -92,7 +92,7 @@ namespace Azure.Cosmos.EmulatorTests
             }
             finally
             {
-                foreach (Cosmos.Database database in deleteList)
+                foreach (Cosmos.CosmosDatabase database in deleteList)
                 {
                     await database.DeleteAsync();
                 }
@@ -105,7 +105,7 @@ namespace Azure.Cosmos.EmulatorTests
         public async Task ContainerTest(bool directMode)
         {
             CosmosClient client = directMode ? DirectCosmosClient : GatewayCosmosClient;
-            Database database = client.GetDatabase(DatabaseId);
+            CosmosDatabase database = client.GetDatabase(DatabaseId);
             List<string> createdIds = new List<string>();
 
             try
@@ -153,7 +153,7 @@ namespace Azure.Cosmos.EmulatorTests
         public async Task ItemTest(bool directMode)
         {
             CosmosClient client = directMode ? DirectCosmosClient : GatewayCosmosClient;
-            Container container = client.GetContainer(DatabaseId, ContainerId);
+            CosmosContainer container = client.GetContainer(DatabaseId, ContainerId);
             List<string> createdIds = new List<string>()
             {
                 "BasicQueryItem",
@@ -455,7 +455,7 @@ namespace Azure.Cosmos.EmulatorTests
         public async Task PermissionTests(bool directMode)
         {
             CosmosClient client = directMode ? DirectCosmosClient : GatewayCosmosClient;
-            Database database = client.GetDatabase(DatabaseId);
+            CosmosDatabase database = client.GetDatabase(DatabaseId);
             List<string> createdPermissionIds = new List<string>();
             List<string> createdContainerIds = new List<string>();
             string userId = Guid.NewGuid().ToString();
@@ -468,7 +468,7 @@ namespace Azure.Cosmos.EmulatorTests
                 user = (UserCore)createUserResponse.User;
 
                 ContainerResponse createContainerResponse = await database.CreateContainerIfNotExistsAsync(Guid.NewGuid().ToString(), partitionKeyPath: "/pk");
-                Container container = createContainerResponse.Container;
+                CosmosContainer container = createContainerResponse.Container;
                 PermissionResponse permissionResponse = await user.CreatePermissionAsync(new PermissionProperties("BasicQueryPermission1", PermissionMode.All, container));
                 createdContainerIds.Add(createContainerResponse.Container.Id);
                 createdPermissionIds.Add(permissionResponse.Permission.Id);
@@ -653,7 +653,7 @@ namespace Azure.Cosmos.EmulatorTests
         //    Console.WriteLine($"[\"{string.Join("\", \n\"", results.Select(r => r.ObjectKey))}\"]");
         //}
 
-        private static async Task WriteDocument(Container container, TestCollectionObject testData)
+        private static async Task WriteDocument(CosmosContainer container, TestCollectionObject testData)
         {
             try
             {

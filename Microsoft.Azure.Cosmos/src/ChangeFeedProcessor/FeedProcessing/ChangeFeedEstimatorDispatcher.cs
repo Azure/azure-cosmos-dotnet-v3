@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Core.Trace;
 #if AZURECORE
-    using static Azure.Cosmos.Container;
+    using static Azure.Cosmos.CosmosContainer;
 #else
     using static Microsoft.Azure.Cosmos.Container;
 #endif

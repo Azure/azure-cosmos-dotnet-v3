@@ -15,15 +15,15 @@ namespace Azure.Cosmos
     public class PermissionProperties
     {
         /// <summary>
-        /// Initialize a new instance of the <see cref="PermissionProperties"/> with permssion to <see cref="Container"/>.
+        /// Initialize a new instance of the <see cref="PermissionProperties"/> with permssion to <see cref="CosmosContainer"/>.
         /// </summary>
         /// <param name="id">The permission id.</param>
         /// <param name="permissionMode">The <see cref="PermissionMode"/>.</param>
-        /// <param name="container">The <see cref="Container"/> object.</param>
+        /// <param name="container">The <see cref="CosmosContainer"/> object.</param>
         /// <param name="resourcePartitionKey">(Optional) The partition key value for the permission in the Azure Cosmos DB service. see <see cref="PartitionKey"/></param>
         public PermissionProperties(string id,
             PermissionMode permissionMode,
-            Container container,
+            CosmosContainer container,
             PartitionKey? resourcePartitionKey = null)
         {
             this.Id = id;
@@ -44,12 +44,12 @@ namespace Azure.Cosmos
         /// </summary>
         /// <param name="id">The permission id.</param>
         /// <param name="permissionMode">The <see cref="PermissionMode"/>.</param>
-        /// <param name="container">The <see cref="Container"/> object.</param>
+        /// <param name="container">The <see cref="CosmosContainer"/> object.</param>
         /// <param name="resourcePartitionKey">The <see cref="PartitionKey"/> of the resource in the Azure Cosmos service.</param>
         /// <param name="itemId">The cosmos item id</param>
         public PermissionProperties(string id,
             PermissionMode permissionMode,
-            Container container,
+            CosmosContainer container,
             PartitionKey resourcePartitionKey,
             string itemId)
         {

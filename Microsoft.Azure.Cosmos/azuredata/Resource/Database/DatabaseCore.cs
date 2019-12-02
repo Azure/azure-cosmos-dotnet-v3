@@ -20,7 +20,7 @@ namespace Azure.Cosmos
     ///
     /// <see cref="CosmosClient"/> for or creating new databases, and reading/querying all databases; use `client.Databases`.
     /// </summary>
-    internal class DatabaseCore : Database
+    internal class DatabaseCore : CosmosDatabase
     {
         /// <summary>
         /// Only used for unit testing
@@ -206,7 +206,7 @@ namespace Azure.Cosmos
 
             this.ValidateContainerProperties(containerProperties);
 
-            Container container = this.GetContainer(containerProperties.Id);
+            CosmosContainer container = this.GetContainer(containerProperties.Id);
             Response response = await container.ReadContainerStreamAsync(cancellationToken: cancellationToken);
             if (response.Status != (int)HttpStatusCode.NotFound)
             {
@@ -258,7 +258,7 @@ namespace Azure.Cosmos
             return this.CreateContainerIfNotExistsAsync(containerProperties, throughput, requestOptions, cancellationToken);
         }
 
-        public override Container GetContainer(string id)
+        public override CosmosContainer GetContainer(string id)
         {
             if (string.IsNullOrEmpty(id))
             {

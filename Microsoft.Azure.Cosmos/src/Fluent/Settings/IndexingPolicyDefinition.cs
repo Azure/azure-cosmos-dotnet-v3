@@ -10,6 +10,9 @@ namespace Microsoft.Azure.Cosmos.Fluent
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+#if AZURECORE
+    using Container = CosmosContainer;
+#endif
 
     /// <summary>
     /// Indexing Policy fluent definition.

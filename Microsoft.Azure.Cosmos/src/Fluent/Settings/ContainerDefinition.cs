@@ -8,6 +8,9 @@ namespace Microsoft.Azure.Cosmos.Fluent
 #endif
 {
     using System;
+#if AZURECORE
+    using Container = CosmosContainer;
+#endif
 
     /// <summary>
     /// Azure Cosmos container fluent definition.

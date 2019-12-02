@@ -18,7 +18,7 @@ namespace Azure.Cosmos.EmulatorTests
     [TestClass]
     public sealed class StoredProcedureTests : BaseCosmosClientHelper
     {
-        private Container container = null;
+        private CosmosContainer container = null;
         private Scripts scripts = null;
 
         [TestInitialize]

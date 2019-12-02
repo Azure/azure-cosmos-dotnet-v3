@@ -27,7 +27,7 @@ namespace Azure.Cosmos.EmulatorTests
         [TestMethod]
         public async Task ValidateDatabaseNotFoundResponse()
         {
-            Database database = CosmosNotFoundTests.client.GetDatabase(DoesNotExist);
+            CosmosDatabase database = CosmosNotFoundTests.client.GetDatabase(DoesNotExist);
             this.VerifyNotFoundResponse(await database.ReadStreamAsync());
             this.VerifyNotFoundResponse(await database.DeleteStreamAsync());
         }
@@ -35,18 +35,18 @@ namespace Azure.Cosmos.EmulatorTests
         [TestMethod]
         public async Task ValidateContainerNotFoundResponse()
         {
-            Database dbDoesNotExist = CosmosNotFoundTests.client.GetDatabase(DoesNotExist);
+            CosmosDatabase dbDoesNotExist = CosmosNotFoundTests.client.GetDatabase(DoesNotExist);
             await this.ContainerOperations(database: dbDoesNotExist, dbNotExist: true);
 
-            Database dbExists = await client.CreateDatabaseAsync("NotFoundTest" + Guid.NewGuid().ToString());
+            CosmosDatabase dbExists = await client.CreateDatabaseAsync("NotFoundTest" + Guid.NewGuid().ToString());
             await this.ContainerOperations(database: dbExists, dbNotExist: false);
         }
 
         [TestMethod]
         public async Task ValidateQueryNotFoundResponse()
         {
-            Database db = await CosmosNotFoundTests.client.CreateDatabaseAsync("NotFoundTest" + Guid.NewGuid().ToString());
-            Container container = await db.CreateContainerAsync("NotFoundTest" + Guid.NewGuid().ToString(), "/pk", 500);
+            CosmosDatabase db = await CosmosNotFoundTests.client.CreateDatabaseAsync("NotFoundTest" + Guid.NewGuid().ToString());
+            CosmosContainer container = await db.CreateContainerAsync("NotFoundTest" + Guid.NewGuid().ToString(), "/pk", 500);
 
             dynamic randomItem = new { id = "test", pk = "testpk" };
             await container.CreateItemAsync(randomItem);
@@ -78,7 +78,7 @@ namespace Azure.Cosmos.EmulatorTests
             await db.DeleteAsync();
         }
 
-        private async Task ContainerOperations(Database database, bool dbNotExist)
+        private async Task ContainerOperations(CosmosDatabase database, bool dbNotExist)
         {
             // Create should fail if the database does not exist
             if (dbNotExist)
@@ -87,7 +87,7 @@ namespace Azure.Cosmos.EmulatorTests
                 this.VerifyNotFoundResponse(await database.CreateContainerStreamAsync(newcontainerSettings, throughput: 500));
             }
 
-            Container doesNotExistContainer = database.GetContainer(DoesNotExist);
+            CosmosContainer doesNotExistContainer = database.GetContainer(DoesNotExist);
             this.VerifyNotFoundResponse(await doesNotExistContainer.ReadContainerStreamAsync());
 
             ContainerProperties containerSettings = new ContainerProperties(id: DoesNotExist, partitionKeyPath: "/pk");
@@ -100,7 +100,7 @@ namespace Azure.Cosmos.EmulatorTests
             // The database exists create a container and validate it's children
             if (!dbNotExist)
             {
-                Container containerExists = await database.CreateContainerAsync(
+                CosmosContainer containerExists = await database.CreateContainerAsync(
                     id: "NotFoundTest" + Guid.NewGuid().ToString(),
                     partitionKeyPath: "/pk");
 
@@ -108,7 +108,7 @@ namespace Azure.Cosmos.EmulatorTests
             }
         }
 
-        private async Task ItemOperations(Container container, bool containerNotExist)
+        private async Task ItemOperations(CosmosContainer container, bool containerNotExist)
         {
             if (containerNotExist)
             {

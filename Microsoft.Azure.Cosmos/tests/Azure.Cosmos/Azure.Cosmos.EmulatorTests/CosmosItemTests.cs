@@ -30,7 +30,7 @@ namespace Azure.Cosmos.EmulatorTests
     [TestClass]
     public class CosmosItemTests : BaseCosmosClientHelper
     {
-        private Container Container = null;
+        private CosmosContainer Container = null;
         private ContainerProperties containerSettings = null;
 
         private static readonly string nonPartitionItemId = "fixed-Container-Item";
@@ -95,7 +95,7 @@ namespace Azure.Cosmos.EmulatorTests
             };
 
             CosmosClient ignoreNullClient = TestCommon.CreateCosmosClient(clientOptions);
-            Container ignoreContainer = ignoreNullClient.GetContainer(this.database.Id, this.Container.Id);
+            CosmosContainer ignoreContainer = ignoreNullClient.GetContainer(this.database.Id, this.Container.Id);
 
             Response<dynamic> ignoreNullResponse = await ignoreContainer.CreateItemAsync<dynamic>(item: testItem);
             Assert.IsNotNull(ignoreNullResponse);
@@ -168,7 +168,7 @@ namespace Azure.Cosmos.EmulatorTests
         [TestMethod]
         public async Task CreateDropItemMultiPartPartitionKeyTest()
         {
-            Container multiPartPkContainer = await this.database.CreateContainerAsync(Guid.NewGuid().ToString(), "/a/b/c");
+            CosmosContainer multiPartPkContainer = await this.database.CreateContainerAsync(Guid.NewGuid().ToString(), "/a/b/c");
 
             dynamic testItem = new
             {
@@ -209,7 +209,7 @@ namespace Azure.Cosmos.EmulatorTests
         public async Task ReadCollectionNotExists()
         {
             string collectionName = Guid.NewGuid().ToString();
-            Container testContainer = this.database.GetContainer(collectionName);
+            CosmosContainer testContainer = this.database.GetContainer(collectionName);
             await CosmosItemTests.TestNonePKForNonExistingContainer(testContainer);
 
             // Item -> Container -> Database contract 
@@ -271,8 +271,8 @@ namespace Azure.Cosmos.EmulatorTests
             Assert.AreEqual(loopCount, count);
 
             // Create real container and address 
-            Cosmos.Database db = await client.CreateDatabaseAsync(dbName);
-            Container container = await db.CreateContainerAsync(containerName, "/id");
+            Cosmos.CosmosDatabase db = await client.CreateDatabaseAsync(dbName);
+            CosmosContainer container = await db.CreateContainerAsync(containerName, "/id");
 
             // reset counter
             count = 0;
@@ -560,7 +560,7 @@ namespace Azure.Cosmos.EmulatorTests
             };
 
             CosmosClient clientSerializer = TestCommon.CreateCosmosClient(options);
-            Container containerSerializer = clientSerializer.GetContainer(this.database.Id, this.Container.Id);
+            CosmosContainer containerSerializer = clientSerializer.GetContainer(this.database.Id, this.Container.Id);
 
             try
             {
@@ -1447,8 +1447,8 @@ namespace Azure.Cosmos.EmulatorTests
         public async Task VerifyToManyRequestTest(bool isQuery)
         {
             CosmosClient client = TestCommon.CreateCosmosClient();
-            Database db = await client.CreateDatabaseIfNotExistsAsync("LoadTest");
-            Container container = await db.CreateContainerIfNotExistsAsync("LoadContainer", "/status");
+            CosmosDatabase db = await client.CreateDatabaseIfNotExistsAsync("LoadTest");
+            CosmosContainer container = await db.CreateContainerIfNotExistsAsync("LoadContainer", "/status");
 
             try
             {
@@ -1516,7 +1516,7 @@ namespace Azure.Cosmos.EmulatorTests
         [DataTestMethod]
         public async Task ContainterReCreateStatelessTest(bool operationBetweenRecreate, bool isQuery)
         {
-            Func<Container, int, Task> operation = null;
+            Func<CosmosContainer, int, Task> operation = null;
             if (isQuery)
             {
                 operation = ExecuteQueryAsync;
@@ -1528,7 +1528,7 @@ namespace Azure.Cosmos.EmulatorTests
 
             CosmosClient cc1 = TestCommon.CreateCosmosClient();
             CosmosClient cc2 = TestCommon.CreateCosmosClient();
-            Database db1 = null;
+            CosmosDatabase db1 = null;
             try
             {
                 string dbName = Guid.NewGuid().ToString();
@@ -1540,7 +1540,7 @@ namespace Azure.Cosmos.EmulatorTests
                 await operation(container1, (int)HttpStatusCode.OK);
 
                 // Read through client2 -> return 404
-                Container container2 = cc2.GetDatabase(dbName).GetContainer(containerName);
+                CosmosContainer container2 = cc2.GetDatabase(dbName).GetContainer(containerName);
                 await operation(container2, (int)HttpStatusCode.OK);
 
                 // Delete container 
@@ -1616,7 +1616,7 @@ namespace Azure.Cosmos.EmulatorTests
         }
 
         private static async Task VerifyQueryToManyExceptionAsync(
-            Container container,
+            CosmosContainer container,
             bool isQuery,
             List<Response> failedToManyMessages)
         {
@@ -1636,7 +1636,7 @@ namespace Azure.Cosmos.EmulatorTests
             }
         }
 
-        private static async Task ExecuteQueryAsync(Container container, int expected)
+        private static async Task ExecuteQueryAsync(CosmosContainer container, int expected)
         {
             await foreach(Response response in container.GetItemQueryStreamIterator("select * from r"))
             {
@@ -1644,7 +1644,7 @@ namespace Azure.Cosmos.EmulatorTests
             }
         }
 
-        private static async Task ExecuteReadFeedAsync(Container container, int expected)
+        private static async Task ExecuteReadFeedAsync(CosmosContainer container, int expected)
         {
             await foreach(Response response in container.GetItemQueryStreamIterator())
             {
@@ -1682,7 +1682,7 @@ namespace Azure.Cosmos.EmulatorTests
             };
         }
 
-        private static async Task TestNonePKForNonExistingContainer(Container container)
+        private static async Task TestNonePKForNonExistingContainer(CosmosContainer container)
         {
             // Stream implementation should not throw
             Response response = await container.ReadItemStreamAsync("id1", PartitionKey.None);

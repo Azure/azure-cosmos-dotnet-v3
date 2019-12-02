@@ -76,7 +76,7 @@ namespace Azure.Cosmos
         }
 
         internal Task<ContainerResponse> CreateContainerResponseAsync(
-            Container container,
+            CosmosContainer container,
             Task<Response> cosmosResponseMessageTask,
             CancellationToken cancellationToken)
         {
@@ -94,7 +94,7 @@ namespace Azure.Cosmos
         }
 
         internal Task<DatabaseResponse> CreateDatabaseResponseAsync(
-            Database database,
+            CosmosDatabase database,
             Task<Response> cosmosResponseMessageTask,
             CancellationToken cancellationToken)
         {

@@ -154,8 +154,8 @@ namespace Azure.Cosmos.Tests
             mockDefaultJsonSerializer.Setup(x => x.FromStream<DatabaseProperties>(databaseResponse.ContentStream)).Returns(databaseSettings);
             mockDefaultJsonSerializer.Setup(x => x.FromStream<ContainerProperties>(containerResponse.ContentStream)).Returns(containerSettings);
 
-            Mock<Container> mockContainer = new Mock<Container>();
-            Mock<Database> mockDatabase = new Mock<Database>();
+            Mock<CosmosContainer> mockContainer = new Mock<CosmosContainer>();
+            Mock<CosmosDatabase> mockDatabase = new Mock<CosmosDatabase>();
 
             // Verify all the system types that should always use default
             await cosmosResponseFactory.CreateContainerResponseAsync(mockContainer.Object, Task.FromResult(containerResponse), default(CancellationToken));

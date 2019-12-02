@@ -26,7 +26,7 @@ namespace Azure.Cosmos
         internal DatabaseResponse(
             Response response,
             DatabaseProperties databaseProperties,
-            Database database)
+            CosmosDatabase database)
         {
             this.rawResponse = response;
             this.Value = databaseProperties;
@@ -37,7 +37,7 @@ namespace Azure.Cosmos
         /// The reference to the cosmos database. 
         /// This allows additional operations for the database and easier access to the container operations
         /// </summary>
-        public virtual Database Database { get; }
+        public virtual CosmosDatabase Database { get; }
 
         /// <inheritdoc/>
         public override DatabaseProperties Value { get; }
@@ -46,10 +46,10 @@ namespace Azure.Cosmos
         public override Response GetRawResponse() => this.rawResponse;
 
         /// <summary>
-        /// Get <see cref="Cosmos.Database"/> implicitly from <see cref="DatabaseResponse"/>
+        /// Get <see cref="Cosmos.CosmosDatabase"/> implicitly from <see cref="DatabaseResponse"/>
         /// </summary>
         /// <param name="response">DatabaseResponse</param>
-        public static implicit operator Database(DatabaseResponse response)
+        public static implicit operator CosmosDatabase(DatabaseResponse response)
         {
             return response.Database;
         }

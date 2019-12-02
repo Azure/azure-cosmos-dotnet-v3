@@ -63,14 +63,14 @@ namespace Azure.Cosmos.ChangeFeed.Tests
             CollectionAssert.AreEqual(DocumentServiceLeaseContainerCosmosTests.allLeases.Where(l => l.Owner == DocumentServiceLeaseContainerCosmosTests.leaseStoreManagerSettings.HostName).ToList(), readLeases.ToList());
         }
 
-        private static Container GetMockedContainer(string containerName = "myColl")
+        private static CosmosContainer GetMockedContainer(string containerName = "myColl")
         {
             Headers headers = new Headers();
             headers.ContinuationToken = string.Empty;
 
             MockAsyncPageable<DocumentServiceLeaseCore> asyncPageable = new MockAsyncPageable<DocumentServiceLeaseCore>(DocumentServiceLeaseContainerCosmosTests.allLeases);
 
-            Mock<Container> mockedItems = new Mock<Container>();
+            Mock<CosmosContainer> mockedItems = new Mock<CosmosContainer>();
             mockedItems.Setup(i => i.GetItemQueryIterator<DocumentServiceLeaseCore>(
                 // To make sure the SQL Query gets correctly created
                 It.Is<string>(value => string.Equals("SELECT * FROM c WHERE STARTSWITH(c.id, '" + DocumentServiceLeaseContainerCosmosTests.leaseStoreManagerSettings.GetPartitionLeasePrefix() + "')", value)),

@@ -10,6 +10,9 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using ChangeFeed;
+#if AZURECORE
+    using Container = CosmosContainer;
+#endif
 
     /// <summary>
     /// Provides a flexible way to create an instance of <see cref="ChangeFeedProcessor"/> with custom set of parameters.

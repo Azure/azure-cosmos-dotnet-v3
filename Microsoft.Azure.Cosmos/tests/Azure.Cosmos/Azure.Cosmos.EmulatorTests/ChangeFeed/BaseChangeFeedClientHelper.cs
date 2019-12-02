@@ -12,8 +12,8 @@ namespace Azure.Cosmos.EmulatorTests.ChangeFeed
         public static int ChangeFeedSetupTime = 1000;
         public static int ChangeFeedCleanupTime = 5000;
 
-        public Container Container = null;
-        public Container LeaseContainer = null;
+        public CosmosContainer Container = null;
+        public CosmosContainer LeaseContainer = null;
 
         public async Task ChangeFeedTestInit()
         {

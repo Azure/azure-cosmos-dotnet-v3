@@ -28,7 +28,7 @@ namespace Azure.Cosmos
     /// performance guide at <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips"/>.
     /// </summary>
     /// <example>
-    /// This example create a <see cref="CosmosClient"/>, <see cref="Database"/>, and a <see cref="Container"/>.
+    /// This example create a <see cref="CosmosClient"/>, <see cref="CosmosDatabase"/>, and a <see cref="CosmosContainer"/>.
     /// The CosmosClient is created with the connection string and configured to use "East US 2" region.
     /// <code language="c#">
     /// <![CDATA[
@@ -49,7 +49,7 @@ namespace Azure.Cosmos
     /// </code>
     /// </example>
     /// <example>
-    /// This example create a <see cref="CosmosClient"/>, <see cref="Database"/>, and a <see cref="Container"/>.
+    /// This example create a <see cref="CosmosClient"/>, <see cref="CosmosDatabase"/>, and a <see cref="CosmosContainer"/>.
     /// The CosmosClient is created with the AccountEndpoint, AccountKey or ResourceToken and configured to use "East US 2" region.
     /// <code language="c#">
     /// <![CDATA[
@@ -71,7 +71,7 @@ namespace Azure.Cosmos
     /// </code>
     /// </example>
     /// <example>
-    /// This example create a <see cref="CosmosClient"/>, <see cref="Database"/>, and a <see cref="Container"/>.
+    /// This example create a <see cref="CosmosClient"/>, <see cref="CosmosDatabase"/>, and a <see cref="CosmosContainer"/>.
     /// The CosmosClient is created through builder pattern <see cref="Fluent.CosmosClientBuilder"/>.
     /// <code language="c#">
     /// <![CDATA[
@@ -316,7 +316,7 @@ namespace Azure.Cosmos
         /// </summary>
         /// <param name="id">The cosmos database id</param>
         /// <remarks>
-        /// <see cref="Database"/> proxy reference doesn't guarantee existence.
+        /// <see cref="CosmosDatabase"/> proxy reference doesn't guarantee existence.
         /// </remarks>
         /// <example>
         /// <code language="c#">
@@ -327,7 +327,7 @@ namespace Azure.Cosmos
         /// </code>
         /// </example>
         /// <returns>Cosmos database proxy</returns>
-        public virtual Database GetDatabase(string id)
+        public virtual CosmosDatabase GetDatabase(string id)
         {
             return new DatabaseCore(this.ClientContext, id);
         }
@@ -336,14 +336,14 @@ namespace Azure.Cosmos
         /// Returns a proxy reference to a container. 
         /// </summary>
         /// <remarks>
-        /// <see cref="Container"/> proxy reference doesn't guarantee existence.
+        /// <see cref="CosmosContainer"/> proxy reference doesn't guarantee existence.
         /// Please ensure container exists, before
         /// operating on it.
         /// </remarks>
         /// <param name="databaseId">cosmos database name</param>
         /// <param name="containerId">cosmos container name</param>
         /// <returns>Cosmos container proxy</returns>
-        public virtual Container GetContainer(string databaseId, string containerId)
+        public virtual CosmosContainer GetContainer(string databaseId, string containerId)
         {
             if (string.IsNullOrEmpty(databaseId))
             {
@@ -441,7 +441,7 @@ namespace Azure.Cosmos
 
             // Doing a Read before Create will give us better latency for existing databases
             DatabaseProperties databaseProperties = this.PrepareDatabaseProperties(id);
-            Database database = this.GetDatabase(id);
+            CosmosDatabase database = this.GetDatabase(id);
             Response response = await database.ReadStreamAsync(requestOptions: requestOptions, cancellationToken: cancellationToken);
             if (response.Status != (int)HttpStatusCode.NotFound)
             {

@@ -19,7 +19,7 @@ namespace Azure.Cosmos.EmulatorTests
     [TestClass]
     public class AsyncEnumerationTests : BaseCosmosClientHelper
     {
-        private Container Container = null;
+        private CosmosContainer Container = null;
 
         [TestInitialize]
         public async Task TestInitialize()

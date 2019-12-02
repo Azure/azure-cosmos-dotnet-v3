@@ -47,7 +47,7 @@ namespace Azure.Cosmos
         /// <summary>
         /// Returns a reference to a database object. 
         /// </summary>
-        public Database Database { get; }
+        public CosmosDatabase Database { get; }
 
         internal virtual Uri LinkUri { get; }
 

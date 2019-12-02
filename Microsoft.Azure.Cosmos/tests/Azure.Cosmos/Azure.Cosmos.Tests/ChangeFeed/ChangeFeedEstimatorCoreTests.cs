@@ -10,7 +10,7 @@ namespace Azure.Cosmos.ChangeFeed.Tests
     using Azure.Cosmos.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
-    using static Azure.Cosmos.Container;
+    using static Azure.Cosmos.CosmosContainer;
 
     [TestClass]
     [TestCategory("ChangeFeed")]

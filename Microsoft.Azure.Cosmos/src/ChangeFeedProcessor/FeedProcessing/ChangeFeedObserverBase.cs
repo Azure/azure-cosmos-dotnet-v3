@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using System.Threading;
     using System.Threading.Tasks;
 #if AZURECORE
-    using static Azure.Cosmos.Container;
+    using static Azure.Cosmos.CosmosContainer;
 #else
     using static Microsoft.Azure.Cosmos.Container;
 #endif
