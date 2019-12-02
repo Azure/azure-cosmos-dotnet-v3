@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Azure.Cosmos
+namespace Azure.Cosmos.Serialization
 {
     using System.IO;
 

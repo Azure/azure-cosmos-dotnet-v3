@@ -6,6 +6,7 @@ namespace Azure.Cosmos
 {
     using System.IO;
     using System.Text;
+    using Azure.Cosmos.Serialization;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Serialization;
 

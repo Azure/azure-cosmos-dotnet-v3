@@ -18,6 +18,7 @@ namespace Azure.Cosmos.EmulatorTests
     using Azure;
     using Azure.Cosmos;
     using Azure.Cosmos.Query;
+    using Azure.Cosmos.Serialization;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query;

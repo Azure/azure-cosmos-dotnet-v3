@@ -17,6 +17,7 @@ namespace Azure.Cosmos.EmulatorTests
     using System.Threading.Tasks;
     using Azure.Cosmos;
     using Azure.Cosmos.Fluent;
+    using Azure.Cosmos.Serialization;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Utils;
     using Microsoft.Azure.Documents;

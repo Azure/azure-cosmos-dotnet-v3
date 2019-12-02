@@ -8,6 +8,7 @@ namespace Azure.Cosmos.EmulatorTests
     using System.IO;
     using System.Net;
     using System.Threading.Tasks;
+    using Azure.Cosmos.Serialization;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 

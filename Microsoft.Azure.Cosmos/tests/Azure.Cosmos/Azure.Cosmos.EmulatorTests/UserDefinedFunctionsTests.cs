@@ -5,6 +5,7 @@
 namespace Azure.Cosmos.EmulatorTests
 {
     using Azure.Cosmos.Scripts;
+    using Azure.Cosmos.Serialization;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;

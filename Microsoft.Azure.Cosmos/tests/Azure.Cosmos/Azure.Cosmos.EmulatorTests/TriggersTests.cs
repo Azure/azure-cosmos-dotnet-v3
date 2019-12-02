@@ -11,6 +11,7 @@ namespace Azure.Cosmos.EmulatorTests
     using System.Net;
     using System.Threading.Tasks;
     using Azure.Cosmos.Scripts;
+    using Azure.Cosmos.Serialization;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
 

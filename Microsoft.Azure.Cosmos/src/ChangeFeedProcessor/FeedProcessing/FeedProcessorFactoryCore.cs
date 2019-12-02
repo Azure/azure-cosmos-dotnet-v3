@@ -9,6 +9,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 #endif
 {
     using System;
+#if AZURECORE
+    using Azure.Cosmos.Serialization;
+#endif
     using Microsoft.Azure.Cosmos;
 
     internal class FeedProcessorFactoryCore<T> : FeedProcessorFactory<T>

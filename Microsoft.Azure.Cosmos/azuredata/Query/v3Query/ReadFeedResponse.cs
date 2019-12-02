@@ -4,7 +4,7 @@
 namespace Azure.Cosmos
 {
     using System.Collections.Generic;
-    using System.Net;
+    using Azure.Cosmos.Serialization;
     using Microsoft.Azure.Cosmos;
 
     internal class ReadFeedResponse<T> : FeedResponse<T>
@@ -25,14 +25,6 @@ namespace Azure.Cosmos
         public override string ContinuationToken { get; }
 
         public override IEnumerable<T> Value { get; }
-
-        //public override Headers Headers { get; }
-
-        //public override IEnumerable<T> Resource { get; }
-
-        //public override HttpStatusCode StatusCode { get; }
-
-        //public override CosmosDiagnostics Diagnostics { get; }
 
         public override IEnumerator<T> GetEnumerator()
         {

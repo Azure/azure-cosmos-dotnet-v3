@@ -13,6 +13,7 @@ namespace Azure.Cosmos.Tests
     using System.Threading;
     using System.Threading.Tasks;
     using Azure.Cosmos.Scripts;
+    using Azure.Cosmos.Serialization;
     using Microsoft.Azure.Cosmos;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;

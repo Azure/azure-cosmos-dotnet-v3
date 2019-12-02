@@ -10,6 +10,7 @@ namespace Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Azure.Cosmos.Scripts;
+    using Azure.Cosmos.Serialization;
 
     internal class CosmosResponseFactory
     {
