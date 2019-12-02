@@ -11,7 +11,8 @@ namespace Microsoft.Azure.Cosmos.Fluent
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
 #if AZURECORE
-    using Container = CosmosContainer;
+    using Azure.Cosmos.Spatial;
+    using Container = CosmosContainer;    
 #endif
 
     /// <summary>

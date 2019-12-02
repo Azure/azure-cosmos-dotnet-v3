@@ -9,6 +9,9 @@ namespace Microsoft.Azure.Cosmos.Fluent
 #endif
 {
     using System;
+#if AZURECORE
+    using Azure.Cosmos.Spatial;
+#endif
 
     /// <summary>
     /// Spatial index fluent definition.

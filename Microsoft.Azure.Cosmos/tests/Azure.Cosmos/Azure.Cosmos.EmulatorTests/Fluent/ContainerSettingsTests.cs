@@ -4,6 +4,7 @@
 
 namespace Azure.Cosmos.EmulatorTests
 {
+    using Azure.Cosmos.Spatial;
     using Microsoft.Azure.Cosmos;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
