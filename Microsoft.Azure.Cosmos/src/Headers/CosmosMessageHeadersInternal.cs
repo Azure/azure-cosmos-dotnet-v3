@@ -147,7 +147,7 @@ namespace Microsoft.Azure.Cosmos
 
         public void Clear()
         {
-            foreach (var knownHeader in this.knownHeaders)
+            foreach (KeyValuePair<string, CosmosCustomHeader> knownHeader in this.knownHeaders)
             {
                 knownHeader.Value.Set(null);
             }
@@ -198,12 +198,12 @@ namespace Microsoft.Azure.Cosmos
 
         public IEnumerable<string> Keys()
         {
-            foreach (var knownHeader in this.knownHeaders.Where(header => !string.IsNullOrEmpty(header.Value.Get())))
+            foreach (KeyValuePair<string, CosmosCustomHeader> knownHeader in this.knownHeaders.Where(header => !string.IsNullOrEmpty(header.Value.Get())))
             {
                 yield return knownHeader.Key;
             }
 
-            foreach (var key in this.headers.Value.Keys)
+            foreach (string key in this.headers.Value.Keys)
             {
                 yield return key;
             }
@@ -216,7 +216,7 @@ namespace Microsoft.Azure.Cosmos
 
         public IEnumerator<string> GetEnumerator()
         {
-            using (var customHeaderIterator = this.knownHeaders.GetEnumerator())
+            using (Dictionary<string, CosmosCustomHeader>.Enumerator customHeaderIterator = this.knownHeaders.GetEnumerator())
             {
                 while (customHeaderIterator.MoveNext())
                 {
@@ -266,7 +266,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal static KeyValuePair<string, PropertyInfo>[] GetHeaderAttributes<T>()
         {
-            var knownHeaderProperties = typeof(T)
+            IEnumerable<PropertyInfo> knownHeaderProperties = typeof(T)
                     .GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
                     .Where(p => p.GetCustomAttributes(typeof(CosmosKnownHeaderAttribute), false).Any());
 

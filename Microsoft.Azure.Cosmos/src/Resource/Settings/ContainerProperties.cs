@@ -387,7 +387,7 @@ namespace Microsoft.Azure.Cosmos
         /// Initializes a new instance of the <see cref="ContainerProperties"/> class for the Azure Cosmos DB service.
         /// </summary>
         /// <param name="id">The Id of the resource in the Azure Cosmos service.</param>
-        /// <param name="partitionKeyDefinition">The partition key <see cref="PartitionKeyDefinition"/></param>
+        /// <param name="partitionKeyDefinition">The partition key definition.</param>
         internal ContainerProperties(string id, PartitionKeyDefinition partitionKeyDefinition)
         {
             this.Id = id;

@@ -64,9 +64,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </summary>
         /// <param name="throughput">Desired throughput for the container expressed in Request Units per second.</param>
         /// <returns>An asynchronous Task representing the creation of a <see cref="Container"/> based on the Fluent definition.</returns>
-        /// <remarks>
-        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
-        /// </remarks>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
         public async Task<ContainerResponse> CreateAsync(int? throughput = null)
         {
             ContainerProperties containerProperties = this.Build();
@@ -79,9 +77,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </summary>
         /// <param name="throughput">Desired throughput for the container expressed in Request Units per second.</param>
         /// <returns>An asynchronous Task representing the creation of a <see cref="Container"/> based on the Fluent definition.</returns>
-        /// <remarks>
-        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
-        /// </remarks>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
         public async Task<ContainerResponse> CreateIfNotExistsAsync(int? throughput = null)
         {
             ContainerProperties containerProperties = this.Build();

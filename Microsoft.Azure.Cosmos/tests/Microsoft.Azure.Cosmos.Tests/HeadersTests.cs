@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             string value1 = Guid.NewGuid().ToString();
             string value2 = Guid.NewGuid().ToString();
-            var Headers = new Headers();
+            Headers Headers = new Headers();
             Headers.Add(Key, value1);
             Assert.AreEqual(value1, Headers.Get(Key));
             Headers.Set(Key, value2);
@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void TestIndexer()
         {
-            var Headers = new Headers();
+            Headers Headers = new Headers();
             string value = Guid.NewGuid().ToString();
             Headers.CosmosMessageHeaders[Key] = value;
             Assert.AreEqual(value, Headers[Key]);
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void TestRemove()
         {
-            var Headers = new Headers();
+            Headers Headers = new Headers();
             string value = Guid.NewGuid().ToString();
             Headers.CosmosMessageHeaders[Key] = value;
             Assert.AreEqual(value, Headers[Key]);
@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void TestClear()
         {
-            var Headers = new Headers();
+            Headers Headers = new Headers();
             Headers.CosmosMessageHeaders[Key] = Guid.NewGuid().ToString();
             Headers.CosmosMessageHeaders.Clear();
             Assert.IsNull(Headers[Key]);
@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void TestCount()
         {
-            var Headers = new Headers();
+            Headers Headers = new Headers();
             Headers.CosmosMessageHeaders[Key] = Guid.NewGuid().ToString();
             Assert.AreEqual(1, Headers.CosmosMessageHeaders.Count());
         }
@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void TestGetValues()
         {
-            var Headers = new Headers();
+            Headers Headers = new Headers();
             string value1 = Guid.NewGuid().ToString();
             Headers.Add(Key, value1);
             IEnumerable<string> values = Headers.GetValues(Key);
@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void TestAllKeys()
         {
-            var Headers = new Headers();
+            Headers Headers = new Headers();
             Headers.CosmosMessageHeaders[Key] = Guid.NewGuid().ToString();
             Assert.AreEqual(Key, Headers.AllKeys().First());
         }
@@ -87,10 +87,10 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void TestGetIEnumerableKeys()
         {
-            var Headers = new Headers();
+            Headers Headers = new Headers();
             string value = Guid.NewGuid().ToString();
             Headers.CosmosMessageHeaders[Key] = value;
-            foreach (var header in Headers)
+            foreach (string header in Headers)
             {
                 Assert.AreEqual(value, Headers[header]);
                 return;
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [ExpectedException(typeof(NotImplementedException))]
         public void TestGetToNameValueCollection()
         {
-            var Headers = new Headers();
+            Headers Headers = new Headers();
             string value = Guid.NewGuid().ToString();
             Headers.CosmosMessageHeaders[Key] = value;
             NameValueCollection anotherCollection = Headers.CosmosMessageHeaders.ToNameValueCollection();
@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 string value2 = Guid.NewGuid().ToString();
                 string value3 = Guid.NewGuid().ToString();
                 string value4 = Guid.NewGuid().ToString();
-                var Headers = new Headers();
+                Headers Headers = new Headers();
                 Headers.ContinuationToken = value1;
                 Headers.PartitionKey = value2;
                 Headers.PartitionKeyRangeId = value3;
@@ -147,7 +147,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 string value2 = "1002";
                 string value3 = "20";
                 string value4 = "someSession";
-                var requestHeaders = new Headers();
+                Headers requestHeaders = new Headers();
                 requestHeaders.CosmosMessageHeaders[HttpConstants.HttpHeaders.Continuation] = value1;
                 requestHeaders.CosmosMessageHeaders[WFConstants.BackendHeaders.SubStatus] = value2;
                 requestHeaders.CosmosMessageHeaders[HttpConstants.HttpHeaders.RetryAfterInMilliseconds] = value3;
@@ -166,7 +166,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void TestClearWithKnownProperties()
         {
-            var Headers = new Headers();
+            Headers Headers = new Headers();
             Headers.CosmosMessageHeaders[Key] = Guid.NewGuid().ToString();
             Headers.PartitionKey = Guid.NewGuid().ToString();
             Headers.ContinuationToken = Guid.NewGuid().ToString();
@@ -181,7 +181,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void TestCountWithKnownProperties()
         {
-            var Headers = new Headers();
+            Headers Headers = new Headers();
             Headers.CosmosMessageHeaders[Key] = Guid.NewGuid().ToString();
             Headers.PartitionKey = Guid.NewGuid().ToString();
             Headers.ContinuationToken = Guid.NewGuid().ToString();
@@ -192,13 +192,13 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void TestAllKeysWithKnownProperties()
         {
-            var Headers = new Headers();
+            Headers Headers = new Headers();
             Headers.CosmosMessageHeaders[Key] = Guid.NewGuid().ToString();
             Headers.ContinuationToken = Guid.NewGuid().ToString();
             Headers.CosmosMessageHeaders[HttpConstants.HttpHeaders.RetryAfterInMilliseconds] = "20";
             Headers.Add(WFConstants.BackendHeaders.SubStatus, "1002");
             Headers.PartitionKey = Guid.NewGuid().ToString();
-            var allKeys = Headers.AllKeys();
+            string[] allKeys = Headers.AllKeys();
             Assert.IsTrue(allKeys.Contains(Key));
             Assert.IsTrue(allKeys.Contains(HttpConstants.HttpHeaders.PartitionKey));
             Assert.IsTrue(allKeys.Contains(HttpConstants.HttpHeaders.RetryAfterInMilliseconds));
@@ -209,12 +209,12 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void AllKnownPropertiesHaveGetAndSetAndIndexed()
         {
-            var Headers = new Headers();
-            var knownHeaderProperties = typeof(Headers)
+            Headers Headers = new Headers();
+            IEnumerable<PropertyInfo> knownHeaderProperties = typeof(Headers)
                     .GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
                     .Where(p => p.GetCustomAttributes(typeof(CosmosKnownHeaderAttribute), false).Any());
 
-            foreach (var knownHeaderProperty in knownHeaderProperties)
+            foreach (PropertyInfo knownHeaderProperty in knownHeaderProperties)
             {
                 string value = "123456789";
                 string header = ((CosmosKnownHeaderAttribute)knownHeaderProperty.GetCustomAttributes(typeof(CosmosKnownHeaderAttribute), false).First()).HeaderName;
@@ -222,7 +222,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                 Assert.AreEqual(value, (string)knownHeaderProperty.GetValue(Headers)); // Verify getter
 
-                value = "9876543210";
+                value = "987654321";
                 knownHeaderProperty.SetValue(Headers, value);
                 Assert.AreEqual(value, Headers[header]);
             }
