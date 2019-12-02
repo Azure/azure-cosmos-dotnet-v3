@@ -614,7 +614,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (!stream.CanSeek)
             {
-                throw new ArgumentException("Stream is needs to be seekable", nameof(stream));
+                throw new ArgumentException("Stream needs to be seekable", nameof(stream));
             }
 
             try
