@@ -1375,7 +1375,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     createItemCount++;
                     string pk = requestMessage.Headers.PartitionKey;
-                    Assert.IsFalse(string.Equals(partitionKey, pk), $"Same PK value should not be sent again. PK value:{pk}");
+                    Assert.AreEqual(partitionKey, pk, $"Same PK value should not be sent again. PK value:{pk}");
                     partitionKey = pk;
                 }
             };
