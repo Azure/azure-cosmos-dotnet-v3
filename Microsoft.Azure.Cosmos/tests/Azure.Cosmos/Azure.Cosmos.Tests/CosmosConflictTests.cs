@@ -27,7 +27,7 @@ namespace Azure.Cosmos.Tests
                 return TestHandler.ReturnSuccess();
             });
 
-            IAsyncEnumerable<Response> iterator = container.Conflicts.GetConflictQueryStreamIterator();
+            IAsyncEnumerable<Response> iterator = container.Conflicts.GetConflictsStreamAsync();
             await foreach (Response response in iterator)
             {
             }

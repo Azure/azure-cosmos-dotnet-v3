@@ -62,7 +62,7 @@ namespace Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        public override IAsyncEnumerable<Response> GetConflictQueryStreamIterator(
+        public override IAsyncEnumerable<Response> GetConflictsStreamAsync(
            string queryText = null,
            string continuationToken = null,
            QueryRequestOptions requestOptions = null,
@@ -74,14 +74,14 @@ namespace Azure.Cosmos
                 queryDefinition = new QueryDefinition(queryText);
             }
 
-            return this.GetConflictQueryStreamIterator(
+            return this.GetConflictsStreamAsync(
                 queryDefinition,
                 continuationToken,
                 requestOptions,
                 cancellationToken);
         }
 
-        public override AsyncPageable<T> GetConflictQueryIterator<T>(
+        public override AsyncPageable<T> GetConflictsAsync<T>(
             string queryText = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
@@ -93,14 +93,14 @@ namespace Azure.Cosmos
                 queryDefinition = new QueryDefinition(queryText);
             }
 
-            return this.GetConflictQueryIterator<T>(
+            return this.GetConflictsAsync<T>(
                 queryDefinition,
                 continuationToken,
                 requestOptions,
                 cancellationToken);
         }
 
-        public override async IAsyncEnumerable<Response> GetConflictQueryStreamIterator(
+        public override async IAsyncEnumerable<Response> GetConflictsStreamAsync(
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
@@ -120,7 +120,7 @@ namespace Azure.Cosmos
             }
         }
 
-        public override AsyncPageable<T> GetConflictQueryIterator<T>(
+        public override AsyncPageable<T> GetConflictsAsync<T>(
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
