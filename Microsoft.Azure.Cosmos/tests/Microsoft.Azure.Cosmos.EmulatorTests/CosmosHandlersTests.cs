@@ -111,20 +111,5 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             public string description { get; set; }
             public string status { get; set; }
         }
-
-        public class CustomHandler : RequestHandler
-        {
-            public Action<RequestMessage> UpdateRequestMessage = null;
-
-            public override Task<ResponseMessage> SendAsync(RequestMessage request, CancellationToken cancellationToken)
-            {
-                if (this.UpdateRequestMessage != null)
-                {
-                    this.UpdateRequestMessage(request);
-                }
-
-                return base.SendAsync(request, cancellationToken);
-            }
-        }
     }
 }
