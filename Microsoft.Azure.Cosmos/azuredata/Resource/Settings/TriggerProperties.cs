@@ -76,6 +76,7 @@ namespace Azure.Cosmos.Scripts
         /// ETags are used for concurrency checking when updating resources. 
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.ETag)]
-        public ETag ETag { get; private set; }
+        [JsonConverter(typeof(ETagConverter))]
+        public ETag? ETag { get; private set; }
     }
 }
