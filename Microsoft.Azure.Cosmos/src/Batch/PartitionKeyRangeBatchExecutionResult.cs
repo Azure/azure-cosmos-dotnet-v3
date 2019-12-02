@@ -11,14 +11,14 @@ namespace Microsoft.Azure.Cosmos
     {
         public string PartitionKeyRangeId { get; }
 
-        public BatchResponse ServerResponse { get; }
+        public TransactionalBatchResponse ServerResponse { get; }
 
         public IEnumerable<ItemBatchOperation> Operations { get; }
 
         public PartitionKeyRangeBatchExecutionResult(
             string pkRangeId,
             IEnumerable<ItemBatchOperation> operations,
-            BatchResponse serverResponse)
+            TransactionalBatchResponse serverResponse)
         {
             this.PartitionKeyRangeId = pkRangeId;
             this.ServerResponse = serverResponse;

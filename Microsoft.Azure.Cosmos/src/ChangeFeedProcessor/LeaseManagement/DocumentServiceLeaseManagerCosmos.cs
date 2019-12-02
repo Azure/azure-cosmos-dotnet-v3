@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 throw new ArgumentNullException(nameof(leaseToken));
 
             string leaseDocId = this.GetDocumentId(leaseToken);
-            var documentServiceLease = new DocumentServiceLeaseCore
+            DocumentServiceLeaseCore documentServiceLease = new DocumentServiceLeaseCore
             {
                 LeaseId = leaseDocId,
                 LeaseToken = leaseToken,

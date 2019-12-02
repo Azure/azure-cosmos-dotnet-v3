@@ -103,6 +103,12 @@ namespace Azure.Cosmos
             return response;
         }
 
+        internal bool TryGetContinuationToken(out string state)
+        {
+            state = this.continuationToken;
+            return true;
+        }
+
         internal static string GetContinuationToken(ResponseMessage httpResponseMessage)
         {
             return httpResponseMessage.CosmosHeaders.ContinuationToken;

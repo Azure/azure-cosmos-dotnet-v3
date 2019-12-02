@@ -62,7 +62,9 @@ namespace Microsoft.Azure.Cosmos.Query
                 MaxItemCount = queryRequestOptions.MaxItemCount,
                 PartitionKey = queryRequestOptions.PartitionKey,
                 Properties = queryRequestOptions.Properties,
-                PartitionedQueryExecutionInfo = partitionedQueryExecutionInfo
+                PartitionedQueryExecutionInfo = partitionedQueryExecutionInfo,
+                ExecutionEnvironment = queryRequestOptions.ExecutionEnvironment.GetValueOrDefault(Core.ExecutionContext.ExecutionEnvironment.Client),
+                ResponseContinuationTokenLimitInKb = queryRequestOptions.ResponseContinuationTokenLimitInKb,
             };
 
             return new QueryIterator(
@@ -82,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 QueryResponseCore responseCore = await this.cosmosQueryExecutionContext.ExecuteNextAsync(cancellationToken);
                 CosmosQueryContext cosmosQueryContext = this.cosmosQueryExecutionContext.CosmosQueryContext;
-                QueryAggregateDiagnostics diagnostics = new QueryAggregateDiagnostics(responseCore.diagnostics);
+                QueryAggregateDiagnostics diagnostics = new QueryAggregateDiagnostics(responseCore.Diagnostics);
                 QueryResponse queryResponse;
                 if (responseCore.IsSuccess)
                 {
@@ -98,7 +100,8 @@ namespace Microsoft.Azure.Cosmos.Query
                             cosmosQueryContext.ContainerResourceId)
                         {
                             RequestCharge = responseCore.RequestCharge,
-                            ActivityId = responseCore.ActivityId
+                            ActivityId = responseCore.ActivityId,
+                            SubStatusCode = responseCore.SubStatusCode ?? Documents.SubStatusCodes.Unknown
                         });
                 }
                 else
@@ -116,7 +119,8 @@ namespace Microsoft.Azure.Cosmos.Query
                             cosmosQueryContext.ContainerResourceId)
                         {
                             RequestCharge = responseCore.RequestCharge,
-                            ActivityId = responseCore.ActivityId
+                            ActivityId = responseCore.ActivityId,
+                            SubStatusCode = responseCore.SubStatusCode ?? Documents.SubStatusCodes.Unknown
                         });
                 }
 
@@ -144,7 +148,7 @@ namespace Microsoft.Azure.Cosmos.Query
             return response;
         }
 
-        internal override bool TryGetContinuationToken(out string state)
+        internal bool TryGetContinuationToken(out string state)
         {
             return this.cosmosQueryExecutionContext.TryGetContinuationToken(out state);
         }

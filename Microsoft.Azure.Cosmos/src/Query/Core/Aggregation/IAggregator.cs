@@ -21,5 +21,11 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
         /// </summary>
         /// <returns>The result of the aggregation.</returns>
         CosmosElement GetResult();
+
+        /// <summary>
+        /// Gets a continuation token that stores the partial aggregate up till this point.
+        /// </summary>
+        /// <returns>A continuation token that stores the partial aggregate up till this point.</returns>
+        string GetContinuationToken();
     }
 }

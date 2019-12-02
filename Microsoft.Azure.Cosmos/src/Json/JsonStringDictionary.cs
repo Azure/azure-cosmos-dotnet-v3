@@ -40,13 +40,13 @@ namespace Microsoft.Azure.Cosmos.Json
                 return true;
             }
 
-            if (size == this.stringDictionary.Length)
+            if (this.size == this.stringDictionary.Length)
             {
                 return false;
             }
 
             index = this.size;
-            this.stringDictionary[size++] = value;
+            this.stringDictionary[this.size++] = value;
             this.stringToIndex[value] = index;
 
             return true;
@@ -55,13 +55,38 @@ namespace Microsoft.Azure.Cosmos.Json
         public bool TryGetStringAtIndex(int index, out string value)
         {
             value = default(string);
-            if (index < 0 || index >= size)
+            if (index < 0 || index >= this.size)
             {
                 return false;
             }
 
             value = this.stringDictionary[index];
             return true;
+        }
+
+        public static JsonStringDictionary CreateFromStringArray(IReadOnlyList<string> userStrings)
+        {
+            if (userStrings == null)
+            {
+                throw new ArgumentNullException(nameof(userStrings));
+            }
+
+            JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(userStrings.Count);
+            for (int i = 0; i < userStrings.Count; i++)
+            {
+                string userString = userStrings[i];
+                if (!jsonStringDictionary.TryAddString(userString, out int index))
+                {
+                    throw new ArgumentException($"Failed to add {userString} to {nameof(JsonStringDictionary)}.");
+                }
+
+                if (index != i)
+                {
+                    throw new ArgumentException($"Tried to add {userString} at index {i}, but instead it was inserted at index {index}.");
+                }
+            }
+
+            return jsonStringDictionary;
         }
     }
 #if INTERNAL

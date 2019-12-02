@@ -8,6 +8,7 @@ namespace Azure.Cosmos
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
+    using Azure.Cosmos.Query;
 
     internal class PageIteratorCore<T>
     {
@@ -30,7 +31,24 @@ namespace Azure.Cosmos
 
             Response response = await this.feedIterator.ReadNextAsync(cancellationToken);
             
-            return (new CosmosPage<T>(this.responseCreator(response), response), this.feedIterator.HasMoreResults);
+            return (new CosmosPage<T>(this.responseCreator(response), response, this.TryGetContinuationToken), this.feedIterator.HasMoreResults);
+        }
+
+        internal bool TryGetContinuationToken(out string state)
+        {
+            QueryIterator queryIterator = this.feedIterator as QueryIterator;
+            if (queryIterator != null)
+            {
+                return queryIterator.TryGetContinuationToken(out state);
+            }
+
+            FeedIteratorCore feedIteratorCore = this.feedIterator as FeedIteratorCore;
+            if (feedIteratorCore != null)
+            {
+                return feedIteratorCore.TryGetContinuationToken(out state);
+            }
+
+            throw new ArgumentException($"Unsupported  iterator type of {this.feedIterator.GetType().Name}");
         }
     }
 }

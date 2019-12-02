@@ -2,20 +2,17 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Query
+namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 {
     using System;
-    using System.Collections.Generic;
-    using System.Globalization;
-    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Query.ExecutionComponent;
+    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Documents.Collections;
-    using PartitionKeyRange = Documents.PartitionKeyRange;
 
     /// <summary>
     /// You can imagine the pipeline to be a directed acyclic graph where documents flow from multiple sources (the partitions) to a single sink (the client who calls on ExecuteNextAsync()).
@@ -128,31 +125,23 @@ namespace Microsoft.Azure.Cosmos.Query
             return this.component.TryGetContinuationToken(out state);
         }
 
-        /// <summary>
-        /// Creates a CosmosPipelinedItemQueryExecutionContext.
-        /// </summary>
-        /// <param name="queryContext">The parameters for constructing the base class.</param>
-        /// <param name="initParams">The initial parameters</param>
-        /// <param name="requestContinuationToken">The request continuation.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>A task to await on, which in turn returns a CosmosPipelinedItemQueryExecutionContext.</returns>
-        public static async Task<CosmosQueryExecutionContext> CreateAsync(
+        public static async Task<TryCatch<CosmosQueryExecutionContext>> TryCreateAsync(
+            ExecutionEnvironment executionEnvironment,
             CosmosQueryContext queryContext,
             CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams,
             string requestContinuationToken,
             CancellationToken cancellationToken)
         {
-            DefaultTrace.TraceInformation(
-                string.Format(
-                    CultureInfo.InvariantCulture,
-                    "{0}, CorrelatedActivityId: {1} | Pipelined~Context.CreateAsync",
-                    DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
-                    queryContext.CorrelatedActivityId));
+            if (queryContext == null)
+            {
+                throw new ArgumentNullException(nameof(initParams));
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
 
             QueryInfo queryInfo = initParams.PartitionedQueryExecutionInfo.QueryInfo;
 
             int initialPageSize = initParams.InitialPageSize;
-            CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams parameters = initParams;
             if (queryInfo.HasGroupBy)
             {
                 // The query will block until all groupings are gathered so we might as well speed up the process.
@@ -167,131 +156,116 @@ namespace Microsoft.Azure.Cosmos.Query
                     maxBufferedItemCount: initParams.MaxBufferedItemCount);
             }
 
-            Func<string, Task<IDocumentQueryExecutionComponent>> createOrderByComponentFunc = async (continuationToken) =>
+            async Task<TryCatch<IDocumentQueryExecutionComponent>> tryCreateOrderByComponentAsync(string continuationToken)
             {
-                return await CosmosOrderByItemQueryExecutionContext.CreateAsync(
+                return (await CosmosOrderByItemQueryExecutionContext.TryCreateAsync(
                     queryContext,
                     initParams,
                     continuationToken,
-                    cancellationToken);
-            };
+                    cancellationToken)).Try<IDocumentQueryExecutionComponent>(component => component);
+            }
 
-            Func<string, Task<IDocumentQueryExecutionComponent>> createParallelComponentFunc = async (continuationToken) =>
+            async Task<TryCatch<IDocumentQueryExecutionComponent>> tryCreateParallelComponentAsync(string continuationToken)
             {
-                return await CosmosParallelItemQueryExecutionContext.CreateAsync(
+                return (await CosmosParallelItemQueryExecutionContext.TryCreateAsync(
                     queryContext,
                     initParams,
                     continuationToken,
-                    cancellationToken);
-            };
+                    cancellationToken)).Try<IDocumentQueryExecutionComponent>(component => component);
+            }
 
-            return (CosmosQueryExecutionContext)await PipelinedDocumentQueryExecutionContext.CreateHelperAsync(
-                queryContext.QueryClient,
-                initParams.PartitionedQueryExecutionInfo.QueryInfo,
-                initialPageSize,
-                requestContinuationToken,
-                createOrderByComponentFunc,
-                createParallelComponentFunc);
-        }
-
-        private static async Task<PipelinedDocumentQueryExecutionContext> CreateHelperAsync(
-            CosmosQueryClient queryClient,
-            QueryInfo queryInfo,
-            int initialPageSize,
-            string requestContinuation,
-            Func<string, Task<IDocumentQueryExecutionComponent>> createOrderByQueryExecutionContext,
-            Func<string, Task<IDocumentQueryExecutionComponent>> createParallelQueryExecutionContext)
-        {
-            Func<string, Task<IDocumentQueryExecutionComponent>> createComponentFunc;
+            Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreatePipelineAsync;
             if (queryInfo.HasOrderBy)
             {
-                createComponentFunc = createOrderByQueryExecutionContext;
+                tryCreatePipelineAsync = tryCreateOrderByComponentAsync;
             }
             else
             {
-                createComponentFunc = createParallelQueryExecutionContext;
+                tryCreatePipelineAsync = tryCreateParallelComponentAsync;
             }
 
             if (queryInfo.HasAggregates && !queryInfo.HasGroupBy)
             {
-                Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback = createComponentFunc;
-                createComponentFunc = async (continuationToken) =>
+                Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync = tryCreatePipelineAsync;
+                tryCreatePipelineAsync = async (continuationToken) =>
                 {
-                    return await AggregateDocumentQueryExecutionComponent.CreateAsync(
+                    return await AggregateDocumentQueryExecutionComponent.TryCreateAsync(
+                        executionEnvironment,
                         queryInfo.Aggregates,
                         queryInfo.GroupByAliasToAggregateType,
+                        queryInfo.GroupByAliases,
                         queryInfo.HasSelectValue,
                         continuationToken,
-                        createSourceCallback);
+                        tryCreateSourceAsync);
                 };
             }
 
             if (queryInfo.HasDistinct)
             {
-                Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback = createComponentFunc;
-                createComponentFunc = async (continuationToken) =>
+                Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync = tryCreatePipelineAsync;
+                tryCreatePipelineAsync = async (continuationToken) =>
                 {
-                    return await DistinctDocumentQueryExecutionComponent.CreateAsync(
-                        queryClient,
+                    return await DistinctDocumentQueryExecutionComponent.TryCreateAsync(
+                        executionEnvironment,
                         continuationToken,
-                        createSourceCallback,
+                        tryCreateSourceAsync,
                         queryInfo.DistinctType);
                 };
             }
 
             if (queryInfo.HasGroupBy)
             {
-                Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback = createComponentFunc;
-                createComponentFunc = async (continuationToken) =>
+                Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync = tryCreatePipelineAsync;
+                tryCreatePipelineAsync = async (continuationToken) =>
                 {
-                    return await GroupByDocumentQueryExecutionComponent.CreateAsync(
+                    return await GroupByDocumentQueryExecutionComponent.TryCreateAsync(
+                        executionEnvironment,
                         continuationToken,
-                        createSourceCallback,
+                        tryCreateSourceAsync,
                         queryInfo.GroupByAliasToAggregateType,
+                        queryInfo.GroupByAliases,
                         queryInfo.HasSelectValue);
                 };
             }
 
             if (queryInfo.HasOffset)
             {
-                Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback = createComponentFunc;
-                createComponentFunc = async (continuationToken) =>
+                Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync = tryCreatePipelineAsync;
+                tryCreatePipelineAsync = async (continuationToken) =>
                 {
-                    return await SkipDocumentQueryExecutionComponent.CreateAsync(
+                    return await SkipDocumentQueryExecutionComponent.TryCreateAsync(
                         queryInfo.Offset.Value,
                         continuationToken,
-                        createSourceCallback);
+                        tryCreateSourceAsync);
                 };
             }
 
             if (queryInfo.HasLimit)
             {
-                Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback = createComponentFunc;
-                createComponentFunc = async (continuationToken) =>
+                Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync = tryCreatePipelineAsync;
+                tryCreatePipelineAsync = async (continuationToken) =>
                 {
-                    return await TakeDocumentQueryExecutionComponent.CreateLimitDocumentQueryExecutionComponentAsync(
-                        queryClient,
+                    return await TakeDocumentQueryExecutionComponent.TryCreateLimitDocumentQueryExecutionComponentAsync(
                         queryInfo.Limit.Value,
                         continuationToken,
-                        createSourceCallback);
+                        tryCreateSourceAsync);
                 };
             }
 
             if (queryInfo.HasTop)
             {
-                Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback = createComponentFunc;
-                createComponentFunc = async (continuationToken) =>
+                Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync = tryCreatePipelineAsync;
+                tryCreatePipelineAsync = async (continuationToken) =>
                 {
-                    return await TakeDocumentQueryExecutionComponent.CreateTopDocumentQueryExecutionComponentAsync(
-                        queryClient,
+                    return await TakeDocumentQueryExecutionComponent.TryCreateTopDocumentQueryExecutionComponentAsync(
                         queryInfo.Top.Value,
                         continuationToken,
-                        createSourceCallback);
+                        tryCreateSourceAsync);
                 };
             }
 
-            return new PipelinedDocumentQueryExecutionContext(
-                await createComponentFunc(requestContinuation), initialPageSize);
+            return (await tryCreatePipelineAsync(requestContinuationToken))
+                .Try<CosmosQueryExecutionContext>((source) => new PipelinedDocumentQueryExecutionContext(source, initialPageSize));
         }
 
         /// <summary>
@@ -334,9 +308,34 @@ namespace Microsoft.Azure.Cosmos.Query
                 if (!queryResponse.IsSuccess)
                 {
                     this.component.Stop();
+                    return queryResponse;
                 }
 
-                return queryResponse;
+                string updatedContinuationToken;
+                if (queryResponse.DisallowContinuationTokenMessage == null)
+                {
+                    if (queryResponse.ContinuationToken != null)
+                    {
+                        updatedContinuationToken = new PipelineContinuationTokenV0(queryResponse.ContinuationToken).ToString();
+                    }
+                    else
+                    {
+                        updatedContinuationToken = null;
+                    }
+                }
+                else
+                {
+                    updatedContinuationToken = null;
+                }
+
+                return QueryResponseCore.CreateSuccess(
+                    result: queryResponse.CosmosElements,
+                    continuationToken: updatedContinuationToken,
+                    disallowContinuationTokenMessage: queryResponse.DisallowContinuationTokenMessage,
+                    activityId: queryResponse.ActivityId,
+                    requestCharge: queryResponse.RequestCharge,
+                    diagnostics: queryResponse.Diagnostics,
+                    responseLengthBytes: queryResponse.ResponseLengthBytes);
             }
             catch (Exception)
             {
