@@ -386,7 +386,7 @@ namespace Azure.Cosmos.EmulatorTests
             Cosmos.IndexingPolicy indexingPolicy = null,
             CosmosClientFactory cosmosClientFactory = null)
         {
-            Task queryWrapper(Container container, IEnumerable<Document> inputDocuments, object throwaway)
+            Task queryWrapper(CosmosContainer container, IEnumerable<Document> inputDocuments, object throwaway)
             {
                 return query(container, inputDocuments);
             }
@@ -598,7 +598,7 @@ namespace Azure.Cosmos.EmulatorTests
         }
 
         private static async Task<List<T>> QueryWithTryGetContinuationTokens<T>(
-            Container container,
+            CosmosContainer container,
             string query,
             QueryRequestOptions queryRequestOptions = null)
         {
@@ -4344,7 +4344,7 @@ namespace Azure.Cosmos.EmulatorTests
         }
 
         private async Task TestMalformedPipelinedContinuationTokenHelper(
-            Container container,
+            CosmosContainer container,
             IEnumerable<Document> documents)
         {
             string query = "SELECT * FROM c";
@@ -4576,7 +4576,7 @@ namespace Azure.Cosmos.EmulatorTests
         }
 
         private static async Task<List<T>> RunQueryCombinations<T>(
-            Container container,
+            CosmosContainer container,
             string query,
             QueryRequestOptions queryRequestOptions,
             QueryDrainingMode queryDrainingMode)

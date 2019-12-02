@@ -9,6 +9,7 @@ namespace Azure.Cosmos.ChangeFeed
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Azure.Cosmos.Serialization;
 
     internal static class CosmosContainerExtensions
     {
@@ -30,7 +31,7 @@ namespace Azure.Cosmos.ChangeFeed
         }
 
         public static async Task<ItemResponse<T>> TryCreateItemAsync<T>(
-            this Container container,
+            this CosmosContainer container,
             PartitionKey partitionKey,
             T item)
         {
@@ -50,7 +51,7 @@ namespace Azure.Cosmos.ChangeFeed
         }
 
         public static async Task<ItemResponse<T>> TryReplaceItemAsync<T>(
-            this Container container,
+            this CosmosContainer container,
             string itemId,
             T item,
             PartitionKey partitionKey,
@@ -74,7 +75,8 @@ namespace Azure.Cosmos.ChangeFeed
         {
             using (Response response = await container.DeleteItemStreamAsync(itemId, partitionKey, cosmosItemRequestOptions).ConfigureAwait(false))
             {
-                return response.IsSuccessStatusCode();
+                response.EnsureSuccessStatusCode();
+                return new ItemResponse<T>(response, CosmosContainerExtensions.DefaultJsonSerializer.FromStream<T>(response.ContentStream));
             }
         }
 
