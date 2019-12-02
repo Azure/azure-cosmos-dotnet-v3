@@ -1366,7 +1366,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task TestInvalidPartitionKeyException()
         {
-            CustomHandler testHandler = new CustomHandler();
+            RequestHandlerHelper testHandler = new RequestHandlerHelper();
             int createItemCount = 0;
             string partitionKey = null;
             testHandler.UpdateRequestMessage = (requestMessage) =>
@@ -1375,7 +1375,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     createItemCount++;
                     string pk = requestMessage.Headers.PartitionKey;
-                    Assert.AreEqual(partitionKey, pk, $"Same PK value should not be sent again. PK value:{pk}");
+                    Assert.AreNotEqual(partitionKey, pk, $"Same PK value should not be sent again. PK value:{pk}");
                     partitionKey = pk;
                 }
             };

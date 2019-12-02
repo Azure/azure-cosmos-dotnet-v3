@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task TestCustomPropertyWithHandler()
         { 
-            CustomHandler testHandler = new CustomHandler();
+            RequestHandlerHelper testHandler = new RequestHandlerHelper();
 
             // Add the random guid to the property
             Guid randomGuid = Guid.NewGuid();

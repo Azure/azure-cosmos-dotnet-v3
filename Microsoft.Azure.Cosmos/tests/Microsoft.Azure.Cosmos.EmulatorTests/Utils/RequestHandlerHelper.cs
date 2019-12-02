@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading;
     using System.Threading.Tasks;
 
-    public class CustomHandler : RequestHandler
+    public class RequestHandlerHelper : RequestHandler
     {
         public Action<RequestMessage> UpdateRequestMessage = null;
 
