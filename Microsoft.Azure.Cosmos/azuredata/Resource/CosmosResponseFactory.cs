@@ -140,7 +140,7 @@ namespace Azure.Cosmos
         }
 
         internal Task<UserResponse> CreateUserResponseAsync(
-            User user,
+            CosmosUser user,
             Task<Response> cosmosResponseMessageTask,
             CancellationToken cancellationToken)
         {
@@ -157,7 +157,7 @@ namespace Azure.Cosmos
         }
 
         internal Task<PermissionResponse> CreatePermissionResponseAsync(
-            Permission permission,
+            CosmosPermission permission,
             Task<Response> cosmosResponseMessageTask,
             CancellationToken cancellationToken)
         {

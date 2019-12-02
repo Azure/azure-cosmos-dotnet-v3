@@ -50,7 +50,7 @@ namespace Azure.Cosmos.EmulatorTests
 
             string userId = Guid.NewGuid().ToString();
             UserResponse userResponse = await this.cosmosDatabase.CreateUserAsync(userId);
-            User user = userResponse.User;
+            CosmosUser user = userResponse.User;
             Assert.AreEqual((int)HttpStatusCode.Created, userResponse.GetRawResponse().Status);
             Assert.AreEqual(userId, user.Id);
 
@@ -109,7 +109,7 @@ namespace Azure.Cosmos.EmulatorTests
             UserResponse userResponse = await this.cosmosDatabase.CreateUserAsync(userId);
             Assert.AreEqual((int)HttpStatusCode.Created, userResponse.GetRawResponse().Status);
             Assert.AreEqual(userId, userResponse.Value.Id);
-            User user = userResponse.User;
+            CosmosUser user = userResponse.User;
 
             //create resource
             string containerId = Guid.NewGuid().ToString();
@@ -167,7 +167,7 @@ namespace Azure.Cosmos.EmulatorTests
             UserResponse userResponse = await this.cosmosDatabase.CreateUserAsync(userId);
             Assert.AreEqual((int)HttpStatusCode.Created, userResponse.GetRawResponse().Status);
             Assert.AreEqual(userId, userResponse.Value.Id);
-            User user = userResponse.User;
+            CosmosUser user = userResponse.User;
 
             //create resource
             string containerId = Guid.NewGuid().ToString();

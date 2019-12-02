@@ -311,7 +311,7 @@ namespace Azure.Cosmos
             return this.ClientContext.ResponseFactory.CreateUserResponseAsync(this.GetUser(userProperties.Id), response, cancellationToken);
         }
 
-        public override User GetUser(string id)
+        public override CosmosUser GetUser(string id)
         {
             if (string.IsNullOrEmpty(id))
             {

@@ -516,7 +516,7 @@ namespace Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract User GetUser(string id);
+        public abstract CosmosUser GetUser(string id);
 
         /// <summary>
         /// Creates a user as an asynchronous operation in the Azure Cosmos service.

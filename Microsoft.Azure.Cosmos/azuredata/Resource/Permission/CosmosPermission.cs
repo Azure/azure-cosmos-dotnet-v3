@@ -33,7 +33,7 @@ namespace Azure.Cosmos
     /// </item>
     /// </list>
     /// </summary>
-    public abstract class Permission
+    public abstract class CosmosPermission
     {
         /// <summary>
         /// The Id of the Cosmos Permission
@@ -65,8 +65,8 @@ namespace Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// User user = this.database.GetUser("userId");
-        /// Permission permission= user.GetPermission("permissionId");
+        /// CosmosUser user = this.database.GetUser("userId");
+        /// CosmosPermission permission= user.GetPermission("permissionId");
         /// PermissionProperties permissionProperties = await permission.ReadAsync(tokenExpiryInSeconds: 9000);
         /// ]]>
         /// </code>
@@ -134,8 +134,8 @@ namespace Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// User user = this.database.GetUser("userId");
-        /// Permission permission = user.GetPermission("permissionId");
+        /// CosmosUser user = this.database.GetUser("userId");
+        /// CosmosPermission permission = user.GetPermission("permissionId");
         /// PermissionResponse response = await permission.DeleteAsync();
         /// ]]>
         /// </code>

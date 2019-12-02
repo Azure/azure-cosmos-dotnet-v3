@@ -26,7 +26,7 @@ namespace Azure.Cosmos
         internal PermissionResponse(
             Response response,
             PermissionProperties permissionProperties,
-            Permission permission)
+            CosmosPermission permission)
         {
             this.rawResponse = response;
             this.Value = permissionProperties;
@@ -43,13 +43,13 @@ namespace Azure.Cosmos
         /// The reference to the cosmos permission. This allows additional operations on the permission
         /// or for easy access permissions
         /// </summary>
-        public virtual Permission Permission { get; private set; }
+        public virtual CosmosPermission Permission { get; private set; }
 
         /// <summary>
-        /// Get <see cref="Cosmos.Permission"/> implicitly from <see cref="PermissionResponse"/>
+        /// Get <see cref="Cosmos.CosmosPermission"/> implicitly from <see cref="PermissionResponse"/>
         /// </summary>
         /// <param name="response">PermissionResponse</param>
-        public static implicit operator Permission(PermissionResponse response)
+        public static implicit operator CosmosPermission(PermissionResponse response)
         {
             return response.Permission;
         }
