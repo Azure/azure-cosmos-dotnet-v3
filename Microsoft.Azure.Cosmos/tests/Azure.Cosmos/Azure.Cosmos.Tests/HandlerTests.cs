@@ -105,7 +105,7 @@ namespace Azure.Cosmos.Tests
                 Properties = new Dictionary<string, object>(new List<KeyValuePair<string, object>> {
                     new KeyValuePair<string, object>(PropertyKey, propertyValue)
                 }),
-                IfMatchEtag = Condition,
+                IfMatch = new ETag(Condition),
             };
 
             TestHandler testHandler = new TestHandler((request, cancellationToken) =>
@@ -235,7 +235,7 @@ namespace Azure.Cosmos.Tests
             const string SessionToken = "test";
             ItemRequestOptions options = new ItemRequestOptions
             {
-                IfNoneMatchEtag = Condition,
+                IfNoneMatch = new ETag(Condition),
                 ConsistencyLevel = (Cosmos.ConsistencyLevel)ConsistencyLevel.Eventual,
                 SessionToken = SessionToken
             };

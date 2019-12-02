@@ -1216,7 +1216,7 @@ namespace Azure.Cosmos.EmulatorTests
 
             ItemRequestOptions itemRequestOptions = new ItemRequestOptions()
             {
-                IfMatchEtag = Guid.NewGuid().ToString(),
+                IfMatch = new ETag(Guid.NewGuid().ToString()),
             };
 
             try

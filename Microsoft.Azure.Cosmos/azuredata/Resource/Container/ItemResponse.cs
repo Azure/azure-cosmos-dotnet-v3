@@ -67,17 +67,6 @@ namespace Azure.Cosmos
         /// <remarks>
         /// ETags are used for concurrency checking when updating resources. 
         /// </remarks>
-        public virtual string ETag
-        {
-            get
-            {
-                if (this.GetRawResponse().Headers.TryGetValue(HttpConstants.HttpHeaders.ETag, out string etag))
-                {
-                    return etag;
-                }
-
-                return string.Empty;
-            }
-        }
+        public virtual ETag? ETag => this.GetRawResponse().Headers.ETag;
     }
 }

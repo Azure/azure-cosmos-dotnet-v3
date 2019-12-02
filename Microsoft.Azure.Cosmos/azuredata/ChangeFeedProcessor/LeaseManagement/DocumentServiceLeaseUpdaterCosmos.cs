@@ -114,7 +114,7 @@ namespace Azure.Cosmos.ChangeFeed
 
         private ItemRequestOptions CreateIfMatchOptions(DocumentServiceLease lease)
         {
-            return new ItemRequestOptions { IfMatchEtag = lease.ConcurrencyToken };
+            return new ItemRequestOptions { IfMatch = new ETag(lease.ConcurrencyToken) };
         }
     }
 }

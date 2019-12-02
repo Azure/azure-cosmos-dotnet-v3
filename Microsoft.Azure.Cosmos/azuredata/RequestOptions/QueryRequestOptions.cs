@@ -201,8 +201,8 @@ namespace Azure.Cosmos
         {
             QueryRequestOptions queryRequestOptions = new QueryRequestOptions
             {
-                IfMatchEtag = this.IfMatchEtag,
-                IfNoneMatchEtag = this.IfNoneMatchEtag,
+                IfMatch = this.IfMatch,
+                IfNoneMatch = this.IfNoneMatch,
                 MaxItemCount = this.MaxItemCount,
                 ResponseContinuationTokenLimitInKb = this.ResponseContinuationTokenLimitInKb,
                 EnableScanInQuery = this.EnableScanInQuery,
