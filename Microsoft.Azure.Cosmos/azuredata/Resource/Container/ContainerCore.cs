@@ -61,7 +61,7 @@ namespace Azure.Cosmos
 
         //internal virtual BatchAsyncContainerExecutor BatchExecutor { get; }
 
-        public override Conflicts Conflicts { get; }
+        public override CosmosConflicts Conflicts { get; }
 
         public override Scripts.Scripts Scripts { get; }
 

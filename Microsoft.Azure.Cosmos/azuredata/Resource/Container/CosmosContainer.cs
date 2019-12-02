@@ -34,7 +34,7 @@ namespace Azure.Cosmos
         /// <summary>
         /// Returns the conflicts
         /// </summary>
-        public abstract Conflicts Conflicts { get; }
+        public abstract CosmosConflicts Conflicts { get; }
 
         /// <summary>
         /// Returns the scripts

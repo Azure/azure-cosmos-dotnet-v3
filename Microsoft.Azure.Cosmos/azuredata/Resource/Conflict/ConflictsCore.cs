@@ -12,7 +12,7 @@ namespace Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
 
-    internal class ConflictsCore : Conflicts
+    internal class ConflictsCore : CosmosConflicts
     {
         private readonly ContainerCore container;
         private readonly CosmosClientContext clientContext;
