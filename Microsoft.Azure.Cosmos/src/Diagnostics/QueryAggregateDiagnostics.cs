@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             foreach (QueryPageDiagnostics queryPage in this.Pages)
             {
-                queryPage.AppendJsonToBuilder(stringBuilder);
+                queryPage.AppendJson(stringBuilder);
 
                 // JSON seperate objects
                 stringBuilder.Append(",");
