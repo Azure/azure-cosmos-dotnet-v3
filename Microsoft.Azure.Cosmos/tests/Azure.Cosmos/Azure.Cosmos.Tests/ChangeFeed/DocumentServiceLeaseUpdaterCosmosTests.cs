@@ -88,7 +88,7 @@ namespace Azure.Cosmos.ChangeFeed.Tests
                 It.Is<Cosmos.PartitionKey>(pk => pk.Equals(partitionKey)),
                 It.IsAny<ItemRequestOptions>(),
                 It.IsAny<CancellationToken>()))
-                .Throws(new CosmosException(string.Empty, HttpStatusCode.PreconditionFailed, 0, string.Empty, 0))
+                .Throws(new CosmosException(string.Empty, (int)HttpStatusCode.PreconditionFailed))
                 .Returns(() =>
                 {
                     var itemResponse = new Mock<ItemResponse<DocumentServiceLeaseCore>>();
@@ -144,7 +144,7 @@ namespace Azure.Cosmos.ChangeFeed.Tests
                 It.Is<Cosmos.PartitionKey>(pk => pk.Equals(partitionKey)),
                 It.IsAny<ItemRequestOptions>(),
                 It.IsAny<CancellationToken>()))
-                .Throws(new CosmosException(string.Empty, HttpStatusCode.PreconditionFailed, 0, string.Empty, 0));
+                .Throws(new CosmosException(string.Empty, (int)HttpStatusCode.PreconditionFailed));
 
             var updater = new DocumentServiceLeaseUpdaterCosmos(DocumentServiceLeaseUpdaterCosmosTests.GetMockedContainer(mockedItems));
             var updatedLease = await updater.UpdateLeaseAsync(leaseToUpdate, itemId, partitionKey, serverLease =>
@@ -181,7 +181,7 @@ namespace Azure.Cosmos.ChangeFeed.Tests
                 It.Is<Cosmos.PartitionKey>(pk => pk.Equals(partitionKey)),
                 It.IsAny<ItemRequestOptions>(),
                 It.IsAny<CancellationToken>()))
-                .Throws(new CosmosException(string.Empty, HttpStatusCode.Conflict, 0, string.Empty, 0))
+                .Throws(new CosmosException(string.Empty, (int)HttpStatusCode.Conflict))
                 .Returns(() =>
                 {
                     var itemResponse = new Mock<ItemResponse<DocumentServiceLeaseCore>>();
@@ -268,7 +268,7 @@ namespace Azure.Cosmos.ChangeFeed.Tests
                 It.Is<Cosmos.PartitionKey>(pk => pk.Equals(partitionKey)),
                 It.IsAny<ItemRequestOptions>(),
                 It.IsAny<CancellationToken>()))
-                .Throws(new CosmosException(string.Empty, HttpStatusCode.PreconditionFailed, 0, string.Empty, 0))
+                .Throws(new CosmosException(string.Empty, (int)HttpStatusCode.PreconditionFailed))
                 .Returns(() =>
                 {
                     var itemResponse = new Mock<ItemResponse<DocumentServiceLeaseCore>>();
