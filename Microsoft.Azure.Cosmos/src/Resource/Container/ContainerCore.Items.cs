@@ -573,9 +573,6 @@ namespace Microsoft.Azure.Cosmos
                     {
                         return responseMessage;
                     }
-
-                    responseMessage.Dispose();
-                    itemStream.Position = 0;
                 }
             }
         }
