@@ -326,16 +326,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Azure.Cosmos.Database db = await client.CreateDatabaseAsync(databaseName);
                     Container container = await db.CreateContainerAsync(collectionName, "/id");
 
-                    string id = Guid.NewGuid().ToString();
-                    ResponseMessage rm = await container.ReadItemStreamAsync(id, new Azure.Cosmos.PartitionKey(id), options);
 
-                    Trace.TraceInformation(rm.StatusCode.ToString());
-                }
-                catch (DocumentClientException dce)
-                {
-                    string message = dce.Message;
-                    Assert.IsTrue(message.Contains("The size of the request headers is too long."));
-                }
+                string id = Guid.NewGuid().ToString();
+                ResponseMessage rm = await container.ReadItemStreamAsync(id, new Azure.Cosmos.PartitionKey(id), options);
+
+                Assert.IsTrue(rm.ErrorMessage.Contains("The size of the request headers is too long."));
             }
             finally
             {
