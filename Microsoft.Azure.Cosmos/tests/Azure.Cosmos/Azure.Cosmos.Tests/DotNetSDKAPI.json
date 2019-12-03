@@ -71,20 +71,6 @@
           ],
           "MethodInfo": "Azure.Cosmos.AccountConsistency get_Consistency()"
         },
-        "Azure.ETag ETag[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"_etag\")]": {
-          "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
-          "MethodInfo": null
-        },
-        "Azure.ETag get_ETag()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Azure.ETag get_ETag()"
-        },
         "System.Collections.Generic.IEnumerable`1[Azure.Cosmos.AccountRegion] get_ReadableRegions()": {
           "Type": "Method",
           "Attributes": [],
@@ -108,6 +94,21 @@
             "JsonIgnoreAttribute"
           ],
           "MethodInfo": null
+        },
+        "System.Nullable`1[Azure.ETag] ETag[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"_etag\")]-[Newtonsoft.Json.JsonConverterAttribute(typeof(Azure.Cosmos.ETagConverter))]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonConverterAttribute",
+            "JsonPropertyAttribute"
+          ],
+          "MethodInfo": null
+        },
+        "System.Nullable`1[Azure.ETag] get_ETag()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[Azure.ETag] get_ETag()"
         },
         "System.String get_Id()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -488,9 +489,10 @@
           ],
           "MethodInfo": null
         },
-        "System.Nullable`1[Azure.ETag] ETag[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"_etag\")]": {
+        "System.Nullable`1[Azure.ETag] ETag[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"_etag\")]-[Newtonsoft.Json.JsonConverterAttribute(typeof(Azure.Cosmos.ETagConverter))]": {
           "Type": "Property",
           "Attributes": [
+            "JsonConverterAttribute",
             "JsonPropertyAttribute"
           ],
           "MethodInfo": null
@@ -2490,20 +2492,6 @@
           ],
           "MethodInfo": null
         },
-        "Azure.ETag ETag[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"_etag\")]": {
-          "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
-          "MethodInfo": null
-        },
-        "Azure.ETag get_ETag()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Azure.ETag get_ETag()"
-        },
         "System.Nullable`1[Azure.Cosmos.PartitionKey] get_ResourcePartitionKey()": {
           "Type": "Method",
           "Attributes": [],
@@ -2515,6 +2503,21 @@
             "JsonIgnoreAttribute"
           ],
           "MethodInfo": null
+        },
+        "System.Nullable`1[Azure.ETag] ETag[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"_etag\")]-[Newtonsoft.Json.JsonConverterAttribute(typeof(Azure.Cosmos.ETagConverter))]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonConverterAttribute",
+            "JsonPropertyAttribute"
+          ],
+          "MethodInfo": null
+        },
+        "System.Nullable`1[Azure.ETag] get_ETag()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[Azure.ETag] get_ETag()"
         },
         "System.Nullable`1[System.DateTime] get_LastModified()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -3648,19 +3651,20 @@
     "StoredProcedureProperties": {
       "Subclasses": {},
       "Members": {
-        "Azure.ETag ETag[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"_etag\")]": {
+        "System.Nullable`1[Azure.ETag] ETag[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"_etag\")]-[Newtonsoft.Json.JsonConverterAttribute(typeof(Azure.Cosmos.ETagConverter))]": {
           "Type": "Property",
           "Attributes": [
+            "JsonConverterAttribute",
             "JsonPropertyAttribute"
           ],
           "MethodInfo": null
         },
-        "Azure.ETag get_ETag()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "System.Nullable`1[Azure.ETag] get_ETag()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "Azure.ETag get_ETag()"
+          "MethodInfo": "System.Nullable`1[Azure.ETag] get_ETag()"
         },
         "System.Nullable`1[System.DateTime] get_LastModified()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -3793,19 +3797,20 @@
           ],
           "MethodInfo": null
         },
-        "Azure.ETag ETag[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"_etag\")]": {
+        "System.Nullable`1[Azure.ETag] ETag[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"_etag\")]-[Newtonsoft.Json.JsonConverterAttribute(typeof(Azure.Cosmos.ETagConverter))]": {
           "Type": "Property",
           "Attributes": [
+            "JsonConverterAttribute",
             "JsonPropertyAttribute"
           ],
           "MethodInfo": null
         },
-        "Azure.ETag get_ETag()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "System.Nullable`1[Azure.ETag] get_ETag()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "Azure.ETag get_ETag()"
+          "MethodInfo": "System.Nullable`1[Azure.ETag] get_ETag()"
         },
         "System.String Body[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"body\")]": {
           "Type": "Property",
@@ -3895,19 +3900,20 @@
     "UserDefinedFunctionProperties": {
       "Subclasses": {},
       "Members": {
-        "Azure.ETag ETag[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"_etag\")]": {
+        "System.Nullable`1[Azure.ETag] ETag[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"_etag\")]-[Newtonsoft.Json.JsonConverterAttribute(typeof(Azure.Cosmos.ETagConverter))]": {
           "Type": "Property",
           "Attributes": [
+            "JsonConverterAttribute",
             "JsonPropertyAttribute"
           ],
           "MethodInfo": null
         },
-        "Azure.ETag get_ETag()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "System.Nullable`1[Azure.ETag] get_ETag()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "Azure.ETag get_ETag()"
+          "MethodInfo": "System.Nullable`1[Azure.ETag] get_ETag()"
         },
         "System.String Body[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"body\")]": {
           "Type": "Property",
@@ -5231,20 +5237,6 @@
     "ThroughputProperties": {
       "Subclasses": {},
       "Members": {
-        "Azure.ETag ETag[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"_etag\")]": {
-          "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
-          "MethodInfo": null
-        },
-        "Azure.ETag get_ETag()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Azure.ETag get_ETag()"
-        },
         "System.DateTime get_LastModified()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -5259,6 +5251,21 @@
             "JsonPropertyAttribute"
           ],
           "MethodInfo": null
+        },
+        "System.Nullable`1[Azure.ETag] ETag[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"_etag\")]-[Newtonsoft.Json.JsonConverterAttribute(typeof(Azure.Cosmos.ETagConverter))]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonConverterAttribute",
+            "JsonPropertyAttribute"
+          ],
+          "MethodInfo": null
+        },
+        "System.Nullable`1[Azure.ETag] get_ETag()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[Azure.ETag] get_ETag()"
         },
         "System.Nullable`1[System.Int32] get_Throughput()": {
           "Type": "Method",
