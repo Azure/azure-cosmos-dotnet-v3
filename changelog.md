@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+- [#1070](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1070) CreateItem will only retry for auto-extracted partition key in-case of collection re-creation
+
 ## <a name="3.5.0"/> [3.5.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.5.0) - 2019-12-03
 
 ### Added
@@ -16,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1000](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1000) Add PortReuseMode to CosmosClientOptions.
 - [#1017](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1017) Adding ClientSideRequestStatistics to gateway calls and making endtime nullable
 - [#1038](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1038) Add Selflink to resource properties
- 
+  
 ### Fixed
 
 - [#921](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/921) Fixed error handling to preserve stack trace in certain scenarios
@@ -30,8 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1036](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1036) Fixed query responses to return null Content if it is a failure
 - [#1045](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1045) Added stack trace and innner exception to CosmosException
 - [#1050](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1050) Add mocking constructors to TransactionalBatchOperationResult
-- [#1070](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1070) CreateItem will only retry for auto-extracted partition key in-case of collection re-creation
-
+ 
 ## <a name="3.4.1"/> [3.4.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.4.1) - 2019-11-06
 
 ### Fixed
