@@ -86,6 +86,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task DeadlockDatabase()
+        {
+            DatabaseResponse response = await this.CreateDatabaseHelper();
+            TaskFactory taskFactory = new TaskFactory(new SingleTaskScheduler());
+            CosmosClient cosmosClient = TestCommon.CreateCosmosClient();
+            Task task = taskFactory.StartNew(() =>
+            {
+                Database database = cosmosClient.GetDatabase("CosmosdbHang-databaseId");
+                DatabaseResponse databaseResponse = database.ReadAsync().GetAwaiter().GetResult();
+            });
+
+             await task;
+        }
+
+        [TestMethod]
         public async Task StreamCrudTestAsync()
         {
             Cosmos.Database database = await this.CreateDatabaseStreamHelper();
