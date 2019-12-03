@@ -67,7 +67,7 @@ namespace Azure.Cosmos.ChangeFeed
             }
         }
 
-        public static async Task<T> TryDeleteItemAsync<T>(
+        public static async Task<bool> TryDeleteItemAsync<T>(
             this CosmosContainer container,
             PartitionKey partitionKey,
             string itemId,
@@ -75,8 +75,7 @@ namespace Azure.Cosmos.ChangeFeed
         {
             using (Response response = await container.DeleteItemStreamAsync(itemId, partitionKey, cosmosItemRequestOptions).ConfigureAwait(false))
             {
-                response.EnsureSuccessStatusCode();
-                return new ItemResponse<T>(response, CosmosContainerExtensions.DefaultJsonSerializer.FromStream<T>(response.ContentStream));
+                return response.IsSuccessStatusCode();
             }
         }
 

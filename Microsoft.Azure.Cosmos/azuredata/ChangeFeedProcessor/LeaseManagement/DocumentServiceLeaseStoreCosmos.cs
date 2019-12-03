@@ -70,12 +70,12 @@ namespace Azure.Cosmos.ChangeFeed
                 IfMatch = this.lockETag,
             };
 
-            LockDocument document = await this.container.TryDeleteItemAsync<LockDocument>(
+            bool deleted = await this.container.TryDeleteItemAsync<LockDocument>(
                 this.requestOptionsFactory.GetPartitionKey(lockId),
                 lockId,
                 requestOptions).ConfigureAwait(false);
 
-            if (document != null)
+            if (deleted)
             {
                 this.lockETag = null;
                 return true;
