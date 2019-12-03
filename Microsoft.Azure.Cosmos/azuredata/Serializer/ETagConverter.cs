@@ -42,17 +42,17 @@ namespace Azure.Cosmos
             return new ETag(etagToken.Value<string>());
         }
 
-        public override bool CanWrite
-        {
-            get
-            {
-                return false;
-            }
-        }
+        public override bool CanWrite => true;
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
-            throw new NotImplementedException();
+            ETag valueAsType = (ETag)value;
+            if (valueAsType == null)
+            {
+                return;
+            }
+
+            writer.WriteValue(valueAsType.ToString());
         }
     }
 }
