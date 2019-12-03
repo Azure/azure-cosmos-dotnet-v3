@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Routing;
@@ -37,6 +38,13 @@ namespace Microsoft.Azure.Cosmos
         private readonly ConcurrentDictionary<string, SemaphoreSlim> limitersByPartitionkeyRange = new ConcurrentDictionary<string, SemaphoreSlim>();
         private readonly TimerPool timerPool;
         private readonly RetryOptions retryOptions;
+
+        private readonly ConcurrentBag<(int, bool, double, double, double)> countsAndLatencies = new ConcurrentBag<(int, bool, double, double, double)>();
+        private readonly Stopwatch stopwatch = new Stopwatch();
+        private readonly ConcurrentDictionary<string, int> docsPartitionId = new ConcurrentDictionary<string, int>();
+        private readonly ConcurrentDictionary<string, int> throttlePartitionId = new ConcurrentDictionary<string, int>();
+        private readonly ConcurrentDictionary<string, long> timePartitionid = new ConcurrentDictionary<string, long>();
+        private bool disposeCongestionController = false;
 
         /// <summary>
         /// For unit testing.
@@ -79,6 +87,8 @@ namespace Microsoft.Azure.Cosmos
             this.dispatchTimerInSeconds = dispatchTimerInSeconds;
             this.timerPool = new TimerPool(BatchAsyncContainerExecutor.MinimumDispatchTimerInSeconds);
             this.retryOptions = cosmosClientContext.ClientOptions.GetConnectionPolicy().RetryOptions;
+
+            this.stopwatch.Start();
         }
 
         public virtual async Task<TransactionalBatchOperationResult> AddAsync(
@@ -103,6 +113,7 @@ namespace Microsoft.Azure.Cosmos
 
         public void Dispose()
         {
+            this.disposeCongestionController = true;
             foreach (KeyValuePair<string, BatchAsyncStreamer> streamer in this.streamersByPartitionKeyRange)
             {
                 streamer.Value.Dispose();
@@ -114,6 +125,19 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.timerPool.Dispose();
+
+            IEnumerable<IGrouping<int, (int, bool, double, double, double)>> gs = this.countsAndLatencies.GroupBy(i => i.Item1);
+            double totalCharge = 0;
+            double totalTime = 0;
+            foreach (IGrouping<int, (int, bool, double, double, double)> g in gs)
+            {
+                Console.WriteLine($"BatchItemCount: {g.Key} BatchCount: {g.Count()} RateLimitedBatches: {g.Count(h => h.Item2)} AvgLatencyInMs: {g.Average(h => h.Item4)} AvgBackendLatencyMs: {g.Average(h => h.Item5)}");
+                totalCharge += g.Sum(h => h.Item3);
+                totalTime += g.Sum(h => h.Item4);
+
+            }
+
+            Console.WriteLine($"TotalCharge: {totalCharge} and total time: {totalTime}");
         }
 
         internal virtual async Task ValidateOperationAsync(
@@ -219,13 +243,18 @@ namespace Microsoft.Azure.Cosmos
             PartitionKeyRangeServerBatchRequest serverRequest,
             CancellationToken cancellationToken)
         {
-            SemaphoreSlim limiter = this.GetOrAddLimiterForPartitionKeyRange(serverRequest.PartitionKeyRangeId);
-            using (await limiter.UsingWaitAsync(cancellationToken))
+            SemaphoreSlim limiter = this.GetOrAddLimiterForPartitionKeyRange(serverRequest.PartitionKeyRangeId, cancellationToken);
+            int numThrottle = -1;
+            PartitionKeyRangeBatchExecutionResult result = null;
+            await limiter.WaitAsync(cancellationToken);
+
+            try
             {
                 using (Stream serverRequestPayload = serverRequest.TransferBodyStream())
                 {
                     Debug.Assert(serverRequestPayload != null, "Server request payload expected to be non-null");
 
+                    TimeSpan start = this.stopwatch.Elapsed;
                     ResponseMessage responseMessage = await this.cosmosClientContext.ProcessResourceOperationStreamAsync(
                         this.cosmosContainer.LinkUri,
                         ResourceType.Document,
@@ -236,12 +265,40 @@ namespace Microsoft.Azure.Cosmos
                         streamPayload: serverRequestPayload,
                         requestEnricher: requestMessage => BatchAsyncContainerExecutor.AddHeadersToRequestMessage(requestMessage, serverRequest.PartitionKeyRangeId),
                         cancellationToken: cancellationToken).ConfigureAwait(false);
+                    await Task.CompletedTask.ConfigureAwait(false);
 
-                    TransactionalBatchResponse serverResponse = await TransactionalBatchResponse.FromResponseMessageAsync(responseMessage, serverRequest, this.cosmosClientContext.CosmosSerializer).ConfigureAwait(false);
+                    double backendElapsedTime = (this.stopwatch.Elapsed - start).TotalMilliseconds;
 
-                    return new PartitionKeyRangeBatchExecutionResult(serverRequest.PartitionKeyRangeId, serverRequest.Operations, serverResponse);
+                    TransactionalBatchResponse serverResponse = await
+                    TransactionalBatchResponse.FromResponseMessageAsync(responseMessage, serverRequest, this.cosmosClientContext.CosmosSerializer, false).ConfigureAwait(false);
+
+                    numThrottle = serverResponse.Count(r => r.StatusCode == (System.Net.HttpStatusCode)429);
+                    long secondsElapsed = (this.stopwatch.Elapsed - start).Seconds;
+                    this.throttlePartitionId.AddOrUpdate(serverRequest.PartitionKeyRangeId, numThrottle, (_, old) => old + numThrottle);
+                    this.docsPartitionId.AddOrUpdate(serverRequest.PartitionKeyRangeId, serverResponse.Count, (_, old) => old + serverResponse.Count);
+                    this.timePartitionid.AddOrUpdate(serverRequest.PartitionKeyRangeId, secondsElapsed, (_, old) => old + secondsElapsed);
+
+                    this.countsAndLatencies.Add(
+                        (serverRequest.Operations.Count,
+                        serverResponse.Any(r => r.StatusCode == (System.Net.HttpStatusCode)429),
+                        serverResponse.RequestCharge,
+                        (this.stopwatch.Elapsed - start).TotalMilliseconds,
+                        backendElapsedTime));
+                    result = new PartitionKeyRangeBatchExecutionResult(serverRequest.PartitionKeyRangeId, serverRequest.Operations, serverResponse);
                 }
             }
+            catch (Exception ex)
+            {
+                Trace.TraceError(ex.Message);
+                throw ex;
+            }
+            finally
+            {
+                // No matter what, when the task is finished the semaphore is released letting the next task run.
+                limiter.Release();
+            }
+
+            return result;
         }
 
         private BatchAsyncStreamer GetOrAddStreamerForPartitionKeyRange(string partitionKeyRangeId)
@@ -260,20 +317,95 @@ namespace Microsoft.Azure.Cosmos
             return this.streamersByPartitionKeyRange[partitionKeyRangeId];
         }
 
-        private SemaphoreSlim GetOrAddLimiterForPartitionKeyRange(string partitionKeyRangeId)
+        private SemaphoreSlim GetOrAddLimiterForPartitionKeyRange(string partitionKeyRangeId, CancellationToken cancellationToken)
         {
             if (this.limitersByPartitionkeyRange.TryGetValue(partitionKeyRangeId, out SemaphoreSlim limiter))
             {
                 return limiter;
             }
 
-            SemaphoreSlim newLimiter = new SemaphoreSlim(1, 1);
+            SemaphoreSlim newLimiter = new SemaphoreSlim(5, int.MaxValue);
             if (!this.limitersByPartitionkeyRange.TryAdd(partitionKeyRangeId, newLimiter))
             {
                 newLimiter.Dispose();
             }
+            else
+            {
+                // Addition sucessfull meaning a new limiter was created, so create congestion control on top of it
+                this.CongestionControlTask(partitionKeyRangeId, newLimiter, cancellationToken);
+            }
 
             return this.limitersByPartitionkeyRange[partitionKeyRangeId];
+        }
+
+        private void CongestionControlTask(string partitionKeyRangeId, SemaphoreSlim limiter, CancellationToken cancellationToken)
+        {
+            Task congestionControllerTask = Task.Run(async () =>
+            {
+                long waitTimeForLoggingMetrics = 1;
+                long lastElapsedTime = 0;
+
+                int startingDegreeOfConcurrency = 5;
+                int defaultMaxDegreeOfConcurrency = 60;
+                int additiveIncreaseFactor = 5;
+                double multiplicativeDecreaseFactor = 1.0;
+                int degreeOfConcurrency = startingDegreeOfConcurrency;
+                int maxDegreeOfConcurrency = defaultMaxDegreeOfConcurrency;
+
+                int oldThrttleCount = 0;
+                int oldDocCount = 0;
+
+                while (!this.disposeCongestionController)
+                {
+                    this.timePartitionid.TryGetValue(partitionKeyRangeId, out long currentElapsedTime);
+                    long elapsedTime = currentElapsedTime - lastElapsedTime;
+                    lastElapsedTime = currentElapsedTime;
+
+                    if (elapsedTime >= waitTimeForLoggingMetrics)
+                    {
+                        waitTimeForLoggingMetrics += 1;
+
+                        this.docsPartitionId.TryGetValue(partitionKeyRangeId, out int newDocCount);
+                        this.throttlePartitionId.TryGetValue(partitionKeyRangeId, out int newThrottleCount);
+
+                        int diffThrottle = newThrottleCount - oldThrttleCount;
+                        oldThrttleCount = newThrottleCount;
+
+                        int changeDocCount = newDocCount - oldDocCount;
+                        oldDocCount = newDocCount;
+
+                        if (diffThrottle > 0)
+                        {
+                            additiveIncreaseFactor = 1;
+                            double decreaseFactor = multiplicativeDecreaseFactor + (1000.0 / ((diffThrottle < 1000 ? 1000 : diffThrottle) * 1.0));
+
+                            int decreaseCount = (int)(degreeOfConcurrency * 1.0 / decreaseFactor);
+
+                            // We got a throttle so we need to back off on the degree of concurrency.
+                            // Get the current degree of concurrency and decrease that (AIMD).
+                            for (int i = 0; i < decreaseCount; i++)
+                            {
+                                await limiter.WaitAsync(cancellationToken);
+                            }
+                            degreeOfConcurrency -= decreaseCount;
+                        }
+
+                        if (changeDocCount > 0 && diffThrottle == 0)
+                        {
+                            if (degreeOfConcurrency + additiveIncreaseFactor <= maxDegreeOfConcurrency)
+                            {
+                                // We aren't getting throttles, so we should bump of the degree of concurrency (AIAD).
+                                limiter.Release(additiveIncreaseFactor);
+                                degreeOfConcurrency = degreeOfConcurrency + additiveIncreaseFactor;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        await Task.Delay(2);
+                    }
+                }
+            }, cancellationToken);
         }
     }
 }

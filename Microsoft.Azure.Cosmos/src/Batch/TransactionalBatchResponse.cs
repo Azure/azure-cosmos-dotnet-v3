@@ -211,7 +211,8 @@ namespace Microsoft.Azure.Cosmos
         internal static async Task<TransactionalBatchResponse> FromResponseMessageAsync(
             ResponseMessage responseMessage,
             ServerBatchRequest serverRequest,
-            CosmosSerializer serializer)
+            CosmosSerializer serializer,
+            bool isContentRequired = true)
         {
             using (responseMessage)
             {
@@ -230,7 +231,7 @@ namespace Microsoft.Azure.Cosmos
                     if (content.ReadByte() == (int)HybridRowVersion.V1)
                     {
                         content.Position = 0;
-                        response = await TransactionalBatchResponse.PopulateFromContentAsync(content, responseMessage, serverRequest, serializer);
+                        response = await TransactionalBatchResponse.PopulateFromContentAsync(content, responseMessage, serverRequest, serializer, isContentRequired);
                         if (response == null)
                         {
                             // Convert any payload read failures as InternalServerError
@@ -317,7 +318,8 @@ namespace Microsoft.Azure.Cosmos
             Stream content,
             ResponseMessage responseMessage,
             ServerBatchRequest serverRequest,
-            CosmosSerializer serializer)
+            CosmosSerializer serializer,
+            bool isContentRequired = true)
         {
             List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
 
@@ -327,7 +329,7 @@ namespace Microsoft.Azure.Cosmos
             Result res = await content.ReadRecordIOAsync(
                 record =>
                 {
-                    Result r = TransactionalBatchOperationResult.ReadOperationResult(record, out TransactionalBatchOperationResult operationResult);
+                    Result r = TransactionalBatchOperationResult.ReadOperationResult(record, out TransactionalBatchOperationResult operationResult, isContentRequired);
                     if (r != Result.Success)
                     {
                         return r;
