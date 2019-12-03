@@ -301,42 +301,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 DatabaseResponse databaseResponse = await cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
             });
         }
-
-        [TestMethod]
-        [Owner("jawilley")]
-        public async Task TestLargeSessionTokenExceptionInGateway()
-        {
-            await TestCommon.DeleteAllDatabasesAsync();
-
-            try
-            {
-                string databaseName = "db";
-                string collectionName = "coll";
-
-                // Create a session token that is to large for the gateway to handle
-                string bigSession = "ABCDEF".PadLeft(100 * 1024, 'Z');
-                ItemRequestOptions options = new ItemRequestOptions()
-                {
-                    SessionToken = bigSession
-                };
-
-                try
-                {
-                    CosmosClient client = TestCommon.CreateCosmosClient(true);
-                    Azure.Cosmos.Database db = await client.CreateDatabaseAsync(databaseName);
-                    Container container = await db.CreateContainerAsync(collectionName, "/id");
-
-
-                string id = Guid.NewGuid().ToString();
-                ResponseMessage rm = await container.ReadItemStreamAsync(id, new Azure.Cosmos.PartitionKey(id), options);
-
-                Assert.IsTrue(rm.ErrorMessage.Contains("The size of the request headers is too long."));
-            }
-            finally
-            {
-                await TestCommon.DeleteAllDatabasesAsync();
-            }
-        }
     }
 
     internal static class StringHelper
