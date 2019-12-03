@@ -185,7 +185,7 @@ namespace Microsoft.Azure.Cosmos
                 HttpRequestMessage requestMessage = responseMessage.RequestMessage;
                 if (requestMessage != null)
                 {
-                    context.Append($"RequestUri: {requestMessage.RequestUri.ToString()};");
+                    context.AppendLine($"RequestUri: {requestMessage.RequestUri.ToString()};");
                     context.Append($"RequestMethod: {requestMessage.Method.Method};");
 
                     if (requestMessage.Headers != null)
