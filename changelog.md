@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+### Added
+
+
+ 
+### Fixed
+
+- [#1075](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1075) Including header size details for BadRequest with large headers
+
+
 
 ## 3.5.0 - TBD
 
