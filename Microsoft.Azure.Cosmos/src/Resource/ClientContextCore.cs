@@ -143,16 +143,30 @@ namespace Microsoft.Azure.Cosmos
             Action<RequestMessage> requestEnricher,
             CancellationToken cancellationToken)
         {
-            return this.RequestHandler.SendAsync(
-                resourceUri: resourceUri,
-                resourceType: resourceType,
-                operationType: operationType,
-                requestOptions: requestOptions,
-                cosmosContainerCore: cosmosContainerCore,
-                partitionKey: partitionKey,
-                streamPayload: streamPayload,
-                requestEnricher: requestEnricher,
-                cancellationToken: cancellationToken);
+            if (SynchronizationContext.Current == null)
+            {
+                return this.RequestHandler.SendAsync(
+                    resourceUri: resourceUri,
+                    resourceType: resourceType,
+                    operationType: operationType,
+                    requestOptions: requestOptions,
+                    cosmosContainerCore: cosmosContainerCore,
+                    partitionKey: partitionKey,
+                    streamPayload: streamPayload,
+                    requestEnricher: requestEnricher,
+                    cancellationToken: cancellationToken);
+            }
+
+            return Task.Run(() => this.RequestHandler.SendAsync(
+                    resourceUri: resourceUri,
+                    resourceType: resourceType,
+                    operationType: operationType,
+                    requestOptions: requestOptions,
+                    cosmosContainerCore: cosmosContainerCore,
+                    partitionKey: partitionKey,
+                    streamPayload: streamPayload,
+                    requestEnricher: requestEnricher,
+                    cancellationToken: cancellationToken));
         }
 
         internal override Task<T> ProcessResourceOperationAsync<T>(
