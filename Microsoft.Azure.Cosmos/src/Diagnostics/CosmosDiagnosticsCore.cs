@@ -189,8 +189,7 @@ namespace Microsoft.Azure.Cosmos
                 this.ParentDiagnosticsCore = cosmosDiagnosticsCore;
                 this.Name = name;
                 this.StartTime = DateTimeOffset.UtcNow;
-                this.ElapsedTime = new Stopwatch();
-                this.ElapsedTime.Start();
+                this.ElapsedTime = Stopwatch.StartNew();
             }
 
             public void Dispose()
