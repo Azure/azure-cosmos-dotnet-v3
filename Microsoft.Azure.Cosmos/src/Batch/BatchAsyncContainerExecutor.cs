@@ -122,7 +122,10 @@ namespace Microsoft.Azure.Cosmos
 
             this.timerPool.Dispose();
 
-            IEnumerable<IGrouping<int, (int, bool, double, double)>> gs = this.countsAndLatencies.GroupBy(i => i.Item1);
+            IEnumerable<IGrouping<int, (int, bool, double, double)>> gs = this.countsAndLatencies
+                .GroupBy(i => i.Item1)
+                .OrderBy(g => g.Key);
+
             double totalCharge = 0;
             foreach (IGrouping<int, (int, bool, double, double)> g in gs)
             {
@@ -309,14 +312,17 @@ namespace Microsoft.Azure.Cosmos
                         streamPayload: serverRequestPayload,
                         requestEnricher: requestMessage => BatchAsyncContainerExecutor.AddHeadersToRequestMessage(requestMessage, serverRequest.PartitionKeyRangeId),
                         cancellationToken: cancellationToken).ConfigureAwait(false);
-                    //await Task.CompletedTask.ConfigureAwait(false);
-                    TransactionalBatchResponse serverResponse = // new TransactionalBatchResponse(System.Net.HttpStatusCode.OK, SubStatusCodes.Unknown, null, serverRequest.Operations);
-                    await TransactionalBatchResponse.FromResponseMessageAsync(responseMessage, serverRequest, this.cosmosClientContext.CosmosSerializer).ConfigureAwait(false);
+                        // await Task.CompletedTask.ConfigureAwait(false);
+                    TimeSpan stop = this.stopwatch.Elapsed;
+
+                    TransactionalBatchResponse serverResponse =
+                        // new TransactionalBatchResponse(System.Net.HttpStatusCode.OK, SubStatusCodes.Unknown, null, serverRequest.Operations);
+                        await TransactionalBatchResponse.FromResponseMessageAsync(responseMessage, serverRequest, this.cosmosClientContext.CosmosSerializer).ConfigureAwait(false);
                     this.countsAndLatencies.Add(
                         (serverRequest.Operations.Count,
                         serverResponse.Any(r => r.StatusCode == (System.Net.HttpStatusCode)429),
                         serverResponse.RequestCharge,
-                        (this.stopwatch.Elapsed - start).TotalMilliseconds));
+                        (stop - start).TotalMilliseconds));
                     return new PartitionKeyRangeBatchExecutionResult(serverRequest.PartitionKeyRangeId, serverRequest.Operations, serverResponse);
                 }
             }

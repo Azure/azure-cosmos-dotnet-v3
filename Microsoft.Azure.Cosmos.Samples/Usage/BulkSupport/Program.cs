@@ -3,13 +3,16 @@
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Runtime;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Extensions.Configuration;
     using Newtonsoft.Json;
 
@@ -39,13 +42,11 @@
         {
             try
             {
-                // Make sure this is >= 2 * physical_partition_count * (2MB / docSize) when useBulk is true
-                // for best perf.
-                int concurrency = args.Length > 0 ? int.Parse(args[0]) : 200000;
-                int docSize = args.Length > 1 ? int.Parse(args[1]) : 1024;
+                int maxDocs = args.Length > 0 ? int.Parse(args[0]) : 1000000;
+                int docSize = args.Length > 1 ? int.Parse(args[1]) : 540;
                 int runtimeInSeconds = args.Length > 2 ? int.Parse(args[2]) : 30;
                 bool useBulk = args.Length > 3 ? bool.Parse(args[3]) : true;
-                int workerCount = args.Length > 4 ? int.Parse(args[4]) : 20;
+                int workerCount = args.Length > 4 ? int.Parse(args[4]) : 1;
 
                 // Read the Cosmos endpointUrl and authorisationKeys from configuration
                 // These values are available from the Azure Management Portal on the Cosmos Account Blade under "Keys"
@@ -72,7 +73,7 @@
 
                 Console.WriteLine("Running demo with a {0}CosmosClient...", useBulk ? "Bulk enabled " : string.Empty);
                 // Execute inserts for 30 seconds on a Bulk enabled client
-                await Program.CreateItemsConcurrentlyAsync(bulkClient, concurrency, docSize, runtimeInSeconds, workerCount);
+                await Program.CreateItemsConcurrentlyAsync(bulkClient, maxDocs, docSize, runtimeInSeconds, workerCount);
 
                 bulkClient.Dispose();
             }
@@ -99,38 +100,35 @@
             string authKey,
             bool useBulk) =>
         // </Initialization>
-            new CosmosClient(endpoint, authKey, new CosmosClientOptions() { AllowBulkExecution = useBulk } );
+            new CosmosClientBuilder(endpoint, authKey).WithBulkExecution(useBulk).Build();
         // </Initialization>
 
         private static async Task CreateItemsConcurrentlyAsync(
             CosmosClient client, 
-            int concurrency, 
+            int maxDocs, 
             int docSize, 
             int runtimeInSeconds,
             int workerCount)
         {
-            DataSource dataSource = new DataSource(concurrency * workerCount, docSize);
+            DataSource dataSource = new DataSource(maxDocs, docSize);
 
             Container container = client.GetContainer(Program.databaseId, Program.containerId);
-            Console.WriteLine($"Initiating creates of items of about {docSize} bytes with {workerCount} workers each maintaining {concurrency} in-progress items for {runtimeInSeconds} seconds.");
+            Console.WriteLine($"Initiating creates of up to {maxDocs} items of about {docSize} bytes each using {workerCount} workers for {runtimeInSeconds} seconds.");
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
             cancellationTokenSource.CancelAfter(runtimeInSeconds * 1000);
             CancellationToken cancellationToken = cancellationTokenSource.Token;
-            int created = await CreateItemsAsync(container, dataSource, concurrency, docSize, workerCount, cancellationToken);
+            int created = await CreateItemsAsync(container, dataSource, docSize, workerCount, cancellationToken);
             Console.WriteLine($"Inserted {created} items.");
         }
 
         private static async Task<int> CreateItemsAsync(
             Container container,
             DataSource dataSource,
-            int concurrency,
             int docSize,
             int workerCount,
             CancellationToken cancellationToken)
         {
             ConcurrentDictionary<HttpStatusCode, int> countsByStatus = new ConcurrentDictionary<HttpStatusCode, int>();
-
-            SemaphoreSlim semaphore = new SemaphoreSlim(concurrency, concurrency);
 
             try
             {
@@ -139,14 +137,12 @@
                 {
                     workerTasks.Add(Task.Run(() =>
                     {
-                        while (true)
+                        while (!cancellationToken.IsCancellationRequested)
                         {
-                            semaphore.Wait(cancellationToken);
                             MemoryStream stream = dataSource.GetNextItemStream(out string partitionKeyValue);
                             _ = container.CreateItemStreamAsync(stream, new PartitionKey(partitionKeyValue))
                                 .ContinueWith((Task<ResponseMessage> task) =>
                                 {
-                                    semaphore.Release();
                                     dataSource.DoneWithItemStream(stream);
                                     HttpStatusCode resultCode = task.Result.StatusCode;
                                     if (task.Result.Content != null) { task.Result.Content.Dispose(); }
@@ -335,7 +331,10 @@
             private MemoryStream GetNewStream()
             {
                 byte[] buffer = new byte[this.streamSize];
+
+                // Ensure allocation
                 buffer[this.streamSize - 1] = 0;
+
                 return new PoolableMemoryStream(buffer, index: 0, count: streamSize, writable: true, publiclyVisible: true);
             }
         }
