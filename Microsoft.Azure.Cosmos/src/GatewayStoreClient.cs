@@ -186,13 +186,13 @@ namespace Microsoft.Azure.Cosmos
                 if (requestMessage != null)
                 {
                     context.AppendLine($"RequestUri: {requestMessage.RequestUri.ToString()};");
-                    context.Append($"RequestMethod: {requestMessage.Method.Method};");
+                    context.AppendLine($"RequestMethod: {requestMessage.Method.Method};");
 
                     if (requestMessage.Headers != null)
                     {
                         foreach (KeyValuePair<string, IEnumerable<string>> header in requestMessage.Headers)
                         {
-                            context.Append($"Header: {header.Key} Length: {string.Join(",", header.Value).Length};");
+                            context.AppendLine($"Header: {header.Key} Length: {string.Join(",", header.Value).Length};");
                         }
                     }
                 }
