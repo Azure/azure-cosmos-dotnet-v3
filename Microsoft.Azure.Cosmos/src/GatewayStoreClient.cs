@@ -180,7 +180,7 @@ namespace Microsoft.Azure.Cosmos
             else
             {
                 StringBuilder context = new StringBuilder();
-                context.Append(await responseMessage.Content.ReadAsStringAsync());
+                context.AppendLine(await responseMessage.Content.ReadAsStringAsync());
 
                 HttpRequestMessage requestMessage = responseMessage.RequestMessage;
                 if (requestMessage != null)
