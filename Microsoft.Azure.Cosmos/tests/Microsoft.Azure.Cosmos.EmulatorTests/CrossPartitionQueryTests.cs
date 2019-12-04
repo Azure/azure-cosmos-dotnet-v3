@@ -4811,6 +4811,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 stringBuilder.Append('a' + rand.Next(0, 26));
             }
 
+            stringBuilder.Append("💩");
+
             return stringBuilder.ToString();
         }
 
