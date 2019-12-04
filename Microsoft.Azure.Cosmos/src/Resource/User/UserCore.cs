@@ -55,21 +55,29 @@ namespace Microsoft.Azure.Cosmos
         public override Task<UserResponse> ReadAsync(RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<ResponseMessage> response = this.ReadStreamAsync(
-                requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
+            return TaskHelper.RunInlineIfNeededAsync(() =>
+            {
+                Task<ResponseMessage> response = this.ProcessStreamAsync(
+                    streamPayload: null,
+                    operationType: OperationType.Read,
+                    requestOptions: requestOptions,
+                    cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateUserResponseAsync(this, response);
+                return this.ClientContext.ResponseFactory.CreateUserResponseAsync(this, response);
+            });
         }
 
         public Task<ResponseMessage> ReadStreamAsync(RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.ProcessStreamAsync(
-                streamPayload: null,
-                operationType: OperationType.Read,
-                requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
+            return TaskHelper.RunInlineIfNeededAsync(() =>
+            {
+                return this.ProcessStreamAsync(
+                    streamPayload: null,
+                    operationType: OperationType.Read,
+                    requestOptions: requestOptions,
+                    cancellationToken: cancellationToken);
+            });
         }
 
         /// <inheritdoc/>
@@ -83,12 +91,15 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.ClientContext.ValidateResource(userProperties.Id);
-            Task<ResponseMessage> response = this.ReplaceStreamInternalAsync(
-                streamPayload: this.ClientContext.PropertiesSerializer.ToStream(userProperties),
-                requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
+            return TaskHelper.RunInlineIfNeededAsync(() =>
+            {
+                Task<ResponseMessage> response = this.ReplaceStreamInternalAsync(
+                    streamPayload: this.ClientContext.PropertiesSerializer.ToStream(userProperties),
+                    requestOptions: requestOptions,
+                    cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateUserResponseAsync(this, response);
+                return this.ClientContext.ResponseFactory.CreateUserResponseAsync(this, response);
+            });
         }
 
         public Task<ResponseMessage> ReplaceStreamAsync(UserProperties userProperties,
@@ -101,31 +112,42 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.ClientContext.ValidateResource(userProperties.Id);
-            return this.ReplaceStreamInternalAsync(
-                streamPayload: this.ClientContext.PropertiesSerializer.ToStream(userProperties),
-                requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
+            return TaskHelper.RunInlineIfNeededAsync(() =>
+            {
+                return this.ReplaceStreamInternalAsync(
+                    streamPayload: this.ClientContext.PropertiesSerializer.ToStream(userProperties),
+                    requestOptions: requestOptions,
+                    cancellationToken: cancellationToken);
+            });
         }
 
         /// <inheritdoc/>
         public override Task<UserResponse> DeleteAsync(RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<ResponseMessage> response = this.DeleteStreamAsync(
-                requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
+            return TaskHelper.RunInlineIfNeededAsync(() =>
+            {
+                Task<ResponseMessage> response = this.ProcessStreamAsync(
+                    streamPayload: null,
+                    operationType: OperationType.Delete,
+                    requestOptions: requestOptions,
+                    cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateUserResponseAsync(this, response);
+                return this.ClientContext.ResponseFactory.CreateUserResponseAsync(this, response);
+            });
         }
 
         public Task<ResponseMessage> DeleteStreamAsync(RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.ProcessStreamAsync(
-               streamPayload: null,
-               operationType: OperationType.Delete,
-               requestOptions: requestOptions,
-               cancellationToken: cancellationToken);
+            return TaskHelper.RunInlineIfNeededAsync(() =>
+            {
+                return this.ProcessStreamAsync(
+                    streamPayload: null,
+                    operationType: OperationType.Delete,
+                    requestOptions: requestOptions,
+                    cancellationToken: cancellationToken);
+            });
         }
 
         /// <inheritdoc/>
@@ -155,13 +177,16 @@ namespace Microsoft.Azure.Cosmos
 
             this.ClientContext.ValidateResource(permissionProperties.Id);
 
-            Task<ResponseMessage> response = this.CreatePermissionStreamInternalAsync(
-                streamPayload: this.ClientContext.PropertiesSerializer.ToStream(permissionProperties),
-                tokenExpiryInSeconds: tokenExpiryInSeconds,
-                requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
+            return TaskHelper.RunInlineIfNeededAsync(() =>
+            {
+                Task<ResponseMessage> response = this.CreatePermissionStreamInternalAsync(
+                    streamPayload: this.ClientContext.PropertiesSerializer.ToStream(permissionProperties),
+                    tokenExpiryInSeconds: tokenExpiryInSeconds,
+                    requestOptions: requestOptions,
+                    cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreatePermissionResponseAsync(this.GetPermission(permissionProperties.Id), response);
+                return this.ClientContext.ResponseFactory.CreatePermissionResponseAsync(this.GetPermission(permissionProperties.Id), response);
+            });
         }
 
         public Task<ResponseMessage> CreatePermissionStreamAsync(PermissionProperties permissionProperties,
@@ -177,10 +202,13 @@ namespace Microsoft.Azure.Cosmos
             this.ClientContext.ValidateResource(permissionProperties.Id);
 
             Stream streamPayload = this.ClientContext.PropertiesSerializer.ToStream(permissionProperties);
-            return this.CreatePermissionStreamInternalAsync(streamPayload,
-                tokenExpiryInSeconds,
-                requestOptions,
-                cancellationToken);
+            return TaskHelper.RunInlineIfNeededAsync(() =>
+            {
+                return this.CreatePermissionStreamInternalAsync(streamPayload,
+                    tokenExpiryInSeconds,
+                    requestOptions,
+                    cancellationToken);
+            });
         }
 
         public override Task<PermissionResponse> UpsertPermissionAsync(PermissionProperties permissionProperties,
@@ -195,13 +223,16 @@ namespace Microsoft.Azure.Cosmos
 
             this.ClientContext.ValidateResource(permissionProperties.Id);
 
-            Task<ResponseMessage> response = this.UpsertPermissionStreamInternalAsync(
-                streamPayload: this.ClientContext.PropertiesSerializer.ToStream(permissionProperties),
-                tokenExpiryInSeconds: tokenExpiryInSeconds,
-                requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
+            return TaskHelper.RunInlineIfNeededAsync(() =>
+            {
+                Task<ResponseMessage> response = this.UpsertPermissionStreamInternalAsync(
+                    streamPayload: this.ClientContext.PropertiesSerializer.ToStream(permissionProperties),
+                    tokenExpiryInSeconds: tokenExpiryInSeconds,
+                    requestOptions: requestOptions,
+                    cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreatePermissionResponseAsync(this.GetPermission(permissionProperties.Id), response);
+                return this.ClientContext.ResponseFactory.CreatePermissionResponseAsync(this.GetPermission(permissionProperties.Id), response);
+            });
         }
 
         /// <inheritdoc/>

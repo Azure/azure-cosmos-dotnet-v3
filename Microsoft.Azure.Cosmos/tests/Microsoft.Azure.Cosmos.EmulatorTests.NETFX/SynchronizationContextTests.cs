@@ -5,6 +5,7 @@
 
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
+    using System;
     using System.Threading;
     using System.Threading.Tasks;
     using System.Windows.Forms;
@@ -13,10 +14,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public class SynchronizationContextTests : BaseCosmosClientHelper
     {
+        private Container Container = null;
+
         [TestInitialize]
         public async Task TestInitialize()
         {
             await base.TestInit();
+            string PartitionKey = "/status";
+            ContainerProperties containerSettings = new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey);
+            ContainerResponse response = await this.database.CreateContainerAsync(
+                containerSettings,
+                cancellationToken: this.cancellationToken);
+            Assert.IsNotNull(response);
+            Assert.IsNotNull(response.Container);
+            Assert.IsNotNull(response.Resource);
+            this.Container = response;
         }
 
         [TestCleanup]
@@ -30,9 +42,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [Timeout(30000)]
         public void VerifySynchronizationContextDoesNotLock()
         {
+            // Using Windows Form context to block similarly than ASP.NET NETFX would
             WindowsFormsSynchronizationContext synchronizationContext = new WindowsFormsSynchronizationContext();
             SynchronizationContext.SetSynchronizationContext(synchronizationContext);
             this.database.ReadStreamAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+            this.database.ReadAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+            ItemResponse<ToDoActivity> response = this.Container.CreateItemAsync<ToDoActivity>(item: testItem).ConfigureAwait(false).GetAwaiter().GetResult();
+            Assert.IsNotNull(response);
+            Assert.IsNotNull(response.Headers.GetHeaderValue<string>(Documents.HttpConstants.HttpHeaders.MaxResourceQuota));
+            Assert.IsNotNull(response.Headers.GetHeaderValue<string>(Documents.HttpConstants.HttpHeaders.CurrentResourceQuotaUsage));
+            ItemResponse<ToDoActivity> deleteResponse = this.Container.DeleteItemAsync<ToDoActivity>(partitionKey: new Cosmos.PartitionKey(testItem.status), id: testItem.id).ConfigureAwait(false).GetAwaiter().GetResult();
+            Assert.IsNotNull(deleteResponse);
         }
     }
 }

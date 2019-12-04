@@ -67,11 +67,16 @@ namespace Microsoft.Azure.Cosmos
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<ResponseMessage> response = this.ReadContainerStreamAsync(
-                requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
+            return TaskHelper.RunInlineIfNeededAsync(() =>
+            {
+                Task<ResponseMessage> response = this.ProcessStreamAsync(
+                    streamPayload: null,
+                    operationType: OperationType.Read,
+                    requestOptions: requestOptions,
+                    cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this, response);
+                return this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this, response);
+            });
         }
 
         public override Task<ContainerResponse> ReplaceContainerAsync(
@@ -79,29 +84,37 @@ namespace Microsoft.Azure.Cosmos
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (containerProperties == null)
+            return TaskHelper.RunInlineIfNeededAsync(() =>
             {
-                throw new ArgumentNullException(nameof(containerProperties));
-            }
+                if (containerProperties == null)
+                {
+                    throw new ArgumentNullException(nameof(containerProperties));
+                }
 
-            this.ClientContext.ValidateResource(containerProperties.Id);
-            Task<ResponseMessage> response = this.ReplaceStreamInternalAsync(
-                streamPayload: this.ClientContext.PropertiesSerializer.ToStream(containerProperties),
-                requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
+                this.ClientContext.ValidateResource(containerProperties.Id);
+                Task<ResponseMessage> response = this.ReplaceStreamInternalAsync(
+                    streamPayload: this.ClientContext.PropertiesSerializer.ToStream(containerProperties),
+                    requestOptions: requestOptions,
+                    cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this, response);
+                return this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this, response);
+            });
         }
 
         public override Task<ContainerResponse> DeleteContainerAsync(
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<ResponseMessage> response = this.DeleteContainerStreamAsync(
-                requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
+            return TaskHelper.RunInlineIfNeededAsync(() =>
+            {
+                Task<ResponseMessage> response = this.ProcessStreamAsync(
+                   streamPayload: null,
+                   operationType: OperationType.Delete,
+                   requestOptions: requestOptions,
+                   cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this, response);
+                return this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this, response);
+            });
         }
 
         public async override Task<int?> ReadThroughputAsync(
@@ -115,18 +128,24 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            string rid = await this.GetRIDAsync(cancellationToken);
-            CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
-            return await cosmosOffers.ReadThroughputAsync(rid, requestOptions, cancellationToken);
+            return await TaskHelper.RunInlineIfNeededAsync(async () =>
+            {
+                string rid = await this.GetRIDAsync(cancellationToken);
+                CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
+                return await cosmosOffers.ReadThroughputAsync(rid, requestOptions, cancellationToken);
+            });
         }
 
         internal async Task<ThroughputResponse> ReadThroughputIfExistsAsync(
             RequestOptions requestOptions,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            string rid = await this.GetRIDAsync(cancellationToken);
-            CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
-            return await cosmosOffers.ReadThroughputIfExistsAsync(rid, requestOptions, cancellationToken);
+            return await TaskHelper.RunInlineIfNeededAsync(async () =>
+            {
+                string rid = await this.GetRIDAsync(cancellationToken);
+                CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
+                return await cosmosOffers.ReadThroughputIfExistsAsync(rid, requestOptions, cancellationToken);
+            });
         }
 
         public async override Task<ThroughputResponse> ReplaceThroughputAsync(
@@ -134,14 +153,17 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            string rid = await this.GetRIDAsync(cancellationToken);
+            return await TaskHelper.RunInlineIfNeededAsync(async () =>
+            {
+                string rid = await this.GetRIDAsync(cancellationToken);
 
-            CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
-            return await cosmosOffers.ReplaceThroughputAsync(
-                targetRID: rid,
-                throughput: throughput,
-                requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
+                CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
+                return await cosmosOffers.ReplaceThroughputAsync(
+                    targetRID: rid,
+                    throughput: throughput,
+                    requestOptions: requestOptions,
+                    cancellationToken: cancellationToken);
+            });
         }
 
         internal async Task<ThroughputResponse> ReplaceThroughputIfExistsAsync(
@@ -149,36 +171,45 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            string rid = await this.GetRIDAsync(cancellationToken);
+            return await TaskHelper.RunInlineIfNeededAsync(async () =>
+            {
+                string rid = await this.GetRIDAsync(cancellationToken);
 
-            CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
-            return await cosmosOffers.ReplaceThroughputIfExistsAsync(
-                targetRID: rid,
-                throughput: throughput,
-                requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
+                CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
+                return await cosmosOffers.ReplaceThroughputIfExistsAsync(
+                    targetRID: rid,
+                    throughput: throughput,
+                    requestOptions: requestOptions,
+                    cancellationToken: cancellationToken);
+            });
         }
 
         public override Task<ResponseMessage> DeleteContainerStreamAsync(
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.ProcessStreamAsync(
-               streamPayload: null,
-               operationType: OperationType.Delete,
-               requestOptions: requestOptions,
-               cancellationToken: cancellationToken);
+            return TaskHelper.RunInlineIfNeededAsync(() =>
+            {
+                return this.ProcessStreamAsync(
+                   streamPayload: null,
+                   operationType: OperationType.Delete,
+                   requestOptions: requestOptions,
+                   cancellationToken: cancellationToken);
+            });
         }
 
         public override Task<ResponseMessage> ReadContainerStreamAsync(
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.ProcessStreamAsync(
-                streamPayload: null,
-                operationType: OperationType.Read,
-                requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
+            return TaskHelper.RunInlineIfNeededAsync(() =>
+            {
+                return this.ProcessStreamAsync(
+                    streamPayload: null,
+                    operationType: OperationType.Read,
+                    requestOptions: requestOptions,
+                    cancellationToken: cancellationToken);
+            });
         }
 
         public override Task<ResponseMessage> ReplaceContainerStreamAsync(
@@ -186,16 +217,19 @@ namespace Microsoft.Azure.Cosmos
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (containerProperties == null)
+            return TaskHelper.RunInlineIfNeededAsync(() =>
             {
-                throw new ArgumentNullException(nameof(containerProperties));
-            }
+                if (containerProperties == null)
+                {
+                    throw new ArgumentNullException(nameof(containerProperties));
+                }
 
-            this.ClientContext.ValidateResource(containerProperties.Id);
-            return this.ReplaceStreamInternalAsync(
-                streamPayload: this.ClientContext.PropertiesSerializer.ToStream(containerProperties),
-                requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
+                this.ClientContext.ValidateResource(containerProperties.Id);
+                return this.ReplaceStreamInternalAsync(
+                    streamPayload: this.ClientContext.PropertiesSerializer.ToStream(containerProperties),
+                    requestOptions: requestOptions,
+                    cancellationToken: cancellationToken);
+            });
         }
 
         /// <summary>

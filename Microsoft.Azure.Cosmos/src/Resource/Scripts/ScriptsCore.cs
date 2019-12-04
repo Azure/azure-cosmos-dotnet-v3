@@ -155,14 +155,17 @@ namespace Microsoft.Azure.Cosmos.Scripts
             StoredProcedureRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<ResponseMessage> response = this.ExecuteStoredProcedureStreamAsync(
-                storedProcedureId: storedProcedureId,
-                partitionKey: partitionKey,
-                parameters: parameters,
-                requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
+            return TaskHelper.RunInlineIfNeededAsync(() =>
+            {
+                Task<ResponseMessage> response = this.ExecuteStoredProcedureStreamInternalAsync(
+                    storedProcedureId: storedProcedureId,
+                    partitionKey: partitionKey,
+                    parameters: parameters,
+                    requestOptions: requestOptions,
+                    cancellationToken: cancellationToken);
 
-            return this.clientContext.ResponseFactory.CreateStoredProcedureExecuteResponseAsync<TOutput>(response);
+                return this.clientContext.ResponseFactory.CreateStoredProcedureExecuteResponseAsync<TOutput>(response);
+            });
         }
 
         public override Task<ResponseMessage> ExecuteStoredProcedureStreamAsync(
@@ -172,32 +175,15 @@ namespace Microsoft.Azure.Cosmos.Scripts
             StoredProcedureRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (string.IsNullOrEmpty(storedProcedureId))
+            return TaskHelper.RunInlineIfNeededAsync(() =>
             {
-                throw new ArgumentNullException(nameof(storedProcedureId));
-            }
-
-            ContainerCore.ValidatePartitionKey(partitionKey, requestOptions);
-
-            Stream streamPayload = null;
-            if (parameters != null)
-            {
-                streamPayload = this.clientContext.CosmosSerializer.ToStream<dynamic[]>(parameters);
-            }
-
-            Uri linkUri = this.clientContext.CreateLink(
-                parentLink: this.container.LinkUri.OriginalString,
-                uriPathSegment: Paths.StoredProceduresPathSegment,
-                id: storedProcedureId);
-
-            return this.ProcessStreamOperationAsync(
-                resourceUri: linkUri,
-                resourceType: ResourceType.StoredProcedure,
-                operationType: OperationType.ExecuteJavaScript,
-                partitionKey: partitionKey,
-                streamPayload: streamPayload,
-                requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
+                return this.ExecuteStoredProcedureStreamInternalAsync(
+                    storedProcedureId: storedProcedureId,
+                    partitionKey: partitionKey,
+                    parameters: parameters,
+                    requestOptions: requestOptions,
+                    cancellationToken: cancellationToken);
+            });
         }
 
         public override Task<TriggerResponse> CreateTriggerAsync(
@@ -220,12 +206,15 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 throw new ArgumentNullException(nameof(triggerProperties.Body));
             }
 
-            return this.ProcessTriggerOperationAsync(
+            return TaskHelper.RunInlineIfNeededAsync(() =>
+            {
+                return this.ProcessTriggerOperationAsync(
                 linkUri: this.container.LinkUri,
                 operationType: OperationType.Create,
                 streamPayload: this.clientContext.PropertiesSerializer.ToStream(triggerProperties),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
+            });
         }
 
         public override FeedIterator GetTriggerQueryStreamIterator(
@@ -301,12 +290,15 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 throw new ArgumentNullException(nameof(id));
             }
 
-            return this.ProcessTriggerOperationAsync(
-                id: id,
-                operationType: OperationType.Read,
-                streamPayload: null,
-                requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
+            return TaskHelper.RunInlineIfNeededAsync(() =>
+            {
+                return this.ProcessTriggerOperationAsync(
+                    id: id,
+                    operationType: OperationType.Read,
+                    streamPayload: null,
+                    requestOptions: requestOptions,
+                    cancellationToken: cancellationToken);
+            });
         }
 
         public override Task<TriggerResponse> ReplaceTriggerAsync(
@@ -329,12 +321,15 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 throw new ArgumentNullException(nameof(triggerProperties.Body));
             }
 
-            return this.ProcessTriggerOperationAsync(
+            return TaskHelper.RunInlineIfNeededAsync(() =>
+            {
+                return this.ProcessTriggerOperationAsync(
                 id: triggerProperties.Id,
                 operationType: OperationType.Replace,
                 streamPayload: this.clientContext.PropertiesSerializer.ToStream(triggerProperties),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
+            });
         }
 
         public override Task<TriggerResponse> DeleteTriggerAsync(
@@ -347,12 +342,15 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 throw new ArgumentNullException(nameof(id));
             }
 
-            return this.ProcessTriggerOperationAsync(
+            return TaskHelper.RunInlineIfNeededAsync(() =>
+            {
+                return this.ProcessTriggerOperationAsync(
                 id: id,
                 operationType: OperationType.Delete,
                 streamPayload: null,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
+            });
         }
 
         public override Task<UserDefinedFunctionResponse> CreateUserDefinedFunctionAsync(
@@ -375,12 +373,15 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 throw new ArgumentNullException(nameof(userDefinedFunctionProperties.Body));
             }
 
-            return this.ProcessUserDefinedFunctionOperationAsync(
+            return TaskHelper.RunInlineIfNeededAsync(() =>
+            {
+                return this.ProcessUserDefinedFunctionOperationAsync(
                 linkUri: this.container.LinkUri,
                 operationType: OperationType.Create,
                 streamPayload: this.clientContext.PropertiesSerializer.ToStream(userDefinedFunctionProperties),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
+            });
         }
 
         public override FeedIterator GetUserDefinedFunctionQueryStreamIterator(
@@ -456,12 +457,15 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 throw new ArgumentNullException(nameof(id));
             }
 
-            return this.ProcessUserDefinedFunctionOperationAsync(
-                id: id,
-                operationType: OperationType.Read,
-                streamPayload: null,
-                requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
+            return TaskHelper.RunInlineIfNeededAsync(() =>
+            {
+                return this.ProcessUserDefinedFunctionOperationAsync(
+                    id: id,
+                    operationType: OperationType.Read,
+                    streamPayload: null,
+                    requestOptions: requestOptions,
+                    cancellationToken: cancellationToken);
+            });
         }
 
         public override Task<UserDefinedFunctionResponse> ReplaceUserDefinedFunctionAsync(
@@ -484,12 +488,15 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 throw new ArgumentNullException(nameof(userDefinedFunctionProperties.Body));
             }
 
-            return this.ProcessUserDefinedFunctionOperationAsync(
-                id: userDefinedFunctionProperties.Id,
-                operationType: OperationType.Replace,
-                streamPayload: this.clientContext.PropertiesSerializer.ToStream(userDefinedFunctionProperties),
-                requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
+            return TaskHelper.RunInlineIfNeededAsync(() =>
+            {
+                return this.ProcessUserDefinedFunctionOperationAsync(
+                    id: userDefinedFunctionProperties.Id,
+                    operationType: OperationType.Replace,
+                    streamPayload: this.clientContext.PropertiesSerializer.ToStream(userDefinedFunctionProperties),
+                    requestOptions: requestOptions,
+                    cancellationToken: cancellationToken);
+            });
         }
 
         public override Task<UserDefinedFunctionResponse> DeleteUserDefinedFunctionAsync(
@@ -502,10 +509,48 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 throw new ArgumentNullException(nameof(id));
             }
 
-            return this.ProcessUserDefinedFunctionOperationAsync(
-                id: id,
-                operationType: OperationType.Delete,
-                streamPayload: null,
+            return TaskHelper.RunInlineIfNeededAsync(() =>
+            {
+                return this.ProcessUserDefinedFunctionOperationAsync(
+                    id: id,
+                    operationType: OperationType.Delete,
+                    streamPayload: null,
+                    requestOptions: requestOptions,
+                    cancellationToken: cancellationToken);
+            });
+        }
+
+        private Task<ResponseMessage> ExecuteStoredProcedureStreamInternalAsync(
+            string storedProcedureId,
+            Cosmos.PartitionKey partitionKey,
+            dynamic[] parameters,
+            StoredProcedureRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (string.IsNullOrEmpty(storedProcedureId))
+            {
+                throw new ArgumentNullException(nameof(storedProcedureId));
+            }
+
+            ContainerCore.ValidatePartitionKey(partitionKey, requestOptions);
+
+            Stream streamPayload = null;
+            if (parameters != null)
+            {
+                streamPayload = this.clientContext.CosmosSerializer.ToStream<dynamic[]>(parameters);
+            }
+
+            Uri linkUri = this.clientContext.CreateLink(
+                parentLink: this.container.LinkUri.OriginalString,
+                uriPathSegment: Paths.StoredProceduresPathSegment,
+                id: storedProcedureId);
+
+            return this.ProcessStreamOperationAsync(
+                resourceUri: linkUri,
+                resourceType: ResourceType.StoredProcedure,
+                operationType: OperationType.ExecuteJavaScript,
+                partitionKey: partitionKey,
+                streamPayload: streamPayload,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }

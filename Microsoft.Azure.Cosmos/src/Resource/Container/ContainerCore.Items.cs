@@ -41,13 +41,16 @@ namespace Microsoft.Azure.Cosmos
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.ProcessItemStreamAsync(
-                partitionKey,
-                null,
-                streamPayload,
-                OperationType.Create,
-                requestOptions,
-                cancellationToken: cancellationToken);
+            return TaskHelper.RunInlineIfNeededAsync(() =>
+            {
+                return this.ProcessItemStreamAsync(
+                    partitionKey,
+                    null,
+                    streamPayload,
+                    OperationType.Create,
+                    requestOptions,
+                    cancellationToken: cancellationToken);
+            });
         }
 
         public override Task<ItemResponse<T>> CreateItemAsync<T>(
@@ -61,15 +64,18 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(item));
             }
 
-            Task<ResponseMessage> response = this.ExtractPartitionKeyAndProcessItemStreamAsync(
-                partitionKey: partitionKey,
-                itemId: null,
-                item: item,
-                operationType: OperationType.Create,
-                requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
+            return TaskHelper.RunInlineIfNeededAsync(() =>
+            {
+                Task<ResponseMessage> response = this.ExtractPartitionKeyAndProcessItemStreamAsync(
+                    partitionKey: partitionKey,
+                    itemId: null,
+                    item: item,
+                    operationType: OperationType.Create,
+                    requestOptions: requestOptions,
+                    cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response);
+                return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response);
+            });
         }
 
         public override Task<ResponseMessage> ReadItemStreamAsync(
@@ -78,13 +84,16 @@ namespace Microsoft.Azure.Cosmos
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.ProcessItemStreamAsync(
-                partitionKey,
-                id,
-                null,
-                OperationType.Read,
-                requestOptions,
-                cancellationToken: cancellationToken);
+            return TaskHelper.RunInlineIfNeededAsync(() =>
+            {
+                return this.ProcessItemStreamAsync(
+                    partitionKey,
+                    id,
+                    null,
+                    OperationType.Read,
+                    requestOptions,
+                    cancellationToken: cancellationToken);
+            });
         }
 
         public override Task<ItemResponse<T>> ReadItemAsync<T>(
@@ -93,13 +102,18 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<ResponseMessage> response = this.ReadItemStreamAsync(
-                partitionKey: partitionKey,
-                id: id,
-                requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
+            return TaskHelper.RunInlineIfNeededAsync(() =>
+            {
+                Task<ResponseMessage> response = this.ProcessItemStreamAsync(
+                    partitionKey,
+                    id,
+                    null,
+                    OperationType.Read,
+                    requestOptions,
+                    cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response);
+                return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response);
+            });
         }
 
         public override Task<ResponseMessage> UpsertItemStreamAsync(
@@ -108,13 +122,16 @@ namespace Microsoft.Azure.Cosmos
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.ProcessItemStreamAsync(
-                partitionKey,
-                null,
-                streamPayload,
-                OperationType.Upsert,
-                requestOptions,
-                cancellationToken: cancellationToken);
+            return TaskHelper.RunInlineIfNeededAsync(() =>
+            {
+                return this.ProcessItemStreamAsync(
+                    partitionKey,
+                    null,
+                    streamPayload,
+                    OperationType.Upsert,
+                    requestOptions,
+                    cancellationToken: cancellationToken);
+            });
         }
 
         public override Task<ItemResponse<T>> UpsertItemAsync<T>(
@@ -128,15 +145,18 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(item));
             }
 
-            Task<ResponseMessage> response = this.ExtractPartitionKeyAndProcessItemStreamAsync(
-                partitionKey: partitionKey,
-                itemId: null,
-                item: item,
-                operationType: OperationType.Upsert,
-                requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
+            return TaskHelper.RunInlineIfNeededAsync(() =>
+            {
+                Task<ResponseMessage> response = this.ExtractPartitionKeyAndProcessItemStreamAsync(
+                    partitionKey: partitionKey,
+                    itemId: null,
+                    item: item,
+                    operationType: OperationType.Upsert,
+                    requestOptions: requestOptions,
+                    cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response);
+                return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response);
+            });
         }
 
         public override Task<ResponseMessage> ReplaceItemStreamAsync(
@@ -146,13 +166,16 @@ namespace Microsoft.Azure.Cosmos
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.ProcessItemStreamAsync(
-                partitionKey,
-                id,
-                streamPayload,
-                OperationType.Replace,
-                requestOptions,
-                cancellationToken: cancellationToken);
+            return TaskHelper.RunInlineIfNeededAsync(() =>
+            {
+                return this.ProcessItemStreamAsync(
+                    partitionKey,
+                    id,
+                    streamPayload,
+                    OperationType.Replace,
+                    requestOptions,
+                    cancellationToken: cancellationToken);
+            });
         }
 
         public override Task<ItemResponse<T>> ReplaceItemAsync<T>(
@@ -172,15 +195,18 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(item));
             }
 
-            Task<ResponseMessage> response = this.ExtractPartitionKeyAndProcessItemStreamAsync(
-               partitionKey: partitionKey,
-               itemId: id,
-               item: item,
-               operationType: OperationType.Replace,
-               requestOptions: requestOptions,
-               cancellationToken: cancellationToken);
+            return TaskHelper.RunInlineIfNeededAsync(() =>
+            {
+                Task<ResponseMessage> response = this.ExtractPartitionKeyAndProcessItemStreamAsync(
+                   partitionKey: partitionKey,
+                   itemId: id,
+                   item: item,
+                   operationType: OperationType.Replace,
+                   requestOptions: requestOptions,
+                   cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response);
+                return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response);
+            });
         }
 
         public override Task<ResponseMessage> DeleteItemStreamAsync(
@@ -189,13 +215,16 @@ namespace Microsoft.Azure.Cosmos
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.ProcessItemStreamAsync(
-                partitionKey,
-                id,
-                null,
-                OperationType.Delete,
-                requestOptions,
-                cancellationToken: cancellationToken);
+            return TaskHelper.RunInlineIfNeededAsync(() =>
+            {
+                return this.ProcessItemStreamAsync(
+                    partitionKey,
+                    id,
+                    null,
+                    OperationType.Delete,
+                    requestOptions,
+                    cancellationToken: cancellationToken);
+            });
         }
 
         public override Task<ItemResponse<T>> DeleteItemAsync<T>(
@@ -204,13 +233,18 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<ResponseMessage> response = this.DeleteItemStreamAsync(
-               partitionKey: partitionKey,
-               id: id,
-               requestOptions: requestOptions,
-               cancellationToken: cancellationToken);
+            return TaskHelper.RunInlineIfNeededAsync(() =>
+            {
+                Task<ResponseMessage> response = this.ProcessItemStreamAsync(
+                    partitionKey,
+                    id,
+                    null,
+                    OperationType.Delete,
+                    requestOptions,
+                    cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response);
+                return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response);
+            });
         }
 
         public override FeedIterator GetItemQueryStreamIterator(
@@ -524,13 +558,13 @@ namespace Microsoft.Azure.Cosmos
                         streamPayload,
                         operationType,
                         requestOptions,
-                        cancellationToken: cancellationToken);
+                        cancellationToken: cancellationToken).ConfigureAwait(false);
             }
 
             PartitionKeyMismatchRetryPolicy requestRetryPolicy = null;
             while (true)
             {
-                partitionKey = await this.GetPartitionKeyValueFromStreamAsync(streamPayload, cancellationToken);
+                partitionKey = await this.GetPartitionKeyValueFromStreamAsync(streamPayload, cancellationToken).ConfigureAwait(false);
 
                 ResponseMessage responseMessage = await this.ProcessItemStreamAsync(
                     partitionKey,
@@ -538,7 +572,7 @@ namespace Microsoft.Azure.Cosmos
                     streamPayload,
                     operationType,
                     requestOptions,
-                    cancellationToken: cancellationToken);
+                    cancellationToken: cancellationToken).ConfigureAwait(false);
 
                 if (responseMessage.IsSuccessStatusCode)
                 {
@@ -550,7 +584,7 @@ namespace Microsoft.Azure.Cosmos
                     requestRetryPolicy = new PartitionKeyMismatchRetryPolicy(await this.ClientContext.DocumentClient.GetCollectionCacheAsync(), null);
                 }
 
-                ShouldRetryResult retryResult = await requestRetryPolicy.ShouldRetryAsync(responseMessage, cancellationToken);
+                ShouldRetryResult retryResult = await requestRetryPolicy.ShouldRetryAsync(responseMessage, cancellationToken).ConfigureAwait(false);
                 if (!retryResult.ShouldRetry)
                 {
                     return responseMessage;

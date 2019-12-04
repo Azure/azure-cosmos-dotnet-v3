@@ -70,6 +70,7 @@
     <Compile Include="Utils\BaseCosmosClientHelper.cs" />
     <Compile Include="Utils\ConfigurationManager.cs" />
     <Compile Include="Utils\TestCommon.cs" />
+    <Compile Include="Utils\ToDoActivity.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

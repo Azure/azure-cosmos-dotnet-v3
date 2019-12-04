@@ -143,7 +143,7 @@ namespace Microsoft.Azure.Cosmos
             Action<RequestMessage> requestEnricher,
             CancellationToken cancellationToken)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => this.RequestHandler.SendAsync(
+            return this.RequestHandler.SendAsync(
                     resourceUri: resourceUri,
                     resourceType: resourceType,
                     operationType: operationType,
@@ -152,7 +152,7 @@ namespace Microsoft.Azure.Cosmos
                     partitionKey: partitionKey,
                     streamPayload: streamPayload,
                     requestEnricher: requestEnricher,
-                    cancellationToken: cancellationToken));
+                    cancellationToken: cancellationToken);
         }
 
         internal override Task<T> ProcessResourceOperationAsync<T>(
@@ -167,7 +167,7 @@ namespace Microsoft.Azure.Cosmos
             Func<ResponseMessage, T> responseCreator,
             CancellationToken cancellationToken)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => this.RequestHandler.SendAsync<T>(
+            return this.RequestHandler.SendAsync<T>(
                 resourceUri: resourceUri,
                 resourceType: resourceType,
                 operationType: operationType,
@@ -177,7 +177,7 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload: streamPayload,
                 requestEnricher: requestEnricher,
                 responseCreator: responseCreator,
-                cancellationToken: cancellationToken));
+                cancellationToken: cancellationToken);
         }
 
         internal override async Task<ContainerProperties> GetCachedContainerPropertiesAsync(
