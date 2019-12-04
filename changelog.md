@@ -7,7 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-## 3.5.0 - TBD
+### Fixed
+- [#1070](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1070) CreateItem will only retry for auto-extracted partition key in-case of collection re-creation
+
+## <a name="3.5.0"/> [3.5.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.5.0) - 2019-12-03
 
 ### Added
 
@@ -16,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1000](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1000) Add PortReuseMode to CosmosClientOptions.
 - [#1017](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1017) Adding ClientSideRequestStatistics to gateway calls and making endtime nullable
 - [#1038](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1038) Add Selflink to resource properties
- 
+  
 ### Fixed
 
 - [#921](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/921) Fixed error handling to preserve stack trace in certain scenarios
@@ -189,6 +192,8 @@ Any requests to Azure Cosmos DB using a retired SDK are rejected by the service.
 
 | Version | Release Date | Retirement Date |
 | --- | --- | --- |
+| [3.5.0](#3.5.0) |December 03, 2019 |--- |
+| [3.4.1](#3.4.1) |November 06, 2019 |--- |
 | [3.4.0](#3.4.0) |November 04, 2019 |--- |
 | [3.3.3](#3.3.3) |October 30, 2019 |--- |
 | [3.3.2](#3.3.2) |October 16, 2019 |--- |

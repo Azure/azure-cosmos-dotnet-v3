@@ -184,6 +184,30 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
             Assert.AreEqual(bufferedSerializedPeopleString, bufferedResultString);
         }
 
+        [TestMethod]
+        [Owner("brchon")]
+        public void TestCaching()
+        {
+            CosmosArray lazilyDeserializedPeople = CosmosElement.CreateFromBuffer(LazyCosmosElementTests.bufferedSerializedPeople) as CosmosArray;
+            Assert.IsTrue(
+                object.ReferenceEquals(lazilyDeserializedPeople[0], lazilyDeserializedPeople[0]),
+                "Array did not return the item from the cache.");
+
+            CosmosObject lazilyDeserializedPerson = lazilyDeserializedPeople[0] as CosmosObject;
+            Assert.IsTrue(
+                object.ReferenceEquals(lazilyDeserializedPerson[nameof(Person.Age)], lazilyDeserializedPerson[nameof(Person.Age)]),
+                "Object did not return the property from the cache.");
+
+            CosmosString personName = lazilyDeserializedPerson[nameof(Person.Name)] as CosmosString;
+            Assert.IsTrue(
+                object.ReferenceEquals(personName.Value, personName.Value),
+                "Did not return the string from the cache.");
+
+            // Numbers is a value type so we don't need to test for the cache.
+            // Booleans are multitons so we don't need to test for the cache.
+            // Nulls are singletons so we don't need to test for the cache.
+        }
+
         #region CurratedDocs
         [TestMethod]
         [Owner("brchon")]

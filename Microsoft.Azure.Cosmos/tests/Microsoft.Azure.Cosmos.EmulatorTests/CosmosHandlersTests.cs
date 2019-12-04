@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task TestCustomPropertyWithHandler()
         { 
-            CustomHandler testHandler = new CustomHandler();
+            RequestHandlerHelper testHandler = new RequestHandlerHelper();
 
             // Add the random guid to the property
             Guid randomGuid = Guid.NewGuid();
@@ -110,21 +110,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             public double cost { get; set; }
             public string description { get; set; }
             public string status { get; set; }
-        }
-
-        public class CustomHandler : RequestHandler
-        {
-            public Action<RequestMessage> UpdateRequestMessage = null;
-
-            public override Task<ResponseMessage> SendAsync(RequestMessage request, CancellationToken cancellationToken)
-            {
-                if (this.UpdateRequestMessage != null)
-                {
-                    this.UpdateRequestMessage(request);
-                }
-
-                return base.SendAsync(request, cancellationToken);
-            }
         }
     }
 }
