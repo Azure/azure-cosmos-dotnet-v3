@@ -157,6 +157,7 @@ namespace Microsoft.Azure.Cosmos
                     cancellationToken: cancellationToken);
             }
 
+            // Used on NETFX applications with SynchronizationContext when doing locking calls
             return Task.Run(() => this.RequestHandler.SendAsync(
                     resourceUri: resourceUri,
                     resourceType: resourceType,
