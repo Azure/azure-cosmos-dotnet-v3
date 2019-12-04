@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
@@ -27,8 +28,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [ClassInitialize]
         public static async Task TestInit(TestContext textContext)
         {
-            CosmosBasicQueryTests.DirectCosmosClient = TestCommon.CreateCosmosClient();
-            CosmosBasicQueryTests.GatewayCosmosClient = TestCommon.CreateCosmosClient((builder) => builder.WithConnectionModeGateway());
+            CosmosBasicQueryTests.DirectCosmosClient = TestCommon.CreateCosmosClient((builder) => builder.WithSerializerOptions(new CosmosSerializationOptions() { IgnoreNullValues = false, Indented = false, PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase }));
+            CosmosBasicQueryTests.GatewayCosmosClient = TestCommon.CreateCosmosClient((builder) => builder.WithConnectionModeGateway().WithSerializerOptions(new CosmosSerializationOptions() { IgnoreNullValues = false, Indented = false, PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase }));
             Database database = await DirectCosmosClient.CreateDatabaseIfNotExistsAsync(DatabaseId);
             await database.CreateContainerIfNotExistsAsync(ContainerId, "/pk");
         }
@@ -145,6 +146,132 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             }
         }
+
+        [TestMethod]
+        public async Task ItemTest()
+        {
+            CosmosClient client = TestCommon.CreateCosmosClient((builder) => builder.WithSerializerOptions(new CosmosSerializationOptions() { IgnoreNullValues = false, Indented = false, PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase }));
+
+            Database database = await client.CreateDatabaseAsync("TestDb" + Guid.NewGuid().ToString());
+            Container container = await database.CreateContainerAsync("TestContainer", "/pkey");
+
+            DeviceToken deviceTokenToFind = null;
+            for (int i = 0; i < 5; i++)
+            {
+                DeviceToken deviceToken = new DeviceToken();
+                deviceToken.DeviceId = "Test";
+                deviceToken.PartitionKey = Guid.NewGuid().ToString();
+                deviceToken.PlayerId = Guid.NewGuid().ToString();
+                deviceTokenToFind = await container.CreateItemAsync(deviceToken, new PartitionKey(deviceToken.PartitionKey));
+            }
+
+            QueryDefinition queryDefinition = new QueryDefinition(@"SELECT * FROM document d 
+                    WHERE(d.id = @documentId)
+                      AND(d.deviceId = @deviceId)").
+                      WithParameter("@documentId", deviceTokenToFind.Id)
+                      .WithParameter("@deviceId", deviceTokenToFind.DeviceId);
+
+            FeedIterator<DeviceToken> feedIterator = container.GetItemQueryIterator<DeviceToken>(queryDefinition);
+
+            while (feedIterator.HasMoreResults)
+            {
+                FeedResponse<DeviceToken> deviceTokens = await feedIterator.ReadNextAsync();
+                foreach(DeviceToken token in deviceTokens)
+                {
+                    Assert.IsNotNull(token);
+                }
+            }
+        }
+
+        public class DeviceToken : PlayerEntityDocument
+        {
+            private string _deviceId;
+            private string _deviceOS;
+
+            public override string Id
+            {
+                get => "device";
+                set
+                {
+                    // no op
+                }
+            }
+
+            public string DeviceId
+            {
+                get => _deviceId.ToLowerInvariant();
+                set => _deviceId = value;
+            }
+
+            public string DeviceOS
+            {
+                get => _deviceOS;
+                set => _deviceOS = value?.ToLowerInvariant();
+            }
+        }
+
+
+        public abstract class PlayerEntityDocument : EntityDocument
+        {
+            [JsonProperty("pkey")]
+            public override string PartitionKey
+            {
+                get => BuildPartitionKey(GetType(), PlayerId);
+
+                set
+                {
+                    // no-op
+                }
+            }
+
+            public string PlayerId { get; set; }
+
+            public static string BuildPartitionKey(Type type, string playerId)
+            {
+                return $"{GetEntityName(type)}|{playerId}".ToLowerInvariant();
+            }
+
+            public static string BuildPartitionKey<T>(string playerId)
+            {
+                return BuildPartitionKey(typeof(T), playerId);
+            }
+        }
+
+        public abstract class EntityDocument
+        {
+            private const string DocumentSuffix = "Document";
+
+            private static readonly ConcurrentDictionary<Type, string> EntityNames =
+                new ConcurrentDictionary<Type, string>();
+
+            [JsonProperty(PropertyName = "ttl", NullValueHandling = NullValueHandling.Ignore)]
+            public long? TimeToLive { get; set; }
+
+            [JsonProperty("pkey")]
+            public abstract string PartitionKey { get; set; }
+
+            public virtual string Id { get; set; }
+
+            public static string GetEntityName(Type type)
+            {
+                return EntityNames.GetOrAdd(
+                    type,
+                    t =>
+                    {
+                        string name = t.Name;
+
+                        return name.EndsWith(DocumentSuffix)
+                            ? name.Substring(0, name.Length - DocumentSuffix.Length)
+                            : name;
+                    });
+            }
+
+            public static string GetEntityName<T>()
+            {
+                return GetEntityName(typeof(T));
+            }
+        }
+
 
         [TestMethod]
         [DataRow(false)]
