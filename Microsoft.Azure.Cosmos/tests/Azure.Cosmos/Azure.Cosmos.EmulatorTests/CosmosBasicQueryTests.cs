@@ -250,7 +250,7 @@ namespace Azure.Cosmos.EmulatorTests
         public async Task ScriptsStoredProcedureTest(bool directMode)
         {
             CosmosClient client = directMode ? DirectCosmosClient : GatewayCosmosClient;
-            Scripts scripts = client.GetContainer(DatabaseId, ContainerId).Scripts;
+            CosmosScripts scripts = client.GetContainer(DatabaseId, ContainerId).Scripts;
 
             List<string> createdIds = new List<string>()
             {
@@ -302,7 +302,7 @@ namespace Azure.Cosmos.EmulatorTests
         public async Task ScriptsUserDefinedFunctionTest(bool directMode)
         {
             CosmosClient client = directMode ? DirectCosmosClient : GatewayCosmosClient;
-            Scripts scripts = client.GetContainer(DatabaseId, ContainerId).Scripts;
+            CosmosScripts scripts = client.GetContainer(DatabaseId, ContainerId).Scripts;
 
             List<string> createdIds = new List<string>()
             {
@@ -354,7 +354,7 @@ namespace Azure.Cosmos.EmulatorTests
         public async Task ScriptsTriggerTest(bool directMode)
         {
             CosmosClient client = directMode ? DirectCosmosClient : GatewayCosmosClient;
-            Scripts scripts = client.GetContainer(DatabaseId, ContainerId).Scripts;
+            CosmosScripts scripts = client.GetContainer(DatabaseId, ContainerId).Scripts;
 
             List<string> createdIds = new List<string>()
             {

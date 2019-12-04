@@ -39,7 +39,7 @@ namespace Azure.Cosmos
         /// <summary>
         /// Returns the scripts
         /// </summary>
-        public abstract Scripts.Scripts Scripts { get; }
+        public abstract Scripts.CosmosScripts Scripts { get; }
 
         /// <summary>
         /// Reads a <see cref="ContainerProperties"/> from the Azure Cosmos service as an asynchronous operation.

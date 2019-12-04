@@ -63,7 +63,7 @@ namespace Azure.Cosmos
 
         public override CosmosConflicts Conflicts { get; }
 
-        public override Scripts.Scripts Scripts { get; }
+        public override Scripts.CosmosScripts Scripts { get; }
 
         public override async Task<ContainerResponse> ReadContainerAsync(
             ContainerRequestOptions requestOptions = null,

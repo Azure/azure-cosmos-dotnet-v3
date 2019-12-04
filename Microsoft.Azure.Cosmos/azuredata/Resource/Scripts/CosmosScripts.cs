@@ -15,7 +15,7 @@ namespace Azure.Cosmos.Scripts
     /// <seealso cref="StoredProcedureProperties"/>
     /// <seealso cref="TriggerProperties"/>
     /// <seealso cref="UserDefinedFunctionProperties"/>
-    public abstract class Scripts
+    public abstract class CosmosScripts
     {
         /// <summary>
         /// Creates a stored procedure as an asynchronous operation in the Azure Cosmos DB service.
@@ -69,9 +69,9 @@ namespace Azure.Cosmos.Scripts
         ///        if (!isAccepted) throw new Error(""The query wasn't accepted by the server. Try again/use continuation token between API and script."");
         ///    }";
         ///    
-        /// Scripts scripts = this.container.Scripts;
+        /// CosmosScripts scripts = this.container.Scripts;
         /// StoredProcedureProperties storedProcedure = new StoredProcedureProperties(id, sprocBody);
-        /// StoredProcedureResponse storedProcedureResponse = await scripts.CreateStoredProcedureAsync(storedProcedure);
+        /// Response<StoredProcedureProperties> storedProcedureResponse = await scripts.CreateStoredProcedureAsync(storedProcedure);
         /// 
         /// // Execute the stored procedure
         /// CosmosItemResponse<string> sprocResponse = await scripts.ExecuteStoredProcedureAsync<string, string>(
@@ -100,11 +100,11 @@ namespace Azure.Cosmos.Scripts
         /// This create the type feed iterator for sproc with queryDefinition as input.
         /// <code language="c#">
         /// <![CDATA[
-        /// Scripts scripts = this.container.Scripts;
+        /// CosmosScripts scripts = this.container.Scripts;
         /// string queryText = "SELECT * FROM s where s.id like @testId";
         /// QueryDefinition queryDefinition = new QueryDefinition(queryText);
         /// queryDefinition.WithParameter("@testId", "testSprocId");
-        /// FeedIterator<StoredProcedureProperties> iter = this.scripts.GetStoredProcedureQueryIterator<StoredProcedureProperties>(queryDefinition);
+        /// AsyncPageable<StoredProcedureProperties> iter = this.scripts.GetStoredProcedureQueryIterator<StoredProcedureProperties>(queryDefinition);
         /// ]]>
         /// </code>
         /// </example>
@@ -127,11 +127,11 @@ namespace Azure.Cosmos.Scripts
         /// This create the stream feed iterator for sproc with queryDefinition as input.
         /// <code language="c#">
         /// <![CDATA[
-        /// Scripts scripts = this.container.Scripts;
+        /// CosmosScripts scripts = this.container.Scripts;
         /// string queryText = "SELECT * FROM s where s.id like @testId";
         /// QueryDefinition queryDefinition = new QueryDefinition(queryText);
         /// queryDefinition.WithParameter("@testId", "testSprocId");
-        /// FeedIterator iter = this.scripts.GetStoredProcedureQueryStreamIterator(queryDefinition);
+        /// IAsyncEnumerable<Response> iter = this.scripts.GetStoredProcedureQueryStreamIterator(queryDefinition);
         /// ]]>
         /// </code>
         /// </example>
@@ -154,9 +154,9 @@ namespace Azure.Cosmos.Scripts
         /// This create the type feed iterator for sproc with queryText as input.
         /// <code language="c#">
         /// <![CDATA[
-        /// Scripts scripts = this.container.Scripts;
+        /// CosmosScripts scripts = this.container.Scripts;
         /// string queryText = "SELECT * FROM s where s.id like '%testId%'";
-        /// FeedIterator<StoredProcedureProperties> iter = this.scripts.GetStoredProcedureQueryIterator<StoredProcedureProperties>(queryText);
+        /// AsyncPageable<StoredProcedureProperties> iter = this.scripts.GetStoredProcedureQueryIterator<StoredProcedureProperties>(queryText);
         /// ]]>
         /// </code>
         /// </example>
@@ -179,9 +179,9 @@ namespace Azure.Cosmos.Scripts
         /// This create the stream feed iterator for sproc with queryText as input.
         /// <code language="c#">
         /// <![CDATA[
-        /// Scripts scripts = this.container.Scripts;
+        /// CosmosScripts scripts = this.container.Scripts;
         /// string queryText = "SELECT * FROM s where s.id like '%testId%'";
-        /// FeedIterator iter = this.scripts.GetStoredProcedureQueryStreamIterator(queryText);
+        /// IAsyncEnumerable<Response> iter = this.scripts.GetStoredProcedureQueryStreamIterator(queryText);
         /// ]]>
         /// </code>
         /// </example>
@@ -218,8 +218,8 @@ namespace Azure.Cosmos.Scripts
         ///  This reads an existing stored procedure.
         /// <code language="c#">
         /// <![CDATA[
-        /// Scripts scripts = this.container.Scripts;
-        /// StoredProcedureResponse storedProcedure = await scripts.ReadStoredProcedureAsync("ExistingId");
+        /// CosmosScripts scripts = this.container.Scripts;
+        /// Response<StoredProcedureProperties> storedProcedure = await scripts.ReadStoredProcedureAsync("ExistingId");
         /// ]]>
         /// </code>
         /// </example>
@@ -263,8 +263,8 @@ namespace Azure.Cosmos.Scripts
         ///     getContext().getRequest().setBody(item);
         /// }";
         /// 
-        /// Scripts scripts = this.container.Scripts;
-        /// StoredProcedureResponse response = await scripts.ReplaceStoredProcedureAsync(new StoredProcedureProperties("testTriggerId", body));
+        /// CosmosScripts scripts = this.container.Scripts;
+        /// Response<StoredProcedureProperties> response = await scripts.ReplaceStoredProcedureAsync(new StoredProcedureProperties("testTriggerId", body));
         /// ]]>
         /// </code>
         /// </example>
@@ -295,8 +295,8 @@ namespace Azure.Cosmos.Scripts
         /// This examples gets a reference to an existing stored procedure and deletes it.
         /// <code language="c#">
         /// <![CDATA[
-        /// Scripts scripts = this.container.Scripts;
-        /// StoredProcedureResponse response = await scripts.DeleteStoredProcedureAsync("taxUdfId");
+        /// CosmosScripts scripts = this.container.Scripts;
+        /// Response<StoredProcedureProperties> response = await scripts.DeleteStoredProcedureAsync("taxUdfId");
         /// ]]>
         /// </code>
         /// </example>
@@ -340,7 +340,7 @@ namespace Azure.Cosmos.Scripts
         ///        if (!isAccepted) throw new Error(""The query wasn't accepted by the server. Try again/use continuation token between API and script."");
         ///    }";
         ///    
-        /// Scripts scripts = this.container.Scripts;
+        /// CosmosScripts scripts = this.container.Scripts;
         /// string sprocId = "appendString";
         /// StoredProcedureResponse storedProcedureResponse = await scripts.CreateStoredProcedureAsync(
         ///         sprocId,
@@ -397,9 +397,9 @@ namespace Azure.Cosmos.Scripts
         ///        if (!isAccepted) throw new Error(""The query wasn't accepted by the server. Try again/use continuation token between API and script."");
         ///    }";
         ///    
-        /// Scripts scripts = this.container.Scripts;
+        /// CosmosScripts scripts = this.container.Scripts;
         /// string sprocId = "appendString";
-        /// StoredProcedureResponse storedProcedureResponse = await scripts.CreateStoredProcedureAsync(
+        /// Response<StoredProcedureProperties> storedProcedureResponse = await scripts.CreateStoredProcedureAsync(
         ///         sprocId,
         ///         sprocBody);
         /// 
@@ -457,8 +457,8 @@ namespace Azure.Cosmos.Scripts
         ///  This creates a trigger then uses the trigger in a create item.
         /// <code language="c#">
         /// <![CDATA[
-        /// Scripts scripts = this.container.Scripts;
-        /// TriggerResponse triggerResponse = await scripts.CreateTriggerAsync(
+        /// CosmosScripts scripts = this.container.Scripts;
+        /// Response<TriggerProperties> triggerResponse = await scripts.CreateTriggerAsync(
         ///     new TriggerProperties
         ///     {
         ///         Id = "addTax",
@@ -504,11 +504,11 @@ namespace Azure.Cosmos.Scripts
         /// This create the type feed iterator for Trigger with queryDefinition as input.
         /// <code language="c#">
         /// <![CDATA[
-        /// Scripts scripts = this.container.Scripts;
+        /// CosmosScripts scripts = this.container.Scripts;
         /// string queryText = "SELECT * FROM t where t.id like @testId";
         /// QueryDefinition queryDefinition = new QueryDefinition(queryText);
         /// queryDefinition.WithParameter("@testId", "testTriggerId");
-        /// FeedIterator<TriggerProperties> iter = this.scripts.GetTriggerQueryIterator<TriggerProperties>(queryDefinition);
+        /// AsyncPageable<TriggerProperties> iter = this.scripts.GetTriggerQueryIterator<TriggerProperties>(queryDefinition);
         /// ]]>
         /// </code>
         /// </example>
@@ -535,7 +535,7 @@ namespace Azure.Cosmos.Scripts
         /// string queryText = "SELECT * FROM t where t.id like @testId";
         /// QueryDefinition queryDefinition = new QueryDefinition(queryText);
         /// queryDefinition.WithParameter("@testId", "testTriggerId");
-        /// FeedIterator iter = this.scripts.GetTriggerQueryStreamIterator(queryDefinition);
+        /// IAsyncEnumerable<Response> iter = this.scripts.GetTriggerQueryStreamIterator(queryDefinition);
         /// ]]>
         /// </code>
         /// </example>
@@ -558,9 +558,9 @@ namespace Azure.Cosmos.Scripts
         /// This create the type feed iterator for Trigger with queryText as input.
         /// <code language="c#">
         /// <![CDATA[
-        /// Scripts scripts = this.container.Scripts;
+        /// CosmosScripts scripts = this.container.Scripts;
         /// string queryText = "SELECT * FROM t where t.id like '%testId%'";
-        /// FeedIterator<TriggerProperties> iter = this.scripts.GetTriggerQueryIterator<TriggerProperties>(queryText);
+        /// AsyncPageable<TriggerProperties> iter = this.scripts.GetTriggerQueryIterator<TriggerProperties>(queryText);
         /// ]]>
         /// </code>
         /// </example>
@@ -585,7 +585,7 @@ namespace Azure.Cosmos.Scripts
         /// <![CDATA[
         /// Scripts scripts = this.container.Scripts;
         /// string queryText = "SELECT * FROM t where t.id like '%testId%'";
-        /// FeedIterator iter = this.scripts.GetTriggerQueryStreamIterator(queryText);
+        /// IAsyncEnumerable<Response> iter = this.scripts.GetTriggerQueryStreamIterator(queryText);
         /// ]]>
         /// </code>
         /// </example>
@@ -618,8 +618,8 @@ namespace Azure.Cosmos.Scripts
         ///  This reads an existing trigger
         /// <code language="c#">
         /// <![CDATA[
-        /// Scripts scripts = this.container.Scripts;
-        /// TriggerResponse response = await scripts.ReadTriggerAsync("ExistingId");
+        /// CosmosScripts scripts = this.container.Scripts;
+        /// Response<TriggerProperties> response = await scripts.ReadTriggerAsync("ExistingId");
         /// TriggerProperties triggerProperties = response;
         /// ]]>
         /// </code>
@@ -659,8 +659,8 @@ namespace Azure.Cosmos.Scripts
         ///     TriggerType = TriggerType.Post
         /// };
         /// 
-        /// Scripts scripts = this.container.Scripts;
-        /// TriggerResponse response = await scripts.ReplaceTriggerAsync(triggerSettigs);
+        /// CosmosScripts scripts = this.container.Scripts;
+        /// Response<TriggerProperties> response = await scripts.ReplaceTriggerAsync(triggerSettigs);
         /// ]]>
         /// </code>
         /// </example>
@@ -681,7 +681,7 @@ namespace Azure.Cosmos.Scripts
         /// <code language="c#">
         /// <![CDATA[
         /// Scripts scripts = this.container.Scripts;
-        /// TriggerResponse response = await scripts.DeleteTriggerAsync("existingId");
+        /// Response<TriggerProperties> response = await scripts.DeleteTriggerAsync("existingId");
         /// ]]>
         /// </code>
         /// </example>
@@ -722,7 +722,7 @@ namespace Azure.Cosmos.Scripts
         ///  This creates a user defined function then uses the function in an item query.
         /// <code language="c#">
         /// <![CDATA[
-        /// Scripts scripts = this.container.Scripts;
+        /// CosmosScripts scripts = this.container.Scripts;
         /// await scripts.UserDefinedFunctions.CreateUserDefinedFunctionAsync(
         ///     new UserDefinedFunctionProperties 
         ///     { 
@@ -735,11 +735,9 @@ namespace Azure.Cosmos.Scripts
         ///     .WithParameter("@expensive", 9000)
         ///     .WithParameter("@status", "Done");
         ///
-        /// FeedIterator<double> setIterator = this.container.Items.GetItemsQueryIterator<double>(
+        /// await foreach (double tax in this.container.Items.GetItemsQueryIterator<double>(
         ///     sqlQueryDefinition: sqlQuery,
-        ///     partitionKey: "Done");
-        ///
-        /// await foreach (double tax in setIterator)
+        ///     partitionKey: "Done"))
         /// {
         ///     Console.WriteLine(tax);
         /// }
@@ -768,7 +766,7 @@ namespace Azure.Cosmos.Scripts
         /// string queryText = "SELECT * FROM u where u.id like @testId";
         /// QueryDefinition queryDefinition = new QueryDefinition(queryText);
         /// queryDefinition.WithParameter("@testId", "testUDFId");
-        /// FeedIterator<UserDefinedFunctionProperties> iter = this.scripts.GetUserDefinedFunctionQueryIterator<UserDefinedFunctionProperties>(queryDefinition);
+        /// AsyncPageable<UserDefinedFunctionProperties> iter = this.scripts.GetUserDefinedFunctionQueryIterator<UserDefinedFunctionProperties>(queryDefinition);
         /// ]]>
         /// </code>
         /// </example>
@@ -791,11 +789,11 @@ namespace Azure.Cosmos.Scripts
         /// This create the stream feed iterator for UDF with queryDefinition as input.
         /// <code language="c#">
         /// <![CDATA[
-        /// Scripts scripts = this.container.Scripts;
+        /// CosmosScripts scripts = this.container.Scripts;
         /// string queryText = "SELECT * FROM u where u.id like @testId";
         /// QueryDefinition queryDefinition = new QueryDefinition(queryText);
         /// queryDefinition.WithParameter("@testId", "testUdfId");
-        /// FeedIterator iter = this.scripts.GetUserDefinedFunctionQueryStreamIterator(queryDefinition);
+        /// IAsyncEnumerable<Response> iter = this.scripts.GetUserDefinedFunctionQueryStreamIterator(queryDefinition);
         /// ]]>
         /// </code>
         /// </example>
@@ -820,7 +818,7 @@ namespace Azure.Cosmos.Scripts
         /// <![CDATA[
         /// Scripts scripts = this.container.Scripts;
         /// QueryDefinition queryDefinition = new QueryDefinition("SELECT * FROM u where u.id like '%testId%'");
-        /// FeedIterator<UserDefinedFunctionProperties> iter = this.scripts.GetUserDefinedFunctionQueryIterator<UserDefinedFunctionProperties>(queryDefinition);
+        /// AsyncPageable<UserDefinedFunctionProperties> iter = this.scripts.GetUserDefinedFunctionQueryIterator<UserDefinedFunctionProperties>(queryDefinition);
         /// ]]>
         /// </code>
         /// </example>
@@ -843,9 +841,9 @@ namespace Azure.Cosmos.Scripts
         /// This create the stream feed iterator for UDF with queryText as input.
         /// <code language="c#">
         /// <![CDATA[
-        /// Scripts scripts = this.container.Scripts;
+        /// CosmosScripts scripts = this.container.Scripts;
         /// QueryDefinition queryDefinition = new QueryDefinition("SELECT * FROM u where u.id like '%testId%'");
-        /// FeedIterator iter = this.scripts.GetUserDefinedFunctionQueryStreamIterator(queryDefinition);
+        /// IAsyncEnumerable<Response> iter = this.scripts.GetUserDefinedFunctionQueryStreamIterator(queryDefinition);
         /// ]]>
         /// </code>
         /// </example>
@@ -881,8 +879,8 @@ namespace Azure.Cosmos.Scripts
         ///  This reads an existing user defined function.
         /// <code language="c#">
         /// <![CDATA[
-        /// Scripts scripts = this.container.Scripts;
-        /// UserDefinedFunctionResponse response = await scripts.ReadUserDefinedFunctionAsync("ExistingId");
+        /// CosmosScripts scripts = this.container.Scripts;
+        /// Response<UserDefinedFunctionProperties> response = await scripts.ReadUserDefinedFunctionAsync("ExistingId");
         /// UserDefinedFunctionProperties udfProperties = response;
         /// ]]>
         /// </code>
@@ -905,14 +903,14 @@ namespace Azure.Cosmos.Scripts
         /// This examples replaces an existing user defined function.
         /// <code language="c#">
         /// <![CDATA[
-        /// Scripts scripts = this.container.Scripts;
+        /// CosmosScripts scripts = this.container.Scripts;
         /// UserDefinedFunctionProperties udfProperties = new UserDefinedFunctionProperties
         /// {
         ///     Id = "testUserDefinedFunId",
         ///     Body = "function(amt) { return amt * 0.15; }",
         /// };
         /// 
-        /// UserDefinedFunctionResponse response = await scripts.ReplaceUserDefinedFunctionAsync(udfProperties);
+        /// Response<UserDefinedFunctionProperties> response = await scripts.ReplaceUserDefinedFunctionAsync(udfProperties);
         /// UserDefinedFunctionProperties udfProperties = response;
         /// ]]>
         /// </code>
@@ -933,8 +931,8 @@ namespace Azure.Cosmos.Scripts
         /// This examples gets a reference to an existing user defined function and deletes it.
         /// <code language="c#">
         /// <![CDATA[
-        /// Scripts scripts = this.container.Scripts;
-        /// UserDefinedFunctionResponse response = await this.container.DeleteUserDefinedFunctionAsync("existingId");
+        /// CosmosScripts scripts = this.container.Scripts;
+        /// Response<UserDefinedFunctionProperties> response = await this.container.DeleteUserDefinedFunctionAsync("existingId");
         /// ]]>
         /// </code>
         /// </example>

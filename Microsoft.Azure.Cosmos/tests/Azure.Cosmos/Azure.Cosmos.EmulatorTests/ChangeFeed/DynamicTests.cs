@@ -146,7 +146,7 @@ namespace Azure.Cosmos.EmulatorTests.ChangeFeed
                             err => { if (err) throw err;}
                         );}";
 
-            Scripts scripts = this.Container.Scripts;
+            CosmosScripts scripts = this.Container.Scripts;
 
             Response<StoredProcedureProperties> storedProcedureResponse =
                 await scripts.CreateStoredProcedureAsync(new StoredProcedureProperties(sprocId, sprocBody));
