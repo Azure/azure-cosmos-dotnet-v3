@@ -15,9 +15,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
         public static QueryResponseCore CreateFromException(Exception exception)
         {
-            // Get the inner most exception (except if it's an exception with artifical stack trace).
-            while ((!(exception is ExceptionWithStackTraceException)) && (exception.InnerException != null)) exception = exception.InnerException;
-
             QueryResponseCore queryResponseCore;
             if (exception is CosmosException cosmosException)
             {
@@ -45,14 +42,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             }
             else
             {
-                // Unknown exception type should become a 500
-                queryResponseCore = QueryResponseCore.CreateFailure(
-                    statusCode: System.Net.HttpStatusCode.InternalServerError,
-                    subStatusCodes: null,
-                    errorMessage: exception?.ToString(),
-                    requestCharge: 0,
-                    activityId: QueryResponseCore.EmptyGuidString,
-                    diagnostics: QueryResponseCore.EmptyDiagnostics);
+                if (exception.InnerException != null)
+                {
+                    // retry with the inner exception
+                    queryResponseCore = QueryResponseFactory.CreateFromException(exception.InnerException);
+                }
+                else
+                {
+                    // Unknown exception type should become a 500
+                    queryResponseCore = QueryResponseCore.CreateFailure(
+                        statusCode: System.Net.HttpStatusCode.InternalServerError,
+                        subStatusCodes: null,
+                        errorMessage: exception?.ToString(),
+                        requestCharge: 0,
+                        activityId: QueryResponseCore.EmptyGuidString,
+                        diagnostics: QueryResponseCore.EmptyDiagnostics);
+                }
             }
 
             return queryResponseCore;
