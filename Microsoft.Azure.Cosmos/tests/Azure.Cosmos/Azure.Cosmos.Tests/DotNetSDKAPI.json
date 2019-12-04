@@ -1141,12 +1141,12 @@
           "Attributes": [],
           "MethodInfo": "Azure.Cosmos.CosmosConflicts get_Conflicts()"
         },
-        "Azure.Cosmos.Scripts.Scripts get_Scripts()": {
+        "Azure.Cosmos.Scripts.CosmosScripts get_Scripts()": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Azure.Cosmos.Scripts.Scripts get_Scripts()"
+          "MethodInfo": "Azure.Cosmos.Scripts.CosmosScripts get_Scripts()"
         },
-        "Azure.Cosmos.Scripts.Scripts Scripts": {
+        "Azure.Cosmos.Scripts.CosmosScripts Scripts": {
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": null
@@ -3479,7 +3479,7 @@
       },
       "NestedTypes": {}
     },
-    "Scripts": {
+    "CosmosScripts": {
       "Subclasses": {},
       "Members": {
         "Azure.AsyncPageable`1[T] GetStoredProcedureQueryIterator[T](Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)": {
