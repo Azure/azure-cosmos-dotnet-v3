@@ -191,7 +191,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 cosmosDiagnostics);
         }
 
-        private FeedIterator CreateStreamIterator(bool isContinuationExcpected)
+        private FeedIteratorInternal CreateStreamIterator(bool isContinuationExcpected)
         {
             SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression, this.serializationOptions);
 
@@ -206,7 +206,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression, this.serializationOptions);
 
-            FeedIterator streamIterator = this.CreateStreamIterator(isContinuationExcpected);
+            FeedIteratorInternal streamIterator = this.CreateStreamIterator(isContinuationExcpected);
             return new FeedIteratorCore<T>(
                 streamIterator,
                 this.responseFactory.CreateQueryFeedResponse<T>);
