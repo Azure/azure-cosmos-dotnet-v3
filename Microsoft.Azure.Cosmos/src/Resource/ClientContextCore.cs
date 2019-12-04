@@ -143,22 +143,7 @@ namespace Microsoft.Azure.Cosmos
             Action<RequestMessage> requestEnricher,
             CancellationToken cancellationToken)
         {
-            if (SynchronizationContext.Current == null)
-            {
-                return this.RequestHandler.SendAsync(
-                    resourceUri: resourceUri,
-                    resourceType: resourceType,
-                    operationType: operationType,
-                    requestOptions: requestOptions,
-                    cosmosContainerCore: cosmosContainerCore,
-                    partitionKey: partitionKey,
-                    streamPayload: streamPayload,
-                    requestEnricher: requestEnricher,
-                    cancellationToken: cancellationToken);
-            }
-
-            // Used on NETFX applications with SynchronizationContext when doing locking calls
-            return Task.Run(() => this.RequestHandler.SendAsync(
+            return TaskHelper.RunInlineIfNeededAsync(() => this.RequestHandler.SendAsync(
                     resourceUri: resourceUri,
                     resourceType: resourceType,
                     operationType: operationType,
@@ -182,7 +167,7 @@ namespace Microsoft.Azure.Cosmos
             Func<ResponseMessage, T> responseCreator,
             CancellationToken cancellationToken)
         {
-            return this.RequestHandler.SendAsync<T>(
+            return TaskHelper.RunInlineIfNeededAsync(() => this.RequestHandler.SendAsync<T>(
                 resourceUri: resourceUri,
                 resourceType: resourceType,
                 operationType: operationType,
@@ -192,7 +177,7 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload: streamPayload,
                 requestEnricher: requestEnricher,
                 responseCreator: responseCreator,
-                cancellationToken: cancellationToken);
+                cancellationToken: cancellationToken));
         }
 
         internal override async Task<ContainerProperties> GetCachedContainerPropertiesAsync(
