@@ -40,6 +40,15 @@
     <Compile Include="..\Microsoft.Azure.Cosmos.EmulatorTests\Utils\ToDoActivity.cs">
         <Link>Utils\ToDoActivity.cs</Link>
     </Compile>
+    <Compile Include="..\Microsoft.Azure.Cosmos.EmulatorTests\Utils\TestCommon.cs">
+        <Link>Utils\TestCommon.cs</Link>
+    </Compile>
+    <Compile Include="..\Microsoft.Azure.Cosmos.EmulatorTests\Utils\DocumentClientLinkSwitchExtension.cs">
+        <Link>Utils\DocumentClientLinkSwitchExtension.cs</Link>
+    </Compile>
+    <Compile Include="..\Microsoft.Azure.Cosmos.EmulatorTests\Utils\Logger.cs">
+        <Link>Utils\Logger.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Microsoft.Azure.Cosmos.EmulatorTests\settings.json">
