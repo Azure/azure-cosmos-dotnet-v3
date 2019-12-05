@@ -144,15 +144,15 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             return this.RequestHandler.SendAsync(
-                    resourceUri: resourceUri,
-                    resourceType: resourceType,
-                    operationType: operationType,
-                    requestOptions: requestOptions,
-                    cosmosContainerCore: cosmosContainerCore,
-                    partitionKey: partitionKey,
-                    streamPayload: streamPayload,
-                    requestEnricher: requestEnricher,
-                    cancellationToken: cancellationToken);
+                resourceUri: resourceUri,
+                resourceType: resourceType,
+                operationType: operationType,
+                requestOptions: requestOptions,
+                cosmosContainerCore: cosmosContainerCore,
+                partitionKey: partitionKey,
+                streamPayload: streamPayload,
+                requestEnricher: requestEnricher,
+                cancellationToken: cancellationToken);
         }
 
         internal override Task<T> ProcessResourceOperationAsync<T>(
