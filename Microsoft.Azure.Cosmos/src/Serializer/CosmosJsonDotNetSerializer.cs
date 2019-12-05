@@ -4,6 +4,8 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
+    using System.Diagnostics;
     using System.IO;
     using System.Text;
     using Newtonsoft.Json;
@@ -15,7 +17,8 @@ namespace Microsoft.Azure.Cosmos
     internal sealed class CosmosJsonDotNetSerializer : CosmosSerializer
     {
         private static readonly Encoding DefaultEncoding = new UTF8Encoding(false, true);
-        private readonly JsonSerializer Serializer;
+        private readonly JsonSerializerSettings SerializerSettings;
+        private JsonSerializer Serializer;
 
         /// <summary>
         /// Create a serializer that uses the JSON.net serializer
@@ -26,6 +29,7 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         internal CosmosJsonDotNetSerializer()
         {
+            this.SerializerSettings = null;
             this.Serializer = JsonSerializer.Create();
         }
 
@@ -38,6 +42,11 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         internal CosmosJsonDotNetSerializer(CosmosSerializationOptions cosmosSerializerOptions)
         {
+            if (cosmosSerializerOptions == null || cosmosSerializerOptions.IsDefaultSettings())
+            {
+                throw new ArgumentException("No need to create a custom serializer. The settings are the default.");
+            }
+
             JsonSerializerSettings jsonSerializerSettings = new JsonSerializerSettings()
             {
                 NullValueHandling = cosmosSerializerOptions.IgnoreNullValues ? NullValueHandling.Ignore : NullValueHandling.Include,
@@ -47,7 +56,8 @@ namespace Microsoft.Azure.Cosmos
                     : null
             };
 
-            this.Serializer = JsonSerializer.Create(jsonSerializerSettings);
+            this.SerializerSettings = jsonSerializerSettings;
+            this.Serializer = null;
         }
 
         /// <summary>
@@ -59,7 +69,8 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         internal CosmosJsonDotNetSerializer(JsonSerializerSettings jsonSerializerSettings)
         {
-            this.Serializer = JsonSerializer.Create(jsonSerializerSettings);
+            this.SerializerSettings = jsonSerializerSettings ?? throw new ArgumentNullException(nameof(jsonSerializerSettings));
+            this.Serializer = null;
         }
 
         /// <summary>
@@ -81,7 +92,8 @@ namespace Microsoft.Azure.Cosmos
                 {
                     using (JsonTextReader jsonTextReader = new JsonTextReader(sr))
                     {
-                        return this.Serializer.Deserialize<T>(jsonTextReader);
+                        JsonSerializer jsonSerializer = this.GetSerializer();
+                        return jsonSerializer.Deserialize<T>(jsonTextReader);
                     }
                 }
             }
@@ -101,7 +113,8 @@ namespace Microsoft.Azure.Cosmos
                 using (JsonWriter writer = new JsonTextWriter(streamWriter))
                 {
                     writer.Formatting = Newtonsoft.Json.Formatting.None;
-                    this.Serializer.Serialize(writer, input);
+                    JsonSerializer jsonSerializer = this.GetSerializer();
+                    jsonSerializer.Serialize(writer, input);
                     writer.Flush();
                     streamWriter.Flush();
                 }
@@ -109,6 +122,15 @@ namespace Microsoft.Azure.Cosmos
 
             streamPayload.Position = 0;
             return streamPayload;
+        }
+
+        /// <summary>
+        /// JsonSerializer has hit a race conditions with custom settings that cause null reference exception.
+        /// To avoid the race condition a new JsonSerializer is created for each call when there is custom settings
+        /// </summary>
+        private JsonSerializer GetSerializer()
+        {
+            return this.Serializer ?? JsonSerializer.Create(this.SerializerSettings);
         }
     }
 }

@@ -512,7 +512,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal CosmosSerializer GetCosmosSerializerWithWrapperOrDefault()
         {
-            if (this.SerializerOptions != null)
+            if (this.SerializerOptions != null && !this.SerializerOptions.IsDefaultSettings())
             {
                 CosmosJsonDotNetSerializer cosmosJsonDotNetSerializer = new CosmosJsonDotNetSerializer(this.SerializerOptions);
                 return new CosmosJsonSerializerWrapper(cosmosJsonDotNetSerializer);
