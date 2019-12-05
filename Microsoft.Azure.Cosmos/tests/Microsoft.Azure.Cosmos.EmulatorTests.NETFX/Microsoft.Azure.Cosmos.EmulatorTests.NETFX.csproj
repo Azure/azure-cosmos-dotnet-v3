@@ -7,7 +7,7 @@
     <IsPackable>false</IsPackable>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <RootNamespace>Microsoft.Azure.Cosmos</RootNamespace>
-    <AssemblyName>Microsoft.Azure.Cosmos.EmulatorTests</AssemblyName>
+    <AssemblyName>Microsoft.Azure.Cosmos.EmulatorTests.NETFX</AssemblyName>
     <IsEmulatorTest>true</IsEmulatorTest>
     <EmulatorFlavor>master</EmulatorFlavor>
     <DisableCopyEmulator>True</DisableCopyEmulator>
@@ -31,23 +31,11 @@
     <PackageReference Include="System.Reflection" Version="4.3.0" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\Microsoft.Azure.Cosmos.EmulatorTests\Utils\BaseCosmosClientHelper.cs">
-        <Link>Utils\BaseCosmosClientHelper.cs</Link>
-    </Compile>
     <Compile Include="..\Microsoft.Azure.Cosmos.EmulatorTests\Utils\ConfigurationManager.cs">
         <Link>Utils\ConfigurationManager.cs</Link>
     </Compile>
     <Compile Include="..\Microsoft.Azure.Cosmos.EmulatorTests\Utils\ToDoActivity.cs">
         <Link>Utils\ToDoActivity.cs</Link>
-    </Compile>
-    <Compile Include="..\Microsoft.Azure.Cosmos.EmulatorTests\Utils\TestCommon.cs">
-        <Link>Utils\TestCommon.cs</Link>
-    </Compile>
-    <Compile Include="..\Microsoft.Azure.Cosmos.EmulatorTests\Utils\DocumentClientLinkSwitchExtension.cs">
-        <Link>Utils\DocumentClientLinkSwitchExtension.cs</Link>
-    </Compile>
-    <Compile Include="..\Microsoft.Azure.Cosmos.EmulatorTests\Utils\Logger.cs">
-        <Link>Utils\Logger.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

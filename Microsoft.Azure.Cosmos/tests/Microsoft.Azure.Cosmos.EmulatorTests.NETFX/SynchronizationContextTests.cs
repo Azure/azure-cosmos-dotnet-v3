@@ -10,25 +10,28 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading;
     using System.Threading.Tasks;
     using System.Windows.Forms;
+    using Microsoft.Azure.Cosmos.Utils;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    public class SynchronizationContextTests : BaseCosmosClientHelper
+    public class SynchronizationContextTests
     {
         private Container Container = null;
+        private Database Database = null;
 
         [TestInitialize]
         public async Task TestInitialize()
         {
-            await base.TestInit();
+            string authKey = ConfigurationManager.AppSettings["MasterKey"];
+            string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
+
+            CosmosClient cosmosClient = new CosmosClient(endpoint, authKey);
+            this.Database = await cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
+
             string PartitionKey = "/status";
             ContainerProperties containerSettings = new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey);
-            ContainerResponse response = await this.database.CreateContainerAsync(
-                containerSettings,
-                cancellationToken: this.cancellationToken);
-            Assert.IsNotNull(response);
-            Assert.IsNotNull(response.Container);
-            Assert.IsNotNull(response.Resource);
+            ContainerResponse response = await this.Database.CreateContainerAsync(
+                containerSettings);
             this.Container = response;
         }
 
@@ -36,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task Cleanup()
         {
             SynchronizationContext.SetSynchronizationContext(null);
-            await base.TestCleanup();
+            await this.Database.DeleteStreamAsync();
         }
 
         [TestMethod]
@@ -46,8 +49,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Using Windows Form context to block similarly than ASP.NET NETFX would
             WindowsFormsSynchronizationContext synchronizationContext = new WindowsFormsSynchronizationContext();
             SynchronizationContext.SetSynchronizationContext(synchronizationContext);
-            this.database.ReadStreamAsync().ConfigureAwait(false).GetAwaiter().GetResult();
-            this.database.ReadAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+            this.Database.ReadStreamAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+            this.Database.ReadAsync().ConfigureAwait(false).GetAwaiter().GetResult();
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
             ItemResponse<ToDoActivity> response = this.Container.CreateItemAsync<ToDoActivity>(item: testItem).ConfigureAwait(false).GetAwaiter().GetResult();
             Assert.IsNotNull(response);
