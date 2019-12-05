@@ -558,7 +558,7 @@ namespace Microsoft.Azure.Cosmos
                         streamPayload,
                         operationType,
                         requestOptions,
-                        cancellationToken: cancellationToken).ConfigureAwait(false);
+                        cancellationToken: cancellationToken);
             }
 
             PartitionKeyMismatchRetryPolicy requestRetryPolicy = null;

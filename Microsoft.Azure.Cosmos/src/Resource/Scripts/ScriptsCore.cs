@@ -345,11 +345,11 @@ namespace Microsoft.Azure.Cosmos.Scripts
             return TaskHelper.RunInlineIfNeededAsync(() =>
             {
                 return this.ProcessTriggerOperationAsync(
-                id: id,
-                operationType: OperationType.Delete,
-                streamPayload: null,
-                requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
+                    id: id,
+                    operationType: OperationType.Delete,
+                    streamPayload: null,
+                    requestOptions: requestOptions,
+                    cancellationToken: cancellationToken);
             });
         }
 
@@ -376,11 +376,11 @@ namespace Microsoft.Azure.Cosmos.Scripts
             return TaskHelper.RunInlineIfNeededAsync(() =>
             {
                 return this.ProcessUserDefinedFunctionOperationAsync(
-                linkUri: this.container.LinkUri,
-                operationType: OperationType.Create,
-                streamPayload: this.clientContext.PropertiesSerializer.ToStream(userDefinedFunctionProperties),
-                requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
+                    linkUri: this.container.LinkUri,
+                    operationType: OperationType.Create,
+                    streamPayload: this.clientContext.PropertiesSerializer.ToStream(userDefinedFunctionProperties),
+                    requestOptions: requestOptions,
+                    cancellationToken: cancellationToken);
             });
         }
 
