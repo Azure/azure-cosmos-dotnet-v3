@@ -7,7 +7,7 @@
     <IsPackable>false</IsPackable>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <RootNamespace>Microsoft.Azure.Cosmos</RootNamespace>
-    <AssemblyName>Microsoft.Azure.Cosmos.EmulatorTests.NETFX</AssemblyName>
+    <AssemblyName>Microsoft.Azure.Cosmos.EmulatorTests</AssemblyName>
     <IsEmulatorTest>true</IsEmulatorTest>
     <EmulatorFlavor>master</EmulatorFlavor>
     <DisableCopyEmulator>True</DisableCopyEmulator>
