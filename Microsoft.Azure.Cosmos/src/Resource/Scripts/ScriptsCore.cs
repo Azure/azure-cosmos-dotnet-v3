@@ -324,11 +324,11 @@ namespace Microsoft.Azure.Cosmos.Scripts
             return TaskHelper.RunInlineIfNeededAsync(() =>
             {
                 return this.ProcessTriggerOperationAsync(
-                id: triggerProperties.Id,
-                operationType: OperationType.Replace,
-                streamPayload: this.clientContext.PropertiesSerializer.ToStream(triggerProperties),
-                requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
+                    id: triggerProperties.Id,
+                    operationType: OperationType.Replace,
+                    streamPayload: this.clientContext.PropertiesSerializer.ToStream(triggerProperties),
+                    requestOptions: requestOptions,
+                    cancellationToken: cancellationToken);
             });
         }
 
