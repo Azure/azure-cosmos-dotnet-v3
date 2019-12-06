@@ -26,47 +26,76 @@ namespace Microsoft.Azure.Cosmos
             return new DatabaseInlineCore(database);
         }
 
-        public override Task<ContainerResponse> CreateContainerAsync(ContainerProperties containerProperties, int? throughput = null, RequestOptions requestOptions = null, CancellationToken cancellationToken = default)
+        public override Task<ContainerResponse> CreateContainerAsync(
+            ContainerProperties containerProperties,
+            int? throughput = null,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default)
         {
             return TaskHelper.RunInlineIfNeededAsync(() => this.database.CreateContainerAsync(containerProperties, throughput, requestOptions, cancellationToken));
         }
 
-        public override Task<ContainerResponse> CreateContainerAsync(string id, string partitionKeyPath, int? throughput = null, RequestOptions requestOptions = null, CancellationToken cancellationToken = default)
+        public override Task<ContainerResponse> CreateContainerAsync(string id,
+            string partitionKeyPath,
+            int? throughput = null,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default)
         {
             return TaskHelper.RunInlineIfNeededAsync(() => this.database.CreateContainerAsync(id, partitionKeyPath, throughput, requestOptions, cancellationToken));
         }
 
-        public override Task<ContainerResponse> CreateContainerIfNotExistsAsync(ContainerProperties containerProperties, int? throughput = null, RequestOptions requestOptions = null, CancellationToken cancellationToken = default)
+        public override Task<ContainerResponse> CreateContainerIfNotExistsAsync(
+            ContainerProperties containerProperties,
+            int? throughput = null,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default)
         {
             return TaskHelper.RunInlineIfNeededAsync(() => this.database.CreateContainerIfNotExistsAsync(containerProperties, throughput, requestOptions, cancellationToken));
         }
 
-        public override Task<ContainerResponse> CreateContainerIfNotExistsAsync(string id, string partitionKeyPath, int? throughput = null, RequestOptions requestOptions = null, CancellationToken cancellationToken = default)
+        public override Task<ContainerResponse> CreateContainerIfNotExistsAsync(
+            string id,
+            string partitionKeyPath,
+            int? throughput = null,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default)
         {
             return TaskHelper.RunInlineIfNeededAsync(() => this.database.CreateContainerIfNotExistsAsync(id, partitionKeyPath, throughput, requestOptions, cancellationToken));
         }
 
-        public override Task<ResponseMessage> CreateContainerStreamAsync(ContainerProperties containerProperties, int? throughput = null, RequestOptions requestOptions = null, CancellationToken cancellationToken = default)
+        public override Task<ResponseMessage> CreateContainerStreamAsync(
+            ContainerProperties containerProperties,
+            int? throughput = null,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default)
         {
             return TaskHelper.RunInlineIfNeededAsync(() => this.database.CreateContainerStreamAsync(containerProperties, throughput, requestOptions, cancellationToken));
         }
 
-        public override Task<UserResponse> CreateUserAsync(string id, RequestOptions requestOptions = null, CancellationToken cancellationToken = default)
+        public override Task<UserResponse> CreateUserAsync(string id,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default)
         {
             return TaskHelper.RunInlineIfNeededAsync(() => this.database.CreateUserAsync(id, requestOptions, cancellationToken));
         }
 
-        public override ContainerBuilder DefineContainer(string name, string partitionKeyPath)
+        public override ContainerBuilder DefineContainer(
+            string name,
+            string partitionKeyPath)
         {
             return this.database.DefineContainer(name, partitionKeyPath);
         }
 
-        public override Task<DatabaseResponse> DeleteAsync(RequestOptions requestOptions = null, CancellationToken cancellationToken = default)
+        public override Task<DatabaseResponse> DeleteAsync(
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default)
         {
             return TaskHelper.RunInlineIfNeededAsync(() => this.database.DeleteAsync(requestOptions, cancellationToken));
         }
 
-        public override Task<ResponseMessage> DeleteStreamAsync(RequestOptions requestOptions = null, CancellationToken cancellationToken = default)
+        public override Task<ResponseMessage> DeleteStreamAsync(
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default)
         {
             return TaskHelper.RunInlineIfNeededAsync(() => this.database.DeleteStreamAsync(requestOptions, cancellationToken));
         }
@@ -76,22 +105,33 @@ namespace Microsoft.Azure.Cosmos
             return this.database.GetContainer(id);
         }
 
-        public override FeedIterator<T> GetContainerQueryIterator<T>(QueryDefinition queryDefinition, string continuationToken = null, QueryRequestOptions requestOptions = null)
+        public override FeedIterator<T> GetContainerQueryIterator<T>(
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null)
         {
             return this.database.GetContainerQueryIterator<T>(queryDefinition, continuationToken, requestOptions);
         }
 
-        public override FeedIterator<T> GetContainerQueryIterator<T>(string queryText = null, string continuationToken = null, QueryRequestOptions requestOptions = null)
+        public override FeedIterator<T> GetContainerQueryIterator<T>(
+            string queryText = null,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null)
         {
             return this.database.GetContainerQueryIterator<T>(queryText, continuationToken, requestOptions);
         }
 
-        public override FeedIterator GetContainerQueryStreamIterator(QueryDefinition queryDefinition, string continuationToken = null, QueryRequestOptions requestOptions = null)
+        public override FeedIterator GetContainerQueryStreamIterator(QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null)
         {
             return this.database.GetContainerQueryStreamIterator(queryDefinition, continuationToken, requestOptions);
         }
 
-        public override FeedIterator GetContainerQueryStreamIterator(string queryText = null, string continuationToken = null, QueryRequestOptions requestOptions = null)
+        public override FeedIterator GetContainerQueryStreamIterator(
+            string queryText = null,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null)
         {
             return this.database.GetContainerQueryStreamIterator(queryText, continuationToken, requestOptions);
         }
@@ -101,22 +141,31 @@ namespace Microsoft.Azure.Cosmos
             return this.database.GetUser(id);
         }
 
-        public override FeedIterator<T> GetUserQueryIterator<T>(string queryText = null, string continuationToken = null, QueryRequestOptions requestOptions = null)
+        public override FeedIterator<T> GetUserQueryIterator<T>(
+            string queryText = null,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null)
         {
             return this.database.GetUserQueryIterator<T>(queryText, continuationToken, requestOptions);
         }
 
-        public override FeedIterator<T> GetUserQueryIterator<T>(QueryDefinition queryDefinition, string continuationToken = null, QueryRequestOptions requestOptions = null)
+        public override FeedIterator<T> GetUserQueryIterator<T>(
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null)
         {
             return this.database.GetUserQueryIterator<T>(queryDefinition, continuationToken, requestOptions);
         }
 
-        public override Task<DatabaseResponse> ReadAsync(RequestOptions requestOptions = null, CancellationToken cancellationToken = default)
+        public override Task<DatabaseResponse> ReadAsync(RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default)
         {
             return TaskHelper.RunInlineIfNeededAsync(() => this.database.ReadAsync(requestOptions, cancellationToken));
         }
 
-        public override Task<ResponseMessage> ReadStreamAsync(RequestOptions requestOptions = null, CancellationToken cancellationToken = default)
+        public override Task<ResponseMessage> ReadStreamAsync(
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default)
         {
             return TaskHelper.RunInlineIfNeededAsync(() => this.database.ReadStreamAsync(requestOptions, cancellationToken));
         }
@@ -126,17 +175,25 @@ namespace Microsoft.Azure.Cosmos
             return TaskHelper.RunInlineIfNeededAsync(() => this.database.ReadThroughputAsync(cancellationToken));
         }
 
-        public override Task<ThroughputResponse> ReadThroughputAsync(RequestOptions requestOptions, CancellationToken cancellationToken = default)
+        public override Task<ThroughputResponse> ReadThroughputAsync(
+            RequestOptions requestOptions,
+            CancellationToken cancellationToken = default)
         {
             return TaskHelper.RunInlineIfNeededAsync(() => this.database.ReadThroughputAsync(requestOptions, cancellationToken));
         }
 
-        public override Task<ThroughputResponse> ReplaceThroughputAsync(int throughput, RequestOptions requestOptions = null, CancellationToken cancellationToken = default)
+        public override Task<ThroughputResponse> ReplaceThroughputAsync(
+            int throughput,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default)
         {
             return TaskHelper.RunInlineIfNeededAsync(() => this.database.ReplaceThroughputAsync(throughput, requestOptions, cancellationToken));
         }
 
-        public override Task<UserResponse> UpsertUserAsync(string id, RequestOptions requestOptions = null, CancellationToken cancellationToken = default)
+        public override Task<UserResponse> UpsertUserAsync(
+            string id,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default)
         {
             return TaskHelper.RunInlineIfNeededAsync(() => this.database.UpsertUserAsync(id, requestOptions, cancellationToken));
         }

@@ -25,17 +25,26 @@ namespace Microsoft.Azure.Cosmos
             return new PermissionInlineCore(permission);
         }
 
-        public override Task<PermissionResponse> ReadAsync(int? tokenExpiryInSeconds = null, RequestOptions requestOptions = null, CancellationToken cancellationToken = default)
+        public override Task<PermissionResponse> ReadAsync(
+            int? tokenExpiryInSeconds = null,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default)
         {
             return TaskHelper.RunInlineIfNeededAsync(() => this.permission.ReadAsync(tokenExpiryInSeconds, requestOptions, cancellationToken));
         }
 
-        public override Task<PermissionResponse> ReplaceAsync(PermissionProperties permissionProperties, int? tokenExpiryInSeconds = null, RequestOptions requestOptions = null, CancellationToken cancellationToken = default)
+        public override Task<PermissionResponse> ReplaceAsync(
+            PermissionProperties permissionProperties,
+            int? tokenExpiryInSeconds = null,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default)
         {
             return TaskHelper.RunInlineIfNeededAsync(() => this.permission.ReplaceAsync(permissionProperties, tokenExpiryInSeconds, requestOptions, cancellationToken));
         }
 
-        public override Task<PermissionResponse> DeleteAsync(RequestOptions requestOptions = null, CancellationToken cancellationToken = default)
+        public override Task<PermissionResponse> DeleteAsync(
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default)
         {
             return TaskHelper.RunInlineIfNeededAsync(() => this.permission.DeleteAsync(requestOptions, cancellationToken));
         }
