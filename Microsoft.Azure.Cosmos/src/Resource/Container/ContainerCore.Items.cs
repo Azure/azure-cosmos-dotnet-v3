@@ -352,10 +352,13 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions.PartitionKey = null;
             }
 
-            FeedIterator feedIterator = this.GetItemQueryStreamIterator(
+            if (!(this.GetItemQueryStreamIterator(
                 queryDefinition,
                 continuationToken,
-                requestOptions);
+                requestOptions) is FeedIteratorInternal feedIterator))
+            {
+                throw new InvalidOperationException($"Expected a FeedIteratorInternal.");
+            }
 
             return new FeedIteratorCore<T>(
                 feedIterator: feedIterator,
@@ -467,7 +470,7 @@ namespace Microsoft.Azure.Cosmos
         /// It decides if it is a query or read feed and create
         /// the correct instance.
         /// </summary>
-        internal FeedIterator GetItemQueryStreamIteratorInternal(
+        internal FeedIteratorInternal GetItemQueryStreamIteratorInternal(
             SqlQuerySpec sqlQuerySpec,
             bool isContinuationExcpected,
             string continuationToken,

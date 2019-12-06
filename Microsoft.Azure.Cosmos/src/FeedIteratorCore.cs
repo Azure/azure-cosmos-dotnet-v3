@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Cosmos feed stream iterator. This is used to get the query responses with a Stream content
     /// </summary>
-    internal class FeedIteratorCore : FeedIterator
+    internal class FeedIteratorCore : FeedIteratorInternal
     {
         private readonly CosmosClientContext clientContext;
         private readonly Uri resourceLink;
@@ -101,9 +101,9 @@ namespace Microsoft.Azure.Cosmos
             return response;
         }
 
-        internal bool TryGetContinuationToken(out string state)
+        public override bool TryGetContinuationToken(out string continuationToken)
         {
-            state = this.continuationToken;
+            continuationToken = this.continuationToken;
             return true;
         }
 
@@ -125,13 +125,13 @@ namespace Microsoft.Azure.Cosmos
     /// Cosmos feed iterator that keeps track of the continuation token when retrieving results form a query.
     /// </summary>
     /// <typeparam name="T">The response object type that can be deserialized</typeparam>
-    internal class FeedIteratorCore<T> : FeedIterator<T>
+    internal sealed class FeedIteratorCore<T> : FeedIteratorInternal<T>
     {
-        private readonly FeedIterator feedIterator;
+        private readonly FeedIteratorInternal feedIterator;
         private readonly Func<ResponseMessage, FeedResponse<T>> responseCreator;
 
         internal FeedIteratorCore(
-            FeedIterator feedIterator,
+            FeedIteratorInternal feedIterator,
             Func<ResponseMessage, FeedResponse<T>> responseCreator)
         {
             this.responseCreator = responseCreator;
@@ -153,21 +153,9 @@ namespace Microsoft.Azure.Cosmos
             return this.responseCreator(response);
         }
 
-        internal bool TryGetContinuationToken(out string state)
+        public override bool TryGetContinuationToken(out string continuationToken)
         {
-            QueryIterator queryIterator = this.feedIterator as QueryIterator;
-            if (queryIterator != null)
-            {
-                return queryIterator.TryGetContinuationToken(out state);
-            }
-
-            FeedIteratorCore feedIteratorCore = this.feedIterator as FeedIteratorCore;
-            if (feedIteratorCore != null)
-            {
-                return feedIteratorCore.TryGetContinuationToken(out state);
-            }
-
-            throw new ArgumentException($"Unsupported  iterator type of {this.feedIterator.GetType().Name}");
+            return this.feedIterator.TryGetContinuationToken(out continuationToken);
         }
     }
 }
