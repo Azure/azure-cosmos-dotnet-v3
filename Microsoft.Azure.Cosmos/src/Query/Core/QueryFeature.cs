@@ -6,7 +6,14 @@ namespace Microsoft.Azure.Cosmos
     using System;
 
     [Flags]
-    internal enum QueryFeatures : ulong
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1601 // Partial elements should be documented
+    public
+#else
+    internal
+#endif
+    enum QueryFeatures : ulong
     {
         None = 0,
         Aggregate = 1 << 0,
@@ -20,4 +27,8 @@ namespace Microsoft.Azure.Cosmos
         Top = 1 << 8,
         NonValueAggregate = 1 << 9,
     }
+#if INTERNAL
+#pragma warning restore SA1601 // Partial elements should be documented
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
+#endif
 }

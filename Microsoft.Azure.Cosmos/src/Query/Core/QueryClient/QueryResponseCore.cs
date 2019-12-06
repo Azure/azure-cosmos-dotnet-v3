@@ -9,7 +9,14 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos.CosmosElements;
     using SubStatusCodes = Documents.SubStatusCodes;
 
-    internal struct QueryResponseCore
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1601 // Partial elements should be documented
+    public
+#else
+    internal
+#endif
+    struct QueryResponseCore
     {
         private static readonly IReadOnlyList<CosmosElement> EmptyList = new List<CosmosElement>().AsReadOnly();
         internal static readonly string EmptyGuidString = Guid.Empty.ToString();
@@ -112,4 +119,8 @@ namespace Microsoft.Azure.Cosmos.Query
             return cosmosQueryResponse;
         }
     }
+#if INTERNAL
+#pragma warning restore SA1601 // Partial elements should be documented
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
+#endif
 }
