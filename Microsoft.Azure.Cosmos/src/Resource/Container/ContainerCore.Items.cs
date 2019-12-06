@@ -18,6 +18,9 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -386,10 +389,13 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions.PartitionKey = null;
             }
 
-            FeedIterator feedIterator = this.GetItemQueryStreamIterator(
+            if (!(this.GetItemQueryStreamIterator(
                 queryDefinition,
                 continuationToken,
-                requestOptions);
+                requestOptions) is FeedIteratorInternal feedIterator))
+            {
+                throw new InvalidOperationException($"Expected a FeedIteratorInternal.");
+            }
 
             return new FeedIteratorCore<T>(
                 feedIterator: feedIterator,
@@ -501,7 +507,7 @@ namespace Microsoft.Azure.Cosmos
         /// It decides if it is a query or read feed and create
         /// the correct instance.
         /// </summary>
-        internal FeedIterator GetItemQueryStreamIteratorInternal(
+        internal FeedIteratorInternal GetItemQueryStreamIteratorInternal(
             SqlQuerySpec sqlQuerySpec,
             bool isContinuationExcpected,
             string continuationToken,

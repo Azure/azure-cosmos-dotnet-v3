@@ -143,7 +143,7 @@ namespace Microsoft.Azure.Cosmos
             }
             catch (Exception)
             {
-                partitionKey = default(PartitionKey);
+                partitionKey = default;
                 return false;
             }
         }

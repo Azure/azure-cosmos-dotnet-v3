@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -117,7 +118,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                     document
                 };
 
-                message.Content = (new CosmosJsonDotNetSerializer()).ToStream(cosmosFeedResponse);
+                message.Content = new CosmosJsonDotNetSerializer().ToStream(cosmosFeedResponse);
             }
 
             return message;

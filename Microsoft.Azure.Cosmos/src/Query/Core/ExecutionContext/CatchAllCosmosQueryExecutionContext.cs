@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
 
     internal sealed class CatchAllCosmosQueryExecutionContext : CosmosQueryExecutionContext
     {
@@ -16,12 +17,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         public CatchAllCosmosQueryExecutionContext(
             CosmosQueryExecutionContext cosmosQueryExecutionContext)
         {
-            if (cosmosQueryExecutionContext == null)
-            {
-                throw new ArgumentNullException(nameof(cosmosQueryExecutionContext));
-            }
-
-            this.cosmosQueryExecutionContext = cosmosQueryExecutionContext;
+            this.cosmosQueryExecutionContext = cosmosQueryExecutionContext ?? throw new ArgumentNullException(nameof(cosmosQueryExecutionContext));
         }
 
         public override bool IsDone => this.hitException || this.cosmosQueryExecutionContext.IsDone;

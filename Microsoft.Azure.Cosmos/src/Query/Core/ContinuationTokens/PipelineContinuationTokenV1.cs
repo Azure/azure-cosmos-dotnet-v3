@@ -20,12 +20,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
         public PipelineContinuationTokenV1(string sourceContinuationToken)
             : base(PipelineContinuationTokenV1.VersionNumber)
         {
-            if (sourceContinuationToken == null)
-            {
-                throw new ArgumentNullException(nameof(sourceContinuationToken));
-            }
-
-            this.SourceContinuationToken = sourceContinuationToken;
+            this.SourceContinuationToken = sourceContinuationToken ?? throw new ArgumentNullException(nameof(sourceContinuationToken));
         }
 
         public string SourceContinuationToken { get; }
@@ -58,13 +53,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
                 parsedContinuationToken,
                 out Version version))
             {
-                pipelinedContinuationTokenV1 = default(PipelineContinuationTokenV1);
+                pipelinedContinuationTokenV1 = default;
                 return false;
             }
 
             if (version != PipelineContinuationTokenV1.VersionNumber)
             {
-                pipelinedContinuationTokenV1 = default(PipelineContinuationTokenV1);
+                pipelinedContinuationTokenV1 = default;
                 return false;
             }
 
@@ -72,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
                 parsedContinuationToken,
                 out string sourceContinuationToken))
             {
-                pipelinedContinuationTokenV1 = default(PipelineContinuationTokenV1);
+                pipelinedContinuationTokenV1 = default;
                 return false;
             }
 
@@ -104,7 +99,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
                 PipelineContinuationTokenV1.SourceContinuationTokenPropertyName,
                 out CosmosString parsedSourceContinuationToken))
             {
-                sourceContinuationToken = default(string);
+                sourceContinuationToken = default;
                 return false;
             }
 

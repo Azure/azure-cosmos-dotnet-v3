@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
 
     /// <summary>
     /// Implementation of <see cref="CosmosQueryExecutionContext"/> that composes another context and defers it's initialization until the first read.
@@ -18,12 +19,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
         public LazyCosmosQueryExecutionContext(AsyncLazy<TryCatch<CosmosQueryExecutionContext>> lazyTryCreateCosmosQueryExecutionContext)
         {
-            if (lazyTryCreateCosmosQueryExecutionContext == null)
-            {
-                throw new ArgumentNullException(nameof(lazyTryCreateCosmosQueryExecutionContext));
-            }
-
-            this.lazyTryCreateCosmosQueryExecutionContext = lazyTryCreateCosmosQueryExecutionContext;
+            this.lazyTryCreateCosmosQueryExecutionContext = lazyTryCreateCosmosQueryExecutionContext ?? throw new ArgumentNullException(nameof(lazyTryCreateCosmosQueryExecutionContext));
         }
 
         public override bool IsDone
