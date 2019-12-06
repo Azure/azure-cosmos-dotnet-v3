@@ -111,3 +111,4 @@ jobs:
     displayName: 'VsTest - testAssemblies'
     inputs:
       testAssemblyVer2: '**\Microsoft.Azure.Cosmos.EmulatorTests.dll'
+      vsTestVersion: 16.0
