@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     using System.Linq;
     using System.Runtime.InteropServices;
     using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Documents;
 
 #if INTERNAL

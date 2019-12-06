@@ -157,11 +157,14 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
-            FeedIterator databaseStreamIterator = this.GetOfferQueryStreamIterator(
+            if (!(this.GetOfferQueryStreamIterator(
                queryDefinition,
                continuationToken,
                requestOptions,
-               cancellationToken);
+               cancellationToken) is FeedIteratorInternal databaseStreamIterator))
+            {
+                throw new InvalidOperationException($"Expected a FeedIteratorInternal.");
+            }
 
             return new FeedIteratorCore<T>(
                 databaseStreamIterator,

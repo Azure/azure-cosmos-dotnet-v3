@@ -471,10 +471,13 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            FeedIterator databaseStreamIterator = this.GetDatabaseQueryStreamIterator(
+            if (!(this.GetDatabaseQueryStreamIterator(
                 queryDefinition,
                 continuationToken,
-                requestOptions);
+                requestOptions) is FeedIteratorInternal databaseStreamIterator))
+            {
+                throw new InvalidOperationException($"Expected a FeedIteratorInternal.");
+            }
 
             return new FeedIteratorCore<T>(
                 databaseStreamIterator,

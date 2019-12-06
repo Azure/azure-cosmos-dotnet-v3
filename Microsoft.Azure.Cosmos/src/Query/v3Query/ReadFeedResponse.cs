@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System.Collections.Generic;
     using System.Net;
+    using Microsoft.Azure.Cosmos.Query.Core;
 
     internal class ReadFeedResponse<T> : FeedResponse<T>
     {
@@ -44,7 +45,7 @@ namespace Microsoft.Azure.Cosmos
         {
             using (responseMessage)
             {
-                ICollection<TInput> resources = default(ICollection<TInput>);
+                ICollection<TInput> resources = default;
                 if (responseMessage.Content != null)
                 {
                     CosmosFeedResponseUtil<TInput> response = jsonSerializer.FromStream<CosmosFeedResponseUtil<TInput>>(responseMessage.Content);

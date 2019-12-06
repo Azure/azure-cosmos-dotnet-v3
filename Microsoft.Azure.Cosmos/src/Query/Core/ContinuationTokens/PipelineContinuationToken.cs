@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
                     rawContinuationToken,
                     out PipelineContinuationTokenV0 pipelineContinuationTokenV0))
                 {
-                    pipelineContinuationToken = default(PipelineContinuationToken);
+                    pipelineContinuationToken = default;
                     return false;
                 }
 
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
                 parsedContinuationToken,
                 out Version version))
             {
-                pipelineContinuationToken = default(PipelineContinuationToken);
+                pipelineContinuationToken = default;
                 return false;
             }
 
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
                     rawContinuationToken,
                     out PipelineContinuationTokenV0 pipelineContinuationTokenV0))
                 {
-                    pipelineContinuationToken = default(PipelineContinuationToken);
+                    pipelineContinuationToken = default;
                     return false;
                 }
 
@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
                     parsedContinuationToken,
                     out PipelineContinuationTokenV1 pipelineContinuationTokenV1))
                 {
-                    pipelineContinuationToken = default(PipelineContinuationToken);
+                    pipelineContinuationToken = default;
                     return false;
                 }
 
@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
                     parsedContinuationToken,
                     out PipelineContinuationTokenV1_1 pipelineContinuationTokenV1_1))
                 {
-                    pipelineContinuationToken = default(PipelineContinuationToken);
+                    pipelineContinuationToken = default;
                     return false;
                 }
 
@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
             }
             else
             {
-                pipelineContinuationToken = default(PipelineContinuationToken);
+                pipelineContinuationToken = default;
                 return false;
             }
 
@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
 
             if (!(pipelinedContinuationToken is PipelineContinuationTokenV1_1 convertedPipelineContinuationTokenV1_1))
             {
-                pipelineContinuationTokenV1_1 = default(PipelineContinuationTokenV1_1);
+                pipelineContinuationTokenV1_1 = default;
                 return false;
             }
             else

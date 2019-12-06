@@ -9,12 +9,13 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Routing;
 
     /// <summary>
     /// Cosmos Stand-By Feed iterator implementing Composite Continuation Token
     /// </summary>
-    internal class ChangeFeedResultSetIteratorCore : FeedIterator
+    internal class ChangeFeedResultSetIteratorCore : FeedIteratorInternal
     {
         internal StandByFeedContinuationToken compositeContinuationToken;
 
@@ -85,7 +86,7 @@ namespace Microsoft.Azure.Cosmos
             return response;
         }
 
-        internal bool TryGetContinuationToken(out string state)
+        public override bool TryGetContinuationToken(out string state)
         {
             state = this.continuationToken;
             return true;

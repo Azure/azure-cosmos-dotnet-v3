@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System;
     using System.Collections.Generic;
     using System.Text;
+    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
 
     internal sealed class QueryAggregateDiagnostics : CosmosDiagnostics
     {

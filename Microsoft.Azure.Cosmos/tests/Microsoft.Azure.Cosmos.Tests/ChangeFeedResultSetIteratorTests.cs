@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Client.Core.Tests;
     using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Newtonsoft.Json;

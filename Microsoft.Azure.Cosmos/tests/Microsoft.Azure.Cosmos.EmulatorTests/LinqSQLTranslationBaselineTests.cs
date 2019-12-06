@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using System.Threading.Tasks;
     using System.Net;
+    using Microsoft.Azure.Cosmos.Query.Core;
 
     [TestClass]
     public class LinqSQLTranslationBaselineTest : BaselineTests<LinqTestInput, LinqTestOutput>
@@ -190,25 +191,25 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         {
             int constInt = 2;
             int[] array = { 1, 2, 3 };
-            var paramx = Expression.Parameter(typeof(int), "x");
+            ParameterExpression paramx = Expression.Parameter(typeof(int), "x");
             float floatValue = 5.23f;
 
             const int Records = 100;
             Func<Random, simple> createDataObj = (random) =>
             {
-                var obj = new simple();
+                simple obj = new simple();
                 obj.x = random.Next();
                 obj.y = random.Next();
                 obj.id = Guid.NewGuid().ToString();
                 obj.pk = "Test";
                 return obj;
             };
-            var dataQuery = LinqTestsCommon.GenerateTestCosmosData<simple>(createDataObj, Records, testContainer);
+            Func<bool, IQueryable<simple>> dataQuery = LinqTestsCommon.GenerateTestCosmosData<simple>(createDataObj, Records, testContainer);
 
-            var inputs = new List<LinqTestInput>();
-            inputs.Add(new LinqTestInput("Select cast float", b => dataQuery(b).Select(x => (int)(floatValue))));
+            List<LinqTestInput> inputs = new List<LinqTestInput>();
+            inputs.Add(new LinqTestInput("Select cast float", b => dataQuery(b).Select(x => (int)floatValue)));
             inputs.Add(new LinqTestInput("Select identity", b => dataQuery(b).Select(x => x)));
-            inputs.Add(new LinqTestInput("Select int expr", b => dataQuery(b).Select(x => x.x % 10 + 2 + x.x % 5)));
+            inputs.Add(new LinqTestInput("Select int expr", b => dataQuery(b).Select(x => (x.x % 10) + 2 + (x.x % 5))));
             inputs.Add(new LinqTestInput("Select int expr w const", b => dataQuery(b).Select(x => x.x + constInt)));
             inputs.Add(new LinqTestInput("Select w new array", b => dataQuery(b).Select(d => new int[2] { d.x, d.x + 1 })));
             inputs.Add(new LinqTestInput("Select new", b => dataQuery(b).Select(d => new { first = d.x, second = d.x })));
@@ -242,14 +243,14 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         {
             string constString = "s";
             int[] array = { 1, 2, 3 };
-            var paramx = Expression.Parameter(typeof(int), "x");
+            ParameterExpression paramx = Expression.Parameter(typeof(int), "x");
 
             const int Records = 100;
             const int MaxArraySize = 10;
             const int MaxStringLength = 50;
             Func<Random, complex> createDataObj = (random) =>
             {
-                var obj = new complex();
+                complex obj = new complex();
                 obj.b = random.NextDouble() < 0.5;
                 obj.dbl = random.NextDouble();
                 obj.dblArray = new double[random.Next(MaxArraySize)];
@@ -263,9 +264,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 obj.pk = "Test";
                 return obj;
             };
-            var getQuery = LinqTestsCommon.GenerateTestCosmosData<complex>(createDataObj, Records, testContainer);
+            Func<bool, IQueryable<complex>> getQuery = LinqTestsCommon.GenerateTestCosmosData<complex>(createDataObj, Records, testContainer);
 
-            var inputs = new List<LinqTestInput>();
+            List<LinqTestInput> inputs = new List<LinqTestInput>();
             inputs.Add(new LinqTestInput("Select equality", b => getQuery(b).Select(s => s.str == "5")));
             inputs.Add(new LinqTestInput("Select string concat", b => getQuery(b).Select(d => "x" + d.str)));
             inputs.Add(new LinqTestInput("Select string concat w const", b => getQuery(b).Select(d => "x" + constString + d.str)));

@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
     using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json.Linq;
 
