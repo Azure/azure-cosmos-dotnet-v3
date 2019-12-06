@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     using Microsoft.Azure.Documents;
 
 #if AZURECORE
-    using global::Azure.Cosmos;
+    using global::Azure.Cosmos.Serialization;
 #endif
 
 #if INTERNAL

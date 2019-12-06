@@ -12,6 +12,7 @@ namespace Azure.Cosmos
     using System.Threading.Tasks;
     using Azure.Core.Pipeline;
     using Azure.Cosmos.Diagnostics;
+    using Azure.Cosmos.Serialization;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Routing;

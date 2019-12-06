@@ -21,7 +21,7 @@ namespace Azure.Cosmos.EmulatorTests
     public class CosmosContainerTests
     {
         private CosmosClient cosmosClient = null;
-        private Database cosmosDatabase = null;
+        private CosmosDatabase cosmosDatabase = null;
         private static long ToEpoch(DateTime dateTime) => (long)(dateTime - new DateTime(1970, 1, 1)).TotalSeconds;
 
         [TestInitialize]
@@ -63,7 +63,7 @@ namespace Azure.Cosmos.EmulatorTests
             };
 
             ContainerResponse response = await this.cosmosDatabase.CreateContainerAsync(cp);
-            Container container = response;
+            CosmosContainer container = response;
             ContainerProperties existingContainerProperties = response.Value;
 
             // Turn on indexing
@@ -136,7 +136,7 @@ namespace Azure.Cosmos.EmulatorTests
                 }
             };
 
-            Container container = containerResponse;
+            CosmosContainer container = containerResponse;
             containerResponse = await container.ReplaceContainerAsync(settings);
             Assert.AreEqual((int)HttpStatusCode.OK, containerResponse.GetRawResponse().Status);
             Assert.AreEqual(containerName, containerResponse.Value.Id);
@@ -475,7 +475,7 @@ namespace Azure.Cosmos.EmulatorTests
         public async Task DeleteNonExistingContainer()
         {
             string containerName = Guid.NewGuid().ToString();
-            Container container = this.cosmosDatabase.GetContainer(containerName);
+            CosmosContainer container = this.cosmosDatabase.GetContainer(containerName);
 
             try
             {
@@ -496,7 +496,7 @@ namespace Azure.Cosmos.EmulatorTests
 
             ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(containerName, partitionKeyPath);
             Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
-            Container container = this.cosmosDatabase.GetContainer(containerName);
+            CosmosContainer container = this.cosmosDatabase.GetContainer(containerName);
 
             int? readThroughput = await container.ReadThroughputAsync();
             Assert.IsNotNull(readThroughput);
@@ -520,7 +520,7 @@ namespace Azure.Cosmos.EmulatorTests
 
             ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(setting);
             Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
-            Container container = containerResponse;
+            CosmosContainer container = containerResponse;
             ContainerProperties responseSettings = containerResponse;
 
             Assert.AreEqual(timeToLiveInSeconds, responseSettings.DefaultTimeToLive);
@@ -546,7 +546,7 @@ namespace Azure.Cosmos.EmulatorTests
 
             ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(containerName, partitionKeyPath);
             Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
-            Container container = this.cosmosDatabase.GetContainer(containerName);
+            CosmosContainer container = this.cosmosDatabase.GetContainer(containerName);
 
             int? readThroughput = await container.ReadThroughputAsync();
             Assert.IsNotNull(readThroughput);
@@ -575,13 +575,13 @@ namespace Azure.Cosmos.EmulatorTests
             CosmosClient client = TestCommon.CreateCosmosClient(new CosmosClientOptions() { Serializer = mockJsonSerializer });
 
             int databaseThroughput = 10000;
-            Database databaseNoThroughput = await client.CreateDatabaseAsync(Guid.NewGuid().ToString(), null);
-            Database databaseWithThroughput = await client.CreateDatabaseAsync(Guid.NewGuid().ToString(), databaseThroughput, null);
+            CosmosDatabase databaseNoThroughput = await client.CreateDatabaseAsync(Guid.NewGuid().ToString(), null);
+            CosmosDatabase databaseWithThroughput = await client.CreateDatabaseAsync(Guid.NewGuid().ToString(), databaseThroughput, null);
 
 
             string containerId = Guid.NewGuid().ToString();
             string partitionPath = "/users";
-            Container containerNoThroughput = await databaseWithThroughput.CreateContainerAsync(containerId, partitionPath, throughput: null);
+            CosmosContainer containerNoThroughput = await databaseWithThroughput.CreateContainerAsync(containerId, partitionPath, throughput: null);
             try
             {
                 await containerNoThroughput.ReadThroughputAsync(new RequestOptions());
@@ -603,7 +603,7 @@ namespace Azure.Cosmos.EmulatorTests
             }
 
             int containerThroughput = 1000;
-            Container container = await databaseNoThroughput.CreateContainerAsync(Guid.NewGuid().ToString(), "/id", throughput: containerThroughput);
+            CosmosContainer container = await databaseNoThroughput.CreateContainerAsync(Guid.NewGuid().ToString(), "/id", throughput: containerThroughput);
 
             int? containerResponseThroughput = await container.ReadThroughputAsync();
             Assert.AreEqual(containerThroughput, containerResponseThroughput);
@@ -631,7 +631,7 @@ namespace Azure.Cosmos.EmulatorTests
         public async Task ThroughputNonExistingResourceTest()
         {
             string containerName = Guid.NewGuid().ToString();
-            Container container = this.cosmosDatabase.GetContainer(containerName);
+            CosmosContainer container = this.cosmosDatabase.GetContainer(containerName);
 
             try
             {
@@ -651,7 +651,7 @@ namespace Azure.Cosmos.EmulatorTests
             string partitionKeyPath = "/users";
 
             ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(containerName, partitionKeyPath);
-            Container container = containerResponse;
+            CosmosContainer container = containerResponse;
             ContainerProperties containerSettings = containerResponse;
             Assert.IsNotNull(container);
             Assert.IsNotNull(containerSettings);
@@ -696,7 +696,7 @@ namespace Azure.Cosmos.EmulatorTests
             // Verify the container content.
             setting.DefaultTimeToLive = timeToLivetimeToLiveInSeconds;
             containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(setting);
-            Container container = containerResponse;
+            CosmosContainer container = containerResponse;
             Assert.AreEqual(timeToLivetimeToLiveInSeconds, containerResponse.Value.DefaultTimeToLive);
             Assert.AreEqual("/creationDate", containerResponse.Value.TimeToLivePropertyPath);
 

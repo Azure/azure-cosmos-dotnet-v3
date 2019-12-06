@@ -9,6 +9,7 @@ namespace Azure.Cosmos.Tests
     using System.Net;
     using System.Net.Http;
     using Azure.Cosmos.Fluent;
+    using Azure.Cosmos.Serialization;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;

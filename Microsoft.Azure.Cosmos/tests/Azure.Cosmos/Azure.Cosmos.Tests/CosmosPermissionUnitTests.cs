@@ -30,7 +30,7 @@ namespace Azure.Cosmos.Tests
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
                 (builder) => builder.AddCustomHandlers(testHandler));
 
-            Database database = client.GetDatabase("testdb");
+            CosmosDatabase database = client.GetDatabase("testdb");
             await database.GetUser("testUser").CreatePermissionAsync(
                 new PermissionProperties("permissionId", PermissionMode.All, database.GetContainer("containerId")), 
                 tokenExpiryInSeconds: tokenExpiryInSeconds

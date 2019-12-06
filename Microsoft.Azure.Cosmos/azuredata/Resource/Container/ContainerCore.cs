@@ -19,9 +19,9 @@ namespace Azure.Cosmos
     /// <summary>
     /// Operations for reading, replacing, or deleting a specific, existing container by id.
     /// 
-    /// <see cref="Azure.Cosmos.Database"/> for creating new containers, and reading/querying all containers;
+    /// <see cref="Azure.Cosmos.CosmosDatabase"/> for creating new containers, and reading/querying all containers;
     /// </summary>
-    internal partial class ContainerCore : Container
+    internal partial class ContainerCore : CosmosContainer
     {
         /// <summary>
         /// Only used for unit testing
@@ -53,7 +53,7 @@ namespace Azure.Cosmos
 
         public override string Id { get; }
 
-        public Database Database { get; }
+        public CosmosDatabase Database { get; }
 
         internal virtual Uri LinkUri { get; }
 
@@ -61,9 +61,9 @@ namespace Azure.Cosmos
 
         //internal virtual BatchAsyncContainerExecutor BatchExecutor { get; }
 
-        public override Conflicts Conflicts { get; }
+        public override CosmosConflicts Conflicts { get; }
 
-        public override Scripts.Scripts Scripts { get; }
+        public override Scripts.CosmosScripts Scripts { get; }
 
         public override async Task<ContainerResponse> ReadContainerAsync(
             ContainerRequestOptions requestOptions = null,

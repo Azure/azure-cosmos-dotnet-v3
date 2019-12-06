@@ -11,7 +11,8 @@ namespace Azure.Cosmos
     /// <summary>
     /// Operations for reading/querying conflicts in a Azure Cosmos container.
     /// </summary>
-    public abstract class Conflicts
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "VSTHRD200:Use \"Async\" suffix for async methods", Justification = "AsyncPageable or IAsyncEnumerable are not considered Async for checkers.")]
+    public abstract class CosmosConflicts
     {
         /// <summary>
         /// Delete a conflict from the Azure Cosmos service as an asynchronous operation.
@@ -37,14 +38,10 @@ namespace Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator<ConflictProperties> conflictIterator = conflicts.GetConflictQueryIterator();
-        /// while (conflictIterator.HasMoreResults)
+        /// await foreach(ConflictProperties item in conflicts.GetConflictsAsync())
         /// {
-        ///     foreach(ConflictProperties item in await conflictIterator.ReadNextAsync())
-        ///     {
-        ///         MyClass intendedChanges = conflicts.ReadConflictContent<MyClass>(item);
-        ///         ItemResponse<MyClass> currentState = await conflicts.ReadCurrentAsync<MyClass>(intendedChanges.MyPartitionKey, item);
-        ///     }
+        ///     MyClass intendedChanges = conflicts.ReadConflictContent<MyClass>(item);
+        ///     ItemResponse<MyClass> currentState = await conflicts.ReadCurrentAsync<MyClass>(intendedChanges.MyPartitionKey, item);
         /// }
         /// ]]>
         /// </code>
@@ -63,14 +60,10 @@ namespace Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator<ConflictProperties> conflictIterator = conflicts.GetConflictQueryIterator();
-        /// while (conflictIterator.HasMoreResults)
+        /// await foreach(ConflictProperties item in conflicts.GetConflictsAsync())
         /// {
-        ///     foreach(ConflictProperties item in await conflictIterator.ReadNextAsync())
-        ///     {
-        ///         MyClass intendedChanges = conflicts.ReadConflictContent<MyClass>(item);
-        ///         ItemResponse<MyClass> currentState = await conflicts.ReadCurrentAsync<MyClass>(intendedChanges.MyPartitionKey, item);
-        ///     }
+        ///     MyClass intendedChanges = conflicts.ReadConflictContent<MyClass>(item);
+        ///     ItemResponse<MyClass> currentState = await conflicts.ReadCurrentAsync<MyClass>(intendedChanges.MyPartitionKey, item);
         /// }
         /// ]]>
         /// </code>
@@ -88,13 +81,13 @@ namespace Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// await foreach(ConflictProperties item in conflicts.GetConflictQueryIterator())
+        /// await foreach(ConflictProperties item in conflicts.GetConflictsAsync())
         /// {
         /// }
         /// ]]>
         /// </code>
         /// </example>
-        public abstract AsyncPageable<T> GetConflictQueryIterator<T>(
+        public abstract AsyncPageable<T> GetConflictsAsync<T>(
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
@@ -111,13 +104,13 @@ namespace Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// await foreach(Response response in conflicts.GetConflictQueryStreamIterator())
+        /// await foreach(Response response in conflicts.GetConflictsStreamAsync())
         /// {
         /// }
         /// ]]>
         /// </code>
         /// </example>
-        public abstract IAsyncEnumerable<Response> GetConflictQueryStreamIterator(
+        public abstract IAsyncEnumerable<Response> GetConflictsStreamAsync(
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
@@ -134,13 +127,13 @@ namespace Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// await foreach(ConflictProperties item in conflicts.GetConflictQueryIterator())
+        /// await foreach(ConflictProperties item in conflicts.GetConflictsAsync())
         /// {
         /// }
         /// ]]>
         /// </code>
         /// </example>
-        public abstract AsyncPageable<T> GetConflictQueryIterator<T>(
+        public abstract AsyncPageable<T> GetConflictsAsync<T>(
             string queryText = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
@@ -157,13 +150,13 @@ namespace Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// await foreach (Response response in conflicts.GetConflictQueryStreamIterator())
+        /// await foreach (Response response in conflicts.GetConflictsStreamAsync())
         /// {
         /// }
         /// ]]>
         /// </code>
         /// </example>
-        public abstract IAsyncEnumerable<Response> GetConflictQueryStreamIterator(
+        public abstract IAsyncEnumerable<Response> GetConflictsStreamAsync(
             string queryText = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,

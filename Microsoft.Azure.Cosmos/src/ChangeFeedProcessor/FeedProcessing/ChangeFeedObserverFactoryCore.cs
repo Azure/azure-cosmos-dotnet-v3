@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 #endif
 {
 #if AZURECORE
-    using static Azure.Cosmos.Container;
+    using static Azure.Cosmos.CosmosContainer;
 #else
     using static Microsoft.Azure.Cosmos.Container;
 #endif

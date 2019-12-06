@@ -26,7 +26,7 @@ namespace Azure.Cosmos
         internal UserResponse(
             Response response,
             UserProperties userProperties,
-            User user)
+            CosmosUser user)
         {
             this.rawResponse = response;
             this.Value = userProperties;
@@ -43,13 +43,13 @@ namespace Azure.Cosmos
         /// The reference to the cosmos user. This allows additional operations on the user
         /// or for easy access permissions
         /// </summary>
-        public virtual User User { get; private set; }
+        public virtual CosmosUser User { get; private set; }
 
         /// <summary>
-        /// Get <see cref="Cosmos.User"/> implicitly from <see cref="UserResponse"/>
+        /// Get <see cref="Cosmos.CosmosUser"/> implicitly from <see cref="UserResponse"/>
         /// </summary>
         /// <param name="response">UserResponse</param>
-        public static implicit operator User(UserResponse response)
+        public static implicit operator CosmosUser(UserResponse response)
         {
             return response.User;
         }

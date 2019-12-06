@@ -10,6 +10,7 @@ namespace Azure.Cosmos.ChangeFeed.Tests
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Azure.Cosmos.Serialization;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;

@@ -4,6 +4,7 @@
 
 namespace Azure.Cosmos.EmulatorTests
 {
+    using Azure.Cosmos.Spatial;
     using Microsoft.Azure.Cosmos;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
@@ -239,7 +240,7 @@ namespace Azure.Cosmos.EmulatorTests
             Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
             Assert.AreEqual(containerName, containerResponse.Value.Id);
             Assert.AreEqual(partitionKeyPath, containerResponse.Value.PartitionKey.Paths.First());
-            Container container = containerResponse;
+            CosmosContainer container = containerResponse;
             Assert.AreEqual(IndexingMode.None, containerResponse.Value.IndexingPolicy.IndexingMode);
             Assert.IsFalse(containerResponse.Value.IndexingPolicy.Automatic);
 
@@ -271,7 +272,7 @@ namespace Azure.Cosmos.EmulatorTests
             Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
             Assert.AreEqual(containerName, containerResponse.Value.Id);
             Assert.AreEqual(partitionKeyPath, containerResponse.Value.PartitionKey.Paths.First());
-            Container container = containerResponse;
+            CosmosContainer container = containerResponse;
             Assert.AreEqual(1, containerResponse.Value.UniqueKeyPolicy.UniqueKeys.Count);
             Assert.AreEqual(2, containerResponse.Value.UniqueKeyPolicy.UniqueKeys[0].Paths.Count);
             Assert.AreEqual("/attribute1", containerResponse.Value.UniqueKeyPolicy.UniqueKeys[0].Paths[0]);
@@ -293,7 +294,7 @@ namespace Azure.Cosmos.EmulatorTests
         [TestMethod]
         public async Task TestConflictResolutionPolicy()
         {
-            Database databaseForConflicts = await this.cosmosClient.CreateDatabaseAsync("conflictResolutionContainerTest",
+            CosmosDatabase databaseForConflicts = await this.cosmosClient.CreateDatabaseAsync("conflictResolutionContainerTest",
                 cancellationToken: this.cancellationToken);
 
             try
@@ -369,7 +370,7 @@ namespace Azure.Cosmos.EmulatorTests
             Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
             Assert.AreEqual(containerName, containerResponse.Value.Id);
             Assert.AreEqual(partitionKeyPath, containerResponse.Value.PartitionKey.Paths.First());
-            Container container = containerResponse;
+            CosmosContainer container = containerResponse;
             Assert.AreEqual(2, containerResponse.Value.IndexingPolicy.IncludedPaths.Count);
             Assert.AreEqual("/included1/*", containerResponse.Value.IndexingPolicy.IncludedPaths[0].Path);
             Assert.AreEqual("/included2/*", containerResponse.Value.IndexingPolicy.IncludedPaths[1].Path);
@@ -408,7 +409,7 @@ namespace Azure.Cosmos.EmulatorTests
                         .CreateAsync(expectedThroughput);
 
             Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
-            Container container = this.database.GetContainer(containerName);
+            CosmosContainer container = this.database.GetContainer(containerName);
 
             int? readThroughput = await container.ReadThroughputAsync();
             Assert.IsNotNull(readThroughput);
@@ -430,7 +431,7 @@ namespace Azure.Cosmos.EmulatorTests
                         .CreateAsync(expectedThroughput);
 
             Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
-            Container container = this.database.GetContainer(containerName);
+            CosmosContainer container = this.database.GetContainer(containerName);
 
             ThroughputResponse readThroughput = await container.ReadThroughputAsync(new RequestOptions());
             Assert.IsNotNull(readThroughput);
@@ -461,7 +462,7 @@ namespace Azure.Cosmos.EmulatorTests
                 .CreateAsync();
 
             Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
-            Container container = containerResponse;
+            CosmosContainer container = containerResponse;
             ContainerProperties responseSettings = containerResponse;
 
             Assert.AreEqual(timeToLiveInSeconds, responseSettings.DefaultTimeToLive);
@@ -521,7 +522,7 @@ namespace Azure.Cosmos.EmulatorTests
                    .WithTimeToLivePropertyPath("/creationDate")
                    .WithDefaultTimeToLive(timeToLivetimeToLiveInSeconds)
                    .CreateAsync();
-            Container container = containerResponse;
+            CosmosContainer container = containerResponse;
             Assert.AreEqual(timeToLivetimeToLiveInSeconds, containerResponse.Value.DefaultTimeToLive);
 #pragma warning disable 0612
             Assert.AreEqual("/creationDate", containerResponse.Value.TimeToLivePropertyPath);

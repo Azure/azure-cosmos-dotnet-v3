@@ -2,11 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-#if AZURECORE
 namespace Azure.Cosmos.ChangeFeed
-#else
-namespace Microsoft.Azure.Cosmos.ChangeFeed
-#endif
 {
     using System;
     using System.Collections.Concurrent;
@@ -17,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Azure.Cosmos.Serialization;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;

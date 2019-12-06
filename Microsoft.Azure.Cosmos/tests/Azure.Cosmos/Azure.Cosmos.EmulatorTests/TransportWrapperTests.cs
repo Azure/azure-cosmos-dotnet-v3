@@ -22,8 +22,8 @@ namespace Azure.Cosmos.EmulatorTests
                     builder.WithTransportClientHandlerFactory(transportClient => new TransportClientWrapper(transportClient, TransportWrapperTests.Interceptor));
                 });
 
-            Cosmos.Database database = await cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
-            Container container = await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/id");
+            Cosmos.CosmosDatabase database = await cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            CosmosContainer container = await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/id");
 
             string id1 = Guid.NewGuid().ToString();
             TestPayload payload1 = await container.CreateItemAsync<TestPayload>(new TestPayload { id = id1 });

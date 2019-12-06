@@ -8,6 +8,7 @@ namespace Azure.Cosmos.EmulatorTests
     using System.Globalization;
     using System.IO;
     using Azure.Cosmos;
+    using Azure.Cosmos.Serialization;
     using Newtonsoft.Json;
 
     /// <summary>

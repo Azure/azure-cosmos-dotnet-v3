@@ -35,12 +35,12 @@ namespace Azure.Cosmos
             if (response != null)
             {
                 this.StatusCode = (HttpStatusCode)response.Status;
+                this.Response = response;
                 ResponseMessage responseMessage = response as ResponseMessage;
                 this.CosmosHeaders = responseMessage?.CosmosHeaders ?? new Headers();
                 this.Diagnostics = responseMessage?.Diagnostics;
                 this.ActivityId = this.CosmosHeaders.ActivityId;
                 this.RequestCharge = this.CosmosHeaders.RequestCharge;
-                this.RetryAfter = this.CosmosHeaders.RetryAfter;
                 this.SubStatusCode = (int)this.CosmosHeaders.SubStatusCode;
                 if (response.ContentStream != null
                     && response.ContentStream.CanRead
@@ -60,41 +60,37 @@ namespace Azure.Cosmos
         /// Create a <see cref="CosmosException"/>
         /// </summary>
         /// <param name="message">The message associated with the exception.</param>
-        /// <param name="statusCode">The <see cref="HttpStatusCode"/> associated with the exception.</param>
-        /// <param name="subStatusCode">A sub status code associated with the exception.</param>
-        /// <param name="activityId">An ActivityId associated with the operation that generated the exception.</param>
-        /// <param name="requestCharge">A request charge associated with the operation that generated the exception.</param>
+        /// <param name="statusCode">The status code associated with the exception.</param>
         public CosmosException(
             string message,
-            HttpStatusCode statusCode,
-            int subStatusCode,
-            string activityId,
-            double requestCharge)
-            : base((int)statusCode, message)
+            int statusCode)
+            : base(statusCode, message)
         {
-            this.SubStatusCode = subStatusCode;
-            this.StatusCode = statusCode;
-            this.RequestCharge = requestCharge;
-            this.ActivityId = activityId;
+            this.StatusCode = (HttpStatusCode)statusCode;
             this.CosmosHeaders = new Headers();
         }
 
         /// <summary>
+        /// The response that generated the exception.
+        /// </summary>
+        public virtual Response Response { get; }
+
+        /// <summary>
         /// The body of the cosmos response message as a string
         /// </summary>
-        public virtual string ResponseBody { get; }
+        internal virtual string ResponseBody { get; }
 
         /// <summary>
         /// Gets the request completion status code from the Azure Cosmos DB service.
         /// </summary>
         /// <value>The request completion status code</value>
-        public virtual HttpStatusCode StatusCode { get; }
+        internal virtual HttpStatusCode StatusCode { get; }
 
         /// <summary>
         /// Gets the request completion sub status code from the Azure Cosmos DB service.
         /// </summary>
         /// <value>The request completion status code</value>
-        public virtual int SubStatusCode { get; }
+        internal virtual int SubStatusCode { get; }
 
         /// <summary>
         /// Gets the request charge for this request from the Azure Cosmos DB service.
@@ -102,7 +98,7 @@ namespace Azure.Cosmos
         /// <value>
         /// The request charge measured in request units.
         /// </value>
-        public virtual double RequestCharge { get; }
+        internal virtual double RequestCharge { get; }
 
         /// <summary>
         /// Gets the activity ID for the request from the Azure Cosmos DB service.
@@ -110,12 +106,7 @@ namespace Azure.Cosmos
         /// <value>
         /// The activity ID for the request.
         /// </value>
-        public virtual string ActivityId { get; }
-
-        /// <summary>
-        /// Gets the retry after time. This tells how long a request should wait before doing a retry.
-        /// </summary>
-        public virtual TimeSpan? RetryAfter { get; }
+        internal virtual string ActivityId { get; }
 
         /// <summary>
         /// Gets the response headers
@@ -149,8 +140,7 @@ namespace Azure.Cosmos
         /// <returns>A string representation of the exception.</returns>
         public override string ToString()
         {
-            //string diagnostics = this.Diagnostics != null ? this.Diagnostics.ToString() : string.Empty;
-            string diagnostics = string.Empty;
+            string diagnostics = this.Diagnostics != null ? this.Diagnostics.ToString() : string.Empty;
             return $"{nameof(CosmosException)};StatusCode={this.StatusCode};SubStatusCode={this.SubStatusCode};ActivityId={this.ActivityId ?? string.Empty};RequestCharge={this.RequestCharge};Message={this.Message};Diagnostics{diagnostics}";
         }
 

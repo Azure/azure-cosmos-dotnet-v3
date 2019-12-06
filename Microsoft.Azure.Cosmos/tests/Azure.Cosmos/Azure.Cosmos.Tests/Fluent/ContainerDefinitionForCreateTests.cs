@@ -27,7 +27,7 @@ namespace Azure.Cosmos.Tests.Fluent
         [ExpectedException(typeof(ArgumentNullException))]
         public async Task MissingPKForCreateThrows()
         {
-            Mock<Database> mockContainers = new Mock<Database>();
+            Mock<CosmosDatabase> mockContainers = new Mock<CosmosDatabase>();
 
             ContainerBuilder containerFluentDefinitionForCreate = new ContainerBuilder(
                 mockContainers.Object,
@@ -47,12 +47,12 @@ namespace Azure.Cosmos.Tests.Fluent
                 .Setup(c => c.Value)
                 .Returns(new ContainerProperties() { PartitionKey = new Microsoft.Azure.Documents.PartitionKeyDefinition() { Paths = new Collection<string>() { partitionKey } } });
 
-            Mock<Container> mockContainer = new Mock<Container>();
+            Mock<CosmosContainer> mockContainer = new Mock<CosmosContainer>();
             mockContainer
                 .Setup(c => c.ReadContainerAsync(It.IsAny<ContainerRequestOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(mockContainerResponse.Object);
 
-            Mock<Database> mockContainers = new Mock<Database>();
+            Mock<CosmosDatabase> mockContainers = new Mock<CosmosDatabase>();
             mockContainers
                 .Setup(c => c.CreateContainerAsync(
                     It.Is<ContainerProperties>((settings) => settings.PartitionKeyPath.Equals(partitionKey)), 
@@ -78,7 +78,7 @@ namespace Azure.Cosmos.Tests.Fluent
         public async Task WithThroughput()
         {
             Mock<ContainerResponse> mockContainerResponse = new Mock<ContainerResponse>();
-            Mock<Database> mockContainers = new Mock<Database>();
+            Mock<CosmosDatabase> mockContainers = new Mock<CosmosDatabase>();
             mockContainers
                 .Setup(c => c.CreateContainerAsync(
                     It.IsAny<ContainerProperties>(),
@@ -110,7 +110,7 @@ namespace Azure.Cosmos.Tests.Fluent
         public async Task WithTimeToLivePropertyPath()
         {
             Mock<ContainerResponse> mockContainerResponse = new Mock<ContainerResponse>();
-            Mock<Database> mockContainers = new Mock<Database>();
+            Mock<CosmosDatabase> mockContainers = new Mock<CosmosDatabase>();
             mockContainers
                 .Setup(c => c.CreateContainerAsync(
 #pragma warning disable CS0612 // Type or member is obsolete
@@ -147,7 +147,7 @@ namespace Azure.Cosmos.Tests.Fluent
         public async Task WithDefaultTimeToLiveTimeSpan()
         {
             Mock<ContainerResponse> mockContainerResponse = new Mock<ContainerResponse>();
-            Mock<Database> mockContainers = new Mock<Database>();
+            Mock<CosmosDatabase> mockContainers = new Mock<CosmosDatabase>();
             mockContainers
                 .Setup(c => c.CreateContainerAsync(
                     It.Is<ContainerProperties>((settings) => settings.DefaultTimeToLive.Equals((int)timeToLive.TotalSeconds)),
@@ -180,7 +180,7 @@ namespace Azure.Cosmos.Tests.Fluent
         public async Task WithDefaultTimeToLiveInt()
         {
             Mock<ContainerResponse> mockContainerResponse = new Mock<ContainerResponse>();
-            Mock<Database> mockContainers = new Mock<Database>();
+            Mock<CosmosDatabase> mockContainers = new Mock<CosmosDatabase>();
             mockContainers
                 .Setup(c => c.CreateContainerAsync(
                     It.Is<ContainerProperties>((settings) => settings.DefaultTimeToLive.Equals((int)timeToLive.TotalSeconds)),
@@ -213,7 +213,7 @@ namespace Azure.Cosmos.Tests.Fluent
         public async Task WithIndexingPolicy()
         {
             Mock<ContainerResponse> mockContainerResponse = new Mock<ContainerResponse>();
-            Mock<Database> mockContainers = new Mock<Database>();
+            Mock<CosmosDatabase> mockContainers = new Mock<CosmosDatabase>();
             mockContainers
                 .Setup(c => c.CreateContainerAsync(
                     It.Is<ContainerProperties>((settings) => IndexingMode.None.Equals(settings.IndexingPolicy.IndexingMode) && !settings.IndexingPolicy.Automatic),
@@ -249,7 +249,7 @@ namespace Azure.Cosmos.Tests.Fluent
         public async Task WithUniqueKey()
         {
             Mock<ContainerResponse> mockContainerResponse = new Mock<ContainerResponse>();
-            Mock<Database> mockContainers = new Mock<Database>();
+            Mock<CosmosDatabase> mockContainers = new Mock<CosmosDatabase>();
             mockContainers
                 .Setup(c => c.CreateContainerAsync(
                     It.Is<ContainerProperties>((settings) => settings.UniqueKeyPolicy.UniqueKeys.Count == 1 && path.Equals(settings.UniqueKeyPolicy.UniqueKeys[0].Paths[0])),

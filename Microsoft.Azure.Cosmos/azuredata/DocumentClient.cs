@@ -390,7 +390,7 @@ namespace Microsoft.Azure.Cosmos
         /// Using Direct connectivity, wherever possible, is recommended.
         /// </remarks>
         /// <seealso cref="Uri"/>
-        /// <seealso cref="Permission"/>
+        /// <seealso cref="CosmosPermission"/>
         /// <seealso cref="ConnectionPolicy"/>
         /// <seealso cref="ConsistencyLevel"/>
         internal DocumentClient(Uri serviceEndpoint,

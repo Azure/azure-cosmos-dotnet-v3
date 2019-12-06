@@ -11,6 +11,7 @@ namespace Azure.Cosmos.EmulatorTests
     using System.Net;
     using System.Threading.Tasks;
     using Azure.Cosmos.Scripts;
+    using Azure.Cosmos.Serialization;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
 
@@ -18,7 +19,7 @@ namespace Azure.Cosmos.EmulatorTests
     public sealed class TriggersTests : BaseCosmosClientHelper
     {
         private ContainerCore container = null;
-        private Scripts scripts = null;
+        private CosmosScripts scripts = null;
 
         [TestInitialize]
         public async Task TestInitialize()
@@ -244,7 +245,7 @@ namespace Azure.Cosmos.EmulatorTests
             using (CosmosClient cosmosClient = TestCommon.CreateCosmosClient(new CosmosClientOptions() { Serializer = new FaultySerializer() }))
             {
                 // Should not use the custom serializer for these operations
-                Scripts scripts = cosmosClient.GetContainer(this.database.Id, this.container.Id).Scripts;
+                CosmosScripts scripts = cosmosClient.GetContainer(this.database.Id, this.container.Id).Scripts;
 
                 TriggerProperties cosmosTrigger = await this.CreateRandomTrigger();
 

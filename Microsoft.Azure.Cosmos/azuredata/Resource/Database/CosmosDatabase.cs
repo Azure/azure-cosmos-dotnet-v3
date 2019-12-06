@@ -21,7 +21,7 @@ namespace Azure.Cosmos
     /// For instance, do not call `database.ReadAsync()` before every single `item.ReadAsync()` call, to ensure the database exists;
     /// do this once on application start up.
     /// </remarks>
-    public abstract class Database
+    public abstract class CosmosDatabase
     {
         /// <summary>
         /// The Id of the Cosmos database
@@ -252,7 +252,7 @@ namespace Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Container GetContainer(string id);
+        public abstract CosmosContainer GetContainer(string id);
 
         /// <summary>
         /// Creates a container as an asynchronous operation in the Azure Cosmos service.
@@ -516,7 +516,7 @@ namespace Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract User GetUser(string id);
+        public abstract CosmosUser GetUser(string id);
 
         /// <summary>
         /// Creates a user as an asynchronous operation in the Azure Cosmos service.

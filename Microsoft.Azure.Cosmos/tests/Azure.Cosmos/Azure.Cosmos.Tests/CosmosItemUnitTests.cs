@@ -10,6 +10,7 @@ namespace Azure.Cosmos.Tests
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Azure.Cosmos.Serialization;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -589,7 +590,7 @@ namespace Azure.Cosmos.Tests
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
                 (cosmosClientBuilder) => cosmosClientBuilder.AddCustomHandlers(testHandler));
 
-            Container container = client.GetDatabase("testdb")
+            CosmosContainer container = client.GetDatabase("testdb")
                                         .GetContainer("testcontainer");
 
             await container.CreateItemAsync<dynamic>(
@@ -631,7 +632,7 @@ namespace Azure.Cosmos.Tests
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
                 (builder) => builder.AddCustomHandlers(testHandler));
 
-            Container container = client.GetDatabase("testdb")
+            CosmosContainer container = client.GetDatabase("testdb")
                                         .GetContainer("testcontainer");
 
             ItemResponse<dynamic> itemResponse = await container.CreateItemAsync<dynamic>(

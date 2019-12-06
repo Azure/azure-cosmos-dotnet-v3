@@ -7,16 +7,16 @@ namespace Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.IO;
-    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Azure.Cosmos.Serialization;
 
     /// <summary>
     /// Operations for reading, replacing, or deleting a specific, existing container or item in a container by id.
     /// There are two different types of operations.
     /// 1. The object operations where it serializes and deserializes the item on request/response
     /// 2. The stream response which takes a Stream containing a JSON serialized object and returns a response containing a Stream
-    /// <see cref="Database"/> for creating new containers, and reading/querying all containers;
+    /// <see cref="CosmosDatabase"/> for creating new containers, and reading/querying all containers;
     /// </summary>
     /// <remarks>
     ///  Note: all these operations make calls against a fixed budget.
@@ -24,7 +24,7 @@ namespace Azure.Cosmos
     ///  For instance, do not call `container.readAsync()` before every single `item.read()` call, to ensure the cosmosContainer exists;
     ///  do this once on application start up.
     /// </remarks>
-    public abstract class Container
+    public abstract class CosmosContainer
     {
         /// <summary>
         /// The Id of the Cosmos container
@@ -34,12 +34,12 @@ namespace Azure.Cosmos
         /// <summary>
         /// Returns the conflicts
         /// </summary>
-        public abstract Conflicts Conflicts { get; }
+        public abstract CosmosConflicts Conflicts { get; }
 
         /// <summary>
         /// Returns the scripts
         /// </summary>
-        public abstract Scripts.Scripts Scripts { get; }
+        public abstract Scripts.CosmosScripts Scripts { get; }
 
         /// <summary>
         /// Reads a <see cref="ContainerProperties"/> from the Azure Cosmos service as an asynchronous operation.

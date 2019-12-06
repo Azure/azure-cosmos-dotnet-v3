@@ -10,7 +10,7 @@ namespace Azure.Cosmos
     /// <summary>
     /// Operations for reading, replacing, or deleting a specific existing user by id and query a user's permissions.
     /// </summary>
-    public abstract class User
+    public abstract class CosmosUser
     {
         /// <summary>
         /// The Id of the Cosmos user
@@ -41,7 +41,7 @@ namespace Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// User user = this.database.GetUser("userId");
+        /// CosmosUser user = this.database.GetUser("userId");
         /// UserProperties userProperties = await user.ReadUserAsync();
         /// ]]>
         /// </code>
@@ -106,7 +106,7 @@ namespace Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// User user = this.database.GetUser("userId");
+        /// CosmosUser user = this.database.GetUser("userId");
         /// UserResponse response = await user.DeleteUserAsync();
         /// ]]>
         /// </code>
@@ -132,7 +132,7 @@ namespace Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Permission GetPermission(string id);
+        public abstract CosmosPermission GetPermission(string id);
 
         /// <summary>
         /// Creates a permission as an asynchronous operation in the Azure Cosmos service.

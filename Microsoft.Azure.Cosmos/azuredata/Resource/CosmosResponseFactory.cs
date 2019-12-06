@@ -10,6 +10,7 @@ namespace Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Azure.Cosmos.Scripts;
+    using Azure.Cosmos.Serialization;
 
     internal class CosmosResponseFactory
     {
@@ -76,7 +77,7 @@ namespace Azure.Cosmos
         }
 
         internal Task<ContainerResponse> CreateContainerResponseAsync(
-            Container container,
+            CosmosContainer container,
             Task<Response> cosmosResponseMessageTask,
             CancellationToken cancellationToken)
         {
@@ -94,7 +95,7 @@ namespace Azure.Cosmos
         }
 
         internal Task<DatabaseResponse> CreateDatabaseResponseAsync(
-            Database database,
+            CosmosDatabase database,
             Task<Response> cosmosResponseMessageTask,
             CancellationToken cancellationToken)
         {
@@ -139,7 +140,7 @@ namespace Azure.Cosmos
         }
 
         internal Task<UserResponse> CreateUserResponseAsync(
-            User user,
+            CosmosUser user,
             Task<Response> cosmosResponseMessageTask,
             CancellationToken cancellationToken)
         {
@@ -156,7 +157,7 @@ namespace Azure.Cosmos
         }
 
         internal Task<PermissionResponse> CreatePermissionResponseAsync(
-            Permission permission,
+            CosmosPermission permission,
             Task<Response> cosmosResponseMessageTask,
             CancellationToken cancellationToken)
         {

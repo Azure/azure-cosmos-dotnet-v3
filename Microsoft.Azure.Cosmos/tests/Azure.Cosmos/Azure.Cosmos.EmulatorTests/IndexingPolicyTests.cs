@@ -32,7 +32,7 @@ namespace Azure.Cosmos.EmulatorTests
         /// <summary>
         /// The database used for all the tests.
         /// </summary>
-        private static readonly Cosmos.Database database = cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString()).Result;
+        private static readonly Cosmos.CosmosDatabase database = cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString()).Result;
 
         private static readonly IndexingPolicyEqualityComparer indexingPolicyEqualityComparer = new IndexingPolicyEqualityComparer();
 
@@ -342,7 +342,7 @@ namespace Azure.Cosmos.EmulatorTests
                 PartitionKey = partitionKeyDefinition
             };
 
-            Cosmos.Database cosmosDatabase = await cosmosClient.CreateDatabaseIfNotExistsAsync(IndexingPolicyTests.database.Id);
+            Cosmos.CosmosDatabase cosmosDatabase = await cosmosClient.CreateDatabaseIfNotExistsAsync(IndexingPolicyTests.database.Id);
             ContainerResponse cosmosContainerResponse = await cosmosDatabase.CreateContainerAsync(containerSetting);
 
             Assert.IsTrue(IndexingPolicyTests.indexingPolicyEqualityComparer.Equals(indexingPolicy, containerSetting.IndexingPolicy));

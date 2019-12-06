@@ -9,13 +9,14 @@ namespace Azure.Cosmos.ChangeFeed
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Azure.Cosmos.Serialization;
 
     internal static class CosmosContainerExtensions
     {
         public static readonly CosmosSerializer DefaultJsonSerializer = new CosmosJsonDotNetSerializer();
 
         public static async Task<T> TryGetItemAsync<T>(
-            this Container container,
+            this CosmosContainer container,
             PartitionKey partitionKey,
             string itemId)
         {
@@ -30,7 +31,7 @@ namespace Azure.Cosmos.ChangeFeed
         }
 
         public static async Task<ItemResponse<T>> TryCreateItemAsync<T>(
-            this Container container,
+            this CosmosContainer container,
             PartitionKey partitionKey,
             T item)
         {
@@ -50,7 +51,7 @@ namespace Azure.Cosmos.ChangeFeed
         }
 
         public static async Task<ItemResponse<T>> TryReplaceItemAsync<T>(
-            this Container container,
+            this CosmosContainer container,
             string itemId,
             T item,
             PartitionKey partitionKey,
@@ -67,7 +68,7 @@ namespace Azure.Cosmos.ChangeFeed
         }
 
         public static async Task<bool> TryDeleteItemAsync<T>(
-            this Container container,
+            this CosmosContainer container,
             PartitionKey partitionKey,
             string itemId,
             ItemRequestOptions cosmosItemRequestOptions = null)
@@ -79,7 +80,7 @@ namespace Azure.Cosmos.ChangeFeed
         }
 
         public static async Task<bool> ItemExistsAsync(
-            this Container container,
+            this CosmosContainer container,
             PartitionKey partitionKey,
             string itemId)
         {
@@ -92,7 +93,7 @@ namespace Azure.Cosmos.ChangeFeed
         }
 
         public static async Task<string> GetMonitoredContainerRidAsync(
-            this Container monitoredContainer,
+            this CosmosContainer monitoredContainer,
             string suggestedMonitoredRid,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -107,7 +108,7 @@ namespace Azure.Cosmos.ChangeFeed
         }
 
         public static string GetLeasePrefix(
-            this Container monitoredContainer,
+            this CosmosContainer monitoredContainer,
             ChangeFeedLeaseOptions changeFeedLeaseOptions,
             string monitoredContainerRid)
         {

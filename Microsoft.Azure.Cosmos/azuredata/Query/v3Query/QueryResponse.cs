@@ -8,6 +8,7 @@ namespace Azure.Cosmos
     using System.IO;
     using System.Linq;
     using System.Net;
+    using Azure.Cosmos.Serialization;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query;

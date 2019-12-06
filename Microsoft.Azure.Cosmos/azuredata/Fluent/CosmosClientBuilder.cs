@@ -6,6 +6,7 @@ namespace Azure.Cosmos.Fluent
 {
     using System;
     using System.Net;
+    using Azure.Cosmos.Serialization;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;

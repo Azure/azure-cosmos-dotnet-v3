@@ -5,6 +5,7 @@
 namespace Azure.Cosmos.EmulatorTests
 {
     using Azure.Cosmos.Scripts;
+    using Azure.Cosmos.Serialization;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
@@ -17,7 +18,7 @@ namespace Azure.Cosmos.EmulatorTests
     public sealed class UserDefinedFunctionsTests : BaseCosmosClientHelper
     {
         private ContainerCore container = null;
-        private Scripts scripts = null;
+        private CosmosScripts scripts = null;
         private const string function = @"function(amt) { return amt * 0.05; }";
 
         [TestInitialize]
@@ -152,7 +153,7 @@ namespace Azure.Cosmos.EmulatorTests
             using (CosmosClient cosmosClient = TestCommon.CreateCosmosClient(new CosmosClientOptions() { Serializer = new FaultySerializer() }))
             {
                 // Should not use the custom serializer for these operations
-                Scripts scripts = cosmosClient.GetContainer(this.database.Id, this.container.Id).Scripts;
+                CosmosScripts scripts = cosmosClient.GetContainer(this.database.Id, this.container.Id).Scripts;
 
                 UserDefinedFunctionProperties cosmosUserDefinedFunction = await this.CreateRandomUdf();
 

@@ -13,7 +13,7 @@ namespace Azure.Cosmos.EmulatorTests
     public abstract class BaseCosmosClientHelper
     {
         protected CosmosClient cosmosClient = null;
-        protected Database database = null;
+        protected CosmosDatabase database = null;
         protected CancellationTokenSource cancellationTokenSource = null;
         protected CancellationToken cancellationToken;
 

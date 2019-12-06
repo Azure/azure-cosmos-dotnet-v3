@@ -17,6 +17,7 @@ namespace Azure.Cosmos.EmulatorTests
     using System.Threading.Tasks;
     using Azure.Cosmos;
     using Azure.Cosmos.Fluent;
+    using Azure.Cosmos.Serialization;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Utils;
     using Microsoft.Azure.Documents;
@@ -177,7 +178,7 @@ namespace Azure.Cosmos.EmulatorTests
 
         public static async Task DeleteAllDatabasesAsyncWorker(CosmosClient client)
         {
-            IList<Cosmos.Database> databases = new List<Cosmos.Database>();
+            IList<Cosmos.CosmosDatabase> databases = new List<Cosmos.CosmosDatabase>();
 
             AsyncPageable<DatabaseProperties> resultSetIterator = client.GetDatabaseQueryIterator<DatabaseProperties>(
                 queryDefinition: null,
@@ -198,14 +199,14 @@ namespace Azure.Cosmos.EmulatorTests
             Logger.LogLine("Number of database to delete {0}", totalCount);
         }
 
-        public static async Task DeleteDatabaseAsync(CosmosClient client, Cosmos.Database database)
+        public static async Task DeleteDatabaseAsync(CosmosClient client, Cosmos.CosmosDatabase database)
         {
             await TestCommon.DeleteDatabaseCollectionAsync(client, database);
 
             await TestCommon.AsyncRetryRateLimiting(() => database.DeleteAsync());
         }
 
-        public static async Task DeleteDatabaseCollectionAsync(CosmosClient client, Cosmos.Database database)
+        public static async Task DeleteDatabaseCollectionAsync(CosmosClient client, Cosmos.CosmosDatabase database)
         {
             //Delete them in chunks of 10.
             AsyncPageable<ContainerProperties> resultSetIterator = database.GetContainerQueryIterator<ContainerProperties>(requestOptions: new QueryRequestOptions() { MaxItemCount = 10 });

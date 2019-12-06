@@ -16,9 +16,9 @@ namespace Azure.Cosmos.ChangeFeed
     internal sealed class DocumentServiceLeaseUpdaterCosmos : DocumentServiceLeaseUpdater
     {
         private const int RetryCountOnConflict = 5;
-        private readonly Container container;
+        private readonly CosmosContainer container;
 
-        public DocumentServiceLeaseUpdaterCosmos(Container container)
+        public DocumentServiceLeaseUpdaterCosmos(CosmosContainer container)
         {
             if (container == null) throw new ArgumentNullException(nameof(container));
             this.container = container;
@@ -112,7 +112,7 @@ namespace Azure.Cosmos.ChangeFeed
 
         private ItemRequestOptions CreateIfMatchOptions(DocumentServiceLease lease)
         {
-            return new ItemRequestOptions { IfMatchEtag = lease.ConcurrencyToken };
+            return new ItemRequestOptions { IfMatch = new ETag(lease.ConcurrencyToken) };
         }
     }
 }

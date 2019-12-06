@@ -3,7 +3,7 @@
 //------------------------------------------------------------
 
 #if AZURECORE
-namespace Azure.Cosmos
+namespace Azure.Cosmos.Serialization
 #else
 namespace Microsoft.Azure.Cosmos
 #endif

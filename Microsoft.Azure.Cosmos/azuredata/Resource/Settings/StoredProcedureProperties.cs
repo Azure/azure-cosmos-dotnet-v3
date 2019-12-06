@@ -82,7 +82,8 @@ namespace Azure.Cosmos.Scripts
         /// ETags are used for concurrency checking when updating resources. 
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.ETag)]
-        public string ETag { get; private set; }
+        [JsonConverter(typeof(ETagConverter))]
+        public ETag? ETag { get; private set; }
 
         /// <summary>
         /// Gets the last modified timestamp associated with <see cref="StoredProcedureProperties" /> from the Azure Cosmos DB service.

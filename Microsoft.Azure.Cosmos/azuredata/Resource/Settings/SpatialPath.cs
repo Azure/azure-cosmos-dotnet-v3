@@ -1,7 +1,7 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Azure.Cosmos
+namespace Azure.Cosmos.Spatial
 {
     using System;
     using System.Collections.ObjectModel;

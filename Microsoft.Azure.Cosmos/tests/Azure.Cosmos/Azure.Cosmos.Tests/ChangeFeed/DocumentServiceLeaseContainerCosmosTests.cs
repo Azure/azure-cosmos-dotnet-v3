@@ -66,7 +66,7 @@ namespace Azure.Cosmos.ChangeFeed.Tests
             Assert.AreEqual(owned[0].Owner, readLeases[0].Owner);
         }
 
-        private static Container GetMockedContainer(string containerName = "myColl")
+        private static CosmosContainer GetMockedContainer(string containerName = "myColl")
         {
             Headers headers = new Headers();
             headers.ContinuationToken = string.Empty;
@@ -84,7 +84,7 @@ namespace Azure.Cosmos.ChangeFeed.Tests
             Mock<IAsyncEnumerable<Response>> mockEnumerable = new Mock<IAsyncEnumerable<Response>>();
             mockEnumerable.Setup(m => m.GetAsyncEnumerator(It.IsAny<CancellationToken>())).Returns(new MockAsyncEnumerator<Response>(new List<Response>() { mockFeedResponse }));
 
-            Mock<Container> mockedItems = new Mock<Container>();
+            Mock<CosmosContainer> mockedItems = new Mock<CosmosContainer>();
             mockedItems.Setup(i => i.GetItemQueryStreamIterator(
                 // To make sure the SQL Query gets correctly created
                 It.Is<string>(value => string.Equals("SELECT * FROM c WHERE STARTSWITH(c.id, '" + DocumentServiceLeaseContainerCosmosTests.leaseStoreManagerSettings.GetPartitionLeasePrefix() + "')", value)),

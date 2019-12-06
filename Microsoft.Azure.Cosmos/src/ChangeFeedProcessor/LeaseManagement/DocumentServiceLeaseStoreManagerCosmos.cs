@@ -9,6 +9,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 #endif
 {
     using System;
+#if AZURECORE
+    using Container = CosmosContainer;
+#endif
     using Microsoft.Azure.Cosmos;
 
     /// <summary>

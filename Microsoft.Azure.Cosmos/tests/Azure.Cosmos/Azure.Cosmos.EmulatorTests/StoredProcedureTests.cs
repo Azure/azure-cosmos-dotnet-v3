@@ -12,14 +12,15 @@ namespace Azure.Cosmos.EmulatorTests
     using System.Threading.Tasks;
     using Azure.Cosmos.Fluent;
     using Azure.Cosmos.Scripts;
+    using Azure.Cosmos.Serialization;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
 
     [TestClass]
     public sealed class StoredProcedureTests : BaseCosmosClientHelper
     {
-        private Container container = null;
-        private Scripts scripts = null;
+        private CosmosContainer container = null;
+        private CosmosScripts scripts = null;
 
         [TestInitialize]
         public async Task TestInitialize()
@@ -181,7 +182,7 @@ namespace Azure.Cosmos.EmulatorTests
             using (CosmosClient cosmosClient = TestCommon.CreateCosmosClient(new CosmosClientOptions() { Serializer = new FaultySerializer() }))
             {
                 // Should not use the custom serializer for these operations
-                Scripts scripts = cosmosClient.GetContainer(this.database.Id, this.container.Id).Scripts;
+                CosmosScripts scripts = cosmosClient.GetContainer(this.database.Id, this.container.Id).Scripts;
 
                 string sprocBody = "function() { { var x = 42; } }";
                 int numberOfSprocs = 3;

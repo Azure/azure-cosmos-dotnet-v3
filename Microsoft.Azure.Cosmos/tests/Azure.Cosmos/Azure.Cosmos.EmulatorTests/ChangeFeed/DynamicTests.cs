@@ -85,7 +85,7 @@ namespace Azure.Cosmos.EmulatorTests.ChangeFeed
                     this.database,
                     "fixedLeases");
 
-            Container fixedLeasesContainer = this.cosmosClient.GetContainer(this.database.Id, "fixedLeases");
+            CosmosContainer fixedLeasesContainer = this.cosmosClient.GetContainer(this.database.Id, "fixedLeases");
 
             try
             {
@@ -146,7 +146,7 @@ namespace Azure.Cosmos.EmulatorTests.ChangeFeed
                             err => { if (err) throw err;}
                         );}";
 
-            Scripts scripts = this.Container.Scripts;
+            CosmosScripts scripts = this.Container.Scripts;
 
             Response<StoredProcedureProperties> storedProcedureResponse =
                 await scripts.CreateStoredProcedureAsync(new StoredProcedureProperties(sprocId, sprocBody));

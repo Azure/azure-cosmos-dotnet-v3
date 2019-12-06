@@ -2,12 +2,10 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.ChangeFeed
+namespace Azure.Cosmos.ChangeFeed
 {
     using System;
-    using System.IO;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -15,13 +13,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     /// </summary>
     internal sealed class DocumentServiceLeaseStoreCosmos : DocumentServiceLeaseStore
     {
-        private readonly Container container;
+        private readonly CosmosContainer container;
         private readonly string containerNamePrefix;
         private readonly RequestOptionsFactory requestOptionsFactory;
-        private string lockETag;
+        private ETag? lockETag;
 
         public DocumentServiceLeaseStoreCosmos(
-            Container container,
+            CosmosContainer container,
             string containerNamePrefix,
             RequestOptionsFactory requestOptionsFactory)
         {
@@ -40,17 +38,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         public override async Task MarkInitializedAsync()
         {
             string markerDocId = this.GetStoreMarkerName();
-            dynamic containerDocument = new { id = markerDocId };
+            var containerDocument = new { id = markerDocId };
 
-            using (Stream itemStream = CosmosContainerExtensions.DefaultJsonSerializer.ToStream(containerDocument))
-            {
-                using (var responseMessage = await this.container.CreateItemStreamAsync(
-                    itemStream,
-                    this.requestOptionsFactory.GetPartitionKey(markerDocId)).ConfigureAwait(false))
-                {
-                    responseMessage.EnsureSuccessStatusCode();
-                }
-            }
+            await this.container.CreateItemAsync<dynamic>(
+                item: containerDocument,
+                partitionKey: this.requestOptionsFactory.GetPartitionKey(markerDocId)).ConfigureAwait(false);
         }
 
         public override async Task<bool> AcquireInitializationLockAsync(TimeSpan lockTime)
@@ -75,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             string lockId = this.GetStoreLockName();
             ItemRequestOptions requestOptions = new ItemRequestOptions()
             {
-                IfMatchEtag = this.lockETag,
+                IfMatch = this.lockETag,
             };
 
             bool deleted = await this.container.TryDeleteItemAsync<LockDocument>(

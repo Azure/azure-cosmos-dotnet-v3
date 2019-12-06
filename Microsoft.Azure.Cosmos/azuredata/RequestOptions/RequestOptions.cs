@@ -12,27 +12,10 @@ namespace Azure.Cosmos
     /// <summary>
     /// The default cosmos request options
     /// </summary>
-    public class RequestOptions
+    public class RequestOptions : MatchConditions
     {
         internal IDictionary<string, object> Properties { get; set; }
-
-        /// <summary>
-        /// Gets or sets the If-Match (ETag) associated with the request in the Azure Cosmos DB service.
-        /// </summary>
-        /// <remarks>
-        /// Most commonly used with the Delete* and Replace* methods of <see cref="Container"/> such as <see cref="Container.ReplaceItemAsync{T}(T, string, PartitionKey?, ItemRequestOptions, System.Threading.CancellationToken)"/>
-        /// but can be used with other methods like <see cref="Container.ReadItemAsync{T}(string, PartitionKey, ItemRequestOptions, System.Threading.CancellationToken)"/> for caching scenarios.
-        /// </remarks>
-        public string IfMatchEtag { get; set; }
-
-        /// <summary>
-        /// Gets or sets the If-None-Match (ETag) associated with the request in the Azure Cosmos DB service.
-        /// </summary>
-        /// <remarks>
-        /// Most commonly used to detect changes to the resource
-        /// </remarks>
-        public string IfNoneMatchEtag { get; set; }
-
+        
         /// <summary>
         /// Gets or sets the boolean to use effective partition key routing in the cosmos db request.
         /// </summary>
@@ -65,14 +48,14 @@ namespace Azure.Cosmos
                 }
             }
 
-            if (this.IfMatchEtag != null)
+            if (this.IfMatch.HasValue)
             {
-                request.Headers.Add(HttpConstants.HttpHeaders.IfMatch, this.IfMatchEtag);
+                request.Headers.Add(HttpConstants.HttpHeaders.IfMatch, this.IfMatch.Value.ToString());
             }
 
-            if (this.IfNoneMatchEtag != null)
+            if (this.IfNoneMatch.HasValue)
             {
-                request.Headers.Add(HttpConstants.HttpHeaders.IfNoneMatch, this.IfNoneMatchEtag);
+                request.Headers.Add(HttpConstants.HttpHeaders.IfNoneMatch, this.IfNoneMatch.Value.ToString());
             }
         }
 

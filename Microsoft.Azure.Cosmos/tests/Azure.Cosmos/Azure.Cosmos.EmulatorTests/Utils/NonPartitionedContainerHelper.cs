@@ -16,7 +16,7 @@ namespace Azure.Cosmos.EmulatorTests
         private static readonly string PreNonPartitionedMigrationApiVersion = "2018-08-31";
 
         internal static async Task<ContainerCore> CreateNonPartitionedContainer(
-            Cosmos.Database database,
+            Cosmos.CosmosDatabase database,
             string containerId,
             string indexingPolicy = null)
         {
@@ -38,7 +38,7 @@ namespace Azure.Cosmos.EmulatorTests
         }
 
         internal static async Task CreateNonPartitionedContainer(
-            Cosmos.Database database,
+            Cosmos.CosmosDatabase database,
             DocumentCollection documentCollection)
         {
             (string endpoint, string authKey) accountInfo = TestCommon.GetAccountInfo();

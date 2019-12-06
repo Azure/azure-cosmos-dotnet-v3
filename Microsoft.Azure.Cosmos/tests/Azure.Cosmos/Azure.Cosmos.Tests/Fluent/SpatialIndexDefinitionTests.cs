@@ -6,6 +6,7 @@ namespace Azure.Cosmos.Tests.Fluent
 {
     using System;
     using Azure.Cosmos.Fluent;
+    using Azure.Cosmos.Spatial;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 

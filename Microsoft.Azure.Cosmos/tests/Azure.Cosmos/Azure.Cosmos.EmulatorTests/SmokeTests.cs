@@ -80,8 +80,8 @@ namespace Azure.Cosmos.EmulatorTests
 
         private async Task DocumentInsertsTest()
         {
-            Database database = await this.client.CreateDatabaseIfNotExistsAsync(DatabaseName);
-            Container container = await this.CreatePartitionedCollectionIfNotExists(database, PartitionedCollectionName);
+            CosmosDatabase database = await this.client.CreateDatabaseIfNotExistsAsync(DatabaseName);
+            CosmosContainer container = await this.CreatePartitionedCollectionIfNotExists(database, PartitionedCollectionName);
 
             for (int i = 0; i < 2; i++)
             {
@@ -123,8 +123,8 @@ namespace Azure.Cosmos.EmulatorTests
 
         private async Task QueryWithPagination()
         {
-            Database database = await this.client.CreateDatabaseIfNotExistsAsync(DatabaseName);
-            Container container = await this.CreatePartitionedCollectionIfNotExists(database, PartitionedCollectionName);
+            CosmosDatabase database = await this.client.CreateDatabaseIfNotExistsAsync(DatabaseName);
+            CosmosContainer container = await this.CreatePartitionedCollectionIfNotExists(database, PartitionedCollectionName);
 
             await container.UpsertItemAsync<Person>(new Person() { Id = "1", FirstName = "David", LastName = "Smith" });
             await container.UpsertItemAsync<Person>(new Person() { Id = "2", FirstName = "Robert", LastName = "Johnson" });
@@ -176,8 +176,8 @@ namespace Azure.Cosmos.EmulatorTests
 
         private async Task CrossPartitionQueries()
         {
-            Database db = await this.client.CreateDatabaseIfNotExistsAsync(DatabaseName);
-            Container container = await this.CreatePartitionedCollectionIfNotExists(db, PartitionedCollectionName);
+            CosmosDatabase db = await this.client.CreateDatabaseIfNotExistsAsync(DatabaseName);
+            CosmosContainer container = await this.CreatePartitionedCollectionIfNotExists(db, PartitionedCollectionName);
 
             for (int i = 0; i < 2; i++)
             {
@@ -220,7 +220,7 @@ namespace Azure.Cosmos.EmulatorTests
             string databaseId = Guid.NewGuid().ToString();
 
             // Create the database with this unique id
-            Database createdDatabase = await client.CreateDatabaseIfNotExistsAsync(databaseId);
+            CosmosDatabase createdDatabase = await client.CreateDatabaseIfNotExistsAsync(databaseId);
 
             // CreateDatabaseIfNotExistsAsync should create the new database
             Assert.AreEqual(databaseId, createdDatabase.Id);
@@ -228,9 +228,9 @@ namespace Azure.Cosmos.EmulatorTests
             string databaseId2 = Guid.NewGuid().ToString();
 
             // Pre-create the database with this unique id
-            Database createdDatabase2 = await client.CreateDatabaseAsync(databaseId2);
+            CosmosDatabase createdDatabase2 = await client.CreateDatabaseAsync(databaseId2);
 
-            Database readDatabase = await client.CreateDatabaseIfNotExistsAsync(databaseId2);
+            CosmosDatabase readDatabase = await client.CreateDatabaseIfNotExistsAsync(databaseId2);
 
             // CreateDatabaseIfNotExistsAsync should return the same database
             Assert.AreEqual(createdDatabase2.Id, readDatabase.Id);
@@ -266,7 +266,7 @@ namespace Azure.Cosmos.EmulatorTests
             string databaseId = Guid.NewGuid().ToString();
 
             // Create the database with this unique id
-            Database createdDatabase = await this.client.CreateDatabaseIfNotExistsAsync(databaseId);
+            CosmosDatabase createdDatabase = await this.client.CreateDatabaseIfNotExistsAsync(databaseId);
 
             string collectionId = Guid.NewGuid().ToString();
             ContainerProperties collection = new ContainerProperties(collectionId, "/id");
@@ -298,12 +298,12 @@ namespace Azure.Cosmos.EmulatorTests
             return new CosmosClient(Host, MasterKey, connectionPolicy);
         }
 
-        private async Task<Container> CreatePartitionedCollectionIfNotExists(Database database, string collectionName)
+        private async Task<CosmosContainer> CreatePartitionedCollectionIfNotExists(CosmosDatabase database, string collectionName)
         {
             return await database.CreateContainerIfNotExistsAsync(collectionName, partitionKeyPath: "/id", throughput: 10200);
         }
 
-        private async Task CleanupDocumentCollection(Container container)
+        private async Task CleanupDocumentCollection(CosmosContainer container)
         {
             await foreach(JObject doc in container.GetItemQueryIterator<JObject>())
             {

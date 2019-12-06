@@ -13,9 +13,9 @@ namespace Azure.Cosmos
     /// <summary>
     /// Operations for reading, replacing, or deleting a specific, existing user by id.
     /// 
-    /// <see cref="Cosmos.User"/> for creating new users, and reading/querying all user;
+    /// <see cref="Cosmos.CosmosUser"/> for creating new users, and reading/querying all user;
     /// </summary>
-    internal class PermissionCore : Permission
+    internal class PermissionCore : CosmosPermission
     {
         /// <summary>
         /// Only used for unit testing
@@ -45,7 +45,7 @@ namespace Azure.Cosmos
         /// <summary>
         /// Returns a reference to a user object. 
         /// </summary>
-        public User User { get; }
+        public CosmosUser User { get; }
 
         internal virtual Uri LinkUri { get; }
 

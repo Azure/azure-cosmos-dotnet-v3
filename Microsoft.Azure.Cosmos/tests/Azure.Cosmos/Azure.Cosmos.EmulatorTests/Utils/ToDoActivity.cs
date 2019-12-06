@@ -39,7 +39,7 @@ namespace Azure.Cosmos.EmulatorTests
             return base.GetHashCode();
         }
 
-        public static async Task<IList<ToDoActivity>> CreateRandomItems(Container container, int pkCount, int perPKItemCount = 1, bool randomPartitionKey = true)
+        public static async Task<IList<ToDoActivity>> CreateRandomItems(CosmosContainer container, int pkCount, int perPKItemCount = 1, bool randomPartitionKey = true)
         {
             Assert.IsFalse(!randomPartitionKey && pkCount > 1);
 
