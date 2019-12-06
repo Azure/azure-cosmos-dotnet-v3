@@ -102,6 +102,11 @@ jobs:
       arguments: Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.EmulatorTests.NETFX\bin\Release\net461\Microsoft.Azure.Cosmos.EmulatorTests.dll /logger:trx
       testRunTitle: Test Microsoft.Azure.Cosmos.EmulatorTests.NETFX
 
+  - task: VisualStudioTestPlatformInstaller@1
+    displayName: 'Visual Studio Test Platform Installer'
+    inputs:
+      versionSelector: latestStable
+
   - task: VSTest@2
     displayName: 'VsTest - testAssemblies'
     inputs:
