@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - [#1075](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1075) Including header size details for BadRequest with large headers
-
+- [#1086](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1086) Fix possible NullReferenceException on a TransactionalBatch code path
 
 
 ### Fixed
