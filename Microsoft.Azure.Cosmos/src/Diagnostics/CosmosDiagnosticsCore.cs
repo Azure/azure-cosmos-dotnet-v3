@@ -16,10 +16,10 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class CosmosDiagnosticsCore : CosmosDiagnostics
     {
-        private static string DefaultUserAgentString { get; }
-        private List<ICosmosDiagnosticsJsonWriter> scopes { get; } = new List<ICosmosDiagnosticsJsonWriter>();
+        private static readonly string DefaultUserAgentString;
+        private readonly List<ICosmosDiagnosticsJsonWriter> scopes;
         private long retryCount = 0;
-        private TimeSpan retryBackoffTimeSpan;
+        private TimeSpan retryBackoffTimeSpan = TimeSpan.Zero;
         private string userAgent;
 
         static CosmosDiagnosticsCore()
@@ -32,6 +32,7 @@ namespace Microsoft.Azure.Cosmos
         internal CosmosDiagnosticsCore()
         {
             this.userAgent = CosmosDiagnosticsCore.DefaultUserAgentString;
+            this.scopes = new List<ICosmosDiagnosticsJsonWriter>();
         }
 
         internal CosmosDiagnosticsScope CreateScope(string name)
@@ -73,12 +74,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal void AddSdkRetry(TimeSpan backOffTimeSpan)
         {
-            if (this.retryBackoffTimeSpan == null)
-            {
-                this.retryBackoffTimeSpan = new TimeSpan();
-            }
-
-            this.retryBackoffTimeSpan.Add(backOffTimeSpan);
+            this.retryBackoffTimeSpan = this.retryBackoffTimeSpan.Add(backOffTimeSpan);
             this.retryCount++;
         }
 
@@ -101,7 +97,7 @@ namespace Microsoft.Azure.Cosmos
         {
             stringBuilder.Append("\"RetryCount\":");
             stringBuilder.Append(this.retryCount);
-            if (this.retryBackoffTimeSpan == null)
+            if (this.retryCount > 0)
             {
                 stringBuilder.Append(",\"RetryTimeDelay\":\"");
 
@@ -120,7 +116,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Supports appending a single string value to the list
         /// </summary>
-        private struct CosmosDiagnosticScopeStringAttribute : ICosmosDiagnosticsJsonWriter
+        private class CosmosDiagnosticScopeStringAttribute : ICosmosDiagnosticsJsonWriter
         {
             private readonly string name;
             private readonly string jsonValue;
@@ -147,7 +143,7 @@ namespace Microsoft.Azure.Cosmos
         /// Supports appending an object that implements ICosmosDiagnosticsJsonWriter so
         /// it can be lazy.
         /// </summary>
-        private struct CosmosDiagnosticScopeAttribute : ICosmosDiagnosticsJsonWriter
+        private class CosmosDiagnosticScopeAttribute : ICosmosDiagnosticsJsonWriter
         {
             private readonly string name;
             private readonly ICosmosDiagnosticsJsonWriter jsonValue;
@@ -174,7 +170,7 @@ namespace Microsoft.Azure.Cosmos
         /// A scope is a section of code that is important to track.
         /// For example there is a scope for serialization, retry handlers, etc..
         /// </summary>
-        internal struct CosmosDiagnosticsScope : IDisposable, ICosmosDiagnosticsJsonWriter
+        internal class CosmosDiagnosticsScope : IDisposable, ICosmosDiagnosticsJsonWriter
         {
             private string Name { get; }
             private DateTimeOffset StartTime { get; }

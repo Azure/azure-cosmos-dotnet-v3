@@ -14,11 +14,6 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public void AppendJson(StringBuilder stringBuilder)
         {
-            if (this.Diagnostics.Count == 0)
-            {
-                return;
-            }
-
             foreach (CosmosDiagnostics diagnostics in this.Diagnostics)
             {
                 stringBuilder.Append(diagnostics.ToString());

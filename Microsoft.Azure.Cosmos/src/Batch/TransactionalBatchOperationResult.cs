@@ -209,6 +209,7 @@ namespace Microsoft.Azure.Cosmos
                 RequestCharge = this.RequestCharge,
             };
 
+            // DEVNOTE: Temporary until batch has CosmosDiagnosticsCore wired through
             CosmosDiagnosticsCore diagnosticsCore = this.Diagnostics as CosmosDiagnosticsCore;
             if (diagnosticsCore == null)
             {
