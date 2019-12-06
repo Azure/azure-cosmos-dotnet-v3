@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Cosmos Stand-By Feed iterator implementing Composite Continuation Token
     /// </summary>
-    internal class ChangeFeedResultSetIteratorCore : FeedIterator
+    internal class ChangeFeedResultSetIteratorCore : FeedIteratorInternal
     {
         internal StandByFeedContinuationToken compositeContinuationToken;
 
@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos
             return response;
         }
 
-        internal bool TryGetContinuationToken(out string state)
+        public override bool TryGetContinuationToken(out string state)
         {
             state = this.continuationToken;
             return true;

@@ -31,7 +31,10 @@ namespace Microsoft.Azure.Cosmos
             this.RetryAfter = other.RetryAfter;
         }
 
-        private TransactionalBatchOperationResult()
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TransactionalBatchOperationResult"/> class.
+        /// </summary>
+        protected TransactionalBatchOperationResult()
         {
         }
 
@@ -225,6 +228,13 @@ namespace Microsoft.Azure.Cosmos
             : base(result)
         {
             this.Resource = resource;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TransactionalBatchOperationResult{T}"/> class.
+        /// </summary>
+        protected TransactionalBatchOperationResult()
+        {
         }
 
         /// <summary>

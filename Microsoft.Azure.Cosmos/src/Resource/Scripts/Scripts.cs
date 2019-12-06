@@ -19,8 +19,8 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <summary>
         /// Creates a stored procedure as an asynchronous operation in the Azure Cosmos DB service.
         /// </summary>
-        /// <param name="storedProcedureProperties">The Stored Procedure to create</param>
-        /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="RequestOptions"/></param>
+        /// <param name="storedProcedureProperties">The Stored Procedure to create.</param>
+        /// <param name="requestOptions">(Optional) The options for the stored procedure request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The <see cref="StoredProcedureProperties"/> that was created contained within a <see cref="Task"/> object representing the service response for the asynchronous operation.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="storedProcedureProperties"/> is not set.</exception>
@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </summary>
         /// <param name="queryDefinition">The cosmos SQL query definition.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
-        /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the item query request.</param>
         /// <returns>An iterator to read through the existing stored procedures.</returns>
         /// <example>
         /// This create the type feed iterator for sproc with queryDefinition as input.
@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </summary>
         /// <param name="queryDefinition">The cosmos SQL query definition.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
-        /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the item query request.</param>
         /// <returns>An iterator to read through the existing stored procedures.</returns>
         /// <example>
         /// This create the stream feed iterator for sproc with queryDefinition as input.
@@ -142,7 +142,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </summary>
         /// <param name="queryText">The cosmos SQL query text.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
-        /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the item query request.</param>
         /// <returns>An iterator to read through the existing stored procedures.</returns>
         /// <example>
         /// This create the type feed iterator for sproc with queryText as input.
@@ -165,7 +165,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </summary>
         /// <param name="queryText">The cosmos SQL query text.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
-        /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the item query request.</param>
         /// <returns>An iterator to read through the existing stored procedures.</returns>
         /// <example>
         /// This create the stream feed iterator for sproc with queryText as input.
@@ -186,7 +186,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// Reads a <see cref="StoredProcedureProperties"/> from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
         /// <param name="id">The identifier of the Stored Procedure to read.</param>
-        /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="StoredProcedureRequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the stored procedure request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="StoredProcedureProperties"/>.
@@ -223,7 +223,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// Replaces a <see cref="StoredProcedureProperties"/> in the Azure Cosmos service as an asynchronous operation.
         /// </summary>
         /// <param name="storedProcedureProperties">The Stored Procedure to replace</param>
-        /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="StoredProcedureRequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the stored procedure request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="StoredProcedureProperties"/>.
@@ -268,7 +268,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// Delete a <see cref="StoredProcedureProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
         /// <param name="id">The identifier of the Stored Procedure to delete.</param>
-        /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="StoredProcedureRequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the stored procedure request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="ResponseMessage"/> which will contain the response to the request issued.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="id"/> are not set.</exception>
@@ -301,9 +301,9 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </summary>
         /// <typeparam name="TOutput">The return type that is JSON serializable.</typeparam>
         /// <param name="storedProcedureId">The identifier of the Stored Procedure to execute.</param>
-        /// <param name="partitionKey">The partition key for the item. <see cref="Cosmos.PartitionKey"/></param>
+        /// <param name="partitionKey">The partition key for the item.</param>
         /// <param name="parameters">(Optional) An array of dynamic objects representing the parameters for the stored procedure.</param>
-        /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="StoredProcedureRequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the stored procedure request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The task object representing the service response for the asynchronous operation which would contain any response set in the stored procedure.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="storedProcedureId"/> or <paramref name="partitionKey"/>  are not set.</exception>
@@ -358,9 +358,9 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// Executes a stored procedure against a container as an asynchronous operation in the Azure Cosmos service and obtains a Stream as response.
         /// </summary>
         /// <param name="storedProcedureId">The identifier of the Stored Procedure to execute.</param>
-        /// <param name="partitionKey">The partition key for the item. <see cref="Cosmos.PartitionKey"/></param>
+        /// <param name="partitionKey">The partition key for the item.</param>
         /// <param name="parameters">(Optional) An array of dynamic objects representing the parameters for the stored procedure.</param>
-        /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="StoredProcedureRequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the stored procedure request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The task object representing the service response for the asynchronous operation which would contain any response set in the stored procedure.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="storedProcedureId"/> or <paramref name="partitionKey"/>  are not set.</exception>
@@ -420,7 +420,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// Creates a trigger as an asynchronous operation in the Azure Cosmos DB service.
         /// </summary>
         /// <param name="triggerProperties">The <see cref="TriggerProperties"/> object.</param>
-        /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="RequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the stored procedure request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A task object representing the service response for the asynchronous operation.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="triggerProperties"/> is not set.</exception>
@@ -488,7 +488,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </summary>
         /// <param name="queryDefinition">The cosmos SQL query definition.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
-        /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the item query request.</param>
         /// <returns>An iterator to read through the existing stored procedures.</returns>
         /// <example>
         /// This create the type feed iterator for Trigger with queryDefinition as input.
@@ -513,7 +513,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </summary>
         /// <param name="queryDefinition">The cosmos SQL query definition.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
-        /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the item query request.</param>
         /// <returns>An iterator to read through the existing stored procedures.</returns>
         /// <example>
         /// This create the stream feed iterator for Trigger with queryDefinition as input.
@@ -538,7 +538,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </summary>
         /// <param name="queryText">The cosmos SQL query text.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
-        /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the item query request.</param>
         /// <returns>An iterator to read through the existing stored procedures.</returns>
         /// <example>
         /// This create the type feed iterator for Trigger with queryText as input.
@@ -561,7 +561,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </summary>
         /// <param name="queryText">The cosmos SQL query text.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
-        /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the item query request.</param>
         /// <returns>An iterator to read through the existing stored procedures.</returns>
         /// <example>
         /// This create the stream feed iterator for Trigger with queryText as input.
@@ -582,7 +582,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// Reads a <see cref="TriggerProperties"/> from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
         /// <param name="id">The id of the trigger to read.</param>
-        /// <param name="requestOptions">(Optional) The options for the trigger request <see cref="RequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the trigger request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="TriggerResponse"/> which wraps a <see cref="TriggerProperties"/> containing the read resource record.
@@ -616,7 +616,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// Replaces a <see cref="TriggerProperties"/> in the Azure Cosmos service as an asynchronous operation.
         /// </summary>
         /// <param name="triggerProperties">The <see cref="TriggerProperties"/> object.</param>
-        /// <param name="requestOptions">(Optional) The options for the trigger request <see cref="RequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the trigger request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="TriggerResponse"/> which wraps a <see cref="TriggerProperties"/> containing the updated resource record.
@@ -656,7 +656,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// Delete a <see cref="TriggerProperties"/> from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
         /// <param name="id">The id of the trigger to delete.</param>
-        /// <param name="requestOptions">(Optional) The options for the trigger request <see cref="RequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the trigger request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="TriggerResponse"/> which wraps a <see cref="TriggerProperties"/> which will contain information about the request issued.</returns>
         /// /// <example>
@@ -677,7 +677,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// Creates a user defined function as an asynchronous operation in the Azure Cosmos DB service.
         /// </summary>
         /// <param name="userDefinedFunctionProperties">The <see cref="UserDefinedFunctionProperties"/> object.</param>
-        /// <param name="requestOptions">(Optional) The options for the user defined function request <see cref="RequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the user defined function request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A task object representing the service response for the asynchronous operation.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="userDefinedFunctionProperties"/> is not set.</exception>
@@ -743,7 +743,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </summary>
         /// <param name="queryDefinition">The cosmos SQL query definition.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
-        /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the item query request.</param>
         /// <returns>An iterator to read through the existing stored procedures.</returns>
         /// <example>
         /// This create the type feed iterator for UDF with queryDefinition as input.
@@ -768,7 +768,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </summary>
         /// <param name="queryDefinition">The cosmos SQL query definition.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
-        /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the item query request.</param>
         /// <returns>An iterator to read through the existing stored procedures.</returns>
         /// <example>
         /// This create the stream feed iterator for UDF with queryDefinition as input.
@@ -793,7 +793,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </summary>
         /// <param name="queryText">The cosmos SQL query text.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
-        /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the item query request.</param>
         /// <returns>An iterator to read through the existing stored procedures.</returns>
         /// <example>
         /// This create the type feed iterator for UDF with queryText as input.
@@ -816,7 +816,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </summary>
         /// <param name="queryText">The cosmos SQL query text.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
-        /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the item query request.</param>
         /// <returns>An iterator to read through the existing stored procedures.</returns>
         /// <example>
         /// This create the stream feed iterator for UDF with queryText as input.
@@ -837,7 +837,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// Reads a <see cref="UserDefinedFunctionProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
         /// <param name="id">The id of the user defined function to read</param>
-        /// <param name="requestOptions">(Optional) The options for the user defined function request <see cref="RequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the user defined function request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="UserDefinedFunctionResponse"/> which wraps a <see cref="UserDefinedFunctionProperties"/> containing the read resource record.
@@ -874,7 +874,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// Replaces a <see cref="UserDefinedFunctionProperties"/> in the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
         /// <param name="userDefinedFunctionProperties">The <see cref="UserDefinedFunctionProperties"/> object.</param>
-        /// <param name="requestOptions">(Optional) The options for the user defined function request <see cref="RequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the user defined function request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="UserDefinedFunctionResponse"/> which wraps a <see cref="UserDefinedFunctionProperties"/> containing the updated resource record.
@@ -904,7 +904,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// Delete a <see cref="UserDefinedFunctionProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
         /// <param name="id">The id of the user defined function to delete.</param>
-        /// <param name="requestOptions">(Optional) The options for the user defined function request <see cref="RequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the user defined function request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="UserDefinedFunctionResponse"/> which wraps a <see cref="UserDefinedFunctionProperties"/> which will contain information about the request issued.</returns>
         /// <example>

@@ -7,14 +7,13 @@ namespace Microsoft.Azure.Cosmos.Query
     using System;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
 
-    internal class QueryIterator : FeedIterator
+    internal sealed class QueryIterator : FeedIteratorInternal
     {
         private readonly CosmosQueryContext cosmosQueryContext;
         private readonly CosmosQueryExecutionContext cosmosQueryExecutionContext;
@@ -125,9 +124,9 @@ namespace Microsoft.Azure.Cosmos.Query
             return queryResponse;
         }
 
-        internal bool TryGetContinuationToken(out string state)
+        public override bool TryGetContinuationToken(out string continuationToken)
         {
-            return this.cosmosQueryExecutionContext.TryGetContinuationToken(out state);
+            return this.cosmosQueryExecutionContext.TryGetContinuationToken(out continuationToken);
         }
     }
 }
