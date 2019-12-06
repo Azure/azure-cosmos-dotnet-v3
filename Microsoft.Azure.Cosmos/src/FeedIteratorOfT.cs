@@ -11,7 +11,14 @@ namespace Microsoft.Azure.Cosmos
     /// Cosmos Result set iterator that keeps track of the continuation token when retrieving results form a query.
     /// </summary>
 #pragma warning disable SA1649 // SA1649FileNameMustMatchTypeName
-    public abstract class FeedIterator<T>
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1601 // Partial elements should be documented
+    public
+#else
+    internal
+#endif
+    abstract class FeedIterator<T>
 #pragma warning restore SA1649
     {
         /// <summary>
@@ -26,4 +33,8 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A query response from cosmos service</returns>
         public abstract Task<FeedResponse<T>> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken));
     }
+#if INTERNAL
+#pragma warning restore SA1601 // Partial elements should be documented
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
+#endif
 }

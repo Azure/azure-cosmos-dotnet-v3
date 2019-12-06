@@ -9,14 +9,20 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Documents;
     using static Microsoft.Azure.Documents.RuntimeConstants;
 
     /// <summary>
     /// Cosmos feed stream iterator. This is used to get the query responses with a Stream content
     /// </summary>
-    internal class FeedIteratorCore : FeedIteratorInternal
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1601 // Partial elements should be documented
+    public
+#else
+    internal
+#endif
+    class FeedIteratorCore : FeedIteratorInternal
     {
         private readonly CosmosClientContext clientContext;
         private readonly Uri resourceLink;
@@ -158,4 +164,8 @@ namespace Microsoft.Azure.Cosmos
             return this.feedIterator.TryGetContinuationToken(out continuationToken);
         }
     }
+#if INTERNAL
+#pragma warning restore SA1601 // Partial elements should be documented
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
+#endif
 }
