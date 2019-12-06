@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 {
     using System.Collections.Generic;
     using System.Linq.Expressions;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Sql;
 
     /// <summary>
@@ -53,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
                 foreach (KeyValuePair<object, string> keyValuePair in parameters)
                 {
-                    sqlParameters.Add(new Microsoft.Azure.Cosmos.SqlParameter(keyValuePair.Value, keyValuePair.Key));
+                    sqlParameters.Add(new Microsoft.Azure.Cosmos.Query.Core.SqlParameter(keyValuePair.Value, keyValuePair.Key));
                 }
             }
             queryText = query.ToString();

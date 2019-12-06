@@ -7,7 +7,11 @@ namespace Microsoft.Azure.Cosmos.Query
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
 
 #if INTERNAL
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
@@ -27,18 +31,8 @@ namespace Microsoft.Azure.Cosmos.Query
             CosmosQueryExecutionContext cosmosQueryExecutionContext,
             CosmosSerializationFormatOptions cosmosSerializationFormatOptions)
         {
-            if (cosmosQueryContext == null)
-            {
-                throw new ArgumentNullException(nameof(cosmosQueryContext));
-            }
-
-            if (cosmosQueryExecutionContext == null)
-            {
-                throw new ArgumentNullException(nameof(cosmosQueryExecutionContext));
-            }
-
-            this.cosmosQueryContext = cosmosQueryContext;
-            this.cosmosQueryExecutionContext = cosmosQueryExecutionContext;
+            this.cosmosQueryContext = cosmosQueryContext ?? throw new ArgumentNullException(nameof(cosmosQueryContext));
+            this.cosmosQueryExecutionContext = cosmosQueryExecutionContext ?? throw new ArgumentNullException(nameof(cosmosQueryExecutionContext));
             this.cosmosSerializationFormatOptions = cosmosSerializationFormatOptions;
         }
 
@@ -88,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public override bool HasMoreResults => !this.cosmosQueryExecutionContext.IsDone;
 
-        public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
             // This catches exception thrown by the pipeline and converts it to QueryResponse
             QueryResponseCore responseCore = await this.cosmosQueryExecutionContext.ExecuteNextAsync(cancellationToken);

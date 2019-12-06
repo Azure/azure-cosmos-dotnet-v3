@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Sql
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using Microsoft.Azure.Cosmos.Query.Core;
 
     internal sealed class SqlNumberLiteral : SqlLiteral
     {

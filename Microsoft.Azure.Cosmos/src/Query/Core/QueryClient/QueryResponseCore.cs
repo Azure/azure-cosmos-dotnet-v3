@@ -1,12 +1,13 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Query
+namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
 {
     using System;
     using System.Collections.Generic;
     using System.Net;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using SubStatusCodes = Documents.SubStatusCodes;
 
 #if INTERNAL

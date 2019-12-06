@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Query.Core.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>
@@ -23,9 +24,9 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
         [TestMethod]
         public async Task TestAddAsync()
         {
-            var queue = new ConcurrentQueue<int>();
+            ConcurrentQueue<int> queue = new ConcurrentQueue<int>();
             queue.Enqueue(0);
-            var asyncCollection = new AsyncCollection<int>(queue, 1);
+            AsyncCollection<int> asyncCollection = new AsyncCollection<int>(queue, 1);
             int item = 1;
             Task task = asyncCollection.AddAsync(item);
             await Task.Delay(DelayInMilliSeconds);
@@ -41,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
         [TestMethod]
         public async Task TestAddRangeAsync()
         {
-            var asyncCollection = new AsyncCollection<int>(2);
+            AsyncCollection<int> asyncCollection = new AsyncCollection<int>(2);
             Task task = asyncCollection.AddRangeAsync(new[] { 0, 1, 2 });
             await Task.Delay(DelayInMilliSeconds);
             Assert.AreEqual(false, task.IsCompleted);
@@ -56,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
         [TestMethod]
         public async Task TestTakeAsync()
         {
-            var asyncCollection = new AsyncCollection<int>();
+            AsyncCollection<int> asyncCollection = new AsyncCollection<int>();
             Task<int> task = asyncCollection.TakeAsync();
             await Task.Delay(DelayInMilliSeconds);
             Assert.AreEqual(false, task.IsCompleted);
@@ -71,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
         [TestMethod]
         public async Task TestPeekAsync()
         {
-            var asyncCollection = new AsyncCollection<int>();
+            AsyncCollection<int> asyncCollection = new AsyncCollection<int>();
             Task<int> task = asyncCollection.PeekAsync();
             await Task.Delay(DelayInMilliSeconds);
             Assert.AreEqual(false, task.IsCompleted);
@@ -87,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
         public async Task SimpleTest()
         {
             int size = 100;
-            var asyncCollection = new AsyncCollection<int>();
+            AsyncCollection<int> asyncCollection = new AsyncCollection<int>();
             Assert.AreEqual(0, asyncCollection.Count);
             List<int> list = new List<int>();
             for (int i = 0; i < size; ++i)
