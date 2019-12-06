@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos
                 clientSideRequestStatistics: cosmosClientSideRequestStatistics);
 
             pointOperationStatistics.ToString();
-            Assert.IsNull(pointOperationStatistics.supplementalResponseStatisticsList);
+            Assert.IsNull(pointOperationStatistics.ClientSideRequestStatistics.supplementalResponseStatisticsList);
 
             //Adding 5 objects supplementalResponseStatisticsList
             cosmosClientSideRequestStatistics.supplementalResponseStatisticsList = new List<StoreResponseStatistics>
@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos
                 responseSessionToken: null,
                 clientSideRequestStatistics: cosmosClientSideRequestStatistics);
             pointOperationStatistics.ToString();
-            Assert.AreEqual(5, pointOperationStatistics.supplementalResponseStatisticsList.Count);
+            Assert.AreEqual(5, pointOperationStatistics.ClientSideRequestStatistics.supplementalResponseStatisticsList.Count);
 
             //Adding 5 more objects supplementalResponseStatisticsList, making total 10
             cosmosClientSideRequestStatistics.supplementalResponseStatisticsList.AddRange(new List<StoreResponseStatistics>()
@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos
                 responseSessionToken: null,
                 clientSideRequestStatistics:  cosmosClientSideRequestStatistics);
             pointOperationStatistics.ToString();
-            Assert.AreEqual(10, pointOperationStatistics.supplementalResponseStatisticsList.Count);
+            Assert.AreEqual(10, pointOperationStatistics.ClientSideRequestStatistics.supplementalResponseStatisticsList.Count);
 
             //Adding 2 more objects supplementalResponseStatisticsList, making total 12
             cosmosClientSideRequestStatistics.supplementalResponseStatisticsList.AddRange(new List<StoreResponseStatistics>()
@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos
                 responseSessionToken: null,
                 clientSideRequestStatistics:  cosmosClientSideRequestStatistics);
             pointOperationStatistics.ToString();
-            Assert.AreEqual(10, pointOperationStatistics.supplementalResponseStatisticsList.Count);
+            Assert.AreEqual(10, pointOperationStatistics.ClientSideRequestStatistics.supplementalResponseStatisticsList.Count);
         }
     }
 }
