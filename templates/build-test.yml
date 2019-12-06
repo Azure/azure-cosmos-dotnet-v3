@@ -99,7 +99,7 @@ jobs:
     inputs:
       command: custom
       custom: vstest
-      arguments: Microsoft.Azure.Cosmos\tests\bin\Release\net461\Microsoft.Azure.Cosmos.EmulatorTests.dll /logger:trx
+      arguments: Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.EmulatorTests.NETFX\bin\Release\net461\Microsoft.Azure.Cosmos.EmulatorTests.dll /logger:trx
       testRunTitle: Test Microsoft.Azure.Cosmos.EmulatorTests.NETFX
 
   - task: VSTest@2
