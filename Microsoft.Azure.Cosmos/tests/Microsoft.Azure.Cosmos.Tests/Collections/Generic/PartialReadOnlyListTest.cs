@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
     using System.Linq;
     using System.Collections.Generic;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Microsoft.Azure.Cosmos.Query.Core.Collections;
 
     /// <summary>
     /// Tests for "PartialReadOnlyList" class.
@@ -87,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
 
             try
             {
-                var i = list[-1];
+                int i = list[-1];
                 Assert.Fail("ArgumentOutOfRangeException should have been thrown.");
             }
             catch (ArgumentOutOfRangeException)
@@ -95,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
 
             try
             {
-                var i = list[2];
+                int i = list[2];
                 Assert.Fail("ArgumentOutOfRangeException should have been thrown.");
             }
             catch (ArgumentOutOfRangeException)

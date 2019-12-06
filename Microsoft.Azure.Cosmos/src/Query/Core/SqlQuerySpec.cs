@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos.Query.Core
 {
     using System;
     using System.Runtime.Serialization;
@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos
     [DataContract]
     internal sealed class SqlQuerySpec
     {
-        private string queryText;
         private SqlParameterCollection parameters;
 
         /// <summary>
@@ -42,13 +41,8 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="parameters">The <see cref="T:Microsoft.Azure.Documents.SqlParameterCollection"/> instance, which represents the collection of query parameters.</param>
         public SqlQuerySpec(string queryText, SqlParameterCollection parameters)
         {
-            if (parameters == null)
-            {
-                throw new ArgumentNullException("parameters");
-            }
-
-            this.queryText = queryText;
-            this.parameters = parameters;
+            this.QueryText = queryText;
+            this.parameters = parameters ?? throw new ArgumentNullException("parameters");
         }
 
         /// <summary>
@@ -56,11 +50,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <value>The text of the database query.</value>
         [DataMember(Name = "query")]
-        public string QueryText
-        {
-            get { return this.queryText; }
-            set { this.queryText = value; }
-        }
+        public string QueryText { get; set; }
 
         /// <summary>
         /// Gets or sets the <see cref="T:Microsoft.Azure.Documents.SqlParameterCollection"/> instance, which represents the collection of Azure Cosmos DB query parameters.
@@ -75,12 +65,7 @@ namespace Microsoft.Azure.Cosmos
             }
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException("value");
-                }
-
-                this.parameters = value;
+                this.parameters = value ?? throw new ArgumentNullException("value");
             }
         }
 
