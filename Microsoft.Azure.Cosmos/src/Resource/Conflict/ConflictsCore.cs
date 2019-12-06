@@ -39,29 +39,26 @@ namespace Microsoft.Azure.Cosmos
             PartitionKey partitionKey,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return TaskHelper.RunInlineIfNeededAsync(() =>
+            if (conflict == null)
             {
-                if (conflict == null)
-                {
-                    throw new ArgumentNullException(nameof(conflict));
-                }
+                throw new ArgumentNullException(nameof(conflict));
+            }
 
-                Uri conflictLink = this.clientContext.CreateLink(
-                     parentLink: this.container.LinkUri.OriginalString,
-                     uriPathSegment: Paths.ConflictsPathSegment,
-                     id: conflict.Id);
+            Uri conflictLink = this.clientContext.CreateLink(
+                 parentLink: this.container.LinkUri.OriginalString,
+                 uriPathSegment: Paths.ConflictsPathSegment,
+                 id: conflict.Id);
 
-                return this.clientContext.ProcessResourceOperationStreamAsync(
-                    resourceUri: conflictLink,
-                    resourceType: ResourceType.Conflict,
-                    operationType: OperationType.Delete,
-                    requestOptions: null,
-                    cosmosContainerCore: this.container,
-                    partitionKey: partitionKey,
-                    streamPayload: null,
-                    requestEnricher: null,
-                    cancellationToken: cancellationToken);
-            });
+            return this.clientContext.ProcessResourceOperationStreamAsync(
+                resourceUri: conflictLink,
+                resourceType: ResourceType.Conflict,
+                operationType: OperationType.Delete,
+                requestOptions: null,
+                cosmosContainerCore: this.container,
+                partitionKey: partitionKey,
+                streamPayload: null,
+                requestEnricher: null,
+                cancellationToken: cancellationToken);
         }
 
         public override FeedIterator GetConflictQueryStreamIterator(
@@ -135,46 +132,43 @@ namespace Microsoft.Azure.Cosmos
             PartitionKey partitionKey,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return await TaskHelper.RunInlineIfNeededAsync(async () =>
+            if (cosmosConflict == null)
             {
-                if (cosmosConflict == null)
-                {
-                    throw new ArgumentNullException(nameof(cosmosConflict));
-                }
+                throw new ArgumentNullException(nameof(cosmosConflict));
+            }
 
-                // SourceResourceId is RID based on Conflicts, so we need to obtain the db and container rid
-                DatabaseCore databaseCore = (DatabaseCore)this.container.Database;
-                string databaseResourceId = await databaseCore.GetRIDAsync(cancellationToken);
-                string containerResourceId = await this.container.GetRIDAsync(cancellationToken);
+            // SourceResourceId is RID based on Conflicts, so we need to obtain the db and container rid
+            DatabaseCore databaseCore = (DatabaseCore)this.container.Database;
+            string databaseResourceId = await databaseCore.GetRIDAsync(cancellationToken);
+            string containerResourceId = await this.container.GetRIDAsync(cancellationToken);
 
-                Uri dbLink = this.clientContext.CreateLink(
-                    parentLink: string.Empty,
-                    uriPathSegment: Paths.DatabasesPathSegment,
-                    id: databaseResourceId);
+            Uri dbLink = this.clientContext.CreateLink(
+                parentLink: string.Empty,
+                uriPathSegment: Paths.DatabasesPathSegment,
+                id: databaseResourceId);
 
-                Uri containerLink = this.clientContext.CreateLink(
-                    parentLink: dbLink.OriginalString,
-                    uriPathSegment: Paths.CollectionsPathSegment,
-                    id: containerResourceId);
+            Uri containerLink = this.clientContext.CreateLink(
+                parentLink: dbLink.OriginalString,
+                uriPathSegment: Paths.CollectionsPathSegment,
+                id: containerResourceId);
 
-                Uri itemLink = this.clientContext.CreateLink(
-                    parentLink: containerLink.OriginalString,
-                    uriPathSegment: Paths.DocumentsPathSegment,
-                    id: cosmosConflict.SourceResourceId);
+            Uri itemLink = this.clientContext.CreateLink(
+                parentLink: containerLink.OriginalString,
+                uriPathSegment: Paths.DocumentsPathSegment,
+                id: cosmosConflict.SourceResourceId);
 
-                Task<ResponseMessage> response = this.clientContext.ProcessResourceOperationStreamAsync(
-                    resourceUri: itemLink,
-                    resourceType: ResourceType.Document,
-                    operationType: OperationType.Read,
-                    requestOptions: null,
-                    cosmosContainerCore: this.container,
-                    partitionKey: partitionKey,
-                    streamPayload: null,
-                    requestEnricher: null,
-                    cancellationToken: cancellationToken);
+            Task<ResponseMessage> response = this.clientContext.ProcessResourceOperationStreamAsync(
+                resourceUri: itemLink,
+                resourceType: ResourceType.Document,
+                operationType: OperationType.Read,
+                requestOptions: null,
+                cosmosContainerCore: this.container,
+                partitionKey: partitionKey,
+                streamPayload: null,
+                requestEnricher: null,
+                cancellationToken: cancellationToken);
 
-                return await this.clientContext.ResponseFactory.CreateItemResponseAsync<T>(response);
-            });
+            return await this.clientContext.ResponseFactory.CreateItemResponseAsync<T>(response);
         }
 
         public override T ReadConflictContent<T>(ConflictProperties cosmosConflict)

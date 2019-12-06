@@ -324,7 +324,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>Cosmos database proxy</returns>
         public virtual Database GetDatabase(string id)
         {
-            return new DatabaseCore(this.ClientContext, id);
+            return DatabaseInlineCore.CreateInlineIfNeeded(new DatabaseCore(this.ClientContext, id));
         }
 
         /// <summary>

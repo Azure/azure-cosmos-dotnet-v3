@@ -11,8 +11,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.Cosmos.Emul
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.Cosmos.Performance.Tests", "Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Performance.Tests\Microsoft.Azure.Cosmos.Performance.Tests.csproj", "{0392A590-68EF-4283-94D8-33F350BEC9BF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Azure.Cosmos.EmulatorTests.NETFX", "Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.EmulatorTests.NETFX\Microsoft.Azure.Cosmos.EmulatorTests.NETFX.csproj", "{7F9EA992-2581-41AE-AA51-47A1591F4D5B}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Cover|Any CPU = Cover|Any CPU
@@ -71,18 +69,6 @@ Global
 		{0392A590-68EF-4283-94D8-33F350BEC9BF}.Release|Any CPU.Build.0 = Release|Any CPU
 		{0392A590-68EF-4283-94D8-33F350BEC9BF}.Release|x64.ActiveCfg = Release|Any CPU
 		{0392A590-68EF-4283-94D8-33F350BEC9BF}.Release|x64.Build.0 = Release|Any CPU
-		{7F9EA992-2581-41AE-AA51-47A1591F4D5B}.Cover|Any CPU.ActiveCfg = Release|Any CPU
-		{7F9EA992-2581-41AE-AA51-47A1591F4D5B}.Cover|Any CPU.Build.0 = Release|Any CPU
-		{7F9EA992-2581-41AE-AA51-47A1591F4D5B}.Cover|x64.ActiveCfg = Release|Any CPU
-		{7F9EA992-2581-41AE-AA51-47A1591F4D5B}.Cover|x64.Build.0 = Release|Any CPU
-		{7F9EA992-2581-41AE-AA51-47A1591F4D5B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7F9EA992-2581-41AE-AA51-47A1591F4D5B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7F9EA992-2581-41AE-AA51-47A1591F4D5B}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{7F9EA992-2581-41AE-AA51-47A1591F4D5B}.Debug|x64.Build.0 = Debug|Any CPU
-		{7F9EA992-2581-41AE-AA51-47A1591F4D5B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7F9EA992-2581-41AE-AA51-47A1591F4D5B}.Release|Any CPU.Build.0 = Release|Any CPU
-		{7F9EA992-2581-41AE-AA51-47A1591F4D5B}.Release|x64.ActiveCfg = Release|Any CPU
-		{7F9EA992-2581-41AE-AA51-47A1591F4D5B}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
