@@ -18,7 +18,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Query;
-    using Microsoft.Azure.Cosmos.Query.ParallelQuery;
+    using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel;
+    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Services.Management.Tests;
     using Microsoft.Azure.Cosmos.Utils;
@@ -1170,8 +1172,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 for (int j = 0; j < 100; j++)
                 {
-                    sb.Append("{\"id\":\"documentId" + (100 * i + j));
-                    sb.Append("\",\"partitionKey\":" + (100 * i + j));
+                    sb.Append("{\"id\":\"documentId" + ((100 * i) + j));
+                    sb.Append("\",\"partitionKey\":" + ((100 * i) + j));
                     for (int k = 1; k < 20; k++)
                     {
                         sb.Append(",\"field_" + k + "\":" + random.Next(100000));

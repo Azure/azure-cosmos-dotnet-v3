@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using Microsoft.Azure.Documents.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
+    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
 
     /// <summary>
     /// Tests for <see cref="PartitionRoutingHelper"/> class.
