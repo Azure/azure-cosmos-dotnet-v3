@@ -96,12 +96,10 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<ResponseMessage> response = this.ProcessItemStreamAsync(
-                partitionKey,
-                id,
-                null,
-                OperationType.Read,
-                requestOptions,
+            Task<ResponseMessage> response = this.ReadItemStreamAsync(
+                partitionKey: partitionKey,
+                id: id,
+                requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
             return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response);
@@ -209,12 +207,10 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<ResponseMessage> response = this.ProcessItemStreamAsync(
-                partitionKey,
-                id,
-                null,
-                OperationType.Delete,
-                requestOptions,
+            Task<ResponseMessage> response = this.DeleteItemStreamAsync(
+                partitionKey: partitionKey,
+                id: id,
+                requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
             return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response);

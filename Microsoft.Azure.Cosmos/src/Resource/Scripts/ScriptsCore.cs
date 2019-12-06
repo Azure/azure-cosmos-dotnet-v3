@@ -158,7 +158,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             StoredProcedureRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<ResponseMessage> response = this.ExecuteStoredProcedureStreamInternalAsync(
+            Task<ResponseMessage> response = this.ExecuteStoredProcedureStreamAsync(
                 storedProcedureId: storedProcedureId,
                 partitionKey: partitionKey,
                 parameters: parameters,
@@ -175,10 +175,30 @@ namespace Microsoft.Azure.Cosmos.Scripts
             StoredProcedureRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.ExecuteStoredProcedureStreamInternalAsync(
-                storedProcedureId: storedProcedureId,
+            if (string.IsNullOrEmpty(storedProcedureId))
+            {
+                throw new ArgumentNullException(nameof(storedProcedureId));
+            }
+
+            ContainerCore.ValidatePartitionKey(partitionKey, requestOptions);
+
+            Stream streamPayload = null;
+            if (parameters != null)
+            {
+                streamPayload = this.clientContext.CosmosSerializer.ToStream<dynamic[]>(parameters);
+            }
+
+            Uri linkUri = this.clientContext.CreateLink(
+                parentLink: this.container.LinkUri.OriginalString,
+                uriPathSegment: Paths.StoredProceduresPathSegment,
+                id: storedProcedureId);
+
+            return this.ProcessStreamOperationAsync(
+                resourceUri: linkUri,
+                resourceType: ResourceType.StoredProcedure,
+                operationType: OperationType.ExecuteJavaScript,
                 partitionKey: partitionKey,
-                parameters: parameters,
+                streamPayload: streamPayload,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
@@ -495,41 +515,6 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 id: id,
                 operationType: OperationType.Delete,
                 streamPayload: null,
-                requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
-        }
-
-        private Task<ResponseMessage> ExecuteStoredProcedureStreamInternalAsync(
-            string storedProcedureId,
-            Cosmos.PartitionKey partitionKey,
-            dynamic[] parameters,
-            StoredProcedureRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
-        {
-            if (string.IsNullOrEmpty(storedProcedureId))
-            {
-                throw new ArgumentNullException(nameof(storedProcedureId));
-            }
-
-            ContainerCore.ValidatePartitionKey(partitionKey, requestOptions);
-
-            Stream streamPayload = null;
-            if (parameters != null)
-            {
-                streamPayload = this.clientContext.CosmosSerializer.ToStream<dynamic[]>(parameters);
-            }
-
-            Uri linkUri = this.clientContext.CreateLink(
-                parentLink: this.container.LinkUri.OriginalString,
-                uriPathSegment: Paths.StoredProceduresPathSegment,
-                id: storedProcedureId);
-
-            return this.ProcessStreamOperationAsync(
-                resourceUri: linkUri,
-                resourceType: ResourceType.StoredProcedure,
-                operationType: OperationType.ExecuteJavaScript,
-                partitionKey: partitionKey,
-                streamPayload: streamPayload,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }

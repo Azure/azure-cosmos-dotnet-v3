@@ -48,10 +48,9 @@ namespace Microsoft.Azure.Cosmos
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<ResponseMessage> response = this.ProcessAsync(
-                OperationType.Read,
-                requestOptions,
-                cancellationToken);
+            Task<ResponseMessage> response = this.ReadStreamAsync(
+                        requestOptions,
+                        cancellationToken);
 
             return this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(this, response);
         }
@@ -60,10 +59,9 @@ namespace Microsoft.Azure.Cosmos
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<ResponseMessage> response = this.ProcessAsync(
-                OperationType.Delete,
-                requestOptions,
-                cancellationToken);
+            Task<ResponseMessage> response = this.DeleteStreamAsync(
+                        requestOptions,
+                        cancellationToken);
 
             return this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(this, response);
         }

@@ -55,9 +55,7 @@ namespace Microsoft.Azure.Cosmos
         public override Task<UserResponse> ReadAsync(RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<ResponseMessage> response = this.ProcessStreamAsync(
-                streamPayload: null,
-                operationType: OperationType.Read,
+            Task<ResponseMessage> response = this.ReadStreamAsync(
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
@@ -113,9 +111,7 @@ namespace Microsoft.Azure.Cosmos
         public override Task<UserResponse> DeleteAsync(RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<ResponseMessage> response = this.ProcessStreamAsync(
-                streamPayload: null,
-                operationType: OperationType.Delete,
+            Task<ResponseMessage> response = this.DeleteStreamAsync(
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
