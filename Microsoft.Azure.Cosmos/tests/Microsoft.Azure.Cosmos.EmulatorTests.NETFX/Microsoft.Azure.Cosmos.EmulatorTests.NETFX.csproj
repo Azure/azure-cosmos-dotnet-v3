@@ -33,7 +33,7 @@
     <PackageReference Include="Newtonsoft.Json" Version="10.0.2" />
     <PackageReference Include="System.Linq.Dynamic.Core" Version="1.0.8.11" />
     <PackageReference Include="System.Reflection" Version="4.3.0" />
-    <!--<Reference Include="System.Windows.Forms" />-->
+    <Reference Include="System.Windows.Forms" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\Microsoft.Azure.Cosmos.EmulatorTests\Utils\ConfigurationManager.cs">
