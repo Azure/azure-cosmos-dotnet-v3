@@ -137,7 +137,24 @@ namespace Microsoft.Azure.Cosmos
 
         public static string GetPartitionKeyRangeId(PartitionKey partitionKey, PartitionKeyDefinition partitionKeyDefinition, Routing.CollectionRoutingMap collectionRoutingMap)
         {
-            string effectivePartitionKey = partitionKey.InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition);
+            Documents.Routing.PartitionKeyInternal partitionKeyInternal = null;
+            if (partitionKey.IsNone)
+            {
+                if (partitionKeyDefinition.Paths.Count == 0 || (partitionKeyDefinition.IsSystemKey == true))
+                {
+                    partitionKeyInternal = Documents.Routing.PartitionKeyInternal.Empty;
+                }
+                else
+                {
+                    partitionKeyInternal = Documents.Routing.PartitionKeyInternal.Undefined;
+                }
+            }
+            else
+            {
+                partitionKeyInternal = partitionKey.InternalKey;
+            }
+
+            string effectivePartitionKey = partitionKeyInternal.GetEffectivePartitionKeyString(partitionKeyDefinition);
             return collectionRoutingMap.GetRangeByEffectivePartitionKey(effectivePartitionKey).Id;
         }
     }
