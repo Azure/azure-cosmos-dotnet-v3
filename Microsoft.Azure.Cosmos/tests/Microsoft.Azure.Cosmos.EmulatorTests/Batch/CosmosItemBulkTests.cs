@@ -393,8 +393,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private static Task<ItemResponse<MyDocument>> ExecuteCreateAsync(Container container, MyDocument item)
         {
-            //return container.CreateItemAsync<MyDocument>(item, new PartitionKey(item.Status));
-            return container.CreateItemAsync<MyDocument>(item);
+            return container.CreateItemAsync<MyDocument>(item, new PartitionKey(item.Status));
         }
 
         private static Task<ItemResponse<JObject>> ExecuteCreateAsync(Container container, JObject item)
