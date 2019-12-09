@@ -21,6 +21,10 @@ namespace Microsoft.Azure.Cosmos
 
         public override Scripts.Scripts Scripts => this.container.Scripts;
 
+        internal CosmosClientContext ClientContext => this.container.ClientContext;
+
+        internal Uri LinkUri => this.container.LinkUri;
+
         internal ContainerInlineCore(ContainerCore container)
         {
             if (container == null)
