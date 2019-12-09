@@ -21,14 +21,14 @@ namespace Microsoft.Azure.Cosmos
 
         public override Scripts.Scripts Scripts => this.container.Scripts;
 
-        public static Container CreateInlineIfNeeded(ContainerCore container)
+        internal ContainerInlineCore(ContainerCore container)
         {
-            if (SynchronizationContext.Current == null)
+            if (container == null)
             {
-                return container;
+                throw new ArgumentNullException(nameof(container));
             }
 
-            return new ContainerInlineCore(container);
+            this.container = container;
         }
 
         public override Task<ContainerResponse> ReadContainerAsync(
@@ -241,16 +241,6 @@ namespace Microsoft.Azure.Cosmos
         public override TransactionalBatch CreateTransactionalBatch(PartitionKey partitionKey)
         {
             return this.container.CreateTransactionalBatch(partitionKey);
-        }
-
-        private ContainerInlineCore(ContainerCore container)
-        {
-            if (container == null)
-            {
-                throw new ArgumentNullException(nameof(container));
-            }
-
-            this.container = container;
         }
     }
 }

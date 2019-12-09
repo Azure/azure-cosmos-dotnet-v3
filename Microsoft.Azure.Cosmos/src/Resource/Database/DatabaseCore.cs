@@ -262,7 +262,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(id));
             }
 
-            return ContainerInlineCore.CreateInlineIfNeeded(new ContainerCore(
+            return new ContainerInlineCore(new ContainerCore(
                     this.ClientContext,
                     this,
                     id));
@@ -315,7 +315,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(id));
             }
 
-            return UserInlineCore.CreateInlineIfNeeded(new UserCore(
+            return new UserInlineCore(new UserCore(
                     this.ClientContext,
                     this,
                     id));

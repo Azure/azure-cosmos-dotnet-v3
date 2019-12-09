@@ -13,17 +13,7 @@ namespace Microsoft.Azure.Cosmos
     {
         private readonly ConflictsCore conflicts;
 
-        public static Conflicts CreateInlineIfNeeded(ConflictsCore conflicts)
-        {
-            if (SynchronizationContext.Current == null)
-            {
-                return conflicts;
-            }
-
-            return new ConflictsInlineCore(conflicts);
-        }
-
-        private ConflictsInlineCore(ConflictsCore conflicts)
+        internal ConflictsInlineCore(ConflictsCore conflicts)
         {
             if (conflicts == null)
             {

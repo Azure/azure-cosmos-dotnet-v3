@@ -15,14 +15,14 @@ namespace Microsoft.Azure.Cosmos
 
         public override string Id => this.permission.Id;
 
-        public static Permission CreateInlineIfNeeded(PermissionCore permission)
+        internal PermissionInlineCore(PermissionCore database)
         {
-            if (SynchronizationContext.Current == null)
+            if (database == null)
             {
-                return permission;
+                throw new ArgumentNullException(nameof(database));
             }
 
-            return new PermissionInlineCore(permission);
+            this.permission = database;
         }
 
         public override Task<PermissionResponse> ReadAsync(
@@ -47,16 +47,6 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return TaskHelper.RunInlineIfNeededAsync(() => this.permission.DeleteAsync(requestOptions, cancellationToken));
-        }
-
-        private PermissionInlineCore(PermissionCore database)
-        {
-            if (database == null)
-            {
-                throw new ArgumentNullException(nameof(database));
-            }
-
-            this.permission = database;
         }
     }
 }

@@ -16,14 +16,14 @@ namespace Microsoft.Azure.Cosmos
 
         public override string Id => this.database.Id;
 
-        public static Database CreateInlineIfNeeded(DatabaseCore database)
+        internal DatabaseInlineCore(DatabaseCore database)
         {
-            if (SynchronizationContext.Current == null)
+            if (database == null)
             {
-                return database;
+                throw new ArgumentNullException(nameof(database));
             }
 
-            return new DatabaseInlineCore(database);
+            this.database = database;
         }
 
         public override Task<ContainerResponse> CreateContainerAsync(
@@ -196,16 +196,6 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return TaskHelper.RunInlineIfNeededAsync(() => this.database.UpsertUserAsync(id, requestOptions, cancellationToken));
-        }
-
-        private DatabaseInlineCore(DatabaseCore database)
-        {
-            if (database == null)
-            {
-                throw new ArgumentNullException(nameof(database));
-            }
-
-            this.database = database;
         }
     }
 }

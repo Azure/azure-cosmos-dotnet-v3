@@ -13,14 +13,14 @@ namespace Microsoft.Azure.Cosmos.Scripts
     {
         private readonly ScriptsCore scripts;
 
-        public static Scripts CreateInlineIfNeeded(ScriptsCore scripts)
+        internal ScriptsInlineCore(ScriptsCore scripts)
         {
-            if (SynchronizationContext.Current == null)
+            if (scripts == null)
             {
-                return scripts;
+                throw new ArgumentNullException(nameof(scripts));
             }
 
-            return new ScriptsInlineCore(scripts);
+            this.scripts = scripts;
         }
 
         public override Task<StoredProcedureResponse> CreateStoredProcedureAsync(
@@ -233,16 +233,6 @@ namespace Microsoft.Azure.Cosmos.Scripts
             CancellationToken cancellationToken = default)
         {
             return TaskHelper.RunInlineIfNeededAsync(() => this.scripts.DeleteUserDefinedFunctionAsync(id, requestOptions, cancellationToken));
-        }
-
-        private ScriptsInlineCore(ScriptsCore scripts)
-        {
-            if (scripts == null)
-            {
-                throw new ArgumentNullException(nameof(scripts));
-            }
-
-            this.scripts = scripts;
         }
     }
 }

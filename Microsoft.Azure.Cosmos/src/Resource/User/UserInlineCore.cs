@@ -15,14 +15,14 @@ namespace Microsoft.Azure.Cosmos
 
         public override string Id => this.user.Id;
 
-        public static User CreateInlineIfNeeded(UserCore user)
+        internal UserInlineCore(UserCore database)
         {
-            if (SynchronizationContext.Current == null)
+            if (database == null)
             {
-                return user;
+                throw new ArgumentNullException(nameof(database));
             }
 
-            return new UserInlineCore(user);
+            this.user = database;
         }
 
         public override Task<UserResponse> ReadAsync(
@@ -84,16 +84,6 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions requestOptions = null)
         {
             return this.user.GetPermissionQueryIterator<T>(queryDefinition, continuationToken, requestOptions);
-        }
-
-        private UserInlineCore(UserCore database)
-        {
-            if (database == null)
-            {
-                throw new ArgumentNullException(nameof(database));
-            }
-
-            this.user = database;
         }
     }
 }

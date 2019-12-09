@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(id));
             }
 
-            return PermissionInlineCore.CreateInlineIfNeeded(new PermissionCore(
+            return new PermissionInlineCore(new PermissionCore(
                     this.ClientContext,
                     this,
                     id));
