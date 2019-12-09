@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Net.Http;
     using System.Text;
+    using System.Web;
     using Newtonsoft.Json;
     using static Microsoft.Azure.Cosmos.CosmosClientSideRequestStatistics;
 
@@ -72,7 +73,7 @@ namespace Microsoft.Azure.Cosmos
             string errorMessage = string.Empty;
             if (this.ErrorMessage != null)
             {
-                errorMessage = JsonConvert.ToString(this.ErrorMessage, '\'', stringEscapeHandling: StringEscapeHandling.EscapeHtml);
+                errorMessage = HttpUtility.JavaScriptStringEncode(this.ErrorMessage);
             }
 
             stringBuilder.Append($"{{\"ActivityId\":\"{this.ActivityId}\"");

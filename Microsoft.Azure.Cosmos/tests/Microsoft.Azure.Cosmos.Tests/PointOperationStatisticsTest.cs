@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos
                 responseSessionToken: null,
                 clientSideRequestStatistics:  cosmosClientSideRequestStatistics);
             pointOperationStatistics.ToString();
-            Assert.AreEqual(10, pointOperationStatistics.ClientSideRequestStatistics.supplementalResponseStatisticsList.Count);
+            Assert.AreEqual(12, pointOperationStatistics.ClientSideRequestStatistics.supplementalResponseStatisticsList.Count);
         }
     }
 }

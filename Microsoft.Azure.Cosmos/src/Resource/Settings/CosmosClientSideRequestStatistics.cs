@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Globalization;
     using System.Text;
     using Microsoft.Azure.Documents;
-    using Newtonsoft.Json;
 
     internal sealed class CosmosClientSideRequestStatistics : IClientSideRequestStatistics
     {
@@ -204,14 +203,14 @@ namespace Microsoft.Azure.Cosmos
                         stringBuilder.Append(",");
                     }
 
-                    item.AppendJsonToBuilder(stringBuilder);            
+                    item.AppendJsonToBuilder(stringBuilder);
                 }
 
                 stringBuilder.Append("]");
 
                 //only take last 10 responses from this list - this has potential of having large number of entries. 
                 //since this is for establishing consistency, we can make do with the last responses to paint a meaningful picture.
-                int supplementalResponseStatisticsListCount = this.supplementalResponseStatisticsList.Count;
+                int supplementalResponseStatisticsListCount = this.supplementalResponseStatisticsList?.Count ?? 0;
                 int initialIndex = Math.Max(supplementalResponseStatisticsListCount - CosmosClientSideRequestStatistics.MaxSupplementalRequestsForToString, 0);
 
                 if (initialIndex != 0)
