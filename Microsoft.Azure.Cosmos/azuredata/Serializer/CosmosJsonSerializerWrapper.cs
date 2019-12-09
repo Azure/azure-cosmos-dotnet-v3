@@ -6,6 +6,8 @@ namespace Azure.Cosmos
 {
     using System;
     using System.IO;
+    using System.Threading;
+    using System.Threading.Tasks;
     using Azure.Cosmos.Serialization;
 
     internal class CosmosJsonSerializerWrapper : CosmosSerializer
@@ -17,9 +19,11 @@ namespace Azure.Cosmos
             this.InternalJsonSerializer = cosmosJsonSerializer ?? throw new ArgumentNullException(nameof(cosmosJsonSerializer));
         }
 
-        public override T FromStream<T>(Stream stream)
+        public override async Task<T> FromStreamAsync<T>(
+            Stream stream,
+            CancellationToken cancellationToken = default(CancellationToken))
         {
-            T item = this.InternalJsonSerializer.FromStream<T>(stream);
+            T item = await this.InternalJsonSerializer.FromStreamAsync<T>(stream, cancellationToken);
             if (stream.CanRead)
             {
                 throw new InvalidOperationException("Json Serializer left an open stream.");
@@ -28,9 +32,11 @@ namespace Azure.Cosmos
             return item;
         }
 
-        public override Stream ToStream<T>(T input)
+        public override async Task<Stream> ToStreamAsync<T>(
+            T input,
+            CancellationToken cancellationToken = default(CancellationToken))
         {
-            Stream stream = this.InternalJsonSerializer.ToStream<T>(input);
+            Stream stream = await this.InternalJsonSerializer.ToStreamAsync<T>(input, cancellationToken);
             if (stream == null)
             {
                 throw new InvalidOperationException("Json Serializer returned a null stream.");
