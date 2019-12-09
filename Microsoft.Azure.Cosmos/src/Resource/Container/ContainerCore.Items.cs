@@ -176,12 +176,12 @@ namespace Microsoft.Azure.Cosmos
             }
 
             Task<ResponseMessage> response = this.ExtractPartitionKeyAndProcessItemStreamAsync(
-                partitionKey: partitionKey,
-                itemId: id,
-                item: item,
-                operationType: OperationType.Replace,
-                requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
+               partitionKey: partitionKey,
+               itemId: id,
+               item: item,
+               operationType: OperationType.Replace,
+               requestOptions: requestOptions,
+               cancellationToken: cancellationToken);
 
             return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response);
         }
@@ -208,10 +208,10 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken))
         {
             Task<ResponseMessage> response = this.DeleteItemStreamAsync(
-                partitionKey: partitionKey,
-                id: id,
-                requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
+               partitionKey: partitionKey,
+               id: id,
+               requestOptions: requestOptions,
+               cancellationToken: cancellationToken);
 
             return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response);
         }

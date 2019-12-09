@@ -165,10 +165,10 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessStreamAsync(
-                streamPayload: null,
-                operationType: OperationType.Delete,
-                requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
+               streamPayload: null,
+               operationType: OperationType.Delete,
+               requestOptions: requestOptions,
+               cancellationToken: cancellationToken);
         }
 
         public override Task<ResponseMessage> ReadContainerStreamAsync(
@@ -336,15 +336,15 @@ namespace Microsoft.Azure.Cosmos
            CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ClientContext.ProcessResourceOperationStreamAsync(
-                resourceUri: linkUri,
-                resourceType: resourceType,
-                operationType: operationType,
-                cosmosContainerCore: null,
-                partitionKey: null,
-                streamPayload: streamPayload,
-                requestOptions: requestOptions,
-                requestEnricher: null,
-                cancellationToken: cancellationToken);
+              resourceUri: linkUri,
+              resourceType: resourceType,
+              operationType: operationType,
+              cosmosContainerCore: null,
+              partitionKey: null,
+              streamPayload: streamPayload,
+              requestOptions: requestOptions,
+              requestEnricher: null,
+              cancellationToken: cancellationToken);
         }
     }
 }
