@@ -54,42 +54,40 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         }
 
         [Benchmark]
-        public void StaticSerializeItem()
+        public void SingletonJsonSerializeItem()
         {
-            MemoryStream streamPayload = new MemoryStream();
-            using (StreamWriter streamWriter = new StreamWriter(streamPayload, encoding: ItemBenchmark.DefaultEncoding, bufferSize: 1024, leaveOpen: true))
+            using (MemoryStream streamPayload = new MemoryStream())
             {
-                using (JsonWriter writer = new JsonTextWriter(streamWriter))
+                using (StreamWriter streamWriter = new StreamWriter(streamPayload, encoding: ItemBenchmark.DefaultEncoding, bufferSize: 1024, leaveOpen: true))
                 {
-                    writer.Formatting = Newtonsoft.Json.Formatting.None;
-                    this.jsonSerializer.Serialize(writer, this.TestItem);
-                    writer.Flush();
-                    streamWriter.Flush();
+                    using (JsonWriter writer = new JsonTextWriter(streamWriter))
+                    {
+                        writer.Formatting = Newtonsoft.Json.Formatting.None;
+                        this.jsonSerializer.Serialize(writer, this.TestItem);
+                        writer.Flush();
+                        streamWriter.Flush();
+                    }
                 }
             }
-
-            streamPayload.Position = 0;
-            streamPayload.Dispose();
         }
 
         [Benchmark]
-        public void NewSerializeItem()
+        public void InstanceJsonSerializeItem()
         {
-            MemoryStream streamPayload = new MemoryStream();
-            using (StreamWriter streamWriter = new StreamWriter(streamPayload, encoding: ItemBenchmark.DefaultEncoding, bufferSize: 1024, leaveOpen: true))
+            using (MemoryStream streamPayload = new MemoryStream())
             {
-                using (JsonWriter writer = new JsonTextWriter(streamWriter))
+                using (StreamWriter streamWriter = new StreamWriter(streamPayload, encoding: ItemBenchmark.DefaultEncoding, bufferSize: 1024, leaveOpen: true))
                 {
-                    writer.Formatting = Newtonsoft.Json.Formatting.None;
-                    JsonSerializer jsonSerializer = new JsonSerializer();
-                    jsonSerializer.Serialize(writer, this.TestItem);
-                    writer.Flush();
-                    streamWriter.Flush();
+                    using (JsonWriter writer = new JsonTextWriter(streamWriter))
+                    {
+                        writer.Formatting = Newtonsoft.Json.Formatting.None;
+                        JsonSerializer jsonSerializer = new JsonSerializer();
+                        jsonSerializer.Serialize(writer, this.TestItem);
+                        writer.Flush();
+                        streamWriter.Flush();
+                    }
                 }
             }
-
-            streamPayload.Position = 0;
-            streamPayload.Dispose();
         }
 
         /// <summary>
