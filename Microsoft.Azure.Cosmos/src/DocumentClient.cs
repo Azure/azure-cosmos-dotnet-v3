@@ -1140,6 +1140,19 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        public async Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRanges(
+            string collectionResourceId,
+            Range<string> range,
+            bool forceRefresh = false)
+        {
+            IReadOnlyList<PartitionKeyRange> ranges = await this.partitionKeyRangeCache.TryGetOverlappingRangesAsync(
+                collectionResourceId,
+                range,
+                forceRefresh);
+
+            return ranges;
+        }
+
         /// <summary>
         /// Gets or sets the session object used for session consistency version tracking in the Azure Cosmos DB service.
         /// </summary>
