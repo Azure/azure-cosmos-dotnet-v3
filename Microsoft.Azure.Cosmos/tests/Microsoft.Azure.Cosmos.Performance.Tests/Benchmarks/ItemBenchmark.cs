@@ -6,21 +6,27 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 {
     using System;
     using System.IO;
+    using System.Text;
     using System.Threading.Tasks;
     using BenchmarkDotNet.Attributes;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Documents.Collections;
+    using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Benchmark for Item related operations.
     /// </summary>
+    [MemoryDiagnoser]
     public class ItemBenchmark
     {
+        private static readonly Encoding DefaultEncoding = new UTF8Encoding(false, true);
         private readonly CosmosClient clientForTests;
         private readonly Container container;
+        private readonly JsonSerializer jsonSerializer = new JsonSerializer();
         private JObject baseItem;
         private byte[] payloadBytes;
-
+        private dynamic TestItem;
         /// <summary>
         /// Initializes a new instance of the <see cref="ItemBenchmark"/> class.
         /// </summary>
@@ -37,6 +43,53 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                     this.payloadBytes = ms.ToArray();
                 }
             }
+
+            this.TestItem = new
+            {
+                id = "test",
+                pk = "what",
+                value = 1245,
+                stop = true,
+            };
+        }
+
+        [Benchmark]
+        public void StaticSerializeItem()
+        {
+            MemoryStream streamPayload = new MemoryStream();
+            using (StreamWriter streamWriter = new StreamWriter(streamPayload, encoding: ItemBenchmark.DefaultEncoding, bufferSize: 1024, leaveOpen: true))
+            {
+                using (JsonWriter writer = new JsonTextWriter(streamWriter))
+                {
+                    writer.Formatting = Newtonsoft.Json.Formatting.None;
+                    this.jsonSerializer.Serialize(writer, this.TestItem);
+                    writer.Flush();
+                    streamWriter.Flush();
+                }
+            }
+
+            streamPayload.Position = 0;
+            streamPayload.Dispose();
+        }
+
+        [Benchmark]
+        public void NewSerializeItem()
+        {
+            MemoryStream streamPayload = new MemoryStream();
+            using (StreamWriter streamWriter = new StreamWriter(streamPayload, encoding: ItemBenchmark.DefaultEncoding, bufferSize: 1024, leaveOpen: true))
+            {
+                using (JsonWriter writer = new JsonTextWriter(streamWriter))
+                {
+                    writer.Formatting = Newtonsoft.Json.Formatting.None;
+                    JsonSerializer jsonSerializer = new JsonSerializer();
+                    jsonSerializer.Serialize(writer, this.TestItem);
+                    writer.Flush();
+                    streamWriter.Flush();
+                }
+            }
+
+            streamPayload.Position = 0;
+            streamPayload.Dispose();
         }
 
         /// <summary>
@@ -83,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         [Benchmark]
         public async Task UpsertItemStream()
         {
-            
+
             ResponseMessage response = await this.container.UpsertItemStreamAsync(
                     new MemoryStream(this.payloadBytes),
                     new Cosmos.PartitionKey(Constants.ValidOperationId));
@@ -134,7 +187,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         {
             ResponseMessage response = await this.container.ReplaceItemStreamAsync(
                 new MemoryStream(this.payloadBytes),
-                Constants.ValidOperationId, 
+                Constants.ValidOperationId,
                 new Cosmos.PartitionKey(Constants.ValidOperationId));
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound || response.Content == null)
             {

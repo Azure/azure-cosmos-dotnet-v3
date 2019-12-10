@@ -18,7 +18,6 @@ namespace Microsoft.Azure.Cosmos
     {
         private static readonly Encoding DefaultEncoding = new UTF8Encoding(false, true);
         private readonly JsonSerializerSettings SerializerSettings;
-        private JsonSerializer Serializer;
 
         /// <summary>
         /// Create a serializer that uses the JSON.net serializer
@@ -30,7 +29,6 @@ namespace Microsoft.Azure.Cosmos
         internal CosmosJsonDotNetSerializer()
         {
             this.SerializerSettings = null;
-            this.Serializer = JsonSerializer.Create();
         }
 
         /// <summary>
@@ -57,7 +55,6 @@ namespace Microsoft.Azure.Cosmos
             };
 
             this.SerializerSettings = jsonSerializerSettings;
-            this.Serializer = null;
         }
 
         /// <summary>
@@ -70,7 +67,6 @@ namespace Microsoft.Azure.Cosmos
         internal CosmosJsonDotNetSerializer(JsonSerializerSettings jsonSerializerSettings)
         {
             this.SerializerSettings = jsonSerializerSettings ?? throw new ArgumentNullException(nameof(jsonSerializerSettings));
-            this.Serializer = null;
         }
 
         /// <summary>
@@ -126,11 +122,11 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// JsonSerializer has hit a race conditions with custom settings that cause null reference exception.
-        /// To avoid the race condition a new JsonSerializer is created for each call when there is custom settings
+        /// To avoid the race condition a new JsonSerializer is created for each call
         /// </summary>
         private JsonSerializer GetSerializer()
         {
-            return this.Serializer ?? JsonSerializer.Create(this.SerializerSettings);
+            return JsonSerializer.Create(this.SerializerSettings);
         }
     }
 }
