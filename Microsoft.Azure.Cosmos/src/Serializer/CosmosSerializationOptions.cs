@@ -12,19 +12,15 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     public sealed class CosmosSerializationOptions
     {
-        private const bool DefaultIgnoreNullValues = false;
-        private const bool DefaultIndented = false;
-        private const CosmosPropertyNamingPolicy DefaultCosmosPropertyNamingPolicy = CosmosPropertyNamingPolicy.Default;
-
         /// <summary>
         /// Create an instance of CosmosSerializationOptions
         /// with the default values for the Cosmos SDK
         /// </summary>
         public CosmosSerializationOptions()
         {
-            this.IgnoreNullValues = DefaultIgnoreNullValues;
-            this.Indented = DefaultIndented;
-            this.PropertyNamingPolicy = DefaultCosmosPropertyNamingPolicy;
+            this.IgnoreNullValues = false;
+            this.Indented = false;
+            this.PropertyNamingPolicy = CosmosPropertyNamingPolicy.Default;
         }
 
         /// <summary>
@@ -51,15 +47,5 @@ namespace Microsoft.Azure.Cosmos
         /// The default value is CosmosPropertyNamingPolicy.Default
         /// </remarks>
         public CosmosPropertyNamingPolicy PropertyNamingPolicy { get; set; }
-
-        /// <summary>
-        /// Helper method to check if all the setting values are the default.
-        /// </summary>
-        internal bool IsDefaultSettings()
-        {
-            return this.IgnoreNullValues == DefaultIgnoreNullValues &&
-                this.Indented == DefaultIndented &&
-                this.PropertyNamingPolicy == DefaultCosmosPropertyNamingPolicy;
-        }
     }
 }

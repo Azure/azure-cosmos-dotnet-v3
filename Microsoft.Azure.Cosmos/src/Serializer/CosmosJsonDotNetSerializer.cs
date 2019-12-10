@@ -40,9 +40,10 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         internal CosmosJsonDotNetSerializer(CosmosSerializationOptions cosmosSerializerOptions)
         {
-            if (cosmosSerializerOptions == null || cosmosSerializerOptions.IsDefaultSettings())
+            if (cosmosSerializerOptions == null)
             {
-                throw new ArgumentException("No need to create a custom serializer. The settings are the default.");
+                this.SerializerSettings = null;
+                return;
             }
 
             JsonSerializerSettings jsonSerializerSettings = new JsonSerializerSettings()
