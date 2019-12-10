@@ -136,8 +136,7 @@
             await Program.ProfilePointOperations(container);
             await Program.ProfileFeedOperations(container);
 
-            // Uncomment to Cleanup
-            //await cosmosDatabase.DeleteAsync();
+            await container.DeleteContainerAsync();
         }
         // </RunDemoAsync>
 
@@ -158,6 +157,7 @@
             Console.WriteLine(description);
             ItemResponse<T> response = await pointOperation();
             Console.WriteLine(response.Diagnostics);
+            Console.WriteLine();
         }
         // </ProfilePointOperation>
 
@@ -175,14 +175,16 @@
 
         private static async Task ProfileFeedOperation(string description, FeedIterator feedIterator)
         {
-            Console.WriteLine(description);
+            Console.WriteLine($"Description: {description}");
             int iteration = 0;
             while (feedIterator.HasMoreResults)
             {
-                Console.WriteLine(iteration++);
+                Console.WriteLine($"Iteration: {iteration++}");
                 ResponseMessage responseMessage = await feedIterator.ReadNextAsync();
                 Console.WriteLine(responseMessage.Diagnostics);
             }
+
+            Console.WriteLine();
         }
         // </ProfilePointOperation>
 
