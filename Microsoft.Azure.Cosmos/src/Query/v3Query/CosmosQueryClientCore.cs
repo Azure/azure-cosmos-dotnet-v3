@@ -355,12 +355,13 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal override Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(
+        internal override async Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(
             string collectionResourceId,
             Range<string> range,
             bool forceRefresh = false)
         {
-            return this.documentClient.TryGetOverlappingRangesAsync(collectionResourceId, range, forceRefresh);
+            PartitionKeyRangeCache partitionKeyRangeCache = await this.GetRoutingMapProviderAsync();
+            return await partitionKeyRangeCache.TryGetOverlappingRangesAsync(collectionResourceId, range, forceRefresh);
         }
 
         private Task<PartitionKeyRangeCache> GetRoutingMapProviderAsync()
