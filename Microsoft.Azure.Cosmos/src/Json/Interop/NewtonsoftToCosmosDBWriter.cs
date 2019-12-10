@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
     using System.Collections.Generic;
     using System.IO;
     using System.Text;
+    using Microsoft.Azure.Cosmos.Query.Core;
 
     internal sealed class NewtonsoftToCosmosDBWriter : Microsoft.Azure.Cosmos.Json.JsonWriter
     {

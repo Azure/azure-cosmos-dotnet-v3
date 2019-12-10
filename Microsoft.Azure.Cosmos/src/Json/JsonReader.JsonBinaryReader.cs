@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.IO;
     using System.Text;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Query.Core;
 
     /// <summary>
     /// Partial JsonReader with a private JsonBinaryReader implementation

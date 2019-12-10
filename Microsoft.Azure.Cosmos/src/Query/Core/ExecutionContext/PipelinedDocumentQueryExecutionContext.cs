@@ -11,7 +11,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Documents.Collections;
 
     /// <summary>
@@ -95,18 +104,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             IDocumentQueryExecutionComponent component,
             int actualPageSize)
         {
-            if (component == null)
-            {
-                throw new ArgumentNullException($"{nameof(component)} can not be null.");
-            }
-
-            if (actualPageSize < 0)
-            {
-                throw new ArgumentException($"{nameof(actualPageSize)} can not be negative.");
-            }
-
-            this.component = component;
-            this.actualPageSize = actualPageSize;
+            this.component = component ?? throw new ArgumentNullException($"{nameof(component)} can not be null.");
+            this.actualPageSize = (actualPageSize < 0) ? throw new ArgumentOutOfRangeException($"{nameof(actualPageSize)} can not be negative.") : actualPageSize;
         }
 
         /// <summary>
