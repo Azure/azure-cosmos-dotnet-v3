@@ -360,7 +360,7 @@ namespace Microsoft.Azure.Cosmos
             Range<string> range,
             bool forceRefresh = false)
         {
-            return this.documentClient.TryGetOverlappingRanges(collectionResourceId, range, forceRefresh);
+            return this.documentClient.TryGetOverlappingRangesAsync(collectionResourceId, range, forceRefresh);
         }
 
         private Task<PartitionKeyRangeCache> GetRoutingMapProviderAsync()
