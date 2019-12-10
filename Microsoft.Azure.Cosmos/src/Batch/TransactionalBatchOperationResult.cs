@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal virtual CosmosDiagnostics Diagnostics { get; set; }
 
-        internal static Result ReadOperationResult(Memory<byte> input, out TransactionalBatchOperationResult batchOperationResult, bool isContentRequired = true)
+        internal static Result ReadOperationResult(Memory<byte> input, out TransactionalBatchOperationResult batchOperationResult)
         {
             RowBuffer row = new RowBuffer(input.Length);
             if (!row.ReadFrom(
@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             RowReader reader = new RowReader(ref row);
-            Result result = TransactionalBatchOperationResult.ReadOperationResult(ref reader, out batchOperationResult, isContentRequired);
+            Result result = TransactionalBatchOperationResult.ReadOperationResult(ref reader, out batchOperationResult);
             if (result != Result.Success)
             {
                 return result;
@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos
             return Result.Success;
         }
 
-        private static Result ReadOperationResult(ref RowReader reader, out TransactionalBatchOperationResult batchOperationResult, bool isContentRequired = true)
+        private static Result ReadOperationResult(ref RowReader reader, out TransactionalBatchOperationResult batchOperationResult)
         {
             batchOperationResult = new TransactionalBatchOperationResult();
             while (reader.Read())
@@ -151,30 +151,24 @@ namespace Microsoft.Azure.Cosmos
                         break;
 
                     case "eTag":
-                        if (isContentRequired)
+                        r = reader.ReadString(out string eTag);
+                        if (r != Result.Success)
                         {
-                            r = reader.ReadString(out string eTag);
-                            if (r != Result.Success)
-                            {
-                                return r;
-                            }
-
-                            batchOperationResult.ETag = eTag;
+                            return r;
                         }
+
+                        batchOperationResult.ETag = eTag;
                         break;
 
                     case "resourceBody":
-                        if (isContentRequired)
+                        r = reader.ReadBinary(out byte[] resourceBody);
+                        if (r != Result.Success)
                         {
-                            r = reader.ReadBinary(out byte[] resourceBody);
-                            if (r != Result.Success)
-                            {
-                                return r;
-                            }
-
-                            batchOperationResult.ResourceStream = new MemoryStream(
-                                buffer: resourceBody, index: 0, count: resourceBody.Length, writable: false, publiclyVisible: true);
+                            return r;
                         }
+
+                        batchOperationResult.ResourceStream = new MemoryStream(
+                            buffer: resourceBody, index: 0, count: resourceBody.Length, writable: false, publiclyVisible: true);
                         break;
 
                     case "requestCharge":
@@ -190,16 +184,13 @@ namespace Microsoft.Azure.Cosmos
                         break;
 
                     case "retryAfterMilliseconds":
-                        if ((int)batchOperationResult.StatusCode == (int)StatusCodes.TooManyRequests)
+                        r = reader.ReadUInt32(out uint retryAfterMilliseconds);
+                        if (r != Result.Success)
                         {
-                            r = reader.ReadUInt32(out uint retryAfterMilliseconds);
-                            if (r != Result.Success)
-                            {
-                                return r;
-                            }
-
-                            batchOperationResult.RetryAfter = TimeSpan.FromMilliseconds(retryAfterMilliseconds);
+                            return r;
                         }
+
+                        batchOperationResult.RetryAfter = TimeSpan.FromMilliseconds(retryAfterMilliseconds);
                         break;
                 }
             }
