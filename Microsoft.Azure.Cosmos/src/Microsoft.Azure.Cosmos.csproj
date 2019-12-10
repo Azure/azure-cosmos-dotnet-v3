@@ -68,14 +68,24 @@
   </ItemGroup>
 
   <ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
-    <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[$(DirectVersion)]" />
-    <PackageReference Include="Microsoft.Azure.Cosmos.Serialization.HybridRow" Version="[$(HybridRowVersion)]" />
+    <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[$(DirectVersion)]" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.Azure.Cosmos.Serialization.HybridRow" Version="[$(HybridRowVersion)]" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="10.0.2" />
     <PackageReference Include="StyleCop.Analyzers" Version="1.1.118" PrivateAssets="All" />
     <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="16.0.102" PrivateAssets="All" />
+
+    <!--Direct Dependencies-->
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.5.0" />
+    <PackageReference Include="System.ServiceModel.Primitives" Version="4.5.0" />
+
+    <!--HybridRow Dependencies-->
+    <PackageReference Include="System.Memory" Version="4.5.1" />
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="4.5.1" />
+    <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.1" />
+    <PackageReference Include="System.ValueTuple" Version="4.5.0" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
@@ -85,7 +95,6 @@
     <None Include="$(NugetPackageRoot)\Microsoft.Azure.Cosmos.Serialization.HybridRow\$(HybridRowVersion)\lib\netstandard2.0\Microsoft.Azure.Cosmos.Core.dll" Pack="true" IsAssembly="true" PackagePath="lib\netstandard2.0" />
     <None Include="$(NugetPackageRoot)\Microsoft.Azure.Cosmos.Serialization.HybridRow\$(HybridRowVersion)\lib\netstandard2.0\Microsoft.Azure.Cosmos.Serialization.HybridRow.dll" Pack="true" IsAssembly="true" PackagePath="lib\netstandard2.0" />
     <None Include="$(NugetPackageRoot)\Microsoft.Azure.Cosmos.Direct\$(DirectVersion)\lib\netstandard2.0\Microsoft.Azure.Cosmos.Direct.dll" Pack="true" IsAssembly="true" PackagePath="lib\netstandard2.0" />
-    <!-- <None Include="$(NugetPackageRoot)\Microsoft.Azure.Cosmos.Direct\$(DirectVersion)\lib\netstandard2.0\Microsoft.Azure.Cosmos.Direct.dll" Pack="true" IsAssembly="true" PackagePath="lib\netstandard2.0" /> -->
     <None Include="$(MSBuildThisFileDirectory)\Microsoft.Azure.Cosmos.targets" Pack="true" PackagePath="build\netstandard2.0">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -100,7 +109,7 @@
   <PropertyGroup>
     <DefineConstants Condition=" '$(IsNightly)' == 'true' or '$(IsPreview)' == 'true' ">$(DefineConstants);PREVIEW</DefineConstants>
     <DefineConstants Condition=" '$(SignAssembly)' == 'true' ">$(DefineConstants);SignAssembly</DefineConstants>
-    <DefineConstants Condition=" '$(DelaySign)' == 'true' ">DelaySignKeys</DefineConstants>
+    <DefineConstants Condition=" '$(DelaySign)' == 'true' ">$(DefineConstants);DelaySignKeys</DefineConstants>
     <DefineConstants>$(DefineConstants);DOCDBCLIENT;COSMOSCLIENT;NETSTANDARD20</DefineConstants>
     <LangVersion>7.3</LangVersion>
   </PropertyGroup>

@@ -28,14 +28,14 @@
     public class Program
     {
         private const string databaseId = "samples";
-        private const string containerId = "bulk-support";
+        private static string containerId = "bulk-support";
         private static readonly JsonSerializer Serializer = new JsonSerializer();
 
         private static Database database = null;
 
         // Async main requires c# 7.1 which is set in the csproj with the LangVersion attribute
         // <Main>
-        public static async Task Main(string[] args)
+        public static void Main(string[] args)
         {
             try
             {
@@ -45,10 +45,7 @@
                 int docSize = args.Length > 1 ? int.Parse(args[1]) : 1024;
                 int runtimeInSeconds = args.Length > 2 ? int.Parse(args[2]) : 20;
                 bool useBulk = args.Length > 3 ? bool.Parse(args[3]) : true;
-                int workerCount = args.Length > 4 ? int.Parse(args[4]) : 1;
-                int containers = args.Length > 5 ? int.Parse(args[5]) : 1;
-                int type = args.Length > 6 ? int.Parse(args[6]) : 0;
-
+                Program.containerId = args.Length > 4 ? args[4] : "bulk-support";
                 // Read the Cosmos endpointUrl and authorisationKeys from configuration
                 // These values are available from the Azure Management Portal on the Cosmos Account Blade under "Keys"
                 // Keep these values in a safe & secure location. Together they provide Administrative access to your Cosmos account
@@ -68,23 +65,8 @@
                     throw new ArgumentException("Please specify a valid AuthorizationKey in the appSettings.json");
                 }
 
-                //CosmosClient bulkClient = Program.GetBulkClientInstance(endpoint, authKey, useBulk);
-                // Create the require container, can be done with any client
-                //await Program.InitializeAsync(bulkClient, throughput: 6000);
-
-                Console.WriteLine("Running demo with a {0}CosmosClient...", useBulk ? "Bulk enabled " : string.Empty);
-                // Execute inserts for 30 seconds on a Bulk enabled client
-
-                if (type == 0)
-                {
-                    await Program.CreateItemsConcurrentlyAsync(endpoint, authKey, useBulk, concurrency, docSize, runtimeInSeconds, workerCount, containers);
-                }
-                else
-                {
-                    await Program.RunBatchstreamerImportAsync(endpoint, authKey, useBulk, concurrency, docSize, runtimeInSeconds, workerCount, containers);
-                }
-
-                //bulkClient.Dispose();
+                Console.WriteLine("Running demo for container {0} with a {1} CosmosClient...", Program.containerId, useBulk ? "Bulk enabled " : string.Empty);
+                Program.CreateItemsConcurrently(endpoint, authKey, useBulk, concurrency, docSize, runtimeInSeconds);
             }
             catch (CosmosException cre)
             {
@@ -112,96 +94,20 @@
             new Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder(endpoint, authKey).WithBulkExecution(useBulk).Build();
         // </Initialization>
 
-        private static async Task CreateItemsConcurrentlyAsync(
+        private static void CreateItemsConcurrently(
             string endpoint,
             string authKey,
             bool useBulk,
             int concurrency,
             int docSize,
-            int runtimeInSeconds,
-            int workerCount,
-            int containers)
+            int runtimeInSeconds)
         {
-            DataSource dataSource = new DataSource(concurrency, docSize, workerCount);
-            Console.WriteLine("CreateItemsConcurrentlyAsync");
-            Console.WriteLine($"Initiating creates of items of about {docSize} bytes with {workerCount} workers each maintaining {concurrency} in-progress items for {runtimeInSeconds} seconds.");
-            int created = await CreateItemsAsync(endpoint, authKey, useBulk, dataSource, concurrency, docSize, workerCount, runtimeInSeconds, containers);
-            Console.WriteLine($"Inserted {created} items.");
-        }
+            Console.WriteLine($"Initiating creates of items of about {docSize} bytes maintaining {concurrency} in-progress items for {runtimeInSeconds} seconds.");
+            DataSource dataSource = new DataSource(concurrency, docSize);
 
-        private static async Task RunBatchstreamerImportAsync(
-            string endpoint,
-            string authKey,
-            bool useBulk,
-            int concurrency,
-            int docSize,
-            int runtimeInSeconds,
-            int workerCount,
-            int containers)
-        {
-            CosmosClient client = Program.GetBulkClientInstance(endpoint, authKey, useBulk);
-            //List<Container> conatiners = new List<Container>();
-            //for (int i = 0; i < containers; i++)
-            //{
-            //    Container container = client.GetContainer(Program.databaseId, Program.containerId);
-            //    conatiners.Add(container);
-            //}
-            Container container = client.GetContainer(Program.databaseId, Program.containerId);
-            DataSource dataSource = new DataSource(concurrency, docSize, workerCount);
-            Console.WriteLine("RunBatchstreamerImportAsync");
-            Console.WriteLine($"Initiating creates of items of about {docSize} bytes with {workerCount} workers each maintaining {concurrency} in-progress items for {runtimeInSeconds} seconds.");
-            CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
-            cancellationTokenSource.CancelAfter(runtimeInSeconds * 1000);
-            CancellationToken cancellationToken = cancellationTokenSource.Token;
-
-            int localDocCounter = 0;
-            List<Task<ResponseMessage>> workerTasks = new List<Task<ResponseMessage>>();
-            var watch = System.Diagnostics.Stopwatch.StartNew();
-
-            while (watch.ElapsedMilliseconds < runtimeInSeconds * 1000)
-            {
-                localDocCounter = localDocCounter + 1;
-                MemoryStream stream = dataSource.GetNextItemStream(out PartitionKey partitionKeyValue, 0);
-
-                workerTasks.Add(container.CreateItemStreamAsync(stream, partitionKeyValue, cancellationToken: cancellationToken));
-            }
-
-            Console.WriteLine("Basic divison done for " + localDocCounter + " in seconds: " + watch.ElapsedMilliseconds / 1000);
-            ResponseMessage[] response = await Task.WhenAll(workerTasks);
-
-            Console.WriteLine("Everthing completed for: " + localDocCounter + " and response has lenthg: " + response.Length);
-
-            int docCount = 0;
-            int successfullCount = 0;
-            while (docCount < response.Length)
-            {
-                ResponseMessage resp = response[docCount];
-                if (resp.IsSuccessStatusCode)
-                {
-                    successfullCount = successfullCount + 1;
-                }
-                docCount = docCount + 1;
-            }
-            Console.WriteLine("Total inserted docs in: " + successfullCount + " in seconds: " + watch.ElapsedMilliseconds / 1000);
-
-        }
-
-        private static async Task<int> CreateItemsAsync(
-            string endpoint,
-            string authKey,
-            bool useBulk,
-            DataSource dataSource,
-            int concurrency,
-            int docSize,
-            int workerCount,
-            int runtimeInSeconds,
-            int containers)
-        {
             CosmosClient client = Program.GetBulkClientInstance(endpoint, authKey, useBulk);
             Container container = client.GetContainer(Program.databaseId, Program.containerId);
             ConcurrentDictionary<HttpStatusCode, int> countsByStatus = new ConcurrentDictionary<HttpStatusCode, int>();
-            List<Task> workerTasks = new List<Task>();
-            Random random = new Random();
 
             Console.WriteLine("Starting job");
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
@@ -209,27 +115,22 @@
             CancellationToken cancellationToken = cancellationTokenSource.Token;
             try
             {
-                for (int i = 0; i < workerCount; i++)
+                while (!cancellationToken.IsCancellationRequested)
                 {
-                    int tmpI = i;
-                    workerTasks.Add(Task.Run(() =>
-                    {
-                        while (!cancellationToken.IsCancellationRequested)
+                    MemoryStream stream = dataSource.GetNextDocItem(out PartitionKey partitionKeyValue);
+                    _ = container.CreateItemStreamAsync(stream, partitionKeyValue, null, cancellationToken)
+                        .ContinueWith((Task<ResponseMessage> task) =>
                         {
-                            MemoryStream stream = dataSource.GetNextItemStream(out PartitionKey partitionKeyValue, tmpI);
-                            _ = container.CreateItemStreamAsync(stream, partitionKeyValue)
-                                .ContinueWith((Task<ResponseMessage> task) =>
-                                {
-                                    dataSource.DoneWithItemStream(stream);
-                                    HttpStatusCode resultCode = task.Result.StatusCode;
-                                    countsByStatus.AddOrUpdate(resultCode, 1, (_, old) => old + 1);
-                                    task.Dispose();
-                                });
-                        }
-                    }));
+                            if (!task.IsCanceled)
+                            {
+                                if(stream != null) { stream.Dispose(); }
+                                HttpStatusCode resultCode = task.Result.StatusCode;
+                                countsByStatus.AddOrUpdate(resultCode, 1, (_, old) => old + 1);
+                                if (task.Result != null) { task.Result.Dispose(); }
+                                task.Dispose();
+                            }
+                        });
                 }
-
-                await Task.WhenAll(workerTasks);
             }
             catch (Exception ex)
             {
@@ -241,10 +142,12 @@
                 {
                     Console.WriteLine(countForStatus.Key + " " + countForStatus.Value);
                 }
+
                 client.Dispose();
             }
 
-            return countsByStatus.SingleOrDefault(x => x.Key == HttpStatusCode.Created).Value;
+            int created = countsByStatus.SingleOrDefault(x => x.Key == HttpStatusCode.Created).Value;
+            Console.WriteLine($"Inserted {created} items.");
         }
 
         // <Model>
@@ -296,94 +199,47 @@
         private class DataSource
         {
             private int docSize;
-            private MemoryStreamPool pool;
-            private byte[] sample;
-            private int idIndex = -1, pkIndex = -1;
-            private static List<Stack<KeyValuePair<PartitionKey, MemoryStream>>> documentsToImportInBatch;
+            private static Stack<KeyValuePair<PartitionKey, MemoryStream>> documentsToImportInBatch;
 
-            public DataSource(int initialPoolSize, int docSize, int workerCount)
+            public DataSource(int initialPoolSize, int docSize)
             {
-                this.pool = new MemoryStreamPool(initialPoolSize * workerCount, docSize);
                 this.docSize = docSize;
-                documentsToImportInBatch = new List<Stack<KeyValuePair<PartitionKey, MemoryStream>>>();
-                Console.WriteLine("Creating a stack pool of " + initialPoolSize * workerCount + " items");
-                for (int i = 0; i < workerCount; i++)
+                documentsToImportInBatch = new Stack<KeyValuePair<PartitionKey, MemoryStream>>();
+               
+                Stack<KeyValuePair<PartitionKey, MemoryStream>> stk = new Stack<KeyValuePair<PartitionKey, MemoryStream>>();
+                for (int j = 0; j < initialPoolSize; j++)
                 {
-                    Stack<KeyValuePair<PartitionKey, MemoryStream>> stk = new Stack<KeyValuePair<PartitionKey, MemoryStream>>();
-                    for (int j = 0; j < initialPoolSize; j++)
-                    {
-                        MemoryStream value = CreateNextItemStream(out PartitionKey partitionKeyValue);
-                        stk.Push(new KeyValuePair<PartitionKey, MemoryStream>(partitionKeyValue, value));
-                    }
-                    documentsToImportInBatch.Add(stk);
+                    MemoryStream value = CreateNextDocItem(out PartitionKey partitionKeyValue);
+                    documentsToImportInBatch.Push(new KeyValuePair<PartitionKey, MemoryStream>(partitionKeyValue, value));
                 }
-
-                Console.WriteLine("Created a stack pool of " + documentsToImportInBatch.Count + " items");
             }
 
-            public MemoryStream CreateNextItemStream(out PartitionKey partitionKey)
+            private MemoryStream CreateNextDocItem(out PartitionKey partitionKeyValue)
             {
-                // Actual implementation would possibly read from a file or other source.
-
-                string partitionKeyValue = Guid.NewGuid().ToString();
+                string partitionKey = Guid.NewGuid().ToString();
                 string id = Guid.NewGuid().ToString();
+                string padding = docSize > 300 ? new string('x', docSize - 300) : string.Empty;
+                MyDocument myDocument = new MyDocument() { id = id, pk = partitionKey, other = padding };
+                string value = JsonConvert.SerializeObject(myDocument);
+                partitionKeyValue = new PartitionKey(partitionKey);
 
-                if (this.sample == null)
-                {
-                    // Leave about 100 bytes for pk, id and 200 bytes for system properties.
-                    string padding = this.docSize > 300 ? new string('x', this.docSize - 300) : string.Empty;
-                    MyDocument myDocument = new MyDocument() { id = id, pk = partitionKeyValue, other = padding };
-                    string str = JsonConvert.SerializeObject(myDocument);
-                    this.sample = Encoding.UTF8.GetBytes(str);
-                    this.idIndex = str.IndexOf(id);
-                    this.pkIndex = str.IndexOf(partitionKeyValue);
-                }
-
-                MemoryStream stream = this.pool.Take();
-                byte[] buffer = stream.GetBuffer();
-                if (buffer[0] == '\0')
-                {
-                    sample.CopyTo(buffer.AsSpan());
-                    stream.SetLength(sample.Length);
-                }
-
-                Memory<byte> mem = buffer.AsMemory().Slice(this.idIndex, id.Length);
-                Encoding.UTF8.GetBytes(id).CopyTo(mem);
-
-                mem = buffer.AsMemory().Slice(this.pkIndex, partitionKeyValue.Length);
-                Encoding.UTF8.GetBytes(partitionKeyValue).CopyTo(mem);
-
-                stream.Position = 0;
-                partitionKey = new PartitionKey(partitionKeyValue);
-                return stream;
+                return new MemoryStream(Encoding.UTF8.GetBytes(value ?? "")); ;
             }
 
-            public MemoryStream GetNextItemStream(out PartitionKey partitionKeyValue, int i)
+            public MemoryStream GetNextDocItem(out PartitionKey partitionKeyValue)
             {
-                if (documentsToImportInBatch[i].Count > 0)
+                if (documentsToImportInBatch.Count > 0)
                 {
-                    var pair = documentsToImportInBatch[i].Pop();
+                    var pair = documentsToImportInBatch.Pop();
                     partitionKeyValue = pair.Key;
                     return pair.Value;
                 }
                 else
                 {
-                    var value = CreateNextItemStream(out PartitionKey pkValue);
+                    var value = CreateNextDocItem(out PartitionKey pkValue);
                     partitionKeyValue = pkValue;
                     return value;
                 }
-
-            }
-
-            public Stack<KeyValuePair<PartitionKey, MemoryStream>> GetStack(int i)
-            {
-                return documentsToImportInBatch[i];
-
-            }
-
-            public void DoneWithItemStream(MemoryStream stream)
-            {
-                this.pool.Return(stream);
             }
         }
 

@@ -72,6 +72,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (this.AssertBatcher(completer, exception))
             {
+                this.taskCompletionSource.SetCanceled();
                 this.taskCompletionSource.SetException(exception);
             }
 
