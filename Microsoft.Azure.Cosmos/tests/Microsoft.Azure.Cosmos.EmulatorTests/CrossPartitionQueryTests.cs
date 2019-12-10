@@ -20,6 +20,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Xml;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy;
+    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
@@ -176,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 new ContainerProperties
                 {
                     Id = Guid.NewGuid().ToString() + "container",
-                    IndexingPolicy = indexingPolicy == null ? new Cosmos.IndexingPolicy
+                    IndexingPolicy = indexingPolicy ?? new Cosmos.IndexingPolicy
                     {
                         IncludedPaths = new Collection<Cosmos.IncludedPath>
                         {
@@ -190,7 +196,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                 }
                             }
                         }
-                    } : indexingPolicy,
+                    },
                     PartitionKey = partitionKey == null ? null : new PartitionKeyDefinition
                     {
                         Paths = new Collection<string> { partitionKey },
@@ -840,7 +846,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (CosmosException exception) when (exception.StatusCode == HttpStatusCode.BadRequest)
             {
-                Assert.IsTrue(exception.Message.StartsWith(@"Response status code does not indicate success: 400 Substatus: 0 Reason: ({""errors"":[{""severity"":""Error"",""location"":{""start"":27,""end"":28},""code"":""SC2001"",""message"":""Identifier 'a' could not be resolved.""}]})."),
+                Assert.IsTrue(exception.Message.Contains(@"{""errors"":[{""severity"":""Error"",""location"":{""start"":27,""end"":28},""code"":""SC2001"",""message"":""Identifier 'a' could not be resolved.""}]}"),
                     exception.Message);
             }
         }
@@ -4494,8 +4500,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             public override bool Equals(object obj)
             {
-                Headers headers = obj as Headers;
-                if (headers != null)
+                if (obj is Headers headers)
                 {
                     return Headers.Equals(this, headers);
                 }
@@ -4810,6 +4815,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 stringBuilder.Append('a' + rand.Next(0, 26));
             }
+
+            stringBuilder.Append("💩");
 
             return stringBuilder.ToString();
         }

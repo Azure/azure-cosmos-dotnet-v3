@@ -167,7 +167,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </code>
         /// </example>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
-        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/high-availability"/>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/high-availability">High availability</seealso>
         /// <seealso cref="CosmosClientOptions.LimitToEndpoint"/>
         public CosmosClientBuilder WithLimitToEndpoint(bool limitToEndpoint)
         {

@@ -31,7 +31,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BulkSupport", "BulkSupport\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IndexManagement", "IndexManagement\IndexManagement.csproj", "{BDAA451B-C9C8-4D29-AF1E-1748B8720BEC}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Batch", "Batch\Batch.csproj", "{2F124644-761C-4DD8-9C4D-229AC71E6C3A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TransactionalBatch", "TransactionalBatch\TransactionalBatch.csproj", "{2F124644-761C-4DD8-9C4D-229AC71E6C3A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

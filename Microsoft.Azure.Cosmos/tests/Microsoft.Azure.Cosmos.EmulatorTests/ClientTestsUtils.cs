@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -286,7 +287,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             for (int i = 0; i < numberOfCollections; i++)
             {
                 string uniqCollectionName = "SmokeTestCollection" + Guid.NewGuid().ToString("N");
-                var partitionKeyDefinition = new PartitionKeyDefinition
+                PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition
                 {
                     Paths = new System.Collections.ObjectModel.Collection<string> { "/id" },
                     Kind = PartitionKind.Hash
@@ -440,7 +441,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(1, results.Count, "Should have queried and found 1 userDefinedFunction");
 
                 //Test select array
-                var queryArray = client.CreateDocumentQuery(collection.SelfLink, "SELECT VALUE [1, 2, 3, 4]").AsDocumentQuery();
+                IDocumentQuery<dynamic> queryArray = client.CreateDocumentQuery(collection.SelfLink, "SELECT VALUE [1, 2, 3, 4]").AsDocumentQuery();
                 JArray result = queryArray.ExecuteNextAsync().Result.FirstOrDefault();
 
                 Assert.AreEqual(result[0], 1);

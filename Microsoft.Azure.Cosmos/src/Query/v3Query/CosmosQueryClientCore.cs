@@ -13,8 +13,11 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
@@ -121,8 +124,7 @@ namespace Microsoft.Azure.Cosmos
             SchedulingStopwatch schedulingStopwatch,
             CancellationToken cancellationToken)
         {
-            QueryRequestOptions queryRequestOptions = requestOptions as QueryRequestOptions;
-            if (queryRequestOptions == null)
+            if (!(requestOptions is QueryRequestOptions queryRequestOptions))
             {
                 throw new InvalidOperationException($"CosmosQueryClientCore.ExecuteItemQueryAsync only supports RequestOptionType of QueryRequestOptions");
             }
@@ -289,8 +291,7 @@ namespace Microsoft.Azure.Cosmos
                         diagnostics: pageDiagnostics);
                 }
 
-                MemoryStream memoryStream = cosmosResponseMessage.Content as MemoryStream;
-                if (memoryStream == null)
+                if (!(cosmosResponseMessage.Content is MemoryStream memoryStream))
                 {
                     memoryStream = new MemoryStream();
                     cosmosResponseMessage.Content.CopyTo(memoryStream);
@@ -354,12 +355,13 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal override Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(
+        internal override async Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(
             string collectionResourceId,
             Range<string> range,
             bool forceRefresh = false)
         {
-            throw new NotImplementedException();
+            PartitionKeyRangeCache partitionKeyRangeCache = await this.GetRoutingMapProviderAsync();
+            return await partitionKeyRangeCache.TryGetOverlappingRangesAsync(collectionResourceId, range, forceRefresh);
         }
 
         private Task<PartitionKeyRangeCache> GetRoutingMapProviderAsync()

@@ -7,12 +7,13 @@ namespace Microsoft.Azure.Cosmos.Query
     using System;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
 
-    internal class QueryIterator : FeedIterator
+    internal sealed class QueryIterator : FeedIteratorInternal
     {
         private readonly CosmosQueryContext cosmosQueryContext;
         private readonly CosmosQueryExecutionContext cosmosQueryExecutionContext;
@@ -23,18 +24,8 @@ namespace Microsoft.Azure.Cosmos.Query
             CosmosQueryExecutionContext cosmosQueryExecutionContext,
             CosmosSerializationFormatOptions cosmosSerializationFormatOptions)
         {
-            if (cosmosQueryContext == null)
-            {
-                throw new ArgumentNullException(nameof(cosmosQueryContext));
-            }
-
-            if (cosmosQueryExecutionContext == null)
-            {
-                throw new ArgumentNullException(nameof(cosmosQueryExecutionContext));
-            }
-
-            this.cosmosQueryContext = cosmosQueryContext;
-            this.cosmosQueryExecutionContext = cosmosQueryExecutionContext;
+            this.cosmosQueryContext = cosmosQueryContext ?? throw new ArgumentNullException(nameof(cosmosQueryContext));
+            this.cosmosQueryExecutionContext = cosmosQueryExecutionContext ?? throw new ArgumentNullException(nameof(cosmosQueryExecutionContext));
             this.cosmosSerializationFormatOptions = cosmosSerializationFormatOptions;
         }
 
@@ -84,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public override bool HasMoreResults => !this.cosmosQueryExecutionContext.IsDone;
 
-        public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
             // This catches exception thrown by the pipeline and converts it to QueryResponse
             QueryResponseCore responseCore = await this.cosmosQueryExecutionContext.ExecuteNextAsync(cancellationToken);
@@ -98,6 +89,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     count: responseCore.CosmosElements.Count,
                     responseLengthBytes: responseCore.ResponseLengthBytes,
                     diagnostics: diagnostics,
+                    serializationOptions: this.cosmosSerializationFormatOptions,
                     responseHeaders: new CosmosQueryResponseMessageHeaders(
                         responseCore.ContinuationToken,
                         responseCore.DisallowContinuationTokenMessage,
@@ -129,14 +121,12 @@ namespace Microsoft.Azure.Cosmos.Query
                     });
             }
 
-            queryResponse.CosmosSerializationOptions = this.cosmosSerializationFormatOptions;
-
             return queryResponse;
         }
 
-        internal bool TryGetContinuationToken(out string state)
+        public override bool TryGetContinuationToken(out string continuationToken)
         {
-            return this.cosmosQueryExecutionContext.TryGetContinuationToken(out state);
+            return this.cosmosQueryExecutionContext.TryGetContinuationToken(out continuationToken);
         }
     }
 }

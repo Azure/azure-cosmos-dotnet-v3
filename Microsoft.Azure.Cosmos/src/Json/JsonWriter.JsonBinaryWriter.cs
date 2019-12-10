@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.Linq;
     using System.Runtime.InteropServices;
     using System.Text;
+    using Microsoft.Azure.Cosmos.Query.Core;
 
     /// <summary>
     /// Partial class for the JsonWriter that has a private JsonTextWriter below.

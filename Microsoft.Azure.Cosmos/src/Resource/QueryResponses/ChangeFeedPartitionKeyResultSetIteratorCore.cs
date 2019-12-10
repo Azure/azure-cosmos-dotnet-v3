@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Cosmos Change Feed Iterator for a particular Partition Key Range
     /// </summary>
-    internal class ChangeFeedPartitionKeyResultSetIteratorCore : FeedIterator
+    internal sealed class ChangeFeedPartitionKeyResultSetIteratorCore : FeedIteratorInternal
     {
         private readonly CosmosClientContext clientContext;
         private readonly ContainerCore container;
@@ -75,9 +75,9 @@ namespace Microsoft.Azure.Cosmos
                 }, cancellationToken);
         }
 
-        internal bool TryGetContinuationToken(out string state)
+        public override bool TryGetContinuationToken(out string continuationToken)
         {
-            state = this.continuationToken;
+            continuationToken = this.continuationToken;
             return true;
         }
 

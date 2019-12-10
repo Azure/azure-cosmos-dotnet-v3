@@ -12,10 +12,17 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -24,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     [TestClass]
     public class QueryPipelineMockTests
     {
-        private CancellationToken cancellationToken = new CancellationTokenSource().Token;
+        private readonly CancellationToken cancellationToken = new CancellationTokenSource().Token;
 
         [TestMethod]
         [DataRow(true)]
@@ -77,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     maxConcurrency: null,
                     maxItemCount: maxPageSize,
                     maxBufferedItemCount: null,
-                    testSettings: new Query.Core.TestInjections(simulate429s: false, simulateEmptyPages: false));
+                    testSettings: new TestInjections(simulate429s: false, simulateEmptyPages: false));
 
                 CosmosParallelItemQueryExecutionContext executionContext = (await CosmosParallelItemQueryExecutionContext.TryCreateAsync(
                     context,
@@ -161,7 +168,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     maxConcurrency: null,
                     maxItemCount: maxPageSize,
                     maxBufferedItemCount: null,
-                    testSettings: new Query.Core.TestInjections(simulate429s: false, simulateEmptyPages: false));
+                    testSettings: new TestInjections(simulate429s: false, simulateEmptyPages: false));
 
                 CosmosParallelItemQueryExecutionContext executionContext = (await CosmosParallelItemQueryExecutionContext.TryCreateAsync(
                     context,
@@ -289,7 +296,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     maxConcurrency: null,
                     maxItemCount: maxPageSize,
                     maxBufferedItemCount: null,
-                    testSettings: new Query.Core.TestInjections(simulate429s: false, simulateEmptyPages: false));
+                    testSettings: new TestInjections(simulate429s: false, simulateEmptyPages: false));
 
                 CosmosOrderByItemQueryExecutionContext executionContext = (await CosmosOrderByItemQueryExecutionContext.TryCreateAsync(
                     context,
@@ -412,7 +419,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     maxConcurrency: null,
                     maxItemCount: maxPageSize,
                     maxBufferedItemCount: null,
-                    testSettings: new Query.Core.TestInjections(simulate429s: false, simulateEmptyPages: false));
+                    testSettings: new TestInjections(simulate429s: false, simulateEmptyPages: false));
 
                 TryCatch<CosmosOrderByItemQueryExecutionContext> tryCreate = await CosmosOrderByItemQueryExecutionContext.TryCreateAsync(
                     context,
@@ -461,9 +468,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 }
                 else
                 {
-                    CosmosException cosmosException = tryCreate.Exception as CosmosException;
-                    Assert.IsNotNull(cosmosException);
-                    Assert.AreEqual((HttpStatusCode)429, cosmosException.StatusCode);
+                    QueryResponseCore queryResponseCore = QueryResponseFactory.CreateFromException(tryCreate.Exception);
+                    Assert.AreEqual((HttpStatusCode)429, queryResponseCore.StatusCode);
                 }
             }
         }

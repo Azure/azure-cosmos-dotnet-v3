@@ -534,15 +534,15 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             }
             catch (Exception e)
             {
-                while (!(e is DocumentClientException) && e.InnerException != null)
-                {
-                    e = e.InnerException;
-                }
+                while (e.InnerException != null) e = e.InnerException;
 
-                DocumentClientException dce = e as DocumentClientException;
-                if (dce != null)
+                if (e is CosmosException cosmosException)
                 {
-                    errorMessage = dce.RawErrorMessage;
+                    errorMessage = $"Status Code: {cosmosException.StatusCode}";
+                }
+                else if (e is DocumentClientException documentClientException)
+                {
+                    errorMessage = documentClientException.RawErrorMessage;
                 }
                 else
                 {

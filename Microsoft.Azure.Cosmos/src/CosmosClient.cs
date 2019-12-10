@@ -12,9 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Handlers;
-    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -22,8 +20,8 @@ namespace Microsoft.Azure.Cosmos
     /// This client can be used to configure and execute requests in the Azure Cosmos DB database service.
     /// 
     /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
-    /// of the application which enables efficient connection management and performance. Please refer to 
-    /// performance guide at <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips"/>.
+    /// of the application which enables efficient connection management and performance. Please refer to the
+    /// <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">performance guide</see>.
     /// </summary>
     /// <example>
     /// This example create a <see cref="CosmosClient"/>, <see cref="Database"/>, and a <see cref="Container"/>.
@@ -47,7 +45,7 @@ namespace Microsoft.Azure.Cosmos
     /// </code>
     /// </example>
     /// <example>
-    /// This example create a <see cref="CosmosClient"/>, <see cref="Database"/>, and a <see cref="Container"/>.
+    /// This example creates a <see cref="CosmosClient"/>, <see cref="Database"/>, and a <see cref="Container"/>.
     /// The CosmosClient is created with the AccountEndpoint, AccountKey or ResourceToken and configured to use "East US 2" region.
     /// <code language="c#">
     /// <![CDATA[
@@ -69,8 +67,8 @@ namespace Microsoft.Azure.Cosmos
     /// </code>
     /// </example>
     /// <example>
-    /// This example create a <see cref="CosmosClient"/>, <see cref="Database"/>, and a <see cref="Container"/>.
-    /// The CosmosClient is created through builder pattern <see cref="Fluent.CosmosClientBuilder"/>.
+    /// This example creates a <see cref="CosmosClient"/>, <see cref="Database"/>, and a <see cref="Container"/>.
+    /// The CosmosClient is created through builder pattern using <see cref="Fluent.CosmosClientBuilder"/>.
     /// <code language="c#">
     /// <![CDATA[
     /// using Microsoft.Azure.Cosmos;
@@ -87,15 +85,13 @@ namespace Microsoft.Azure.Cosmos
     /// ]]>
     /// </code>
     /// </example>
-    /// <remarks>
     /// <seealso cref="CosmosClientOptions"/>
     /// <seealso cref="Fluent.CosmosClientBuilder"/>
-    /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/performance-tips"/>
-    /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/troubleshoot-dot-net-sdk"/>
-    /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/distribute-data-globally" />
-    /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/partitioning-overview" />
-    /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units" />
-    /// </remarks>
+    /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">Performance Tips</seealso>
+    /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/troubleshoot-dot-net-sdk">Diagnose and troubleshoot issues</seealso>
+    /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/distribute-data-globally">Global data distribution</seealso>
+    /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/partitioning-overview">Partitioning and horizontal scaling</seealso>
+    /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
     public class CosmosClient : IDisposable
     {
         private readonly Uri DatabaseRootUri = new Uri(Paths.Databases_Root, UriKind.Relative);
@@ -119,11 +115,11 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Create a new CosmosClient with the connection string
+        /// Creates a new CosmosClient with the connection string.
         /// 
         /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
-        /// of the application which enables efficient connection management and performance. Please refer to 
-        /// performance guide at <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips"/>.
+        /// of the application which enables efficient connection management and performance. Please refer to the
+        /// <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">performance guide</see>.
         /// </summary>
         /// <param name="connectionString">The connection string to the cosmos account. ex: https://mycosmosaccount.documents.azure.com:443/;AccountKey=SuperSecretKey; </param>
         /// <param name="clientOptions">(Optional) client options</param>
@@ -145,12 +141,10 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <remarks>
         /// <seealso cref="CosmosClientOptions"/>
         /// <seealso cref="Fluent.CosmosClientBuilder"/>
-        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/performance-tips"/>
-        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/troubleshoot-dot-net-sdk"/>
-        /// </remarks>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">Performance Tips</seealso>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/troubleshoot-dot-net-sdk">Diagnose and troubleshoot issues</seealso>
         public CosmosClient(
             string connectionString,
             CosmosClientOptions clientOptions = null)
@@ -162,11 +156,11 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Create a new CosmosClient with the account endpoint URI string and account key
+        /// Creates a new CosmosClient with the account endpoint URI string and account key.
         /// 
         /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
-        /// of the application which enables efficient connection management and performance. Please refer to 
-        /// performance guide at <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips"/>.
+        /// of the application which enables efficient connection management and performance. Please refer to the
+        /// <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">performance guide</see>.
         /// </summary>
         /// <param name="accountEndpoint">The cosmos service endpoint to use</param>
         /// <param name="authKeyOrResourceToken">The cosmos account key or resource token to use to create the client.</param>
@@ -189,12 +183,10 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <remarks>
         /// <seealso cref="CosmosClientOptions"/>
         /// <seealso cref="Fluent.CosmosClientBuilder"/>
-        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/performance-tips"/>
-        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/troubleshoot-dot-net-sdk"/>
-        /// </remarks>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">Performance Tips</seealso>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/troubleshoot-dot-net-sdk">Diagnose and troubleshoot issues</seealso>
         public CosmosClient(
             string accountEndpoint,
             string authKeyOrResourceToken,
@@ -273,7 +265,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// The <see cref="Cosmos.CosmosClientOptions"/> used initialize CosmosClient
+        /// The <see cref="Cosmos.CosmosClientOptions"/> used initialize CosmosClient.
         /// </summary>
         public virtual CosmosClientOptions ClientOptions { get; private set; }
 
@@ -301,7 +293,7 @@ namespace Microsoft.Azure.Cosmos
         internal BatchAsyncContainerExecutorCache BatchExecutorCache { get; private set; } = new BatchAsyncContainerExecutorCache();
 
         /// <summary>
-        /// Read Azure Cosmos DB account properties <see cref="Microsoft.Azure.Cosmos.AccountProperties"/>
+        /// Reads the <see cref="Microsoft.Azure.Cosmos.AccountProperties"/> for the Azure Cosmos DB account.
         /// </summary>
         /// <returns>
         /// A <see cref="AccountProperties"/> wrapped in a <see cref="System.Threading.Tasks.Task"/> object.
@@ -314,7 +306,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Returns a proxy reference to a database. 
         /// </summary>
-        /// <param name="id">The cosmos database id</param>
+        /// <param name="id">The Cosmos database id</param>
         /// <remarks>
         /// <see cref="Database"/> proxy reference doesn't guarantee existence.
         /// Please ensure database exists through <see cref="CosmosClient.CreateDatabaseAsync(DatabaseProperties, int?, RequestOptions, CancellationToken)"/> 
@@ -344,8 +336,8 @@ namespace Microsoft.Azure.Cosmos
         /// or <see cref="Database.CreateContainerIfNotExistsAsync(ContainerProperties, int?, RequestOptions, CancellationToken)"/>, before
         /// operating on it.
         /// </remarks>
-        /// <param name="databaseId">cosmos database name</param>
-        /// <param name="containerId">cosmos container name</param>
+        /// <param name="databaseId">Cosmos database name</param>
+        /// <param name="containerId">Cosmos container name</param>
         /// <returns>Cosmos container proxy</returns>
         public virtual Container GetContainer(string databaseId, string containerId)
         {
@@ -363,7 +355,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Send a request for creating a database.
+        /// Sends a request for creating a database.
         ///
         /// A database manages users, permissions and a set of containers.
         /// Each Azure Cosmos DB Database Account is able to support multiple independent named databases,
@@ -378,9 +370,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestOptions">(Optional) A set of options that can be set.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="DatabaseResponse"/> which wraps a <see cref="DatabaseProperties"/> containing the resource record.</returns>
-        /// <remarks>
-        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
-        /// </remarks>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
         public virtual Task<DatabaseResponse> CreateDatabaseAsync(
                 string id,
                 int? throughput = null,
@@ -417,8 +407,8 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="throughput">(Optional) The throughput provisioned for a database in measurement of Request Units per second in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) A set of additional options that can be set.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>A <see cref="Task"/> containing a <see cref="DatabaseResponse"/> which wraps a <see cref="DatabaseProperties"/> containing the resource record.</returns>
-        /// <list>
+        /// <returns>A <see cref="Task"/> containing a <see cref="DatabaseResponse"/> which wraps a <see cref="DatabaseProperties"/> containing the resource record.
+        /// <list type="table">
         ///     <listheader>
         ///         <term>StatusCode</term><description>Common success StatusCodes for the CreateDatabaseIfNotExistsAsync operation</description>
         ///     </listheader>
@@ -429,9 +419,8 @@ namespace Microsoft.Azure.Cosmos
         ///         <term>200</term><description>Accepted - This means the database already exists.</description>
         ///     </item>
         /// </list>
-        /// <remarks>
-        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
-        /// </remarks>
+        /// </returns>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
         public virtual async Task<DatabaseResponse> CreateDatabaseIfNotExistsAsync(
             string id,
             int? throughput = null,
@@ -469,7 +458,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="queryDefinition">The cosmos SQL query definition.</param>
         /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
-        /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the item query request.</param>
         /// <returns>An iterator to go through the databases.</returns>
         /// <remarks>
         /// Refer to https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.
@@ -482,10 +471,13 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            FeedIterator databaseStreamIterator = this.GetDatabaseQueryStreamIterator(
+            if (!(this.GetDatabaseQueryStreamIterator(
                 queryDefinition,
                 continuationToken,
-                requestOptions);
+                requestOptions) is FeedIteratorInternal databaseStreamIterator))
+            {
+                throw new InvalidOperationException($"Expected a FeedIteratorInternal.");
+            }
 
             return new FeedIteratorCore<T>(
                 databaseStreamIterator,
@@ -498,7 +490,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="queryDefinition">The cosmos SQL query definition.</param>
         /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
-        /// <param name="requestOptions">(Optional) The options for the query request <see cref="QueryRequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the query request.</param>
         /// <returns>An iterator to go through the databases</returns>
         /// <remarks>
         /// Refer to https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.
@@ -526,7 +518,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="queryText">The cosmos SQL query text.</param>
         /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
-        /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the item query request.</param>
         /// <returns>An iterator to go through the databases.</returns>
         /// <remarks>
         /// Refer to https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.
@@ -557,7 +549,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="queryText">The cosmos SQL query text.</param>
         /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
-        /// <param name="requestOptions">(Optional) The options for the query request <see cref="QueryRequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the query request.</param>
         /// <returns>An iterator to go through the databases</returns>
         /// <remarks>
         /// Refer to https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.
@@ -598,9 +590,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestOptions">(Optional) A set of options that can be set.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="DatabaseResponse"/> which wraps a <see cref="DatabaseProperties"/> containing the resource record.</returns>
-        /// <remarks>
-        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
-        /// </remarks>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
         public virtual Task<ResponseMessage> CreateDatabaseStreamAsync(
                 DatabaseProperties databaseProperties,
                 int? throughput = null,

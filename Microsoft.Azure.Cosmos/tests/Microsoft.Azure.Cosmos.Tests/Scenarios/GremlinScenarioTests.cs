@@ -642,6 +642,7 @@ namespace Microsoft.Azure.Cosmos.Scenarios
                 vertexArray,
                 count: 2,
                 responseLengthBytes: vertex1JsonWriterResult.Length + vertex2JsonWriterResult.Length,
+                serializationOptions: null,
                 responseHeaders: CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(
                     sourceHeaders: null,
                     resourceType: ResourceType.Document,
@@ -723,6 +724,7 @@ namespace Microsoft.Azure.Cosmos.Scenarios
                 vertexArray,
                 count: 2,
                 responseLengthBytes: vertex1JsonWriterResult.Length + vertex2JsonWriterResult.Length,
+                serializationOptions: null,
                 responseHeaders: CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(
                     sourceHeaders: null,
                     resourceType: ResourceType.Document,

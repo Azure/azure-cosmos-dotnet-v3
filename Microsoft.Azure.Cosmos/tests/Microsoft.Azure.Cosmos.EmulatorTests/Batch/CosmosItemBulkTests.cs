@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Net;
     using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class CosmosItemBulkTests
@@ -76,6 +77,27 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Task<ItemResponse<MyDocument>> task = tasks[i];
                 ItemResponse<MyDocument> result = await task;
+                Assert.IsTrue(result.Headers.RequestCharge > 0);
+                Assert.IsFalse(string.IsNullOrEmpty(result.Diagnostics.ToString()));
+                Assert.AreEqual(HttpStatusCode.Created, result.StatusCode);
+            }
+        }
+
+        [TestMethod]
+        public async Task CreateItemJObjectWithoutPK_WithBulk()
+        {
+            List<Task<ItemResponse<JObject>>> tasks = new List<Task<ItemResponse<JObject>>>();
+            for (int i = 0; i < 100; i++)
+            {
+                tasks.Add(this.container.CreateItemAsync(CreateJObjectWithoutPK(i.ToString())));
+            }
+
+            await Task.WhenAll(tasks);
+
+            for (int i = 0; i < 100; i++)
+            {
+                Task<ItemResponse<JObject>> task = tasks[i];
+                ItemResponse<JObject> result = await task;
                 Assert.IsTrue(result.Headers.RequestCharge > 0);
                 Assert.IsFalse(string.IsNullOrEmpty(result.Diagnostics.ToString()));
                 Assert.AreEqual(HttpStatusCode.Created, result.StatusCode);
@@ -374,6 +396,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return container.CreateItemAsync<MyDocument>(item, new PartitionKey(item.Status));
         }
 
+        private static Task<ItemResponse<JObject>> ExecuteCreateAsync(Container container, JObject item)
+        {
+            return container.CreateItemAsync<JObject>(item);
+        }
+
         private static Task<ItemResponse<MyDocument>> ExecuteUpsertAsync(Container container, MyDocument item)
         {
             return container.UpsertItemAsync<MyDocument>(item, new PartitionKey(item.Status));
@@ -420,6 +447,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         private static MyDocument CreateItem(string id) => new MyDocument() { id = id, Status = id };
+
+        private static JObject CreateJObjectWithoutPK(string id)
+        {
+            JObject document = new JObject();
+            document["id"] = id;
+            return document;
+        }
 
         private class MyDocument
         {
