@@ -85,5 +85,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.user.GetPermissionQueryIterator<T>(queryDefinition, continuationToken, requestOptions);
         }
+
+        public static implicit operator UserCore(UserInlineCore userInlineCore) => userInlineCore.user;
     }
 }

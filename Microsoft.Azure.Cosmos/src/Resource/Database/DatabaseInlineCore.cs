@@ -197,5 +197,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return TaskHelper.RunInlineIfNeededAsync(() => this.database.UpsertUserAsync(id, requestOptions, cancellationToken));
         }
+
+        public static implicit operator DatabaseCore(DatabaseInlineCore databaseInlineCore) => databaseInlineCore.database;
     }
 }
