@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;

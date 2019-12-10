@@ -212,7 +212,7 @@ namespace Microsoft.Azure.Cosmos
             ResponseMessage responseMessage,
             ServerBatchRequest serverRequest,
             CosmosSerializer serializer,
-            bool isContentRequired = true)
+            bool shouldPromoteOperationStatus = true)
         {
             using (responseMessage)
             {
@@ -231,7 +231,13 @@ namespace Microsoft.Azure.Cosmos
                     if (content.ReadByte() == (int)HybridRowVersion.V1)
                     {
                         content.Position = 0;
-                        response = await TransactionalBatchResponse.PopulateFromContentAsync(content, responseMessage, serverRequest, serializer, isContentRequired);
+                        response = await TransactionalBatchResponse.PopulateFromContentAsync(
+                            content,
+                            responseMessage,
+                            serverRequest,
+                            serializer,
+                            shouldPromoteOperationStatus);
+
                         if (response == null)
                         {
                             // Convert any payload read failures as InternalServerError
@@ -248,7 +254,8 @@ namespace Microsoft.Azure.Cosmos
                         }
                     }
                 }
-                else
+
+                if (response == null)
                 {
                     response = new TransactionalBatchResponse(
                         responseMessage.StatusCode,
@@ -319,7 +326,7 @@ namespace Microsoft.Azure.Cosmos
             ResponseMessage responseMessage,
             ServerBatchRequest serverRequest,
             CosmosSerializer serializer,
-            bool isContentRequired = true)
+            bool shouldPromoteOperationStatus)
         {
             List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
 
@@ -329,7 +336,7 @@ namespace Microsoft.Azure.Cosmos
             Result res = await content.ReadRecordIOAsync(
                 record =>
                 {
-                    Result r = TransactionalBatchOperationResult.ReadOperationResult(record, out TransactionalBatchOperationResult operationResult, isContentRequired);
+                    Result r = TransactionalBatchOperationResult.ReadOperationResult(record, out TransactionalBatchOperationResult operationResult);
                     if (r != Result.Success)
                     {
                         return r;
@@ -350,7 +357,8 @@ namespace Microsoft.Azure.Cosmos
 
             // Promote the operation error status as the Batch response error status if we have a MultiStatus response
             // to provide users with status codes they are used to.
-            if ((int)responseMessage.StatusCode == (int)StatusCodes.MultiStatus)
+            if ((int)responseMessage.StatusCode == (int)StatusCodes.MultiStatus
+                && shouldPromoteOperationStatus)
             {
                 foreach (TransactionalBatchOperationResult result in results)
                 {

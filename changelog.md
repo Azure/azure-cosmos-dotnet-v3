@@ -6,8 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+### Added
 
-## 3.5.0 - TBD
+
+ 
+### Fixed
+
+- [#1075](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1075) Including header size details for BadRequest with large headers
+- [#1086](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1086) Fix possible NullReferenceException on a TransactionalBatch code path
+
+
+### Fixed
+- [#1070](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1070) CreateItem will only retry for auto-extracted partition key in-case of collection re-creation
+- [#1060](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1060) Fixed unicode encoding bug in DISTINCT queries.
+
+## <a name="3.5.0"/> [3.5.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.5.0) - 2019-12-03
 
 ### Added
 
@@ -16,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1000](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1000) Add PortReuseMode to CosmosClientOptions.
 - [#1017](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1017) Adding ClientSideRequestStatistics to gateway calls and making endtime nullable
 - [#1038](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1038) Add Selflink to resource properties
- 
+  
 ### Fixed
 
 - [#921](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/921) Fixed error handling to preserve stack trace in certain scenarios
@@ -30,8 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1036](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1036) Fixed query responses to return null Content if it is a failure
 - [#1045](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1045) Added stack trace and innner exception to CosmosException
 - [#1050](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1050) Add mocking constructors to TransactionalBatchOperationResult
-- [#1070](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1070) CreateItem will only retry for auto-extracted partition key in-case of collection re-creation
-
+ 
 ## <a name="3.4.1"/> [3.4.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.4.1) - 2019-11-06
 
 ### Fixed
@@ -189,6 +201,8 @@ Any requests to Azure Cosmos DB using a retired SDK are rejected by the service.
 
 | Version | Release Date | Retirement Date |
 | --- | --- | --- |
+| [3.5.0](#3.5.0) |December 03, 2019 |--- |
+| [3.4.1](#3.4.1) |November 06, 2019 |--- |
 | [3.4.0](#3.4.0) |November 04, 2019 |--- |
 | [3.3.3](#3.3.3) |October 30, 2019 |--- |
 | [3.3.2](#3.3.2) |October 16, 2019 |--- |

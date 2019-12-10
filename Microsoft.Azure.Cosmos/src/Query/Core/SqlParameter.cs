@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos.Query.Core
 {
     using System.Runtime.Serialization;
 
@@ -16,9 +16,6 @@ namespace Microsoft.Azure.Cosmos
     [DataContract]
     internal sealed class SqlParameter
     {
-        private string name;
-        private object value;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlParameter"/> class for the Azure Cosmos DB service.
         /// </summary>
@@ -33,7 +30,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>Names of parameters must begin with '@' and be a valid SQL identifier.</remarks>
         public SqlParameter(string name)
         {
-            this.name = name;
+            this.Name = name;
         }
 
         /// <summary>
@@ -44,8 +41,8 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>Names of parameters must begin with '@' and be a valid SQL identifier. The value gets serialized and passed in as JSON to the document query.</remarks>
         public SqlParameter(string name, object value)
         {
-            this.name = name;
-            this.value = value;
+            this.Name = name;
+            this.Value = value;
         }
 
         /// <summary>
@@ -54,11 +51,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>The name of the parameter.</value>
         /// <remarks>Names of parameters must begin with '@' and be a valid SQL identifier.</remarks>
         [DataMember(Name = "name")]
-        public string Name
-        {
-            get { return this.name; }
-            set { this.name = value; }
-        }
+        public string Name { get; set; }
 
         /// <summary>
         /// Gets or sets the value of the parameter for the Azure Cosmos DB service.
@@ -66,10 +59,6 @@ namespace Microsoft.Azure.Cosmos
         /// <value>The value of the parameter.</value>
         /// <remarks>The value gets serialized and passed in as JSON to the document query.</remarks>
         [DataMember(Name = "value")]
-        public object Value
-        {
-            get { return this.value; }
-            set { this.value = value; }
-        }
+        public object Value { get; set; }
     }
 }
