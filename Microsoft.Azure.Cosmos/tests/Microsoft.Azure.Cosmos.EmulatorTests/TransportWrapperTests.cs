@@ -38,27 +38,41 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     builder.WithTransportClientHandlerFactory(transportClient => new TransportClientWrapper(
                         transportClient,
-                        TransportWrapperTests.ThrowTransportExceptionOnItemCreate));
+                        TransportWrapperTests.ThrowTransportExceptionOnItemOperation));
                 });
 
             Cosmos.Database database = await cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
             Container container = await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/id");
 
-            string id1 = Guid.NewGuid().ToString();
             try
             {
                 TestPayload payload1 = await container.CreateItemAsync<TestPayload>(new TestPayload { id = "bad" }, new Cosmos.PartitionKey("bad"));
-                ItemResponse<TestPayload> itemResponse = await container.ReadItemAsync<TestPayload>(id1, new Cosmos.PartitionKey(id1));
-
+                Assert.Fail("Create item should fail with TransportException");
             }
             catch (CosmosException ce)
             {
-                string message = ce.ToString();
-                Assert.IsTrue(message.Contains("TransportException: A client transport error occurred: The connection failed"), "StoreResult Exception is missing");
-                string diagnostics = ce.Diagnostics.ToString();
-                Assert.IsNotNull(diagnostics);
-                Assert.IsTrue(diagnostics.Contains("TransportException: A client transport error occurred: The connection failed"));
+                this.ValidateTransportException(ce);
             }
+
+            try
+            {
+                FeedIterator<TestPayload> feedIterator = container.GetItemQueryIterator<TestPayload>("select * from T where T.Random = 19827 ");
+                await feedIterator.ReadNextAsync();
+                Assert.Fail("Create item should fail with TransportException");
+            }
+            catch (CosmosException ce)
+            {
+                this.ValidateTransportException(ce);
+            }
+        }
+
+        private void ValidateTransportException(CosmosException cosmosException)
+        {
+            string message = cosmosException.ToString();
+            Assert.IsTrue(message.Contains("TransportException: A client transport error occurred: The connection failed"), "StoreResult Exception is missing");
+            string diagnostics = cosmosException.Diagnostics.ToString();
+            Assert.IsNotNull(diagnostics);
+            Assert.IsTrue(diagnostics.Contains("TransportException: A client transport error occurred: The connection failed"));
         }
 
         private static void Interceptor(
@@ -85,12 +99,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        private static void ThrowTransportExceptionOnItemCreate(
+        private static void ThrowTransportExceptionOnItemOperation(
                 Uri physicalAddress,
                 ResourceOperation resourceOperation,
                 DocumentServiceRequest request)
         {
-            if (request.ResourceType == ResourceType.Document && request.OperationType == OperationType.Create)
+            if (request.ResourceType == ResourceType.Document)
             {
                 TransportException transportException = new TransportException(
                     errorCode: TransportErrorCode.ConnectionBroken,

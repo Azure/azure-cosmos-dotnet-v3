@@ -81,8 +81,8 @@ namespace Microsoft.Azure.Cosmos
             stringBuilder.Append($",\"SubStatusCode\":\"{this.SubStatusCode.ToString()}\"");
             stringBuilder.Append($",\"RequestCharge\":\"{this.RequestCharge}\"");
             stringBuilder.Append($",\"ErrorMessage\":\"{errorMessage}\"");
-            stringBuilder.Append($",\"Method\":\"{this.Method.ToString()}\"");
-            stringBuilder.Append($",\"RequestUri\":\"{this.RequestUri.ToString()}\"");
+            stringBuilder.Append($",\"Method\":\"{this.Method?.ToString() ?? "null"}\"");
+            stringBuilder.Append($",\"RequestUri\":\"{this.RequestUri?.ToString() ?? "null"}\"");
             stringBuilder.Append($",\"RequestSessionToken\":\"{this.RequestSessionToken}\"");
             stringBuilder.Append($",\"ResponseSessionToken\":\"{this.ResponseSessionToken}\"");
             if (this.ClientSideRequestStatistics != null)
