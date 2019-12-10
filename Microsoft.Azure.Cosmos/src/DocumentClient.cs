@@ -1140,17 +1140,15 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public async Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRanges(
+        public Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(
             string collectionResourceId,
             Range<string> range,
             bool forceRefresh = false)
         {
-            IReadOnlyList<PartitionKeyRange> ranges = await this.partitionKeyRangeCache.TryGetOverlappingRangesAsync(
+            return this.partitionKeyRangeCache.TryGetOverlappingRangesAsync(
                 collectionResourceId,
                 range,
                 forceRefresh);
-
-            return ranges;
         }
 
         /// <summary>
