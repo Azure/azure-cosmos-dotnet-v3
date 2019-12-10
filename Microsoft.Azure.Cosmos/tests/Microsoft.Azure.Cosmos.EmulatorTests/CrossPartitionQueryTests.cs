@@ -523,7 +523,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         foreach (Tuple<Container, List<Document>> containerAndDocuments in collectionsAndDocuments)
                         {
-                            Container container = cosmosClient.GetContainer(((ContainerCore)containerAndDocuments.Item1).Database.Id, containerAndDocuments.Item1.Id);
+                            Container container = cosmosClient.GetContainer(((ContainerCore)(ContainerInlineCore)containerAndDocuments.Item1).Database.Id, containerAndDocuments.Item1.Id);
                             Task queryTask = Task.Run(() => query(container, containerAndDocuments.Item2, testArgs));
                             queryTasks.Add(queryTask);
                         }
@@ -1518,7 +1518,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Container container,
             IEnumerable<Document> documents)
         {
-            ContainerCore containerCore = (ContainerCore)container;
+            ContainerCore containerCore = (ContainerInlineCore)container;
 
             foreach (bool isGatewayQueryPlan in new bool[] { true, false })
             {
@@ -4404,7 +4404,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Container container,
             IEnumerable<Document> documents)
         {
-            ContainerCore conatinerCore = (ContainerCore)container;
+            ContainerCore conatinerCore = (ContainerInlineCore)container;
             foreach (int maxDegreeOfParallelism in new int[] { 1, 100 })
             {
                 foreach (int maxItemCount in new int[] { 10, 100 })

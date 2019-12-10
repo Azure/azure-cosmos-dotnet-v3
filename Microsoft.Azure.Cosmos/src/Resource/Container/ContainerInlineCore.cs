@@ -246,5 +246,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.container.CreateTransactionalBatch(partitionKey);
         }
+
+        public static implicit operator ContainerCore(ContainerInlineCore containerInlineCore) => containerInlineCore.container;
     }
 }

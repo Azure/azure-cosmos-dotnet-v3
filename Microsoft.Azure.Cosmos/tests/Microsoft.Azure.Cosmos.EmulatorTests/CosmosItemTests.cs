@@ -265,7 +265,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             string dbName = Guid.NewGuid().ToString();
             string containerName = Guid.NewGuid().ToString();
-            ContainerCore testContainer = (ContainerCore)client.GetContainer(dbName, containerName);
+            ContainerCore testContainer = (ContainerInlineCore)client.GetContainer(dbName, containerName);
 
             int loopCount = 2;
             for (int i = 0; i < loopCount; i++)
@@ -1031,7 +1031,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     id: Guid.NewGuid().ToString(),
                     partitionKeyPath: "/pk",
                     throughput: 15000);
-                container = (ContainerCore)containerResponse;
+                container = (ContainerInlineCore)containerResponse;
 
                 // Get all the partition key ranges to verify there is more than one partition
                 IRoutingMapProvider routingMapProvider = await this.cosmosClient.DocumentClient.GetPartitionKeyRangeCacheAsync();
@@ -1296,7 +1296,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     "ReadNonPartition" + Guid.NewGuid());
 
                 await NonPartitionedContainerHelper.CreateItemInNonPartitionedContainer(fixedContainer, nonPartitionItemId);
-                await NonPartitionedContainerHelper.CreateUndefinedPartitionItem((ContainerCore)this.Container, undefinedPartitionItemId);
+                await NonPartitionedContainerHelper.CreateUndefinedPartitionItem((ContainerInlineCore)this.Container, undefinedPartitionItemId);
 
                 ContainerResponse containerResponse = await fixedContainer.ReadContainerAsync();
                 Assert.IsTrue(containerResponse.Resource.PartitionKey.Paths.Count > 0);
@@ -1637,7 +1637,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 string containerName = Guid.NewGuid().ToString();
 
                 db1 = await cc1.CreateDatabaseAsync(dbName);
-                ContainerCore container1 = (ContainerCore)await db1.CreateContainerAsync(containerName, "/id");
+                ContainerCore container1 = (ContainerInlineCore)await db1.CreateContainerAsync(containerName, "/id");
 
                 await operation(container1, HttpStatusCode.OK);
 
@@ -1658,7 +1658,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
 
                 // Re-create again 
-                container1 = (ContainerCore)await db1.CreateContainerAsync(containerName, "/id");
+                container1 = (ContainerInlineCore)await db1.CreateContainerAsync(containerName, "/id");
 
                 // Read through client1
                 await operation(container1, HttpStatusCode.OK);

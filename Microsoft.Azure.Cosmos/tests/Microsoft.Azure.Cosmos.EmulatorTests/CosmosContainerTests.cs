@@ -585,7 +585,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(readThroughput);
 
             await container.ReplaceThroughputAsync(readThroughput.Value + 1000);
-            int? replaceThroughput = await ((ContainerCore)container).ReadThroughputAsync();
+            int? replaceThroughput = await ((ContainerCore)(ContainerInlineCore)container).ReadThroughputAsync();
             Assert.IsNotNull(replaceThroughput);
             Assert.AreEqual(readThroughput.Value + 1000, replaceThroughput);
 
