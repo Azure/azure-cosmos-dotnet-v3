@@ -205,9 +205,8 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<Documents.Routing.PartitionKeyInternal> GetPartitionKeyInternalAsync(ItemBatchOperation operation, CancellationToken cancellationToken)
         {
-            // Same logic from RequestInvokerHandler to manage partition key migration
-            if (!operation.PartitionKey.HasValue
-                || operation.PartitionKey.Value.IsNone)
+            Debug.Assert(operation.PartitionKey.HasValue, "PartitionKey should be set on the operation");
+            if (operation.PartitionKey.Value.IsNone)
             {
                 return await this.cosmosContainer.GetNonePartitionKeyValueAsync(cancellationToken).ConfigureAwait(false);
             }
