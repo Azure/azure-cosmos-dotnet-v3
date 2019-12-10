@@ -13,12 +13,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - [#1075](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1075) Including header size details for BadRequest with large headers
-
+- [#1086](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1086) Fix possible NullReferenceException on a TransactionalBatch code path
 
 
 ### Fixed
 - [#1070](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1070) CreateItem will only retry for auto-extracted partition key in-case of collection re-creation
 - [#1060](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1060) Fixed unicode encoding bug in DISTINCT queries.
+- [#1091](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1091) Fixed a bug in query when a partition split occurs that causes a NotImplementedException to be thrown.
 - [#1089](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1089) Fixes a NullReferenceException when using Bulk with items with no PK
 
 ## <a name="3.5.0"/> [3.5.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.5.0) - 2019-12-03
@@ -30,7 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1000](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1000) Add PortReuseMode to CosmosClientOptions.
 - [#1017](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1017) Adding ClientSideRequestStatistics to gateway calls and making endtime nullable
 - [#1038](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1038) Add Selflink to resource properties
-  
+
 ### Fixed
 
 - [#921](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/921) Fixed error handling to preserve stack trace in certain scenarios
@@ -44,7 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1036](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1036) Fixed query responses to return null Content if it is a failure
 - [#1045](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1045) Added stack trace and innner exception to CosmosException
 - [#1050](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1050) Add mocking constructors to TransactionalBatchOperationResult
- 
+
 ## <a name="3.4.1"/> [3.4.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.4.1) - 2019-11-06
 
 ### Fixed
@@ -66,7 +67,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - [#901](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/901) Fixed a bug causing query response to create a new stream for each content call
 - [#918](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/918) Fixed serializer being used for Scripts, Permissions, and Conflict related iterators
-- [#936](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/936) Fixed bulk requests with large resources to have natural exception 
+- [#936](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/936) Fixed bulk requests with large resources to have natural exception
 
 ## <a name="3.3.3"/> [3.3.3](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.3.3) - 2019-10-30
 
@@ -148,8 +149,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [#612](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/612) Bug fix for ReadFeed with partition-key
 - [#614](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/614) Fixed SpatialPath serialization and compatibility with older index versions
-- [#619](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/619) Fixed PInvokeStackImbalance exception for .NET Framework 
-- [#626](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/626) FeedResponse<T> status code now return OK for success instead of the invalid status code 0 or Accepted 
+- [#619](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/619) Fixed PInvokeStackImbalance exception for .NET Framework
+- [#626](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/626) FeedResponse<T> status code now return OK for success instead of the invalid status code 0 or Accepted
 - [#629](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/629) Fixed CreateContainerIfNotExistsAsync validation to limited to partitionKeyPath only
 - [#630](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/630) Fixed User Agent to contain environment and package information
 
@@ -187,14 +188,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fluent builder APIs for CosmosClient, Container, and Change Feed processor
 - Idiomatic throughput management APIs
 - Granular RequestOptions and ResponseTypes for database, container, item, query and throughput requests
-- Ability to scale non-partitioned containers 
+- Ability to scale non-partitioned containers
 - Extensible and customizable serializer
 - Extensible request pipeline with support for custom handlers
 
 ## Release & Retirement dates
 Microsoft provides notification at least **12 months** in advance of retiring an SDK in order to smooth the transition to a newer/supported version.
 
-New features and functionality and optimizations are only added to the current SDK, as such it is recommended that you always upgrade to the latest SDK version as early as possible. 
+New features and functionality and optimizations are only added to the current SDK, as such it is recommended that you always upgrade to the latest SDK version as early as possible.
 
 Any requests to Azure Cosmos DB using a retired SDK are rejected by the service.
 
