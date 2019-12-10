@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1070](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1070) CreateItem will only retry for auto-extracted partition key in-case of collection re-creation
 - [#1060](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1060) Fixed unicode encoding bug in DISTINCT queries.
 - [#1091](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1091) Fixed a bug in query when a partition split occurs that causes a NotImplementedException to be thrown.
+- [#1089](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1089) Fixes a NullReferenceException when using Bulk with items with no PK
 - [#1078](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1078) Fixed a lock happening on scenarios with SynchronizationContext while executing async public methods synchronously.
 
 ## <a name="3.5.0"/> [3.5.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.5.0) - 2019-12-03
