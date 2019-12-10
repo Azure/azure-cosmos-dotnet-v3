@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -20,13 +20,15 @@ namespace Microsoft.Azure.Cosmos.Common
     /// <typeparam name="TValue">Type of values.</typeparam>
     internal sealed class AsyncCache<TKey, TValue>
     {
-        private readonly ConcurrentDictionary<TKey, AsyncLazy<TValue>> values;
-
         private readonly IEqualityComparer<TValue> valueEqualityComparer;
+        private readonly IEqualityComparer<TKey> keyEqualityComparer;
+
+        private ConcurrentDictionary<TKey, AsyncLazy<TValue>> values;
 
         public AsyncCache(IEqualityComparer<TValue> valueEqualityComparer, IEqualityComparer<TKey> keyEqualityComparer = null)
         {
-            this.values = new ConcurrentDictionary<TKey, AsyncLazy<TValue>>(keyEqualityComparer ?? EqualityComparer<TKey>.Default);
+            this.keyEqualityComparer = keyEqualityComparer ?? EqualityComparer<TKey>.Default;
+            this.values = new ConcurrentDictionary<TKey, AsyncLazy<TValue>>(this.keyEqualityComparer);
             this.valueEqualityComparer = valueEqualityComparer;
         }
 
@@ -97,12 +99,10 @@ namespace Microsoft.Azure.Cosmos.Common
 
             AsyncLazy<TValue> initialLazyValue;
 
-            // Check if we have a generator for that value and it's running/ran.
-            // If not, we prefer to the use the generator passed-in, to let old closures go.
-            if (this.values.TryGetValue(key, out initialLazyValue) && initialLazyValue.IsValueCreated)
+            if (this.values.TryGetValue(key, out initialLazyValue))
             {
-                // If we're currently computing a value, then return it...
-                if (!initialLazyValue.Value.IsCompleted)
+                // If we haven't computed the value or we're currently computing it, then return it...
+                if (!initialLazyValue.IsValueCreated || !initialLazyValue.Value.IsCompleted)
                 {
                     try
                     {
@@ -201,8 +201,11 @@ namespace Microsoft.Azure.Cosmos.Common
 
         public void Clear()
         {
+            ConcurrentDictionary<TKey, AsyncLazy<TValue>> newValues = new ConcurrentDictionary<TKey, AsyncLazy<TValue>>(this.keyEqualityComparer);
+            ConcurrentDictionary<TKey, AsyncLazy<TValue>> oldValues = Interlocked.Exchange(ref this.values, newValues);
+
             // Ensure all tasks are observed.
-            foreach (AsyncLazy<TValue> value in this.values.Values)
+            foreach (AsyncLazy<TValue> value in oldValues.Values)
             {
                 if (value.IsValueCreated)
                 {
@@ -210,7 +213,7 @@ namespace Microsoft.Azure.Cosmos.Common
                 }
             }
 
-            this.values.Clear();
+            oldValues.Clear();
         }
 
         /// <summary>
