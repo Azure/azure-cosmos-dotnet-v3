@@ -702,9 +702,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             MemoryStream[] streamPayloads = new MemoryStream[]
             {
                 new MemoryStream(Encoding.UTF8.GetBytes(@"{""0"":""onetwothree"", ""length"": 1}")),
-                new MemoryStream(Encoding.UTF8.GetBytes(@"{""0"":""onetwothree"", ""length"": 65535}")), // The max allowed by javascript function.apply
+                new MemoryStream(Encoding.UTF8.GetBytes(@"{""0"":""onetwothree"", ""length"": ""1""}")), // Javascript treats length string as a numebr
+                new MemoryStream(Encoding.UTF8.GetBytes(@"{""0"":""onetwothree"", ""length"": 10000}")), // Tons of extra arguments which aren't actually there
                 new MemoryStream(Encoding.UTF8.GetBytes(@"{""0"":""onetwothree"", ""1"": ""test"", ""length"": 1}")), // function.apply will not see the [1] parameter because length == 1
+                new MemoryStream(Encoding.UTF8.GetBytes(@"{""0"":""onetwothree"", ""1"": ""test"", ""length"": 1.5}")), // function.apply will not see the [1] parameter because length rounds down to 1
                 new MemoryStream(Encoding.UTF8.GetBytes(@"{""0"":""one"", ""1"": ""twothree"", ""length"": 2}")),
+                new MemoryStream(Encoding.UTF8.GetBytes(@"{""0"":""one"", ""2"": ""twothree"", ""length"": 3}")), // Skipping a parameter is okay
                 new MemoryStream(Encoding.UTF8.GetBytes(@"{""0"":""one"", ""2"": ""three"", ""1"": ""two"", ""length"": 3}")) // out of order is okay because arrays are just numeric indexers in javascript
             };
 
@@ -724,6 +727,49 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     string text = await reader.ReadToEndAsync();
                     Assert.AreEqual(@"""onetwothree""", text);
                 }
+            }
+
+            StoredProcedureResponse deleteResponse = await this.scripts.DeleteStoredProcedureAsync(sprocId);
+            Assert.AreEqual(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+        }
+
+        [TestMethod]
+        public async Task ExecuteTestWithNonAppliableArraylikeParameters()
+        {
+            string sprocId = Guid.NewGuid().ToString();
+            string sprocBody = @"function() {
+                var context = getContext();
+                var response = context.getResponse();
+                response.setBody(true);
+            }";
+
+            StoredProcedureResponse storedProcedureResponse =
+                await this.scripts.CreateStoredProcedureAsync(new StoredProcedureProperties(sprocId, sprocBody));
+            Assert.AreEqual(HttpStatusCode.Created, storedProcedureResponse.StatusCode);
+            StoredProcedureTests.ValidateStoredProcedureSettings(sprocId, sprocBody, storedProcedureResponse);
+
+            // Insert document and then query
+            string testPartitionId = Guid.NewGuid().ToString();
+            var payload = new { id = testPartitionId, user = testPartitionId };
+            ItemResponse<dynamic> createItemResponse = await this.container.CreateItemAsync<dynamic>(payload);
+            Assert.AreEqual(HttpStatusCode.Created, createItemResponse.StatusCode);
+
+            MemoryStream[] streamPayloads = new MemoryStream[]
+            {
+                new MemoryStream(Encoding.UTF8.GetBytes(@"{""0"":""onetwothree"", ""length"": 600000}")), // 600000 parameters -> "out of stack space"
+                new MemoryStream(Encoding.UTF8.GetBytes(@"{""0"":""onetwothree"", ""length"": 1e9}")), // 1 billion parameters -> exceeds javascript .apply maximum
+            };
+
+            foreach (MemoryStream streamPayload in streamPayloads)
+            {
+                ResponseMessage response = await this.scripts.ExecuteStoredProcedureStreamAsync(
+                    storedProcedureId: sprocId,
+                    streamPayload: streamPayload,
+                    partitionKey: new Cosmos.PartitionKey(testPartitionId),
+                    requestOptions: null,
+                    cancellationToken: default(CancellationToken));
+
+                Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
             }
 
             StoredProcedureResponse deleteResponse = await this.scripts.DeleteStoredProcedureAsync(sprocId);
