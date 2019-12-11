@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Collections.Generic;
     using System.Globalization;
     using System.Linq.Expressions;
+    using Microsoft.Azure.Cosmos.Query.Core;
 
     internal static class DocumentQueryEvaluator
     {

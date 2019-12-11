@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Collections.Generic
+namespace Microsoft.Azure.Cosmos.Query.Core.Collections
 {
     using System;
     using System.Collections;
@@ -50,19 +50,9 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
 
         private PriorityQueue(List<T> queue, IComparer<T> comparer, bool isSynchronized)
         {
-            if (queue == null)
-            {
-                throw new ArgumentNullException("queue");
-            }
-
-            if (comparer == null)
-            {
-                throw new ArgumentNullException("comparer");
-            }
-
             this.IsSynchronized = isSynchronized;
-            this.queue = queue;
-            this.Comparer = comparer;
+            this.queue = queue ?? throw new ArgumentNullException(nameof(queue));
+            this.Comparer = comparer ?? throw new ArgumentNullException(nameof(comparer));
         }
 
         public int Count
@@ -254,7 +244,7 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
         {
             if (this.queue.Count <= 0)
             {
-                item = default(T);
+                item = default;
                 return false;
             }
 
@@ -266,7 +256,7 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
         {
             if (this.queue.Count <= 0)
             {
-                item = default(T);
+                item = default;
                 return false;
             }
 

@@ -10,14 +10,14 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
 
     [TestClass]
     public class ItemProducerTests
     {
-        private CancellationToken cancellationToken = new CancellationTokenSource().Token;
+        private readonly CancellationToken cancellationToken = new CancellationTokenSource().Token;
 
         [TestMethod]
         [DataRow(0, 5)]
@@ -132,7 +132,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             bool blockExecute = true;
             int callBackCount = 0;
-            Action callbackBlock = () =>
+            void callbackBlock()
             {
                 int callBackWaitCount = 0;
                 callBackCount++;
@@ -148,7 +148,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                 // Reset the block for the  next call
                 blockExecute = true;
-            };
+            }
 
             int[] pageSizes = new int[] { 2, 3, 1, 4 };
             (ItemProducer itemProducer, ReadOnlyCollection<ToDoItem> allItems) itemFactory = MockItemProducerFactory.Create(

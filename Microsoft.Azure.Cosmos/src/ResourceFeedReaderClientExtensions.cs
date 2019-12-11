@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -196,5 +196,15 @@ namespace Microsoft.Azure.Cosmos
             return new ResourceFeedReader<Offer>(client, ResourceType.Offer, options, null);
         }
 
+        /// <summary>
+        /// Creates a Feed Reader for snapshots in the Azure Cosmos DB service.
+        /// </summary>
+        /// <param name="client">The <see cref="DocumentClient"/> instance.</param>
+        /// <param name="options">the <see cref="FeedOptions"/> options for the request.</param>
+        /// <returns>A <see cref="ResourceFeedReader{Snapshot}"/> instance.</returns>
+        public static ResourceFeedReader<Snapshot> CreateSnapshotFeedReader(this DocumentClient client, FeedOptions options = null)
+        {
+            return new ResourceFeedReader<Snapshot>(client, ResourceType.Snapshot, options, null);
+        }
     }
 }

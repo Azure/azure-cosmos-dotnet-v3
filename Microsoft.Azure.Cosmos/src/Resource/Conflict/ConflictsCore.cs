@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
 
+    // TODO: This class should inherit from ConflictsInternal to avoid the downcasting hacks.
     internal class ConflictsCore : Conflicts
     {
         private readonly ContainerCore container;
@@ -113,10 +114,13 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            FeedIterator databaseStreamIterator = this.GetConflictQueryStreamIterator(
+            if (!(this.GetConflictQueryStreamIterator(
                 queryDefinition,
                 continuationToken,
-                requestOptions);
+                requestOptions) is FeedIteratorInternal databaseStreamIterator))
+            {
+                throw new InvalidOperationException($"Expected a FeedIteratorInternal.");
+            }
 
             return new FeedIteratorCore<T>(
                 databaseStreamIterator,

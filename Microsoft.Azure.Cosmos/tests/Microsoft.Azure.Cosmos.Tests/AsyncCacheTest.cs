@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
@@ -15,6 +16,32 @@ namespace Microsoft.Azure.Cosmos.Tests
     [TestClass]
     public class AsyncCacheTest
     {
+        [TestMethod]
+        [Owner("flnarenj")]
+        public async Task TestConcurrentGetAsync()
+        {
+            const string key = "a";
+            const string value = "b";
+
+            AsyncCache<string, string> cache = new AsyncCache<string, string>();
+
+            int hitCount = 0;
+            await Enumerable.Range(0, 10).ForEachAsync(
+               10,
+               _ => cache.GetAsync(
+                   key,
+                   null,
+                   () =>
+                   {
+                       // No Interlocked, would force barriers
+                       hitCount++;
+                       return Task.FromResult(value);
+                   },
+                   CancellationToken.None));
+
+            Assert.AreEqual(1, hitCount);
+        }
+
         [TestMethod]
         public async Task TestGetAsync()
         {
