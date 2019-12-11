@@ -210,7 +210,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
 
                 CollectionAssert.AreEquivalent(sprocIds, readSprocIds);
-            }   
+            }
         }
 
         [TestMethod]
@@ -565,7 +565,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ResponseMessage response = await this.scripts.ExecuteStoredProcedureStreamAsync(
                 storedProcedureId: sprocId,
                 streamPayload: streamPayload,
-                partitionKey: new Cosmos.PartitionKey(testPartitionId),                
+                partitionKey: new Cosmos.PartitionKey(testPartitionId),
                 requestOptions: null,
                 cancellationToken: default(CancellationToken));
 
@@ -573,6 +573,157 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 string text = await reader.ReadToEndAsync();
                 Assert.AreEqual(@"""onetwothree""", text);
+            }
+
+            StoredProcedureResponse deleteResponse = await this.scripts.DeleteStoredProcedureAsync(sprocId);
+            Assert.AreEqual(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+        }
+
+        [TestMethod]
+        public async Task ExecuteTestWithNonObjectStreamParameters()
+        {
+            string sprocId = Guid.NewGuid().ToString();
+            string sprocBody = @"function(param1) {
+                var context = getContext();
+                var response = context.getResponse();
+                response.setBody(param1);
+            }";
+
+            StoredProcedureResponse storedProcedureResponse =
+                await this.scripts.CreateStoredProcedureAsync(new StoredProcedureProperties(sprocId, sprocBody));
+            Assert.AreEqual(HttpStatusCode.Created, storedProcedureResponse.StatusCode);
+            StoredProcedureTests.ValidateStoredProcedureSettings(sprocId, sprocBody, storedProcedureResponse);
+
+            // Insert document and then query
+            string testPartitionId = Guid.NewGuid().ToString();
+            var payload = new { id = testPartitionId, user = testPartitionId };
+            ItemResponse<dynamic> createItemResponse = await this.container.CreateItemAsync<dynamic>(payload);
+            Assert.AreEqual(HttpStatusCode.Created, createItemResponse.StatusCode);
+
+            MemoryStream[] streamPayloads = new MemoryStream[]
+            {
+                new MemoryStream(Encoding.UTF8.GetBytes(@"""""")),
+                new MemoryStream(Encoding.UTF8.GetBytes(@"""hello""")),
+                new MemoryStream(Encoding.UTF8.GetBytes(@"0")),
+                new MemoryStream(Encoding.UTF8.GetBytes(@"undefined")),
+                new MemoryStream(Encoding.UTF8.GetBytes(@"-1.25")),
+                new MemoryStream(Encoding.UTF8.GetBytes(@"false")),
+                new MemoryStream(Encoding.UTF8.GetBytes(@"[x:4]")) // invalid json
+            };
+
+            foreach (MemoryStream streamPayload in streamPayloads)
+            {
+                ResponseMessage response = await this.scripts.ExecuteStoredProcedureStreamAsync(
+                    storedProcedureId: sprocId,
+                    streamPayload: streamPayload,
+                    partitionKey: new Cosmos.PartitionKey(testPartitionId),
+                    requestOptions: null,
+                    cancellationToken: default(CancellationToken));
+
+                Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
+            }
+
+            StoredProcedureResponse deleteResponse = await this.scripts.DeleteStoredProcedureAsync(sprocId);
+            Assert.AreEqual(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+        }
+
+        [TestMethod]
+        public async Task ExecuteTestWithTechnicallyJSONParseableButNotArraylikeParameters()
+        {
+            string sprocId = Guid.NewGuid().ToString();
+            string sprocBody = @"function(param1) {
+                var context = getContext();
+                var response = context.getResponse();
+                response.setBody(typeof param1);
+            }";
+
+            StoredProcedureResponse storedProcedureResponse =
+                await this.scripts.CreateStoredProcedureAsync(new StoredProcedureProperties(sprocId, sprocBody));
+            Assert.AreEqual(HttpStatusCode.Created, storedProcedureResponse.StatusCode);
+            StoredProcedureTests.ValidateStoredProcedureSettings(sprocId, sprocBody, storedProcedureResponse);
+
+            // Insert document and then query
+            string testPartitionId = Guid.NewGuid().ToString();
+            var payload = new { id = testPartitionId, user = testPartitionId };
+            ItemResponse<dynamic> createItemResponse = await this.container.CreateItemAsync<dynamic>(payload);
+            Assert.AreEqual(HttpStatusCode.Created, createItemResponse.StatusCode);
+
+            MemoryStream[] streamPayloads = new MemoryStream[]
+            {
+                new MemoryStream(Encoding.UTF8.GetBytes(@"null")),
+                new MemoryStream(Encoding.UTF8.GetBytes(@"{}")),
+                new MemoryStream(Encoding.UTF8.GetBytes(@"{""param1"":4}")),
+                new MemoryStream(Encoding.UTF8.GetBytes(@"{""0"":4}"))
+            };
+
+            foreach (MemoryStream streamPayload in streamPayloads)
+            {
+                ResponseMessage response = await this.scripts.ExecuteStoredProcedureStreamAsync(
+                    storedProcedureId: sprocId,
+                    streamPayload: streamPayload,
+                    partitionKey: new Cosmos.PartitionKey(testPartitionId),
+                    requestOptions: null,
+                    cancellationToken: default(CancellationToken));
+
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+
+                using (StreamReader reader = new StreamReader(response.Content))
+                {
+                    string text = await reader.ReadToEndAsync();
+                    Assert.AreEqual(@"""undefined""", text);
+                }
+            }
+
+            StoredProcedureResponse deleteResponse = await this.scripts.DeleteStoredProcedureAsync(sprocId);
+            Assert.AreEqual(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+        }
+
+        [TestMethod]
+        public async Task ExecuteTestWithArraylikeParameters()
+        {
+            string sprocId = Guid.NewGuid().ToString();
+            string sprocBody = @"function(param1, param2, param3) {
+                var context = getContext();
+                var response = context.getResponse();
+                response.setBody(param1 + (param2 || '') + (param3 || ''));
+            }";
+
+            StoredProcedureResponse storedProcedureResponse =
+                await this.scripts.CreateStoredProcedureAsync(new StoredProcedureProperties(sprocId, sprocBody));
+            Assert.AreEqual(HttpStatusCode.Created, storedProcedureResponse.StatusCode);
+            StoredProcedureTests.ValidateStoredProcedureSettings(sprocId, sprocBody, storedProcedureResponse);
+
+            // Insert document and then query
+            string testPartitionId = Guid.NewGuid().ToString();
+            var payload = new { id = testPartitionId, user = testPartitionId };
+            ItemResponse<dynamic> createItemResponse = await this.container.CreateItemAsync<dynamic>(payload);
+            Assert.AreEqual(HttpStatusCode.Created, createItemResponse.StatusCode);
+
+            MemoryStream[] streamPayloads = new MemoryStream[]
+            {
+                new MemoryStream(Encoding.UTF8.GetBytes(@"{""0"":""onetwothree"", ""length"": 1}")),
+                new MemoryStream(Encoding.UTF8.GetBytes(@"{""0"":""onetwothree"", ""length"": 65535}")), // The max allowed by javascript function.apply
+                new MemoryStream(Encoding.UTF8.GetBytes(@"{""0"":""onetwothree"", ""1"": ""test"", ""length"": 1}")), // function.apply will not see the [1] parameter because length == 1
+                new MemoryStream(Encoding.UTF8.GetBytes(@"{""0"":""one"", ""1"": ""twothree"", ""length"": 2}")),
+                new MemoryStream(Encoding.UTF8.GetBytes(@"{""0"":""one"", ""2"": ""three"", ""1"": ""two"", ""length"": 3}")) // out of order is okay because arrays are just numeric indexers in javascript
+            };
+
+            foreach (MemoryStream streamPayload in streamPayloads)
+            {
+                ResponseMessage response = await this.scripts.ExecuteStoredProcedureStreamAsync(
+                    storedProcedureId: sprocId,
+                    streamPayload: streamPayload,
+                    partitionKey: new Cosmos.PartitionKey(testPartitionId),
+                    requestOptions: null,
+                    cancellationToken: default(CancellationToken));
+
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+
+                using (StreamReader reader = new StreamReader(response.Content))
+                {
+                    string text = await reader.ReadToEndAsync();
+                    Assert.AreEqual(@"""onetwothree""", text);
+                }
             }
 
             StoredProcedureResponse deleteResponse = await this.scripts.DeleteStoredProcedureAsync(sprocId);

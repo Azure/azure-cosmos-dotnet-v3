@@ -360,7 +360,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </summary>
         /// <param name="storedProcedureId">The identifier of the Stored Procedure to execute.</param>
         /// <param name="partitionKey">The partition key for the item.</param>
-        /// <param name="parameters">(Optional) An array of dynamic objects representing the parameters for the stored procedure.</param>
+        /// <param name="parameters">An array of dynamic objects representing the parameters for the stored procedure. This can be null if no parameters are required.</param>
         /// <param name="requestOptions">(Optional) The options for the stored procedure request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The task object representing the service response for the asynchronous operation which would contain any response set in the stored procedure.</returns>
@@ -421,11 +421,11 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// Executes a stored procedure against a container as an asynchronous operation in the Azure Cosmos service and obtains a Stream as response.
         /// </summary>
         /// <param name="storedProcedureId">The identifier of the Stored Procedure to execute.</param>
-        /// <param name="streamPayload">(Optional) An optional <see cref="Stream"/> containing the payload, which should represent an array of parameters for the stored procedure.</param>
+        /// <param name="streamPayload">A <see cref="Stream"/> containing the payload which should represent a JSON array or arraylike object of parameters. This is parsed using JSON.parse and Function.apply uses the result to call the stored procedure. This can be null if no parameters are required.</param>
         /// <param name="partitionKey">The partition key for the item.</param>
         /// <param name="requestOptions">(Optional) The options for the stored procedure request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>The task object representing the service response for the asynchronous operation which would contain any response set in the stored procedure.</returns>
+        /// <returns>The task object representing the service response for the asynchronous operation which would contain any response set in the stored procedure. The response will contain status code (400) BadRequest if streamPayload represents anything other than a JSON array, arraylike object or null.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="storedProcedureId"/> or <paramref name="partitionKey"/>  are not set.</exception>
         /// <example>
         ///  This creates and executes a stored procedure that appends a string to the first item returned from the query.
