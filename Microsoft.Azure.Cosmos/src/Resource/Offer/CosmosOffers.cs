@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos
             OfferV2 newOffer = new OfferV2(offerV2, throughput);
 
             return await this.GetThroughputResponseAsync(
-                streamPayload: this.ClientContext.PropertiesSerializer.ToStream(newOffer),
+                streamPayload: this.ClientContext.SerializerCore.ToStream(newOffer),
                 operationType: OperationType.Replace,
                 linkUri: new Uri(offerV2.SelfLink, UriKind.Relative),
                 resourceType: ResourceType.Offer,
@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos
                 OfferV2 newOffer = new OfferV2(offerV2, throughput);
 
                 return await this.GetThroughputResponseAsync(
-                    streamPayload: this.ClientContext.PropertiesSerializer.ToStream(newOffer),
+                    streamPayload: this.ClientContext.SerializerCore.ToStream(newOffer),
                     operationType: OperationType.Replace,
                     linkUri: new Uri(offerV2.SelfLink, UriKind.Relative),
                     resourceType: ResourceType.Offer,

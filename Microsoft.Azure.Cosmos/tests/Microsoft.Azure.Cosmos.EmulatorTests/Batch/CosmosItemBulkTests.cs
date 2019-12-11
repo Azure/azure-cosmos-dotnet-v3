@@ -13,8 +13,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public class CosmosItemBulkTests
     {
-        private static CosmosSerializer cosmosDefaultJsonSerializer = new CosmosJsonDotNetSerializer();
-
         private Container container;
         private Database database;
 
@@ -56,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(HttpStatusCode.Created, result.StatusCode);
                 Assert.IsTrue(result.Headers.RequestCharge > 0);
                 Assert.IsFalse(string.IsNullOrEmpty(result.Diagnostics.ToString()));
-                MyDocument document = cosmosDefaultJsonSerializer.FromStream<MyDocument>(result.Content);
+                MyDocument document = TestCommon.Serializer.FromStream<MyDocument>(result.Content);
                 Assert.AreEqual(i.ToString(), document.id);
             }
         }
@@ -100,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(HttpStatusCode.Created, result.StatusCode);
                 Assert.IsTrue(result.Headers.RequestCharge > 0);
                 Assert.IsFalse(string.IsNullOrEmpty(result.Diagnostics.ToString()));
-                MyDocument document = cosmosDefaultJsonSerializer.FromStream<MyDocument>(result.Content);
+                MyDocument document = TestCommon.Serializer.FromStream<MyDocument>(result.Content);
                 Assert.AreEqual(i.ToString(), document.id);
             }
         }
@@ -396,17 +394,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private static Task<ResponseMessage> ExecuteCreateStreamAsync(Container container, MyDocument item)
         {
-            return container.CreateItemStreamAsync(cosmosDefaultJsonSerializer.ToStream(item), new PartitionKey(item.Status));
+            return container.CreateItemStreamAsync(TestCommon.Serializer.ToStream(item), new PartitionKey(item.Status));
         }
 
         private static Task<ResponseMessage> ExecuteUpsertStreamAsync(Container container, MyDocument item)
         {
-            return container.UpsertItemStreamAsync(cosmosDefaultJsonSerializer.ToStream(item), new PartitionKey(item.Status));
+            return container.UpsertItemStreamAsync(TestCommon.Serializer.ToStream(item), new PartitionKey(item.Status));
         }
 
         private static Task<ResponseMessage> ExecuteReplaceStreamAsync(Container container, MyDocument item)
         {
-            return container.ReplaceItemStreamAsync(cosmosDefaultJsonSerializer.ToStream(item), item.id, new PartitionKey(item.Status));
+            return container.ReplaceItemStreamAsync(TestCommon.Serializer.ToStream(item), item.id, new PartitionKey(item.Status));
         }
 
         private static Task<ResponseMessage> ExecuteDeleteStreamAsync(Container container, MyDocument item)

@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Cosmos
                 Debug.Assert(BatchAsyncContainerExecutor.ValidateOperationEPK(operation, itemRequestOptions));
             }
 
-            await operation.MaterializeResourceAsync(this.cosmosClientContext.CosmosSerializer, cancellationToken);
+            await operation.MaterializeResourceAsync(this.cosmosClientContext.SerializerCore, cancellationToken);
         }
 
         private static IDocumentClientRetryPolicy GetRetryPolicy(RetryOptions retryOptions)
@@ -237,7 +237,7 @@ namespace Microsoft.Azure.Cosmos
                         requestEnricher: requestMessage => BatchAsyncContainerExecutor.AddHeadersToRequestMessage(requestMessage, serverRequest.PartitionKeyRangeId),
                         cancellationToken: cancellationToken).ConfigureAwait(false);
 
-                    TransactionalBatchResponse serverResponse = await TransactionalBatchResponse.FromResponseMessageAsync(responseMessage, serverRequest, this.cosmosClientContext.CosmosSerializer).ConfigureAwait(false);
+                    TransactionalBatchResponse serverResponse = await TransactionalBatchResponse.FromResponseMessageAsync(responseMessage, serverRequest, this.cosmosClientContext.SerializerCore).ConfigureAwait(false);
 
                     return new PartitionKeyRangeBatchExecutionResult(serverRequest.PartitionKeyRangeId, serverRequest.Operations, serverResponse);
                 }
@@ -251,7 +251,7 @@ namespace Microsoft.Azure.Cosmos
                 return streamer;
             }
 
-            BatchAsyncStreamer newStreamer = new BatchAsyncStreamer(this.maxServerRequestOperationCount, this.maxServerRequestBodyLength, this.dispatchTimerInSeconds, this.timerPool, this.cosmosClientContext.CosmosSerializer, this.ExecuteAsync, this.ReBatchAsync);
+            BatchAsyncStreamer newStreamer = new BatchAsyncStreamer(this.maxServerRequestOperationCount, this.maxServerRequestBodyLength, this.dispatchTimerInSeconds, this.timerPool, this.cosmosClientContext.SerializerCore, this.ExecuteAsync, this.ReBatchAsync);
             if (!this.streamersByPartitionKeyRange.TryAdd(partitionKeyRangeId, newStreamer))
             {
                 newStreamer.Dispose();

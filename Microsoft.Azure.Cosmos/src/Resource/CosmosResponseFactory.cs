@@ -11,61 +11,47 @@ namespace Microsoft.Azure.Cosmos
     internal class CosmosResponseFactory
     {
         /// <summary>
-        /// Cosmos JSON converter. This allows custom JSON parsers.
-        /// </summary>
-        private readonly CosmosSerializer cosmosSerializer;
-
-        /// <summary>
         /// This is used for all meta data types
         /// </summary>
-        private readonly CosmosSerializer propertiesSerializer;
+        private readonly CosmosSerializerCore serializerCore;
 
         internal CosmosResponseFactory(
-            CosmosSerializer defaultJsonSerializer,
-            CosmosSerializer userJsonSerializer)
+            CosmosSerializerCore jsonSerializerCore)
         {
-            this.propertiesSerializer = defaultJsonSerializer;
-            this.cosmosSerializer = userJsonSerializer;
+            this.serializerCore = jsonSerializerCore;
         }
 
         internal FeedResponse<T> CreateQueryFeedResponseWithPropertySerializer<T>(
             ResponseMessage cosmosResponseMessage)
         {
             return this.CreateQueryFeedResponseHelper<T>(
-                cosmosResponseMessage,
-                true);
+                cosmosResponseMessage);
         }
 
         internal FeedResponse<T> CreateQueryFeedResponse<T>(
             ResponseMessage cosmosResponseMessage)
         {
             return this.CreateQueryFeedResponseHelper<T>(
-                cosmosResponseMessage,
-                false);
+                cosmosResponseMessage);
         }
 
         private FeedResponse<T> CreateQueryFeedResponseHelper<T>(
-            ResponseMessage cosmosResponseMessage,
-            bool usePropertySerializer)
+            ResponseMessage cosmosResponseMessage)
         {
             //Throw the exception
             cosmosResponseMessage.EnsureSuccessStatusCode();
-
-            // The property serializer should be used for internal
-            // query operations like throughput since user serializer can break the logic
-            CosmosSerializer serializer = usePropertySerializer ? this.propertiesSerializer : this.cosmosSerializer;
 
             QueryResponse queryResponse = cosmosResponseMessage as QueryResponse;
             if (queryResponse != null)
             {
                 return QueryResponse<T>.CreateResponse<T>(
                     cosmosQueryResponse: queryResponse,
-                    jsonSerializer: serializer);
+                    serializerCore: this.serializerCore);
             }
 
             return ReadFeedResponse<T>.CreateResponse<T>(
                        cosmosResponseMessage,
-                       serializer);
+                       this.serializerCore);
         }
 
         internal Task<ItemResponse<T>> CreateItemResponseAsync<T>(
@@ -73,7 +59,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                T item = this.ToObjectInternal<T>(cosmosResponseMessage, this.cosmosSerializer);
+                T item = this.ToObjectInternal<T>(cosmosResponseMessage);
                 return new ItemResponse<T>(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
@@ -88,7 +74,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                ContainerProperties containerProperties = this.ToObjectInternal<ContainerProperties>(cosmosResponseMessage, this.propertiesSerializer);
+                ContainerProperties containerProperties = this.ToObjectInternal<ContainerProperties>(cosmosResponseMessage);
                 return new ContainerResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
@@ -104,7 +90,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                UserProperties userProperties = this.ToObjectInternal<UserProperties>(cosmosResponseMessage, this.propertiesSerializer);
+                UserProperties userProperties = this.ToObjectInternal<UserProperties>(cosmosResponseMessage);
                 return new UserResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
@@ -120,7 +106,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                PermissionProperties permissionProperties = this.ToObjectInternal<PermissionProperties>(cosmosResponseMessage, this.propertiesSerializer);
+                PermissionProperties permissionProperties = this.ToObjectInternal<PermissionProperties>(cosmosResponseMessage);
                 return new PermissionResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
@@ -136,9 +122,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                DatabaseProperties databaseProperties = this.ToObjectInternal<DatabaseProperties>(
-                    cosmosResponseMessage,
-                    this.propertiesSerializer);
+                DatabaseProperties databaseProperties = this.ToObjectInternal<DatabaseProperties>(cosmosResponseMessage);
 
                 return new DatabaseResponse(
                     cosmosResponseMessage.StatusCode,
@@ -154,7 +138,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                ThroughputProperties throughputProperties = this.ToObjectInternal<ThroughputProperties>(cosmosResponseMessage, this.propertiesSerializer);
+                ThroughputProperties throughputProperties = this.ToObjectInternal<ThroughputProperties>(cosmosResponseMessage);
                 return new ThroughputResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
@@ -167,7 +151,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                T item = this.ToObjectInternal<T>(cosmosResponseMessage, this.cosmosSerializer);
+                T item = this.ToObjectInternal<T>(cosmosResponseMessage);
                 return new StoredProcedureExecuteResponse<T>(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
@@ -180,7 +164,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                StoredProcedureProperties cosmosStoredProcedure = this.ToObjectInternal<StoredProcedureProperties>(cosmosResponseMessage, this.propertiesSerializer);
+                StoredProcedureProperties cosmosStoredProcedure = this.ToObjectInternal<StoredProcedureProperties>(cosmosResponseMessage);
                 return new StoredProcedureResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
@@ -193,7 +177,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                TriggerProperties triggerProperties = this.ToObjectInternal<TriggerProperties>(cosmosResponseMessage, this.propertiesSerializer);
+                TriggerProperties triggerProperties = this.ToObjectInternal<TriggerProperties>(cosmosResponseMessage);
                 return new TriggerResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
@@ -206,7 +190,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                UserDefinedFunctionProperties settings = this.ToObjectInternal<UserDefinedFunctionProperties>(cosmosResponseMessage, this.propertiesSerializer);
+                UserDefinedFunctionProperties settings = this.ToObjectInternal<UserDefinedFunctionProperties>(cosmosResponseMessage);
                 return new UserDefinedFunctionResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
@@ -223,7 +207,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal T ToObjectInternal<T>(ResponseMessage cosmosResponseMessage, CosmosSerializer jsonSerializer)
+        internal T ToObjectInternal<T>(ResponseMessage cosmosResponseMessage)
         {
             //Throw the exception
             cosmosResponseMessage.EnsureSuccessStatusCode();
@@ -233,7 +217,7 @@ namespace Microsoft.Azure.Cosmos
                 return default(T);
             }
 
-            return jsonSerializer.FromStream<T>(cosmosResponseMessage.Content);
+            return this.serializerCore.FromStream<T>(cosmosResponseMessage.Content);
         }
     }
 }

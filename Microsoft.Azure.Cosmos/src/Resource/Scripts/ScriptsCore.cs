@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             return this.ProcessStoredProcedureOperationAsync(
                 linkUri: this.container.LinkUri,
                 operationType: OperationType.Create,
-                streamPayload: this.clientContext.PropertiesSerializer.ToStream(storedProcedureProperties),
+                streamPayload: this.clientContext.SerializerCore.ToStream(storedProcedureProperties),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
@@ -128,7 +128,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             return this.ProcessStoredProcedureOperationAsync(
                 id: storedProcedureProperties.Id,
                 operationType: OperationType.Replace,
-                streamPayload: this.clientContext.PropertiesSerializer.ToStream(storedProcedureProperties),
+                streamPayload: this.clientContext.SerializerCore.ToStream(storedProcedureProperties),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
@@ -185,7 +185,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             Stream streamPayload = null;
             if (parameters != null)
             {
-                streamPayload = this.clientContext.CosmosSerializer.ToStream<dynamic[]>(parameters);
+                streamPayload = this.clientContext.SerializerCore.ToStream<dynamic[]>(parameters);
             }
 
             Uri linkUri = this.clientContext.CreateLink(
@@ -226,7 +226,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             return this.ProcessTriggerOperationAsync(
                 linkUri: this.container.LinkUri,
                 operationType: OperationType.Create,
-                streamPayload: this.clientContext.PropertiesSerializer.ToStream(triggerProperties),
+                streamPayload: this.clientContext.SerializerCore.ToStream(triggerProperties),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
@@ -338,7 +338,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             return this.ProcessTriggerOperationAsync(
                 id: triggerProperties.Id,
                 operationType: OperationType.Replace,
-                streamPayload: this.clientContext.PropertiesSerializer.ToStream(triggerProperties),
+                streamPayload: this.clientContext.SerializerCore.ToStream(triggerProperties),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
@@ -384,7 +384,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             return this.ProcessUserDefinedFunctionOperationAsync(
                 linkUri: this.container.LinkUri,
                 operationType: OperationType.Create,
-                streamPayload: this.clientContext.PropertiesSerializer.ToStream(userDefinedFunctionProperties),
+                streamPayload: this.clientContext.SerializerCore.ToStream(userDefinedFunctionProperties),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
@@ -496,7 +496,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             return this.ProcessUserDefinedFunctionOperationAsync(
                 id: userDefinedFunctionProperties.Id,
                 operationType: OperationType.Replace,
-                streamPayload: this.clientContext.PropertiesSerializer.ToStream(userDefinedFunctionProperties),
+                streamPayload: this.clientContext.SerializerCore.ToStream(userDefinedFunctionProperties),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }

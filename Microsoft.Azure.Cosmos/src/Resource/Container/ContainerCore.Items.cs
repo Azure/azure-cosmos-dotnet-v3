@@ -519,7 +519,7 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
-            Stream streamPayload = this.ClientContext.CosmosSerializer.ToStream<T>(item);
+            Stream streamPayload = this.ClientContext.SerializerCore.ToStream<T>(item);
 
             // User specified PK value, no need to extract it
             if (partitionKey.HasValue)

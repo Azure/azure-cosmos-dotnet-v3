@@ -24,20 +24,20 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
         private readonly PartitionCheckpointer checkpointer;
         private readonly ChangeFeedObserver<T> observer;
         private readonly FeedIterator resultSetIterator;
-        private readonly CosmosSerializer cosmosJsonSerializer;
+        private readonly CosmosSerializerCore serializerCore;
 
         public FeedProcessorCore(
             ChangeFeedObserver<T> observer,
             FeedIterator resultSetIterator,
             ProcessorOptions options,
             PartitionCheckpointer checkpointer,
-            CosmosSerializer cosmosJsonSerializer)
+            CosmosSerializerCore serializerCore)
         {
             this.observer = observer;
             this.options = options;
             this.checkpointer = checkpointer;
             this.resultSetIterator = resultSetIterator;
-            this.cosmosJsonSerializer = cosmosJsonSerializer;
+            this.serializerCore = serializerCore;
         }
 
         public override async Task RunAsync(CancellationToken cancellationToken)
@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             Collection<T> asFeedResponse;
             try
             {
-                asFeedResponse = this.cosmosJsonSerializer.FromStream<CosmosFeedResponseUtil<T>>(response.Content).Data;
+                asFeedResponse = this.serializerCore.FromStream<CosmosFeedResponseUtil<T>>(response.Content).Data;
             }
             catch (Exception serializationException)
             {

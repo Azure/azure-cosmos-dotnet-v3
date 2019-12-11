@@ -111,10 +111,9 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             ResponseMessage feedResponse = this.CreateResponse();
 
             Mock<CosmosSerializer> mockUserJsonSerializer = new Mock<CosmosSerializer>();
-            Mock<CosmosSerializer> mockDefaultJsonSerializer = new Mock<CosmosSerializer>();
+            CosmosSerializerCore serializerCore = new CosmosSerializerCore(mockUserJsonSerializer.Object);
             CosmosResponseFactory cosmosResponseFactory = new CosmosResponseFactory(
-               defaultJsonSerializer: mockDefaultJsonSerializer.Object,
-               userJsonSerializer: mockUserJsonSerializer.Object);
+               serializerCore);
 
             // Test the user specified response
             mockUserJsonSerializer.Setup(x => x.FromStream<ToDoActivity>(itemResponse.Content)).Returns(new ToDoActivity());
@@ -151,12 +150,6 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
                 Id = "mock"
             };
 
-            mockDefaultJsonSerializer.Setup(x => x.FromStream<DatabaseProperties>(databaseResponse.Content)).Returns(databaseSettings);
-            mockDefaultJsonSerializer.Setup(x => x.FromStream<ContainerProperties>(containerResponse.Content)).Returns(containerSettings);
-            mockDefaultJsonSerializer.Setup(x => x.FromStream<StoredProcedureProperties>(storedProcedureResponse.Content)).Returns(cosmosStoredProcedureSettings);
-            mockDefaultJsonSerializer.Setup(x => x.FromStream<TriggerProperties>(triggerResponse.Content)).Returns(cosmosTriggerSettings);
-            mockDefaultJsonSerializer.Setup(x => x.FromStream<UserDefinedFunctionProperties>(udfResponse.Content)).Returns(cosmosUserDefinedFunctionSettings);
-
             Mock<Container> mockContainer = new Mock<Container>();
             Mock<Database> mockDatabase = new Mock<Database>();
 
@@ -166,9 +159,6 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             await cosmosResponseFactory.CreateStoredProcedureResponseAsync(Task.FromResult(storedProcedureResponse));
             await cosmosResponseFactory.CreateTriggerResponseAsync(Task.FromResult(triggerResponse));
             await cosmosResponseFactory.CreateUserDefinedFunctionResponseAsync(Task.FromResult(udfResponse));
-
-            // Throw if the setups were not called
-            mockDefaultJsonSerializer.VerifyAll();
         }
 
         [TestMethod]

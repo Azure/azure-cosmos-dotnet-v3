@@ -154,7 +154,7 @@ namespace Microsoft.Azure.Cosmos
     internal class QueryResponse<T> : FeedResponse<T>
     {
         private readonly IEnumerable<CosmosElement> cosmosElements;
-        private readonly CosmosSerializer jsonSerializer;
+        private readonly CosmosSerializerCore serializerCore;
         private readonly CosmosSerializationFormatOptions serializationOptions;
         private IEnumerable<T> resources;
 
@@ -163,13 +163,13 @@ namespace Microsoft.Azure.Cosmos
             IEnumerable<CosmosElement> cosmosElements,
             CosmosQueryResponseMessageHeaders responseMessageHeaders,
             CosmosDiagnostics diagnostics,
-            CosmosSerializer jsonSerializer,
+            CosmosSerializerCore serializerCore,
             CosmosSerializationFormatOptions serializationOptions)
         {
             this.cosmosElements = cosmosElements;
             this.QueryHeaders = responseMessageHeaders;
             this.Diagnostics = diagnostics;
-            this.jsonSerializer = jsonSerializer;
+            this.serializerCore = serializerCore;
             this.serializationOptions = serializationOptions;
             this.StatusCode = httpStatusCode;
         }
@@ -209,7 +209,7 @@ namespace Microsoft.Azure.Cosmos
                             this.QueryHeaders.ContainerRid,
                             this.cosmosElements,
                             this.QueryHeaders.ResourceType,
-                            this.jsonSerializer,
+                            this.serializerCore,
                             this.serializationOptions);
                     }
                 }
@@ -220,7 +220,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal static QueryResponse<TInput> CreateResponse<TInput>(
             QueryResponse cosmosQueryResponse,
-            CosmosSerializer jsonSerializer)
+            CosmosSerializerCore serializerCore)
         {
             QueryResponse<TInput> queryResponse;
             using (cosmosQueryResponse)
@@ -231,7 +231,7 @@ namespace Microsoft.Azure.Cosmos
                     cosmosElements: cosmosQueryResponse.CosmosElements,
                     responseMessageHeaders: cosmosQueryResponse.QueryHeaders,
                     diagnostics: cosmosQueryResponse.Diagnostics,
-                    jsonSerializer: jsonSerializer,
+                    serializerCore: serializerCore,
                     serializationOptions: cosmosQueryResponse.CosmosSerializationOptions);
             }
             return queryResponse;

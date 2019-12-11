@@ -41,14 +41,14 @@ namespace Microsoft.Azure.Cosmos
 
         internal static ReadFeedResponse<TInput> CreateResponse<TInput>(
             ResponseMessage responseMessage,
-            CosmosSerializer jsonSerializer)
+            CosmosSerializerCore serializerCore)
         {
             using (responseMessage)
             {
                 ICollection<TInput> resources = default;
                 if (responseMessage.Content != null)
                 {
-                    CosmosFeedResponseUtil<TInput> response = jsonSerializer.FromStream<CosmosFeedResponseUtil<TInput>>(responseMessage.Content);
+                    CosmosFeedResponseUtil<TInput> response = serializerCore.FromStream<CosmosFeedResponseUtil<TInput>>(responseMessage.Content);
                     resources = response.Data;
                 }
 
