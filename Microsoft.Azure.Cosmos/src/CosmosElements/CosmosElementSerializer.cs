@@ -247,7 +247,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 resourceType,
                 cosmosSerializationOptions);
 
-            IEnumerable<T> typedResults = jsonSerializer.FromStream<CosmosFeedResponseUtil<T>>(stream).Data;
+            IEnumerable<T> typedResults = jsonSerializer.FromFeedResponseStream<T>(stream);
 
             return typedResults;
         }

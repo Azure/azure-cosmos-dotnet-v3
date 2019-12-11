@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.ObjectModel;
     using System.Diagnostics;
     using System.IO;
     using Microsoft.Azure.Cosmos.Query.Core;
@@ -19,7 +20,14 @@ namespace Microsoft.Azure.Cosmos
         private static readonly CosmosSerializer propertiesSerializer = new CosmosJsonSerializerWrapper(new CosmosJsonDotNetSerializer());
         private readonly CosmosSerializer customSerializer;
         private readonly CosmosSerializer sqlQuerySpecSerializer;
-        
+
+        public enum SerializerType
+        {
+            UserType,
+            InternalType,
+            SqlQuerySpecType,
+        }
+
         internal CosmosSerializerCore(
             CosmosSerializer customSerializer)
         {
@@ -37,19 +45,25 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public T FromStream<T>(Stream stream)
+        public T FromStream<T>(Stream stream, SerializerType serializerType)
         {
-            CosmosSerializer serializerCore = this.GetSerializer<T>();
+            CosmosSerializer serializerCore = this.GetSerializer<T>(serializerType);
             return serializerCore.FromStream<T>(stream);
         }
 
-        public Stream ToStream<T>(T input)
+        public Collection<T> FromFeedResponseStream<T>(Stream stream)
         {
-            CosmosSerializer serializerCore = this.GetSerializer<T>();
+            CosmosSerializer serializerCore = this.GetFeedResponseSerializer<T>();
+            return serializerCore.FromStream<CosmosFeedResponseUtil<T>>(stream).Data;
+        }
+
+        public Stream ToStream<T>(T input, SerializerType serializerType)
+        {
+            CosmosSerializer serializerCore = this.GetSerializer<T>(serializerType);
             return serializerCore.ToStream<T>(input);
         }
 
-        private CosmosSerializer GetSerializer<T>()
+        private CosmosSerializer GetFeedResponseSerializer<T>()
         {
             if (this.customSerializer == null)
             {
@@ -57,11 +71,6 @@ namespace Microsoft.Azure.Cosmos
             }
 
             Type inputType = typeof(T);
-            if (inputType == typeof(CosmosFeedResponseUtil<>))
-            {
-                Debug.Assert(inputType.GenericTypeArguments.Length == 0);
-            }
-
             if (inputType == typeof(AccountProperties) ||
                 inputType == typeof(DatabaseProperties) ||
                 inputType == typeof(ContainerProperties) ||
@@ -86,5 +95,30 @@ namespace Microsoft.Azure.Cosmos
 
             return this.customSerializer;
         }
+
+        private CosmosSerializer GetSerializer<T>(SerializerType serializerType)
+        {
+            if (this.customSerializer == null)
+            {
+                return CosmosSerializerCore.propertiesSerializer;
+            }
+
+            if (serializerType == SerializerType.InternalType)
+            {
+                return CosmosSerializerCore.propertiesSerializer;
+            }
+
+            if (serializerType == SerializerType.SqlQuerySpecType)
+            {
+                return this.sqlQuerySpecSerializer;
+            }
+
+            // User serializer is responsible for all item operation serialization.
+            // This includes any public SDK types.
+            Debug.Assert(typeof(T).IsPublic, $"User serializer is being used for internal type:{typeof(T).FullName}.");
+            return this.customSerializer;
+        }
+
+        
     }
 }

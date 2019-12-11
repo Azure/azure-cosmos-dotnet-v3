@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             Collection<T> asFeedResponse;
             try
             {
-                asFeedResponse = this.serializerCore.FromStream<CosmosFeedResponseUtil<T>>(response.Content).Data;
+                asFeedResponse = this.serializerCore.FromFeedResponseStream<T>(response.Content);
             }
             catch (Exception serializationException)
             {
