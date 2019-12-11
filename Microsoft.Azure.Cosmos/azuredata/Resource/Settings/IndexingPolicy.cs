@@ -9,8 +9,6 @@ namespace Azure.Cosmos
     using System.Collections.ObjectModel;
     using Azure.Cosmos.Spatial;
     using Microsoft.Azure.Documents;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Converters;
 
     /// <summary>
     /// Represents the indexing policy configuration for a collection in the Azure Cosmos DB service.

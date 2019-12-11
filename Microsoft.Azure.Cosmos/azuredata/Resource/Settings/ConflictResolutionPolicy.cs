@@ -4,14 +4,13 @@
 
 namespace Azure.Cosmos
 {
-    using Microsoft.Azure.Documents;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Converters;
+    using System.Text.Json.Serialization;
 
     /// <summary>
     /// Represents the conflict resolution policy configuration for specifying how to resolve conflicts 
     /// in case writes from different regions result in conflicts on items in the container in the Azure Cosmos DB service.
     /// </summary>
+    [JsonConverter(typeof(TextJsonConflictResolutionPolicyConverter))]
     public class ConflictResolutionPolicy
     {
         /// <summary>
@@ -29,8 +28,6 @@ namespace Azure.Cosmos
         /// <value>
         /// One of the values of the <see cref="ConflictResolutionMode"/> enumeration.
         /// </value>
-        [JsonProperty(PropertyName = Constants.Properties.Mode, NullValueHandling = NullValueHandling.Ignore)]
-        [JsonConverter(typeof(StringEnumConverter))]
         public ConflictResolutionMode Mode { get; set; }
 
         /// <summary>
@@ -50,7 +47,6 @@ namespace Azure.Cosmos
         /// conflictResolutionPolicy.ConflictResolutionPath = "/name/first";
         /// ]]>
         /// </example>
-        [JsonProperty(PropertyName = Constants.Properties.ConflictResolutionPath, NullValueHandling = NullValueHandling.Ignore)]
         public string ResolutionPath { get; set; }
 
         /// <summary>
@@ -70,7 +66,6 @@ namespace Azure.Cosmos
         /// conflictResolutionPolicy.ConflictResolutionProcedure = "dbs/databaseName/colls/containerName/sprocs/storedProcedureName";
         /// ]]>
         /// </example>
-        [JsonProperty(PropertyName = Constants.Properties.ConflictResolutionProcedure, NullValueHandling = NullValueHandling.Ignore)]
         public string ResolutionProcedure { get; set; }
     }
 }

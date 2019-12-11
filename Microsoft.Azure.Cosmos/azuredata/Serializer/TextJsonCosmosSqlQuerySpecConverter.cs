@@ -5,20 +5,20 @@
 namespace Azure.Cosmos
 {
     using System;
-    using System.Collections.Generic;
     using System.IO;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
     using Azure.Cosmos.Serialization;
     using Microsoft.Azure.Cosmos;
-    using Newtonsoft.Json;
 
     /// <summary>
     /// A custom serializer converter for SQL query spec
     /// </summary>
-    internal sealed class CosmosSqlQuerySpecJsonConverter : JsonConverter
+    internal sealed class TextJsonCosmosSqlQuerySpecConverter : JsonConverter<SqlParameter>
     {
         private readonly CosmosSerializer UserSerializer;
 
-        internal CosmosSqlQuerySpecJsonConverter(CosmosSerializer userSerializer)
+        internal TextJsonCosmosSqlQuerySpecConverter(CosmosSerializer userSerializer)
         {
             this.UserSerializer = userSerializer ?? throw new ArgumentNullException(nameof(userSerializer));
         }
@@ -28,27 +28,27 @@ namespace Azure.Cosmos
             return typeof(SqlParameter) == objectType;
         }
 
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+        public override SqlParameter Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             throw new NotImplementedException();
         }
 
-        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        public override void Write(Utf8JsonWriter writer, SqlParameter sqlParameter, JsonSerializerOptions options)
         {
-            SqlParameter sqlParameter = (SqlParameter)value;
-
             writer.WriteStartObject();
             writer.WritePropertyName("name");
-            serializer.Serialize(writer, sqlParameter.Name);
+            writer.WriteStringValue(sqlParameter.Name);
             writer.WritePropertyName("value");
 
             // Use the user serializer for the parameter values so custom conversions are correctly handled
-            using (Stream str = this.UserSerializer.ToStream(sqlParameter.Value))
+#pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
+            using (Stream str = this.UserSerializer.ToStreamAsync(sqlParameter.Value).GetAwaiter().GetResult())
+#pragma warning restore VSTHRD002 // Avoid problematic synchronous waits
             {
                 using (StreamReader streamReader = new StreamReader(str))
                 {
                     string parameterValue = streamReader.ReadToEnd();
-                    writer.WriteRawValue(parameterValue);
+                    writer.WriteStringValue(parameterValue);
                 }
             }
 
@@ -69,12 +69,11 @@ namespace Azure.Cosmos
                 return propertiesSerializer;
             }
 
-            JsonSerializerSettings settings = new JsonSerializerSettings()
-            {
-                Converters = new List<JsonConverter>() { new CosmosSqlQuerySpecJsonConverter(cosmosSerializer) }
-            };
+            JsonSerializerOptions settings = new JsonSerializerOptions();
 
-            return new CosmosJsonSerializerWrapper(new CosmosJsonDotNetSerializer(settings));
+            settings.Converters.Add(new TextJsonCosmosSqlQuerySpecConverter(cosmosSerializer));
+
+            return new CosmosJsonSerializerWrapper(new CosmosTextJsonSerializer(settings));
         }
     }
 }

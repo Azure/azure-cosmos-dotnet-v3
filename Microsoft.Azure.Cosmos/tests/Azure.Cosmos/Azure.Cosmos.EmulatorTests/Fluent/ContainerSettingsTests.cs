@@ -86,7 +86,7 @@ namespace Azure.Cosmos.EmulatorTests
                 }
             };
 
-            CosmosJsonDotNetSerializer serializer = new CosmosJsonDotNetSerializer();
+            CosmosTextJsonSerializer serializer = new CosmosTextJsonSerializer();
             Stream stream = serializer.ToStream(containerProperties);
             ContainerProperties deserialziedTest = serializer.FromStream<ContainerProperties>(stream);
 

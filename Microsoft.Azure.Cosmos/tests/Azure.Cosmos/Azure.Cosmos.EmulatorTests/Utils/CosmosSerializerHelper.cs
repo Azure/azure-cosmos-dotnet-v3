@@ -31,7 +31,7 @@ namespace Azure.Cosmos.EmulatorTests
             }
             else
             {
-                this.cosmosSerializer = new CosmosJsonDotNetSerializer(jsonSerializerSettings);
+                this.cosmosSerializer = new CosmosTextJsonSerializer(jsonSerializerSettings);
             }
 
             this.fromStreamCallback = fromStreamCallback;

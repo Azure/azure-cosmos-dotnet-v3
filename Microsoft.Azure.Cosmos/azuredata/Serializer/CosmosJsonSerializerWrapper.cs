@@ -19,7 +19,7 @@ namespace Azure.Cosmos
             this.InternalJsonSerializer = cosmosJsonSerializer ?? throw new ArgumentNullException(nameof(cosmosJsonSerializer));
         }
 
-        public override async Task<T> FromStreamAsync<T>(
+        public override async ValueTask<T> FromStreamAsync<T>(
             Stream stream,
             CancellationToken cancellationToken = default(CancellationToken))
         {

@@ -647,7 +647,7 @@ namespace Azure.Cosmos
                 defaultJsonSerializer: this.ClientOptions.PropertiesSerializer,
                 userJsonSerializer: userSerializer);
 
-            CosmosSerializer sqlQuerySpecSerializer = CosmosSqlQuerySpecJsonConverter.CreateSqlQuerySpecSerializer(
+            CosmosSerializer sqlQuerySpecSerializer = TextJsonCosmosSqlQuerySpecConverter.CreateSqlQuerySpecSerializer(
                 cosmosSerializer: userSerializer,
                 propertiesSerializer: this.ClientOptions.PropertiesSerializer);
 

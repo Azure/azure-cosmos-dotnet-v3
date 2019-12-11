@@ -8,7 +8,6 @@ namespace Azure.Cosmos
     using System.Collections.ObjectModel;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
-    using Newtonsoft.Json;
 
     /// <summary>
     /// Represents a document container in the Azure Cosmos DB service. A container is a named logical container for documents. 
@@ -200,7 +199,7 @@ namespace Azure.Cosmos
         /// </summary>
         /// <value>The last modified time stamp associated with the resource.</value>
         [JsonProperty(PropertyName = Constants.Properties.LastModified, NullValueHandling = NullValueHandling.Ignore)]
-        [JsonConverter(typeof(UnixDateTimeConverter))]
+        [JsonConverter(typeof(TextJsonUnixDateTimeConverter))]
         public DateTime? LastModified { get; private set; }
 
         /// <summary>

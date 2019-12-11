@@ -6,7 +6,6 @@ namespace Azure.Cosmos
 {
     using System;
     using Microsoft.Azure.Documents;
-    using Newtonsoft.Json;
 
     /// <summary>
     /// Represents a throughput of the resources in the Azure Cosmos DB service.

@@ -22,7 +22,7 @@ namespace Azure.Cosmos.Serialization
         /// <param name="stream">The Stream response containing JSON from Cosmos</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The object deserialized from the stream.</returns>
-        public abstract Task<T> FromStreamAsync<T>(
+        public abstract ValueTask<T> FromStreamAsync<T>(
             Stream stream,
             CancellationToken cancellationToken = default(CancellationToken));
 

@@ -5,18 +5,18 @@
 namespace Azure.Cosmos
 {
     using System.IO;
-    using System.Text;
+    using System.Text.Json;
+    using System.Threading;
+    using System.Threading.Tasks;
     using Azure.Cosmos.Serialization;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Serialization;
 
     /// <summary>
     /// The default Cosmos JSON.NET serializer.
     /// </summary>
-    internal sealed class CosmosJsonDotNetSerializer : CosmosSerializer
+    internal sealed class CosmosTextJsonSerializer : CosmosSerializer
     {
-        private static readonly Encoding DefaultEncoding = new UTF8Encoding(false, true);
-        private readonly JsonSerializer Serializer;
+        private static JsonSerializerOptions DefaultSerializationOptions = new JsonSerializerOptions() { WriteIndented = false, DefaultBufferSize = 1024 };
+        private readonly JsonSerializerOptions jsonSerializerSettings;
 
         /// <summary>
         /// Create a serializer that uses the JSON.net serializer
@@ -25,9 +25,9 @@ namespace Azure.Cosmos
         /// This is internal to reduce exposure of JSON.net types so
         /// it is easier to convert to System.Text.Json
         /// </remarks>
-        internal CosmosJsonDotNetSerializer()
+        internal CosmosTextJsonSerializer()
         {
-            this.Serializer = JsonSerializer.Create();
+            this.jsonSerializerSettings = new JsonSerializerOptions();
         }
 
         /// <summary>
@@ -37,30 +37,27 @@ namespace Azure.Cosmos
         /// This is internal to reduce exposure of JSON.net types so
         /// it is easier to convert to System.Text.Json
         /// </remarks>
-        internal CosmosJsonDotNetSerializer(CosmosSerializationOptions cosmosSerializerOptions)
+        internal CosmosTextJsonSerializer(JsonSerializerOptions jsonSerializerSettings)
         {
-            JsonSerializerSettings jsonSerializerSettings = new JsonSerializerSettings()
+            this.jsonSerializerSettings = jsonSerializerSettings;
+        }
+
+        /// <summary>
+        /// Create a serializer that uses the JSON.net serializer
+        /// </summary>
+        /// <remarks>
+        /// This is internal to reduce exposure of JSON.net types so
+        /// it is easier to convert to System.Text.Json
+        /// </remarks>
+        internal CosmosTextJsonSerializer(CosmosSerializationOptions cosmosSerializerOptions)
+        {
+            this.jsonSerializerSettings = new JsonSerializerOptions()
             {
-                NullValueHandling = cosmosSerializerOptions.IgnoreNullValues ? NullValueHandling.Ignore : NullValueHandling.Include,
-                Formatting = cosmosSerializerOptions.Indented ? Formatting.Indented : Formatting.None,
-                ContractResolver = cosmosSerializerOptions.PropertyNamingPolicy == CosmosPropertyNamingPolicy.CamelCase
-                    ? new CamelCasePropertyNamesContractResolver()
-                    : null
+                IgnoreNullValues = cosmosSerializerOptions.IgnoreNullValues,
+                WriteIndented = cosmosSerializerOptions.Indented,
+                PropertyNamingPolicy = cosmosSerializerOptions.PropertyNamingPolicy == CosmosPropertyNamingPolicy.CamelCase ?
+                        JsonNamingPolicy.CamelCase : null
             };
-
-            this.Serializer = JsonSerializer.Create(jsonSerializerSettings);
-        }
-
-        /// <summary>
-        /// Create a serializer that uses the JSON.net serializer
-        /// </summary>
-        /// <remarks>
-        /// This is internal to reduce exposure of JSON.net types so
-        /// it is easier to convert to System.Text.Json
-        /// </remarks>
-        internal CosmosJsonDotNetSerializer(JsonSerializerSettings jsonSerializerSettings)
-        {
-            this.Serializer = JsonSerializer.Create(jsonSerializerSettings);
         }
 
         /// <summary>
@@ -68,23 +65,20 @@ namespace Azure.Cosmos
         /// </summary>
         /// <typeparam name="T">The type of object that should be deserialized</typeparam>
         /// <param name="stream">An open stream that is readable that contains JSON</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The object representing the deserialized stream</returns>
-        public override T FromStream<T>(Stream stream)
+        public override ValueTask<T> FromStreamAsync<T>(
+            Stream stream,
+            CancellationToken cancellationToken)
         {
             using (stream)
             {
                 if (typeof(Stream).IsAssignableFrom(typeof(T)))
                 {
-                    return (T)(object)stream;
+                    return new ValueTask<T>((T)(object)stream);
                 }
 
-                using (StreamReader sr = new StreamReader(stream))
-                {
-                    using (JsonTextReader jsonTextReader = new JsonTextReader(sr))
-                    {
-                        return this.Serializer.Deserialize<T>(jsonTextReader);
-                    }
-                }
+                return JsonSerializer.DeserializeAsync<T>(stream, this.jsonSerializerSettings, cancellationToken);
             }
         }
 
@@ -93,21 +87,14 @@ namespace Azure.Cosmos
         /// </summary>
         /// <typeparam name="T">The type of object being serialized</typeparam>
         /// <param name="input">The object to be serialized</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>An open readable stream containing the JSON of the serialized object</returns>
-        public override Stream ToStream<T>(T input)
+        public override async Task<Stream> ToStreamAsync<T>(
+            T input,
+            CancellationToken cancellationToken)
         {
             MemoryStream streamPayload = new MemoryStream();
-            using (StreamWriter streamWriter = new StreamWriter(streamPayload, encoding: CosmosJsonDotNetSerializer.DefaultEncoding, bufferSize: 1024, leaveOpen: true))
-            {
-                using (JsonWriter writer = new JsonTextWriter(streamWriter))
-                {
-                    writer.Formatting = Newtonsoft.Json.Formatting.None;
-                    this.Serializer.Serialize(writer, input);
-                    writer.Flush();
-                    streamWriter.Flush();
-                }
-            }
-
+            await JsonSerializer.SerializeAsync<T>(streamPayload, input, CosmosTextJsonSerializer.DefaultSerializationOptions, cancellationToken);
             streamPayload.Position = 0;
             return streamPayload;
         }

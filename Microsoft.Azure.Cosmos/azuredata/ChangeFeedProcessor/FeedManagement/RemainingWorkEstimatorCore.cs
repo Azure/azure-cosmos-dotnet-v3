@@ -24,7 +24,7 @@ namespace Azure.Cosmos.ChangeFeed
         private const char PKRangeIdSeparator = ':';
         private const char SegmentSeparator = '#';
         private const string LSNPropertyName = "_lsn";
-        private static readonly CosmosSerializer DefaultSerializer = new CosmosJsonDotNetSerializer();
+        private static readonly CosmosSerializer DefaultSerializer = new CosmosTextJsonSerializer();
         private readonly Func<string, string, bool, FeedIterator> feedCreator;
         private readonly DocumentServiceLeaseContainer leaseContainer;
         private readonly int degreeOfParallelism;
@@ -167,14 +167,16 @@ namespace Azure.Cosmos.ChangeFeed
             return parsed;
         }
 
-        private static Collection<JObject> GetItemsFromResponse(Response response)
+        private static async Task<Collection<JObject>> GetItemsFromResponseAsync(
+            Response response,
+            CancellationToken cancellationToken)
         {
             if (response.ContentStream == null)
             {
                 return new Collection<JObject>();
             }
 
-            return RemainingWorkEstimatorCore.DefaultSerializer.FromStream<CosmosFeedResponseUtil<JObject>>(response.ContentStream).Data;
+            return (await RemainingWorkEstimatorCore.DefaultSerializer.FromStreamAsync<CosmosFeedResponseUtil<JObject>>(response.ContentStream, cancellationToken)).Data;
         }
 
         private async Task<long> GetRemainingWorkAsync(DocumentServiceLease existingLease, CancellationToken cancellationToken)
@@ -196,7 +198,7 @@ namespace Azure.Cosmos.ChangeFeed
 
                 response.Headers.TryGetValue(HttpConstants.HttpHeaders.SessionToken, out string sessionToken);
                 long parsedLSNFromSessionToken = RemainingWorkEstimatorCore.TryConvertToNumber(ExtractLsnFromSessionToken(sessionToken));
-                Collection<JObject> items = RemainingWorkEstimatorCore.GetItemsFromResponse(response);
+                Collection<JObject> items = await RemainingWorkEstimatorCore.GetItemsFromResponseAsync(response, cancellationToken);
                 long lastQueryLSN = items.Count > 0
                     ? RemainingWorkEstimatorCore.TryConvertToNumber(RemainingWorkEstimatorCore.GetFirstItemLSN(items)) - 1
                     : parsedLSNFromSessionToken;

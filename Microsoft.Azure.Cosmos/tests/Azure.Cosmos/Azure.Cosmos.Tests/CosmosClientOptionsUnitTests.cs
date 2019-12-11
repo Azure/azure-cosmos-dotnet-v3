@@ -194,7 +194,7 @@ namespace Azure.Cosmos.Tests
         [TestMethod]
         public void GetCosmosSerializerWithWrapperOrDefaultTest()
         {
-            CosmosJsonDotNetSerializer serializer = new CosmosJsonDotNetSerializer();
+            CosmosTextJsonSerializer serializer = new CosmosTextJsonSerializer();
             CosmosClientOptions options = new CosmosClientOptions()
             {
                 Serializer = serializer
@@ -253,7 +253,7 @@ namespace Azure.Cosmos.Tests
         {
             CosmosClientOptions options = new CosmosClientOptions()
             {
-                Serializer = new CosmosJsonDotNetSerializer()
+                Serializer = new CosmosTextJsonSerializer()
             };
 
             options.SerializerOptions = new CosmosSerializationOptions();
@@ -268,7 +268,7 @@ namespace Azure.Cosmos.Tests
                 SerializerOptions = new CosmosSerializationOptions()
             };
 
-            options.Serializer = new CosmosJsonDotNetSerializer();
+            options.Serializer = new CosmosTextJsonSerializer();
         }
 
         [TestMethod]

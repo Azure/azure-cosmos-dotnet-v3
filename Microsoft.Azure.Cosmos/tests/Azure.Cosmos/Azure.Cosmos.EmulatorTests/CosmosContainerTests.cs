@@ -455,7 +455,7 @@ namespace Azure.Cosmos.EmulatorTests
                     requestOptions: new QueryRequestOptions() { MaxItemCount = 1 }))
              {
                 Assert.AreEqual((int)HttpStatusCode.OK, message.Status);
-                CosmosJsonDotNetSerializer defaultJsonSerializer = new CosmosJsonDotNetSerializer();
+                CosmosTextJsonSerializer defaultJsonSerializer = new CosmosTextJsonSerializer();
                 dynamic containers = defaultJsonSerializer.FromStream<dynamic>(message.ContentStream).DocumentCollections;
                 foreach (dynamic container in containers)
                 {

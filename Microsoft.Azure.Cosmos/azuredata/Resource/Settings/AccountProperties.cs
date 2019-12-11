@@ -7,12 +7,14 @@ namespace Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
-    using Newtonsoft.Json;
 
     /// <summary> 
     /// Represents a <see cref="AccountProperties"/>. A AccountProperties is the container for databases in the Azure Cosmos DB service.
     /// </summary>
+    [JsonConverter(typeof(TextJsonAccountPropertiesConverter))]
     public class AccountProperties
     {
         private Collection<AccountRegion> readRegions;
@@ -25,21 +27,19 @@ namespace Azure.Cosmos
         /// </summary>
         internal AccountProperties()
         {
-            this.QueryEngineConfigurationInternal = new Lazy<IDictionary<string, object>>(() => QueryStringToDictConverter());
+            this.QueryEngineConfigurationInternal = new Lazy<IDictionary<string, object>>(() => this.QueryStringToDictConverter());
         }
 
         /// <summary>
         /// Gets the list of locations representing the writable regions of
         /// this database account from the Azure Cosmos DB service.
         /// </summary>
-        [JsonIgnore]
         public IEnumerable<AccountRegion> WritableRegions => this.WriteLocationsInternal;
 
         /// <summary>
         /// Gets the list of locations representing the readable regions of
         /// this database account from the Azure Cosmos DB service.
         /// </summary>
-        [JsonIgnore]
         public IEnumerable<AccountRegion> ReadableRegions => this.ReadLocationsInternal;
 
         /// <summary>
@@ -63,7 +63,6 @@ namespace Azure.Cosmos
         ///  '/', '\\', '?', '#'
         /// </para>
         /// </remarks>
-        [JsonProperty(PropertyName = Constants.Properties.Id)]
         public string Id { get; internal set; }
 
         /// <summary>
@@ -75,8 +74,6 @@ namespace Azure.Cosmos
         /// <remarks>
         /// ETags are used for concurrency checking when updating resources. 
         /// </remarks>
-        [JsonProperty(PropertyName = Constants.Properties.ETag)]
-        [JsonConverter(typeof(ETagConverter))]
         public ETag? ETag { get; internal set; }
 
         /// <summary>
@@ -90,10 +87,8 @@ namespace Azure.Cosmos
         /// resource whether that is a database, a collection or a document.
         /// These resource ids are used when building up SelfLinks, a static addressable Uri for each resource within a database account.
         /// </remarks>
-        [JsonProperty(PropertyName = Constants.Properties.RId)]
         internal string ResourceId { get; set; }
 
-        [JsonProperty(PropertyName = Constants.Properties.WritableLocations)]
         internal Collection<AccountRegion> WriteLocationsInternal
         {
             get
@@ -107,7 +102,6 @@ namespace Azure.Cosmos
             set => this.writeRegions = value;
         }
 
-        [JsonProperty(PropertyName = Constants.Properties.ReadableLocations)]
         internal Collection<AccountRegion> ReadLocationsInternal
         {
             get
@@ -191,43 +185,36 @@ namespace Azure.Cosmos
         /// <value>
         /// The ConsistencySetting.
         /// </value>
-        [JsonProperty(PropertyName = Constants.Properties.UserConsistencyPolicy)]
         public AccountConsistency Consistency { get; internal set; }
 
         /// <summary>
         /// Gets the self-link for Address Routing Table in the databaseAccount
         /// </summary>
-        [JsonProperty(PropertyName = Constants.Properties.AddressesLink)]
         internal string AddressesLink { get; set; }
 
         /// <summary>
         /// Gets the ReplicationPolicy properties
         /// </summary>
-        [JsonProperty(PropertyName = Constants.Properties.UserReplicationPolicy)]
         internal ReplicationPolicy ReplicationPolicy { get; set; }
 
         /// <summary>
         /// Gets the SystemReplicationPolicy 
         /// </summary>
-        [JsonProperty(PropertyName = Constants.Properties.SystemReplicationPolicy)]
         internal ReplicationPolicy SystemReplicationPolicy { get; set; }
 
-        [JsonProperty(PropertyName = Constants.Properties.ReadPolicy)]
         internal ReadPolicy ReadPolicy { get; set; }
 
         internal IDictionary<string, object> QueryEngineConfiguration => this.QueryEngineConfigurationInternal.Value;
 
-        [JsonProperty(PropertyName = Constants.Properties.QueryEngineConfiguration)]
         internal string QueryEngineConfigurationString { get; set; }
 
-        [JsonProperty(PropertyName = Constants.Properties.EnableMultipleWriteLocations)]
         internal bool EnableMultipleWriteLocations { get; set; }
 
         private IDictionary<string, object> QueryStringToDictConverter()
         {
             if (!string.IsNullOrEmpty(this.QueryEngineConfigurationString))
             {
-                return JsonConvert.DeserializeObject<Dictionary<string, object>>(this.QueryEngineConfigurationString);
+                return JsonSerializer.Deserialize<Dictionary<string, object>>(this.QueryEngineConfigurationString);
             }
             else
             {
