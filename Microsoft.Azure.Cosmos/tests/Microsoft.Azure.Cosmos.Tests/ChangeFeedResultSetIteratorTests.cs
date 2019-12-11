@@ -31,6 +31,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             mockContext.Setup(x => x.DocumentClient).Returns(documentClient);
             mockContext.Setup(x => x.CosmosSerializer).Returns(MockCosmosUtil.Serializer);
             mockContext.Setup(x => x.Client).Returns(client);
+            mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(new Uri("/dbs/test/colls/test", UriKind.Relative));
 
             ResponseMessage firstResponse = new ResponseMessage(HttpStatusCode.NotModified);
             firstResponse.Headers.ETag = "FirstContinuation";
@@ -52,8 +53,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .Returns(Task.FromResult(firstResponse))
                 .Returns(Task.FromResult(secondResponse));
 
+            DatabaseCore databaseCore = new DatabaseCore(mockContext.Object, "mydb");
+
             ChangeFeedResultSetIteratorCore iterator = new ChangeFeedResultSetIteratorCore(
-                mockContext.Object, (ContainerCore)client.GetContainer("myDb", "myColl"), null, 10, new ChangeFeedRequestOptions());
+                mockContext.Object, new ContainerCore(mockContext.Object, databaseCore, "myColl"), null, 10, new ChangeFeedRequestOptions());
             ResponseMessage firstRequest = await iterator.ReadNextAsync();
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(firstResponse.Headers.ETag), "Response should contain the first continuation");
             Assert.IsTrue(!firstRequest.Headers.ContinuationToken.Contains(secondResponse.Headers.ETag), "Response should not contain the second continuation");
@@ -83,6 +86,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             mockContext.Setup(x => x.DocumentClient).Returns(documentClient);
             mockContext.Setup(x => x.CosmosSerializer).Returns(MockCosmosUtil.Serializer);
             mockContext.Setup(x => x.Client).Returns(client);
+            mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(new Uri("/dbs/test/colls/test", UriKind.Relative));
 
             ResponseMessage firstResponse = new ResponseMessage(HttpStatusCode.NotModified);
             firstResponse.Headers.ETag = "FirstContinuation";
@@ -103,8 +107,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .Returns(Task.FromResult(firstResponse))
                 .Returns(Task.FromResult(secondResponse));
 
+            DatabaseCore databaseCore = new DatabaseCore(mockContext.Object, "mydb");
+
             ChangeFeedResultSetIteratorCore iterator = new ChangeFeedResultSetIteratorCore(
-                mockContext.Object, (ContainerCore)client.GetContainer("myDb", "myColl"), null, 10, new ChangeFeedRequestOptions());
+                mockContext.Object, new ContainerCore(mockContext.Object, databaseCore, "myColl"), null, 10, new ChangeFeedRequestOptions());
             ResponseMessage firstRequest = await iterator.ReadNextAsync();
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(firstResponse.Headers.ETag), "Response should contain the first continuation");
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(secondResponse.Headers.ETag), "Response should contain the second continuation");
@@ -134,6 +140,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             mockContext.Setup(x => x.DocumentClient).Returns(documentClient);
             mockContext.Setup(x => x.CosmosSerializer).Returns(MockCosmosUtil.Serializer);
             mockContext.Setup(x => x.Client).Returns(client);
+            mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(new Uri("/dbs/test/colls/test", UriKind.Relative));
 
             ResponseMessage firstResponse = new ResponseMessage(HttpStatusCode.NotModified);
             firstResponse.Headers.ETag = "FirstContinuation";
@@ -157,8 +164,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .Returns(Task.FromResult(secondResponse))
                 .Returns(Task.FromResult(thirdResponse));
 
+            DatabaseCore databaseCore = new DatabaseCore(mockContext.Object, "mydb");
+
             ChangeFeedResultSetIteratorCore iterator = new ChangeFeedResultSetIteratorCore(
-                mockContext.Object, (ContainerCore)client.GetContainer("myDb", "myColl"), null, 10, new ChangeFeedRequestOptions());
+                mockContext.Object, new ContainerCore(mockContext.Object, databaseCore, "myColl"), null, 10, new ChangeFeedRequestOptions());
             ResponseMessage firstRequest = await iterator.ReadNextAsync();
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(firstResponse.Headers.ETag), "Response should contain the first continuation");
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(secondResponse.Headers.ETag), "Response should contain the second continuation");
@@ -189,6 +198,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             mockContext.Setup(x => x.DocumentClient).Returns(new MockDocumentClient());
             mockContext.Setup(x => x.CosmosSerializer).Returns(MockCosmosUtil.Serializer);
             mockContext.Setup(x => x.Client).Returns(client);
+            mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(new Uri("/dbs/test/colls/test", UriKind.Relative));
 
             ResponseMessage firstResponse = new ResponseMessage(HttpStatusCode.NotModified);
             firstResponse.Headers.ETag = "FirstContinuation";
@@ -206,8 +216,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(firstResponse));
 
+            DatabaseCore databaseCore = new DatabaseCore(mockContext.Object, "mydb");
+
             ChangeFeedResultSetIteratorCore iterator = new ChangeFeedResultSetIteratorCore(
-                mockContext.Object, (ContainerCore)client.GetContainer("myDb", "myColl"), null, 10, new ChangeFeedRequestOptions());
+                mockContext.Object, new ContainerCore(mockContext.Object, databaseCore, "myColl"), null, 10, new ChangeFeedRequestOptions());
             ResponseMessage firstRequest = await iterator.ReadNextAsync();
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(firstResponse.Headers.ETag), "Response should contain the first continuation");
             Assert.AreEqual(HttpStatusCode.NotModified, firstRequest.StatusCode);

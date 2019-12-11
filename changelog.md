@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 ### Added
 
+### Fixed
+
+
 ## <a name="3.5.1"/> [3.5.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.5.1) - 2019-12-11
 
 ### Fixed
@@ -15,11 +18,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1060](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1060) Fixed unicode encoding bug in DISTINCT queries.
 - [#1070](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1070) CreateItem will only retry for auto-extracted partition key in-case of collection re-creation
 - [#1075](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1075) Including header size details for BadRequest with large headers
+- [#1078](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1078) Fixed a deadlock on scenarios with SynchronizationContext while executing async SDK API
 - [#1081](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1081) Fixed race condition in serializer caused null reference exception.
 - [#1086](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1086) Fix possible NullReferenceException on a TransactionalBatch code path
 - [#1091](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1091) Fixed a bug in query when a partition split occurs that causes a NotImplementedException to be thrown.
 - [#1089](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1089) Fixes a NullReferenceException when using Bulk with items with no PK
-
 
 ## <a name="3.5.0"/> [3.5.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.5.0) - 2019-12-03
 

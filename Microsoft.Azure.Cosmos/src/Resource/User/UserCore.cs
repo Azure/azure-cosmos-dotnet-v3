@@ -122,10 +122,10 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessStreamAsync(
-               streamPayload: null,
-               operationType: OperationType.Delete,
-               requestOptions: requestOptions,
-               cancellationToken: cancellationToken);
+                streamPayload: null,
+                operationType: OperationType.Delete,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
         }
 
         /// <inheritdoc/>
@@ -136,10 +136,10 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(id));
             }
 
-            return new PermissionCore(
+            return new PermissionInlineCore(new PermissionCore(
                     this.ClientContext,
                     this,
-                    id);
+                    id));
         }
 
         /// <inheritdoc/>
