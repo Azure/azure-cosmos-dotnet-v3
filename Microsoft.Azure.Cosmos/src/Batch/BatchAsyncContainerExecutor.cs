@@ -48,7 +48,6 @@ namespace Microsoft.Azure.Cosmos
         private readonly int additiveIncreaseFactor = 1;
         private readonly int congestionControllerDelayInMs = 2;
         private readonly double multiplicativeDecreaseFactor = 2.0;
-        private bool disposeCongestionController = false;
 
         /// <summary>
         /// For unit testing.
@@ -117,7 +116,6 @@ namespace Microsoft.Azure.Cosmos
 
         public void Dispose()
         {
-            this.disposeCongestionController = true;
             foreach (KeyValuePair<string, BatchAsyncStreamer> streamer in this.streamersByPartitionKeyRange)
             {
                 streamer.Value.Dispose();
@@ -253,12 +251,11 @@ namespace Microsoft.Azure.Cosmos
                         streamPayload: serverRequestPayload,
                         requestEnricher: requestMessage => BatchAsyncContainerExecutor.AddHeadersToRequestMessage(requestMessage, serverRequest.PartitionKeyRangeId),
                         cancellationToken: cancellationToken).ConfigureAwait(false);
-                    await Task.CompletedTask.ConfigureAwait(false);
 
                     TransactionalBatchResponse serverResponse = await
                     TransactionalBatchResponse.FromResponseMessageAsync(responseMessage, serverRequest, this.cosmosClientContext.CosmosSerializer).ConfigureAwait(false);
 
-                    int numThrottle = serverResponse.Count(r => r.StatusCode == (System.Net.HttpStatusCode)429);
+                    int numThrottle = serverResponse.Count(r => r.StatusCode == (System.Net.HttpStatusCode)StatusCodes.TooManyRequests);
                     long secondsElapsed = (this.stopwatch.Elapsed - start).Seconds;
                     this.throttlePartitionId.AddOrUpdate(serverRequest.PartitionKeyRangeId, numThrottle, (_, old) => old + numThrottle);
                     this.docsPartitionId.AddOrUpdate(serverRequest.PartitionKeyRangeId, serverResponse.Count, (_, old) => old + serverResponse.Count);
@@ -317,7 +314,7 @@ namespace Microsoft.Azure.Cosmos
                 int oldThrttleCount = 0;
                 int oldDocCount = 0;
 
-                while (!this.disposeCongestionController)
+                while (!cancellationToken.IsCancellationRequested)
                 {
                     this.timePartitionid.TryGetValue(partitionKeyRangeId, out long currentElapsedTime);
                     long elapsedTime = currentElapsedTime - lastElapsedTime;

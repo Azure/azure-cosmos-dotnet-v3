@@ -39,13 +39,11 @@
         {
             try
             {
-                // Make sure this is >= 2 * physical_partition_count * (2MB / docSize) when useBulk is true
-                // for best perf.
-                int concurrency = args.Length > 0 ? int.Parse(args[0]) : 20000;
+                // Documents to pre-create before starting bulk execution
+                int preCreatedDocuments = args.Length > 0 ? int.Parse(args[0]) : 20000;
                 int docSize = args.Length > 1 ? int.Parse(args[1]) : 1024;
                 int runtimeInSeconds = args.Length > 2 ? int.Parse(args[2]) : 20;
-                bool useBulk = args.Length > 3 ? bool.Parse(args[3]) : true;
-                Program.containerId = args.Length > 4 ? args[4] : "bulk-support";
+                Program.containerId = args.Length > 3 ? args[3] : "bulk-support";
                 // Read the Cosmos endpointUrl and authorisationKeys from configuration
                 // These values are available from the Azure Management Portal on the Cosmos Account Blade under "Keys"
                 // Keep these values in a safe & secure location. Together they provide Administrative access to your Cosmos account
@@ -65,8 +63,8 @@
                     throw new ArgumentException("Please specify a valid AuthorizationKey in the appSettings.json");
                 }
 
-                Console.WriteLine("Running demo for container {0} with a {1} CosmosClient...", Program.containerId, useBulk ? "Bulk enabled " : string.Empty);
-                Program.CreateItemsConcurrently(endpoint, authKey, useBulk, concurrency, docSize, runtimeInSeconds);
+                Console.WriteLine("Running demo for container {0} with a Bulk enabled CosmosClient.", Program.containerId);
+                Program.CreateItemsConcurrently(endpoint, authKey, preCreatedDocuments, docSize, runtimeInSeconds);
             }
             catch (CosmosException cre)
             {
@@ -88,24 +86,22 @@
 
         private static CosmosClient GetBulkClientInstance(
             string endpoint,
-            string authKey,
-            bool useBulk) =>
+            string authKey) =>
         // </Initialization>
-            new Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder(endpoint, authKey).WithBulkExecution(useBulk).Build();
+            new CosmosClient(endpoint, authKey, new CosmosClientOptions() { AllowBulkExecution = true });
         // </Initialization>
 
         private static void CreateItemsConcurrently(
             string endpoint,
             string authKey,
-            bool useBulk,
-            int concurrency,
+            int preCreatedDocuments,
             int docSize,
             int runtimeInSeconds)
         {
-            Console.WriteLine($"Initiating creates of items of about {docSize} bytes maintaining {concurrency} in-progress items for {runtimeInSeconds} seconds.");
-            DataSource dataSource = new DataSource(concurrency, docSize);
+            Console.WriteLine($"Initiating creates of items of about {docSize} bytes maintaining {preCreatedDocuments} in-progress items for {runtimeInSeconds} seconds.");
+            DataSource dataSource = new DataSource(preCreatedDocuments, docSize);
 
-            CosmosClient client = Program.GetBulkClientInstance(endpoint, authKey, useBulk);
+            CosmosClient client = Program.GetBulkClientInstance(endpoint, authKey);
             Container container = client.GetContainer(Program.databaseId, Program.containerId);
             ConcurrentDictionary<HttpStatusCode, int> countsByStatus = new ConcurrentDictionary<HttpStatusCode, int>();
 
@@ -121,14 +117,14 @@
                     _ = container.CreateItemStreamAsync(stream, partitionKeyValue, null, cancellationToken)
                         .ContinueWith((Task<ResponseMessage> task) =>
                         {
-                            if (!task.IsCanceled)
+                            if (task.IsCompleted)
                             {
                                 if(stream != null) { stream.Dispose(); }
                                 HttpStatusCode resultCode = task.Result.StatusCode;
                                 countsByStatus.AddOrUpdate(resultCode, 1, (_, old) => old + 1);
                                 if (task.Result != null) { task.Result.Dispose(); }
-                                task.Dispose();
                             }
+                            task.Dispose();
                         });
                 }
             }
@@ -240,52 +236,6 @@
                     partitionKeyValue = pkValue;
                     return value;
                 }
-            }
-        }
-
-        /// <summary>
-        /// Simplistic implementation of a pool for MemoryStream to avoid repeated allocations.
-        /// Expects that the requirement is for MemoryStreams all with fixed and similar buffer size,
-        /// and that the buffer is publicly visible.
-        /// </summary>
-        private class MemoryStreamPool
-        {
-            private int streamSize;
-
-            private ConcurrentBag<MemoryStream> freeStreams;
-
-
-            public MemoryStreamPool(int initialPoolSize, int bufferSize)
-            {
-                this.streamSize = bufferSize;
-                this.freeStreams = new ConcurrentBag<MemoryStream>();
-
-                for (int i = 0; i < initialPoolSize; i++)
-                {
-                    this.freeStreams.Add(this.GetNewStream());
-                }
-            }
-
-            public MemoryStream Take()
-            {
-                if (this.freeStreams.TryTake(out MemoryStream stream))
-                {
-                    return stream;
-                }
-
-                return this.GetNewStream();
-            }
-
-            public void Return(MemoryStream stream)
-            {
-                this.freeStreams.Add(stream);
-            }
-
-            private MemoryStream GetNewStream()
-            {
-                byte[] buffer = new byte[this.streamSize];
-                buffer[this.streamSize - 1] = 0;
-                return new MemoryStream(buffer, index: 0, count: streamSize, writable: true, publiclyVisible: true);
             }
         }
     }
