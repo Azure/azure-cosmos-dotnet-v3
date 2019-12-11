@@ -425,7 +425,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <param name="partitionKey">The partition key for the item.</param>
         /// <param name="requestOptions">(Optional) The options for the stored procedure request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>The task object representing the service response for the asynchronous operation which would contain any response set in the stored procedure. The response will contain status code (400) BadRequest if streamPayload represents anything other than a JSON array, arraylike object or null.</returns>
+        /// <returns>The task object representing the service response for the asynchronous operation which would contain any response set in the stored procedure. The response will contain status code (400) BadRequest if streamPayload represents anything other than a JSON array, object or null.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="storedProcedureId"/> or <paramref name="partitionKey"/>  are not set.</exception>
         /// <example>
         ///  This creates and executes a stored procedure that appends a string to the first item returned from the query.
