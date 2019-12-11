@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             DatabaseResponse db = await this.cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition();
             partitionKeyDefinition.Paths.Add("/Status");
-            this.cosmosContainer = (ContainerCore)await db.Database.CreateContainerAsync(new ContainerProperties() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition }, 10000);
+            this.cosmosContainer = (ContainerInlineCore)await db.Database.CreateContainerAsync(new ContainerProperties() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition }, 10000);
         }
 
         [TestCleanup]
