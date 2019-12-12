@@ -5,13 +5,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.Specialized;
     using System.Globalization;
     using System.Linq;
     using System.Net;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Collections;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Services.Management.Tests;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -111,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {DocumentClientType.DirectHttps, TestCommon.CreateClient(false, Protocol.Https, tokenType: authTokenType, defaultConsistencyLevel: consistencyLevel)}
             };
 
-            foreach (var clientEntry in clients)
+            foreach (KeyValuePair<DocumentClientType, DocumentClient> clientEntry in clients)
             {
                 try
                 {
@@ -197,7 +194,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal static IEnumerable<RequestOptions> GenerateAllPossibleRequestOptions(bool isDatabase = false)
         {
-            var accessConditions = new List<AccessCondition>
+            List<AccessCondition> accessConditions = new List<AccessCondition>
             {
                 new AccessCondition
                 {
@@ -231,10 +228,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 },
             };
 
-            var sessionTokens = new List<string>(validSessionTokens);
+            List<string> sessionTokens = new List<string>(validSessionTokens);
             sessionTokens.AddRange(invalidSessionTokens);
 
-            var offerTypes = new List<string>
+            List<string> offerTypes = new List<string>
             {
                 null,
                 string.Empty,
@@ -244,10 +241,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 invalidOfferType
             };
 
-            var OfferThroughputs = new List<int?>(isDatabase ? validOfferThroughputsForDatabase : validOfferThroughputs);
+            List<int?> OfferThroughputs = new List<int?>(isDatabase ? validOfferThroughputsForDatabase : validOfferThroughputs);
             OfferThroughputs.AddRange(isDatabase ? invalidOfferThroughputsForDatabase : invalidOfferThroughputs);
 
-            foreach (var accessCondition in accessConditions)
+            foreach (AccessCondition accessCondition in accessConditions)
             {
                 foreach (ConsistencyLevel level in (ConsistencyLevel[])Enum.GetValues(typeof(ConsistencyLevel)))
                 {
@@ -267,7 +264,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                 {
                                     foreach (int? offerThroughput in OfferThroughputs)
                                     {
-                                        var options = new RequestOptions
+                                        RequestOptions options = new RequestOptions
                                         {
                                             AccessCondition = accessCondition,
                                             ConsistencyLevel = level,
@@ -283,7 +280,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                 }
                                 else
                                 {
-                                    var options = new RequestOptions
+                                    RequestOptions options = new RequestOptions
                                     {
                                         AccessCondition = accessCondition,
                                         ConsistencyLevel = level,
@@ -355,7 +352,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await Task.Delay(TimeSpan.FromSeconds(5));
 
             int currentWaitSeconds = 0;
-            var lockedClients = ReplicationTests.GetClientsLocked();
+            DocumentClient[] lockedClients = ReplicationTests.GetClientsLocked();
             for (int index = 0; index < lockedClients.Length; ++index)
             {
                 Logger.LogLine("Client: " + index);
@@ -396,7 +393,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // First wait for replication to complete
             TestCommon.WaitForServerReplication();
 
-            var lockedClients = ReplicationTests.GetClientsLocked();
+            DocumentClient[] lockedClients = ReplicationTests.GetClientsLocked();
             for (int index = 0; index < lockedClients.Length; ++index)
             {
                 Logger.LogLine("Client: " + index);
@@ -432,7 +429,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             DocumentCollection collection,
             StoredProcedure newStoredProcedure)
         {
-            var result = (from proc in client.CreateStoredProcedureQuery(collection.SelfLink)
+            StoredProcedure result = (from proc in client.CreateStoredProcedureQuery(collection.SelfLink)
                           where proc.Id == newStoredProcedure.Id
                           select proc).AsEnumerable().FirstOrDefault();
             if (result != null)

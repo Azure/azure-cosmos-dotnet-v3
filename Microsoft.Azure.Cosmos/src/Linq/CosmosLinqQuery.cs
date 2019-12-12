@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Newtonsoft.Json;
 
     /// <summary> 
@@ -170,7 +171,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             throw new NotImplementedException();
         }
 
-        internal async Task<Response<T>> AggregateResultAsync(CancellationToken cancellationToken = default(CancellationToken))
+        internal async Task<Response<T>> AggregateResultAsync(CancellationToken cancellationToken = default)
         {
             List<T> result = new List<T>();
             CosmosDiagnosticsAggregate cosmosDiagnostics = new CosmosDiagnosticsAggregate();
@@ -191,7 +192,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 cosmosDiagnostics);
         }
 
-        private FeedIterator CreateStreamIterator(bool isContinuationExcpected)
+        private FeedIteratorInternal CreateStreamIterator(bool isContinuationExcpected)
         {
             SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression, this.serializationOptions);
 
@@ -206,7 +207,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression, this.serializationOptions);
 
-            FeedIterator streamIterator = this.CreateStreamIterator(isContinuationExcpected);
+            FeedIteratorInternal streamIterator = this.CreateStreamIterator(isContinuationExcpected);
             return new FeedIteratorCore<T>(
                 streamIterator,
                 this.responseFactory.CreateQueryFeedResponse<T>);

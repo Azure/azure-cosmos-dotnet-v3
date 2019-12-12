@@ -52,13 +52,13 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         {
             if (!this.TryGetValue(key, out CosmosElement cosmosElement))
             {
-                typedCosmosElement = default(TCosmosElement);
+                typedCosmosElement = default;
                 return false;
             }
 
             if (!(cosmosElement is TCosmosElement tCosmosElement))
             {
-                typedCosmosElement = default(TCosmosElement);
+                typedCosmosElement = default;
                 return false;
             }
 

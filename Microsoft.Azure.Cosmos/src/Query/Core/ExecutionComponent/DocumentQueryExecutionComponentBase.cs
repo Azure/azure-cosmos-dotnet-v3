@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
 
     /// <summary>
     /// Base class for all DocumentQueryExecutionComponents that implements and IDocumentQueryExecutionComponent
@@ -23,12 +24,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
         /// <param name="source">The source to drain documents from.</param>
         protected DocumentQueryExecutionComponentBase(IDocumentQueryExecutionComponent source)
         {
-            if (source == null)
-            {
-                throw new ArgumentNullException("source for a component can not be null.");
-            }
-
-            this.Source = source;
+            this.Source = source ?? throw new ArgumentNullException(nameof(source));
         }
 
         /// <summary>

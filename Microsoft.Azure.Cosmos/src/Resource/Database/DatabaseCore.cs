@@ -262,10 +262,10 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(id));
             }
 
-            return new ContainerCore(
+            return new ContainerInlineCore(new ContainerCore(
                     this.ClientContext,
                     this,
-                    id);
+                    id));
         }
 
         public override Task<ResponseMessage> CreateContainerStreamAsync(
@@ -315,10 +315,10 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(id));
             }
 
-            return new UserCore(
+            return new UserInlineCore(new UserCore(
                     this.ClientContext,
                     this,
-                    id);
+                    id));
         }
 
         public Task<ResponseMessage> CreateUserStreamAsync(
@@ -412,10 +412,14 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            FeedIterator containerStreamIterator = this.GetContainerQueryStreamIterator(
+            if (!(this.GetContainerQueryStreamIterator(
                 queryDefinition,
                 continuationToken,
-                requestOptions);
+                requestOptions) is FeedIteratorInternal containerStreamIterator))
+            {
+                // This class should inherit from DatabaseInteral to avoid the downcasting hacks.
+                throw new InvalidOperationException($"Expected FeedIteratorInternal.");
+            }
 
             return new FeedIteratorCore<T>(
                 containerStreamIterator,
@@ -426,10 +430,14 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            FeedIterator userStreamIterator = this.GetUserQueryStreamIterator(
+            if (!(this.GetUserQueryStreamIterator(
                 queryDefinition,
                 continuationToken,
-                requestOptions);
+                requestOptions) is FeedIteratorInternal userStreamIterator))
+            {
+                // This class should inherit from DatabaseInteral to avoid the downcasting hacks.
+                throw new InvalidOperationException($"Expected FeedIteratorInternal.");
+            }
 
             return new FeedIteratorCore<T>(
                 userStreamIterator,
@@ -580,7 +588,7 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ProcessResourceOperationStreamAsync(
+            return this.ProcessResourceOperationStreamAsync(
                 streamPayload: null,
                 operationType: operationType,
                 linkUri: this.LinkUri,

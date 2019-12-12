@@ -12,6 +12,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
 
@@ -38,8 +40,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 throughput: 20000,
                 cancellationToken: this.cancellationToken);
 
-            this.Container = (ContainerCore)response;
-            this.LargerContainer = (ContainerCore)largerContainer;
+            this.Container = (ContainerInlineCore)response;
+            this.LargerContainer = (ContainerInlineCore)largerContainer;
         }
 
         [TestCleanup]
@@ -66,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int visitedPkRanges = 0;
 
             await this.CreateRandomItems(this.Container, batchSize, randomPartitionKey: true);
-            ContainerCore itemsCore = (ContainerCore)this.Container;
+            ContainerCore itemsCore = this.Container;
             FeedIterator feedIterator = itemsCore.GetStandByFeedIterator(requestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue });
 
             while (feedIterator.HasMoreResults)
@@ -160,7 +162,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int pkRangesCount = (await this.Container.ClientContext.DocumentClient.ReadPartitionKeyRangeFeedAsync(this.Container.LinkUri)).Count;
             int visitedPkRanges = 0;
 
-            ContainerCore itemsCore = (ContainerCore)this.Container;
+            ContainerCore itemsCore = this.Container;
             FeedIterator feedIterator = itemsCore.GetStandByFeedIterator();
 
             while (feedIterator.HasMoreResults)
@@ -222,7 +224,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             string corruptedTokenSerialized = JsonConvert.SerializeObject(corruptedTokens);
 
-            ContainerCore itemsCore = (ContainerCore)this.Container;
+            ContainerCore itemsCore = this.Container;
             FeedIterator setIteratorNew =
                 itemsCore.GetStandByFeedIterator(corruptedTokenSerialized);
 
@@ -239,7 +241,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task StandByFeedIterator_WithMaxItemCount()
         {
             await this.CreateRandomItems(this.Container, 2, randomPartitionKey: true);
-            ContainerCore itemsCore = (ContainerCore)this.Container;
+            ContainerCore itemsCore = this.Container;
             FeedIterator feedIterator = itemsCore.GetStandByFeedIterator(maxItemCount: 1, requestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue });
 
             while (feedIterator.HasMoreResults)
@@ -274,7 +276,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int expected = 25;
             int iterations = 0;
             await this.CreateRandomItems(this.Container, expected, randomPartitionKey: true);
-            ContainerCore itemsCore = (ContainerCore)this.Container;
+            ContainerCore itemsCore = this.Container;
             string continuationToken = null;
             int count = 0;
             while (true)
@@ -332,7 +334,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task GetChangeFeedTokensAsync_MatchesPkRanges()
         {
             int pkRangesCount = (await this.LargerContainer.ClientContext.DocumentClient.ReadPartitionKeyRangeFeedAsync(this.LargerContainer.LinkUri)).Count;
-            ContainerCore itemsCore = (ContainerCore)this.LargerContainer;
+            ContainerCore itemsCore = this.LargerContainer;
             IEnumerable<string> tokens = await itemsCore.GetChangeFeedTokensAsync();
             Assert.AreEqual(pkRangesCount, tokens.Count());
         }
@@ -341,7 +343,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task GetChangeFeedTokensAsync_AllowsParallelProcessing()
         {
             int pkRangesCount = (await this.LargerContainer.ClientContext.DocumentClient.ReadPartitionKeyRangeFeedAsync(this.LargerContainer.LinkUri)).Count;
-            ContainerCore itemsCore = (ContainerCore)this.LargerContainer;
+            ContainerCore itemsCore = this.LargerContainer;
             IEnumerable<string> tokens = await itemsCore.GetChangeFeedTokensAsync();
             Assert.IsTrue(pkRangesCount > 1, "Should have created a multi partition container.");
             Assert.AreEqual(pkRangesCount, tokens.Count());

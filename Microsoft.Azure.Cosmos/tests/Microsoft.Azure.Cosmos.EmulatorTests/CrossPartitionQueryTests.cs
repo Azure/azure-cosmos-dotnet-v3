@@ -20,6 +20,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Xml;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy;
+    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
@@ -176,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 new ContainerProperties
                 {
                     Id = Guid.NewGuid().ToString() + "container",
-                    IndexingPolicy = indexingPolicy == null ? new Cosmos.IndexingPolicy
+                    IndexingPolicy = indexingPolicy ?? new Cosmos.IndexingPolicy
                     {
                         IncludedPaths = new Collection<Cosmos.IncludedPath>
                         {
@@ -190,7 +196,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                 }
                             }
                         }
-                    } : indexingPolicy,
+                    },
                     PartitionKey = partitionKey == null ? null : new PartitionKeyDefinition
                     {
                         Paths = new Collection<string> { partitionKey },
@@ -517,7 +523,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         foreach (Tuple<Container, List<Document>> containerAndDocuments in collectionsAndDocuments)
                         {
-                            Container container = cosmosClient.GetContainer(((ContainerCore)containerAndDocuments.Item1).Database.Id, containerAndDocuments.Item1.Id);
+                            Container container = cosmosClient.GetContainer(((ContainerCore)(ContainerInlineCore)containerAndDocuments.Item1).Database.Id, containerAndDocuments.Item1.Id);
                             Task queryTask = Task.Run(() => query(container, containerAndDocuments.Item2, testArgs));
                             queryTasks.Add(queryTask);
                         }
@@ -1512,7 +1518,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Container container,
             IEnumerable<Document> documents)
         {
-            ContainerCore containerCore = (ContainerCore)container;
+            ContainerCore containerCore = (ContainerInlineCore)container;
 
             foreach (bool isGatewayQueryPlan in new bool[] { true, false })
             {
@@ -4398,7 +4404,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Container container,
             IEnumerable<Document> documents)
         {
-            ContainerCore conatinerCore = (ContainerCore)container;
+            ContainerCore conatinerCore = (ContainerInlineCore)container;
             foreach (int maxDegreeOfParallelism in new int[] { 1, 100 })
             {
                 foreach (int maxItemCount in new int[] { 10, 100 })
@@ -4494,8 +4500,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             public override bool Equals(object obj)
             {
-                Headers headers = obj as Headers;
-                if (headers != null)
+                if (obj is Headers headers)
                 {
                     return Headers.Equals(this, headers);
                 }
@@ -4810,6 +4815,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 stringBuilder.Append('a' + rand.Next(0, 26));
             }
+
+            stringBuilder.Append("💩");
 
             return stringBuilder.ToString();
         }

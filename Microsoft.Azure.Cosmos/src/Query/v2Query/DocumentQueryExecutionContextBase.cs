@@ -19,7 +19,9 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Linq;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
@@ -158,6 +160,7 @@ namespace Microsoft.Azure.Cosmos.Query
             bool hasLogicalPartitionKey,
             CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             // $ISSUE-felixfan-2016-07-13: We should probably get PartitionedQueryExecutionInfo from Gateway in GatewayMode
 
             QueryPartitionProvider queryPartitionProvider = await this.Client.GetQueryPartitionProviderAsync(cancellationToken);
@@ -308,6 +311,11 @@ namespace Microsoft.Azure.Cosmos.Query
                 requestHeaders[HttpConstants.HttpHeaders.ForceQueryScan] = bool.TrueString;
             }
 
+            if (this.feedOptions.MergeStaticId != null)
+            {
+                requestHeaders.Set(HttpConstants.HttpHeaders.MergeStaticId, this.feedOptions.MergeStaticId);
+            }
+
             if (this.feedOptions.CosmosSerializationFormatOptions != null)
             {
                 requestHeaders[HttpConstants.HttpHeaders.ContentSerializationFormat] = this.feedOptions.CosmosSerializationFormatOptions.ContentSerializationFormat;
@@ -338,9 +346,9 @@ namespace Microsoft.Azure.Cosmos.Query
         }
 
         public async Task<DocumentFeedResponse<CosmosElement>> ExecuteRequestLazyAsync(
-            DocumentServiceRequest request,
-            IDocumentClientRetryPolicy retryPolicyInstance,
-            CancellationToken cancellationToken)
+    DocumentServiceRequest request,
+    IDocumentClientRetryPolicy retryPolicyInstance,
+    CancellationToken cancellationToken)
         {
             DocumentServiceResponse documentServiceResponse = await this.ExecuteQueryRequestInternalAsync(
                 request,
@@ -592,8 +600,9 @@ namespace Microsoft.Azure.Cosmos.Query
 
         private DocumentServiceRequest CreateReadFeedDocumentServiceRequest(INameValueCollection requestHeaders)
         {
-            if (this.ResourceTypeEnum == Documents.ResourceType.Database
-                || this.ResourceTypeEnum == Documents.ResourceType.Offer)
+            if (this.ResourceTypeEnum == Microsoft.Azure.Documents.ResourceType.Database
+                || this.ResourceTypeEnum == Microsoft.Azure.Documents.ResourceType.Offer
+                || this.ResourceTypeEnum == Microsoft.Azure.Documents.ResourceType.Snapshot)
             {
                 return DocumentServiceRequest.Create(
                     OperationType.ReadFeed,
@@ -638,8 +647,8 @@ namespace Microsoft.Azure.Cosmos.Query
         }
 
         private DocumentFeedResponse<CosmosElement> GetFeedResponse(
-            DocumentServiceRequest documentServiceRequest,
-            DocumentServiceResponse documentServiceResponse)
+                   DocumentServiceRequest documentServiceRequest,
+                   DocumentServiceResponse documentServiceResponse)
         {
             // Execute the callback an each element of the page
             // For example just could get a response like this

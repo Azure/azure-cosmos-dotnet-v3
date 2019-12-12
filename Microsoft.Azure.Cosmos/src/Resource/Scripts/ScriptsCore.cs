@@ -89,10 +89,13 @@ namespace Microsoft.Azure.Cosmos.Scripts
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            FeedIterator databaseStreamIterator = this.GetStoredProcedureQueryStreamIterator(
+            if (!(this.GetStoredProcedureQueryStreamIterator(
                 queryDefinition,
                 continuationToken,
-                requestOptions);
+                requestOptions) is FeedIteratorInternal databaseStreamIterator))
+            {
+                throw new InvalidOperationException($"Expected a FeedIteratorInternal.");
+            }
 
             return new FeedIteratorCore<T>(
                 databaseStreamIterator,
@@ -172,19 +175,34 @@ namespace Microsoft.Azure.Cosmos.Scripts
             StoredProcedureRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
+            Stream streamPayload = null;
+            if (parameters != null)
+            {
+                streamPayload = this.clientContext.CosmosSerializer.ToStream<dynamic[]>(parameters);
+            }
+            
+            return this.ExecuteStoredProcedureStreamAsync(
+                storedProcedureId: storedProcedureId,
+                partitionKey: partitionKey,
+                streamPayload: streamPayload,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+        }
+        
+        public override Task<ResponseMessage> ExecuteStoredProcedureStreamAsync(
+            string storedProcedureId,
+            Stream streamPayload,
+            Cosmos.PartitionKey partitionKey,
+            StoredProcedureRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
             if (string.IsNullOrEmpty(storedProcedureId))
             {
                 throw new ArgumentNullException(nameof(storedProcedureId));
             }
 
             ContainerCore.ValidatePartitionKey(partitionKey, requestOptions);
-
-            Stream streamPayload = null;
-            if (parameters != null)
-            {
-                streamPayload = this.clientContext.CosmosSerializer.ToStream<dynamic[]>(parameters);
-            }
-
+            
             Uri linkUri = this.clientContext.CreateLink(
                 parentLink: this.container.LinkUri.OriginalString,
                 uriPathSegment: Paths.StoredProceduresPathSegment,
@@ -281,10 +299,13 @@ namespace Microsoft.Azure.Cosmos.Scripts
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            FeedIterator databaseStreamIterator = this.GetTriggerQueryStreamIterator(
+            if (!(this.GetTriggerQueryStreamIterator(
                 queryDefinition,
                 continuationToken,
-                requestOptions);
+                requestOptions) is FeedIteratorInternal databaseStreamIterator))
+            {
+                throw new InvalidOperationException($"Expected a FeedIteratorInternal.");
+            }
 
             return new FeedIteratorCore<T>(
                 databaseStreamIterator,
@@ -436,10 +457,13 @@ namespace Microsoft.Azure.Cosmos.Scripts
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            FeedIterator databaseStreamIterator = this.GetUserDefinedFunctionQueryStreamIterator(
+            if (!(this.GetUserDefinedFunctionQueryStreamIterator(
                 queryDefinition,
                 continuationToken,
-                requestOptions);
+                requestOptions) is FeedIteratorInternal databaseStreamIterator))
+            {
+                throw new InvalidOperationException($"Expected a FeedIteratorInternal.");
+            }
 
             return new FeedIteratorCore<T>(
                 databaseStreamIterator,

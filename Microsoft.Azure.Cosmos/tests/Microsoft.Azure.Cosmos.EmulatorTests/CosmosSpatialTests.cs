@@ -40,7 +40,7 @@
             Assert.IsNotNull(response);
             Assert.IsNotNull(response.Container);
             Assert.IsNotNull(response.Resource);
-            this.Container = (ContainerCore)response;
+            this.Container = (ContainerInlineCore)response;
         }
 
         [TestCleanup]
