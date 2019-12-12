@@ -238,6 +238,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                         Math.Ceiling(top / (double)targetRanges.Count) * CosmosQueryExecutionContextFactory.PageSizeFactorForTop,
                         top);
 
+                    // temporarily making sure page size is at least n + 1 to
+                    // workaround a query bug where an additional request is issued
+                    // when the following 2 conditions are met:
+                    // 1 - The query has TOP n / OFFSET m LIMIT n
+                    // 2 - The page size is n OR the query is preempted at the nth result
+                    pageSizeWithTop = Math.Max(pageSizeWithTop, top + 1);
+
                     optimalPageSize = Math.Min(pageSizeWithTop, optimalPageSize);
                 }
                 else if (cosmosQueryContext.IsContinuationExpected)
