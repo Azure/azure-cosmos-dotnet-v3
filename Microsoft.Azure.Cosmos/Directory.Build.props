@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <ClientVersion>3.5.2-UBS-TopNWorkaround</ClientVersion>
+    <ClientVersion>3.5.2-previewTopNWorkaround</ClientVersion>
     <DirectVersion>3.4.2</DirectVersion>
     <HybridRowVersion>1.0.0-preview</HybridRowVersion>
     <AboveDirBuildProps>$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))</AboveDirBuildProps>
