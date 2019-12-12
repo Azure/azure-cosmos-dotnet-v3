@@ -355,6 +355,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "UniqueKeyPolicy",
                 "DefaultTimeToLive",
                 "IndexingPolicy",
+                "GeospatialConfig",
                 "TimeToLivePropertyPath",
                 "PartitionKeyPath",
                 "PartitionKeyDefinitionVersion",
