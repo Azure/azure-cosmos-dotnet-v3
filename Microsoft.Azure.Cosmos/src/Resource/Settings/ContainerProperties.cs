@@ -250,7 +250,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// Geospatial type of collection i.e. geography or geometry 
         /// </value>
-        [JsonProperty(PropertyName = "geospatialConfig")]
+        [JsonIgnore]
         public GeospatialConfig GeospatialConfig
         {
             get

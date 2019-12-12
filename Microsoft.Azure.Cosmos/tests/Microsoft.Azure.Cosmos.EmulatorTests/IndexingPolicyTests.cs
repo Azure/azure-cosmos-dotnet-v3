@@ -338,7 +338,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
                 };
 
-                await IndexingPolicyTests.RoundTripWithLocal(indexingPolicy, Cosmos.GeospatialType.Geometry);
+            Cosmos.GeospatialConfig geospatialConfig = new Cosmos.GeospatialConfig();
+            geospatialConfig.GeospatialType = Cosmos.GeospatialType.Geometry;
+            await IndexingPolicyTests.RoundTripWithLocal(indexingPolicy, geospatialConfig);
         }
 
         [TestMethod]
@@ -393,7 +395,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await IndexingPolicyTests.RoundTripWithLocal(indexingPolicy);
         }
 
-        private static async Task RoundTripWithLocal(Cosmos.IndexingPolicy indexingPolicy, Cosmos.GeospatialType geospatialType = Cosmos.GeospatialType.Geography)
+        private static async Task RoundTripWithLocal(Cosmos.IndexingPolicy indexingPolicy, Cosmos.GeospatialConfig geospatialConfig = null)
         {
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/id" }), Kind = PartitionKind.Hash };
             ContainerProperties containerSetting = new ContainerProperties()
@@ -401,10 +403,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Id = Guid.NewGuid().ToString(),
                 IndexingPolicy = indexingPolicy,
                 PartitionKey = partitionKeyDefinition,
-                GeospatialConfig = new Cosmos.GeospatialConfig()
-                {
-                    GeospatialType = geospatialType
-                }
+                GeospatialConfig = geospatialConfig
             };
 
             Cosmos.Database cosmosDatabase = await cosmosClient.CreateDatabaseIfNotExistsAsync(IndexingPolicyTests.database.Id);
