@@ -27,44 +27,23 @@
 
     public class Program
     {
-        private const string databaseId = "samples";
-        private static string containerId = "bulk-support";
         private static readonly JsonSerializer Serializer = new JsonSerializer();
-
         private static Database database = null;
+        private static int preCreatedDocuments;
+        private static int documentSize;
+        private static int runtimeInSeconds;
+        private static bool shouldCleanupOnFinish;
 
-        // Async main requires c# 7.1 which is set in the csproj with the LangVersion attribute
         // <Main>
         public static void Main(string[] args)
         {
             try
             {
-                // Documents to pre-create before starting bulk execution
-                int preCreatedDocuments = args.Length > 0 ? int.Parse(args[0]) : 20000;
-                int docSize = args.Length > 1 ? int.Parse(args[1]) : 1024;
-                int runtimeInSeconds = args.Length > 2 ? int.Parse(args[2]) : 20;
-                Program.containerId = args.Length > 3 ? args[3] : "bulk-support";
-                // Read the Cosmos endpointUrl and authorisationKeys from configuration
-                // These values are available from the Azure Management Portal on the Cosmos Account Blade under "Keys"
-                // Keep these values in a safe & secure location. Together they provide Administrative access to your Cosmos account
-                IConfigurationRoot configuration = new ConfigurationBuilder()
-                    .AddJsonFile("appSettings.json")
-                    .Build();
+                // Intialize container or create a new container.
+                Container container = Program.Initalizer();
 
-                string endpoint = configuration["EndPointUrl"];
-                if (string.IsNullOrEmpty(endpoint))
-                {
-                    throw new ArgumentNullException("Please specify a valid endpoint in the appSettings.json");
-                }
-
-                string authKey = configuration["AuthorizationKey"];
-                if (string.IsNullOrEmpty(authKey) || string.Equals(authKey, "Super secret key"))
-                {
-                    throw new ArgumentException("Please specify a valid AuthorizationKey in the appSettings.json");
-                }
-
-                Console.WriteLine("Running demo for container {0} with a Bulk enabled CosmosClient.", Program.containerId);
-                Program.CreateItemsConcurrently(endpoint, authKey, preCreatedDocuments, docSize, runtimeInSeconds);
+                // Running bulk ingestion on a container.
+                Program.CreateItemsConcurrently(container);
             }
             catch (CosmosException cre)
             {
@@ -77,33 +56,23 @@
             }
             finally
             {
-                //await Program.CleanupAsync();
+                if (Program.shouldCleanupOnFinish)
+                {
+                    CleanupAsync();
+                }
                 Console.WriteLine("End of demo, press any key to exit.");
                 Console.ReadKey();
             }
         }
         // </Main>
 
-        private static CosmosClient GetBulkClientInstance(
-            string endpoint,
-            string authKey) =>
-        // </Initialization>
-            new CosmosClient(endpoint, authKey, new CosmosClientOptions() { AllowBulkExecution = true });
-        // </Initialization>
-
-        private static void CreateItemsConcurrently(
-            string endpoint,
-            string authKey,
-            int preCreatedDocuments,
-            int docSize,
-            int runtimeInSeconds)
+        private static void CreateItemsConcurrently(Container container)
         {
-            Console.WriteLine($"Initiating creates of items of about {docSize} bytes maintaining {preCreatedDocuments} in-progress items for {runtimeInSeconds} seconds.");
-            DataSource dataSource = new DataSource(preCreatedDocuments, docSize);
+            Console.WriteLine($"Initiating creates of items of about {documentSize} bytes " +
+                $"maintaining {preCreatedDocuments} in-progress items for {runtimeInSeconds} seconds.");
 
-            CosmosClient client = Program.GetBulkClientInstance(endpoint, authKey);
-            Container container = client.GetContainer(Program.databaseId, Program.containerId);
             ConcurrentDictionary<HttpStatusCode, int> countsByStatus = new ConcurrentDictionary<HttpStatusCode, int>();
+            DataSource dataSource = new DataSource(preCreatedDocuments, documentSize);
 
             Console.WriteLine("Starting job");
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
@@ -138,8 +107,6 @@
                 {
                     Console.WriteLine(countForStatus.Key + " " + countForStatus.Value);
                 }
-
-                client.Dispose();
             }
 
             int created = countsByStatus.SingleOrDefault(x => x.Key == HttpStatusCode.Created).Value;
@@ -157,30 +124,105 @@
         }
         // </Model>
 
-        private static async Task CleanupAsync()
+        private static Container Initalizer()
+        {
+            // Read the Cosmos endpointUrl and authorisationKeys from configuration
+            // These values are available from the Azure Management Portal on the Cosmos Account Blade under "Keys"
+            // Keep these values in a safe & secure location. Together they provide Administrative access to your Cosmos account
+            IConfigurationRoot configuration = new ConfigurationBuilder()
+                    .AddJsonFile("appSettings.json")
+                    .Build();
+
+            string endpoint = configuration["EndPointUrl"];
+            if (string.IsNullOrEmpty(endpoint))
+            {
+                throw new ArgumentNullException("Please specify a valid endpoint in the appSettings.json");
+            }
+
+            string authKey = configuration["AuthorizationKey"];
+            if (string.IsNullOrEmpty(authKey) || string.Equals(authKey, "Super secret key"))
+            {
+                throw new ArgumentException("Please specify a valid AuthorizationKey in the appSettings.json");
+            }
+
+            string DatabaseName = configuration["DatabaseName"];
+            if (string.IsNullOrEmpty(DatabaseName))
+            {
+                throw new ArgumentException("Please specify a valid DatabaseName in the appSettings.json");
+            }
+
+            string CollectionName = configuration["CollectionName"];
+            if (string.IsNullOrEmpty(CollectionName))
+            {
+                throw new ArgumentException("Please specify a valid CollectionName in the appSettings.json");
+            }
+
+            Program.preCreatedDocuments = int.Parse(string.IsNullOrEmpty(configuration["PreCreatedDocuments"]) ? "1000" : configuration["PreCreatedDocuments"]);
+            Program.documentSize = int.Parse(string.IsNullOrEmpty(configuration["DocumentSize"]) ? "1024" : configuration["DocumentSize"]);
+            Program.runtimeInSeconds = int.Parse(string.IsNullOrEmpty(configuration["RuntimeInSeconds"]) ? "30" : configuration["RuntimeInSeconds"]);
+
+            Program.shouldCleanupOnFinish = bool.Parse(string.IsNullOrEmpty(configuration["ShouldCleanupOnFinish"]) ? "false" : configuration["ShouldCleanupOnFinish"]);
+            bool shouldCleanupOnStart = bool.Parse(string.IsNullOrEmpty(configuration["ShouldCleanupOnStart"]) ? "false" : configuration["ShouldCleanupOnStart"]);
+            int collectionThroughput = int.Parse(string.IsNullOrEmpty(configuration["CollectionThroughput"]) ? "30000" : configuration["CollectionThroughput"]);
+
+            CosmosClient client = GetBulkClientInstance(endpoint, authKey);
+            Program.database = client.GetDatabase(DatabaseName);
+            Container container = Program.database.GetContainer(CollectionName); ;
+            if (shouldCleanupOnStart)
+            {
+                container = CreateFreshCollection(client, DatabaseName, CollectionName, collectionThroughput);
+            }
+
+            try
+            {
+                container.ReadContainerAsync().GetAwaiter().GetResult();
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine("Error in reading collection: {0}", ex.Message);
+                throw ex;
+            }
+
+            Console.WriteLine("Running demo for container {0} with a Bulk enabled CosmosClient.", CollectionName);
+
+            return container;
+        }
+
+        private static CosmosClient GetBulkClientInstance(
+            string endpoint,
+            string authKey) =>
+        // </Initialization>
+            new CosmosClient(endpoint, authKey, new CosmosClientOptions() { AllowBulkExecution = true });
+        // </Initialization>
+
+        private static void CleanupAsync()
         {
             if (Program.database != null)
             {
-                await Program.database.DeleteAsync();
+                Program.database.DeleteAsync().GetAwaiter().GetResult();
             }
         }
 
-        private static async Task InitializeAsync(CosmosClient client, int throughput)
+        private static Container CreateFreshCollection(CosmosClient client, string datbaseName, string collectionName, int throughput)
         {
-            Program.database = await client.CreateDatabaseIfNotExistsAsync(Program.databaseId);
+            Program.database = client.CreateDatabaseIfNotExistsAsync(datbaseName).Result;
 
-            // Delete the existing container to prevent create item conflicts
-            using (await database.GetContainer(containerId).DeleteContainerStreamAsync())
-            { }
+            try
+            {
+                Console.WriteLine("Deleting old collection if it exists.");
+                database.GetContainer(collectionName).DeleteContainerStreamAsync().GetAwaiter().GetResult();
+            }
+            catch(Exception) {
+                // Do nothing
+            }
 
             // We create a partitioned collection here which needs a partition key. Partitioned collections
             // can be created with very high values of provisioned throughput and used to store 100's of GBs of data. 
             Console.WriteLine($"The demo will create a {throughput} RU/s container, press any key to continue.");
             Console.ReadKey();
 
-            // Create with a throughput of 20000 RU/s - this demo is about throughput so it needs a higher degree of RU/s to show volume
             // Indexing Policy to exclude all attributes to maximize RU/s usage
-            await database.DefineContainer(containerId, "/pk")
+            Container container = database.DefineContainer(collectionName, "/pk")
                     .WithIndexingPolicy()
                         .WithIndexingMode(IndexingMode.Consistent)
                         .WithIncludedPaths()
@@ -189,7 +231,9 @@
                             .Path("/*")
                             .Attach()
                     .Attach()
-                .CreateAsync(throughput);
+                .CreateAsync(throughput).Result;
+
+            return container;
         }
 
         private class DataSource
