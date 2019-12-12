@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Scripts
 {
     using System;
+    using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -105,6 +106,16 @@ namespace Microsoft.Azure.Cosmos.Scripts
             CancellationToken cancellationToken = default)
         {
             return TaskHelper.RunInlineIfNeededAsync(() => this.scripts.ExecuteStoredProcedureStreamAsync(storedProcedureId, partitionKey, parameters, requestOptions, cancellationToken));
+        }
+
+        public override Task<ResponseMessage> ExecuteStoredProcedureStreamAsync(
+            string storedProcedureId,
+            Stream streamPayload,
+            Cosmos.PartitionKey partitionKey,
+            StoredProcedureRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default)
+        {
+            return TaskHelper.RunInlineIfNeededAsync(() => this.scripts.ExecuteStoredProcedureStreamAsync(storedProcedureId, streamPayload, partitionKey, requestOptions, cancellationToken));
         }
 
         public override Task<TriggerResponse> CreateTriggerAsync(
