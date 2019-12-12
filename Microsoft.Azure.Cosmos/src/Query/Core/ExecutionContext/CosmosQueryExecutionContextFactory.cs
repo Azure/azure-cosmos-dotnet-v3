@@ -235,7 +235,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 {
                     // All partitions should initially fetch about 1/nth of the top value.
                     long pageSizeWithTop = (long)Math.Min(
-                        Math.Ceiling(top / (double)targetRanges.Count) * CosmosQueryExecutionContextFactory.PageSizeFactorForTop,
+                        Math.Ceiling((top + 1) / (double)targetRanges.Count) * CosmosQueryExecutionContextFactory.PageSizeFactorForTop,
                         top);
 
                     optimalPageSize = Math.Min(pageSizeWithTop, optimalPageSize);
