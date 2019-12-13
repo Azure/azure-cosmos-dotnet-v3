@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets or sets the bounding box
         /// </summary>
         [JsonProperty(PropertyName = "boundingBox", NullValueHandling = NullValueHandling.Ignore)]
-        public BoundingBoxSpec BoundingBox
+        public BoundingBoxProperties BoundingBox
         {
             get; set;
         }

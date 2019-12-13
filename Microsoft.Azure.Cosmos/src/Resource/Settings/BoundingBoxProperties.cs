@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos
     ///    }
     /// ]]>
     /// </example>
-    public sealed class BoundingBoxSpec
+    public sealed class BoundingBoxProperties
     {
         /// <summary>
         /// Gets the x-coordinate of the lower-left corner of the bounding box.
