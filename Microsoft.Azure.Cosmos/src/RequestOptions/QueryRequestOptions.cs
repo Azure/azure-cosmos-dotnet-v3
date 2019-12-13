@@ -141,6 +141,12 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         public string SessionToken { get; set; }
 
+        internal string StartId { get; set; }
+
+        internal string EndId { get; set; }
+
+        internal EnumerationDirection? EnumerationDirection { get; set; }
+
         internal CosmosSerializationFormatOptions CosmosSerializationFormatOptions { get; set; }
 
         internal ExecutionEnvironment? ExecutionEnvironment { get; set; }
@@ -195,6 +201,21 @@ namespace Microsoft.Azure.Cosmos
             if (this.CosmosSerializationFormatOptions != null)
             {
                 request.Headers.Add(HttpConstants.HttpHeaders.ContentSerializationFormat, this.CosmosSerializationFormatOptions.ContentSerializationFormat);
+            }
+
+            if (this.StartId != null)
+            {
+                request.Headers.Set(HttpConstants.HttpHeaders.StartId, this.StartId);
+            }
+
+            if (this.EndId != null)
+            {
+                request.Headers.Set(HttpConstants.HttpHeaders.EndId, this.EndId);
+            }
+
+            if (this.EnumerationDirection.HasValue)
+            {
+                request.Headers.Set(HttpConstants.HttpHeaders.EnumerationDirection, this.EnumerationDirection.Value.ToString());
             }
 
             request.Headers.Add(HttpConstants.HttpHeaders.PopulateQueryMetrics, bool.TrueString);

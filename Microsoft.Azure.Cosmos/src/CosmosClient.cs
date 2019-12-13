@@ -645,7 +645,8 @@ namespace Microsoft.Azure.Cosmos
                 sqlQuerySpecSerializer: sqlQuerySpecSerializer,
                 cosmosResponseFactory: this.ResponseFactory,
                 requestHandler: this.RequestHandler,
-                documentClient: this.DocumentClient);
+                documentClient: this.DocumentClient,
+                dekCache: new DekCache());
         }
 
         internal virtual async Task<ConsistencyLevel> GetAccountConsistencyLevelAsync()

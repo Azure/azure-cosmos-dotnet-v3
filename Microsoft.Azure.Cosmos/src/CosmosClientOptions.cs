@@ -396,6 +396,12 @@ namespace Microsoft.Azure.Cosmos
         public bool AllowBulkExecution { get; set; }
 
         /// <summary>
+        /// The key wrapping provider to use to wrap and unwrap keys while using client side encryption support.
+        /// See <see href="tbd"/> for more information on client-side encryption support in Azure Cosmos DB.
+        /// </summary>
+        public IKeyWrapProvider KeyWrapProvider { get; set; }
+
+        /// <summary>
         /// A JSON serializer used by the CosmosClient to serialize or de-serialize cosmos request/responses.
         /// The default serializer is always used for all system owned types like DatabaseProperties.
         /// The default serializer is used for user types if no UserJsonSerializer is specified

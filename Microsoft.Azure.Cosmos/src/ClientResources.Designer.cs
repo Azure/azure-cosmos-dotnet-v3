@@ -376,6 +376,24 @@ namespace Microsoft.Azure.Cosmos {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to The key wrapping provider configured was unable to unwrap the wrapped key correctly..
+        /// </summary>
+        internal static string KeyWrappingDidNotRoundtrip {
+            get {
+                return ResourceManager.GetString("KeyWrappingDidNotRoundtrip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The key wrapping provider was not configured for the client. Please ensure this is done while initializing the client before invoking this API..
+        /// </summary>
+        internal static string KeyWrapProviderNotConfigured {
+            get {
+                return ResourceManager.GetString("KeyWrapProviderNotConfigured", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to MediaLink is invalid.
         /// </summary>
         internal static string MediaLinkInvalid {

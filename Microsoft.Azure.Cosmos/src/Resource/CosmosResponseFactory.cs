@@ -130,6 +130,23 @@ namespace Microsoft.Azure.Cosmos
             });
         }
 
+        internal Task<DataEncryptionKeyResponse> CreateDataEncryptionKeyResponseAsync(
+            DataEncryptionKey key,
+            Task<ResponseMessage> cosmosResponseMessageTask)
+        {
+            return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
+            {
+                DataEncryptionKeyProperties keyProperties = this.ToObjectInternal<DataEncryptionKeyProperties>(cosmosResponseMessage, this.propertiesSerializer);
+
+                return new DataEncryptionKeyResponse(
+                    cosmosResponseMessage.StatusCode,
+                    cosmosResponseMessage.Headers,
+                    keyProperties,
+                    key,
+                    cosmosResponseMessage.Diagnostics);
+            });
+        }
+
         internal Task<DatabaseResponse> CreateDatabaseResponseAsync(
             Database database,
             Task<ResponseMessage> cosmosResponseMessageTask)

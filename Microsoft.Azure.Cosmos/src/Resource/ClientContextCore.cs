@@ -24,7 +24,8 @@ namespace Microsoft.Azure.Cosmos
             CosmosSerializer sqlQuerySpecSerializer,
             CosmosResponseFactory cosmosResponseFactory,
             RequestInvokerHandler requestHandler,
-            DocumentClient documentClient)
+            DocumentClient documentClient,
+            DekCache dekCache)
         {
             this.Client = client;
             this.ClientOptions = clientOptions;
@@ -34,6 +35,7 @@ namespace Microsoft.Azure.Cosmos
             this.ResponseFactory = cosmosResponseFactory;
             this.RequestHandler = requestHandler;
             this.DocumentClient = documentClient;
+            this.DekCache = dekCache;
         }
 
         /// <summary>
@@ -54,6 +56,8 @@ namespace Microsoft.Azure.Cosmos
         internal override RequestInvokerHandler RequestHandler { get; }
 
         internal override CosmosClientOptions ClientOptions { get; }
+
+        internal override DekCache DekCache { get; }
 
         /// <summary>
         /// Generates the URI link for the resource

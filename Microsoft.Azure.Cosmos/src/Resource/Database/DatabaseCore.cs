@@ -498,6 +498,139 @@ namespace Microsoft.Azure.Cosmos
             return new ContainerBuilder(this, this.ClientContext, name, partitionKeyPath);
         }
 
+        public override DataEncryptionKey GetDataEncryptionKey(string id)
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
+            return new DataEncryptionKeyCore(
+                    this.ClientContext,
+                    this,
+                    id);
+        }
+
+        public override FeedIterator<DataEncryptionKeyProperties> GetDataEncryptionKeyIterator(
+            string startId = null,
+            string endId = null,
+            bool isDescending = false,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null)
+        {
+            FeedIterator dekStreamIterator = this.GetDataEncryptionKeyStreamIterator(startId, endId, isDescending, continuationToken, requestOptions);
+
+            return new FeedIteratorCore<DataEncryptionKeyProperties>(
+                dekStreamIterator,
+                (responseMessage) =>
+                {
+                    FeedResponse<DataEncryptionKeyProperties> results = this.ClientContext.ResponseFactory.CreateQueryFeedResponseWithPropertySerializer<DataEncryptionKeyProperties>(responseMessage);
+                    foreach (DataEncryptionKeyProperties result in results)
+                    {
+                        this.ClientContext.DekCache.AddOrUpdate(new CachedDekProperties(result));
+                    }
+
+                    return results;
+                });
+        }
+
+        public FeedIterator GetDataEncryptionKeyStreamIterator(
+            string startId = null,
+            string endId = null,
+            bool isDescending = false,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null)
+        {
+            if (startId != null || endId != null)
+            {
+                if (requestOptions == null)
+                {
+                    requestOptions = new QueryRequestOptions();
+                }
+
+                requestOptions.StartId = startId;
+                requestOptions.EndId = endId;
+                requestOptions.EnumerationDirection = isDescending ? EnumerationDirection.Reverse : EnumerationDirection.Forward;
+            }
+
+            return new FeedIteratorCore(
+               clientContext: this.ClientContext,
+               resourceLink: this.LinkUri,
+               resourceType: ResourceType.Key, // todo
+               queryDefinition: null,
+               continuationToken: continuationToken,
+               options: requestOptions,
+               usePropertySerializer: true);
+        }
+
+        public override async Task<DataEncryptionKeyResponse> CreateDataEncryptionKeyAsync(
+            string id,
+            KeyWrapMetadata keyWrapMetadata,
+            TimeSpan clientCacheTimeToLive,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
+            if (keyWrapMetadata == null)
+            {
+                throw new ArgumentNullException(nameof(keyWrapMetadata));
+            }
+
+            // todo: min bound validation
+            if (clientCacheTimeToLive == default(TimeSpan))
+            {
+                throw new ArgumentException(nameof(clientCacheTimeToLive));
+            }
+
+            if (this.ClientContext.ClientOptions.KeyWrapProvider == null)
+            {
+                throw new ArgumentException(ClientResources.KeyWrapProviderNotConfigured);
+            }
+
+            this.ClientContext.ValidateResource(id);
+
+            byte[] rawDek = DataEncryptionKeyCore.GenerateKey();
+            byte[] wrappedDek = await DataEncryptionKeyCore.WrapKeyAsync(rawDek, keyWrapMetadata, this.ClientContext);
+
+            DataEncryptionKeyProperties dekProperties = new DataEncryptionKeyProperties(id, wrappedDek, keyWrapMetadata, clientCacheTimeToLive);
+
+            Stream streamPayload = this.ClientContext.PropertiesSerializer.ToStream(dekProperties);
+            Task<ResponseMessage> response = this.CreateDataEncryptionKeyStreamAsync(
+                streamPayload,
+                requestOptions,
+                cancellationToken);
+
+            DataEncryptionKeyResponse dekResponse = await this.ClientContext.ResponseFactory.CreateDataEncryptionKeyResponseAsync(this.GetDataEncryptionKey(dekProperties.Id), response);
+            this.ClientContext.DekCache.AddOrUpdate(new CachedDekProperties(dekResponse.Resource, rawDek));
+            return dekResponse;
+        }
+
+        public Task<ResponseMessage> CreateDataEncryptionKeyStreamAsync(
+            Stream streamPayload,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (streamPayload == null)
+            {
+                throw new ArgumentNullException(nameof(streamPayload));
+            }
+
+            return this.ClientContext.ProcessResourceOperationStreamAsync(
+                resourceUri: this.LinkUri,
+                resourceType: ResourceType.Key, // todo
+                operationType: OperationType.Create,
+                cosmosContainerCore: null,
+                partitionKey: null,
+                streamPayload: streamPayload,
+                requestOptions: requestOptions,
+                requestEnricher: null,
+                cancellationToken: cancellationToken);
+        }
+
         internal void ValidateContainerProperties(ContainerProperties containerProperties)
         {
             containerProperties.ValidateRequiredProperties();
@@ -580,7 +713,7 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ProcessResourceOperationStreamAsync(
+            return this.ProcessResourceOperationStreamAsync(
                 streamPayload: null,
                 operationType: operationType,
                 linkUri: this.LinkUri,

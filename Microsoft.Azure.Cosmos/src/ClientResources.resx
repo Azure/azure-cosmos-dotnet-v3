@@ -294,4 +294,10 @@
   <data name="UnsupportedBulkRequestOptions" xml:space="preserve">
     <value>Consistency, Session, and Triggers are not allowed when AllowBulkExecution is set to true.</value>
   </data>
+  <data name="KeyWrappingDidNotRoundtrip" xml:space="preserve">
+    <value>The key wrapping provider configured was unable to unwrap the wrapped key correctly.</value>
+  </data>
+  <data name="KeyWrapProviderNotConfigured" xml:space="preserve">
+    <value>The key wrapping provider was not configured for the client. Please ensure this is done while initializing the client before invoking this API.</value>
+  </data>
 </root>
