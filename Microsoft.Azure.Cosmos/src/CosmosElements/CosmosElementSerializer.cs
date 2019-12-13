@@ -249,6 +249,11 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             IReadOnlyList<CosmosElement> cosmosArray,
             CosmosSerializerCore serializerCore)
         {
+            if (cosmosArray == null)
+            {
+                return new List<T>();
+            }
+
             if (typeof(T) == typeof(CosmosElement))
             {
                 return cosmosArray.Cast<T>();

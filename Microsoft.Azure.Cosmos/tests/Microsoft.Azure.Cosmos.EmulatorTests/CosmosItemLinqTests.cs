@@ -384,7 +384,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     action.WithConnectionModeGateway();
                 }
             };
-            CosmosClient camelCaseCosmosClient = TestCommon.CreateCosmosClient(builder);
+            CosmosClient camelCaseCosmosClient = TestCommon.CreateCosmosClient(builder, false);
             Cosmos.Database database = camelCaseCosmosClient.GetDatabase(this.database.Id);
             Container containerFromCamelCaseClient = database.GetContainer(this.Container.Id);
             IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(container: containerFromCamelCaseClient, pkCount: 2, perPKItemCount: 1, randomPartitionKey: true);

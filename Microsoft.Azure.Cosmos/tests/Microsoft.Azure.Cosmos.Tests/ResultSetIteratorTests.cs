@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
+    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class ResultSetIteratorTests
@@ -51,10 +52,10 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task CosmosConflictsIteratorBuildsSettings()
         {
-            string conflictResponsePayload = @"{ 'Data':[{
-                 id: 'Conflict1',
-                 operationType: 'Replace',
-                 resourceType: 'trigger'
+            string conflictResponsePayload = @"{ ""Conflicts"":[{
+                 ""id"": ""Conflict1"",
+                 ""operationType"": ""Replace"",
+                 ""resourceType"": ""trigger""
                 }]}";
 
             CosmosClient mockClient = MockCosmosUtil.CreateMockCosmosClient(
@@ -95,12 +96,13 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task CosmosConflictsStreamIteratorBuildsSettings()
         {
-            string conflictResponsePayload = @"{ 'Data':[{
-                 id: 'Conflict1',
-                 operationType: 'Replace',
-                 resourceType: 'trigger'
+            string conflictResponsePayload = @"{ ""Conflicts"":[{
+                 ""id"": ""Conflict1"",
+                 ""operationType"": ""Replace"",
+                 ""resourceType"": ""trigger""
                 }]}";
 
+            JObject jObject = JObject.Parse(conflictResponsePayload);
             CosmosClient mockClient = MockCosmosUtil.CreateMockCosmosClient(
                 (cosmosClientBuilder) => cosmosClientBuilder.WithConnectionModeDirect());
 

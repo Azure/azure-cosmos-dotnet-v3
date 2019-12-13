@@ -53,10 +53,14 @@ namespace Microsoft.Azure.Cosmos
             {
                 responseMessage.EnsureSuccessStatusCode();
 
-                CosmosArray cosmosArray = CosmosElementSerializer.ToCosmosElements(
-                    responseMessage.Content,
-                    resourceType,
-                    null);
+                CosmosArray cosmosArray = null;
+                if (responseMessage.Content != null)
+                {
+                    cosmosArray = CosmosElementSerializer.ToCosmosElements(
+                        responseMessage.Content,
+                        resourceType,
+                        null);
+                }
 
                 ReadFeedResponse<TInput> readFeedResponse = new ReadFeedResponse<TInput>(
                     httpStatusCode: responseMessage.StatusCode,

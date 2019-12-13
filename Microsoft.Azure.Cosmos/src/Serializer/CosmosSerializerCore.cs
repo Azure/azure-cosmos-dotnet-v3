@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos
                 return this.sqlQuerySpecSerializer;
             }
 
-            Debug.Assert(inputType.IsPublic, $"User serializer is being used for internal type:{inputType.FullName}.");
+            Debug.Assert(inputType.IsPublic || inputType.IsNested, $"User serializer is being used for internal type:{inputType.FullName}.");
 
             return this.customSerializer;
         }

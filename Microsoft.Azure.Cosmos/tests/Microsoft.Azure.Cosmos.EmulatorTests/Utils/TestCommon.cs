@@ -61,17 +61,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return (endpoint, authKey);
         }
 
-        internal static CosmosClientBuilder GetDefaultConfiguration()
+        internal static CosmosClientBuilder GetDefaultConfiguration(bool useCustomSeralizer = true)
         {
             (string endpoint, string authKey) accountInfo = TestCommon.GetAccountInfo();
             CosmosClientBuilder clientBuilder = new CosmosClientBuilder(accountEndpoint: accountInfo.endpoint, authKeyOrResourceToken: accountInfo.authKey);
-            clientBuilder.WithCustomSerializer(new CosmosJsonDotNetSerializer());
+            if (useCustomSeralizer)
+            {
+                clientBuilder.WithCustomSerializer(new CosmosJsonDotNetSerializer());
+            }
+
             return clientBuilder;
         }
 
-        internal static CosmosClient CreateCosmosClient(Action<CosmosClientBuilder> customizeClientBuilder = null)
+        internal static CosmosClient CreateCosmosClient(Action<CosmosClientBuilder> customizeClientBuilder = null, bool useCustomSeralizer = true)
         {
-            CosmosClientBuilder cosmosClientBuilder = GetDefaultConfiguration();
+            CosmosClientBuilder cosmosClientBuilder = GetDefaultConfiguration(useCustomSeralizer);
             if (customizeClientBuilder != null)
             {
                 customizeClientBuilder(cosmosClientBuilder);
