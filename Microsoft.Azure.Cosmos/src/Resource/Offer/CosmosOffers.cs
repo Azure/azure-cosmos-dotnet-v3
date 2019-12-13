@@ -168,7 +168,9 @@ namespace Microsoft.Azure.Cosmos
 
             return new FeedIteratorCore<T>(
                 databaseStreamIterator,
-                this.ClientContext.ResponseFactory.CreateQueryFeedResponseWithPropertySerializer<T>);
+                (response) => this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>(
+                    responseMessage: response,
+                    resourceType: ResourceType.Offer));
         }
 
         internal virtual FeedIterator GetOfferQueryStreamIterator(

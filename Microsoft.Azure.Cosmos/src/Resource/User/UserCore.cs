@@ -219,7 +219,9 @@ namespace Microsoft.Azure.Cosmos
 
             return new FeedIteratorCore<T>(
                 permissionStreamIterator,
-                this.ClientContext.ResponseFactory.CreateQueryFeedResponseWithPropertySerializer<T>);
+                (response) => this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>(
+                    responseMessage: response,
+                    resourceType: ResourceType.Permission));
         }
 
         public FeedIterator GetPermissionQueryStreamIterator(QueryDefinition queryDefinition,

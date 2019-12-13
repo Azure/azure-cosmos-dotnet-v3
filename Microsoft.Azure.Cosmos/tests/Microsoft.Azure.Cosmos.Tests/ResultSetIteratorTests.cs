@@ -5,6 +5,8 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
+    using System.Collections;
+    using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.IO;
     using System.Linq;
@@ -123,7 +125,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             mockClient.RequestHandler.InnerHandler = testHandler;
             ResponseMessage streamResponse = await feedIterator.ReadNextAsync();
 
-            Collection<ConflictProperties> response = MockCosmosUtil.Serializer.FromStream<CosmosFeedResponseUtil<ConflictProperties>>(streamResponse.Content).Data;
+            IEnumerable<ConflictProperties> response = MockCosmosUtil.Serializer.FromFeedResponseStream<ConflictProperties>(
+                streamResponse.Content,
+                ResourceType.Conflict);
 
             Assert.AreEqual(1, response.Count());
 

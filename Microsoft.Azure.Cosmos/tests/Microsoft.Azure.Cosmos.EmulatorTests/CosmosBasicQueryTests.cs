@@ -555,8 +555,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 response.EnsureSuccessStatusCode();
                 Assert.AreEqual(expectedStatus, response.StatusCode);
 
-                ICollection<T> responseResults = TestCommon.Serializer.FromStream<CosmosFeedResponseUtil<T>>(response.Content).Data;
-                Assert.IsTrue(responseResults.Count <= 1);
+                IEnumerable<T> responseResults = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<T>>(response.Content).Data;
+                Assert.IsTrue(responseResults.Count() <= 1);
 
                 pagedStreamResults.AddRange(responseResults);
                 continuationToken = response.Headers.ContinuationToken;

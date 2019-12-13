@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Diagnostics;
+    using System.Linq;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
@@ -114,10 +115,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
         private Task DispatchChangesAsync(ResponseMessage response, CancellationToken cancellationToken)
         {
             ChangeFeedObserverContext context = new ChangeFeedObserverContextCore<T>(this.options.LeaseToken, response, this.checkpointer);
-            Collection<T> asFeedResponse;
+            IEnumerable<T> asFeedResponse;
             try
             {
-                asFeedResponse = this.serializerCore.FromFeedResponseStream<T>(response.Content);
+                asFeedResponse = this.serializerCore.FromFeedResponseStream<T>(
+                    response.Content,
+                    Documents.ResourceType.Document);
             }
             catch (Exception serializationException)
             {
@@ -126,13 +129,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             }
 
             // When StartFromBeginning is used, the first request returns OK but no content
-            if (asFeedResponse.Count == 0)
+            if (!asFeedResponse.Any())
             {
                 return Task.CompletedTask;
             }
 
-            List<T> asReadOnlyList = new List<T>(asFeedResponse.Count);
-            asReadOnlyList.AddRange(asFeedResponse);
+            List<T> asReadOnlyList = new List<T>(asFeedResponse);
 
             return this.observer.ProcessChangesAsync(context, asReadOnlyList, cancellationToken);
         }

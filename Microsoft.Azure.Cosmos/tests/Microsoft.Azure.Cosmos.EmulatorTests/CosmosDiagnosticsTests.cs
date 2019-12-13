@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //Checking point operation diagnostics on stream operations
             ResponseMessage createStreamResponse = await this.Container.CreateItemStreamAsync(
                 partitionKey: new PartitionKey(testItem.status),
-                streamPayload: TestCommon.Serializer.ToStream<ToDoActivity>(testItem));
+                streamPayload: TestCommon.SerializerCore.ToStream<ToDoActivity>(testItem));
             CosmosDiagnosticsTests.VerifyPointDiagnostics(createStreamResponse.Diagnostics);
 
             ResponseMessage readStreamResponse = await this.Container.ReadItemStreamAsync(
@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosDiagnosticsTests.VerifyPointDiagnostics(readStreamResponse.Diagnostics);
 
             ResponseMessage replaceStreamResponse = await this.Container.ReplaceItemStreamAsync(
-               streamPayload: TestCommon.Serializer.ToStream<ToDoActivity>(testItem),
+               streamPayload: TestCommon.SerializerCore.ToStream<ToDoActivity>(testItem),
                id: testItem.id,
                partitionKey: new PartitionKey(testItem.status));
             CosmosDiagnosticsTests.VerifyPointDiagnostics(replaceStreamResponse.Diagnostics);
@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             testItem.description = new string('x', Microsoft.Azure.Documents.Constants.MaxResourceSizeInBytes + 1);
             ResponseMessage createTooBigStreamResponse = await this.Container.CreateItemStreamAsync(
                 partitionKey: new PartitionKey(testItem.status),
-                streamPayload: TestCommon.Serializer.ToStream<ToDoActivity>(testItem));
+                streamPayload: TestCommon.SerializerCore.ToStream<ToDoActivity>(testItem));
             Assert.IsFalse(createTooBigStreamResponse.IsSuccessStatusCode);
             CosmosDiagnosticsTests.VerifyPointDiagnostics(createTooBigStreamResponse.Diagnostics);
         }
@@ -221,7 +221,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             while (streamIterator.HasMoreResults)
             {
                 ResponseMessage response = await streamIterator.ReadNextAsync();
-                Collection<ToDoActivity> result = TestCommon.Serializer.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(response.Content).Data;
+                Collection<ToDoActivity> result = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(response.Content).Data;
                 streamResults.AddRange(result);
                 VerifyQueryDiagnostics(response.Diagnostics);
             }

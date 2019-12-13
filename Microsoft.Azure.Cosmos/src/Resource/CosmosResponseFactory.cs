@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.IO;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Scripts;
 
@@ -21,22 +22,26 @@ namespace Microsoft.Azure.Cosmos
             this.serializerCore = jsonSerializerCore;
         }
 
-        internal FeedResponse<T> CreateQueryFeedResponseWithPropertySerializer<T>(
-            ResponseMessage cosmosResponseMessage)
+        internal FeedResponse<T> CreateQueryFeedUserTypeResponse<T>(
+            ResponseMessage responseMessage)
         {
             return this.CreateQueryFeedResponseHelper<T>(
-                cosmosResponseMessage);
+                responseMessage,
+                Documents.ResourceType.Document);
         }
 
         internal FeedResponse<T> CreateQueryFeedResponse<T>(
-            ResponseMessage cosmosResponseMessage)
+            ResponseMessage responseMessage,
+            Documents.ResourceType resourceType)
         {
             return this.CreateQueryFeedResponseHelper<T>(
-                cosmosResponseMessage);
+                responseMessage,
+                resourceType);
         }
 
         private FeedResponse<T> CreateQueryFeedResponseHelper<T>(
-            ResponseMessage cosmosResponseMessage)
+            ResponseMessage cosmosResponseMessage,
+            Documents.ResourceType resourceType)
         {
             //Throw the exception
             cosmosResponseMessage.EnsureSuccessStatusCode();
@@ -51,7 +56,8 @@ namespace Microsoft.Azure.Cosmos
 
             return ReadFeedResponse<T>.CreateResponse<T>(
                        cosmosResponseMessage,
-                       this.serializerCore);
+                       this.serializerCore,
+                       resourceType);
         }
 
         internal Task<ItemResponse<T>> CreateItemResponseAsync<T>(
@@ -203,21 +209,21 @@ namespace Microsoft.Azure.Cosmos
         {
             using (ResponseMessage message = await cosmosResponseTask)
             {
+                //Throw the exception
+                message.EnsureSuccessStatusCode();
+
                 return createResponse(message);
             }
         }
 
-        internal T ToObjectInternal<T>(ResponseMessage cosmosResponseMessage)
+        internal T ToObjectInternal<T>(ResponseMessage responseMessage)
         {
-            //Throw the exception
-            cosmosResponseMessage.EnsureSuccessStatusCode();
-
-            if (cosmosResponseMessage.Content == null)
+            if (responseMessage.Content == null)
             {
                 return default(T);
             }
 
-            return this.serializerCore.FromStream<T>(cosmosResponseMessage.Content);
+            return this.serializerCore.FromStream<T>(responseMessage.Content);
         }
     }
 }

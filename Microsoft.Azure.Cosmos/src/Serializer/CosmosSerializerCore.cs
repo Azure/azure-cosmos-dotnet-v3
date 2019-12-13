@@ -5,9 +5,12 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections;
+    using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Diagnostics;
     using System.IO;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Documents;
@@ -21,11 +24,9 @@ namespace Microsoft.Azure.Cosmos
         private readonly CosmosSerializer customSerializer;
         private readonly CosmosSerializer sqlQuerySpecSerializer;
 
-        public enum SerializerType
+        internal CosmosSerializerCore()
+            : this(customSerializer: null)
         {
-            UserType,
-            InternalType,
-            SqlQuerySpecType,
         }
 
         internal CosmosSerializerCore(
@@ -45,25 +46,49 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public T FromStream<T>(Stream stream, SerializerType serializerType)
+        internal static CosmosSerializerCore Create(
+            CosmosSerializer customSerializer,
+            CosmosSerializationOptions serializationOptions)
         {
-            CosmosSerializer serializerCore = this.GetSerializer<T>(serializerType);
+            if (customSerializer != null && serializationOptions != null)
+            {
+                throw new ArgumentException("Customer serializer and serialization options can not be set at the same time.");
+            }
+
+            if (serializationOptions != null)
+            {
+                customSerializer = new CosmosJsonSerializerWrapper(new CosmosJsonDotNetSerializer(serializationOptions));
+            }
+
+            return new CosmosSerializerCore(customSerializer);
+        }
+
+        internal T FromStream<T>(Stream stream)
+        {
+            CosmosSerializer serializerCore = this.GetSerializer<T>();
             return serializerCore.FromStream<T>(stream);
         }
 
-        public Collection<T> FromFeedResponseStream<T>(Stream stream)
+        internal Stream ToStream<T>(T input)
         {
-            CosmosSerializer serializerCore = this.GetFeedResponseSerializer<T>();
-            return serializerCore.FromStream<CosmosFeedResponseUtil<T>>(stream).Data;
-        }
-
-        public Stream ToStream<T>(T input, SerializerType serializerType)
-        {
-            CosmosSerializer serializerCore = this.GetSerializer<T>(serializerType);
+            CosmosSerializer serializerCore = this.GetSerializer<T>();
             return serializerCore.ToStream<T>(input);
         }
 
-        private CosmosSerializer GetFeedResponseSerializer<T>()
+        internal IEnumerable<T> FromFeedResponseStream<T>(
+            Stream stream,
+            ResourceType resourceType)
+        {
+            CosmosArray cosmosArray = CosmosElementSerializer.ToCosmosElements(
+                    stream,
+                    resourceType);
+
+            return CosmosElementSerializer.GetResources<T>(
+               cosmosArray: cosmosArray,
+               serializerCore: this);
+        }
+
+        private CosmosSerializer GetSerializer<T>()
         {
             if (this.customSerializer == null)
             {
@@ -96,29 +121,72 @@ namespace Microsoft.Azure.Cosmos
             return this.customSerializer;
         }
 
-        private CosmosSerializer GetSerializer<T>(SerializerType serializerType)
+        private CosmosSerializer GetFeedResponseSerializer<T>(ResourceType resourceType)
         {
-            if (this.customSerializer == null)
+            if (this.customSerializer == null ||
+                this.GetDefaultTypeForResource(resourceType) == typeof(T))
             {
                 return CosmosSerializerCore.propertiesSerializer;
             }
 
-            if (serializerType == SerializerType.InternalType)
+            Type inputType = typeof(T);
+            if (inputType == typeof(AccountProperties) ||
+                inputType == typeof(DatabaseProperties) ||
+                inputType == typeof(ContainerProperties) ||
+                inputType == typeof(PermissionProperties) ||
+                inputType == typeof(StoredProcedureProperties) ||
+                inputType == typeof(TriggerProperties) ||
+                inputType == typeof(UserDefinedFunctionProperties) ||
+                inputType == typeof(UserProperties) ||
+                inputType == typeof(ConflictProperties) ||
+                inputType == typeof(ThroughputProperties) ||
+                inputType == typeof(OfferV2))
             {
                 return CosmosSerializerCore.propertiesSerializer;
             }
 
-            if (serializerType == SerializerType.SqlQuerySpecType)
+            if (inputType == typeof(SqlQuerySpec))
             {
                 return this.sqlQuerySpecSerializer;
             }
 
-            // User serializer is responsible for all item operation serialization.
-            // This includes any public SDK types.
-            Debug.Assert(typeof(T).IsPublic, $"User serializer is being used for internal type:{typeof(T).FullName}.");
+            Debug.Assert(inputType.IsPublic, $"User serializer is being used for internal type:{inputType.FullName}.");
+
             return this.customSerializer;
         }
 
-        
+        private Type GetDefaultTypeForResource(ResourceType resourceType)
+        {
+            switch (resourceType)
+            {
+                case ResourceType.DatabaseAccount:
+                    return typeof(AccountProperties);
+                case ResourceType.Conflict:
+                    return typeof(ConflictProperties);
+                case ResourceType.Database:
+                    return typeof(DatabaseProperties);
+                case ResourceType.Collection:
+                    return typeof(ContainerProperties);
+                case ResourceType.StoredProcedure:
+                    return typeof(StoredProcedureProperties);
+                case ResourceType.Trigger:
+                    return typeof(TriggerProperties);
+                case ResourceType.Offer:
+                    return typeof(OfferV2);
+                case ResourceType.UserDefinedFunction:
+                    return typeof(UserDefinedFunctionProperties);
+                case ResourceType.Permission:
+                    return typeof(PermissionProperties);
+                case ResourceType.User:
+                    return typeof(UserProperties);
+                default:
+                    return null;
+            }
+        }
+
+        private CosmosSerializer GetUserTypeSerializer<T>()
+        {
+            return this.customSerializer ?? CosmosSerializerCore.propertiesSerializer;
+        }
     }
 }

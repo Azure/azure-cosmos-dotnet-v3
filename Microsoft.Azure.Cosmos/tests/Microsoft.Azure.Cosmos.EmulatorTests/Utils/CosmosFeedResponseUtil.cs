@@ -1,7 +1,7 @@
 //------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Query.Core
+namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Collections.ObjectModel;
@@ -25,84 +25,84 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         internal Type InnerType { get; } = typeof(T);
 
         [JsonProperty]
-        private Collection<T> Attachments
+        internal Collection<T> Attachments
         {
             get => this.Data;
             set => this.Data = value;
         }
 
         [JsonProperty]
-        private Collection<T> DocumentCollections
+        internal Collection<T> DocumentCollections
         {
             get => this.Data;
             set => this.Data = value;
         }
 
         [JsonProperty]
-        private Collection<T> Databases
+        internal Collection<T> Databases
         {
             get => this.Data;
             set => this.Data = value;
         }
 
         [JsonProperty]
-        private Collection<T> Documents
+        internal Collection<T> Documents
         {
             get => this.Data;
             set => this.Data = value;
         }
 
         [JsonProperty]
-        private Collection<T> Offers
+        internal Collection<T> Offers
         {
             get => this.Data;
             set => this.Data = value;
         }
 
         [JsonProperty]
-        private Collection<T> Triggers
+        internal Collection<T> Triggers
         {
             get => this.Data;
             set => this.Data = value;
         }
 
         [JsonProperty]
-        private Collection<T> UserDefinedFunctions
+        internal Collection<T> UserDefinedFunctions
         {
             get => this.Data;
             set => this.Data = value;
         }
 
         [JsonProperty]
-        private Collection<T> UserDefinedTypes
+        internal Collection<T> UserDefinedTypes
         {
             get => this.Data;
             set => this.Data = value;
         }
 
         [JsonProperty]
-        private Collection<T> StoredProcedures
+        internal Collection<T> StoredProcedures
         {
             get => this.Data;
             set => this.Data = value;
         }
 
         [JsonProperty]
-        private Collection<T> Conflicts
+        internal Collection<T> Conflicts
         {
             get => this.Data;
             set => this.Data = value;
         }
 
         [JsonProperty]
-        private Collection<T> Users
+        internal Collection<T> Users
         {
             get => this.Data;
             set => this.Data = value;
         }
 
         [JsonProperty]
-        private Collection<T> Permissions
+        internal Collection<T> Permissions
         {
             get => this.Data;
             set => this.Data = value;

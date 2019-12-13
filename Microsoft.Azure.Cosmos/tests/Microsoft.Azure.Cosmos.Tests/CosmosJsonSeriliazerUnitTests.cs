@@ -118,12 +118,12 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             // Test the user specified response
             mockUserJsonSerializer.Setup(x => x.FromStream<ToDoActivity>(itemResponse.Content)).Returns(new ToDoActivity());
             mockUserJsonSerializer.Setup(x => x.FromStream<ToDoActivity>(storedProcedureExecuteResponse.Content)).Returns(new ToDoActivity());
-            mockUserJsonSerializer.Setup(x => x.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(feedResponse.Content)).Returns(new CosmosFeedResponseUtil<ToDoActivity>() { Data = new Collection<ToDoActivity>() });
+            mockUserJsonSerializer.Setup(x => x.FromStream<ToDoActivity>(feedResponse.Content)).Returns(new ToDoActivity());
 
             // Verify all the user types use the user specified version
             await cosmosResponseFactory.CreateItemResponseAsync<ToDoActivity>(Task.FromResult(itemResponse));
             await cosmosResponseFactory.CreateStoredProcedureExecuteResponseAsync<ToDoActivity>(Task.FromResult(storedProcedureExecuteResponse));
-            cosmosResponseFactory.CreateQueryFeedResponse<ToDoActivity>(feedResponse);
+            cosmosResponseFactory.CreateQueryFeedResponse<ToDoActivity>(feedResponse, Documents.ResourceType.Document);
 
             // Throw if the setups were not called
             mockUserJsonSerializer.VerifyAll();
