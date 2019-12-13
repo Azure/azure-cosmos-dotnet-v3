@@ -9,8 +9,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
     using System.Threading.Tasks;
     using BenchmarkDotNet.Attributes;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Scripts;
     using Newtonsoft.Json.Linq;
 
     /// <summary>
@@ -62,39 +60,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             }
         }
 
-        /// <summary>
-        /// Benchmark for CreateItemAsync.
-        /// </summary>
-        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-        [Benchmark]
-        public void TypeCheckItem()
-        {
-            this.Test<dynamic>();
-        }
-
-        private CosmosSerializerCore Test<T>()
-        {
-            Type type = typeof(T);
-            if (type == typeof(AccountProperties) ||
-                type == typeof(DatabaseProperties) ||
-                type == typeof(ContainerProperties) ||
-                type == typeof(PermissionProperties) ||
-                type == typeof(StoredProcedureProperties) ||
-                type == typeof(TriggerProperties) ||
-                type == typeof(UserDefinedFunctionProperties) ||
-                type == typeof(UserProperties) ||
-                type == typeof(ConflictProperties))
-            {
-                return null;
-            }
-
-            if (type == typeof(SqlQuerySpec))
-            {
-                return null;
-            }
-
-            return null;
-        }
         /// <summary>
         /// Benchmark for UpsertItemAsync.
         /// </summary>

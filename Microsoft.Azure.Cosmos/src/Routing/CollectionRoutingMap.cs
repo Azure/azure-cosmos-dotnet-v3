@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Diagnostics;
+    using System.Globalization;
     using System.Linq;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
@@ -26,8 +27,10 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         private readonly List<PartitionKeyRange> orderedPartitionKeyRanges;
         private readonly List<Range<string>> orderedRanges;
-
         private readonly HashSet<string> goneRanges;
+        private readonly static int InvalidPkRangeId = -1;
+
+        internal int HighestNonOfflinePkRangeId { get; private set; }
 
         public CollectionRoutingMap(
             CollectionRoutingMap collectionRoutingMap,
@@ -37,6 +40,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.orderedPartitionKeyRanges = new List<PartitionKeyRange>(collectionRoutingMap.orderedPartitionKeyRanges);
             this.orderedRanges = new List<Range<string>>(collectionRoutingMap.orderedRanges);
             this.goneRanges = new HashSet<string>(collectionRoutingMap.goneRanges);
+            this.HighestNonOfflinePkRangeId = collectionRoutingMap.HighestNonOfflinePkRangeId;
             this.CollectionUniqueId = collectionRoutingMap.CollectionUniqueId;
             this.ChangeFeedNextIfNoneMatch = changeFeedNextIfNoneMatch;
         }
@@ -60,6 +64,24 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.CollectionUniqueId = collectionUniqueId;
             this.ChangeFeedNextIfNoneMatch = changeFeedNextIfNoneMatch;
             this.goneRanges = new HashSet<string>(orderedPartitionKeyRanges.SelectMany(r => r.Parents ?? Enumerable.Empty<string>()));
+
+            this.HighestNonOfflinePkRangeId = orderedPartitionKeyRanges.Max(range =>
+                {
+                    int pkId = CollectionRoutingMap.InvalidPkRangeId;
+                    if (!int.TryParse(range.Id, NumberStyles.Integer, CultureInfo.InvariantCulture, out pkId))
+                    {
+                        DefaultTrace.TraceCritical(
+                            "Could not parse partition key range Id as int {0} for collectionRid {1}",
+                            range.Id,
+                            this.CollectionUniqueId);
+                        throw new ArgumentException(string.Format(
+                            CultureInfo.InvariantCulture,
+                            "Could not parse partition key range Id as int {0} for collectionRid {1}",
+                            range.Id,
+                            this.CollectionUniqueId));
+                    }
+                    return range.Status == PartitionKeyRangeStatus.Offline ? CollectionRoutingMap.InvalidPkRangeId : pkId;
+                });
         }
 
         public static CollectionRoutingMap TryCreateCompleteRoutingMap(
@@ -92,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         public string ChangeFeedNextIfNoneMatch { get; private set; }
 
         /// <summary>
-        /// Partition key ranges in increasing order.
+        /// Ranges in increasing order.
         /// </summary>
         public IReadOnlyList<PartitionKeyRange> OrderedPartitionKeyRanges
         {
@@ -267,5 +289,6 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             return this.goneRanges.Contains(partitionKeyRangeId);
         }
+
     }
 }

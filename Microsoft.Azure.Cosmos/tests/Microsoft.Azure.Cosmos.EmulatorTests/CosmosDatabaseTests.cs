@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(databaseSettings.LastModified.HasValue);
             Assert.IsTrue(databaseSettings.LastModified.Value > new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), databaseSettings.LastModified.Value.ToString());
 
-            DatabaseCore databaseCore = response.Database as DatabaseCore;
+            DatabaseCore databaseCore = response.Database as DatabaseInlineCore;
             Assert.IsNotNull(databaseCore);
             Assert.IsNotNull(databaseCore.LinkUri);
             Assert.IsFalse(databaseCore.LinkUri.ToString().StartsWith("/"));
@@ -215,7 +215,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(createResponse.Diagnostics);
             string diagnostics = createResponse.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
-            Assert.IsTrue(diagnostics.Contains("requestStartTime"));
+            Assert.IsTrue(diagnostics.Contains("RequestStartTimeUtc"));
         }
 
         [TestMethod]
