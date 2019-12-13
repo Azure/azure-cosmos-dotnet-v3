@@ -13,20 +13,44 @@ namespace Azure.Cosmos
 
     internal class TextJsonConflictPropertiesConverter : JsonConverter<ConflictProperties>
     {
-        public override ConflictProperties Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        public override ConflictProperties Read(
+            ref Utf8JsonReader reader,
+            Type typeToConvert,
+            JsonSerializerOptions options)
         {
+            if (reader.TokenType == JsonTokenType.Null)
+            {
+                return null;
+            }
+
+            if (reader.TokenType != JsonTokenType.StartObject)
+            {
+                throw new JsonException(string.Format(CultureInfo.CurrentCulture, RMResources.JsonUnexpectedToken));
+            }
+
             using JsonDocument json = JsonDocument.ParseValue(ref reader);
             JsonElement root = json.RootElement;
             return TextJsonConflictPropertiesConverter.ReadProperty(root);
         }
 
-        public override void Write(Utf8JsonWriter writer, ConflictProperties settings, JsonSerializerOptions options)
+        public override void Write(
+            Utf8JsonWriter writer,
+            ConflictProperties settings,
+            JsonSerializerOptions options)
         {
             TextJsonConflictPropertiesConverter.WritePropertyValues(writer, settings, options);
         }
 
-        public static void WritePropertyValues(Utf8JsonWriter writer, ConflictProperties settings, JsonSerializerOptions options)
+        public static void WritePropertyValues(
+            Utf8JsonWriter writer,
+            ConflictProperties settings,
+            JsonSerializerOptions options)
         {
+            if (settings == null)
+            {
+                return;
+            }
+
             writer.WriteStartObject();
             writer.WriteString(Constants.Properties.Id, settings.Id);
 
@@ -55,7 +79,9 @@ namespace Azure.Cosmos
             return settings;
         }
 
-        private static void ReadPropertyValue(ConflictProperties settings, JsonProperty property)
+        private static void ReadPropertyValue(
+            ConflictProperties settings,
+            JsonProperty property)
         {
             if (property.NameEquals(Constants.Properties.Id))
             {

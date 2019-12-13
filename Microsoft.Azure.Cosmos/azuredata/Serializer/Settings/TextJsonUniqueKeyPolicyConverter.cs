@@ -5,14 +5,15 @@
 namespace Azure.Cosmos
 {
     using System;
+    using System.Collections.ObjectModel;
     using System.Globalization;
     using System.Text.Json;
     using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
 
-    internal class TextJsonReplicationPolicyConverter : JsonConverter<ReplicationPolicy>
+    internal class TextJsonUniqueKeyPolicyConverter : JsonConverter<UniqueKeyPolicy>
     {
-        public override ReplicationPolicy Read(
+        public override UniqueKeyPolicy Read(
             ref Utf8JsonReader reader,
             Type typeToConvert,
             JsonSerializerOptions options)
@@ -29,20 +30,21 @@ namespace Azure.Cosmos
 
             using JsonDocument json = JsonDocument.ParseValue(ref reader);
             JsonElement root = json.RootElement;
-            return TextJsonReplicationPolicyConverter.ReadProperty(root);
+            return TextJsonUniqueKeyPolicyConverter.ReadProperty(root);
         }
 
         public override void Write(
             Utf8JsonWriter writer,
-            ReplicationPolicy policy,
+            UniqueKeyPolicy key,
             JsonSerializerOptions options)
         {
-            TextJsonReplicationPolicyConverter.WritePropertyValue(writer, policy);
+            TextJsonUniqueKeyPolicyConverter.WritePropertyValues(writer, key, options);
         }
 
-        public static void WritePropertyValue(
+        public static void WritePropertyValues(
             Utf8JsonWriter writer,
-            ReplicationPolicy policy)
+            UniqueKeyPolicy policy,
+            JsonSerializerOptions options)
         {
             if (policy == null)
             {
@@ -51,41 +53,43 @@ namespace Azure.Cosmos
 
             writer.WriteStartObject();
 
-            writer.WriteNumber(Constants.Properties.MaxReplicaSetSize, policy.MaxReplicaSetSize);
+            if (policy.UniqueKeys != null)
+            {
+                writer.WritePropertyName(Constants.Properties.UniqueKeys);
+                writer.WriteStartArray();
+                foreach (UniqueKey uniqueKey in policy.UniqueKeys)
+                {
+                    TextJsonUniqueKeyConverter.WritePropertyValues(writer, uniqueKey, options);
+                }
 
-            writer.WriteNumber(Constants.Properties.MinReplicaSetSize, policy.MinReplicaSetSize);
-
-            writer.WriteBoolean(Constants.Properties.AsyncReplication, policy.AsyncReplication);
+                writer.WriteEndArray();
+            }
 
             writer.WriteEndObject();
         }
 
-        public static ReplicationPolicy ReadProperty(JsonElement root)
+        public static UniqueKeyPolicy ReadProperty(JsonElement root)
         {
-            ReplicationPolicy policy = new ReplicationPolicy();
+            UniqueKeyPolicy policy = new UniqueKeyPolicy();
             foreach (JsonProperty property in root.EnumerateObject())
             {
-                TextJsonReplicationPolicyConverter.ReadPropertyValue(policy, property);
+                TextJsonUniqueKeyPolicyConverter.ReadPropertyValue(policy, property);
             }
 
             return policy;
         }
 
         private static void ReadPropertyValue(
-            ReplicationPolicy policy,
+            UniqueKeyPolicy policy,
             JsonProperty property)
         {
-            if (property.NameEquals(Constants.Properties.MaxReplicaSetSize))
+            if (property.NameEquals(Constants.Properties.UniqueKeys))
             {
-                policy.MaxReplicaSetSize = property.Value.GetInt32();
-            }
-            else if (property.NameEquals(Constants.Properties.MinReplicaSetSize))
-            {
-                policy.MinReplicaSetSize = property.Value.GetInt32();
-            }
-            else if (property.NameEquals(Constants.Properties.AsyncReplication))
-            {
-                policy.AsyncReplication = property.Value.GetBoolean();
+                policy.UniqueKeys = new Collection<UniqueKey>();
+                foreach (JsonElement item in property.Value.EnumerateArray())
+                {
+                    policy.UniqueKeys.Add(TextJsonUniqueKeyConverter.ReadProperty(item));
+                }
             }
         }
     }

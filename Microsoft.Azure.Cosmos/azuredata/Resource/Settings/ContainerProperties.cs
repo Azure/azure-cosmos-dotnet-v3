@@ -6,6 +6,7 @@ namespace Azure.Cosmos
 {
     using System;
     using System.Collections.ObjectModel;
+    using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
 
@@ -52,18 +53,17 @@ namespace Azure.Cosmos
     /// </example>
     /// <seealso cref="IndexingPolicy"/>
     /// <seealso cref="UniqueKeyPolicy"/>
+    [JsonConverter(typeof(TextJsonContainerPropertiesConverter))]
     public class ContainerProperties
     {
         private static readonly char[] partitionKeyTokenDelimeter = new char[] { '/' };
 
-        [JsonProperty(PropertyName = Constants.Properties.IndexingPolicy, NullValueHandling = NullValueHandling.Ignore)]
-        private IndexingPolicy indexingPolicyInternal;
+        internal IndexingPolicy indexingPolicyInternal;
 
-        [JsonProperty(PropertyName = Constants.Properties.UniqueKeyPolicy, NullValueHandling = NullValueHandling.Ignore)]
-        private UniqueKeyPolicy uniqueKeyPolicyInternal;
+        internal UniqueKeyPolicy uniqueKeyPolicyInternal;
 
         [JsonProperty(PropertyName = Constants.Properties.ConflictResolutionPolicy, NullValueHandling = NullValueHandling.Ignore)]
-        private ConflictResolutionPolicy conflictResolutionInternal;
+        internal ConflictResolutionPolicy conflictResolutionInternal;
 
         private string[] partitionKeyPathTokens;
         private string id;

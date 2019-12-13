@@ -5,26 +5,51 @@
 namespace Azure.Cosmos
 {
     using System;
+    using System.Globalization;
     using System.Text.Json;
     using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
 
     internal class TextJsonConflictResolutionPolicyConverter : JsonConverter<ConflictResolutionPolicy>
     {
-        public override ConflictResolutionPolicy Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        public override ConflictResolutionPolicy Read(
+            ref Utf8JsonReader reader,
+            Type typeToConvert,
+            JsonSerializerOptions options)
         {
+            if (reader.TokenType == JsonTokenType.Null)
+            {
+                return null;
+            }
+
+            if (reader.TokenType != JsonTokenType.StartObject)
+            {
+                throw new JsonException(string.Format(CultureInfo.CurrentCulture, RMResources.JsonUnexpectedToken));
+            }
+
             using JsonDocument json = JsonDocument.ParseValue(ref reader);
             JsonElement root = json.RootElement;
             return TextJsonConflictResolutionPolicyConverter.ReadProperty(root);
         }
 
-        public override void Write(Utf8JsonWriter writer, ConflictResolutionPolicy policy, JsonSerializerOptions options)
+        public override void Write(
+            Utf8JsonWriter writer,
+            ConflictResolutionPolicy policy,
+            JsonSerializerOptions options)
         {
             TextJsonConflictResolutionPolicyConverter.WritePropertyValues(writer, policy, options);
         }
 
-        public static void WritePropertyValues(Utf8JsonWriter writer, ConflictResolutionPolicy policy, JsonSerializerOptions options)
+        public static void WritePropertyValues(
+            Utf8JsonWriter writer,
+            ConflictResolutionPolicy policy,
+            JsonSerializerOptions options)
         {
+            if (policy == null)
+            {
+                return;
+            }
+
             writer.WriteStartObject();
 
             writer.WritePropertyName(Constants.Properties.Mode);
@@ -54,7 +79,9 @@ namespace Azure.Cosmos
             return policy;
         }
 
-        private static void ReadPropertyValue(ConflictResolutionPolicy policy, JsonProperty property)
+        private static void ReadPropertyValue(
+            ConflictResolutionPolicy policy,
+            JsonProperty property)
         {
             if (property.NameEquals(Constants.Properties.Mode))
             {

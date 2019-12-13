@@ -5,29 +5,56 @@
 namespace Azure.Cosmos
 {
     using System;
+    using System.Globalization;
     using System.Text.Json;
     using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
 
     internal class TextJsonReadPolicyConverter : JsonConverter<ReadPolicy>
     {
-        public override ReadPolicy Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        public override ReadPolicy Read(
+            ref Utf8JsonReader reader,
+            Type typeToConvert,
+            JsonSerializerOptions options)
         {
+            if (reader.TokenType == JsonTokenType.Null)
+            {
+                return null;
+            }
+
+            if (reader.TokenType != JsonTokenType.StartObject)
+            {
+                throw new JsonException(string.Format(CultureInfo.CurrentCulture, RMResources.JsonUnexpectedToken));
+            }
+
             using JsonDocument json = JsonDocument.ParseValue(ref reader);
             JsonElement root = json.RootElement;
             return TextJsonReadPolicyConverter.ReadProperty(root);
         }
 
-        public override void Write(Utf8JsonWriter writer, ReadPolicy policy, JsonSerializerOptions options)
+        public override void Write(
+            Utf8JsonWriter writer,
+            ReadPolicy policy,
+            JsonSerializerOptions options)
         {
             TextJsonReadPolicyConverter.WritePropertyValue(writer, policy);
         }
 
-        public static void WritePropertyValue(Utf8JsonWriter writer, ReadPolicy policy)
+        public static void WritePropertyValue(
+            Utf8JsonWriter writer,
+            ReadPolicy policy)
         {
+            if (policy == null)
+            {
+                return;
+            }
+
             writer.WriteStartObject();
+
             writer.WriteNumber(Constants.Properties.PrimaryReadCoefficient, policy.PrimaryReadCoefficient);
+
             writer.WriteNumber(Constants.Properties.SecondaryReadCoefficient, policy.SecondaryReadCoefficient);
+
             writer.WriteEndObject();
         }
 
@@ -42,7 +69,9 @@ namespace Azure.Cosmos
             return policy;
         }
 
-        private static void ReadPropertyValue(ReadPolicy policy, JsonProperty property)
+        private static void ReadPropertyValue(
+            ReadPolicy policy,
+            JsonProperty property)
         {
             if (property.NameEquals(Constants.Properties.PrimaryReadCoefficient))
             {

@@ -5,14 +5,15 @@
 namespace Azure.Cosmos
 {
     using System;
+    using System.Collections.ObjectModel;
     using System.Globalization;
     using System.Text.Json;
     using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
 
-    internal class TextJsonReplicationPolicyConverter : JsonConverter<ReplicationPolicy>
+    internal class TextJsonUniqueKeyConverter : JsonConverter<UniqueKey>
     {
-        public override ReplicationPolicy Read(
+        public override UniqueKey Read(
             ref Utf8JsonReader reader,
             Type typeToConvert,
             JsonSerializerOptions options)
@@ -29,63 +30,66 @@ namespace Azure.Cosmos
 
             using JsonDocument json = JsonDocument.ParseValue(ref reader);
             JsonElement root = json.RootElement;
-            return TextJsonReplicationPolicyConverter.ReadProperty(root);
+            return TextJsonUniqueKeyConverter.ReadProperty(root);
         }
 
         public override void Write(
             Utf8JsonWriter writer,
-            ReplicationPolicy policy,
+            UniqueKey key,
             JsonSerializerOptions options)
         {
-            TextJsonReplicationPolicyConverter.WritePropertyValue(writer, policy);
+            TextJsonUniqueKeyConverter.WritePropertyValues(writer, key, options);
         }
 
-        public static void WritePropertyValue(
+        public static void WritePropertyValues(
             Utf8JsonWriter writer,
-            ReplicationPolicy policy)
+            UniqueKey key,
+            JsonSerializerOptions options)
         {
-            if (policy == null)
+            if (key == null)
             {
                 return;
             }
 
             writer.WriteStartObject();
 
-            writer.WriteNumber(Constants.Properties.MaxReplicaSetSize, policy.MaxReplicaSetSize);
+            if (key.Paths != null)
+            {
+                writer.WritePropertyName(Constants.Properties.Paths);
+                writer.WriteStartArray();
+                foreach (string path in key.Paths)
+                {
+                    writer.WriteStringValue(path);
+                }
 
-            writer.WriteNumber(Constants.Properties.MinReplicaSetSize, policy.MinReplicaSetSize);
-
-            writer.WriteBoolean(Constants.Properties.AsyncReplication, policy.AsyncReplication);
+                writer.WriteEndArray();
+            }
 
             writer.WriteEndObject();
         }
 
-        public static ReplicationPolicy ReadProperty(JsonElement root)
+        public static UniqueKey ReadProperty(JsonElement root)
         {
-            ReplicationPolicy policy = new ReplicationPolicy();
+            UniqueKey key = new UniqueKey();
             foreach (JsonProperty property in root.EnumerateObject())
             {
-                TextJsonReplicationPolicyConverter.ReadPropertyValue(policy, property);
+                TextJsonUniqueKeyConverter.ReadPropertyValue(key, property);
             }
 
-            return policy;
+            return key;
         }
 
         private static void ReadPropertyValue(
-            ReplicationPolicy policy,
+            UniqueKey key,
             JsonProperty property)
         {
-            if (property.NameEquals(Constants.Properties.MaxReplicaSetSize))
+            if (property.NameEquals(Constants.Properties.Paths))
             {
-                policy.MaxReplicaSetSize = property.Value.GetInt32();
-            }
-            else if (property.NameEquals(Constants.Properties.MinReplicaSetSize))
-            {
-                policy.MinReplicaSetSize = property.Value.GetInt32();
-            }
-            else if (property.NameEquals(Constants.Properties.AsyncReplication))
-            {
-                policy.AsyncReplication = property.Value.GetBoolean();
+                key.Paths = new Collection<string>();
+                foreach (JsonElement item in property.Value.EnumerateArray())
+                {
+                    key.Paths.Add(item.GetString());
+                }
             }
         }
     }

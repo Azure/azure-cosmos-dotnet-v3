@@ -7,8 +7,8 @@ namespace Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Text.Json.Serialization;
     using Azure.Cosmos.Spatial;
-    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Represents the indexing policy configuration for a collection in the Azure Cosmos DB service.
@@ -22,6 +22,7 @@ namespace Azure.Cosmos
     /// </para>
     /// </remarks>
     /// <seealso cref="ContainerProperties"/>
+    [JsonConverter(typeof(TextJsonIndexingPolicyConverter))]
     public sealed class IndexingPolicy
     {
         internal const string DefaultPath = "/*";
@@ -48,7 +49,6 @@ namespace Azure.Cosmos
         /// <value>
         /// True, if automatic indexing is enabled; otherwise, false.
         /// </value>
-        [JsonProperty(PropertyName = Constants.Properties.Automatic)]
         public bool Automatic { get; set; }
 
         /// <summary>
@@ -57,8 +57,6 @@ namespace Azure.Cosmos
         /// <value>
         /// One of the values of the <see cref="T:Microsoft.Azure.Documents.IndexingMode"/> enumeration.
         /// </value>
-        [JsonProperty(PropertyName = Constants.Properties.IndexingMode)]
-        [JsonConverter(typeof(StringEnumConverter))]
         public IndexingMode IndexingMode { get; set; }
 
         /// <summary>
@@ -67,7 +65,6 @@ namespace Azure.Cosmos
         /// <value>
         /// The collection containing <see cref="IncludedPath"/> objects.
         /// </value>
-        [JsonProperty(PropertyName = Constants.Properties.IncludedPaths)]
         public Collection<IncludedPath> IncludedPaths { get; internal set; } = new Collection<IncludedPath>();
 
         /// <summary>
@@ -76,7 +73,6 @@ namespace Azure.Cosmos
         /// <value>
         /// The collection containing <see cref="ExcludedPath"/> objects.
         /// </value>
-        [JsonProperty(PropertyName = Constants.Properties.ExcludedPaths)]
         public Collection<ExcludedPath> ExcludedPaths { get; internal set; } = new Collection<ExcludedPath>();
 
         /// <summary>
@@ -106,13 +102,11 @@ namespace Azure.Cosmos
         ///   ]
         /// ]]>
         /// </example>
-        [JsonProperty(PropertyName = Constants.Properties.CompositeIndexes)]
         public Collection<Collection<CompositePath>> CompositeIndexes { get; internal set; } = new Collection<Collection<CompositePath>>();
 
         /// <summary>
         /// Collection of spatial index definitions to be used
         /// </summary>
-        [JsonProperty(PropertyName = Constants.Properties.SpatialIndexes)]
         public Collection<SpatialPath> SpatialIndexes { get; internal set; } = new Collection<SpatialPath>();
 
         #region EqualityComparers

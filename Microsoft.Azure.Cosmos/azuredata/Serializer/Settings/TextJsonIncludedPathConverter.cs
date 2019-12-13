@@ -5,14 +5,15 @@
 namespace Azure.Cosmos
 {
     using System;
+    using System.Collections.ObjectModel;
     using System.Globalization;
     using System.Text.Json;
     using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
 
-    internal class TextJsonCompositePathConverter : JsonConverter<CompositePath>
+    internal class TextJsonIncludedPathConverter : JsonConverter<IncludedPath>
     {
-        public override CompositePath Read(
+        public override IncludedPath Read(
             ref Utf8JsonReader reader,
             Type typeToConvert,
             JsonSerializerOptions options)
@@ -29,60 +30,70 @@ namespace Azure.Cosmos
 
             using JsonDocument json = JsonDocument.ParseValue(ref reader);
             JsonElement root = json.RootElement;
-            return TextJsonCompositePathConverter.ReadProperty(root);
+            return TextJsonIncludedPathConverter.ReadProperty(root);
         }
 
         public override void Write(
             Utf8JsonWriter writer,
-            CompositePath compositePath,
+            IncludedPath path,
             JsonSerializerOptions options)
         {
-            TextJsonCompositePathConverter.WritePropertyValues(writer, compositePath, options);
+            TextJsonIncludedPathConverter.WritePropertyValues(writer, path, options);
         }
 
         public static void WritePropertyValues(
             Utf8JsonWriter writer,
-            CompositePath compositePath,
+            IncludedPath path,
             JsonSerializerOptions options)
         {
-            if (compositePath == null)
+            if (path == null)
             {
                 return;
             }
 
             writer.WriteStartObject();
-            writer.WriteString(Constants.Properties.Path, compositePath.Path);
+            writer.WriteString(Constants.Properties.Path, path.Path);
 
-            writer.WritePropertyName(Constants.Properties.Order);
-            writer.WriteStringValue(JsonSerializer.Serialize(compositePath.Order, options));
+            if (path.Indexes != null)
+            {
+                writer.WritePropertyName(Constants.Properties.Indexes);
+                writer.WriteStartArray();
+                foreach (Index index in path.Indexes)
+                {
+                    TextJsonIndexConverter.WritePropertyValues(writer, index, options);
+                }
+
+                writer.WriteEndArray();
+            }
 
             writer.WriteEndObject();
         }
 
-        public static CompositePath ReadProperty(JsonElement root)
+        public static IncludedPath ReadProperty(JsonElement root)
         {
-            CompositePath compositePath = new CompositePath();
+            IncludedPath path = new IncludedPath();
             foreach (JsonProperty property in root.EnumerateObject())
             {
-                TextJsonCompositePathConverter.ReadPropertyValue(compositePath, property);
+                TextJsonIncludedPathConverter.ReadPropertyValue(path, property);
             }
 
-            return compositePath;
+            return path;
         }
 
         private static void ReadPropertyValue(
-            CompositePath compositePath,
+            IncludedPath path,
             JsonProperty property)
         {
             if (property.NameEquals(Constants.Properties.Path))
             {
-                compositePath.Path = property.Value.GetString();
+                path.Path = property.Value.GetString();
             }
-            else if (property.NameEquals(Constants.Properties.Order))
+            else if (property.NameEquals(Constants.Properties.Indexes))
             {
-                if (Enum.TryParse<CompositePathSortOrder>(property.Value.GetString(), out CompositePathSortOrder compositePathSortOrder))
+                path.Indexes = new Collection<Index>();
+                foreach (JsonElement item in property.Value.EnumerateArray())
                 {
-                    compositePath.Order = compositePathSortOrder;
+                    path.Indexes.Add(TextJsonIndexConverter.ReadProperty(item));
                 }
             }
         }

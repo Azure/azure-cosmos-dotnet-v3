@@ -4,10 +4,6 @@
 
 namespace Azure.Cosmos
 {
-    using Microsoft.Azure.Documents;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Converters;
-
     /// <summary>
     /// Specifies an instance of the <see cref="SpatialIndex"/> class in the Azure Cosmos DB service. 
     /// </summary>
@@ -44,8 +40,6 @@ namespace Azure.Cosmos
         /// The data type for which this index should be applied.
         /// </value>
         /// <remarks>Refer to http://azure.microsoft.com/documentation/articles/documentdb-indexing-policies/#ConfigPolicy for valid ranges of values.</remarks>
-        [JsonProperty(PropertyName = Constants.Properties.DataType)]
-        [JsonConverter(typeof(StringEnumConverter))]
         public DataType DataType { get; set; }
     }
 }

@@ -10,9 +10,9 @@ namespace Azure.Cosmos
     using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
 
-    internal class TextJsonReplicationPolicyConverter : JsonConverter<ReplicationPolicy>
+    internal class TextJsonExcludedPathConverter : JsonConverter<ExcludedPath>
     {
-        public override ReplicationPolicy Read(
+        public override ExcludedPath Read(
             ref Utf8JsonReader reader,
             Type typeToConvert,
             JsonSerializerOptions options)
@@ -29,63 +29,51 @@ namespace Azure.Cosmos
 
             using JsonDocument json = JsonDocument.ParseValue(ref reader);
             JsonElement root = json.RootElement;
-            return TextJsonReplicationPolicyConverter.ReadProperty(root);
+            return TextJsonExcludedPathConverter.ReadProperty(root);
         }
 
         public override void Write(
             Utf8JsonWriter writer,
-            ReplicationPolicy policy,
+            ExcludedPath path,
             JsonSerializerOptions options)
         {
-            TextJsonReplicationPolicyConverter.WritePropertyValue(writer, policy);
+            TextJsonExcludedPathConverter.WritePropertyValues(writer, path, options);
         }
 
-        public static void WritePropertyValue(
+        public static void WritePropertyValues(
             Utf8JsonWriter writer,
-            ReplicationPolicy policy)
+            ExcludedPath compositePath,
+            JsonSerializerOptions options)
         {
-            if (policy == null)
+            if (compositePath == null)
             {
                 return;
             }
 
             writer.WriteStartObject();
-
-            writer.WriteNumber(Constants.Properties.MaxReplicaSetSize, policy.MaxReplicaSetSize);
-
-            writer.WriteNumber(Constants.Properties.MinReplicaSetSize, policy.MinReplicaSetSize);
-
-            writer.WriteBoolean(Constants.Properties.AsyncReplication, policy.AsyncReplication);
+            writer.WriteString(Constants.Properties.Path, compositePath.Path);
 
             writer.WriteEndObject();
         }
 
-        public static ReplicationPolicy ReadProperty(JsonElement root)
+        public static ExcludedPath ReadProperty(JsonElement root)
         {
-            ReplicationPolicy policy = new ReplicationPolicy();
+            ExcludedPath path = new ExcludedPath();
             foreach (JsonProperty property in root.EnumerateObject())
             {
-                TextJsonReplicationPolicyConverter.ReadPropertyValue(policy, property);
+                TextJsonExcludedPathConverter.ReadPropertyValue(path, property);
             }
 
-            return policy;
+            return path;
         }
 
         private static void ReadPropertyValue(
-            ReplicationPolicy policy,
+            ExcludedPath path,
             JsonProperty property)
         {
-            if (property.NameEquals(Constants.Properties.MaxReplicaSetSize))
+            if (property.NameEquals(Constants.Properties.Path))
             {
-                policy.MaxReplicaSetSize = property.Value.GetInt32();
-            }
-            else if (property.NameEquals(Constants.Properties.MinReplicaSetSize))
-            {
-                policy.MinReplicaSetSize = property.Value.GetInt32();
-            }
-            else if (property.NameEquals(Constants.Properties.AsyncReplication))
-            {
-                policy.AsyncReplication = property.Value.GetBoolean();
+                path.Path = property.Value.GetString();
             }
         }
     }

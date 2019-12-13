@@ -4,12 +4,12 @@
 
 namespace Azure.Cosmos
 {
-    using Microsoft.Azure.Documents;
-    using Newtonsoft.Json;
+    using System.Text.Json.Serialization;
 
     /// <summary> 
     /// Specifies a path within a JSON document to be excluded while indexing data for the Azure Cosmos DB service.
     /// </summary>
+    [JsonConverter(typeof(TextJsonExcludedPathConverter))]
     public sealed class ExcludedPath
     {
         /// <summary>
@@ -18,7 +18,6 @@ namespace Azure.Cosmos
         /// <value>
         /// The path to be excluded from indexing.
         /// </value>
-        [JsonProperty(PropertyName = Constants.Properties.Path)]
         public string Path { get; set; }
     }
 }

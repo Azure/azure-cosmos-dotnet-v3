@@ -11,12 +11,9 @@ namespace Azure.Cosmos
     using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
 
-    internal class TextJsonAccountPropertiesConverter : JsonConverter<AccountProperties>
+    internal class TextJsonContainerPropertiesConverter : JsonConverter<ContainerProperties>
     {
-        public override AccountProperties Read(
-            ref Utf8JsonReader reader,
-            Type typeToConvert,
-            JsonSerializerOptions options)
+        public override ContainerProperties Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             if (reader.TokenType == JsonTokenType.Null)
             {
@@ -30,20 +27,17 @@ namespace Azure.Cosmos
 
             using JsonDocument json = JsonDocument.ParseValue(ref reader);
             JsonElement root = json.RootElement;
-            AccountProperties setting = new AccountProperties();
+            ContainerProperties setting = new ContainerProperties();
 
             foreach (JsonProperty property in root.EnumerateObject())
             {
-                TextJsonAccountPropertiesConverter.ReadPropertyValue(setting, property);
+                TextJsonContainerPropertiesConverter.ReadPropertyValue(setting, property);
             }
 
             return setting;
         }
 
-        public override void Write(
-            Utf8JsonWriter writer,
-            AccountProperties setting,
-            JsonSerializerOptions options)
+        public override void Write(Utf8JsonWriter writer, ContainerProperties setting, JsonSerializerOptions options)
         {
             if (setting == null)
             {
@@ -55,48 +49,16 @@ namespace Azure.Cosmos
             writer.WriteString(Constants.Properties.ETag, setting.ETag.ToString());
             writer.WriteString(Constants.Properties.RId, setting.ResourceId);
 
-            writer.WritePropertyName(Constants.Properties.WritableLocations);
-            writer.WriteStartArray();
-            foreach (AccountRegion accountRegion in setting.WriteLocationsInternal)
-            {
-                TextJsonAccountRegionConverter.WritePropertyValues(writer, accountRegion);
-            }
+            writer.WritePropertyName(Constants.Properties.IndexingPolicy);
+            TextJsonIndexingPolicyConverter.WritePropertyValue(writer, setting.IndexingPolicy, options);
 
-            writer.WriteEndArray();
-
-            writer.WritePropertyName(Constants.Properties.ReadableLocations);
-            writer.WriteStartArray();
-            foreach (AccountRegion accountRegion in setting.ReadLocationsInternal)
-            {
-                TextJsonAccountRegionConverter.WritePropertyValues(writer, accountRegion);
-            }
-
-            writer.WriteEndArray();
-
-            writer.WritePropertyName(Constants.Properties.UserConsistencyPolicy);
-            TextJsonAccountConsistencyConverter.WritePropertyValue(writer, setting.Consistency, options);
-
-            writer.WriteString(Constants.Properties.AddressesLink, setting.AddressesLink);
-
-            writer.WritePropertyName(Constants.Properties.UserReplicationPolicy);
-            TextJsonReplicationPolicyConverter.WritePropertyValue(writer, setting.ReplicationPolicy);
-
-            writer.WritePropertyName(Constants.Properties.SystemReplicationPolicy);
-            TextJsonReplicationPolicyConverter.WritePropertyValue(writer, setting.SystemReplicationPolicy);
-
-            writer.WritePropertyName(Constants.Properties.ReadPolicy);
-            TextJsonReadPolicyConverter.WritePropertyValue(writer, setting.ReadPolicy);
-
-            writer.WriteString(Constants.Properties.QueryEngineConfiguration, setting.QueryEngineConfigurationString);
-
-            writer.WriteBoolean(Constants.Properties.EnableMultipleWriteLocations, setting.EnableMultipleWriteLocations);
+            writer.WritePropertyName(Constants.Properties.UniqueKeyPolicy);
+            TextJsonUniqueKeyPolicyConverter.WritePropertyValues(writer, setting.UniqueKeyPolicy, options);
 
             writer.WriteEndObject();
         }
 
-        private static void ReadPropertyValue(
-            AccountProperties setting,
-            JsonProperty property)
+        private static void ReadPropertyValue(ContainerProperties setting, JsonProperty property)
         {
             if (property.NameEquals(Constants.Properties.Id))
             {
