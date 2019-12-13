@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Documents;
 
@@ -106,7 +107,8 @@ namespace Microsoft.Azure.Cosmos
                 inputType == typeof(UserProperties) ||
                 inputType == typeof(ConflictProperties) ||
                 inputType == typeof(ThroughputProperties) ||
-                inputType == typeof(OfferV2))
+                inputType == typeof(OfferV2) ||
+                inputType == typeof(PartitionedQueryExecutionInfo))
             {
                 return CosmosSerializerCore.propertiesSerializer;
             }

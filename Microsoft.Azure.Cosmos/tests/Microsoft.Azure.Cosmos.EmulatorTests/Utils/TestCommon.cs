@@ -64,8 +64,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         internal static CosmosClientBuilder GetDefaultConfiguration()
         {
             (string endpoint, string authKey) accountInfo = TestCommon.GetAccountInfo();
-
-            return new CosmosClientBuilder(accountEndpoint: accountInfo.endpoint, authKeyOrResourceToken: accountInfo.authKey);
+            CosmosClientBuilder clientBuilder = new CosmosClientBuilder(accountEndpoint: accountInfo.endpoint, authKeyOrResourceToken: accountInfo.authKey);
+            clientBuilder.WithCustomSerializer(new CosmosJsonDotNetSerializer());
+            return clientBuilder;
         }
 
         internal static CosmosClient CreateCosmosClient(Action<CosmosClientBuilder> customizeClientBuilder = null)
