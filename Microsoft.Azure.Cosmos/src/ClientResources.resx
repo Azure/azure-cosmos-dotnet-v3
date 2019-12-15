@@ -300,4 +300,7 @@
   <data name="KeyWrapProviderNotConfigured" xml:space="preserve">
     <value>The key wrapping provider was not configured for the client. Please ensure this is done while initializing the client before invoking this API.</value>
   </data>
+  <data name="CustomSerializerAndEncryptionNotSupportedTogether" xml:space="preserve">
+    <value>A custom serializer may not be used along with client side encryption support.</value>
+  </data>
 </root>

@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos
 
     /// <summary>
     /// Metadata that a key wrapping provider can use to wrap/unwrap keys.
-    /// <seealso cref="IKeyWrapProvider" />
+    /// <seealso cref="KeyWrapProvider" />
     /// </summary>
     public abstract class KeyWrapMetadata
     {

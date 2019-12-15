@@ -155,11 +155,11 @@
                 {
                     EncryptionOptions = new EncryptionOptions
                     {
-                        EncryptionKey = database.GetDataEncryptionKey(Program.myEncryptionKeyName)
+                        DataEncryptionKey = database.GetDataEncryptionKey(Program.myEncryptionKeyName)
                     }
                 });
 
-            // Read the item back - decryption happens automatically as the data contains the wrapped form of the encryption key and
+            // Read the item back - decryption happens automatically as the data contains the reference to the wrapped form of the encryption key and
             // metadata in order to unwrap it.
             ItemResponse<SalesOrder> readResponse = await container.ReadItemAsync<SalesOrder>(orderId, new PartitionKey(account));
             SalesOrder readOrder = readResponse.Resource;

@@ -908,7 +908,6 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="id">Unique identifier for the data encryption key.</param>
         /// <param name="keyWrapMetadata">Metadata used by the configured key wrapping provider in order to wrap the key.</param>
-        /// <param name="clientCacheTimeToLive">Amount of time the data encryption key can be cached in the client before it needs to be checked for revocation.</param>
         /// <param name="requestOptions">(Optional) The options for the request.</param>
         /// <param name="cancellationToken">(Optional) Token representing request cancellation.</param>
         /// <returns>An awaitable response which wraps a <see cref="DataEncryptionKeyProperties"/> containing the read resource record.</returns>
@@ -941,7 +940,6 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<DataEncryptionKeyResponse> CreateDataEncryptionKeyAsync(
             string id,
             KeyWrapMetadata keyWrapMetadata,
-            TimeSpan clientCacheTimeToLive,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
     }

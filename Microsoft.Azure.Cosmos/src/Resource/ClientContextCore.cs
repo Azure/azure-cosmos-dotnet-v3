@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosResponseFactory cosmosResponseFactory,
             RequestInvokerHandler requestHandler,
             DocumentClient documentClient,
-            DekCache dekCache)
+            DekCache dekCache = null)
         {
             this.Client = client;
             this.ClientOptions = clientOptions;

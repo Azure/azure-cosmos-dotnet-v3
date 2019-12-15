@@ -268,6 +268,15 @@ namespace Microsoft.Azure.Cosmos {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to A custom serializer may not be used along with client side encryption support..
+        /// </summary>
+        internal static string CustomSerializerAndEncryptionNotSupportedTogether {
+            get {
+                return ResourceManager.GetString("CustomSerializerAndEncryptionNotSupportedTogether", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Expected valid byte[] value for {0} and string value for {1} when either property is set..
         /// </summary>
         internal static string EpkPropertiesPairingExpected {

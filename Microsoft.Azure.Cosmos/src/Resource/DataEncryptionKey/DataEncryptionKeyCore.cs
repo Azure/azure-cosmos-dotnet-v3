@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
+    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Provides operations for reading, re-wrapping, or deleting a specific data encryption key by Id.
@@ -64,7 +65,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
 
             DataEncryptionKeyResponse response = await this.ClientContext.ResponseFactory.CreateDataEncryptionKeyResponseAsync(this, responseMessage);
-            this.ClientContext.DekCache.Remove(response.Resource); // todo: do we really have a resource returned here?
+            this.ClientContext.DekCache.Remove(this.LinkUri);
             return response;
         }
 
@@ -78,7 +79,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
 
             DataEncryptionKeyResponse response = await this.ClientContext.ResponseFactory.CreateDataEncryptionKeyResponseAsync(this, responseMessage);
-            this.ClientContext.DekCache.AddOrUpdate(new CachedDekProperties(response.Resource));
+            this.ClientContext.DekCache.AddOrUpdate(new InMemoryDekProperties(response.Resource));
             return response;
         }
 
@@ -104,40 +105,16 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(newWrapMetadata));
             }
 
-            CachedDekProperties dekProperties = this.ClientContext.DekCache.Get(this.Id);
-            if (dekProperties == null)
-            {
-                dekProperties = new CachedDekProperties(await this.ReadAsync(cancellationToken: cancellationToken));
+            InMemoryDekProperties inMemoryDekProperties = await this.FetchUnwrappedAsync(cancellationToken);
 
-                // The cache is expected to return a non-null value since the ReadAsync just added it there
-                // and this is just a fallback to actual read response. This optimization avoids repeated unwrapping
-                // if the operation fails saving to the storage and needs to be retried.
-                CachedDekProperties dekProperties2 = this.ClientContext.DekCache.Get(this.Id);
-                if (dekProperties2 != null)
-                {
-                    dekProperties = dekProperties2;
-                }
-            }
-
-            if (dekProperties.RawDek == null)
-            {
-                dekProperties.RawDek = await this.ClientContext.ClientOptions.KeyWrapProvider.UnwrapKeyAsync(
-                    dekProperties.WrappedDataEncryptionKey,
-                    dekProperties.KeyWrapMetadata);
-            }
-
-            DataEncryptionKeyProperties newDekProperties = new DataEncryptionKeyProperties(
-                dekProperties.Id,
-                await DataEncryptionKeyCore.WrapKeyAsync(dekProperties.RawDek, newWrapMetadata, this.ClientContext),
-                newWrapMetadata,
-                dekProperties.ClientCacheTimeToLive);
+            (DataEncryptionKeyProperties newDekProperties, TimeSpan cacheTtl) = await this.WrapAsync(inMemoryDekProperties.RawDek, newWrapMetadata);
 
             if (requestOptions == null)
             {
                 requestOptions = new RequestOptions();
             }
 
-            requestOptions.IfMatchEtag = dekProperties.ETag;
+            requestOptions.IfMatchEtag = inMemoryDekProperties.ETag;
 
             Task<ResponseMessage> responseMessage = this.ProcessStreamAsync(
                 this.ClientContext.PropertiesSerializer.ToStream(newDekProperties),
@@ -146,8 +123,75 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken);
 
             DataEncryptionKeyResponse response = await this.ClientContext.ResponseFactory.CreateDataEncryptionKeyResponseAsync(this, responseMessage);
-            this.ClientContext.DekCache.AddOrUpdate(new CachedDekProperties(response.Resource, dekProperties.RawDek));
+            this.ClientContext.DekCache.AddOrUpdate(new InMemoryDekProperties(response.Resource, inMemoryDekProperties.RawDek, cacheTtl));
             return response;
+        }
+
+        internal async Task<InMemoryDekProperties> FetchUnwrappedAsync(CancellationToken cancellationToken)
+        {
+            InMemoryDekProperties inMemoryDekProperties = this.ClientContext.DekCache.Get(this.LinkUri);
+
+            if (inMemoryDekProperties == null || inMemoryDekProperties.RawDek == null)
+            {
+                DataEncryptionKeyProperties dekProperties = null;
+                if (inMemoryDekProperties == null)
+                {
+                    dekProperties = await this.ReadAsync(cancellationToken: cancellationToken);
+                }
+                else
+                {
+                    dekProperties = inMemoryDekProperties;
+                }
+
+                KeyUnwrapResponse unwrapResponse = await this.ClientContext.ClientOptions.KeyWrapProvider.UnwrapKeyAsync(
+                                dekProperties.WrappedDataEncryptionKey,
+                                dekProperties.KeyWrapMetadata);
+
+                inMemoryDekProperties = new InMemoryDekProperties(dekProperties, unwrapResponse.DataEncryptionKey, unwrapResponse.ClientCacheTimeToLive);
+                this.ClientContext.DekCache.AddOrUpdate(inMemoryDekProperties);
+            }
+
+            return inMemoryDekProperties;
+        }
+
+        internal static byte[] GenerateKey()
+        {
+            byte[] rawDek = new byte[32];
+            RNGCryptoServiceProvider cryptoServiceProvider = new RNGCryptoServiceProvider();
+            cryptoServiceProvider.GetBytes(rawDek);
+            return rawDek;
+        }
+
+        internal byte[] Encrypt(byte[] input)
+        {
+            using (AesManaged myAes = new AesManaged())
+            {
+                using (SHA256Managed sha256 = new SHA256Managed())
+                {
+                    using (ICryptoTransform transform = myAes.CreateEncryptor())
+                    {
+                        transform.TransformFinalBlock(input, 0, input.Length);
+                    }
+                }
+            }
+
+            return null; // todo
+        }
+
+        internal async Task<(DataEncryptionKeyProperties, TimeSpan)> WrapAsync(byte[] key, KeyWrapMetadata metadata)
+        {
+            KeyWrapProvider keyWrapProvider = this.ClientContext.ClientOptions.KeyWrapProvider;
+            KeyWrapResponse keyWrapResponse = await keyWrapProvider.WrapKeyAsync(key, metadata);
+            DataEncryptionKeyProperties dekProperties = new DataEncryptionKeyProperties(this.Id, keyWrapResponse.WrappedDataEncryptionKey, keyWrapResponse.KeyWrapMetadata);
+
+            // Verify
+            KeyUnwrapResponse roundTripResponse = await keyWrapProvider.UnwrapKeyAsync(keyWrapResponse.WrappedDataEncryptionKey, keyWrapResponse.KeyWrapMetadata);
+            if (!roundTripResponse.DataEncryptionKey.SequenceEqual(key))
+            {
+                throw new CosmosException(System.Net.HttpStatusCode.BadRequest, ClientResources.KeyWrappingDidNotRoundtrip);
+            }
+
+            return (dekProperties, roundTripResponse.ClientCacheTimeToLive);
         }
 
         private Task<ResponseMessage> ProcessStreamAsync(
@@ -166,29 +210,6 @@ namespace Microsoft.Azure.Cosmos
              requestOptions: requestOptions,
              requestEnricher: null,
              cancellationToken: cancellationToken);
-        }
-
-        internal static byte[] GenerateKey()
-        {
-            byte[] rawDek = new byte[32];
-            RNGCryptoServiceProvider cryptoServiceProvider = new RNGCryptoServiceProvider();
-            cryptoServiceProvider.GetBytes(rawDek);
-            return rawDek;
-        }
-
-        internal static async Task<byte[]> WrapKeyAsync(byte[] key, KeyWrapMetadata metadata, CosmosClientContext clientContext)
-        {
-            IKeyWrapProvider keyWrapProvider = clientContext.ClientOptions.KeyWrapProvider;
-            byte[] wrappedKey = await keyWrapProvider.WrapKeyAsync(key, metadata);
-
-            // Verify
-            byte[] roundTrippedKey = await keyWrapProvider.UnwrapKeyAsync(wrappedKey, metadata);
-            if (!key.SequenceEqual(roundTrippedKey))
-            {
-                throw new CosmosException(System.Net.HttpStatusCode.BadRequest, ClientResources.KeyWrappingDidNotRoundtrip);
-            }
-
-            return wrappedKey;
         }
     }
 }

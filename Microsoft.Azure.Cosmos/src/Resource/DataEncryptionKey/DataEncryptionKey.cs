@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos
 
     /// <summary>
     /// Provides operations for reading, re-wrapping, or deleting a specific data encryption key by Id.
-    /// See <see cref="Database"/> for operations to create a data encryption key.
+    /// See <see cref="Database"/> for operations to create and enumerate data encryption keys.
     /// See <see href="http://tbd"/> for details of using client side encryption to encrypt sensitive information where
     /// the raw encryption keys are never revealed to the Azure Cosmos service.
     /// </summary>
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Wraps the raw data encryption key (after unwrapping using the old metadata if needed) using the provided
-        /// metadata with the help of the key wrapping provider configured on the client via <see cref="CosmosClientBuilder.WithKeyWrapProvider(IKeyWrapProvider)"/>,
+        /// metadata with the help of the key wrapping provider configured on the client via <see cref="CosmosClientBuilder.WithKeyWrapProvider"/>,
         /// and saves the re-wrapped data encryption key as an asynchronous operation in the Azure Cosmos service.
         /// </summary>
         /// <param name="newWrapMetadata">The metadata using which the data encryption key needs to now be wrapped.</param>

@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(item));
             }
 
-            Task<ResponseMessage> response = this.ExtractPartitionKeyAndProcessItemStreamAsync(
+            Task<ResponseMessage> response = this.PreprocessAndProcessItemAsync(
                 partitionKey: partitionKey,
                 itemId: null,
                 item: item,
@@ -128,7 +128,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(item));
             }
 
-            Task<ResponseMessage> response = this.ExtractPartitionKeyAndProcessItemStreamAsync(
+            Task<ResponseMessage> response = this.PreprocessAndProcessItemAsync(
                 partitionKey: partitionKey,
                 itemId: null,
                 item: item,
@@ -172,7 +172,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(item));
             }
 
-            Task<ResponseMessage> response = this.ExtractPartitionKeyAndProcessItemStreamAsync(
+            Task<ResponseMessage> response = this.PreprocessAndProcessItemAsync(
                partitionKey: partitionKey,
                itemId: id,
                item: item,
@@ -502,17 +502,20 @@ namespace Microsoft.Azure.Cosmos
                 partitionedQueryExecutionInfo: null);
         }
 
-        // Extracted partition key might be invalid as CollectionCache might be stale.
-        // Stale collection cache is refreshed through PartitionKeyMismatchRetryPolicy
-        // and partition-key is extracted again. 
-        internal async Task<ResponseMessage> ExtractPartitionKeyAndProcessItemStreamAsync<T>(
+        internal async Task<ResponseMessage> PreprocessAndProcessItemAsync<T>(
             PartitionKey? partitionKey,
             string itemId,
             T item,
             OperationType operationType,
-            RequestOptions requestOptions,
+            ItemRequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
+            if (requestOptions.EncryptionOptions != null && requestOptions.EncryptionOptions.DataEncryptionKey != null)
+            {
+                InMemoryDekProperties dekProperties = await ((DataEncryptionKeyCore)requestOptions.EncryptionOptions.DataEncryptionKey).FetchUnwrappedAsync(cancellationToken);
+
+            }
+
             Stream streamPayload = this.ClientContext.CosmosSerializer.ToStream<T>(item);
 
             // User specified PK value, no need to extract it
@@ -545,6 +548,9 @@ namespace Microsoft.Azure.Cosmos
                     return responseMessage;
                 }
 
+                // Extracted partition key might be invalid as CollectionCache might be stale.
+                // Stale collection cache is refreshed through PartitionKeyMismatchRetryPolicy
+                // and partition-key is extracted again. 
                 if (requestRetryPolicy == null)
                 {
                     requestRetryPolicy = new PartitionKeyMismatchRetryPolicy(await this.ClientContext.DocumentClient.GetCollectionCacheAsync(), null);

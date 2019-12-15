@@ -387,7 +387,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </summary>
         /// <param name="keyWrapper">The key wrapping provider.</param>
         /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
-        public CosmosClientBuilder WithKeyWrapProvider(IKeyWrapProvider keyWrapper)
+        public CosmosClientBuilder WithKeyWrapProvider(KeyWrapProvider keyWrapper)
         {
             this.clientOptions.KeyWrapProvider = keyWrapper;
             return this;

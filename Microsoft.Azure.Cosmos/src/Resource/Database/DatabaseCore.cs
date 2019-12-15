@@ -527,7 +527,7 @@ namespace Microsoft.Azure.Cosmos
                     FeedResponse<DataEncryptionKeyProperties> results = this.ClientContext.ResponseFactory.CreateQueryFeedResponseWithPropertySerializer<DataEncryptionKeyProperties>(responseMessage);
                     foreach (DataEncryptionKeyProperties result in results)
                     {
-                        this.ClientContext.DekCache.AddOrUpdate(new CachedDekProperties(result));
+                        this.ClientContext.DekCache.AddOrUpdate(new InMemoryDekProperties(result));
                     }
 
                     return results;
@@ -566,7 +566,6 @@ namespace Microsoft.Azure.Cosmos
         public override async Task<DataEncryptionKeyResponse> CreateDataEncryptionKeyAsync(
             string id,
             KeyWrapMetadata keyWrapMetadata,
-            TimeSpan clientCacheTimeToLive,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
@@ -580,12 +579,6 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(keyWrapMetadata));
             }
 
-            // todo: min bound validation
-            if (clientCacheTimeToLive == default(TimeSpan))
-            {
-                throw new ArgumentException(nameof(clientCacheTimeToLive));
-            }
-
             if (this.ClientContext.ClientOptions.KeyWrapProvider == null)
             {
                 throw new ArgumentException(ClientResources.KeyWrapProviderNotConfigured);
@@ -593,10 +586,10 @@ namespace Microsoft.Azure.Cosmos
 
             this.ClientContext.ValidateResource(id);
 
-            byte[] rawDek = DataEncryptionKeyCore.GenerateKey();
-            byte[] wrappedDek = await DataEncryptionKeyCore.WrapKeyAsync(rawDek, keyWrapMetadata, this.ClientContext);
+            DataEncryptionKeyCore newDek = new DataEncryptionKeyCore(this.ClientContext, this, id);
 
-            DataEncryptionKeyProperties dekProperties = new DataEncryptionKeyProperties(id, wrappedDek, keyWrapMetadata, clientCacheTimeToLive);
+            byte[] rawDek = DataEncryptionKeyCore.GenerateKey();
+            (DataEncryptionKeyProperties dekProperties, TimeSpan cacheTtl) = await newDek.WrapAsync(rawDek, keyWrapMetadata);
 
             Stream streamPayload = this.ClientContext.PropertiesSerializer.ToStream(dekProperties);
             Task<ResponseMessage> response = this.CreateDataEncryptionKeyStreamAsync(
@@ -604,8 +597,8 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions,
                 cancellationToken);
 
-            DataEncryptionKeyResponse dekResponse = await this.ClientContext.ResponseFactory.CreateDataEncryptionKeyResponseAsync(this.GetDataEncryptionKey(dekProperties.Id), response);
-            this.ClientContext.DekCache.AddOrUpdate(new CachedDekProperties(dekResponse.Resource, rawDek));
+            DataEncryptionKeyResponse dekResponse = await this.ClientContext.ResponseFactory.CreateDataEncryptionKeyResponseAsync(newDek, response);
+            this.ClientContext.DekCache.AddOrUpdate(new InMemoryDekProperties(dekResponse.Resource, rawDek, cacheTtl));
             return dekResponse;
         }
 

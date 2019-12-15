@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos
     /// Interacts with Azure Key Vault to wrap (encrypt) and unwrap (decrypt) keys for envelope based encryption.
     /// See <see href="tbd"/> for more information on client-side encryption support in Azure Cosmos DB.
     /// </summary>
-    public class AzureKeyVaultKeyWrapProvider : IKeyWrapProvider
+    public class AzureKeyVaultKeyWrapProvider : KeyWrapProvider
     {
         private string clientId;
 
@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="key">Key that needs to be wrapped.</param>
         /// <param name="metadata">Metadata for the wrap provider.</param>
         /// <returns>Awaitable wrapped (i.e. encrypted) version of key passed in.</returns>
-        public Task<byte[]> WrapKeyAsync(byte[] key, KeyWrapMetadata metadata)
+        public Task<KeyWrapResponse> WrapKeyAsync(byte[] key, KeyWrapMetadata metadata)
         {
             return null;
         }
@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="wrappedKey">Wrapped form of key that needs to be unwrapped.</param>
         /// <param name="metadata">Metadata for the wrap provider.</param>
         /// <returns>Awaitable unwrapped (i.e. unencrypted) version of encrypted key passed in.</returns>
-        public Task<byte[]> UnwrapKeyAsync(byte[] wrappedKey, KeyWrapMetadata metadata)
+        public Task<KeyUnwrapResponse> UnwrapKeyAsync(byte[] wrappedKey, KeyWrapMetadata metadata)
         {
             return null;
         }

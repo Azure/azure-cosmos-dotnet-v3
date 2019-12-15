@@ -19,17 +19,14 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="id">Unique identifier for the data encryption key.</param>
         /// <param name="wrappedDataEncryptionKey">Wrapped (encrypted) form of the data encryption key.</param>
         /// <param name="keyWrapMetadata">Metadata used by the configured key wrapping provider in order to unwrap the key.</param>
-        /// <param name="clientCacheTimeToLive">Amount of time the data encryption key can be cached in the client before it needs to be checked for revocation.</param>
         public DataEncryptionKeyProperties(
             string id,
             byte[] wrappedDataEncryptionKey,
-            KeyWrapMetadata keyWrapMetadata,
-            TimeSpan clientCacheTimeToLive)
+            KeyWrapMetadata keyWrapMetadata)
         {
             this.Id = id;
             this.WrappedDataEncryptionKey = wrappedDataEncryptionKey;
             this.KeyWrapMetadata = keyWrapMetadata;
-            this.ClientCacheTimeToLive = clientCacheTimeToLive;
         }
 
         /// <summary>
@@ -52,31 +49,25 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.Id)]
-        public string Id { get; private set; }
+        public string Id { get; }
 
         /// <summary>
         /// Wrapped form of the data encryption key.
         /// </summary>
         [JsonProperty(PropertyName = "wrappedDek")]
-        public byte[] WrappedDataEncryptionKey { get; private set; }
+        public byte[] WrappedDataEncryptionKey { get; }
 
         /// <summary>
         /// Metadata for the wrapping provider than can be used to unwrap the wrapped data encryption key.
         /// </summary>
         [JsonProperty(PropertyName = "keyWrapMetadata")]
-        public KeyWrapMetadata KeyWrapMetadata { get; private set; }
-
-        /// <summary>
-        /// Amount of time the encryption key can be cached in the client after which it must be checked for revocation.
-        /// </summary>
-        [JsonProperty(PropertyName = "clientCacheTtl", NullValueHandling = NullValueHandling.Ignore)]
-        public TimeSpan ClientCacheTimeToLive { get; private set; }
+        public KeyWrapMetadata KeyWrapMetadata { get; }
 
         /// <summary>
         /// Gets the creation time of the resource from the Azure Cosmos DB service.
         /// </summary>
         [JsonProperty(PropertyName = "_cts", NullValueHandling = NullValueHandling.Ignore)]
-        public DateTime? CreatedTime { get; private set; }
+        public DateTime? CreatedTime { get; }
 
         /// <summary>
         /// Gets the entity tag associated with the resource from the Azure Cosmos DB service.
@@ -88,7 +79,7 @@ namespace Microsoft.Azure.Cosmos
         /// ETags are used for concurrency checking when updating resources. 
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.ETag, NullValueHandling = NullValueHandling.Ignore)]
-        public string ETag { get; private set; }
+        public string ETag { get; }
 
         /// <summary>
         /// Gets the last modified time stamp associated with the resource from the Azure Cosmos DB service.
@@ -96,7 +87,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>The last modified time stamp associated with the resource.</value>
         [JsonConverter(typeof(UnixDateTimeConverter))]
         [JsonProperty(PropertyName = Constants.Properties.LastModified, NullValueHandling = NullValueHandling.Ignore)]
-        public DateTime? LastModified { get; private set; }
+        public DateTime? LastModified { get; }
 
         /// <summary>
         /// Gets the self-link associated with the resource from the Azure Cosmos DB service.
@@ -107,7 +98,7 @@ namespace Microsoft.Azure.Cosmos
         /// E.g. a self-link for a document could be dbs/db_resourceid/colls/coll_resourceid/documents/doc_resourceid
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.SelfLink, NullValueHandling = NullValueHandling.Ignore)]
-        public string SelfLink { get; private set; }
+        public string SelfLink { get; }
 
         /// <summary>
         /// Gets the Resource Id associated with the resource in the Azure Cosmos DB service.
@@ -121,6 +112,6 @@ namespace Microsoft.Azure.Cosmos
         /// These resource ids are used when building up SelfLinks, a static addressable Uri for each resource within a database account.
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.RId, NullValueHandling = NullValueHandling.Ignore)]
-        internal string ResourceId { get; private set; }
+        internal string ResourceId { get; }
     }
 }

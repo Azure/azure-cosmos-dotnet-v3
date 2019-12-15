@@ -5,22 +5,26 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Threading;
     using Microsoft.Azure.Cosmos.Common;
 
     internal class DekCache
     {
-        private AsyncCache<string, DataEncryptionKeyProperties> asyncCache = new AsyncCache<string, DataEncryptionKeyProperties>();
+        private AsyncCache<Uri, InMemoryDekProperties> asyncCache = new AsyncCache<Uri, InMemoryDekProperties>();
 
-        public void AddOrUpdate(CachedDekProperties dekProperties)
+        public void AddOrUpdate(InMemoryDekProperties dekProperties)
         {
         }
 
-        public void Remove(DataEncryptionKeyProperties dekProperties)
+        public void Remove(Uri linkUri)
         {
         }
 
-        public CachedDekProperties Get(string id)
+        /// <summary>
+        /// Will strip off rawDek if ttl has expired.
+        /// </summary>
+        /// <param name="linkUri"></param>
+        /// <returns>CachedDekProperties</returns>
+        public InMemoryDekProperties Get(Uri linkUri)
         {
             return null;
         }

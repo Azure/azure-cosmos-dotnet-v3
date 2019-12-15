@@ -59,6 +59,7 @@ namespace Microsoft.Azure.Cosmos
         private int gatewayModeMaxConnectionLimit;
         private CosmosSerializationOptions serializerOptions;
         private CosmosSerializer serializer;
+        private KeyWrapProvider keyWrapProvider;
 
         private ConnectionMode connectionMode;
         private Protocol connectionProtocol;
@@ -372,6 +373,11 @@ namespace Microsoft.Azure.Cosmos
                         $"{nameof(this.Serializer)} is not compatible with {nameof(this.SerializerOptions)}. Only one can be set.  ");
                 }
 
+                if (this.KeyWrapProvider != null)
+                {
+                    throw new ArgumentException(ClientResources.CustomSerializerAndEncryptionNotSupportedTogether);
+                }
+
                 this.serializer = value;
             }
         }
@@ -399,7 +405,19 @@ namespace Microsoft.Azure.Cosmos
         /// The key wrapping provider to use to wrap and unwrap keys while using client side encryption support.
         /// See <see href="tbd"/> for more information on client-side encryption support in Azure Cosmos DB.
         /// </summary>
-        public IKeyWrapProvider KeyWrapProvider { get; set; }
+        public KeyWrapProvider KeyWrapProvider
+        {
+            get => this.keyWrapProvider;
+            set
+            {
+                if (this.Serializer != null)
+                {
+                    throw new ArgumentException(ClientResources.CustomSerializerAndEncryptionNotSupportedTogether);
+                }
+
+                this.keyWrapProvider = value;
+            }
+        }
 
         /// <summary>
         /// A JSON serializer used by the CosmosClient to serialize or de-serialize cosmos request/responses.
