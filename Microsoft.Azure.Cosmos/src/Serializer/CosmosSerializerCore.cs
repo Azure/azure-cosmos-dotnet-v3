@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos
                serializerCore: this);
         }
 
-        private CosmosSerializer GetSerializer<T>(ResourceType resourceType = ResourceType.Unknown)
+        private CosmosSerializer GetSerializer<T>()
         {
             if (this.customSerializer == null)
             {
@@ -120,8 +120,7 @@ namespace Microsoft.Azure.Cosmos
                 inputType == typeof(ConflictProperties) ||
                 inputType == typeof(ThroughputProperties) ||
                 inputType == typeof(OfferV2) ||
-                inputType == typeof(PartitionedQueryExecutionInfo) ||
-                (resourceType == ResourceType.Offer && inputType == typeof(SqlQuerySpec)))
+                inputType == typeof(PartitionedQueryExecutionInfo))
             {
                 return CosmosSerializerCore.propertiesSerializer;
             }
