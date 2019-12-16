@@ -262,10 +262,10 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(id));
             }
 
-            return new ContainerCore(
+            return new ContainerInlineCore(new ContainerCore(
                     this.ClientContext,
                     this,
-                    id);
+                    id));
         }
 
         public override Task<ResponseMessage> CreateContainerStreamAsync(
@@ -315,10 +315,10 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(id));
             }
 
-            return new UserCore(
+            return new UserInlineCore(new UserCore(
                     this.ClientContext,
                     this,
-                    id);
+                    id));
         }
 
         public Task<ResponseMessage> CreateUserStreamAsync(

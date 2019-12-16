@@ -179,21 +179,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(jObject["StatusCode"].ToString());
             Assert.IsNotNull(jObject["RequestCharge"].ToString());
             Assert.IsNotNull(jObject["RequestUri"].ToString());
-            Assert.IsNotNull(jObject["requestStartTimeUtc"].ToString());
-            Assert.IsNotNull(jObject["responseStatisticsList"].ToString());
-            Assert.IsNotNull(jObject["supplementalResponseStatisticsList"].ToString());
-            Assert.IsNotNull(jObject["addressResolutionStatistics"].ToString());
-            Assert.IsNotNull(jObject["contactedReplicas"].ToString());
-            Assert.IsNotNull(jObject["failedReplicas"].ToString());
-            Assert.IsNotNull(jObject["regionsContacted"].ToString());
-            Assert.IsNotNull(jObject["requestLatency"].ToString());
-
-            int statusCode = jObject["StatusCode"].ToObject<int>();
+            Assert.IsNotNull(jObject["ClientSideRequestStatistics"].ToString());
+            JObject clientJObject = jObject["ClientSideRequestStatistics"].ToObject<JObject>();
+            Assert.IsNotNull(clientJObject["RequestStartTimeUtc"].ToString()); 
+            Assert.IsNotNull(clientJObject["ResponseStatisticsList"].ToString());
+            Assert.IsNotNull(clientJObject["AddressResolutionStatistics"].ToString());
+            Assert.IsNotNull(clientJObject["SupplementalResponseStatistics"].ToString());
+            Assert.IsNotNull(clientJObject["ContactedReplicas"].ToString());
+            Assert.IsNotNull(clientJObject["FailedReplicas"].ToString());
+            Assert.IsNotNull(clientJObject["RegionsContacted"].ToString());
+            Assert.IsNotNull(clientJObject["RequestLatency"].ToString());
 
             // Session token only expected on success
             if (statusCode >= 200 && statusCode < 300)
             {
-                Assert.IsNotNull(jObject["requestEndTimeUtc"].ToString());
+                Assert.IsNotNull(clientJObject["RequestEndTimeUtc"].ToString());
                 Assert.IsNotNull(jObject["ResponseSessionToken"].ToString());
             }
         }

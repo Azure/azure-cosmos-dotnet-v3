@@ -197,22 +197,21 @@ namespace Microsoft.Azure.Cosmos
             CollectionRoutingMap collectionRoutingMap = await this.cosmosContainer.GetRoutingMapAsync(cancellationToken);
 
             Debug.Assert(operation.RequestOptions?.Properties?.TryGetValue(WFConstants.BackendHeaders.EffectivePartitionKeyString, out object epkObj) == null, "EPK is not supported");
-            await this.FillOperationPropertiesAsync(operation, cancellationToken);
-            return BatchExecUtils.GetPartitionKeyRangeId(operation.PartitionKey.Value, partitionKeyDefinition, collectionRoutingMap);
+            Documents.Routing.PartitionKeyInternal partitionKeyInternal = await this.GetPartitionKeyInternalAsync(operation, cancellationToken);
+            operation.PartitionKeyJson = partitionKeyInternal.ToJsonString();
+            string effectivePartitionKeyString = partitionKeyInternal.GetEffectivePartitionKeyString(partitionKeyDefinition);
+            return collectionRoutingMap.GetRangeByEffectivePartitionKey(effectivePartitionKeyString).Id;
         }
 
-        private async Task FillOperationPropertiesAsync(ItemBatchOperation operation, CancellationToken cancellationToken)
+        private async Task<Documents.Routing.PartitionKeyInternal> GetPartitionKeyInternalAsync(ItemBatchOperation operation, CancellationToken cancellationToken)
         {
-            // Same logic from RequestInvokerHandler to manage partition key migration
-            if (object.ReferenceEquals(operation.PartitionKey, PartitionKey.None))
+            Debug.Assert(operation.PartitionKey.HasValue, "PartitionKey should be set on the operation");
+            if (operation.PartitionKey.Value.IsNone)
             {
-                Documents.Routing.PartitionKeyInternal partitionKeyInternal = await this.cosmosContainer.GetNonePartitionKeyValueAsync(cancellationToken).ConfigureAwait(false);
-                operation.PartitionKeyJson = partitionKeyInternal.ToJsonString();
+                return await this.cosmosContainer.GetNonePartitionKeyValueAsync(cancellationToken).ConfigureAwait(false);
             }
-            else
-            {
-                operation.PartitionKeyJson = operation.PartitionKey.Value.ToString();
-            }
+
+            return operation.PartitionKey.Value.InternalKey;
         }
 
         private async Task<PartitionKeyRangeBatchExecutionResult> ExecuteAsync(

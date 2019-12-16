@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Net.Http;
     using System.Text;
+    using System.Web;
     using Newtonsoft.Json;
     using static Microsoft.Azure.Cosmos.CosmosClientSideRequestStatistics;
 
@@ -29,24 +30,7 @@ namespace Microsoft.Azure.Cosmos
         public Uri RequestUri { get; }
         public string RequestSessionToken { get; }
         public string ResponseSessionToken { get; }
-
-        public DateTime requestStartTimeUtc { get; private set; }
-
-        public DateTime? requestEndTimeUtc { get; private set; }
-
-        public List<StoreResponseStatistics> responseStatisticsList { get; private set; }
-
-        public List<StoreResponseStatistics> supplementalResponseStatisticsList { get; private set; }
-
-        public Dictionary<string, AddressResolutionStatistics> addressResolutionStatistics { get; private set; }
-
-        public List<Uri> contactedReplicas { get; set; }
-
-        public HashSet<Uri> failedReplicas { get; private set; }
-
-        public HashSet<Uri> regionsContacted { get; private set; }
-
-        public TimeSpan requestLatency { get; private set; }
+        public CosmosClientSideRequestStatistics ClientSideRequestStatistics { get; }
 
         internal PointOperationStatistics(
             string activityId,
@@ -69,32 +53,45 @@ namespace Microsoft.Azure.Cosmos
             this.RequestUri = requestUri;
             this.RequestSessionToken = requestSessionToken;
             this.ResponseSessionToken = responseSessionToken;
-            if (clientSideRequestStatistics != null)
-            {
-                this.requestStartTimeUtc = clientSideRequestStatistics.requestStartTime;
-                this.requestEndTimeUtc = clientSideRequestStatistics.requestEndTime;
-                this.responseStatisticsList = clientSideRequestStatistics.responseStatisticsList;
-                this.supplementalResponseStatisticsList = clientSideRequestStatistics.supplementalResponseStatisticsList;
-                this.addressResolutionStatistics = clientSideRequestStatistics.addressResolutionStatistics;
-                this.contactedReplicas = clientSideRequestStatistics.ContactedReplicas;
-                this.failedReplicas = clientSideRequestStatistics.FailedReplicas;
-                this.regionsContacted = clientSideRequestStatistics.RegionsContacted;
-                this.requestLatency = clientSideRequestStatistics.RequestLatency;
-            }
+            this.ClientSideRequestStatistics = clientSideRequestStatistics;
         }
 
         public override string ToString()
         {
-            if (this.supplementalResponseStatisticsList != null)
+            StringBuilder stringBuilder = new StringBuilder();
+            this.AppendJsonToBuilder(stringBuilder);
+            return stringBuilder.ToString();
+        }
+
+        public void AppendJsonToBuilder(StringBuilder stringBuilder)
+        {
+            if (stringBuilder == null)
             {
-                int supplementalResponseStatisticsListCount = this.supplementalResponseStatisticsList.Count;
-                int countToRemove = Math.Max(supplementalResponseStatisticsListCount - CosmosClientSideRequestStatistics.MaxSupplementalRequestsForToString, 0);
-                if (countToRemove > 0)
-                {
-                    this.supplementalResponseStatisticsList.RemoveRange(0, countToRemove);
-                }
+                throw new ArgumentNullException(nameof(stringBuilder));
             }
-            return JsonConvert.SerializeObject(this, PointOperationStatistics.SerializerSettings);
+
+            string errorMessage = string.Empty;
+            if (this.ErrorMessage != null)
+            {
+                errorMessage = HttpUtility.JavaScriptStringEncode(this.ErrorMessage);
+            }
+
+            stringBuilder.Append($"{{\"ActivityId\":\"{this.ActivityId}\"");
+            stringBuilder.Append($",\"StatusCode\":\"{(int)this.StatusCode}\"");
+            stringBuilder.Append($",\"SubStatusCode\":\"{this.SubStatusCode.ToString()}\"");
+            stringBuilder.Append($",\"RequestCharge\":\"{this.RequestCharge}\"");
+            stringBuilder.Append($",\"ErrorMessage\":\"{errorMessage}\"");
+            stringBuilder.Append($",\"Method\":\"{this.Method?.ToString() ?? "null"}\"");
+            stringBuilder.Append($",\"RequestUri\":\"{this.RequestUri?.ToString() ?? "null"}\"");
+            stringBuilder.Append($",\"RequestSessionToken\":\"{this.RequestSessionToken}\"");
+            stringBuilder.Append($",\"ResponseSessionToken\":\"{this.ResponseSessionToken}\"");
+            if (this.ClientSideRequestStatistics != null)
+            {
+                stringBuilder.Append(",");
+                this.ClientSideRequestStatistics.AppendJsonToBuilder(stringBuilder);
+            }
+
+            stringBuilder.Append("}");
         }
 
         public void AppendJson(StringBuilder stringBuilder)

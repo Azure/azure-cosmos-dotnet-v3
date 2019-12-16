@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 database,
                 documentCollection);
 
-            return (ContainerCore)database.GetContainer(containerId);
+            return (ContainerInlineCore)database.GetContainer(containerId);
         }
 
         internal static async Task<DocumentCollection> CreateNonPartitionedContainer(

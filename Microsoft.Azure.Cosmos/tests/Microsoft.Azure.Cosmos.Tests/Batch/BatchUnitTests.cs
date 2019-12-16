@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Client.Core.Tests;
@@ -336,6 +337,33 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(SubStatusCodes.Unknown, batchResponse[1].SubStatusCode);
             Assert.IsNull(batchResponse[1].ETag);
             Assert.IsNull(batchResponse[1].ResourceStream);
+        }
+
+        [TestMethod]
+        [Owner("abpai")]
+        public async Task BatchJsonServerResponseAsync()
+        {
+            TestHandler testHandler = new TestHandler((request, cancellationToken) =>
+            {
+                HttpStatusCode serverStatusCode = HttpStatusCode.Gone;
+                Stream serverContent = new MemoryStream(Encoding.UTF8.GetBytes("{ \"random\": 1 }"));
+
+                ResponseMessage responseMessage = new ResponseMessage(serverStatusCode, requestMessage: null, errorMessage: null)
+                {
+                    Content = serverContent
+                };
+
+                return Task.FromResult(responseMessage);
+            });
+
+            Container container = BatchUnitTests.GetContainer(testHandler);
+
+            TransactionalBatchResponse batchResponse = await new BatchCore((ContainerCore)container, new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1))
+                .ReadItem("id1")
+                .ReadItem("id2")
+                .ExecuteAsync();
+
+            Assert.AreEqual(HttpStatusCode.Gone, batchResponse.StatusCode);
         }
 
         /// <summary>
