@@ -360,7 +360,7 @@ namespace Microsoft.Azure.Cosmos
                 continuationToken,
                 requestOptions) is FeedIteratorInternal feedIterator))
             {
-                throw new InvalidOperationException($"Expected a FeedIteratorInternal.");
+                throw new InvalidOperationException("Expected a FeedIteratorInternal.");
             }
 
             return new FeedIteratorCore<T>(
