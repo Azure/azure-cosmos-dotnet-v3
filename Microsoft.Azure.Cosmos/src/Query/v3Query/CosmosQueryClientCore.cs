@@ -139,7 +139,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: queryRequestOptions,
                 partitionKey: queryRequestOptions.PartitionKey,
                 cosmosContainerCore: this.cosmosContainerCore,
-                streamPayload: this.clientContext.SerializerCore.ToStream(sqlQuerySpec),
+                streamPayload: this.clientContext.SerializerCore.ToStreamSqlQuerySpec(sqlQuerySpec, resourceType),
                 requestEnricher: (cosmosRequestMessage) =>
                 {
                     this.PopulatePartitionKeyRangeInfo(cosmosRequestMessage, partitionKeyRange);
@@ -180,7 +180,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: null,
                 partitionKey: null,
                 cosmosContainerCore: this.cosmosContainerCore,
-                streamPayload: this.clientContext.SerializerCore.ToStream(sqlQuerySpec),
+                streamPayload: this.clientContext.SerializerCore.ToStreamSqlQuerySpec(sqlQuerySpec, resourceType),
                 requestEnricher: (requestMessage) =>
                 {
                     requestMessage.Headers.Add(HttpConstants.HttpHeaders.ContentType, RuntimeConstants.MediaTypes.QueryJson);
