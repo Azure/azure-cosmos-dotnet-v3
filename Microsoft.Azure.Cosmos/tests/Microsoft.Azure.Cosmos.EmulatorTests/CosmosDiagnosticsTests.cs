@@ -147,22 +147,25 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             JObject jObject = JObject.Parse(info);
             Assert.IsNotNull(jObject["RetryCount"].ToString());
             Assert.IsNotNull(jObject["UserAgent"].ToString());
-            JToken page = jObject["0"];
+
+            JArray contextList = jObject["ContextList"].ToObject<JArray>();
+            Assert.IsTrue(contextList.Count > 0);
+
+            // Find the PointOperationStatistics object
+            JObject page = GetJObjectInContextList(
+                contextList,
+                "0");
 
             // First page will have a request
             // Query might use cache pages which don't have the following info. It was returned in the previous call.
             if(isFirstPage || page != null)
             {
-                jObject = jObject["0"].ToObject<JObject>();
-                string queryMetrics = jObject["QueryMetricText"].ToString();
+                string queryMetrics = page["QueryMetricText"].ToString();
                 Assert.IsNotNull(queryMetrics);
-                Assert.IsNotNull(jObject["IndexUtilizationText"].ToString());
-                Assert.IsNotNull(jObject["PartitionKeyRangeId"].ToString());
-                JObject requestDiagnostics = jObject["RequestDiagnostics"].ToObject<JObject>();
+                Assert.IsNotNull(page["IndexUtilizationText"].ToString());
+                Assert.IsNotNull(page["PartitionKeyRangeId"].ToString());
+                JObject requestDiagnostics = page["RequestDiagnostics"].ToObject<JObject>();
                 Assert.IsNotNull(requestDiagnostics);
-                JObject documentServiceResponse = requestDiagnostics["PointOperationStatistics"].ToObject<JObject>();
-                Assert.IsNotNull(documentServiceResponse);
-                Assert.IsNotNull(documentServiceResponse["ActivityId"].ToString());
             }
         }
 
@@ -173,18 +176,27 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             JObject jObject = JObject.Parse(info);
             Assert.IsNotNull(jObject["RetryCount"].ToString());
             Assert.IsNotNull(jObject["UserAgent"].ToString());
+            Assert.IsNotNull(jObject["ContextList"].ToString());
+            JArray contextList = jObject["ContextList"].ToObject<JArray>();
+            Assert.IsTrue(contextList.Count > 3);
 
-            jObject = jObject["PointOperationStatistics"].ToObject<JObject>();
-            Assert.IsNotNull(jObject["ActivityId"].ToString());
-            Assert.IsNotNull(jObject["StatusCode"].ToString());
-            Assert.IsNotNull(jObject["RequestCharge"].ToString());
-            Assert.IsNotNull(jObject["RequestUri"].ToString());
-            Assert.IsNotNull(jObject["ClientSideRequestStatistics"].ToString());
-            JObject clientJObject = jObject["ClientSideRequestStatistics"].ToObject<JObject>();
+            // Find the PointOperationStatistics object
+            JObject pointStatistics = GetJObjectInContextList(
+                contextList,
+                "PointOperationStatistics");
+
+            Assert.IsNotNull(pointStatistics, $"Context list does not contain PointOperationStatistics in {contextList.ToString()}");
+            int statusCode = pointStatistics["StatusCode"].ToObject<int>();
+            Assert.IsNotNull(pointStatistics["ActivityId"].ToString());
+            Assert.IsNotNull(pointStatistics["StatusCode"].ToString());
+            Assert.IsNotNull(pointStatistics["RequestCharge"].ToString());
+            Assert.IsNotNull(pointStatistics["RequestUri"].ToString());
+            Assert.IsNotNull(pointStatistics["ClientSideRequestStatistics"].ToString());
+            JObject clientJObject = pointStatistics["ClientSideRequestStatistics"].ToObject<JObject>();
             Assert.IsNotNull(clientJObject["RequestStartTimeUtc"].ToString()); 
             Assert.IsNotNull(clientJObject["ResponseStatisticsList"].ToString());
-            Assert.IsNotNull(clientJObject["AddressResolutionStatistics"].ToString());
-            Assert.IsNotNull(clientJObject["SupplementalResponseStatistics"].ToString());
+            Assert.IsNotNull(clientJObject["EndpointToAddressResolutionStatistics"].ToString());
+            Assert.IsNotNull(clientJObject["SupplementalResponseStatisticsListLast10"].ToString());
             Assert.IsNotNull(clientJObject["ContactedReplicas"].ToString());
             Assert.IsNotNull(clientJObject["FailedReplicas"].ToString());
             Assert.IsNotNull(clientJObject["RegionsContacted"].ToString());
@@ -194,8 +206,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             if (statusCode >= 200 && statusCode < 300)
             {
                 Assert.IsNotNull(clientJObject["RequestEndTimeUtc"].ToString());
-                Assert.IsNotNull(jObject["ResponseSessionToken"].ToString());
+                Assert.IsNotNull(pointStatistics["ResponseSessionToken"].ToString());
             }
+        }
+
+        private static JObject GetJObjectInContextList(JArray contextList, string id)
+        {
+            foreach (JObject tempJObject in contextList)
+            {
+                string name = tempJObject["Id"].Value<string>();
+                if (string.Equals(name, id))
+                {
+                    return tempJObject["Value"].ToObject<JObject>();
+                }
+            }
+
+            return null;
         }
 
         private async Task<long> ExecuteQueryAndReturnOutputDocumentCount(string queryText, int expectedItemCount)

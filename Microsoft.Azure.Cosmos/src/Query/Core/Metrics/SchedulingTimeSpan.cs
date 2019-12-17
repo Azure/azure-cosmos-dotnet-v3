@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     using System.Globalization;
     using System.Linq;
     using System.Text;
+    using Newtonsoft.Json;
 
     /// <summary>
     /// This struct is the TimeSpan equivalent to Stopwatch for SchedulingStopwatch.cs.
@@ -41,29 +42,34 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// <summary>
         /// Gets the number of preemptions (the number of times the process was moved from the running state to the ready state).
         /// </summary>
+        [JsonProperty(PropertyName = "NumPreemptions")]
         public long NumPreemptions { get; }
 
         /// <summary>
         /// Gets the total time from when the process arrived to when it ended.
         /// turnaround_time = end_time - arrival_time
         /// </summary>
+        [JsonProperty(PropertyName = "TurnaroundTime")]
         public TimeSpan TurnaroundTime { get; }
 
         /// <summary>
         /// Gets the total latency (time) from when the process arrived to when the CPU actually started working on it.
         /// response_time = start_time - arrival_time
         /// </summary>
+        [JsonProperty(PropertyName = "ResponseTime")]
         public TimeSpan ResponseTime { get; }
 
         /// <summary>
         /// Gets the total time the process spent in the running state.
         /// </summary>
+        [JsonProperty(PropertyName = "RunTime")]
         public TimeSpan RunTime { get; }
 
         /// <summary>
         /// Gets the total time that a process was is in the ready or waiting state.
         /// wait_time = (end_time - arrival_time) - run_time = turnaround_time - run_time
         /// </summary>
+        [JsonProperty(PropertyName = "WaitTime")]
         public TimeSpan WaitTime { get; }
 
         #region StaticMethods

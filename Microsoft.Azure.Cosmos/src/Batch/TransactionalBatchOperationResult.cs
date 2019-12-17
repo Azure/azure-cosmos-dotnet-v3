@@ -210,15 +210,11 @@ namespace Microsoft.Azure.Cosmos
             };
 
             // DEVNOTE: Temporary until batch has CosmosDiagnosticsCore wired through
-            CosmosDiagnosticsCore diagnosticsCore = this.Diagnostics as CosmosDiagnosticsCore;
+            CosmosDiagnosticsContext diagnosticsCore = this.Diagnostics as CosmosDiagnosticsContext;
             if (diagnosticsCore == null)
             {
-                diagnosticsCore = new CosmosDiagnosticsCore();
-                ICosmosDiagnosticsJsonWriter cosmosDiagnosticsJsonWriter = this.Diagnostics as ICosmosDiagnosticsJsonWriter;
-                if (cosmosDiagnosticsJsonWriter == null)
-                {
-                    diagnosticsCore.AddJsonAttribute("TransactionalBatchResponse", cosmosDiagnosticsJsonWriter);
-                }
+                diagnosticsCore = new CosmosDiagnosticsContext();
+                diagnosticsCore.AddJsonAttribute("TransactionalBatchResponse", this.Diagnostics);
             }
              
             ResponseMessage responseMessage = new ResponseMessage(

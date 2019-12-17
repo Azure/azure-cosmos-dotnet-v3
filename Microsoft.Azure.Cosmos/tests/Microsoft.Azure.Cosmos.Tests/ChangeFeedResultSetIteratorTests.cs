@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<Func<ResponseMessage, ResponseMessage>>(),
-                It.IsAny<CosmosDiagnosticsCore>(),
+                It.IsAny<CosmosDiagnosticsContext>(),
                 It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(firstResponse))
                 .Returns(Task.FromResult(secondResponse));
@@ -73,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<Func<ResponseMessage, ResponseMessage>>(),
-                It.IsAny<CosmosDiagnosticsCore>(),
+                It.IsAny<CosmosDiagnosticsContext>(),
                 It.IsAny<CancellationToken>()), Times.Exactly(2));
         }
 
@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<Func<ResponseMessage, ResponseMessage>>(),
-                It.IsAny<CosmosDiagnosticsCore>(),
+                It.IsAny<CosmosDiagnosticsContext>(),
                 It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(firstResponse))
                 .Returns(Task.FromResult(secondResponse));
@@ -129,7 +129,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<Func<ResponseMessage, ResponseMessage>>(),
-                It.IsAny<CosmosDiagnosticsCore>(),
+                It.IsAny<CosmosDiagnosticsContext>(),
                 It.IsAny<CancellationToken>()), Times.Exactly(2));
         }
 
@@ -163,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<Func<ResponseMessage, ResponseMessage>>(),
-                It.IsAny<CosmosDiagnosticsCore>(),
+                It.IsAny<CosmosDiagnosticsContext>(),
                 It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(firstResponse))
                 .Returns(Task.FromResult(secondResponse))
@@ -189,7 +189,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<Func<ResponseMessage, ResponseMessage>>(),
-                It.IsAny<CosmosDiagnosticsCore>(),
+                It.IsAny<CosmosDiagnosticsContext>(),
                 It.IsAny<CancellationToken>()), Times.Exactly(3));
         }
 
@@ -219,7 +219,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<Func<ResponseMessage, ResponseMessage>>(),
-                It.IsAny<CosmosDiagnosticsCore>(),
+                It.IsAny<CosmosDiagnosticsContext>(),
                 It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(firstResponse));
 
@@ -241,7 +241,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<Func<ResponseMessage, ResponseMessage>>(),
-                It.IsAny<CosmosDiagnosticsCore>(),
+                It.IsAny<CosmosDiagnosticsContext>(),
                 It.IsAny<CancellationToken>()), Times.Once);
         }
 

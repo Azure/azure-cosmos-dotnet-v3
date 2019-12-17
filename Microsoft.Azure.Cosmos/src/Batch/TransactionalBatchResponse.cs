@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos
             SubStatusCodes subStatusCode,
             string errorMessage,
             IReadOnlyList<ItemBatchOperation> operations,
-            CosmosDiagnosticsCore diagnosticsCore)
+            CosmosDiagnosticsContext diagnosticsCore)
             : this(statusCode,
                   subStatusCode,
                   errorMessage,
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos
             double requestCharge,
             TimeSpan? retryAfter,
             string activityId,
-            CosmosDiagnosticsCore diagnosticsCore,
+            CosmosDiagnosticsContext diagnosticsCore,
             IReadOnlyList<ItemBatchOperation> operations,
             CosmosSerializer serializer)
         {
@@ -135,7 +135,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public virtual CosmosDiagnostics Diagnostics { get; }
 
-        internal virtual CosmosDiagnosticsCore DiagnosticsCore { get; }
+        internal virtual CosmosDiagnosticsContext DiagnosticsCore { get; }
 
         internal virtual SubStatusCodes SubStatusCode { get; }
 

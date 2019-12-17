@@ -8,11 +8,10 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Collections.Generic;
     using System.Text;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
+    using Newtonsoft.Json;
 
     internal sealed class QueryAggregateDiagnostics : CosmosDiagnostics
     {
-        private const string EmptyJsonArray = "[]";
-
         public QueryAggregateDiagnostics(
             IReadOnlyCollection<QueryPageDiagnostics> pages)
         {
@@ -24,32 +23,12 @@ namespace Microsoft.Azure.Cosmos.Query
             this.Pages = pages;
         }
 
+        [JsonProperty(PropertyName = "Pages")]
         public IReadOnlyCollection<QueryPageDiagnostics> Pages { get; }
 
         public override string ToString()
         {
-            if (this.Pages.Count == 0)
-            {
-                return QueryAggregateDiagnostics.EmptyJsonArray;
-            }
-
-            StringBuilder stringBuilder = new StringBuilder();
-
-            // JSON array start
-            stringBuilder.Append("[");
-
-            foreach (QueryPageDiagnostics queryPage in this.Pages)
-            {
-                queryPage.AppendJson(stringBuilder);
-
-                // JSON seperate objects
-                stringBuilder.Append(",");
-            }
-
-            // JSON array stop
-            stringBuilder.Length -= 1;
-            stringBuilder.Append("]");
-            return stringBuilder.ToString();
+            return JsonConvert.SerializeObject(this);
         }
     }
 }

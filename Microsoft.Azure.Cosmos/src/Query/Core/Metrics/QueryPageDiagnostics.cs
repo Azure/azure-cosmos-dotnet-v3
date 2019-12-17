@@ -6,8 +6,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 {
     using System;
     using System.Text;
+    using Newtonsoft.Json;
 
-    internal sealed class QueryPageDiagnostics : ICosmosDiagnosticsJsonWriter
+    internal sealed class QueryPageDiagnostics
     {
         public QueryPageDiagnostics(
             string partitionKeyRangeId,
@@ -23,42 +24,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             this.SchedulingTimeSpan = schedulingStopwatch.Elapsed;
         }
 
+        [JsonProperty(PropertyName = "PartitionKeyRangeId" )]
         internal string PartitionKeyRangeId { get; }
 
+        [JsonProperty(PropertyName = "QueryMetricText")]
         internal string QueryMetricText { get; }
 
+        [JsonProperty(PropertyName = "IndexUtilizationText")]
         internal string IndexUtilizationText { get; }
 
+        [JsonProperty(PropertyName = "RequestDiagnostics")]
         internal CosmosDiagnostics RequestDiagnostics { get; }
 
+        [JsonProperty(PropertyName = "SchedulingTimeSpan")]
         internal SchedulingTimeSpan SchedulingTimeSpan { get; }
-
-        public void AppendJson(StringBuilder stringBuilder)
-        {
-            string requestDiagnosticsString = string.Empty;
-            if (this.RequestDiagnostics != null)
-            {
-                requestDiagnosticsString = this.RequestDiagnostics.ToString();
-            }
-
-            stringBuilder.Append("{\"PartitionKeyRangeId\":\"");
-            stringBuilder.Append(this.PartitionKeyRangeId);
-            stringBuilder.Append("\",\"QueryMetricText\":\"");
-            stringBuilder.Append(this.QueryMetricText);
-            stringBuilder.Append("\",\"IndexUtilizationText\":\"");
-            stringBuilder.Append(this.IndexUtilizationText);
-            stringBuilder.Append("\",\"RequestDiagnostics\":");
-            stringBuilder.Append(requestDiagnosticsString);
-            stringBuilder.Append(",\"SchedulingTimeSpan\":");
-            this.SchedulingTimeSpan.AppendJsonToBuilder(stringBuilder);
-            stringBuilder.Append("}");
-        }
-
-        public override string ToString()
-        {
-            StringBuilder stringBuilder = new StringBuilder();
-            this.AppendJson(stringBuilder);
-            return stringBuilder.ToString();
-        }
     }
 }

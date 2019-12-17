@@ -38,8 +38,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             string activityId = "TestActivityId";
             double requestCharge = 42.42;
 
-            Mock<CosmosDiagnosticsCore> mockDiagnostics = new Mock<CosmosDiagnosticsCore>();
-            CosmosDiagnosticsCore diagnostics = mockDiagnostics.Object;
+            Mock<CosmosDiagnosticsContext> mockDiagnostics = new Mock<CosmosDiagnosticsContext>();
+            CosmosDiagnosticsContext diagnostics = mockDiagnostics.Object;
             QueryResponse queryResponse = QueryResponse.CreateFailure(
                         statusCode: HttpStatusCode.NotFound,
                         errorMessage: errorMessage,
@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                             RequestCharge = responseCore.RequestCharge,
                             ActivityId = responseCore.ActivityId
                         },
-                        diagnostics: new CosmosDiagnosticsCore());
+                        diagnostics: new CosmosDiagnosticsContext());
 
             using (Stream stream = queryResponse.Content)
             {
@@ -128,7 +128,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                             RequestCharge = responseCore.RequestCharge,
                             ActivityId = responseCore.ActivityId
                         },
-                        diagnostics: new CosmosDiagnosticsCore());
+                        diagnostics: new CosmosDiagnosticsContext());
 
             QueryResponse<ToDoItem> itemQueryResponse = QueryResponseMessageFactory.CreateQueryResponse<ToDoItem>(queryResponse);
             List<ToDoItem> resultItems = new List<ToDoItem>(itemQueryResponse.Resource);
@@ -169,7 +169,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                             RequestCharge = responseCore.RequestCharge,
                             ActivityId = responseCore.ActivityId
                         },
-                        diagnostics: new CosmosDiagnosticsCore());
+                        diagnostics: new CosmosDiagnosticsContext());
 
             QueryResponse<CosmosElement> itemQueryResponse = QueryResponseMessageFactory.CreateQueryResponse<CosmosElement>(queryResponse);
             List<CosmosElement> resultItems = new List<CosmosElement>(itemQueryResponse.Resource);

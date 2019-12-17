@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos
     using Newtonsoft.Json;
     using static Microsoft.Azure.Cosmos.CosmosClientSideRequestStatistics;
 
-    internal class PointOperationStatistics : CosmosDiagnostics, ICosmosDiagnosticsJsonWriter
+    internal class PointOperationStatistics : CosmosDiagnostics
     {
         private static JsonSerializerSettings SerializerSettings = new JsonSerializerSettings()
         {
@@ -58,45 +58,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override string ToString()
         {
-            StringBuilder stringBuilder = new StringBuilder();
-            this.AppendJsonToBuilder(stringBuilder);
-            return stringBuilder.ToString();
-        }
-
-        public void AppendJsonToBuilder(StringBuilder stringBuilder)
-        {
-            if (stringBuilder == null)
-            {
-                throw new ArgumentNullException(nameof(stringBuilder));
-            }
-
-            string errorMessage = string.Empty;
-            if (this.ErrorMessage != null)
-            {
-                errorMessage = HttpUtility.JavaScriptStringEncode(this.ErrorMessage);
-            }
-
-            stringBuilder.Append($"{{\"ActivityId\":\"{this.ActivityId}\"");
-            stringBuilder.Append($",\"StatusCode\":\"{(int)this.StatusCode}\"");
-            stringBuilder.Append($",\"SubStatusCode\":\"{this.SubStatusCode.ToString()}\"");
-            stringBuilder.Append($",\"RequestCharge\":\"{this.RequestCharge}\"");
-            stringBuilder.Append($",\"ErrorMessage\":\"{errorMessage}\"");
-            stringBuilder.Append($",\"Method\":\"{this.Method?.ToString() ?? "null"}\"");
-            stringBuilder.Append($",\"RequestUri\":\"{this.RequestUri?.ToString() ?? "null"}\"");
-            stringBuilder.Append($",\"RequestSessionToken\":\"{this.RequestSessionToken}\"");
-            stringBuilder.Append($",\"ResponseSessionToken\":\"{this.ResponseSessionToken}\"");
-            if (this.ClientSideRequestStatistics != null)
-            {
-                stringBuilder.Append(",");
-                this.ClientSideRequestStatistics.AppendJsonToBuilder(stringBuilder);
-            }
-
-            stringBuilder.Append("}");
-        }
-
-        public void AppendJson(StringBuilder stringBuilder)
-        {
-            stringBuilder.Append(this.ToString());
+            return JsonConvert.SerializeObject(this);
         }
     }
 }

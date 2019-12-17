@@ -647,7 +647,7 @@ namespace Microsoft.Azure.Cosmos.Scenarios
                     sourceHeaders: null,
                     resourceType: ResourceType.Document,
                     containerRid: GremlinScenarioTests.CreateRandomString(10)),
-                diagnostics: new CosmosDiagnosticsCore());
+                diagnostics: new CosmosDiagnosticsContext());
             QueryResponse<CosmosElement> cosmosElementQueryResponse =
                 QueryResponse<CosmosElement>.CreateResponse<CosmosElement>(
                     queryResponse,
@@ -729,7 +729,7 @@ namespace Microsoft.Azure.Cosmos.Scenarios
                     sourceHeaders: null,
                     resourceType: ResourceType.Document,
                     containerRid: GremlinScenarioTests.CreateRandomString(10)),
-                diagnostics: new CosmosDiagnosticsCore());
+                diagnostics: new CosmosDiagnosticsContext());
             QueryResponse<dynamic> cosmosElementQueryResponse =
                 QueryResponse<dynamic>.CreateResponse<dynamic>(
                     queryResponse,

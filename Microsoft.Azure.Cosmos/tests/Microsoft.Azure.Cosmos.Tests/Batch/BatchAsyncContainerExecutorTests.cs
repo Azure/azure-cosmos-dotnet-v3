@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<Cosmos.PartitionKey?>(),
                     It.IsAny<Stream>(),
                     It.IsAny<Action<RequestMessage>>(),
-                    It.IsAny<CosmosDiagnosticsCore>(),
+                    It.IsAny<CosmosDiagnosticsContext>(),
                     It.IsAny<CancellationToken>()))
                 .Returns(this.GenerateSplitResponseAsync(itemBatchOperation))
                 .Returns(this.GenerateOkResponseAsync(itemBatchOperation));
@@ -73,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<Cosmos.PartitionKey?>(),
                     It.IsAny<Stream>(),
                     It.IsAny<Action<RequestMessage>>(),
-                    It.IsAny<CosmosDiagnosticsCore>(),
+                    It.IsAny<CosmosDiagnosticsContext>(),
                     It.IsAny<CancellationToken>()), Times.Exactly(2));
             Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
             Assert.IsNotNull(result.Diagnostics);
@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<Cosmos.PartitionKey?>(),
                     It.IsAny<Stream>(),
                     It.IsAny<Action<RequestMessage>>(),
-                    It.IsAny<CosmosDiagnosticsCore>(),
+                    It.IsAny<CosmosDiagnosticsContext>(),
                     It.IsAny<CancellationToken>()))
                 .Returns(this.GenerateCacheStaleResponseAsync(itemBatchOperation))
                 .Returns(this.GenerateOkResponseAsync(itemBatchOperation));
@@ -141,7 +141,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<Cosmos.PartitionKey?>(),
                     It.IsAny<Stream>(),
                     It.IsAny<Action<RequestMessage>>(),
-                    It.IsAny<CosmosDiagnosticsCore>(),
+                    It.IsAny<CosmosDiagnosticsContext>(),
                     It.IsAny<CancellationToken>()), Times.Exactly(2));
             Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
             Assert.IsNotNull(result.Diagnostics);
@@ -175,7 +175,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<Cosmos.PartitionKey?>(),
                     It.IsAny<Stream>(),
                     It.IsAny<Action<RequestMessage>>(),
-                    It.IsAny<CosmosDiagnosticsCore>(),
+                    It.IsAny<CosmosDiagnosticsContext>(),
                     It.IsAny<CancellationToken>()))
                 .Returns(this.Generate429ResponseAsync(itemBatchOperation))
                 .Returns(this.GenerateOkResponseAsync(itemBatchOperation));
@@ -209,7 +209,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<Cosmos.PartitionKey?>(),
                     It.IsAny<Stream>(),
                     It.IsAny<Action<RequestMessage>>(),
-                    It.IsAny<CosmosDiagnosticsCore>(),
+                    It.IsAny<CosmosDiagnosticsContext>(),
                     It.IsAny<CancellationToken>()), Times.Exactly(2));
             Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
             Assert.IsNotNull(result.Diagnostics);
@@ -243,7 +243,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<Cosmos.PartitionKey?>(),
                     It.IsAny<Stream>(),
                     It.IsAny<Action<RequestMessage>>(),
-                    It.IsAny<CosmosDiagnosticsCore>(),
+                    It.IsAny<CosmosDiagnosticsContext>(),
                     It.IsAny<CancellationToken>()))
                 .Returns(this.GenerateOkResponseAsync(itemBatchOperation));
 
@@ -276,7 +276,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<Cosmos.PartitionKey?>(),
                     It.IsAny<Stream>(),
                     It.IsAny<Action<RequestMessage>>(),
-                    It.IsAny<CosmosDiagnosticsCore>(),
+                    It.IsAny<CosmosDiagnosticsContext>(),
                     It.IsAny<CancellationToken>()), Times.Once);
             Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
         }

@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             Stream streamPayload,
             Action<RequestMessage> requestEnricher,
             Func<ResponseMessage, T> responseCreator,
-            CosmosDiagnosticsCore diagnosticsScope,
+            CosmosDiagnosticsContext diagnosticsScope,
             CancellationToken cancellationToken)
         {
             if (responseCreator == null)
@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             Cosmos.PartitionKey? partitionKey,
             Stream streamPayload,
             Action<RequestMessage> requestEnricher,
-            CosmosDiagnosticsCore diagnosticsCore,
+            CosmosDiagnosticsContext diagnosticsCore,
             CancellationToken cancellationToken)
         {
             if (resourceUri == null)
@@ -111,7 +111,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
             if (diagnosticsCore == null)
             {
-                diagnosticsCore = new CosmosDiagnosticsCore();
+                diagnosticsCore = new CosmosDiagnosticsContext();
             }
 
             diagnosticsCore.SetSdkUserAgent(this.client.ClientContext.UserAgent);

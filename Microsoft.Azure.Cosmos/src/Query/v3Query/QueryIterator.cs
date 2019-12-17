@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
-            CosmosDiagnosticsCore diagnostics = new CosmosDiagnosticsCore();
+            CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContext();
             using (diagnostics.CreateScope("QueryReadNextAsync"))
             {
                 // This catches exception thrown by the pipeline and converts it to QueryResponse

@@ -524,7 +524,7 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
-            CosmosDiagnosticsCore diagnosticsCore = new CosmosDiagnosticsCore();
+            CosmosDiagnosticsContext diagnosticsCore = new CosmosDiagnosticsContext();
             using (diagnosticsCore.CreateScope("ItemStream"))
             {
                 Stream itemStream;
@@ -588,7 +588,7 @@ namespace Microsoft.Azure.Cosmos
             Stream streamPayload,
             OperationType operationType,
             RequestOptions requestOptions,
-            CosmosDiagnosticsCore diagnosticsScope,
+            CosmosDiagnosticsContext diagnosticsScope,
             CancellationToken cancellationToken)
         {
             if (requestOptions != null && requestOptions.IsEffectivePartitionKeyRouting)

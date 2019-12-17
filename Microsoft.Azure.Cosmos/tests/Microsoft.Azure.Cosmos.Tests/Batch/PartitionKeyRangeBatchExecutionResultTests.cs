@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 requestSessionToken: null,
                 responseSessionToken: null,
                 clientSideRequestStatistics: new CosmosClientSideRequestStatistics());
-            CosmosDiagnosticsCore scope = new CosmosDiagnosticsCore();
+            CosmosDiagnosticsContext scope = new CosmosDiagnosticsContext();
             scope.AddJsonAttribute("info", pointOperationStatistics);
 
             TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.OK)

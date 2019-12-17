@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public RequestMessage()
         {
-            this.DiagnosticsCore = new CosmosDiagnosticsCore();
+            this.DiagnosticsCore = new CosmosDiagnosticsContext();
         }
 
         /// <summary>
@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.Method = method;
             this.RequestUri = requestUri;
-            this.DiagnosticsCore = new CosmosDiagnosticsCore();
+            this.DiagnosticsCore = new CosmosDiagnosticsContext();
         }
 
         /// <summary>
@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos
         internal RequestMessage(
             HttpMethod method,
             Uri requestUri,
-            CosmosDiagnosticsCore diagnosticsCore)
+            CosmosDiagnosticsContext diagnosticsCore)
         {
             this.Method = method;
             this.RequestUri = requestUri;
@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal CosmosDiagnosticsCore DiagnosticsCore { get; }
+        internal CosmosDiagnosticsContext DiagnosticsCore { get; }
 
         internal RequestOptions RequestOptions { get; set; }
 
