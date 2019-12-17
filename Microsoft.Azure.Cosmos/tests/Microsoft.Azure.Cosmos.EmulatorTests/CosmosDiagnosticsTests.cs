@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Linq;
+    using System.Threading;
     using System.Threading.Tasks;
 
     [TestClass]
@@ -38,6 +39,31 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task Cleanup()
         {
             await base.TestCleanup();
+        }
+
+        [TestMethod]
+        public async Task CustomHandlersDiagnostic()
+        {
+            TimeSpan delayTime = TimeSpan.FromSeconds(2);
+            CosmosClient cosmosClient = TestCommon.CreateCosmosClient(builder =>
+                builder.AddCustomHandlers(new RequestHandlerSleepHelper(delayTime)));
+
+            DatabaseResponse databaseResponse = await cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            string diagnostics = databaseResponse.Diagnostics.ToString();
+            Assert.IsNotNull(diagnostics);
+            JObject jObject = JObject.Parse(diagnostics);
+            JArray contextList = jObject["ContextList"].ToObject<JArray>();
+            JObject customHandler = GetJObjectInContextList(contextList, typeof(RequestHandlerSleepHelper).FullName);
+            Assert.IsNotNull(customHandler);
+            TimeSpan elapsedTime = customHandler["ElapsedTime"].ToObject<TimeSpan>();
+            Assert.IsTrue(elapsedTime.TotalSeconds > 1);
+
+            customHandler = GetJObjectInContextList(contextList, typeof(RequestHandlerSleepHelper).FullName);
+            Assert.IsNotNull(customHandler);
+            elapsedTime = customHandler["ElapsedTime"].ToObject<TimeSpan>();
+            Assert.IsTrue(elapsedTime > delayTime);
+
+            await databaseResponse.Database.DeleteAsync();
         }
 
         [TestMethod]
@@ -152,7 +178,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(contextList.Count > 0);
 
             // Find the PointOperationStatistics object
-            JObject page = GetJObjectInContextList(
+            JObject page = GetPropertyInContextList(
                 contextList,
                 "0");
 
@@ -181,7 +207,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(contextList.Count > 3);
 
             // Find the PointOperationStatistics object
-            JObject pointStatistics = GetJObjectInContextList(
+            JObject pointStatistics = GetPropertyInContextList(
                 contextList,
                 "PointOperationStatistics");
 
@@ -215,13 +241,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             foreach (JObject tempJObject in contextList)
             {
                 string name = tempJObject["Id"].Value<string>();
-                if (string.Equals(name, id))
-                {
-                    return tempJObject["Value"].ToObject<JObject>();
-                }
+                return tempJObject;
             }
 
             return null;
+        }
+
+        private static JObject GetPropertyInContextList(JArray contextList, string id)
+        {
+            JObject jObject = GetJObjectInContextList(contextList, id);
+            if (jObject == null)
+            {
+                return null;
+            }
+
+            return jObject["Value"].ToObject<JObject>();
         }
 
         private async Task<long> ExecuteQueryAndReturnOutputDocumentCount(string queryText, int expectedItemCount)
@@ -273,6 +307,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(totalOutDocumentCount, streamTotalOutDocumentCount);
 
             return results.Count;
+        }
+
+        private class RequestHandlerSleepHelper : RequestHandler
+        {
+            TimeSpan timeToSleep;
+
+            public RequestHandlerSleepHelper(TimeSpan timeToSleep)
+            {
+                this.timeToSleep = timeToSleep;
+            }
+
+            public override async Task<ResponseMessage> SendAsync(RequestMessage request, CancellationToken cancellationToken)
+            {
+                await Task.Delay(this.timeToSleep);
+                return await base.SendAsync(request, cancellationToken);
+            }
         }
     }
 }

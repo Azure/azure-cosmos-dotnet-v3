@@ -129,11 +129,6 @@ namespace Microsoft.Azure.Cosmos
             RequestHandler current = root;
             if (this.CustomHandlers != null && this.CustomHandlers.Any())
             {
-                // Used to track the time it takes to pass through the user's custom request handlers
-                CustomRequestHandlerWrapper customRequestHandlerWrapper = new CustomRequestHandlerWrapper();
-                current.InnerHandler = customRequestHandlerWrapper;
-                current = customRequestHandlerWrapper;
-
                 foreach (RequestHandler handler in this.CustomHandlers)
                 {
                     current.InnerHandler = handler;
