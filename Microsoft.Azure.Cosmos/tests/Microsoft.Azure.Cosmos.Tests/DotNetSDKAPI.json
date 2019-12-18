@@ -165,7 +165,7 @@
       },
       "NestedTypes": {}
     },
-    "BoundingBoxSpec": {
+    "BoundingBoxProperties": {
       "Subclasses": {},
       "Members": {
         "Double get_Xmax()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -7233,19 +7233,19 @@
     "SpatialPath": {
       "Subclasses": {},
       "Members": {
-        "Microsoft.Azure.Cosmos.BoundingBoxSpec BoundingBox[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"boundingBox\")]": {
+        "Microsoft.Azure.Cosmos.BoundingBoxProperties BoundingBox[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"boundingBox\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
           ],
           "MethodInfo": null
         },
-        "Microsoft.Azure.Cosmos.BoundingBoxSpec get_BoundingBox()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Microsoft.Azure.Cosmos.BoundingBoxProperties get_BoundingBox()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "Microsoft.Azure.Cosmos.BoundingBoxSpec get_BoundingBox()"
+          "MethodInfo": "Microsoft.Azure.Cosmos.BoundingBoxProperties get_BoundingBox()"
         },
         "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.SpatialType] get_SpatialTypes()": {
           "Type": "Method",
@@ -7278,12 +7278,12 @@
           "Attributes": [],
           "MethodInfo": "Void .ctor()"
         },
-        "Void set_BoundingBox(Microsoft.Azure.Cosmos.BoundingBoxSpec)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Void set_BoundingBox(Microsoft.Azure.Cosmos.BoundingBoxProperties)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "Void set_BoundingBox(Microsoft.Azure.Cosmos.BoundingBoxSpec)"
+          "MethodInfo": "Void set_BoundingBox(Microsoft.Azure.Cosmos.BoundingBoxProperties)"
         },
         "Void set_Path(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",

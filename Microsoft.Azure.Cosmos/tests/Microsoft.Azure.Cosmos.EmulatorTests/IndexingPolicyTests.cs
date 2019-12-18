@@ -312,7 +312,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             Cosmos.SpatialType.Point,
                             Cosmos.SpatialType.Polygon,
                         },
-                        BoundingBox = new Cosmos.BoundingBoxSpec()
+                        BoundingBox = new Cosmos.BoundingBoxProperties()
                         {
                             Xmin = 0,
                             Ymin = 0,
@@ -327,7 +327,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         {
                             Cosmos.SpatialType.Point
                         },
-                        BoundingBox = new Cosmos.BoundingBoxSpec()
+                        BoundingBox = new Cosmos.BoundingBoxProperties()
                         {
                             Xmin = 0,
                             Ymin = 0,
