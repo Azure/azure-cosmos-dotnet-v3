@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <value>The last modified time stamp associated with the resource.</value>
         [JsonConverter(typeof(UnixDateTimeConverter))]
-        [JsonProperty(PropertyName = Constants.Properties.LastModified)]
+        [JsonProperty(PropertyName = Constants.Properties.LastModified, NullValueHandling = NullValueHandling.Ignore)]
         public DateTime LastModified { get; private set; }
 
         /// <summary>
@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public int? Throughput
         {
-            get => this.Content.OfferThroughput;
+            get => this.Content?.OfferThroughput;
             private set => this.Content = new OfferContentV2(value.Value);
         }
 

@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
     /// <summary>
     /// Benchmark for Item related operations.
     /// </summary>
+    [MemoryDiagnoser]
     public class ItemBenchmark
     {
         private readonly CosmosClient clientForTests;

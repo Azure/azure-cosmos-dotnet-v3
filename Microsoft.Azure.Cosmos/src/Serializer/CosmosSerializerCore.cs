@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos
             }
             else
             {
-                this.customSerializer = customSerializer;
+                this.customSerializer = new CosmosJsonSerializerWrapper(customSerializer);
                 this.sqlQuerySpecSerializer = CosmosSqlQuerySpecJsonConverter.CreateSqlQuerySpecSerializer(
                     cosmosSerializer: this.customSerializer,
                     propertiesSerializer: CosmosSerializerCore.propertiesSerializer);
@@ -66,21 +66,32 @@ namespace Microsoft.Azure.Cosmos
 
         internal T FromStream<T>(Stream stream)
         {
-            CosmosSerializer serializerCore = this.GetSerializer<T>();
-            return serializerCore.FromStream<T>(stream);
+            CosmosSerializer serializer = this.GetSerializer<T>();
+            return serializer.FromStream<T>(stream);
         }
 
         internal Stream ToStream<T>(T input)
         {
-            CosmosSerializer serializerCore = this.GetSerializer<T>();
-            return serializerCore.ToStream<T>(input);
+            CosmosSerializer serializer = this.GetSerializer<T>();
+            return serializer.ToStream<T>(input);
         }
 
         internal Stream ToStreamSqlQuerySpec(SqlQuerySpec input, ResourceType resourceType)
         {
             CosmosSerializer serializer = CosmosSerializerCore.propertiesSerializer;
+
+            // All the public types that support query use the custom serializer
+            // Internal types like offers will use the default serializer.
             if (this.customSerializer != null &&
-                resourceType != ResourceType.Offer)
+                (resourceType == ResourceType.Database ||
+                resourceType == ResourceType.Collection ||
+                resourceType == ResourceType.Document ||
+                resourceType == ResourceType.Trigger ||
+                resourceType == ResourceType.UserDefinedFunction ||
+                resourceType == ResourceType.StoredProcedure ||
+                resourceType == ResourceType.Permission ||
+                resourceType == ResourceType.User ||
+                resourceType == ResourceType.Conflict))
             {
                 serializer = this.sqlQuerySpecSerializer;
             }
@@ -125,7 +136,11 @@ namespace Microsoft.Azure.Cosmos
                 return CosmosSerializerCore.propertiesSerializer;
             }
 
-            Debug.Assert(inputType != typeof(SqlQuerySpec), "SqlQuerySpec to stream must use the SqlQuerySpec override");
+            if (inputType == typeof(SqlQuerySpec))
+            {
+                throw new ArgumentException("SqlQuerySpec to stream must use the SqlQuerySpec override");
+            }
+
             Debug.Assert(inputType.IsPublic || inputType.IsNested, $"User serializer is being used for internal type:{inputType.FullName}.");
 
             return this.customSerializer;
