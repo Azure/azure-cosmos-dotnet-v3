@@ -111,7 +111,7 @@ namespace Azure.Cosmos
         /// <remarks>
         /// ETags are used for concurrency checking when updating resources. 
         /// </remarks>
-        public string ETag { get; internal set; }
+        public ETag? ETag { get; private set; }
 
         /// <summary>
         /// Gets the last modified time stamp associated with <see cref="DatabaseProperties" /> from the Azure Cosmos DB service.
