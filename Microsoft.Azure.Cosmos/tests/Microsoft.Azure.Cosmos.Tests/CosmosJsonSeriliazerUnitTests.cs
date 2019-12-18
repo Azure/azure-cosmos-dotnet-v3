@@ -115,8 +115,8 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
                serializerCore);
 
             // Test the user specified response
-            mockUserJsonSerializer.Setup(x => x.FromStream<ToDoActivity>(itemResponse.Content)).Returns(new ToDoActivity());
-            mockUserJsonSerializer.Setup(x => x.FromStream<ToDoActivity>(storedProcedureExecuteResponse.Content)).Returns(new ToDoActivity());
+            mockUserJsonSerializer.Setup(x => x.FromStream<ToDoActivity>(itemResponse.Content)).Callback<Stream>(input => input.Dispose()).Returns(new ToDoActivity());
+            mockUserJsonSerializer.Setup(x => x.FromStream<ToDoActivity>(storedProcedureExecuteResponse.Content)).Callback<Stream>(input => input.Dispose()).Returns(new ToDoActivity());
 
             // Verify all the user types use the user specified version
             await cosmosResponseFactory.CreateItemResponseAsync<ToDoActivity>(Task.FromResult(itemResponse));
