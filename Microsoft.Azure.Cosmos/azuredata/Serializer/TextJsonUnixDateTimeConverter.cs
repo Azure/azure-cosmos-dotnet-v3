@@ -16,15 +16,33 @@ namespace Azure.Cosmos
 
         public override DateTime? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
+            if (reader.TokenType == JsonTokenType.Null)
+            {
+                return null;
+            }
+
             if (reader.TokenType != JsonTokenType.Number)
             {
                 throw new JsonException(RMResources.DateTimeConverterInvalidReaderValue);
             }
 
+            return TextJsonUnixDateTimeConverter.ReadProperty(reader.GetString());
+        }
+
+        public override void Write(
+            Utf8JsonWriter writer,
+            DateTime? value,
+            JsonSerializerOptions options)
+        {
+            TextJsonUnixDateTimeConverter.WritePropertyValues(writer, value, options);
+        }
+
+        public static DateTime? ReadProperty(string value)
+        {
             double totalSeconds = 0;
             try
             {
-                totalSeconds = Convert.ToDouble(reader.GetString(), CultureInfo.InvariantCulture);
+                totalSeconds = Convert.ToDouble(value, CultureInfo.InvariantCulture);
             }
             catch
             {
@@ -34,10 +52,16 @@ namespace Azure.Cosmos
             return TextJsonUnixDateTimeConverter.UnixStartTime.AddSeconds(totalSeconds);
         }
 
-        public override void Write(Utf8JsonWriter writer, DateTime? value, JsonSerializerOptions options)
+        public static void WritePropertyValues(
+            Utf8JsonWriter writer,
+            DateTime? value,
+            JsonSerializerOptions options)
         {
-            Int64 totalSeconds = (Int64)((DateTime)value - TextJsonUnixDateTimeConverter.UnixStartTime).TotalSeconds;
-            writer.WriteNumberValue(totalSeconds);
+            if (value.HasValue)
+            {
+                Int64 totalSeconds = (Int64)((DateTime)value - TextJsonUnixDateTimeConverter.UnixStartTime).TotalSeconds;
+                writer.WriteNumberValue(totalSeconds);
+            }
         }
     }
 }

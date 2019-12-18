@@ -46,14 +46,67 @@ namespace Azure.Cosmos
 
             writer.WriteStartObject();
             writer.WriteString(Constants.Properties.Id, setting.Id);
+
             writer.WriteString(Constants.Properties.ETag, setting.ETag.ToString());
+
             writer.WriteString(Constants.Properties.RId, setting.ResourceId);
 
-            writer.WritePropertyName(Constants.Properties.IndexingPolicy);
-            TextJsonIndexingPolicyConverter.WritePropertyValue(writer, setting.IndexingPolicy, options);
+            if (setting.indexingPolicyInternal != null)
+            {
+                writer.WritePropertyName(Constants.Properties.IndexingPolicy);
+                TextJsonIndexingPolicyConverter.WritePropertyValue(writer, setting.indexingPolicyInternal, options);
+            }
 
-            writer.WritePropertyName(Constants.Properties.UniqueKeyPolicy);
-            TextJsonUniqueKeyPolicyConverter.WritePropertyValues(writer, setting.UniqueKeyPolicy, options);
+            if (setting.uniqueKeyPolicyInternal != null)
+            {
+                writer.WritePropertyName(Constants.Properties.UniqueKeyPolicy);
+                TextJsonUniqueKeyPolicyConverter.WritePropertyValues(writer, setting.uniqueKeyPolicyInternal, options);
+            }
+
+            if (setting.conflictResolutionInternal != null)
+            {
+                writer.WritePropertyName(Constants.Properties.ConflictResolutionPolicy);
+                TextJsonConflictResolutionPolicyConverter.WritePropertyValues(writer, setting.conflictResolutionInternal, options);
+            }
+
+            if (setting.LastModified.HasValue)
+            {
+                writer.WritePropertyName(Constants.Properties.LastModified);
+                TextJsonUnixDateTimeConverter.WritePropertyValues(writer, setting.LastModified, options);
+            }
+
+            if (setting.DefaultTimeToLive.HasValue)
+            {
+                writer.WriteNumber(Constants.Properties.DefaultTimeToLive, setting.DefaultTimeToLive.Value);
+            }
+
+            if (setting.PartitionKey != null)
+            {
+                writer.WritePropertyName(Constants.Properties.PartitionKey);
+                writer.WriteStartObject();
+                if (setting.PartitionKey.Version.HasValue)
+                {
+                    writer.WriteNumber(Constants.Properties.PartitionKeyDefinitionVersion, (int)setting.PartitionKey.Version);
+                }
+
+                writer.WritePropertyName(Constants.Properties.Paths);
+                writer.WriteStartArray();
+                foreach (string path in setting.PartitionKey.Paths)
+                {
+                    writer.WriteStringValue(path);
+                }
+
+                writer.WriteEndArray();
+
+                writer.WriteString(Constants.Properties.PartitionKind, JsonSerializer.Serialize(setting.PartitionKey.Kind, options));
+
+                if (setting.PartitionKey.IsSystemKey.HasValue)
+                {
+                    writer.WriteBoolean(Constants.Properties.SystemKey, setting.PartitionKey.IsSystemKey.Value);
+                }
+
+                writer.WriteEndObject();
+            }
 
             writer.WriteEndObject();
         }
@@ -72,49 +125,55 @@ namespace Azure.Cosmos
             {
                 setting.ResourceId = property.Value.GetString();
             }
-            else if (property.NameEquals(Constants.Properties.WritableLocations))
+            else if (property.NameEquals(Constants.Properties.IndexingPolicy))
             {
-                setting.WriteLocationsInternal = new Collection<AccountRegion>();
-                foreach (JsonElement item in property.Value.EnumerateArray())
+                setting.indexingPolicyInternal = TextJsonIndexingPolicyConverter.ReadProperty(property.Value);
+            }
+            else if (property.NameEquals(Constants.Properties.UniqueKeyPolicy))
+            {
+                setting.uniqueKeyPolicyInternal = TextJsonUniqueKeyPolicyConverter.ReadProperty(property.Value);
+            }
+            else if (property.NameEquals(Constants.Properties.ConflictResolutionPolicy))
+            {
+                setting.conflictResolutionInternal = TextJsonConflictResolutionPolicyConverter.ReadProperty(property.Value);
+            }
+            else if (property.NameEquals(Constants.Properties.LastModified))
+            {
+                setting.LastModified = TextJsonUnixDateTimeConverter.ReadProperty(property.Value.GetString());
+            }
+            else if (property.NameEquals(Constants.Properties.DefaultTimeToLive))
+            {
+                setting.DefaultTimeToLive = property.Value.GetInt32();
+            }
+            else if (property.NameEquals(Constants.Properties.PartitionKey))
+            {
+                setting.PartitionKey = new PartitionKeyDefinition();
+                foreach (JsonProperty partitionKeyProperties in property.Value.EnumerateObject())
                 {
-                    setting.WriteLocationsInternal.Add(TextJsonAccountRegionConverter.ReadProperty(item));
+                    if (partitionKeyProperties.NameEquals(Constants.Properties.PartitionKeyDefinitionVersion))
+                    {
+                        setting.PartitionKey.Version = (Microsoft.Azure.Documents.PartitionKeyDefinitionVersion)partitionKeyProperties.Value.GetInt32();
+                    }
+                    else if (partitionKeyProperties.NameEquals(Constants.Properties.Paths))
+                    {
+                        setting.PartitionKey.Paths = new Collection<string>();
+                        foreach (JsonElement item in partitionKeyProperties.Value.EnumerateArray())
+                        {
+                            setting.PartitionKey.Paths.Add(item.GetString());
+                        }
+                    }
+                    else if (partitionKeyProperties.NameEquals(Constants.Properties.PartitionKind))
+                    {
+                        if (Enum.TryParse(partitionKeyProperties.Value.GetString(), out PartitionKind partitionKind))
+                        {
+                            setting.PartitionKey.Kind = partitionKind;
+                        }
+                    }
+                    else if (partitionKeyProperties.NameEquals(Constants.Properties.SystemKey))
+                    {
+                        setting.PartitionKey.IsSystemKey = partitionKeyProperties.Value.GetBoolean();
+                    }
                 }
-            }
-            else if (property.NameEquals(Constants.Properties.ReadableLocations))
-            {
-                setting.ReadLocationsInternal = new Collection<AccountRegion>();
-                foreach (JsonElement item in property.Value.EnumerateArray())
-                {
-                    setting.ReadLocationsInternal.Add(TextJsonAccountRegionConverter.ReadProperty(item));
-                }
-            }
-            else if (property.NameEquals(Constants.Properties.UserConsistencyPolicy))
-            {
-                setting.Consistency = TextJsonAccountConsistencyConverter.ReadProperty(property.Value);
-            }
-            else if (property.NameEquals(Constants.Properties.AddressesLink))
-            {
-                setting.AddressesLink = property.Value.GetString();
-            }
-            else if (property.NameEquals(Constants.Properties.UserReplicationPolicy))
-            {
-                setting.ReplicationPolicy = TextJsonReplicationPolicyConverter.ReadProperty(property.Value);
-            }
-            else if (property.NameEquals(Constants.Properties.SystemReplicationPolicy))
-            {
-                setting.SystemReplicationPolicy = TextJsonReplicationPolicyConverter.ReadProperty(property.Value);
-            }
-            else if (property.NameEquals(Constants.Properties.ReadPolicy))
-            {
-                setting.ReadPolicy = TextJsonReadPolicyConverter.ReadProperty(property.Value);
-            }
-            else if (property.NameEquals(Constants.Properties.QueryEngineConfiguration))
-            {
-                setting.QueryEngineConfigurationString = property.Value.GetString();
-            }
-            else if (property.NameEquals(Constants.Properties.EnableMultipleWriteLocations))
-            {
-                setting.EnableMultipleWriteLocations = property.Value.GetBoolean();
             }
         }
     }

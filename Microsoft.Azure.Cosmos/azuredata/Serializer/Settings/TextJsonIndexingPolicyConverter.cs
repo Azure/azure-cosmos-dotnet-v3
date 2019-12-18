@@ -118,9 +118,50 @@ namespace Azure.Cosmos
             {
                 policy.Automatic = property.Value.GetBoolean();
             }
-            else if (property.NameEquals(Constants.Properties.SecondaryReadCoefficient))
+            else if (property.NameEquals(Constants.Properties.IndexingMode))
             {
-                policy.SecondaryReadCoefficient = property.Value.GetInt32();
+                if (Enum.TryParse(property.Value.GetString(), out IndexingMode indexingMode))
+                {
+                    policy.IndexingMode = indexingMode;
+                }
+            }
+            else if (property.NameEquals(Constants.Properties.IncludedPaths))
+            {
+                policy.IncludedPaths = new Collection<IncludedPath>();
+                foreach (JsonElement item in property.Value.EnumerateArray())
+                {
+                    policy.IncludedPaths.Add(TextJsonIncludedPathConverter.ReadProperty(item));
+                }
+            }
+            else if (property.NameEquals(Constants.Properties.ExcludedPaths))
+            {
+                policy.ExcludedPaths = new Collection<ExcludedPath>();
+                foreach (JsonElement item in property.Value.EnumerateArray())
+                {
+                    policy.ExcludedPaths.Add(TextJsonExcludedPathConverter.ReadProperty(item));
+                }
+            }
+            else if (property.NameEquals(Constants.Properties.CompositeIndexes))
+            {
+                policy.CompositeIndexes = new Collection<Collection<CompositePath>>();
+                foreach (JsonElement array in property.Value.EnumerateArray())
+                {
+                    Collection<CompositePath> itemArray = new Collection<CompositePath>();
+                    foreach (JsonElement item in array.EnumerateArray())
+                    {
+                        itemArray.Add(TextJsonCompositePathConverter.ReadProperty(item));
+                    }
+
+                    policy.CompositeIndexes.Add(itemArray);
+                }
+            }
+            else if (property.NameEquals(Constants.Properties.SpatialIndexes))
+            {
+                policy.SpatialIndexes = new Collection<SpatialPath>();
+                foreach (JsonElement item in property.Value.EnumerateArray())
+                {
+                    policy.SpatialIndexes.Add(TextJsonSpatialPathConverter.ReadProperty(item));
+                }
             }
         }
     }
