@@ -27,10 +27,10 @@ namespace Microsoft.Azure.Cosmos
         private static readonly string DefaultUserAgentString;
 
         [JsonProperty(PropertyName = "RetryCount")]
-        private long retryCount;
+        private long? retryCount;
 
         [JsonProperty(PropertyName = "RetryBackoffTimeSpan")]
-        private TimeSpan retryBackoffTimeSpan;
+        private TimeSpan? retryBackoffTimeSpan;
 
         [JsonProperty(PropertyName = "UserAgent")]
         private string userAgent;
@@ -47,9 +47,9 @@ namespace Microsoft.Azure.Cosmos
 
         internal CosmosDiagnosticsContext()
         {
-            this.retryCount = 0;
+            this.retryCount = null;
+            this.retryBackoffTimeSpan = null;
             this.userAgent = CosmosDiagnosticsContext.DefaultUserAgentString;
-            this.retryBackoffTimeSpan = TimeSpan.Zero;
             this.contextList = new List<object>();
         }
 
@@ -72,8 +72,13 @@ namespace Microsoft.Azure.Cosmos
 
         internal void AddSdkRetry(TimeSpan backOffTimeSpan)
         {
-            this.retryBackoffTimeSpan = this.retryBackoffTimeSpan.Add(backOffTimeSpan);
-            this.retryCount++;
+            if (this.retryBackoffTimeSpan == null)
+            {
+                this.retryBackoffTimeSpan = TimeSpan.Zero;
+            }
+
+            this.retryBackoffTimeSpan = this.retryBackoffTimeSpan.Value.Add(backOffTimeSpan);
+            this.retryCount = this.retryCount.GetValueOrDefault(0) + 1;
         }
 
         internal void AddJsonAttribute(string name, dynamic property)

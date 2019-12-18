@@ -171,7 +171,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string info = diagnostics.ToString();
             Assert.IsNotNull(info);
             JObject jObject = JObject.Parse(info);
-            Assert.IsNotNull(jObject["RetryCount"].ToString());
             Assert.IsNotNull(jObject["UserAgent"].ToString());
 
             JArray contextList = jObject["ContextList"].ToObject<JArray>();
@@ -200,7 +199,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string info = diagnostics.ToString();
             Assert.IsNotNull(info);
             JObject jObject = JObject.Parse(info);
-            Assert.IsNotNull(jObject["RetryCount"].ToString());
+            
             Assert.IsNotNull(jObject["UserAgent"].ToString());
             Assert.IsNotNull(jObject["ContextList"].ToString());
             JArray contextList = jObject["ContextList"].ToObject<JArray>();
