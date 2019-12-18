@@ -241,7 +241,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             foreach (JObject tempJObject in contextList)
             {
                 string name = tempJObject["Id"].Value<string>();
-                return tempJObject;
+                if (string.Equals(id, name))
+                {
+                    return tempJObject;
+                }
             }
 
             return null;
