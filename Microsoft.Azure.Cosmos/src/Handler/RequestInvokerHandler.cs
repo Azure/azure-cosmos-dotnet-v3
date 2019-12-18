@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 partitionKey: partitionKey,
                 streamPayload: streamPayload,
                 requestEnricher: requestEnricher,
-                diagnosticsCore: diagnosticsScope,
+                diagnosticsContext: diagnosticsScope,
                 cancellationToken: cancellationToken);
 
             return responseCreator(responseMessage);
@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             Cosmos.PartitionKey? partitionKey,
             Stream streamPayload,
             Action<RequestMessage> requestEnricher,
-            CosmosDiagnosticsContext diagnosticsCore,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             if (resourceUri == null)
@@ -109,18 +109,18 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
             HttpMethod method = RequestInvokerHandler.GetHttpMethod(operationType);
 
-            if (diagnosticsCore == null)
+            if (diagnosticsContext == null)
             {
-                diagnosticsCore = new CosmosDiagnosticsContext();
+                diagnosticsContext = new CosmosDiagnosticsContext();
             }
 
-            diagnosticsCore.SetSdkUserAgent(this.client.ClientContext.UserAgent);
-            using (diagnosticsCore.CreateScope("RequestInvokerHandler"))
+            diagnosticsContext.SetSdkUserAgent(this.client.ClientContext.UserAgent);
+            using (diagnosticsContext.CreateScope("RequestInvokerHandler"))
             {
                 RequestMessage request = new RequestMessage(
                     method,
                     resourceUri,
-                    diagnosticsCore)
+                    diagnosticsContext)
                 {
                     OperationType = operationType,
                     ResourceType = resourceType,
@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     }
                     else if (partitionKey.Value.IsNone)
                     {
-                        using (diagnosticsCore.CreateScope("GetNonePkValue"))
+                        using (diagnosticsContext.CreateScope("GetNonePkValue"))
                         {
                             try
                             {

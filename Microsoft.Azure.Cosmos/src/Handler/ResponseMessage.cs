@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos
         public ResponseMessage()
         {
             this.Headers = new Headers();
-            this.DiagnosticsCore = new CosmosDiagnosticsContext();
+            this.DiagnosticsContext = new CosmosDiagnosticsContext();
         }
 
         /// <summary>
@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos
             this.RequestMessage = requestMessage;
             this.ErrorMessage = errorMessage;
             this.Headers = new Headers();
-            this.DiagnosticsCore = requestMessage?.DiagnosticsCore ?? new CosmosDiagnosticsContext();
+            this.DiagnosticsContext = requestMessage?.DiagnosticsContext ?? new CosmosDiagnosticsContext();
         }
 
         /// <summary>
@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos
             this.ErrorMessage = errorMessage;
             this.Error = error;
             this.Headers = headers ?? new Headers();
-            this.DiagnosticsCore = diagnostics ?? throw new ArgumentNullException(nameof(diagnostics));
+            this.DiagnosticsContext = diagnostics ?? throw new ArgumentNullException(nameof(diagnostics));
         }
 
         /// <summary>
@@ -116,9 +116,9 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the cosmos diagnostic information for the current request to Azure Cosmos DB service
         /// </summary>
-        public virtual CosmosDiagnostics Diagnostics => this.DiagnosticsCore;
+        public virtual CosmosDiagnostics Diagnostics => this.DiagnosticsContext;
 
-        internal CosmosDiagnosticsContext DiagnosticsCore { get; }
+        internal CosmosDiagnosticsContext DiagnosticsContext { get; }
 
         /// <summary>
         /// Gets the internal error object.

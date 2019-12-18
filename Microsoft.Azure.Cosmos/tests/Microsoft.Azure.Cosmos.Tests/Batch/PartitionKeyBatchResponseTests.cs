@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Content = responseContent,
             };
 
-            responseMessage.DiagnosticsCore.AddJsonAttribute("PointOperation", diagnostics);
+            responseMessage.DiagnosticsContext.AddJsonAttribute("PointOperation", diagnostics);
 
             TransactionalBatchResponse batchresponse = await TransactionalBatchResponse.FromResponseMessageAsync(
                 responseMessage,

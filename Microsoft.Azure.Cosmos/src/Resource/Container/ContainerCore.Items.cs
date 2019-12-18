@@ -524,11 +524,11 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
-            CosmosDiagnosticsContext diagnosticsCore = new CosmosDiagnosticsContext();
-            using (diagnosticsCore.CreateScope("ItemStream"))
+            CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContext();
+            using (diagnosticsContext.CreateScope("ItemStream"))
             {
                 Stream itemStream;
-                using (diagnosticsCore.CreateScope("ItemSerialize"))
+                using (diagnosticsContext.CreateScope("ItemSerialize"))
                 {
                     itemStream = this.ClientContext.CosmosSerializer.ToStream<T>(item);
                 }
@@ -542,14 +542,14 @@ namespace Microsoft.Azure.Cosmos
                             itemStream,
                             operationType,
                             requestOptions,
-                            diagnosticsScope: diagnosticsCore,
+                            diagnosticsScope: diagnosticsContext,
                             cancellationToken: cancellationToken);
                 }
 
                 PartitionKeyMismatchRetryPolicy requestRetryPolicy = null;
                 while (true)
                 {
-                    using (diagnosticsCore.CreateScope("ExtractPkValue"))
+                    using (diagnosticsContext.CreateScope("ExtractPkValue"))
                     {
                         partitionKey = await this.GetPartitionKeyValueFromStreamAsync(itemStream, cancellationToken);
                     }
@@ -560,7 +560,7 @@ namespace Microsoft.Azure.Cosmos
                         itemStream,
                         operationType,
                         requestOptions,
-                        diagnosticsScope: diagnosticsCore,
+                        diagnosticsScope: diagnosticsContext,
                         cancellationToken: cancellationToken);
 
                     if (responseMessage.IsSuccessStatusCode)

@@ -307,7 +307,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Content = responseContent,
             };
 
-            responseMessage.DiagnosticsCore.AddJsonAttribute("PointOperation", new PointOperationStatistics(
+            responseMessage.DiagnosticsContext.AddJsonAttribute("PointOperation", new PointOperationStatistics(
                     activityId: Guid.NewGuid().ToString(),
                     statusCode: HttpStatusCode.Gone,
                     subStatusCode: SubStatusCodes.Unknown,
@@ -349,7 +349,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Content = responseContent,
             };
 
-            responseMessage.DiagnosticsCore.AddJsonAttribute("PointOperation", new PointOperationStatistics(
+            responseMessage.DiagnosticsContext.AddJsonAttribute("PointOperation", new PointOperationStatistics(
                     activityId: Guid.NewGuid().ToString(),
                     statusCode: HttpStatusCode.Gone,
                     subStatusCode: SubStatusCodes.Unknown,
@@ -390,7 +390,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Content = responseContent,
             };
 
-            responseMessage.DiagnosticsCore.AddJsonAttribute("PointOperation", new PointOperationStatistics(
+            responseMessage.DiagnosticsContext.AddJsonAttribute("PointOperation", new PointOperationStatistics(
                     activityId: Guid.NewGuid().ToString(),
                     statusCode: (HttpStatusCode)StatusCodes.TooManyRequests,
                     subStatusCode: SubStatusCodes.Unknown,
@@ -430,7 +430,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Content = responseContent,
             };
 
-            responseMessage.DiagnosticsCore.AddJsonAttribute("PointOperation", new PointOperationStatistics(
+            responseMessage.DiagnosticsContext.AddJsonAttribute("PointOperation", new PointOperationStatistics(
                      activityId: Guid.NewGuid().ToString(),
                      statusCode: HttpStatusCode.OK,
                      subStatusCode: SubStatusCodes.Unknown,

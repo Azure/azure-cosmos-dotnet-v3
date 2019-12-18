@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             RequestMessage request,
             CancellationToken cancellationToken)
         {
-            using (request.DiagnosticsCore.CreateScope("TransportHandler"))
+            using (request.DiagnosticsContext.CreateScope("TransportHandler"))
             {
                 try
                 {

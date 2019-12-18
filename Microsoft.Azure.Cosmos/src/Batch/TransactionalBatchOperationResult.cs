@@ -210,13 +210,13 @@ namespace Microsoft.Azure.Cosmos
             };
 
             // DEVNOTE: Temporary until batch has CosmosDiagnosticsCore wired through
-            CosmosDiagnosticsContext diagnosticsCore = this.Diagnostics as CosmosDiagnosticsContext;
-            if (diagnosticsCore == null)
+            CosmosDiagnosticsContext diagnosticsContext = this.Diagnostics as CosmosDiagnosticsContext;
+            if (diagnosticsContext == null)
             {
-                diagnosticsCore = new CosmosDiagnosticsContext();
+                diagnosticsContext = new CosmosDiagnosticsContext();
                 if (this.Diagnostics != null)
                 {
-                    diagnosticsCore.AddJsonAttribute("TransactionalBatchResponse", this.Diagnostics);
+                    diagnosticsContext.AddJsonAttribute("TransactionalBatchResponse", this.Diagnostics);
                 }              
             }
              
@@ -226,7 +226,7 @@ namespace Microsoft.Azure.Cosmos
                 errorMessage: null,
                 error: null,
                 headers: headers,
-                diagnostics: diagnosticsCore)
+                diagnostics: diagnosticsContext)
             {
                 Content = this.ResourceStream
             };

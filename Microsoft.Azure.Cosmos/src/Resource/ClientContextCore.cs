@@ -159,7 +159,7 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey: partitionKey,
                 streamPayload: streamPayload,
                 requestEnricher: requestEnricher,
-                diagnosticsCore: diagnosticsScope,
+                diagnosticsContext: diagnosticsScope,
                 cancellationToken: cancellationToken);
         }
 

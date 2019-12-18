@@ -228,7 +228,7 @@ namespace Microsoft.Azure.Cosmos
             //Throw the exception
             cosmosResponseMessage.EnsureSuccessStatusCode();
 
-            using (cosmosResponseMessage.DiagnosticsCore.CreateScope("ResponseSerialize"))
+            using (cosmosResponseMessage.DiagnosticsContext.CreateScope("ResponseSerialize"))
             {
                 if (cosmosResponseMessage.Content == null)
                 {
