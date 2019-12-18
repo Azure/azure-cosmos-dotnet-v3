@@ -289,7 +289,7 @@ namespace Microsoft.Azure.Cosmos
                 return limiter;
             }
 
-            SemaphoreSlim newLimiter = new SemaphoreSlim(this.startingDegreeOfConcurrency, int.MaxValue);
+            SemaphoreSlim newLimiter = new SemaphoreSlim(this.startingDegreeOfConcurrency, this.defaultMaxDegreeOfConcurrency);
             if (!this.limitersByPartitionkeyRange.TryAdd(partitionKeyRangeId, newLimiter))
             {
                 newLimiter.Dispose();
@@ -350,7 +350,7 @@ namespace Microsoft.Azure.Cosmos
                         {
                             if (degreeOfConcurrency + this.additiveIncreaseFactor <= maxDegreeOfConcurrency)
                             {
-                                // We aren't getting throttles, so we should bump up the degree of concurrency (AIAD).
+                                // We aren't getting throttles, so we should bump up the degree of concurrency (AIMD).
                                 limiter.Release(this.additiveIncreaseFactor);
                                 degreeOfConcurrency = degreeOfConcurrency + this.additiveIncreaseFactor;
                             }
