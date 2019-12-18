@@ -23,7 +23,6 @@ namespace Microsoft.Azure.Cosmos.Fluent
         private string partitionKeyPath;
         private int? defaultTimeToLive;
         private IndexingPolicy indexingPolicy;
-        private string timeToLivePropertyPath;
         private PartitionKeyDefinitionVersion? partitionKeyDefinitionVersion = null;
 
         /// <summary>
@@ -97,23 +96,6 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Sets the time to live base timestamp property path.
-        /// </summary>
-        /// <param name="propertyPath">This property should be only present when DefaultTimeToLive is set. When this property is present, time to live for a item is decided based on the value of this property in an item. By default, time to live is based on the _ts property in an item. Example: /property</param>
-        /// <returns>An instance of the current Fluent builder.</returns>
-        /// <seealso cref="ContainerProperties.TimeToLivePropertyPath"/>
-        public T WithTimeToLivePropertyPath(string propertyPath)
-        {
-            if (string.IsNullOrEmpty(propertyPath))
-            {
-                throw new ArgumentNullException(nameof(propertyPath));
-            }
-
-            this.timeToLivePropertyPath = propertyPath;
-            return (T)this;
-        }
-
-        /// <summary>
         /// <see cref="Cosmos.IndexingPolicy"/> definition for the current Azure Cosmos container.
         /// </summary>
         /// <returns>An instance of <see cref="IndexingPolicyDefinition{T}"/>.</returns>
@@ -145,13 +127,6 @@ namespace Microsoft.Azure.Cosmos.Fluent
             if (this.defaultTimeToLive.HasValue)
             {
                 containerProperties.DefaultTimeToLive = this.defaultTimeToLive.Value;
-            }
-
-            if (this.timeToLivePropertyPath != null)
-            {
-#pragma warning disable 0612
-                containerProperties.TimeToLivePropertyPath = this.timeToLivePropertyPath;
-#pragma warning restore 0612
             }
 
             if (this.partitionKeyDefinitionVersion.HasValue)
