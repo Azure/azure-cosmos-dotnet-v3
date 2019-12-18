@@ -263,7 +263,7 @@
                 string value = JsonConvert.SerializeObject(myDocument);
                 partitionKeyValue = new PartitionKey(partitionKey);
 
-                return new MemoryStream(Encoding.UTF8.GetBytes(value ?? "")); ;
+                return new MemoryStream(Encoding.UTF8.GetBytes(value)); ;
             }
 
             public MemoryStream GetNextDocItem(out PartitionKey partitionKeyValue)
