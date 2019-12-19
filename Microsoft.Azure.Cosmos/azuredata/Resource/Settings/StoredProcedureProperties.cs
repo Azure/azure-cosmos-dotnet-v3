@@ -5,8 +5,7 @@
 namespace Azure.Cosmos.Scripts
 {
     using System;
-    using Microsoft.Azure.Documents;
-    using Newtonsoft.Json;
+    using System.Text.Json.Serialization;
 
     /// <summary>
     /// Represents a stored procedure in the Azure Cosmos DB service.
@@ -15,6 +14,7 @@ namespace Azure.Cosmos.Scripts
     /// Azure Cosmos DB allows application logic written entirely in JavaScript to be executed directly inside the database engine under the database transaction.
     /// For additional details, refer to the server-side JavaScript API documentation.
     /// </remarks>
+    [JsonConverter(typeof(TextJsonStoredProcedurePropertiesConverter))]
     public class StoredProcedureProperties
     {
         private string id;
@@ -45,7 +45,6 @@ namespace Azure.Cosmos.Scripts
         /// </summary>
         /// <value>The body of the stored procedure.</value>
         /// <remarks>Must be a valid JavaScript function. For e.g. "function () { getContext().getResponse().setBody('Hello World!'); }"</remarks>
-        [JsonProperty(PropertyName = Constants.Properties.Body)]
         public string Body
         {
             get => this.body;
@@ -65,7 +64,6 @@ namespace Azure.Cosmos.Scripts
         ///  '/', '\\', '?', '#'
         /// </para>
         /// </remarks>
-        [JsonProperty(PropertyName = Constants.Properties.Id)]
         public string Id
         {
             get => this.id;
@@ -81,17 +79,13 @@ namespace Azure.Cosmos.Scripts
         /// <remarks>
         /// ETags are used for concurrency checking when updating resources. 
         /// </remarks>
-        [JsonProperty(PropertyName = Constants.Properties.ETag, NullValueHandling = NullValueHandling.Ignore)]
-        [JsonConverter(typeof(ETagConverter))]
-        public ETag? ETag { get; private set; }
+        public ETag? ETag { get; internal set; }
 
         /// <summary>
         /// Gets the last modified timestamp associated with <see cref="StoredProcedureProperties" /> from the Azure Cosmos DB service.
         /// </summary>
         /// <value>The last modified timestamp associated with the resource.</value>
-        [JsonConverter(typeof(UnixDateTimeConverter))]
-        [JsonProperty(PropertyName = Constants.Properties.LastModified)]
-        public DateTime? LastModified { get; private set; }
+        public DateTime? LastModified { get; internal set; }
 
         /// <summary>
         /// Gets the Resource Id associated with the resource in the Azure Cosmos DB service.
@@ -104,7 +98,6 @@ namespace Azure.Cosmos.Scripts
         /// resource whether that is a database, a collection or a document.
         /// These resource ids are used when building up SelfLinks, a static addressable Uri for each resource within a database account.
         /// </remarks>
-        [JsonProperty(PropertyName = Constants.Properties.RId)]
-        internal string ResourceId { get; private set; }
+        internal string ResourceId { get; set; }
     }
 }
