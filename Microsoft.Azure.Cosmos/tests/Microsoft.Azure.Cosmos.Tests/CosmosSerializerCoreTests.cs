@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Text;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Scripts;
@@ -98,118 +99,75 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             CosmosSerializerCore serializerCore = new CosmosSerializerCore(serializerHelper);
 
-            this.TestSerialize(
-                new ContainerProperties()
-                {
-                    Id = Guid.NewGuid().ToString()
-                },
+            string id = "testId";
+            this.TestProperty<AccountProperties>(
                 serializerCore,
-                (input, result) => string.Equals(input.Id, result.Id));
+                id,
+                $@"{{""id"":""{id}"",""_etag"":null,""_rid"":null,""writableLocations"":[],""readableLocations"":[],""userConsistencyPolicy"":null,""addresses"":null,""userReplicationPolicy"":null,""systemReplicationPolicy"":null,""readPolicy"":null,""queryEngineConfiguration"":null,""enableMultipleWriteLocations"":false}}");
 
-            this.TestSerialize(
-                new DatabaseProperties()
-                {
-                    Id = Guid.NewGuid().ToString()
-                },
+            this.TestProperty<DatabaseProperties>(
                 serializerCore,
-                (input, result) => string.Equals(input.Id, result.Id));
+                id,
+                $@"{{""id"":""{id}"",""_etag"":null,""_ts"":1576767176,""_rid"":null}}");
 
-            this.TestSerialize(
-                new TriggerProperties()
-                {
-                    Id = Guid.NewGuid().ToString()
-                },
+            this.TestProperty<ContainerProperties>(
                 serializerCore,
-                (input, result) => string.Equals(input.Id, result.Id));
+                id,
+                $@"{{""id"":""{id}"",""partitionKey"":{{""paths"":[],""kind"":""Hash""}}}}");
 
-            this.TestSerialize(
-                new UserDefinedFunctionProperties()
-                {
-                    Id = Guid.NewGuid().ToString()
-                },
+            this.TestProperty<StoredProcedureProperties>(
                 serializerCore,
-                (input, result) => string.Equals(input.Id, result.Id));
+                id,
+                $@"{{""body"":""bodyCantBeNull"",""id"":""{id}"",""_etag"":null,""_ts"":1576767176,""_rid"":null}}");
 
-            this.TestSerialize(
-                new StoredProcedureProperties()
-                {
-                    Id = Guid.NewGuid().ToString(),
-                    Body = "test body"
-                },
+            this.TestProperty<TriggerProperties>(
                 serializerCore,
-                (input, result) => string.Equals(input.Id, result.Id));
+                id,
+                $@"{{""body"":null,""triggerType"":""Pre"",""triggerOperation"":""All"",""id"":""{id}"",""_etag"":null}}");
 
-            this.TestSerialize(
-                new ConflictProperties()
-                {
-                    Id = Guid.NewGuid().ToString()
-                },
+            this.TestProperty<UserDefinedFunctionProperties>(
                 serializerCore,
-                (input, result) => string.Equals(input.Id, result.Id));
+                id,
+                $@"{{""body"":null,""id"":""{id}"",""_etag"":null}}");
 
-            this.TestSerialize(
-                new AccountProperties()
-                {
-                    Id = Guid.NewGuid().ToString()
-                },
+            this.TestProperty<UserProperties>(
                 serializerCore,
-                (input, result) => string.Equals(input.Id, result.Id));
+                id,
+                $@"{{""id"":""{id}"",""_etag"":null,""_ts"":1576767176,""_rid"":null,""_permissions"":null}}");
 
-            PermissionProperties permissionProperties = JsonConvert.DeserializeObject<PermissionProperties>(
-                "{\"id\":\"permissionId\"}");
-
-            this.TestSerialize(
-                permissionProperties,
+            this.TestProperty<PermissionProperties>(
                 serializerCore,
-                (input, result) => string.Equals(input.Id, result.Id));
+                id,
+                $@"{{""id"":""{id}"",""resource"":null,""permissionMode"":0}}");
 
-            this.TestSerialize(
-                new UserProperties(Guid.NewGuid().ToString()),
+            this.TestProperty<ConflictProperties>(
                 serializerCore,
-                (input, result) => string.Equals(input.Id, result.Id));
+                id,
+                $@"{{""id"":""{id}"",""operationType"":""Invalid"",""resourceType"":null,""resourceId"":null,""content"":null,""conflict_lsn"":0}}");
 
-            ThroughputProperties throughputProperties = JsonConvert.DeserializeObject<ThroughputProperties>(
-                "{\"_etag\":\"etagValue\"}");
-
-            this.TestSerialize(
-                new ThroughputProperties(),
-                serializerCore,
-                (input, result) => true);
-
-            this.TestSerialize(
-                new OfferV2(9001)
-                {
-                    Id = Guid.NewGuid().ToString(),
-                },
-                serializerCore,
-                (input, result) => string.Equals(input.Id, result.Id));
-
-            this.TestSerialize(
-                new PartitionedQueryExecutionInfo()
-                {
-                    QueryInfo = new QueryInfo()
-                    {
-                        DistinctType = Cosmos.Query.Core.ExecutionComponent.Distinct.DistinctQueryType.Ordered,
-                        Limit = 500
-                    }
-                },
-                serializerCore,
-                (input, result) => input.QueryInfo.Limit == result.QueryInfo.Limit && input.QueryInfo.DistinctType == result.QueryInfo.DistinctType);
+            // Throughput doesn't have an id.
+            string defaultThroughputJson = @"{""_etag"":null,""_ts"":1576767176,""Throughput"":null,""_rid"":null,""offerResourceId"":null}";
+            ThroughputProperties property = JsonConvert.DeserializeObject<ThroughputProperties>(defaultThroughputJson);
+            Assert.IsNull(property.Throughput);
+            string propertyJson = JsonConvert.SerializeObject(property);
+            Assert.AreEqual(defaultThroughputJson, propertyJson);
         }
 
-        private void TestSerialize<T>(
-            T input,
+        private void TestProperty<T>(
             CosmosSerializerCore serializerCore,
-            Func<T, T, bool> comparer)
+            string id,
+            string defaultJson)
         {
-            Stream stream = serializerCore.ToStream(input);
-            Assert.IsTrue(stream.CanRead);
-
-            T result = serializerCore.FromStream<T>(stream);
-            Assert.IsNotNull(result);
-            Assert.IsFalse(stream.CanRead, "Stream should be disposed of");
-
-            Assert.IsTrue(comparer(input, result));
+            dynamic property = serializerCore.FromStream<T>(new MemoryStream(Encoding.UTF8.GetBytes(defaultJson)));
+            Assert.AreEqual(id, property.Id);
+            using (Stream stream = serializerCore.ToStream<T>(property))
+            {
+                using (StreamReader sr = new StreamReader(stream))
+                {
+                    string propertyJson = sr.ReadToEnd();
+                    Assert.AreEqual(defaultJson, propertyJson);
+                }
+            }
         }
     }
 }

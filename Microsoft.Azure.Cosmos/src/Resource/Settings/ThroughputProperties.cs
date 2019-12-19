@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <value>The last modified time stamp associated with the resource.</value>
         [JsonConverter(typeof(UnixDateTimeConverter))]
-        [JsonProperty(PropertyName = Constants.Properties.LastModified, NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName = Constants.Properties.LastModified)]
         public DateTime LastModified { get; private set; }
 
         /// <summary>
