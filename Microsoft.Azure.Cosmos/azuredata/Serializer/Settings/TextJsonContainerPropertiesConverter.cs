@@ -47,9 +47,15 @@ namespace Azure.Cosmos
             writer.WriteStartObject();
             writer.WriteString(Constants.Properties.Id, setting.Id);
 
-            writer.WriteString(Constants.Properties.ETag, setting.ETag.ToString());
+            if (setting.ETag.HasValue)
+            {
+                writer.WriteString(Constants.Properties.ETag, setting.ETag.ToString());
+            }
 
-            writer.WriteString(Constants.Properties.RId, setting.ResourceId);
+            if (!string.IsNullOrEmpty(setting.ResourceId))
+            {
+                writer.WriteString(Constants.Properties.RId, setting.ResourceId);
+            }
 
             if (setting.indexingPolicyInternal != null)
             {

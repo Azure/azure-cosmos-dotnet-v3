@@ -5,14 +5,15 @@
 namespace Azure.Cosmos
 {
     using System;
+    using System.Collections.ObjectModel;
     using System.Globalization;
     using System.Text.Json;
     using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
 
-    internal class TextJsonDatabasePropertiesConverter : JsonConverter<DatabaseProperties>
+    internal class TextJsonPermissionPropertiesConverter : JsonConverter<PermissionProperties>
     {
-        public override DatabaseProperties Read(
+        public override PermissionProperties Read(
             ref Utf8JsonReader reader,
             Type typeToConvert,
             JsonSerializerOptions options)
@@ -29,11 +30,11 @@ namespace Azure.Cosmos
 
             using JsonDocument json = JsonDocument.ParseValue(ref reader);
             JsonElement root = json.RootElement;
-            DatabaseProperties setting = new DatabaseProperties();
+            PermissionProperties setting = new PermissionProperties();
 
             foreach (JsonProperty property in root.EnumerateObject())
             {
-                TextJsonDatabasePropertiesConverter.ReadPropertyValue(setting, property);
+                TextJsonPermissionPropertiesConverter.ReadPropertyValue(setting, property);
             }
 
             return setting;
@@ -41,7 +42,7 @@ namespace Azure.Cosmos
 
         public override void Write(
             Utf8JsonWriter writer,
-            DatabaseProperties setting,
+            PermissionProperties setting,
             JsonSerializerOptions options)
         {
             if (setting == null)
@@ -57,9 +58,18 @@ namespace Azure.Cosmos
                 writer.WriteString(Constants.Properties.ETag, setting.ETag.ToString());
             }
 
+            writer.WriteString(Constants.Properties.ResourceLink, setting.ResourceUri);
+
             if (!string.IsNullOrEmpty(setting.ResourceId))
             {
                 writer.WriteString(Constants.Properties.RId, setting.ResourceId);
+            }
+
+            writer.WriteString(Constants.Properties.PermissionMode, JsonSerializer.Serialize(setting.PermissionMode, options));
+
+            if (!string.IsNullOrEmpty(setting.Token))
+            {
+                writer.WriteString(Constants.Properties.Token, setting.Token);
             }
 
             if (setting.LastModified.HasValue)
@@ -68,11 +78,17 @@ namespace Azure.Cosmos
                 TextJsonUnixDateTimeConverter.WritePropertyValues(writer, setting.LastModified, options);
             }
 
+            if (setting.InternalResourcePartitionKey != null)
+            {
+                writer.WritePropertyName(Constants.Properties.ResourcePartitionKey);
+                TextJsonPartitionKeyInternalConverter.WriteElement(writer, setting.InternalResourcePartitionKey);
+            }
+
             writer.WriteEndObject();
         }
 
         private static void ReadPropertyValue(
-            DatabaseProperties setting,
+            PermissionProperties setting,
             JsonProperty property)
         {
             if (property.NameEquals(Constants.Properties.Id))
@@ -87,9 +103,28 @@ namespace Azure.Cosmos
             {
                 setting.ResourceId = property.Value.GetString();
             }
+            else if (property.NameEquals(Constants.Properties.ResourceLink))
+            {
+                setting.ResourceUri = property.Value.GetString();
+            }
+            else if (property.NameEquals(Constants.Properties.PermissionMode))
+            {
+                if (Enum.TryParse(property.Value.GetString(), out PermissionMode permissionMode))
+                {
+                    setting.PermissionMode = permissionMode;
+                }
+            }
+            else if (property.NameEquals(Constants.Properties.Token))
+            {
+                setting.Token = property.Value.GetString();
+            }
             else if (property.NameEquals(Constants.Properties.LastModified))
             {
                 setting.LastModified = TextJsonUnixDateTimeConverter.ReadProperty(property.Value.GetString());
+            }
+            else if (property.NameEquals(Constants.Properties.ResourcePartitionKey))
+            {
+                setting.InternalResourcePartitionKey = TextJsonPartitionKeyInternalConverter.ReadElement(property.Value);
             }
         }
     }
