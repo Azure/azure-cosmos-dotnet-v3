@@ -43,7 +43,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private static readonly int serverStalenessIntervalInSeconds;
         private static readonly int masterStalenessIntervalInSeconds;
-        public static readonly CosmosSerializer Serializer = new CosmosJsonDotNetSerializer();
+
+        // Passing in the a custom serializer instance will cause all the checks for internal types to validated.
+        public static readonly CosmosSerializerCore SerializerCore = new CosmosSerializerCore(new CosmosJsonDotNetSerializer());
 
         static TestCommon()
         {
@@ -59,16 +61,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return (endpoint, authKey);
         }
 
-        internal static CosmosClientBuilder GetDefaultConfiguration()
+        internal static CosmosClientBuilder GetDefaultConfiguration(bool useCustomSeralizer = true)
         {
             (string endpoint, string authKey) accountInfo = TestCommon.GetAccountInfo();
+            CosmosClientBuilder clientBuilder = new CosmosClientBuilder(accountEndpoint: accountInfo.endpoint, authKeyOrResourceToken: accountInfo.authKey);
+            if (useCustomSeralizer)
+            {
+                clientBuilder.WithCustomSerializer(new CosmosJsonDotNetSerializer());
+            }
 
-            return new CosmosClientBuilder(accountEndpoint: accountInfo.endpoint, authKeyOrResourceToken: accountInfo.authKey);
+            return clientBuilder;
         }
 
-        internal static CosmosClient CreateCosmosClient(Action<CosmosClientBuilder> customizeClientBuilder = null)
+        internal static CosmosClient CreateCosmosClient(Action<CosmosClientBuilder> customizeClientBuilder = null, bool useCustomSeralizer = true)
         {
-            CosmosClientBuilder cosmosClientBuilder = GetDefaultConfiguration();
+            CosmosClientBuilder cosmosClientBuilder = GetDefaultConfiguration(useCustomSeralizer);
             if (customizeClientBuilder != null)
             {
                 customizeClientBuilder(cosmosClientBuilder);

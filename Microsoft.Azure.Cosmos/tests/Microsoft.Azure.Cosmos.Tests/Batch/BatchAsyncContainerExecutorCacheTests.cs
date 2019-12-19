@@ -25,9 +25,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosClientContext context = new ClientContextCore(
                 client: mockClient.Object,
                 clientOptions: new CosmosClientOptions() { AllowBulkExecution = true },
-                userJsonSerializer: null,
-                defaultJsonSerializer: null,
-                sqlQuerySpecSerializer: null,
+                serializerCore: null,
                 cosmosResponseFactory: null,
                 requestHandler: null,
                 documentClient: null);
@@ -61,9 +59,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosClientContext context = new ClientContextCore(
                 client: mockClient.Object,
                 clientOptions: new CosmosClientOptions() { AllowBulkExecution = true },
-                userJsonSerializer: null,
-                defaultJsonSerializer: null,
-                sqlQuerySpecSerializer: null,
+                serializerCore: null,
                 cosmosResponseFactory: null,
                 requestHandler: null,
                 documentClient: null);
@@ -100,9 +96,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosClientContext context = new ClientContextCore(
                 client: mockClient.Object,
                 clientOptions: new CosmosClientOptions() { },
-                userJsonSerializer: null,
-                defaultJsonSerializer: null,
-                sqlQuerySpecSerializer: null,
+                serializerCore: null,
                 cosmosResponseFactory: null,
                 requestHandler: null,
                 documentClient: null);

@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos
     /// <seealso cref="ItemBatchOperation"/>
     internal class BatchAsyncBatcher
     {
-        private readonly CosmosSerializer cosmosSerializer;
+        private readonly CosmosSerializerCore serializerCore;
         private readonly List<ItemBatchOperation> batchOperations;
         private readonly BatchAsyncBatcherExecuteDelegate executor;
         private readonly BatchAsyncBatcherRetryDelegate retrier;
@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos
         public BatchAsyncBatcher(
             int maxBatchOperationCount,
             int maxBatchByteSize,
-            CosmosSerializer cosmosSerializer,
+            CosmosSerializerCore serializerCore,
             BatchAsyncBatcherExecuteDelegate executor,
             BatchAsyncBatcherRetryDelegate retrier)
         {
@@ -63,9 +63,9 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(retrier));
             }
 
-            if (cosmosSerializer == null)
+            if (serializerCore == null)
             {
-                throw new ArgumentNullException(nameof(cosmosSerializer));
+                throw new ArgumentNullException(nameof(serializerCore));
             }
 
             this.batchOperations = new List<ItemBatchOperation>(maxBatchOperationCount);
@@ -73,7 +73,7 @@ namespace Microsoft.Azure.Cosmos
             this.retrier = retrier;
             this.maxBatchByteSize = maxBatchByteSize;
             this.maxBatchOperationCount = maxBatchOperationCount;
-            this.cosmosSerializer = cosmosSerializer;
+            this.serializerCore = serializerCore;
         }
 
         public virtual bool TryAdd(ItemBatchOperation operation)
@@ -152,7 +152,7 @@ namespace Microsoft.Azure.Cosmos
                 try
                 {
                     PartitionKeyRangeBatchExecutionResult result = await this.executor(serverRequest, cancellationToken);
-                    using (PartitionKeyRangeBatchResponse batchResponse = new PartitionKeyRangeBatchResponse(serverRequest.Operations.Count, result.ServerResponse, this.cosmosSerializer))
+                    using (PartitionKeyRangeBatchResponse batchResponse = new PartitionKeyRangeBatchResponse(serverRequest.Operations.Count, result.ServerResponse, this.serializerCore))
                     {
                         foreach (ItemBatchOperation itemBatchOperation in batchResponse.Operations)
                         {
@@ -207,7 +207,7 @@ namespace Microsoft.Azure.Cosmos
                   this.maxBatchByteSize,
                   this.maxBatchOperationCount,
                   ensureContinuousOperationIndexes: false,
-                  serializer: this.cosmosSerializer,
+                  serializerCore: this.serializerCore,
                   cancellationToken: cancellationToken).ConfigureAwait(false);
         }
     }

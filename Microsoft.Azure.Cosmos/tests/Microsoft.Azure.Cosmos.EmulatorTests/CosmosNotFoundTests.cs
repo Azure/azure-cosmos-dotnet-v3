@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             if (containerNotExist)
             {
                 dynamic randomItem = new { id = "test", pk = "doesnotexist" };
-                Stream create = TestCommon.Serializer.ToStream<dynamic>(randomItem);
+                Stream create = TestCommon.SerializerCore.ToStream<dynamic>(randomItem);
                 this.VerifyNotFoundResponse(await container.CreateItemStreamAsync(create, new PartitionKey(randomItem.pk)));
 
                 FeedIterator queryIterator = container.GetItemQueryStreamIterator(
@@ -144,7 +144,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 this.VerifyNotFoundResponse(await feedIterator.ReadNextAsync());
 
                 dynamic randomUpsertItem = new { id = DoesNotExist, pk = DoesNotExist, status = 42 };
-                Stream upsert = TestCommon.Serializer.ToStream<dynamic>(randomUpsertItem);
+                Stream upsert = TestCommon.SerializerCore.ToStream<dynamic>(randomUpsertItem);
                 this.VerifyNotFoundResponse(await container.UpsertItemStreamAsync(
                     partitionKey: new Cosmos.PartitionKey(randomUpsertItem.pk),
                     streamPayload: upsert));
@@ -154,7 +154,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.VerifyNotFoundResponse(await container.DeleteItemStreamAsync(partitionKey: new Cosmos.PartitionKey(DoesNotExist), id: DoesNotExist));
 
             dynamic randomReplaceItem = new { id = "test", pk = "doesnotexist", status = 42 };
-            Stream replace = TestCommon.Serializer.ToStream<dynamic>(randomReplaceItem);
+            Stream replace = TestCommon.SerializerCore.ToStream<dynamic>(randomReplaceItem);
             this.VerifyNotFoundResponse(await container.ReplaceItemStreamAsync(
                 partitionKey: new Cosmos.PartitionKey(randomReplaceItem.pk),
                 id: randomReplaceItem.id,

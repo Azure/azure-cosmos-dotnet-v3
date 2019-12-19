@@ -39,15 +39,15 @@ namespace Microsoft.Azure.Cosmos.Tests
             SinglePartitionKeyServerBatchRequest batchRequest = await SinglePartitionKeyServerBatchRequest.CreateAsync(
                 partitionKey: null,
                 operations: new ArraySegment<ItemBatchOperation>(arrayOperations),
-                serializer: new CosmosJsonDotNetSerializer(),
+                serializerCore: MockCosmosUtil.Serializer,
             cancellationToken: default(CancellationToken));
 
             TransactionalBatchResponse batchresponse = await TransactionalBatchResponse.FromResponseMessageAsync(
                 new ResponseMessage(HttpStatusCode.OK) { Content = responseContent },
                 batchRequest,
-                new CosmosJsonDotNetSerializer());
+                MockCosmosUtil.Serializer);
 
-            PartitionKeyRangeBatchResponse response = new PartitionKeyRangeBatchResponse(arrayOperations.Length, batchresponse, new CosmosJsonDotNetSerializer());
+            PartitionKeyRangeBatchResponse response = new PartitionKeyRangeBatchResponse(arrayOperations.Length, batchresponse, MockCosmosUtil.Serializer);
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
         }
 
@@ -73,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             SinglePartitionKeyServerBatchRequest batchRequest = await SinglePartitionKeyServerBatchRequest.CreateAsync(
                 partitionKey: null,
                 operations: new ArraySegment<ItemBatchOperation>(arrayOperations),
-                serializer: new CosmosJsonDotNetSerializer(),
+                serializerCore: MockCosmosUtil.Serializer,
             cancellationToken: default(CancellationToken));
 
             CosmosDiagnostics diagnostics = new PointOperationStatistics(
@@ -91,9 +91,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             TransactionalBatchResponse batchresponse = await TransactionalBatchResponse.FromResponseMessageAsync(
                 new ResponseMessage(HttpStatusCode.OK) { Content = responseContent, Diagnostics = diagnostics },
                 batchRequest,
-                new CosmosJsonDotNetSerializer());
+                MockCosmosUtil.Serializer);
 
-            PartitionKeyRangeBatchResponse response = new PartitionKeyRangeBatchResponse(arrayOperations.Length, batchresponse, new CosmosJsonDotNetSerializer());
+            PartitionKeyRangeBatchResponse response = new PartitionKeyRangeBatchResponse(arrayOperations.Length, batchresponse, MockCosmosUtil.Serializer);
             Assert.AreEqual(diagnostics, response.Diagnostics);
         }
     }

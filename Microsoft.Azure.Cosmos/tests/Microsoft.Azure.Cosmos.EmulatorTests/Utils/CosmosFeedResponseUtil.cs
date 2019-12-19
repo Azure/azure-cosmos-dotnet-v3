@@ -1,9 +1,11 @@
 //------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Query.Core
+namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
+    using System;
     using System.Collections.ObjectModel;
+    using Newtonsoft.Json;
 
     /// <summary>
     /// This is a helper class that is used to get the query response collection.
@@ -13,80 +15,94 @@ namespace Microsoft.Azure.Cosmos.Query.Core
     /// store the collection. Then the response object will use the Data property to
     /// access the collection. This prevents having a class for each different property.
     /// </summary>
-    internal sealed class CosmosFeedResponseUtil<T>
+    public sealed class CosmosFeedResponseUtil<T>
     {
         /// <summary>
         /// All the properties use this to store the collection.
         /// </summary>
-        public Collection<T> Data { get; set; }
+        public Collection<T> Data { get; private set; }
 
-        public Collection<T> Attachments
+        internal Type InnerType { get; } = typeof(T);
+
+        [JsonProperty]
+        internal Collection<T> Attachments
         {
             get => this.Data;
             set => this.Data = value;
         }
 
-        public Collection<T> DocumentCollections
+        [JsonProperty]
+        internal Collection<T> DocumentCollections
         {
             get => this.Data;
             set => this.Data = value;
         }
 
-        public Collection<T> Databases
+        [JsonProperty]
+        internal Collection<T> Databases
         {
             get => this.Data;
             set => this.Data = value;
         }
 
-        public Collection<T> Documents
+        [JsonProperty]
+        internal Collection<T> Documents
         {
             get => this.Data;
             set => this.Data = value;
         }
 
-        public Collection<T> Offers
+        [JsonProperty]
+        internal Collection<T> Offers
         {
             get => this.Data;
             set => this.Data = value;
         }
 
-        public Collection<T> Triggers
+        [JsonProperty]
+        internal Collection<T> Triggers
         {
             get => this.Data;
             set => this.Data = value;
         }
 
-        public Collection<T> UserDefinedFunctions
+        [JsonProperty]
+        internal Collection<T> UserDefinedFunctions
         {
             get => this.Data;
             set => this.Data = value;
         }
 
-        public Collection<T> UserDefinedTypes
+        [JsonProperty]
+        internal Collection<T> UserDefinedTypes
         {
             get => this.Data;
             set => this.Data = value;
         }
 
-        public Collection<T> StoredProcedures
+        [JsonProperty]
+        internal Collection<T> StoredProcedures
         {
             get => this.Data;
             set => this.Data = value;
         }
 
-        public Collection<T> Conflicts
+        [JsonProperty]
+        internal Collection<T> Conflicts
         {
             get => this.Data;
             set => this.Data = value;
         }
 
-        public Collection<T> Users
+        [JsonProperty]
+        internal Collection<T> Users
         {
             get => this.Data;
             set => this.Data = value;
         }
 
-        public Collection<T> Permissions
+        [JsonProperty]
+        internal Collection<T> Permissions
         {
             get => this.Data;
             set => this.Data = value;

@@ -233,7 +233,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             else
             {
                 
-                return TestCommon.Serializer.ToStream<TestDoc>(testDoc);
+                return TestCommon.SerializerCore.ToStream<TestDoc>(testDoc);
             }
         }
 
@@ -245,7 +245,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             else
             {
-                return TestCommon.Serializer.FromStream<TestDoc>(stream);
+                return TestCommon.SerializerCore.FromStream<TestDoc>(stream);
             }
         }
 
