@@ -51,12 +51,9 @@ namespace Azure.Cosmos
             }
 
             writer.WriteStartObject();
-            writer.WriteString(Constants.Properties.Id, setting.Id);
+            TextJsonSettingsHelper.WriteId(writer, setting.Id);
 
-            if (setting.ETag.HasValue)
-            {
-                writer.WriteString(Constants.Properties.ETag, setting.ETag.ToString());
-            }
+            TextJsonSettingsHelper.WriteETag(writer, setting.ETag);
 
             writer.WriteString(Constants.Properties.Body, setting.Body);
 
@@ -77,7 +74,7 @@ namespace Azure.Cosmos
             }
             else if (property.NameEquals(Constants.Properties.ETag))
             {
-                setting.ETag = new ETag(property.Value.GetString());
+                setting.ETag = TextJsonSettingsHelper.ReadETag(property);
             }
             else if (property.NameEquals(Constants.Properties.Body))
             {

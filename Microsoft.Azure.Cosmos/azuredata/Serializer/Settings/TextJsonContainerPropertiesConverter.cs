@@ -45,17 +45,11 @@ namespace Azure.Cosmos
             }
 
             writer.WriteStartObject();
-            writer.WriteString(Constants.Properties.Id, setting.Id);
+            TextJsonSettingsHelper.WriteId(writer, setting.Id);
 
-            if (setting.ETag.HasValue)
-            {
-                writer.WriteString(Constants.Properties.ETag, setting.ETag.ToString());
-            }
+            TextJsonSettingsHelper.WriteETag(writer, setting.ETag);
 
-            if (!string.IsNullOrEmpty(setting.ResourceId))
-            {
-                writer.WriteString(Constants.Properties.RId, setting.ResourceId);
-            }
+            TextJsonSettingsHelper.WriteResourceId(writer, setting.ResourceId);
 
             if (setting.indexingPolicyInternal != null)
             {
@@ -125,7 +119,7 @@ namespace Azure.Cosmos
             }
             else if (property.NameEquals(Constants.Properties.ETag))
             {
-                setting.ETag = new ETag(property.Value.GetString());
+                setting.ETag = TextJsonSettingsHelper.ReadETag(property);
             }
             else if (property.NameEquals(Constants.Properties.RId))
             {
@@ -145,7 +139,7 @@ namespace Azure.Cosmos
             }
             else if (property.NameEquals(Constants.Properties.LastModified))
             {
-                setting.LastModified = TextJsonUnixDateTimeConverter.ReadProperty(property.Value.GetString());
+                setting.LastModified = TextJsonUnixDateTimeConverter.ReadProperty(property);
             }
             else if (property.NameEquals(Constants.Properties.DefaultTimeToLive))
             {

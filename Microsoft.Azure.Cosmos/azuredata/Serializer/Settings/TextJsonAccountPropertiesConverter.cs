@@ -52,17 +52,11 @@ namespace Azure.Cosmos
 
             writer.WriteStartObject();
 
-            writer.WriteString(Constants.Properties.Id, setting.Id);
+            TextJsonSettingsHelper.WriteId(writer, setting.Id);
 
-            if (setting.ETag.HasValue)
-            {
-                writer.WriteString(Constants.Properties.ETag, setting.ETag.ToString());
-            }
+            TextJsonSettingsHelper.WriteETag(writer, setting.ETag);
 
-            if (!string.IsNullOrEmpty(setting.ResourceId))
-            {
-                writer.WriteString(Constants.Properties.RId, setting.ResourceId);
-            }
+            TextJsonSettingsHelper.WriteResourceId(writer, setting.ResourceId);
 
             writer.WritePropertyName(Constants.Properties.WritableLocations);
             writer.WriteStartArray();
@@ -113,7 +107,7 @@ namespace Azure.Cosmos
             }
             else if (property.NameEquals(Constants.Properties.ETag))
             {
-                setting.ETag = new ETag(property.Value.GetString());
+                setting.ETag = TextJsonSettingsHelper.ReadETag(property);
             }
             else if (property.NameEquals(Constants.Properties.RId))
             {

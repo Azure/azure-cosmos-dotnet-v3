@@ -26,7 +26,7 @@ namespace Azure.Cosmos
                 throw new JsonException(RMResources.DateTimeConverterInvalidReaderValue);
             }
 
-            return TextJsonUnixDateTimeConverter.ReadProperty(reader.GetString());
+            return TextJsonUnixDateTimeConverter.UnixStartTime.AddSeconds(reader.GetDouble());
         }
 
         public override void Write(
@@ -37,19 +37,14 @@ namespace Azure.Cosmos
             TextJsonUnixDateTimeConverter.WritePropertyValues(writer, value, options);
         }
 
-        public static DateTime? ReadProperty(string value)
+        public static DateTime? ReadProperty(JsonProperty property)
         {
-            double totalSeconds = 0;
-            try
+            if (property.Value.ValueKind != JsonValueKind.Number)
             {
-                totalSeconds = Convert.ToDouble(value, CultureInfo.InvariantCulture);
-            }
-            catch
-            {
-                throw new JsonException(RMResources.DateTimeConveterInvalidReaderDoubleValue);
+                throw new JsonException(RMResources.DateTimeConverterInvalidReaderValue);
             }
 
-            return TextJsonUnixDateTimeConverter.UnixStartTime.AddSeconds(totalSeconds);
+            return TextJsonUnixDateTimeConverter.UnixStartTime.AddSeconds(property.Value.GetDouble());
         }
 
         public static void WritePropertyValues(

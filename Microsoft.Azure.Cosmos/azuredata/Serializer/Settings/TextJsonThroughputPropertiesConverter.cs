@@ -51,27 +51,16 @@ namespace Azure.Cosmos
 
             writer.WriteStartObject();
 
-            if (setting.ETag.HasValue)
-            {
-                writer.WriteString(Constants.Properties.ETag, setting.ETag.ToString());
-            }
+            TextJsonSettingsHelper.WriteETag(writer, setting.ETag);
 
-            if (!string.IsNullOrEmpty(setting.OfferRID))
-            {
-                writer.WriteString(Constants.Properties.RId, setting.OfferRID);
-            }
+            TextJsonSettingsHelper.WriteResourceId(writer, setting.OfferRID);
+
+            TextJsonSettingsHelper.WriteLastModified(writer, setting.LastModified, options);
 
             if (!string.IsNullOrEmpty(setting.ResourceRID))
             {
                 writer.WriteString(Constants.Properties.OfferResourceId, setting.ResourceRID);
             }
-
-            if (setting.LastModified.HasValue)
-            {
-                writer.WritePropertyName(Constants.Properties.LastModified);
-                TextJsonUnixDateTimeConverter.WritePropertyValues(writer, setting.LastModified, options);
-            }
-
             if (setting.Content != null)
             {
                 writer.WritePropertyName(Constants.Properties.Content);
@@ -98,11 +87,11 @@ namespace Azure.Cosmos
         {
             if (property.NameEquals(Constants.Properties.ETag))
             {
-                setting.ETag = new ETag(property.Value.GetString());
+                setting.ETag = TextJsonSettingsHelper.ReadETag(property);
             }
             else if (property.NameEquals(Constants.Properties.LastModified))
             {
-                setting.LastModified = TextJsonUnixDateTimeConverter.ReadProperty(property.Value.GetString());
+                setting.LastModified = TextJsonUnixDateTimeConverter.ReadProperty(property);
             }
             else if (property.NameEquals(Constants.Properties.RId))
             {
