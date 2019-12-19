@@ -125,7 +125,9 @@ namespace Microsoft.Azure.Cosmos
 
             return new FeedIteratorCore<T>(
                 databaseStreamIterator,
-                this.clientContext.ResponseFactory.CreateQueryFeedResponseWithPropertySerializer<T>);
+                (response) => this.clientContext.ResponseFactory.CreateQueryFeedResponse<T>(
+                    responseMessage: response,
+                    resourceType: ResourceType.Conflict));
         }
 
         public override async Task<ItemResponse<T>> ReadCurrentAsync<T>(
@@ -190,7 +192,7 @@ namespace Microsoft.Azure.Cosmos
                         writer.Write(cosmosConflict.Content);
                         writer.Flush();
                         stream.Position = 0;
-                        return this.clientContext.CosmosSerializer.FromStream<T>(stream);
+                        return this.clientContext.SerializerCore.FromStream<T>(stream);
                     }
                 }
             }

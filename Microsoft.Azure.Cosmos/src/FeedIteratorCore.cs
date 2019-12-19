@@ -68,13 +68,7 @@ namespace Microsoft.Azure.Cosmos
             OperationType operation = OperationType.ReadFeed;
             if (this.querySpec != null)
             {
-                // Use property serializer is for internal query operations like throughput
-                // that should not use custom serializer
-                CosmosSerializer serializer = this.usePropertySerializer ?
-                    this.clientContext.PropertiesSerializer :
-                    this.clientContext.SqlQuerySpecSerializer;
-
-                stream = serializer.ToStream(this.querySpec);
+                stream = this.clientContext.SerializerCore.ToStreamSqlQuerySpec(this.querySpec, this.resourceType);    
                 operation = OperationType.Query;
             }
 

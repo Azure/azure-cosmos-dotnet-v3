@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.ClientContext.ValidateResource(userProperties.Id);
             Task<ResponseMessage> response = this.ReplaceStreamInternalAsync(
-                streamPayload: this.ClientContext.PropertiesSerializer.ToStream(userProperties),
+                streamPayload: this.ClientContext.SerializerCore.ToStream(userProperties),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.ClientContext.ValidateResource(userProperties.Id);
             return this.ReplaceStreamInternalAsync(
-                streamPayload: this.ClientContext.PropertiesSerializer.ToStream(userProperties),
+                streamPayload: this.ClientContext.SerializerCore.ToStream(userProperties),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos
             this.ClientContext.ValidateResource(permissionProperties.Id);
 
             Task<ResponseMessage> response = this.CreatePermissionStreamInternalAsync(
-                streamPayload: this.ClientContext.PropertiesSerializer.ToStream(permissionProperties),
+                streamPayload: this.ClientContext.SerializerCore.ToStream(permissionProperties),
                 tokenExpiryInSeconds: tokenExpiryInSeconds,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
@@ -176,7 +176,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.ClientContext.ValidateResource(permissionProperties.Id);
 
-            Stream streamPayload = this.ClientContext.PropertiesSerializer.ToStream(permissionProperties);
+            Stream streamPayload = this.ClientContext.SerializerCore.ToStream(permissionProperties);
             return this.CreatePermissionStreamInternalAsync(streamPayload,
                 tokenExpiryInSeconds,
                 requestOptions,
@@ -196,7 +196,7 @@ namespace Microsoft.Azure.Cosmos
             this.ClientContext.ValidateResource(permissionProperties.Id);
 
             Task<ResponseMessage> response = this.UpsertPermissionStreamInternalAsync(
-                streamPayload: this.ClientContext.PropertiesSerializer.ToStream(permissionProperties),
+                streamPayload: this.ClientContext.SerializerCore.ToStream(permissionProperties),
                 tokenExpiryInSeconds: tokenExpiryInSeconds,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
@@ -219,7 +219,9 @@ namespace Microsoft.Azure.Cosmos
 
             return new FeedIteratorCore<T>(
                 permissionStreamIterator,
-                this.ClientContext.ResponseFactory.CreateQueryFeedResponseWithPropertySerializer<T>);
+                (response) => this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>(
+                    responseMessage: response,
+                    resourceType: ResourceType.Permission));
         }
 
         public FeedIterator GetPermissionQueryStreamIterator(QueryDefinition queryDefinition,

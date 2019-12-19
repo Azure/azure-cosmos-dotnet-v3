@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Client.Core.Tests;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Routing;
@@ -118,14 +117,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                 handler = handler.InnerHandler;
             }
 
-            CosmosResponseFactory responseFactory = new CosmosResponseFactory(MockCosmosUtil.Serializer, MockCosmosUtil.Serializer);
+            CosmosResponseFactory responseFactory = new CosmosResponseFactory(MockCosmosUtil.Serializer);
 
             return new ClientContextCore(
                 client: client,
                 clientOptions: new CosmosClientOptions(),
-                userJsonSerializer: MockCosmosUtil.Serializer,
-                defaultJsonSerializer: MockCosmosUtil.Serializer,
-                sqlQuerySpecSerializer: MockCosmosUtil.Serializer,
+                serializerCore: MockCosmosUtil.Serializer,
                 cosmosResponseFactory: responseFactory,
                 requestHandler: client.RequestHandler,
                 documentClient: new MockDocumentClient(),

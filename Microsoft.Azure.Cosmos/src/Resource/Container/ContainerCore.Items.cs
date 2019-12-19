@@ -370,7 +370,7 @@ namespace Microsoft.Azure.Cosmos
 
             return new FeedIteratorCore<T>(
                 feedIterator: feedIterator,
-                responseCreator: this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>);
+                responseCreator: this.ClientContext.ResponseFactory.CreateQueryFeedUserTypeResponse<T>);
         }
 
         public override IOrderedQueryable<T> GetItemLinqQueryable<T>(
@@ -530,7 +530,7 @@ namespace Microsoft.Azure.Cosmos
                 Stream itemStream;
                 using (diagnosticsContext.CreateScope("ItemSerialize"))
                 {
-                    itemStream = this.ClientContext.CosmosSerializer.ToStream<T>(item);
+                    itemStream = this.ClientContext.SerializerCore.ToStream<T>(item);
                 }
 
                 // User specified PK value, no need to extract it

@@ -12,9 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1097](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1097) Add GeospatialConfig to ContainerProperties, BoundingBoxProperties to SpatialPath
 - [#1061](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1061) Add Stream payload to ExecuteStoredProcedureStreamAsync
 - [#1062](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1062) Add additional diagnostic information including the ability to track time through the different SDK layers
+- [#1107](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1107) Add Source Link support
 
 ### Fixed
 
+- [#1105](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1105) Custom serializer no longer calls SDK owned types that would cause serialization exceptions
 
 ## <a name="3.5.1"/> [3.5.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.5.1) - 2019-12-11
 

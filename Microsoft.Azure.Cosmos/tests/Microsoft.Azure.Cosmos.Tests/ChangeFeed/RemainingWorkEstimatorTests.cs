@@ -212,13 +212,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             {
                 JObject firstDocument = new JObject();
                 firstDocument["_lsn"] = itemLsn;
-                CosmosFeedResponseUtil<JObject> cosmosFeedResponse = new CosmosFeedResponseUtil<JObject>();
-                cosmosFeedResponse.Data = new System.Collections.ObjectModel.Collection<JObject>()
-                {
-                    firstDocument
-                };
 
-                message.Content = new CosmosJsonDotNetSerializer().ToStream(cosmosFeedResponse);
+                message.Content = new CosmosJsonDotNetSerializer().ToStream( new { Documents = new List<JObject>() { firstDocument } });
             }
 
             return message;
