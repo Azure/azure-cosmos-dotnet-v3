@@ -101,7 +101,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                 MockCosmosUtil.Serializer);
 
             PartitionKeyRangeBatchResponse response = new PartitionKeyRangeBatchResponse(arrayOperations.Length, batchresponse, MockCosmosUtil.Serializer);
-            Assert.AreEqual(diagnostics, response.Diagnostics);
+            string pointDiagnosticString = diagnostics.ToString();
+            pointDiagnosticString = pointDiagnosticString.Substring(1, pointDiagnosticString.Length - 2);
+            string diagnosticContextString = response.DiagnosticsContext.ToString();
+            Assert.IsTrue(diagnosticContextString.Contains(pointDiagnosticString));
         }
     }
 }

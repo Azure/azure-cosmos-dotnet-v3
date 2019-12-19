@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class CosmosDiagnosticsContext : CosmosDiagnostics
     {
-        private static readonly JsonSerializerSettings JsonSerializerSettings = new JsonSerializerSettings()
+        internal static readonly JsonSerializerSettings JsonSerializerSettings = new JsonSerializerSettings()
         {
             NullValueHandling = NullValueHandling.Ignore,
             Culture = CultureInfo.InvariantCulture,

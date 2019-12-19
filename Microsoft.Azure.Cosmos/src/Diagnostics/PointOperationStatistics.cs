@@ -15,12 +15,6 @@ namespace Microsoft.Azure.Cosmos
 
     internal class PointOperationStatistics : CosmosDiagnostics
     {
-        private static JsonSerializerSettings SerializerSettings = new JsonSerializerSettings()
-        {
-            NullValueHandling = NullValueHandling.Ignore,
-            Formatting = Formatting.None
-        };
-
         public string ActivityId { get; }
         public HttpStatusCode StatusCode { get; }
         public Documents.SubStatusCodes SubStatusCode { get; }
@@ -58,7 +52,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override string ToString()
         {
-            return JsonConvert.SerializeObject(this);
+            return JsonConvert.SerializeObject(this, CosmosDiagnosticsContext.JsonSerializerSettings);
         }
     }
 }
