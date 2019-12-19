@@ -4,9 +4,8 @@
 
 namespace Azure.Cosmos.Scripts
 {
+    using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Converters;
 
     /// <summary>
     /// Represents a trigger in the Azure Cosmos DB service.
@@ -15,13 +14,13 @@ namespace Azure.Cosmos.Scripts
     /// Azure Cosmos DB supports pre and post triggers written in JavaScript to be executed on creates, updates and deletes. 
     /// For additional details, refer to the server-side JavaScript API documentation.
     /// </remarks>
+    [JsonConverter(typeof(TextJsonTriggerPropertiesConverter))]
     public class TriggerProperties
     {
         /// <summary>
         /// Gets or sets the body of the trigger for the Azure Cosmos DB service.
         /// </summary>
         /// <value>The body of the trigger.</value>
-        [JsonProperty(PropertyName = Constants.Properties.Body)]
         public string Body { get; set; }
 
         /// <summary>
@@ -29,8 +28,6 @@ namespace Azure.Cosmos.Scripts
         /// </summary>
         /// <value>The body of the trigger.</value>
         /// <seealso cref="TriggerType"/>
-        [JsonConverter(typeof(StringEnumConverter))]
-        [JsonProperty(PropertyName = Constants.Properties.TriggerType)]
         public TriggerType TriggerType { get; set; }
 
         /// <summary>
@@ -38,8 +35,6 @@ namespace Azure.Cosmos.Scripts
         /// </summary>
         /// <value>The operation the trigger is associated with.</value>
         /// <seealso cref="TriggerOperation"/>
-        [JsonConverter(typeof(StringEnumConverter))]
-        [JsonProperty(PropertyName = Constants.Properties.TriggerOperation)]
         public TriggerOperation TriggerOperation { get; set; }
 
         /// <summary>
@@ -63,7 +58,6 @@ namespace Azure.Cosmos.Scripts
         ///  '/', '\\', '?', '#'
         /// </para>
         /// </remarks>
-        [JsonProperty(PropertyName = Constants.Properties.Id)]
         public string Id { get; set; }
 
         /// <summary>
@@ -75,8 +69,6 @@ namespace Azure.Cosmos.Scripts
         /// <remarks>
         /// ETags are used for concurrency checking when updating resources. 
         /// </remarks>
-        [JsonProperty(PropertyName = Constants.Properties.ETag, NullValueHandling = NullValueHandling.Ignore)]
-        [JsonConverter(typeof(ETagConverter))]
-        public ETag? ETag { get; private set; }
+        public ETag? ETag { get; internal set; }
     }
 }

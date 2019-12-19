@@ -52,8 +52,7 @@ namespace Azure.Cosmos
 
             writer.WriteStartObject();
 
-            writer.WritePropertyName(Constants.Properties.DefaultConsistencyLevel);
-            writer.WriteStringValue(JsonSerializer.Serialize(setting.DefaultConsistencyLevel, options));
+            writer.WriteString(Constants.Properties.DefaultConsistencyLevel, JsonSerializer.Serialize(setting.DefaultConsistencyLevel, options));
 
             writer.WriteNumber(Constants.Properties.MaxStalenessPrefix, setting.MaxStalenessPrefix);
 
@@ -87,7 +86,7 @@ namespace Azure.Cosmos
             }
             else if (property.NameEquals(Constants.Properties.DefaultConsistencyLevel))
             {
-                if (Enum.TryParse<ConsistencyLevel>(property.Value.GetString(), out ConsistencyLevel consistencyLevel))
+                if (Enum.TryParse(property.Value.GetString(), out ConsistencyLevel consistencyLevel))
                 {
                     setting.DefaultConsistencyLevel = consistencyLevel;
                 }
