@@ -52,6 +52,11 @@ namespace Microsoft.Azure.Cosmos
         {
             get
             {
+                if (this.SupplementalResponseStatisticsList == null)
+                {
+                    return default;
+                }
+
                 return this.SupplementalResponseStatisticsList.Skip(Math.Max(0, this.SupplementalResponseStatisticsList.Count - 10));
             }
         }
@@ -94,11 +99,16 @@ namespace Microsoft.Azure.Cosmos
                         return true;
                     }
                 }
-                foreach (StoreResponseStatistics responseStatistics in this.SupplementalResponseStatisticsList)
+
+                if (this.SupplementalResponseStatisticsList != null)
                 {
-                    if (responseStatistics.StoreResult.IsClientCpuOverloaded)
+                    foreach (StoreResponseStatistics responseStatistics in this.SupplementalResponseStatisticsList)
                     {
-                        return true;
+                        if (responseStatistics.StoreResult != null
+                            && responseStatistics.StoreResult.IsClientCpuOverloaded)
+                        {
+                            return true;
+                        }
                     }
                 }
 
