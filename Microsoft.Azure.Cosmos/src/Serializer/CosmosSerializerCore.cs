@@ -5,9 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Collections;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
     using System.Diagnostics;
     using System.IO;
     using Microsoft.Azure.Cosmos.CosmosElements;
@@ -25,13 +23,8 @@ namespace Microsoft.Azure.Cosmos
         private readonly CosmosSerializer customSerializer;
         private readonly CosmosSerializer sqlQuerySpecSerializer;
 
-        internal CosmosSerializerCore()
-            : this(customSerializer: null)
-        {
-        }
-
         internal CosmosSerializerCore(
-            CosmosSerializer customSerializer)
+            CosmosSerializer customSerializer = null)
         {
             if (customSerializer == null)
             {
