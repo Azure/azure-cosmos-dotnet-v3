@@ -5,12 +5,12 @@
 namespace Azure.Cosmos
 {
     using System;
-    using Microsoft.Azure.Documents;
-    using Newtonsoft.Json;
+    using System.Text.Json.Serialization;
 
     /// <summary> 
     /// Represents a user in the Azure Cosmos DB service.
     /// </summary>
+    [JsonConverter(typeof(TextJsonUserPropertiesConverter))]
     public class UserProperties
     {
         private string id;
@@ -18,7 +18,7 @@ namespace Azure.Cosmos
         /// <summary>
         /// Initializes a new instance of the <see cref="UserProperties"/> class for the Azure Cosmos DB service.
         /// </summary>
-        protected UserProperties()
+        internal UserProperties()
         {
         }
 
@@ -49,7 +49,6 @@ namespace Azure.Cosmos
         ///  '/', '\\', '?', '#'
         /// </para>
         /// </remarks>
-        [JsonProperty(PropertyName = Constants.Properties.Id)]
         public string Id
         {
             get => this.id;
@@ -65,16 +64,13 @@ namespace Azure.Cosmos
         /// <remarks>
         /// ETags are used for concurrency checking when updating resources. 
         /// </remarks>
-        [JsonProperty(PropertyName = Constants.Properties.ETag)]
-        public string ETag { get; private set; }
+        public ETag? ETag { get; internal set; }
 
         /// <summary>
         /// Gets the last modified time stamp associated with <see cref="DatabaseProperties" /> from the Azure Cosmos DB service.
         /// </summary>
         /// <value>The last modified time stamp associated with the resource.</value>
-        [JsonConverter(typeof(UnixDateTimeConverter))]
-        [JsonProperty(PropertyName = Constants.Properties.LastModified)]
-        public DateTime? LastModified { get; private set; }
+        public DateTime? LastModified { get; internal set; }
 
         /// <summary>
         /// Gets the Resource Id associated with the resource in the Azure Cosmos DB service.
@@ -87,7 +83,6 @@ namespace Azure.Cosmos
         /// resource whether that is a database, a collection or a document.
         /// These resource ids are used when building up SelfLinks, a static addressable Uri for each resource within a database account.
         /// </remarks>
-        [JsonProperty(PropertyName = Constants.Properties.RId)]
         internal string ResourceId { get; set; }
 
         /// <summary>
@@ -98,15 +93,13 @@ namespace Azure.Cosmos
         /// A self-link is a static addressable Uri for each resource within a database account and follows the Azure Cosmos DB resource model.
         /// E.g. a self-link for a document could be dbs/db_resourceid/colls/coll_resourceid/documents/doc_resourceid
         /// </remarks>
-        [JsonProperty(PropertyName = Constants.Properties.SelfLink)]
-        internal string SelfLink { get; private set; }
+        internal string SelfLink { get; set; }
 
         /// <summary>
         /// Gets the permissions associated with the user for the Azure Cosmos DB service.
         /// </summary>
         /// <value>The permissions associated with the user.</value> 
-        [JsonProperty(PropertyName = Constants.Properties.PermissionsLink)]
-        internal string Permissions { get; private set; }
+        internal string Permissions { get; set; }
 
         /// <summary>
         /// Gets the self-link of the permissions associated with the user for the Azure Cosmos DB service.
