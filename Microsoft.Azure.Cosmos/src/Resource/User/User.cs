@@ -218,11 +218,14 @@ namespace Microsoft.Azure.Cosmos
         /// <code language="c#">
         /// <![CDATA[
         /// string queryText = "SELECT * FROM c where c.id like '%testId%'";
-        /// FeedIterator<PermissionProperties> resultSet = this.users.GetPermissionQueryIterator<PermissionProperties>(queryText);
+        /// FeedIterator<PermissionProperties> feedIterator = this.users.GetPermissionQueryIterator<PermissionProperties>(queryText);
         /// while (feedIterator.HasMoreResults)
         /// {
-        ///     FeedResponse<PermissionProperties> iterator =
-        ///     await feedIterator.ReadNextAsync(this.cancellationToken);
+        ///     FeedResponse<PermissionProperties> response = await feedIterator.ReadNextAsync();
+        ///     foreach (var permission in response)
+        ///     {
+        ///         Console.WriteLine(permission);
+        ///     }
         /// }
         /// ]]>
         /// </code>
@@ -231,11 +234,14 @@ namespace Microsoft.Azure.Cosmos
         /// 2. This create the type feed iterator for permissions without queryText, retrieving all permissions.
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator<PermissionProperties> resultSet = this.user.GetPermissionQueryIterator<PermissionProperties>();
+        /// FeedIterator<PermissionProperties> feedIterator = this.user.GetPermissionQueryIterator<PermissionProperties>();
         /// while (feedIterator.HasMoreResults)
         /// {
-        ///     FeedResponse<PermissionProperties> iterator =
-        ///     await feedIterator.ReadNextAsync(this.cancellationToken);
+        ///     FeedResponse<PermissionProperties> response = await feedIterator.ReadNextAsync();
+        ///     foreach (var permission in response)
+        ///     {
+        ///         Console.WriteLine(permission);
+        ///     }
         /// }
         /// ]]>
         /// </code>
@@ -260,9 +266,8 @@ namespace Microsoft.Azure.Cosmos
         /// This create the type feed iterator for permissions with queryDefinition as input.
         /// <code language="c#">
         /// <![CDATA[
-        /// string queryText = "SELECT * FROM c where c.id like @testId";
-        /// QueryDefinition queryDefinition = new QueryDefinition(queryText);
-        /// queryDefinition.WithParameter("@testId", "testPermissionId");
+        /// QueryDefinition queryDefinition = new QueryDefinition("SELECT * FROM c where c.id like @testId")
+        ///     .WithParameter("@testId", "testPermissionId");
         /// FeedIterator<PermissionProperties> resultSet = this.user.GetPermissionQueryIterator<PermissionProperties>(queryDefinition);
         /// while (feedIterator.HasMoreResults)
         /// {

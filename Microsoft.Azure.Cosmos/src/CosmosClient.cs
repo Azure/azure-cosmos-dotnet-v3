@@ -466,6 +466,24 @@ namespace Microsoft.Azure.Cosmos
         /// <see cref="Database.ReadAsync(RequestOptions, CancellationToken)" /> is recommended for single database look-up.
         /// </para>
         /// </remarks>
+        /// <example>
+        /// This create the type feed iterator for database with queryText as input,
+        /// <code language="c#">
+        /// <![CDATA[
+        /// QueryDefinition queryDefinition = new QueryDefinition("SELECT * FROM c where c.id like ")
+        ///     .WithParameter("@id", "%testId%");
+        /// FeedIterator<DatabaseProperties> feedIterator = this.users.GetDatabaseQueryIterator<DatabaseProperties>(queryDefinition);
+        /// while (feedIterator.HasMoreResults)
+        /// {
+        ///     FeedResponse<DatabaseProperties> response = await feedIterator.ReadNextAsync();
+        ///     foreach (var database in response)
+        ///     {
+        ///         Console.WriteLine(database);
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
         public virtual FeedIterator<T> GetDatabaseQueryIterator<T>(
             QueryDefinition queryDefinition,
             string continuationToken = null,
@@ -500,6 +518,29 @@ namespace Microsoft.Azure.Cosmos
         /// <see cref="Database.ReadStreamAsync(RequestOptions, CancellationToken)" /> is recommended for single database look-up.
         /// </para>
         /// </remarks>
+        /// <example>
+        /// Example on how to fully drain the query results.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// QueryDefinition queryDefinition = new QueryDefinition("select * From c where c._rid = @rid")
+        ///               .WithParameter("@rid", "TheRidValue");
+        /// FeedIterator feedIterator = this.CosmosClient.GetDatabaseQueryStreamIterator(
+        ///     queryDefinition);
+        /// while (feedIterator.HasMoreResults)
+        /// {
+        ///     // Stream iterator returns a response with status for errors
+        ///     using(ResponseMessage response = await feedIterator.ReadNextAsync())
+        ///     {
+        ///         // Handle failure scenario. 
+        ///         if(!response.IsSuccessStatusCode)
+        ///         {
+        ///             // Log the response.Diagnostics and handle the error
+        ///         }
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
         public virtual FeedIterator GetDatabaseQueryStreamIterator(
             QueryDefinition queryDefinition,
             string continuationToken = null,
@@ -528,6 +569,23 @@ namespace Microsoft.Azure.Cosmos
         /// <see cref="Database.ReadAsync(RequestOptions, CancellationToken)" /> is recommended for single database look-up.
         /// </para>
         /// </remarks>
+        /// <example>
+        /// This create the type feed iterator for database with queryText as input,
+        /// <code language="c#">
+        /// <![CDATA[
+        /// string queryText = "SELECT * FROM c where c.id like '%testId%'";
+        /// FeedIterator<DatabaseProperties> feedIterator = this.users.GetDatabaseQueryIterator<DatabaseProperties>(queryText);
+        /// while (feedIterator.HasMoreResults)
+        /// {
+        ///     FeedResponse<DatabaseProperties> response = await feedIterator.ReadNextAsync();
+        ///     foreach (var database in response)
+        ///     {
+        ///         Console.WriteLine(database);
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
         public virtual FeedIterator<T> GetDatabaseQueryIterator<T>(
             string queryText = null,
             string continuationToken = null,
@@ -559,6 +617,27 @@ namespace Microsoft.Azure.Cosmos
         /// <see cref="Database.ReadStreamAsync(RequestOptions, CancellationToken)" /> is recommended for single database look-up.
         /// </para>
         /// </remarks>
+        /// <example>
+        /// Example on how to fully drain the query results.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// FeedIterator feedIterator = this.CosmosClient.GetDatabaseQueryStreamIterator(
+        ///     ("select * From c where c._rid = 'TheRidValue'");
+        /// while (feedIterator.HasMoreResults)
+        /// {
+        ///     // Stream iterator returns a response with status for errors
+        ///     using(ResponseMessage response = await feedIterator.ReadNextAsync())
+        ///     {
+        ///         // Handle failure scenario. 
+        ///         if(!response.IsSuccessStatusCode)
+        ///         {
+        ///             // Log the response.Diagnostics and handle the error
+        ///         }
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
         public virtual FeedIterator GetDatabaseQueryStreamIterator(
             string queryText = null,
             string continuationToken = null,
