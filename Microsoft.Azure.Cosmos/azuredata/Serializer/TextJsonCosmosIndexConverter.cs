@@ -29,8 +29,8 @@ namespace Azure.Cosmos
                 throw new JsonException(string.Format(CultureInfo.CurrentCulture, RMResources.InvalidIndexSpecFormat));
             }
 
-            string raw = reader.GetString();
-            JsonDocument document = JsonDocument.Parse(raw);
+            using JsonDocument document = JsonDocument.ParseValue(ref reader);
+
             if (!document.RootElement.TryGetProperty(Constants.Properties.IndexKind, out JsonElement indexKindElement)
                 || indexKindElement.ValueKind != JsonValueKind.String)
             {
