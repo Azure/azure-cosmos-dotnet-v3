@@ -33,6 +33,7 @@ namespace Azure.Cosmos
     /// 
     /// CosmosClient client = new CosmosClient("endpoint", "key", clientOptions);
     /// </example>
+    [JsonConverter(typeof(TextJsonCosmosClientOptionsConverter))]
     public class CosmosClientOptions : ClientOptions
     {
         /// <summary>
@@ -273,7 +274,6 @@ namespace Azure.Cosmos
         /// <summary>
         /// (Gateway/Https) Get or set the proxy information used for web requests.
         /// </summary>
-        [JsonIgnore]
         public IWebProxy WebProxy
         {
             get => this.webProxy;
@@ -331,7 +331,6 @@ namespace Azure.Cosmos
         /// 
         /// CosmosClient client = new CosmosClient("endpoint", "key", clientOptions);
         /// </example>
-        [JsonConverter(typeof(ClientOptionJsonConverter))]
         public CosmosSerializer Serializer
         {
             get => this.serializer;
@@ -376,7 +375,6 @@ namespace Azure.Cosmos
         /// The default serializer is always used for all system owned types like DatabaseProperties.
         /// The default serializer is used for user types if no UserJsonSerializer is specified
         /// </summary>
-        [JsonConverter(typeof(ClientOptionJsonConverter))]
         internal CosmosSerializer PropertiesSerializer => CosmosClientOptions.propertiesSerializer;
 
         internal Collection<RequestHandler> CustomHandlers { get; }
@@ -668,37 +666,6 @@ namespace Azure.Cosmos
         internal string GetSerializedConfiguration()
         {
             return JsonSerializer.Serialize(this);
-        }
-
-        /// <summary>
-        /// The complex object passed in by the user can contain objects that can not be serialized. Instead just log the types.
-        /// </summary>
-        private class ClientOptionJsonConverter : JsonConverter<CosmosSerializer>
-        {
-            public override bool CanConvert(Type objectType)
-            {
-                return objectType == typeof(CosmosSerializer);
-            }
-
-            public override CosmosSerializer Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-            {
-                return JsonSerializer.Deserialize<CosmosSerializer>(ref reader, options);
-            }
-
-            public override void Write(Utf8JsonWriter writer, CosmosSerializer value, JsonSerializerOptions options)
-            {
-                CosmosJsonSerializerWrapper cosmosJsonSerializerWrapper = value as CosmosJsonSerializerWrapper;
-                if (value is CosmosJsonSerializerWrapper)
-                {
-                    writer.WriteString("CosmosSerializer", cosmosJsonSerializerWrapper.InternalJsonSerializer.GetType().ToString());
-                }
-
-                CosmosSerializer cosmosSerializer = value as CosmosSerializer;
-                if (cosmosSerializer is CosmosSerializer)
-                {
-                    writer.WriteString("CosmosSerializer", cosmosSerializer.GetType().ToString());
-                }
-            }
         }
     }
 }
