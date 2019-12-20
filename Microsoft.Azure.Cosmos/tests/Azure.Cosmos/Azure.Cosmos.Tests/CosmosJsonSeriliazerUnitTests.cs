@@ -10,6 +10,7 @@ namespace Azure.Cosmos.Tests
     using System.IO;
     using System.Net;
     using System.Text;
+    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
     using Azure.Cosmos.Scripts;
@@ -17,9 +18,6 @@ namespace Azure.Cosmos.Tests
     using Microsoft.Azure.Cosmos;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
-    using Newtonsoft.Json.Serialization;
 
     [TestClass]
     public class CosmosJsonSeriliazerUnitTests
@@ -71,9 +69,9 @@ namespace Azure.Cosmos.Tests
         [TestMethod]
         public void ValidateCustomSerializerSettings()
         {
-            JsonSerializerSettings settings = new JsonSerializerSettings()
+            JsonSerializerOptions settings = new JsonSerializerOptions()
             {
-                NullValueHandling = NullValueHandling.Ignore
+                IgnoreNullValues = true
             };
 
             ToDoActivity toDoActivityNoDescription = new ToDoActivity()

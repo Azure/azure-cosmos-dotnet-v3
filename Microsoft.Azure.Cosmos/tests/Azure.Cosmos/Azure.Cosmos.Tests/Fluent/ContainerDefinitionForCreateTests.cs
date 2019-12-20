@@ -107,43 +107,6 @@ namespace Azure.Cosmos.Tests.Fluent
         }
 
         [TestMethod]
-        public async Task WithTimeToLivePropertyPath()
-        {
-            Mock<ContainerResponse> mockContainerResponse = new Mock<ContainerResponse>();
-            Mock<CosmosDatabase> mockContainers = new Mock<CosmosDatabase>();
-            mockContainers
-                .Setup(c => c.CreateContainerAsync(
-#pragma warning disable CS0612 // Type or member is obsolete
-                    It.Is<ContainerProperties>((settings) => settings.TimeToLivePropertyPath.Equals(path)),
-#pragma warning restore CS0612 // Type or member is obsolete
-                    It.IsAny<int?>(),
-                    It.IsAny<RequestOptions>(),
-                    It.IsAny<CancellationToken>()))
-                .ReturnsAsync(mockContainerResponse.Object);
-            mockContainers
-                .Setup(c => c.Id)
-                .Returns(Guid.NewGuid().ToString());
-
-            ContainerBuilder containerFluentDefinitionForCreate = new ContainerBuilder(
-                mockContainers.Object,
-                GetContext(),
-                containerName,
-                partitionKey);
-
-            await containerFluentDefinitionForCreate
-                .WithTimeToLivePropertyPath(path)
-                .CreateAsync();
-
-            mockContainers.Verify(c => c.CreateContainerAsync(
-#pragma warning disable CS0612 // Type or member is obsolete
-                    It.Is<ContainerProperties>((settings) => settings.TimeToLivePropertyPath.Equals(path)),
-#pragma warning restore CS0612 // Type or member is obsolete
-                    It.IsAny<int?>(),
-                    It.IsAny<RequestOptions>(),
-                    It.IsAny<CancellationToken>()), Times.Once);
-        }
-
-        [TestMethod]
         public async Task WithDefaultTimeToLiveTimeSpan()
         {
             Mock<ContainerResponse> mockContainerResponse = new Mock<ContainerResponse>();

@@ -7,9 +7,10 @@ namespace Azure.Cosmos.EmulatorTests
     using System;
     using System.Globalization;
     using System.IO;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
     using Azure.Cosmos;
     using Azure.Cosmos.Serialization;
-    using Newtonsoft.Json;
 
     /// <summary>
     /// Placeholder for VST Logger.
@@ -21,7 +22,7 @@ namespace Azure.Cosmos.EmulatorTests
         private readonly Action<dynamic> toStreamCallBack;
 
         public CosmosSerializerHelper(
-            JsonSerializerSettings jsonSerializerSettings,
+            JsonSerializerOptions jsonSerializerSettings,
             Action<dynamic> fromStreamCallback,
             Action<dynamic> toStreamCallBack)
         {
@@ -52,38 +53,39 @@ namespace Azure.Cosmos.EmulatorTests
             return this.cosmosSerializer.ToStream<T>(input);
         }
 
-        public sealed class FormatNumbersAsTextConverter : JsonConverter
+        public sealed class FormatNumbersTextConverter : JsonConverter<int>
         {
-            public override bool CanRead => false;
-            public override bool CanWrite => true;
             public override bool CanConvert(Type type)
             {
-                return type == typeof(int) || type == typeof(double);
+                return type == typeof(int);
             }
 
-            public override void WriteJson(
-                JsonWriter writer,
-                object value,
-                JsonSerializer serializer)
+            public override void Write(Utf8JsonWriter writer, int value, JsonSerializerOptions options)
             {
-                if (value.GetType() == typeof(int))
-                {
-                    int number = (int)value;
-                    writer.WriteValue(number.ToString(CultureInfo.InvariantCulture));
-                }
-                else
-                {
-                    double number = (double)value;
-                    writer.WriteValue(number.ToString(CultureInfo.InvariantCulture));
-                }
+                writer.WriteNumberValue(value);
 
             }
 
-            public override object ReadJson(
-                JsonReader reader,
-                Type type,
-                object existingValue,
-                JsonSerializer serializer)
+            public override int Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                throw new NotSupportedException();
+            }
+        }
+
+        public sealed class FormatDoubleAsTextConverter : JsonConverter<double>
+        {
+            public override bool CanConvert(Type type)
+            {
+                return type == typeof(double);
+            }
+
+            public override void Write(Utf8JsonWriter writer, double value, JsonSerializerOptions options)
+            {
+                writer.WriteNumberValue(value);
+
+            }
+
+            public override double Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
             {
                 throw new NotSupportedException();
             }

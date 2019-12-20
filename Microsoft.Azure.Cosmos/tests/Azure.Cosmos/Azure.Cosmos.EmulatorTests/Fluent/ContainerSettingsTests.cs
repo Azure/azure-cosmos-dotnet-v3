@@ -495,50 +495,5 @@ namespace Azure.Cosmos.EmulatorTests
                 Assert.IsNotNull(ae);
             }
         }
-
-        [TestMethod]
-        public async Task TimeToLivePropertyPath()
-        {
-            string containerName = Guid.NewGuid().ToString();
-            string partitionKeyPath = "/user";
-            int timeToLivetimeToLiveInSeconds = 10;
-
-            ContainerResponse containerResponse = null;
-            try
-            {
-                containerResponse = await this.database.DefineContainer(containerName, partitionKeyPath)
-                    .WithTimeToLivePropertyPath("/creationDate")
-                    .CreateAsync();
-                Assert.Fail("CreateColleciton with TtlPropertyPath and with no DefaultTimeToLive should have failed.");
-            }
-            catch (CosmosException exeption)
-            {
-                // expected because DefaultTimeToLive was not specified
-                Assert.AreEqual(HttpStatusCode.BadRequest, exeption.StatusCode);
-            }
-
-            // Verify the container content.
-            containerResponse = await this.database.DefineContainer(containerName, partitionKeyPath)
-                   .WithTimeToLivePropertyPath("/creationDate")
-                   .WithDefaultTimeToLive(timeToLivetimeToLiveInSeconds)
-                   .CreateAsync();
-            CosmosContainer container = containerResponse;
-            Assert.AreEqual(timeToLivetimeToLiveInSeconds, containerResponse.Value.DefaultTimeToLive);
-#pragma warning disable 0612
-            Assert.AreEqual("/creationDate", containerResponse.Value.TimeToLivePropertyPath);
-#pragma warning restore 0612
-
-            //Creating an item and reading before expiration
-            var payload = new { id = "testId", user = "testUser", creationDate = ToEpoch(DateTime.UtcNow) };
-            ItemResponse<dynamic> createItemResponse = await container.CreateItemAsync<dynamic>(payload);
-            Assert.IsNotNull(createItemResponse.Value);
-            Assert.AreEqual(createItemResponse.GetRawResponse().Status, (int)HttpStatusCode.Created);
-            ItemResponse<dynamic> readItemResponse = await container.ReadItemAsync<dynamic>(payload.id, new PartitionKey(payload.user));
-            Assert.IsNotNull(readItemResponse.Value);
-            Assert.AreEqual(readItemResponse.GetRawResponse().Status, (int)HttpStatusCode.OK);
-
-            containerResponse = await container.DeleteContainerAsync();
-            Assert.AreEqual((int)HttpStatusCode.NoContent, containerResponse.GetRawResponse().Status);
-        }
     }
 }
