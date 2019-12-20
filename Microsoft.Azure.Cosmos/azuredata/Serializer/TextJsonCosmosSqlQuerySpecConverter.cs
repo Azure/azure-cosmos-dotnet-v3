@@ -41,9 +41,7 @@ namespace Azure.Cosmos
             writer.WritePropertyName("value");
 
             // Use the user serializer for the parameter values so custom conversions are correctly handled
-#pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
-            using (Stream str = this.UserSerializer.ToStreamAsync(sqlParameter.Value).GetAwaiter().GetResult())
-#pragma warning restore VSTHRD002 // Avoid problematic synchronous waits
+            using (Stream str = this.UserSerializer.ToStream(sqlParameter.Value))
             {
                 using (StreamReader streamReader = new StreamReader(str))
                 {

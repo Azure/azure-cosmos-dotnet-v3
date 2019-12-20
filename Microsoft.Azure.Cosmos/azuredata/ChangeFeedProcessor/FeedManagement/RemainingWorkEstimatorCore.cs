@@ -167,16 +167,14 @@ namespace Azure.Cosmos.ChangeFeed
             return parsed;
         }
 
-        private static async Task<Collection<JObject>> GetItemsFromResponseAsync(
-            Response response,
-            CancellationToken cancellationToken)
+        private static Collection<JObject> GetItemsFromResponse(Response response)
         {
             if (response.ContentStream == null)
             {
                 return new Collection<JObject>();
             }
 
-            return (await RemainingWorkEstimatorCore.DefaultSerializer.FromStreamAsync<CosmosFeedResponseUtil<JObject>>(response.ContentStream, cancellationToken)).Data;
+            return RemainingWorkEstimatorCore.DefaultSerializer.FromStream<CosmosFeedResponseUtil<JObject>>(response.ContentStream).Data;
         }
 
         private async Task<long> GetRemainingWorkAsync(DocumentServiceLease existingLease, CancellationToken cancellationToken)
@@ -198,7 +196,7 @@ namespace Azure.Cosmos.ChangeFeed
 
                 response.Headers.TryGetValue(HttpConstants.HttpHeaders.SessionToken, out string sessionToken);
                 long parsedLSNFromSessionToken = RemainingWorkEstimatorCore.TryConvertToNumber(ExtractLsnFromSessionToken(sessionToken));
-                Collection<JObject> items = await RemainingWorkEstimatorCore.GetItemsFromResponseAsync(response, cancellationToken);
+                Collection<JObject> items = RemainingWorkEstimatorCore.GetItemsFromResponse(response);
                 long lastQueryLSN = items.Count > 0
                     ? RemainingWorkEstimatorCore.TryConvertToNumber(RemainingWorkEstimatorCore.GetFirstItemLSN(items)) - 1
                     : parsedLSNFromSessionToken;

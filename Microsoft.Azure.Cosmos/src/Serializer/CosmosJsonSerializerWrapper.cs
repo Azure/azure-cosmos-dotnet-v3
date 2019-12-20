@@ -2,7 +2,11 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
+#if AZURECORE
+namespace Azure.Cosmos.Serialization
+#else
 namespace Microsoft.Azure.Cosmos
+#endif
 {
     using System;
     using System.IO;
