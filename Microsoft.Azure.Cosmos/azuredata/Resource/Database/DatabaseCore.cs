@@ -145,7 +145,7 @@ namespace Azure.Cosmos
                 cancellationToken);
         }
 
-        public override Task<ContainerResponse> CreateContainerAsync(
+        public override async Task<ContainerResponse> CreateContainerAsync(
                     ContainerProperties containerProperties,
                     int? throughput = null,
                     RequestOptions requestOptions = null,
@@ -159,12 +159,12 @@ namespace Azure.Cosmos
             this.ValidateContainerProperties(containerProperties);
 
             Task<Response> response = this.CreateContainerStreamInternalAsync(
-                streamPayload: this.ClientContext.PropertiesSerializer.ToStream(containerProperties),
+                streamPayload: await this.ClientContext.PropertiesSerializer.ToStreamAsync(containerProperties, cancellationToken),
                 throughput: throughput,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this.GetContainer(containerProperties.Id), response, cancellationToken);
+            return await this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this.GetContainer(containerProperties.Id), response, cancellationToken);
         }
 
         public override Task<ContainerResponse> CreateContainerAsync(
@@ -271,7 +271,7 @@ namespace Azure.Cosmos
                     id);
         }
 
-        public override Task<Response> CreateContainerStreamAsync(
+        public override async Task<Response> CreateContainerStreamAsync(
             ContainerProperties containerProperties,
             int? throughput = null,
             RequestOptions requestOptions = null,
@@ -284,8 +284,8 @@ namespace Azure.Cosmos
 
             this.ValidateContainerProperties(containerProperties);
 
-            Stream streamPayload = this.ClientContext.PropertiesSerializer.ToStream(containerProperties);
-            return this.CreateContainerStreamInternalAsync(streamPayload,
+            Stream streamPayload = await this.ClientContext.PropertiesSerializer.ToStreamAsync(containerProperties, cancellationToken);
+            return await this.CreateContainerStreamInternalAsync(streamPayload,
                 throughput,
                 requestOptions,
                 cancellationToken);
@@ -324,7 +324,7 @@ namespace Azure.Cosmos
                     id);
         }
 
-        public Task<Response> CreateUserStreamAsync(
+        public async Task<Response> CreateUserStreamAsync(
             UserProperties userProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -336,14 +336,14 @@ namespace Azure.Cosmos
 
             this.ClientContext.ValidateResource(userProperties.Id);
 
-            Stream streamPayload = this.ClientContext.PropertiesSerializer.ToStream(userProperties);
-            return this.ProcessUserCreateAsync(
+            Stream streamPayload = await this.ClientContext.PropertiesSerializer.ToStreamAsync(userProperties, cancellationToken);
+            return await this.ProcessUserCreateAsync(
                 streamPayload: streamPayload,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
 
-        public override Task<UserResponse> UpsertUserAsync(string id,
+        public override async Task<UserResponse> UpsertUserAsync(string id,
             RequestOptions requestOptions,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -355,11 +355,11 @@ namespace Azure.Cosmos
             this.ClientContext.ValidateResource(id);
 
             Task<Response> response = this.ProcessUserUpsertAsync(
-                streamPayload: this.ClientContext.PropertiesSerializer.ToStream(new UserProperties(id)),
+                streamPayload: await this.ClientContext.PropertiesSerializer.ToStreamAsync(new UserProperties(id)),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateUserResponseAsync(this.GetUser(id), response, cancellationToken);
+            return await this.ClientContext.ResponseFactory.CreateUserResponseAsync(this.GetUser(id), response, cancellationToken);
         }
 
         public override IAsyncEnumerable<Response> GetContainerQueryStreamIterator(
@@ -409,7 +409,7 @@ namespace Azure.Cosmos
             FeedIterator feedIterator = this.GetContainerQueryFeedIterator(queryDefinition, continuationToken, requestOptions);
             PageIteratorCore<T> pageIterator = new PageIteratorCore<T>(
                 feedIterator: feedIterator,
-                responseCreator: this.ClientContext.ResponseFactory.CreateQueryFeedResponseWithPropertySerializer<T>);
+                responseCreator: this.ClientContext.ResponseFactory.CreateQueryFeedResponseWithPropertySerializerAsync<T>);
 
             return PageResponseEnumerator.CreateAsyncPageable(continuation => pageIterator.GetPageAsync(continuation, cancellationToken));
         }
@@ -440,7 +440,7 @@ namespace Azure.Cosmos
 
             PageIteratorCore<T> pageIterator = new PageIteratorCore<T>(
                 feedIterator: userStreamIterator,
-                responseCreator: this.ClientContext.ResponseFactory.CreateQueryFeedResponseWithPropertySerializer<T>);
+                responseCreator: this.ClientContext.ResponseFactory.CreateQueryFeedResponseWithPropertySerializerAsync<T>);
 
             return PageResponseEnumerator.CreateAsyncPageable(continuation => pageIterator.GetPageAsync(continuation, cancellationToken));
         }

@@ -54,7 +54,7 @@ namespace Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        public override Task<ItemResponse<T>> CreateItemAsync<T>(
+        public override async Task<ItemResponse<T>> CreateItemAsync<T>(
             T item,
             PartitionKey? partitionKey = null,
             ItemRequestOptions requestOptions = null,
@@ -68,12 +68,12 @@ namespace Azure.Cosmos
             Task<Response> response = this.ExtractPartitionKeyAndProcessItemStreamAsync(
                 partitionKey: partitionKey,
                 itemId: null,
-                streamPayload: this.ClientContext.CosmosSerializer.ToStream<T>(item),
+                streamPayload: await this.ClientContext.CosmosSerializer.ToStreamAsync<T>(item, cancellationToken),
                 operationType: OperationType.Create,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response, cancellationToken);
+            return await this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response, cancellationToken);
         }
 
         public override async Task<Response> ReadItemStreamAsync(
@@ -123,7 +123,7 @@ namespace Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        public override Task<ItemResponse<T>> UpsertItemAsync<T>(
+        public override async Task<ItemResponse<T>> UpsertItemAsync<T>(
             T item,
             PartitionKey? partitionKey = null,
             ItemRequestOptions requestOptions = null,
@@ -137,12 +137,12 @@ namespace Azure.Cosmos
             Task<Response> response = this.ExtractPartitionKeyAndProcessItemStreamAsync(
                 partitionKey: partitionKey,
                 itemId: null,
-                streamPayload: this.ClientContext.CosmosSerializer.ToStream<T>(item),
+                streamPayload: await this.ClientContext.CosmosSerializer.ToStreamAsync<T>(item, cancellationToken),
                 operationType: OperationType.Upsert,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response, cancellationToken);
+            return await this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response, cancellationToken);
         }
 
         public override async Task<Response> ReplaceItemStreamAsync(
@@ -162,7 +162,7 @@ namespace Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        public override Task<ItemResponse<T>> ReplaceItemAsync<T>(
+        public override async Task<ItemResponse<T>> ReplaceItemAsync<T>(
             T item,
             string id,
             PartitionKey? partitionKey = null,
@@ -182,12 +182,12 @@ namespace Azure.Cosmos
             Task<Response> response = this.ExtractPartitionKeyAndProcessItemStreamAsync(
                partitionKey: partitionKey,
                itemId: id,
-               streamPayload: this.ClientContext.CosmosSerializer.ToStream<T>(item),
+               streamPayload: await this.ClientContext.CosmosSerializer.ToStreamAsync<T>(item, cancellationToken),
                operationType: OperationType.Replace,
                requestOptions: requestOptions,
                cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response, cancellationToken);
+            return await this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response, cancellationToken);
         }
 
         public override async Task<Response> DeleteItemStreamAsync(
@@ -379,7 +379,7 @@ namespace Azure.Cosmos
 
             PageIteratorCore<T> pageIterator = new PageIteratorCore<T>(
                 feedIterator: feedIterator,
-                responseCreator: this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>);
+                responseCreator: this.ClientContext.ResponseFactory.CreateQueryFeedResponseAsync<T>);
 
             return PageResponseEnumerator.CreateAsyncPageable(continuation => pageIterator.GetPageAsync(continuation, cancellationToken));
         }

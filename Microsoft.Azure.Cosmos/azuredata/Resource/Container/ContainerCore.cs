@@ -76,7 +76,7 @@ namespace Azure.Cosmos
             return await this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this, response, cancellationToken);
         }
 
-        public override Task<ContainerResponse> ReplaceContainerAsync(
+        public override async Task<ContainerResponse> ReplaceContainerAsync(
             ContainerProperties containerProperties,
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -88,11 +88,11 @@ namespace Azure.Cosmos
 
             this.ClientContext.ValidateResource(containerProperties.Id);
             Task<Response> response = this.ReplaceStreamInternalAsync(
-                streamPayload: this.ClientContext.PropertiesSerializer.ToStream(containerProperties),
+                streamPayload: await this.ClientContext.PropertiesSerializer.ToStreamAsync(containerProperties, cancellationToken),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this, response, cancellationToken);
+            return await this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this, response, cancellationToken);
         }
 
         public override Task<ContainerResponse> DeleteContainerAsync(
@@ -195,7 +195,7 @@ namespace Azure.Cosmos
 
             this.ClientContext.ValidateResource(containerProperties.Id);
             return await this.ReplaceStreamInternalAsync(
-                streamPayload: this.ClientContext.PropertiesSerializer.ToStream(containerProperties),
+                streamPayload: await this.ClientContext.PropertiesSerializer.ToStreamAsync(containerProperties, cancellationToken),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }

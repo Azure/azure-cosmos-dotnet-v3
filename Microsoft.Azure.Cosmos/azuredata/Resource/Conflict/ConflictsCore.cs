@@ -133,7 +133,7 @@ namespace Azure.Cosmos
 
             PageIteratorCore<T> pageIterator = new PageIteratorCore<T>(
                 feedIterator: feedIterator,
-                responseCreator: this.clientContext.ResponseFactory.CreateQueryFeedResponseWithPropertySerializer<T>);
+                responseCreator: this.clientContext.ResponseFactory.CreateQueryFeedResponseWithPropertySerializerAsync<T>);
 
             return PageResponseEnumerator.CreateAsyncPageable(continuation => pageIterator.GetPageAsync(continuation, cancellationToken));
         }
@@ -182,7 +182,9 @@ namespace Azure.Cosmos
             return await this.clientContext.ResponseFactory.CreateItemResponseAsync<T>(response, cancellationToken);
         }
 
-        public override T ReadConflictContent<T>(ConflictProperties cosmosConflict)
+        public override async Task<T> ReadConflictContentAsync<T>(
+            ConflictProperties cosmosConflict,
+            CancellationToken cancellationToken)
         {
             if (cosmosConflict == null)
             {
@@ -196,10 +198,10 @@ namespace Azure.Cosmos
                 {
                     using (StreamWriter writer = new StreamWriter(stream))
                     {
-                        writer.Write(cosmosConflict.Content);
-                        writer.Flush();
+                        await writer.WriteAsync(cosmosConflict.Content);
+                        await writer.FlushAsync();
                         stream.Position = 0;
-                        return this.clientContext.CosmosSerializer.FromStream<T>(stream);
+                        return await this.clientContext.CosmosSerializer.FromStreamAsync<T>(stream, cancellationToken);
                     }
                 }
             }

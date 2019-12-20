@@ -75,7 +75,7 @@ namespace Azure.Cosmos
         }
 
         /// <inheritdoc/>
-        public override Task<UserResponse> ReplaceAsync(UserProperties userProperties,
+        public override async Task<UserResponse> ReplaceAsync(UserProperties userProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -86,14 +86,14 @@ namespace Azure.Cosmos
 
             this.ClientContext.ValidateResource(userProperties.Id);
             Task<Response> response = this.ReplaceStreamInternalAsync(
-                streamPayload: this.ClientContext.PropertiesSerializer.ToStream(userProperties),
+                streamPayload: await this.ClientContext.PropertiesSerializer.ToStreamAsync(userProperties, cancellationToken),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateUserResponseAsync(this, response, cancellationToken);
+            return await this.ClientContext.ResponseFactory.CreateUserResponseAsync(this, response, cancellationToken);
         }
 
-        public Task<Response> ReplaceStreamAsync(UserProperties userProperties,
+        public async Task<Response> ReplaceStreamAsync(UserProperties userProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -103,8 +103,8 @@ namespace Azure.Cosmos
             }
 
             this.ClientContext.ValidateResource(userProperties.Id);
-            return this.ReplaceStreamInternalAsync(
-                streamPayload: this.ClientContext.PropertiesSerializer.ToStream(userProperties),
+            return await this.ReplaceStreamInternalAsync(
+                streamPayload: await this.ClientContext.PropertiesSerializer.ToStreamAsync(userProperties, cancellationToken),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
@@ -145,7 +145,7 @@ namespace Azure.Cosmos
         }
 
         /// <inheritdoc/>
-        public override Task<PermissionResponse> CreatePermissionAsync(PermissionProperties permissionProperties,
+        public override async Task<PermissionResponse> CreatePermissionAsync(PermissionProperties permissionProperties,
             int? tokenExpiryInSeconds = null,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -158,15 +158,15 @@ namespace Azure.Cosmos
             this.ClientContext.ValidateResource(permissionProperties.Id);
 
             Task<Response> response = this.CreatePermissionStreamInternalAsync(
-                streamPayload: this.ClientContext.PropertiesSerializer.ToStream(permissionProperties),
+                streamPayload: await this.ClientContext.PropertiesSerializer.ToStreamAsync(permissionProperties, cancellationToken),
                 tokenExpiryInSeconds: tokenExpiryInSeconds,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreatePermissionResponseAsync(this.GetPermission(permissionProperties.Id), response, cancellationToken);
+            return await this.ClientContext.ResponseFactory.CreatePermissionResponseAsync(this.GetPermission(permissionProperties.Id), response, cancellationToken);
         }
 
-        public Task<Response> CreatePermissionStreamAsync(PermissionProperties permissionProperties,
+        public async Task<Response> CreatePermissionStreamAsync(PermissionProperties permissionProperties,
             int? tokenExpiryInSeconds,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -178,14 +178,14 @@ namespace Azure.Cosmos
 
             this.ClientContext.ValidateResource(permissionProperties.Id);
 
-            Stream streamPayload = this.ClientContext.PropertiesSerializer.ToStream(permissionProperties);
-            return this.CreatePermissionStreamInternalAsync(streamPayload,
+            Stream streamPayload = await this.ClientContext.PropertiesSerializer.ToStreamAsync(permissionProperties, cancellationToken);
+            return await this.CreatePermissionStreamInternalAsync(streamPayload,
                 tokenExpiryInSeconds,
                 requestOptions,
                 cancellationToken);
         }
 
-        public override Task<PermissionResponse> UpsertPermissionAsync(PermissionProperties permissionProperties,
+        public override async Task<PermissionResponse> UpsertPermissionAsync(PermissionProperties permissionProperties,
             int? tokenExpiryInSeconds = null,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -198,12 +198,12 @@ namespace Azure.Cosmos
             this.ClientContext.ValidateResource(permissionProperties.Id);
 
             Task<Response> response = this.UpsertPermissionStreamInternalAsync(
-                streamPayload: this.ClientContext.PropertiesSerializer.ToStream(permissionProperties),
+                streamPayload: await this.ClientContext.PropertiesSerializer.ToStreamAsync(permissionProperties, cancellationToken),
                 tokenExpiryInSeconds: tokenExpiryInSeconds,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreatePermissionResponseAsync(this.GetPermission(permissionProperties.Id), response, cancellationToken);
+            return await this.ClientContext.ResponseFactory.CreatePermissionResponseAsync(this.GetPermission(permissionProperties.Id), response, cancellationToken);
         }
 
         public override AsyncPageable<T> GetPermissionQueryIterator<T>(QueryDefinition queryDefinition,
@@ -218,7 +218,7 @@ namespace Azure.Cosmos
 
             PageIteratorCore<T> pageIterator = new PageIteratorCore<T>(
                 feedIterator: permissionStreamIterator,
-                responseCreator: this.ClientContext.ResponseFactory.CreateQueryFeedResponseWithPropertySerializer<T>);
+                responseCreator: this.ClientContext.ResponseFactory.CreateQueryFeedResponseWithPropertySerializerAsync<T>);
 
             return PageResponseEnumerator.CreateAsyncPageable(continuation => pageIterator.GetPageAsync(continuation, cancellationToken));
         }

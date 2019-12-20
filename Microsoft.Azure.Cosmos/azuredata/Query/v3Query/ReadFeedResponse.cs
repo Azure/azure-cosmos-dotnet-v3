@@ -4,6 +4,8 @@
 namespace Azure.Cosmos
 {
     using System.Collections.Generic;
+    using System.Threading;
+    using System.Threading.Tasks;
     using Azure.Cosmos.Serialization;
     using Microsoft.Azure.Cosmos;
 
@@ -33,16 +35,17 @@ namespace Azure.Cosmos
 
         public override Response GetRawResponse() => this.response;
 
-        internal static ReadFeedResponse<TInput> CreateResponse<TInput>(
+        internal static async Task<ReadFeedResponse<TInput>> CreateResponseAsync<TInput>(
             Response responseMessage,
-            CosmosSerializer jsonSerializer)
+            CosmosSerializer jsonSerializer,
+            CancellationToken cancellationToken)
         {
             using (responseMessage)
             {
                 ICollection<TInput> resources = default(ICollection<TInput>);
                 if (responseMessage.ContentStream != null)
                 {
-                    CosmosFeedResponseUtil<TInput> response = jsonSerializer.FromStream<CosmosFeedResponseUtil<TInput>>(responseMessage.ContentStream);
+                    CosmosFeedResponseUtil<TInput> response = await jsonSerializer.FromStreamAsync<CosmosFeedResponseUtil<TInput>>(responseMessage.ContentStream, cancellationToken);
                     resources = response.Data;
                 }
 

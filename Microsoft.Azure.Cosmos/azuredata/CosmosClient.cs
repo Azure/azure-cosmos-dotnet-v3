@@ -482,7 +482,7 @@ namespace Azure.Cosmos
 
             PageIteratorCore<T> pageIterator = new PageIteratorCore<T>(
                 feedIterator: feedIterator,
-                responseCreator: this.ClientContext.ResponseFactory.CreateQueryFeedResponseWithPropertySerializer<T>);
+                responseCreator: this.ClientContext.ResponseFactory.CreateQueryFeedResponseWithPropertySerializerAsync<T>);
 
             return PageResponseEnumerator.CreateAsyncPageable(continuation => pageIterator.GetPageAsync(continuation, cancellationToken));
         }
@@ -602,7 +602,7 @@ namespace Azure.Cosmos
         /// <remarks>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
         /// </remarks>
-        public virtual Task<Response> CreateDatabaseStreamAsync(
+        public virtual async Task<Response> CreateDatabaseStreamAsync(
                 DatabaseProperties databaseProperties,
                 int? throughput = null,
                 RequestOptions requestOptions = null,
@@ -614,9 +614,9 @@ namespace Azure.Cosmos
             }
 
             this.ClientContext.ValidateResource(databaseProperties.Id);
-            Stream streamPayload = this.ClientContext.PropertiesSerializer.ToStream<DatabaseProperties>(databaseProperties);
+            Stream streamPayload = await this.ClientContext.PropertiesSerializer.ToStreamAsync<DatabaseProperties>(databaseProperties);
 
-            return this.CreateDatabaseStreamInternalAsync(streamPayload, throughput, requestOptions, cancellationToken);
+            return await this.CreateDatabaseStreamInternalAsync(streamPayload, throughput, requestOptions, cancellationToken);
         }
 
         /// <summary>
@@ -688,19 +688,19 @@ namespace Azure.Cosmos
             return databaseProperties;
         }
 
-        internal Task<DatabaseResponse> CreateDatabaseAsync(
+        internal async Task<DatabaseResponse> CreateDatabaseAsync(
                     DatabaseProperties databaseProperties,
                     int? throughput = null,
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
             Task<Response> response = this.CreateDatabaseStreamInternalAsync(
-                streamPayload: this.ClientContext.PropertiesSerializer.ToStream<DatabaseProperties>(databaseProperties),
+                streamPayload: await this.ClientContext.PropertiesSerializer.ToStreamAsync<DatabaseProperties>(databaseProperties),
                 throughput: throughput,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(this.GetDatabase(databaseProperties.Id), response, cancellationToken);
+            return await this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(this.GetDatabase(databaseProperties.Id), response, cancellationToken);
         }
 
         private Task<Response> CreateDatabaseStreamInternalAsync(

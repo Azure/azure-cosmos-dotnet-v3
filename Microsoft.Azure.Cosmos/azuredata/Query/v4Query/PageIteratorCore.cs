@@ -13,11 +13,11 @@ namespace Azure.Cosmos
     internal class PageIteratorCore<T>
     {
         private readonly FeedIterator feedIterator;
-        private readonly Func<Response, IReadOnlyList<T>> responseCreator;
+        private readonly Func<Response, CancellationToken, Task<IReadOnlyList<T>>> responseCreator;
 
         internal PageIteratorCore(
             FeedIterator feedIterator,
-            Func<Response, IReadOnlyList<T>> responseCreator)
+            Func<Response, CancellationToken,  Task<IReadOnlyList<T>>> responseCreator)
         {
             this.responseCreator = responseCreator;
             this.feedIterator = feedIterator;
@@ -31,7 +31,7 @@ namespace Azure.Cosmos
 
             Response response = await this.feedIterator.ReadNextAsync(cancellationToken);
             
-            return (new CosmosPage<T>(this.responseCreator(response), response, this.TryGetContinuationToken), this.feedIterator.HasMoreResults);
+            return (new CosmosPage<T>(await this.responseCreator(response, cancellationToken), response, this.TryGetContinuationToken), this.feedIterator.HasMoreResults);
         }
 
         internal bool TryGetContinuationToken(out string state)

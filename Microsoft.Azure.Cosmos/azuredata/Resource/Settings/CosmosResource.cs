@@ -6,6 +6,8 @@ namespace Azure.Cosmos
 {
     using System;
     using System.IO;
+    using System.Threading;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
 
     /// <summary> 
@@ -16,7 +18,9 @@ namespace Azure.Cosmos
     {
         private static CosmosTextJsonSerializer cosmosDefaultJsonSerializer = new CosmosTextJsonSerializer();
 
-        internal static T FromStream<T>(DocumentServiceResponse response)
+        internal static async Task<T> FromStreamAsync<T>(
+            DocumentServiceResponse response,
+            CancellationToken cancellationToken)
         {
             if (response == null)
             {
@@ -25,20 +29,24 @@ namespace Azure.Cosmos
 
             if (response.ResponseBody != null && (!response.ResponseBody.CanSeek || response.ResponseBody.Length > 0))
             {
-                return CosmosResource.FromStream<T>(response.ResponseBody);
+                return await CosmosResource.FromStreamAsync<T>(response.ResponseBody, cancellationToken);
             }
 
             return default(T);
         }
 
-        internal static Stream ToStream<T>(T input)
+        internal static Task<Stream> ToStreamAsync<T>(
+            T input,
+            CancellationToken cancellationToken)
         {
-            return CosmosResource.cosmosDefaultJsonSerializer.ToStream(input);
+            return CosmosResource.cosmosDefaultJsonSerializer.ToStreamAsync(input, cancellationToken);
         }
 
-        internal static T FromStream<T>(Stream stream)
+        internal static ValueTask<T> FromStreamAsync<T>(
+            Stream stream,
+            CancellationToken cancellationToken)
         {
-            return CosmosResource.cosmosDefaultJsonSerializer.FromStream<T>(stream);
+            return CosmosResource.cosmosDefaultJsonSerializer.FromStreamAsync<T>(stream, cancellationToken);
         }
     }
 }

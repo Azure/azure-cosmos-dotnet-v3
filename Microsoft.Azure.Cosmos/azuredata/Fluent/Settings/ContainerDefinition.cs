@@ -1,14 +1,14 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Fluent
+namespace Azure.Cosmos.Fluent
 {
     using System;
 
     /// <summary>
     /// Azure Cosmos container fluent definition.
     /// </summary>
-    /// <seealso cref="Container"/>
+    /// <seealso cref="CosmosContainer"/>
     public abstract class ContainerDefinition<T>
         where T : ContainerDefinition<T>
     {
