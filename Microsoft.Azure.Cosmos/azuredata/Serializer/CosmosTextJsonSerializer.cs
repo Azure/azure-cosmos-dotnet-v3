@@ -14,7 +14,7 @@ namespace Azure.Cosmos
     /// </summary>
     internal sealed class CosmosTextJsonSerializer : CosmosSerializer
     {
-        private static JsonSerializerOptions DefaultSerializationOptions = new JsonSerializerOptions() { WriteIndented = false, DefaultBufferSize = 1024 };
+        private static JsonSerializerOptions DefaultSerializationOptions = new JsonSerializerOptions() { WriteIndented = false };
         private readonly JsonSerializerOptions jsonSerializerSettings;
 
         /// <summary>
@@ -26,7 +26,7 @@ namespace Azure.Cosmos
         /// </remarks>
         internal CosmosTextJsonSerializer()
         {
-            this.jsonSerializerSettings = new JsonSerializerOptions();
+            this.jsonSerializerSettings = CosmosTextJsonSerializer.DefaultSerializationOptions;
         }
 
         /// <summary>
@@ -74,27 +74,7 @@ namespace Azure.Cosmos
                     return (T)(object)stream;
                 }
 
-                ReadOnlySpan<byte> span;
-                MemoryStream memoryStream = stream as MemoryStream;
-                if (memoryStream != null)
-                {
-                    span = new ReadOnlySpan<byte>(memoryStream.ToArray());
-                }
-                else
-                {
-                    byte[] buffer = new byte[16 * 1024];
-                    using (MemoryStream ms = new MemoryStream())
-                    {
-                        int read;
-                        while ((read = stream.Read(buffer, 0, buffer.Length)) > 0)
-                        {
-                            ms.Write(buffer, 0, read);
-                        }
-
-                        span = new ReadOnlySpan<byte>(ms.ToArray());
-                    }
-                    
-                }
+                ReadOnlySpan<byte> span = stream.AsReadOnlySpan();
                 
                 return JsonSerializer.Deserialize<T>(span, this.jsonSerializerSettings);
             }
@@ -109,8 +89,8 @@ namespace Azure.Cosmos
         public override Stream ToStream<T>(T input)
         {
             MemoryStream streamPayload = new MemoryStream();
-            using Utf8JsonWriter utf8JsonWriter = new Utf8JsonWriter(streamPayload);
-            JsonSerializer.Serialize<T>(utf8JsonWriter, input, CosmosTextJsonSerializer.DefaultSerializationOptions);
+            using Utf8JsonWriter utf8JsonWriter = new Utf8JsonWriter(streamPayload, new JsonWriterOptions() { Indented = this.jsonSerializerSettings.WriteIndented });
+            JsonSerializer.Serialize<T>(utf8JsonWriter, input, this.jsonSerializerSettings);
             streamPayload.Position = 0;
             return streamPayload;
         }
