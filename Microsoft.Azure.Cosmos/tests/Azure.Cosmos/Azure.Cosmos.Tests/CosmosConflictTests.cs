@@ -12,9 +12,9 @@ namespace Azure.Cosmos.Tests
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
-    using Newtonsoft.Json.Linq;
     using System.Collections.Generic;
     using Microsoft.Azure.Cosmos;
+    using System.Text.Json;
 
     [TestClass]
     public class CosmosConflictTests
@@ -50,7 +50,7 @@ namespace Azure.Cosmos.Tests
             ConflictProperties conflictSettings = new ConflictProperties();
             conflictSettings.SourceResourceId = expectedRID;
 
-            await container.Conflicts.ReadCurrentAsync<JObject>(conflictSettings, partitionKey);
+            await container.Conflicts.ReadCurrentAsync<Dictionary<string, object>>(conflictSettings, partitionKey);
         }
 
         [TestMethod]
@@ -60,14 +60,14 @@ namespace Azure.Cosmos.Tests
                 return TestHandler.ReturnSuccess();
             });
 
-            JObject someJsonObject = new JObject();
+            Dictionary<string, object> someJsonObject = new Dictionary<string, object>();
             someJsonObject["id"] = Guid.NewGuid().ToString();
             someJsonObject["someInt"] = 2;
 
             ConflictProperties conflictSettings = new ConflictProperties();
-            conflictSettings.Content = someJsonObject.ToString();
+            conflictSettings.Content = JsonSerializer.Serialize(someJsonObject);
 
-            Assert.AreEqual(someJsonObject.ToString(), container.Conflicts.ReadConflictContent<JObject>(conflictSettings).ToString());
+            Assert.AreEqual(JsonSerializer.Serialize(someJsonObject), JsonSerializer.Serialize(container.Conflicts.ReadConflictContent<Dictionary<string, object>>(conflictSettings)));
         }
 
         [TestMethod]

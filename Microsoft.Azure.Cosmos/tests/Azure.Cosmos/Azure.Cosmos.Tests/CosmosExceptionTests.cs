@@ -9,6 +9,7 @@ namespace Azure.Cosmos.Tests
     using System.Net;
     using System.Net.Http;
     using System.Text;
+    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
@@ -17,7 +18,6 @@ namespace Azure.Cosmos.Tests
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
-    using Newtonsoft.Json;
 
     [TestClass]
     public class CosmosExceptionTests
@@ -67,7 +67,7 @@ namespace Azure.Cosmos.Tests
             Error error = new Error();
             error.Code = "code";
             error.Message = message;
-            string testContent = JsonConvert.SerializeObject(error);
+            string testContent = JsonSerializer.Serialize(error, TextJsonErrorConverter.ErrorSerializationOptions.Value);
             using (MemoryStream memoryStream = new MemoryStream())
             {
                 StreamWriter sw = new StreamWriter(memoryStream);
