@@ -81,6 +81,9 @@
     <Compile Include="..\src\Serializer\CosmosSerializationOptions.cs">
       <Link>Serializer\%(Filename)%(Extension)</Link>
     </Compile>
+    <Compile Include="..\src\Serializer\CosmosSerializer.cs">
+      <Link>Serializer\%(Filename)%(Extension)</Link>
+    </Compile>
     <Compile Include="..\src\Serializer\CosmosSerializationFormatOptions.cs">
       <Link>Serializer\%(Filename)%(Extension)</Link>
     </Compile>
