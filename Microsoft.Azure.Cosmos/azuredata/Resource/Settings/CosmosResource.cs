@@ -6,6 +6,7 @@ namespace Azure.Cosmos
 {
     using System;
     using System.IO;
+    using Azure.Cosmos.Serialization;
     using Microsoft.Azure.Documents;
 
     /// <summary> 
