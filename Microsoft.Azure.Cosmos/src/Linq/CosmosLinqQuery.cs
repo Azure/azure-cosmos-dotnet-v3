@@ -174,14 +174,31 @@ namespace Microsoft.Azure.Cosmos.Linq
         internal async Task<Response<T>> AggregateResultAsync(CancellationToken cancellationToken = default)
         {
             List<T> result = new List<T>();
-            CosmosDiagnosticsAggregate cosmosDiagnostics = new CosmosDiagnosticsAggregate();
+            CosmosDiagnosticsContext diagnosticsContext = null;
             Headers headers = new Headers();
             FeedIterator<T> localFeedIterator = this.CreateFeedIterator(false);
             while (localFeedIterator.HasMoreResults)
             {
                 FeedResponse<T> response = await localFeedIterator.ReadNextAsync();
                 headers.RequestCharge += response.RequestCharge;
-                cosmosDiagnostics.Diagnostics.Add(response.Diagnostics);
+
+                // If the first page has a diagnostic context use that. Else create a new one and add the diagnostic to it.
+                if (diagnosticsContext == null &&
+                    response.Diagnostics is CosmosDiagnosticsContext responseDiagnosticContext)
+                {
+                    diagnosticsContext = responseDiagnosticContext;
+                }
+                else
+                {
+                    // If the first page is not a CosmosDiagnosticsContext then create new one
+                    if (diagnosticsContext == null)
+                    {
+                        diagnosticsContext = new CosmosDiagnosticsContext();
+                    }
+
+                    diagnosticsContext.AddJsonAttribute("QueryPage", response.Diagnostics);
+                }
+
                 result.AddRange(response);
             }
 
@@ -189,7 +206,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 System.Net.HttpStatusCode.OK,
                 headers,
                 result.FirstOrDefault(),
-                cosmosDiagnostics);
+                diagnosticsContext);
         }
 
         private FeedIteratorInternal CreateStreamIterator(bool isContinuationExcpected)
