@@ -53,7 +53,7 @@ namespace Azure.Cosmos.ChangeFeed
                 continuationToken: null,
                 requestOptions: queryRequestOptions))
             {
-                leases.AddRange((await CosmosContainerExtensions.DefaultJsonSerializer.FromStreamAsync<CosmosFeedResponseUtil<DocumentServiceLeaseCore>>(page.ContentStream)).Data);
+                leases.AddRange(CosmosContainerExtensions.DefaultJsonSerializer.FromStream<CosmosFeedResponseUtil<DocumentServiceLeaseCore>>(page.ContentStream).Data);
             }
 
             return leases;

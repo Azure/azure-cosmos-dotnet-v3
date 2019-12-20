@@ -72,7 +72,7 @@ namespace Azure.Cosmos
             OfferV2 newOffer = new OfferV2(offerV2, throughput);
 
             return await this.GetThroughputResponseAsync(
-                streamPayload: await this.ClientContext.PropertiesSerializer.ToStreamAsync(newOffer, cancellationToken),
+                streamPayload: this.ClientContext.PropertiesSerializer.ToStream(newOffer),
                 operationType: OperationType.Replace,
                 linkUri: new Uri(offerV2.SelfLink, UriKind.Relative),
                 resourceType: ResourceType.Offer,
@@ -92,7 +92,7 @@ namespace Azure.Cosmos
                 OfferV2 newOffer = new OfferV2(offerV2, throughput);
 
                 return await this.GetThroughputResponseAsync(
-                    streamPayload: await this.ClientContext.PropertiesSerializer.ToStreamAsync(newOffer, cancellationToken),
+                    streamPayload: this.ClientContext.PropertiesSerializer.ToStream(newOffer),
                     operationType: OperationType.Replace,
                     linkUri: new Uri(offerV2.SelfLink, UriKind.Relative),
                     resourceType: ResourceType.Offer,
@@ -153,7 +153,7 @@ namespace Azure.Cosmos
             FeedIterator feedIterator = this.GetOfferQueryStreamIterator(queryDefinition, continuationToken, requestOptions, cancellationToken);
             PageIteratorCore<T> pageIterator = new PageIteratorCore<T>(
                 feedIterator: feedIterator,
-                responseCreator: this.ClientContext.ResponseFactory.CreateQueryFeedResponseWithPropertySerializerAsync<T>);
+                responseCreator: this.ClientContext.ResponseFactory.CreateQueryFeedResponseWithPropertySerializer<T>);
 
             return PageResponseEnumerator.CreateAsyncPageable(continuation => pageIterator.GetPageAsync(continuation, cancellationToken));
         }

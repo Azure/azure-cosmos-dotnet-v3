@@ -140,7 +140,7 @@ namespace Azure.Cosmos.Query
                 requestOptions: queryRequestOptions,
                 partitionKey: queryRequestOptions.PartitionKey,
                 cosmosContainerCore: this.cosmosContainerCore,
-                streamPayload: await this.clientContext.SqlQuerySpecSerializer.ToStreamAsync(sqlQuerySpec),
+                streamPayload: this.clientContext.SqlQuerySpecSerializer.ToStream(sqlQuerySpec),
                 requestEnricher: (cosmosRequestMessage) =>
                 {
                     this.PopulatePartitionKeyRangeInfo(cosmosRequestMessage, partitionKeyRange);

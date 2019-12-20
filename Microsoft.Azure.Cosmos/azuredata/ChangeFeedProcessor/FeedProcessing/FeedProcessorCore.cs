@@ -114,13 +114,13 @@ namespace Azure.Cosmos.ChangeFeed
             }
         }
 
-        private async Task DispatchChangesAsync(Response response, CancellationToken cancellationToken)
+        private Task DispatchChangesAsync(Response response, CancellationToken cancellationToken)
         {
             ChangeFeedObserverContext context = new ChangeFeedObserverContextCore<T>(this.options.LeaseToken, response, this.checkpointer);
             Collection<T> asFeedResponse;
             try
             {
-                asFeedResponse = (await this.cosmosJsonSerializer.FromStreamAsync<CosmosFeedResponseUtil<T>>(response.ContentStream, cancellationToken)).Data;
+                asFeedResponse = this.cosmosJsonSerializer.FromStream<CosmosFeedResponseUtil<T>>(response.ContentStream).Data;
             }
             catch (Exception serializationException)
             {
@@ -131,13 +131,13 @@ namespace Azure.Cosmos.ChangeFeed
             // When StartFromBeginning is used, the first request returns OK but no content
             if (asFeedResponse.Count == 0)
             {
-                return;
+                return Task.CompletedTask;
             }
 
             List<T> asReadOnlyList = new List<T>(asFeedResponse.Count);
             asReadOnlyList.AddRange(asFeedResponse);
 
-            await this.observer.ProcessChangesAsync(context, asReadOnlyList, cancellationToken);
+            return this.observer.ProcessChangesAsync(context, asReadOnlyList, cancellationToken);
         }
     }
 }

@@ -26,7 +26,7 @@ namespace Azure.Cosmos.ChangeFeed
                     .ConfigureAwait(false))
             {
                 responseMessage.EnsureSuccessStatusCode();
-                return await CosmosContainerExtensions.DefaultJsonSerializer.FromStreamAsync<T>(responseMessage.ContentStream);
+                return CosmosContainerExtensions.DefaultJsonSerializer.FromStream<T>(responseMessage.ContentStream);
             }
         }
 
@@ -35,7 +35,7 @@ namespace Azure.Cosmos.ChangeFeed
             PartitionKey partitionKey,
             T item)
         {
-            using (Stream itemStream = await CosmosContainerExtensions.DefaultJsonSerializer.ToStreamAsync<T>(item))
+            using (Stream itemStream = CosmosContainerExtensions.DefaultJsonSerializer.ToStream<T>(item))
             {
                 using (Response response = await container.CreateItemStreamAsync(itemStream, partitionKey).ConfigureAwait(false))
                 {
@@ -45,7 +45,7 @@ namespace Azure.Cosmos.ChangeFeed
                         return null;
                     }
 
-                    return new ItemResponse<T>(response, await CosmosContainerExtensions.DefaultJsonSerializer.FromStreamAsync<T>(response.ContentStream));
+                    return new ItemResponse<T>(response, CosmosContainerExtensions.DefaultJsonSerializer.FromStream<T>(response.ContentStream));
                 }
             }
         }
@@ -57,12 +57,12 @@ namespace Azure.Cosmos.ChangeFeed
             PartitionKey partitionKey,
             ItemRequestOptions itemRequestOptions)
         {
-            using (Stream itemStream = await CosmosContainerExtensions.DefaultJsonSerializer.ToStreamAsync<T>(item))
+            using (Stream itemStream = CosmosContainerExtensions.DefaultJsonSerializer.ToStream<T>(item))
             {
                 using (Response response = await container.ReplaceItemStreamAsync(itemStream, itemId, partitionKey, itemRequestOptions).ConfigureAwait(false))
                 {
                     response.EnsureSuccessStatusCode();
-                    return new ItemResponse<T>(response, await CosmosContainerExtensions.DefaultJsonSerializer.FromStreamAsync<T>(response.ContentStream));
+                    return new ItemResponse<T>(response, CosmosContainerExtensions.DefaultJsonSerializer.FromStream<T>(response.ContentStream));
                 }
             }
         }

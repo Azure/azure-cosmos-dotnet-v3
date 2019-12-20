@@ -98,7 +98,7 @@ namespace Azure.Cosmos
         }
 
         /// <inheritdoc/>
-        public override async Task<PermissionResponse> ReplaceAsync(PermissionProperties permissionProperties,
+        public override Task<PermissionResponse> ReplaceAsync(PermissionProperties permissionProperties,
             int? tokenExpiryInSeconds = null,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -110,15 +110,15 @@ namespace Azure.Cosmos
 
             this.ClientContext.ValidateResource(permissionProperties.Id);
             Task<Response> response = this.ReplaceStreamInternalAsync(
-                streamPayload: await this.ClientContext.PropertiesSerializer.ToStreamAsync(permissionProperties, cancellationToken),
+                streamPayload: this.ClientContext.PropertiesSerializer.ToStream(permissionProperties),
                 tokenExpiryInSeconds: tokenExpiryInSeconds,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return await this.ClientContext.ResponseFactory.CreatePermissionResponseAsync(this, response, cancellationToken);
+            return this.ClientContext.ResponseFactory.CreatePermissionResponseAsync(this, response, cancellationToken);
         }
 
-        public async Task<Response> ReplacePermissionStreamAsync(PermissionProperties permissionProperties,
+        public Task<Response> ReplacePermissionStreamAsync(PermissionProperties permissionProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -128,8 +128,8 @@ namespace Azure.Cosmos
             }
 
             this.ClientContext.ValidateResource(permissionProperties.Id);
-            return await this.ReplaceStreamInternalAsync(
-                streamPayload: await this.ClientContext.PropertiesSerializer.ToStreamAsync(permissionProperties, cancellationToken),
+            return this.ReplaceStreamInternalAsync(
+                streamPayload: this.ClientContext.PropertiesSerializer.ToStream(permissionProperties),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }

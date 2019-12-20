@@ -75,7 +75,7 @@ namespace Azure.Cosmos
                     this.clientContext.PropertiesSerializer :
                     this.clientContext.SqlQuerySpecSerializer;
 
-                stream = await serializer.ToStreamAsync(this.querySpec, cancellationToken);
+                stream = serializer.ToStream(this.querySpec);    
                 operation = OperationType.Query;
             }
 

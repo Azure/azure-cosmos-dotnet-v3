@@ -25,15 +25,15 @@ namespace Azure.Cosmos.Scripts
             this.clientContext = clientContext;
         }
 
-        public override async Task<Response<StoredProcedureProperties>> CreateStoredProcedureAsync(
+        public override Task<Response<StoredProcedureProperties>> CreateStoredProcedureAsync(
                     StoredProcedureProperties storedProcedureProperties,
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            return await this.ProcessStoredProcedureOperationAsync(
+            return this.ProcessStoredProcedureOperationAsync(
                 linkUri: this.container.LinkUri,
                 operationType: OperationType.Create,
-                streamPayload: await this.clientContext.PropertiesSerializer.ToStreamAsync(storedProcedureProperties),
+                streamPayload: this.clientContext.PropertiesSerializer.ToStream(storedProcedureProperties),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
@@ -102,7 +102,7 @@ namespace Azure.Cosmos.Scripts
 
             PageIteratorCore<T> pageIterator = new PageIteratorCore<T>(
                 feedIterator: iterator,
-                responseCreator: this.clientContext.ResponseFactory.CreateQueryFeedResponseWithPropertySerializerAsync<T>);
+                responseCreator: this.clientContext.ResponseFactory.CreateQueryFeedResponseWithPropertySerializer<T>);
 
             return PageResponseEnumerator.CreateAsyncPageable(continuation => pageIterator.GetPageAsync(continuation, cancellationToken));
         }
@@ -125,15 +125,15 @@ namespace Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        public override async Task<Response<StoredProcedureProperties>> ReplaceStoredProcedureAsync(
+        public override Task<Response<StoredProcedureProperties>> ReplaceStoredProcedureAsync(
             StoredProcedureProperties storedProcedureProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return await this.ProcessStoredProcedureOperationAsync(
+            return this.ProcessStoredProcedureOperationAsync(
                 id: storedProcedureProperties.Id,
                 operationType: OperationType.Replace,
-                streamPayload: await this.clientContext.PropertiesSerializer.ToStreamAsync(storedProcedureProperties, cancellationToken),
+                streamPayload: this.clientContext.PropertiesSerializer.ToStream(storedProcedureProperties),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
@@ -173,7 +173,7 @@ namespace Azure.Cosmos.Scripts
             return this.clientContext.ResponseFactory.CreateStoredProcedureExecuteResponseAsync<TOutput>(response, cancellationToken);
         }
 
-        public override async Task<Response> ExecuteStoredProcedureStreamAsync(
+        public override Task<Response> ExecuteStoredProcedureStreamAsync(
             string storedProcedureId,
             Cosmos.PartitionKey partitionKey,
             dynamic[] parameters,
@@ -190,7 +190,7 @@ namespace Azure.Cosmos.Scripts
             Stream streamPayload = null;
             if (parameters != null)
             {
-                streamPayload = await this.clientContext.CosmosSerializer.ToStreamAsync<dynamic[]>(parameters, cancellationToken);
+                streamPayload = this.clientContext.CosmosSerializer.ToStream<dynamic[]>(parameters);
             }
 
             Uri linkUri = this.clientContext.CreateLink(
@@ -198,7 +198,7 @@ namespace Azure.Cosmos.Scripts
                 uriPathSegment: Paths.StoredProceduresPathSegment,
                 id: storedProcedureId);
 
-            return await this.ProcessStreamOperationAsync(
+            return this.ProcessStreamOperationAsync(
                 resourceUri: linkUri,
                 resourceType: ResourceType.StoredProcedure,
                 operationType: OperationType.ExecuteJavaScript,
@@ -208,7 +208,7 @@ namespace Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        public override async Task<Response<TriggerProperties>> CreateTriggerAsync(
+        public override Task<Response<TriggerProperties>> CreateTriggerAsync(
             TriggerProperties triggerProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -228,10 +228,10 @@ namespace Azure.Cosmos.Scripts
                 throw new ArgumentNullException(nameof(triggerProperties.Body));
             }
 
-            return await this.ProcessTriggerOperationAsync(
+            return this.ProcessTriggerOperationAsync(
                 linkUri: this.container.LinkUri,
                 operationType: OperationType.Create,
-                streamPayload: await this.clientContext.PropertiesSerializer.ToStreamAsync(triggerProperties, cancellationToken),
+                streamPayload: this.clientContext.PropertiesSerializer.ToStream(triggerProperties),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
@@ -303,7 +303,7 @@ namespace Azure.Cosmos.Scripts
 
             PageIteratorCore<T> pageIterator = new PageIteratorCore<T>(
                 feedIterator: iterator,
-                responseCreator: this.clientContext.ResponseFactory.CreateQueryFeedResponseWithPropertySerializerAsync<T>);
+                responseCreator: this.clientContext.ResponseFactory.CreateQueryFeedResponseWithPropertySerializer<T>);
 
             return PageResponseEnumerator.CreateAsyncPageable(continuation => pageIterator.GetPageAsync(continuation, cancellationToken));
         }
@@ -326,7 +326,7 @@ namespace Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        public override async Task<Response<TriggerProperties>> ReplaceTriggerAsync(
+        public override Task<Response<TriggerProperties>> ReplaceTriggerAsync(
             TriggerProperties triggerProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -346,10 +346,10 @@ namespace Azure.Cosmos.Scripts
                 throw new ArgumentNullException(nameof(triggerProperties.Body));
             }
 
-            return await this.ProcessTriggerOperationAsync(
+            return this.ProcessTriggerOperationAsync(
                 id: triggerProperties.Id,
                 operationType: OperationType.Replace,
-                streamPayload: await this.clientContext.PropertiesSerializer.ToStreamAsync(triggerProperties, cancellationToken),
+                streamPayload: this.clientContext.PropertiesSerializer.ToStream(triggerProperties),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
@@ -372,7 +372,7 @@ namespace Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        public override async Task<Response<UserDefinedFunctionProperties>> CreateUserDefinedFunctionAsync(
+        public override Task<Response<UserDefinedFunctionProperties>> CreateUserDefinedFunctionAsync(
             UserDefinedFunctionProperties userDefinedFunctionProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -392,10 +392,10 @@ namespace Azure.Cosmos.Scripts
                 throw new ArgumentNullException(nameof(userDefinedFunctionProperties.Body));
             }
 
-            return await this.ProcessUserDefinedFunctionOperationAsync(
+            return this.ProcessUserDefinedFunctionOperationAsync(
                 linkUri: this.container.LinkUri,
                 operationType: OperationType.Create,
-                streamPayload: await this.clientContext.PropertiesSerializer.ToStreamAsync(userDefinedFunctionProperties, cancellationToken),
+                streamPayload: this.clientContext.PropertiesSerializer.ToStream(userDefinedFunctionProperties),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
@@ -470,7 +470,7 @@ namespace Azure.Cosmos.Scripts
 
             PageIteratorCore<T> pageIterator = new PageIteratorCore<T>(
                 feedIterator: iterator,
-                responseCreator: this.clientContext.ResponseFactory.CreateQueryFeedResponseWithPropertySerializerAsync<T>);
+                responseCreator: this.clientContext.ResponseFactory.CreateQueryFeedResponseWithPropertySerializer<T>);
 
             return PageResponseEnumerator.CreateAsyncPageable(continuation => pageIterator.GetPageAsync(continuation, cancellationToken));
         }
@@ -493,7 +493,7 @@ namespace Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        public override async Task<Response<UserDefinedFunctionProperties>> ReplaceUserDefinedFunctionAsync(
+        public override Task<Response<UserDefinedFunctionProperties>> ReplaceUserDefinedFunctionAsync(
             UserDefinedFunctionProperties userDefinedFunctionProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -513,10 +513,10 @@ namespace Azure.Cosmos.Scripts
                 throw new ArgumentNullException(nameof(userDefinedFunctionProperties.Body));
             }
 
-            return await this.ProcessUserDefinedFunctionOperationAsync(
+            return this.ProcessUserDefinedFunctionOperationAsync(
                 id: userDefinedFunctionProperties.Id,
                 operationType: OperationType.Replace,
-                streamPayload: await this.clientContext.PropertiesSerializer.ToStreamAsync(userDefinedFunctionProperties, cancellationToken),
+                streamPayload: this.clientContext.PropertiesSerializer.ToStream(userDefinedFunctionProperties),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }

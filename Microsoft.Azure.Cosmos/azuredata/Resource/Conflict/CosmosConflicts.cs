@@ -55,7 +55,6 @@ namespace Azure.Cosmos
         /// Reads the content of the Conflict resource in the Azure Cosmos DB service.
         /// </summary>
         /// <param name="conflict">The conflict for which we want to read the content of.</param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The content of the conflict.</returns>
         /// <seealso cref="ConflictProperties"/>
         /// <example>
@@ -63,15 +62,13 @@ namespace Azure.Cosmos
         /// <![CDATA[
         /// await foreach(ConflictProperties item in conflicts.GetConflictsAsync())
         /// {
-        ///     MyClass intendedChanges = await conflicts.ReadConflictContentAsync<MyClass>(item);
+        ///     MyClass intendedChanges = conflicts.ReadConflictContent<MyClass>(item);
         ///     ItemResponse<MyClass> currentState = await conflicts.ReadCurrentAsync<MyClass>(intendedChanges.MyPartitionKey, item);
         /// }
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<T> ReadConflictContentAsync<T>(
-            ConflictProperties conflict,
-            CancellationToken cancellationToken);
+        public abstract T ReadConflictContent<T>(ConflictProperties conflict);
 
         /// <summary>
         /// Obtains an iterator to go through the <see cref="ConflictProperties"/> on an Azure Cosmos container.
