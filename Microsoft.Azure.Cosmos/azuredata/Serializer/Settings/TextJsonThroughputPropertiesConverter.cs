@@ -61,21 +61,10 @@ namespace Azure.Cosmos
             {
                 writer.WriteString(Constants.Properties.OfferResourceId, setting.ResourceRID);
             }
+
             if (setting.Content != null)
             {
-                writer.WritePropertyName(Constants.Properties.Content);
-                writer.WriteStartObject();
-                if (setting.Content.OfferThroughput > 0)
-                {
-                    writer.WriteNumber(Constants.Properties.OfferThroughput, setting.Content.OfferThroughput);
-                }
-
-                if (setting.Content.OfferIsRUPerMinuteThroughputEnabled.HasValue)
-                {
-                    writer.WriteBoolean(Constants.Properties.OfferIsRUPerMinuteThroughputEnabled, setting.Content.OfferIsRUPerMinuteThroughputEnabled.Value);
-                }
-
-                writer.WriteEndObject();
+                TextJsonOfferV2Converter.WriteOfferContent(writer, setting.Content, Constants.Properties.Content);
             }
 
             writer.WriteEndObject();
@@ -103,20 +92,7 @@ namespace Azure.Cosmos
             }
             else if (property.NameEquals(Constants.Properties.Content))
             {
-                int? offerThroughput = null;
-                bool? offerIsRUPerMinuteThroughputEnabled = null;
-                if (property.Value.TryGetProperty(Constants.Properties.OfferThroughput, out JsonElement offerThroughputElement))
-                {
-                    offerThroughput = offerThroughputElement.GetInt32();
-                }
-
-                if (property.Value.TryGetProperty(Constants.Properties.OfferIsRUPerMinuteThroughputEnabled, out JsonElement offerIsRUPerMinuteThroughputEnabledElement)
-                    && offerIsRUPerMinuteThroughputEnabledElement.ValueKind != JsonValueKind.Null)
-                {
-                    offerIsRUPerMinuteThroughputEnabled = offerIsRUPerMinuteThroughputEnabledElement.GetBoolean();
-                }
-
-                setting.Content = offerThroughput.HasValue ? new OfferContentV2(offerThroughput.Value, offerIsRUPerMinuteThroughputEnabled) : new OfferContentV2();
+                setting.Content = TextJsonOfferV2Converter.ReadOfferContent(property.Value);
             }
         }
     }
