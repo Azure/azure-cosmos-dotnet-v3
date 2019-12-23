@@ -84,8 +84,8 @@ namespace Azure.Cosmos.EmulatorTests
             { }
 
             // Both items have null description
-            dynamic testItem = new { id = id1, status = pk, description = (string)null };
-            dynamic testItem2 = new { id = id2, status = pk, description = (string)null };
+            ToDoActivity testItem = new ToDoActivity { id = id1, status = pk };
+            ToDoActivity testItem2 = new ToDoActivity { id = id2, status = pk };
 
             // Create a client that ignore null
             CosmosClientOptions clientOptions = new CosmosClientOptions()
@@ -99,16 +99,17 @@ namespace Azure.Cosmos.EmulatorTests
 
             CosmosClient ignoreNullClient = TestCommon.CreateCosmosClient(clientOptions);
             CosmosContainer ignoreContainer = ignoreNullClient.GetContainer(this.database.Id, this.Container.Id);
-
-            Response<dynamic> ignoreNullResponse = await ignoreContainer.CreateItemAsync<dynamic>(item: testItem);
+            await ignoreContainer.CreateItemAsync<ToDoActivity>(item: testItem);
+            Response<Dictionary<string, object>> ignoreNullResponse = await ignoreContainer.ReadItemAsync<Dictionary<string, object>>(id1, new PartitionKey(pk));
             Assert.IsNotNull(ignoreNullResponse);
             Assert.IsNotNull(ignoreNullResponse.Value);
-            Assert.IsNull(ignoreNullResponse.Value["description"]);
+            Assert.IsFalse(ignoreNullResponse.Value.ContainsKey("description"));
 
-            Response<dynamic> keepNullResponse = await this.Container.CreateItemAsync<dynamic>(item: testItem2);
+            await this.Container.CreateItemAsync<ToDoActivity>(item: testItem2);
+            Response<Dictionary<string, object>> keepNullResponse = await this.Container.ReadItemAsync<Dictionary<string, object>>(id2, new PartitionKey(pk));
             Assert.IsNotNull(keepNullResponse);
             Assert.IsNotNull(keepNullResponse.Value);
-            Assert.IsNotNull(keepNullResponse.Value["description"]);
+            Assert.IsTrue(keepNullResponse.Value.ContainsKey("description"));
 
             using (await this.Container.DeleteItemStreamAsync(id1, new PartitionKey(pk)))
             { }
@@ -1605,7 +1606,7 @@ namespace Azure.Cosmos.EmulatorTests
 
             Dictionary<string, object> tmpJObject = JsonSerializer.Deserialize<Dictionary<string, object>>(JsonSerializer.Serialize(itemWithoutId));
 
-            if (!tmpJObject.ContainsKey("id"))
+            if (!tmpJObject.ContainsKey("id") || tmpJObject["id"] == null)
             {
                 tmpJObject["id"] = autoId;
             }

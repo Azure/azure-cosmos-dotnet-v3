@@ -4,11 +4,11 @@
     using System.Collections.Generic;
     using System.Linq;
     using System.Net;
+    using System.Text.Json.Serialization;
     using System.Threading;
     using System.Threading.Tasks;
     using Azure.Cosmos.Spatial;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json;
 
     [TestClass]
     public class CosmosSpatialTests
@@ -172,25 +172,25 @@
 
         internal class SpatialItem
         {
-            [JsonProperty("name")]
+            [JsonPropertyName("name")]
             public string Name { get; set; }
 
             public string id { get; set; }
 
 
-            [JsonProperty("point")]
+            [JsonPropertyName("point")]
             public Point point { get; set; }
 
-            [JsonProperty("polygon")]
+            [JsonPropertyName("polygon")]
             public Polygon polygon { get; set; }
 
-            [JsonProperty("lineString")]
+            [JsonPropertyName("lineString")]
             public LineString lineString { get; set; }
 
-            [JsonProperty("partitionKey")]
+            [JsonPropertyName("partitionKey")]
             public string partitionKey { get; set; }
 
-            [JsonProperty("MultiPointLocation")]
+            [JsonPropertyName("MultiPointLocation")]
             public MultiPolygon multiPolygon { get; set; }
 
         }

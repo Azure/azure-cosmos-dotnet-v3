@@ -10,12 +10,12 @@ namespace Azure.Cosmos.EmulatorTests
     using System.Globalization;
     using System.Linq;
     using System.Net;
+    using System.Text.Json;
     using System.Threading.Tasks;
     using Azure.Core;
     using Azure.Cosmos;
     using Microsoft.Azure.Cosmos;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class CosmosContainerTests
@@ -456,10 +456,10 @@ namespace Azure.Cosmos.EmulatorTests
              {
                 Assert.AreEqual((int)HttpStatusCode.OK, message.Status);
                 CosmosTextJsonSerializer defaultJsonSerializer = new CosmosTextJsonSerializer();
-                dynamic containers = defaultJsonSerializer.FromStream<dynamic>(message.ContentStream).DocumentCollections;
-                foreach (dynamic container in containers)
+                Dictionary<string, JsonElement> containers = defaultJsonSerializer.FromStream<Dictionary<string, JsonElement>>(message.ContentStream);
+                foreach (JsonElement container in containers["DocumentCollections"].EnumerateArray())
                 {
-                    string id = container.id.ToString();
+                    string id = container.GetProperty("id").GetString();
                     containerIds.Add(id);
                 }
             }
@@ -500,39 +500,6 @@ namespace Azure.Cosmos.EmulatorTests
 
             int? readThroughput = await container.ReadThroughputAsync();
             Assert.IsNotNull(readThroughput);
-
-            containerResponse = await container.DeleteContainerAsync();
-            Assert.AreEqual((int)HttpStatusCode.NoContent, containerResponse.GetRawResponse().Status);
-        }
-
-        [TestMethod]
-        public async Task TimeToLiveTest()
-        {
-            string containerName = Guid.NewGuid().ToString();
-            string partitionKeyPath = "/users";
-            int timeToLiveInSeconds = 10;
-            ContainerProperties setting = new ContainerProperties()
-            {
-                Id = containerName,
-                PartitionKey = new Microsoft.Azure.Documents.PartitionKeyDefinition() { Paths = new Collection<string> { partitionKeyPath }, Kind = Microsoft.Azure.Documents.PartitionKind.Hash },
-                DefaultTimeToLive = timeToLiveInSeconds,
-            };
-
-            ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(setting);
-            Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
-            CosmosContainer container = containerResponse;
-            ContainerProperties responseSettings = containerResponse;
-
-            Assert.AreEqual(timeToLiveInSeconds, responseSettings.DefaultTimeToLive);
-
-            ContainerResponse readResponse = await container.ReadContainerAsync();
-            Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
-            Assert.AreEqual(timeToLiveInSeconds, readResponse.Value.DefaultTimeToLive);
-
-            JObject itemTest = JObject.FromObject(new { id = Guid.NewGuid().ToString(), users = "testUser42" });
-            ItemResponse<JObject> createResponse = await container.CreateItemAsync<JObject>(item: itemTest);
-            JObject responseItem = createResponse;
-            Assert.IsNull(responseItem["ttl"]);
 
             containerResponse = await container.DeleteContainerAsync();
             Assert.AreEqual((int)HttpStatusCode.NoContent, containerResponse.GetRawResponse().Status);

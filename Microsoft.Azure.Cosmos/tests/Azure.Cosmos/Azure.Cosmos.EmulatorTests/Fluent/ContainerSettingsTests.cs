@@ -7,12 +7,13 @@ namespace Azure.Cosmos.EmulatorTests
     using Azure.Cosmos.Spatial;
     using Microsoft.Azure.Cosmos;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json.Linq;
     using System;
+    using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Text.Json;
     using System.Threading.Tasks;
 
     // Similar tests to CosmosContainerTests but with Fluent syntax
@@ -85,6 +86,8 @@ namespace Azure.Cosmos.EmulatorTests
                     }
                 }
             };
+
+            string test = JsonSerializer.Serialize(containerProperties);
 
             CosmosTextJsonSerializer serializer = new CosmosTextJsonSerializer();
             Stream stream = serializer.ToStream(containerProperties);
@@ -471,10 +474,12 @@ namespace Azure.Cosmos.EmulatorTests
             Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
             Assert.AreEqual(timeToLiveInSeconds, readResponse.Value.DefaultTimeToLive);
 
-            JObject itemTest = JObject.FromObject(new { id = Guid.NewGuid().ToString(), users = "testUser42" });
-            ItemResponse<JObject> createResponse = await container.CreateItemAsync<JObject>(item: itemTest);
-            JObject responseItem = createResponse;
-            Assert.IsNull(responseItem["ttl"]);
+            Dictionary<string, object> itemTest = new Dictionary<string, object>();
+            itemTest["id"] = Guid.NewGuid().ToString();
+            itemTest["users"] = "testUser42";
+            ItemResponse<Dictionary<string, object>> createResponse = await container.CreateItemAsync<Dictionary<string, object>>(item: itemTest);
+            Dictionary<string, object> responseItem = createResponse;
+            Assert.IsFalse(responseItem.ContainsKey("ttl"));
 
             containerResponse = await container.DeleteContainerAsync();
             Assert.AreEqual((int)HttpStatusCode.NoContent, containerResponse.GetRawResponse().Status);
