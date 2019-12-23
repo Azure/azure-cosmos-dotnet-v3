@@ -42,7 +42,7 @@
             try
             {
                 // Intialize container or create a new container.
-                Container container = await Program.Initalize();
+                Container container = await Program.Initialize();
 
                 // Running bulk ingestion on a container.
                 Program.CreateItemsConcurrently(container);
@@ -80,6 +80,7 @@
             int docCounter = 0;
             int taskCompleteCounter = 0;
             Stopwatch stopwatch = Stopwatch.StartNew();
+            long startMilliseconds = stopwatch.ElapsedMilliseconds;
 
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
             cancellationTokenSource.CancelAfter(runtimeInSeconds * 1000);
@@ -130,7 +131,7 @@
             }
 
             int created = countsByStatus.SingleOrDefault(x => x.Key == HttpStatusCode.Created).Value;
-            Console.WriteLine($"Inserted {created} items in {stopwatch.Elapsed.Seconds} seconds");
+            Console.WriteLine($"Inserted {created} items in {(stopwatch.ElapsedMilliseconds - startMilliseconds) /1000} seconds");
         }
 
         // <Model>
@@ -144,7 +145,7 @@
         }
         // </Model>
 
-        private static async Task<Container> Initalize()
+        private static async Task<Container> Initialize()
         {
             // Read the Cosmos endpointUrl and authorization keys from configuration
             // These values are available from the Azure Management Portal on the Cosmos Account Blade under "Keys"
