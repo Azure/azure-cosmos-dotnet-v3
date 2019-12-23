@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly ConcurrentDictionary<string, int> docsPartitionId = new ConcurrentDictionary<string, int>();
         private readonly ConcurrentDictionary<string, int> throttlePartitionId = new ConcurrentDictionary<string, int>();
         private readonly ConcurrentDictionary<string, long> timePartitionid = new ConcurrentDictionary<string, long>();
-        private readonly int startingDegreeOfConcurrency = 5;
+        private readonly int startingDegreeOfConcurrency = 1;
         private readonly int defaultMaxDegreeOfConcurrency = 80;
         private readonly int additiveIncreaseFactor = 1;
         private readonly int congestionControllerDelayInMs = 2;
@@ -255,11 +255,11 @@ namespace Microsoft.Azure.Cosmos
                     TransactionalBatchResponse serverResponse = await
                     TransactionalBatchResponse.FromResponseMessageAsync(responseMessage, serverRequest, this.cosmosClientContext.CosmosSerializer).ConfigureAwait(false);
 
-                    int numThrottle = serverResponse.Count(r => r.StatusCode == (System.Net.HttpStatusCode)StatusCodes.TooManyRequests);
-                    long secondsElapsed = (this.stopwatch.Elapsed - start).Seconds;
+                    int numThrottle = serverResponse.Any(r => r.StatusCode == (System.Net.HttpStatusCode)StatusCodes.TooManyRequests) ? 1 : 0;
+                    long milliSecondsElapsed = (this.stopwatch.Elapsed - start).Milliseconds;
                     this.throttlePartitionId.AddOrUpdate(serverRequest.PartitionKeyRangeId, numThrottle, (_, old) => old + numThrottle);
                     this.docsPartitionId.AddOrUpdate(serverRequest.PartitionKeyRangeId, serverResponse.Count, (_, old) => old + serverResponse.Count);
-                    this.timePartitionid.AddOrUpdate(serverRequest.PartitionKeyRangeId, secondsElapsed, (_, old) => old + secondsElapsed);
+                    this.timePartitionid.AddOrUpdate(serverRequest.PartitionKeyRangeId, milliSecondsElapsed, (_, old) => old + milliSecondsElapsed);
 
                     return new PartitionKeyRangeBatchExecutionResult(serverRequest.PartitionKeyRangeId, serverRequest.Operations, serverResponse);
                 }
@@ -307,28 +307,25 @@ namespace Microsoft.Azure.Cosmos
         {
             Task congestionControllerTask = Task.Run(async () =>
             {
-                long waitTimeForLoggingMetrics = 1;
-                long lastElapsedTime = 0;
+                long lastElapsedTimeInMs = 0;
                 int degreeOfConcurrency = this.startingDegreeOfConcurrency;
                 int maxDegreeOfConcurrency = this.defaultMaxDegreeOfConcurrency;
-                int oldThrttleCount = 0;
+                int oldThrottleCount = 0;
                 int oldDocCount = 0;
 
                 while (!cancellationToken.IsCancellationRequested)
                 {
-                    this.timePartitionid.TryGetValue(partitionKeyRangeId, out long currentElapsedTime);
-                    long elapsedTime = currentElapsedTime - lastElapsedTime;
-                    lastElapsedTime = currentElapsedTime;
+                    this.timePartitionid.TryGetValue(partitionKeyRangeId, out long currentElapsedTimeInMs);
+                    long elapsedTime = currentElapsedTimeInMs - lastElapsedTimeInMs;
+                    lastElapsedTimeInMs = currentElapsedTimeInMs;
 
-                    if (elapsedTime >= waitTimeForLoggingMetrics)
+                    if (elapsedTime > 0)
                     {
-                        waitTimeForLoggingMetrics += 1;
-
                         this.docsPartitionId.TryGetValue(partitionKeyRangeId, out int newDocCount);
                         this.throttlePartitionId.TryGetValue(partitionKeyRangeId, out int newThrottleCount);
 
-                        int diffThrottle = newThrottleCount - oldThrttleCount;
-                        oldThrttleCount = newThrottleCount;
+                        int diffThrottle = newThrottleCount - oldThrottleCount;
+                        oldThrottleCount = newThrottleCount;
 
                         int changeDocCount = newDocCount - oldDocCount;
                         oldDocCount = newDocCount;

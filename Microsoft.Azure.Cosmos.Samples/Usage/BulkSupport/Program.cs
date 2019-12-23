@@ -28,9 +28,10 @@
     public class Program
     {
         private static readonly JsonSerializer Serializer = new JsonSerializer();
+        private static CosmosClient client;
         private static Database database = null;
-        private static int preCreatedDocuments;
-        private static int documentSize;
+        private static int itemsToCreate;
+        private static int itemSize;
         private static int runtimeInSeconds;
         private static bool shouldCleanupOnFinish;
 
@@ -40,7 +41,7 @@
             try
             {
                 // Intialize container or create a new container.
-                Container container = Program.Initalizer();
+                Container container = Program.Initalize();
 
                 // Running bulk ingestion on a container.
                 Program.CreateItemsConcurrently(container);
@@ -58,8 +59,9 @@
             {
                 if (Program.shouldCleanupOnFinish)
                 {
-                    CleanupAsync();
+                    Program.CleanupAsync();
                 }
+               
                 Console.WriteLine("End of demo, press any key to exit.");
                 Console.ReadKey();
             }
@@ -68,25 +70,24 @@
 
         private static void CreateItemsConcurrently(Container container)
         {
-            Console.WriteLine($"Initiating creates of items of about {documentSize} bytes " +
-                $"maintaining {preCreatedDocuments} in-progress items for {runtimeInSeconds} seconds.");
+            Console.WriteLine($"Initiating creation of {itemsToCreate} items of about {itemSize} bytes each in a limit of {runtimeInSeconds} seconds.");
 
             ConcurrentDictionary<HttpStatusCode, int> countsByStatus = new ConcurrentDictionary<HttpStatusCode, int>();
-            DataSource dataSource = new DataSource(preCreatedDocuments, documentSize);
+            DataSource dataSource = new DataSource(itemsToCreate, itemSize);
 
-            Console.WriteLine("Starting job");
+            int docCounter = 0;
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
             cancellationTokenSource.CancelAfter(runtimeInSeconds * 1000);
             CancellationToken cancellationToken = cancellationTokenSource.Token;
             try
             {
-                while (!cancellationToken.IsCancellationRequested)
+                while (!cancellationToken.IsCancellationRequested && docCounter++ < itemsToCreate)
                 {
                     MemoryStream stream = dataSource.GetNextDocItem(out PartitionKey partitionKeyValue);
                     _ = container.CreateItemStreamAsync(stream, partitionKeyValue, null, cancellationToken)
                         .ContinueWith((Task<ResponseMessage> task) =>
                         {
-                            if (task.IsCompleted)
+                            if (task.IsCompletedSuccessfully)
                             {
                                 if(stream != null) { stream.Dispose(); }
                                 HttpStatusCode resultCode = task.Result.StatusCode;
@@ -99,18 +100,32 @@
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"Could not insert {itemsToCreate} items in {runtimeInSeconds} seconds.");
                 Console.WriteLine(ex);
             }
             finally
             {
+                int created = countsByStatus.SingleOrDefault(x => x.Key == HttpStatusCode.Created).Value;
+                while (itemsToCreate > created)
+                {
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        Console.WriteLine($"Could not insert {itemsToCreate} items in {runtimeInSeconds} seconds.");
+                        break;
+                    }
+                    Thread.Sleep(10);
+                    created = countsByStatus.SingleOrDefault(x => x.Key == HttpStatusCode.Created).Value;
+                }
+
                 foreach (var countForStatus in countsByStatus)
                 {
                     Console.WriteLine(countForStatus.Key + " " + countForStatus.Value);
                 }
+
+                client.Dispose();
             }
 
-            int created = countsByStatus.SingleOrDefault(x => x.Key == HttpStatusCode.Created).Value;
-            Console.WriteLine($"Inserted {created} items.");
+            Console.WriteLine($"Inserted {countsByStatus.SingleOrDefault(x => x.Key == HttpStatusCode.Created).Value} items.");
         }
 
         // <Model>
@@ -124,17 +139,17 @@
         }
         // </Model>
 
-        private static Container Initalizer()
+        private static Container Initalize()
         {
-            // Read the Cosmos endpointUrl and authorisationKeys from configuration
+            // Read the Cosmos endpointUrl and authorization keys from configuration
             // These values are available from the Azure Management Portal on the Cosmos Account Blade under "Keys"
             // Keep these values in a safe & secure location. Together they provide Administrative access to your Cosmos account
             IConfigurationRoot configuration = new ConfigurationBuilder()
                     .AddJsonFile("appSettings.json")
                     .Build();
 
-            string endpoint = configuration["EndPointUrl"];
-            if (string.IsNullOrEmpty(endpoint))
+            string endpointUrl = configuration["EndPointUrl"];
+            if (string.IsNullOrEmpty(endpointUrl))
             {
                 throw new ArgumentNullException("Please specify a valid endpoint in the appSettings.json");
             }
@@ -157,15 +172,16 @@
                 throw new ArgumentException("Please specify a valid CollectionName in the appSettings.json");
             }
 
-            Program.preCreatedDocuments = int.Parse(string.IsNullOrEmpty(configuration["PreCreatedDocuments"]) ? "1000" : configuration["PreCreatedDocuments"]);
-            Program.documentSize = int.Parse(string.IsNullOrEmpty(configuration["DocumentSize"]) ? "1024" : configuration["DocumentSize"]);
+            // Important: Needed to regulate the main execution/ingestion job.
+            Program.itemsToCreate = int.Parse(string.IsNullOrEmpty(configuration["ItemsToCreate"]) ? "1000" : configuration["ItemsToCreate"]);
+            Program.itemSize = int.Parse(string.IsNullOrEmpty(configuration["ItemSize"]) ? "1024" : configuration["ItemSize"]);
             Program.runtimeInSeconds = int.Parse(string.IsNullOrEmpty(configuration["RuntimeInSeconds"]) ? "30" : configuration["RuntimeInSeconds"]);
 
             Program.shouldCleanupOnFinish = bool.Parse(string.IsNullOrEmpty(configuration["ShouldCleanupOnFinish"]) ? "false" : configuration["ShouldCleanupOnFinish"]);
             bool shouldCleanupOnStart = bool.Parse(string.IsNullOrEmpty(configuration["ShouldCleanupOnStart"]) ? "false" : configuration["ShouldCleanupOnStart"]);
             int collectionThroughput = int.Parse(string.IsNullOrEmpty(configuration["CollectionThroughput"]) ? "30000" : configuration["CollectionThroughput"]);
 
-            CosmosClient client = GetBulkClientInstance(endpoint, authKey);
+            client = GetBulkClientInstance(endpointUrl, authKey);
             Program.database = client.GetDatabase(DatabaseName);
             Container container = Program.database.GetContainer(CollectionName); ;
             if (shouldCleanupOnStart)
@@ -177,7 +193,7 @@
             {
                 container.ReadContainerAsync().GetAwaiter().GetResult();
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Console.WriteLine("Error in reading collection: {0}", ex.Message);
                 throw ex;
@@ -238,16 +254,17 @@
 
         private class DataSource
         {
-            private int docSize;
+            private readonly int itemSize;
+            private const int maxStoredItems = 1000000;
             private static Stack<KeyValuePair<PartitionKey, MemoryStream>> documentsToImportInBatch;
 
-            public DataSource(int initialPoolSize, int docSize)
+            public DataSource(int itemCount, int itemSize)
             {
-                this.docSize = docSize;
+                this.itemSize = itemSize;
                 documentsToImportInBatch = new Stack<KeyValuePair<PartitionKey, MemoryStream>>();
                
                 Stack<KeyValuePair<PartitionKey, MemoryStream>> stk = new Stack<KeyValuePair<PartitionKey, MemoryStream>>();
-                for (int j = 0; j < initialPoolSize; j++)
+                for (int j = 0; j < Math.Min(itemCount, maxStoredItems); j++)
                 {
                     MemoryStream value = CreateNextDocItem(out PartitionKey partitionKeyValue);
                     documentsToImportInBatch.Push(new KeyValuePair<PartitionKey, MemoryStream>(partitionKeyValue, value));
@@ -258,7 +275,7 @@
             {
                 string partitionKey = Guid.NewGuid().ToString();
                 string id = Guid.NewGuid().ToString();
-                string padding = docSize > 300 ? new string('x', docSize - 300) : string.Empty;
+                string padding = this.itemSize > 300 ? new string('x', this.itemSize - 119) : string.Empty;
                 MyDocument myDocument = new MyDocument() { id = id, pk = partitionKey, other = padding };
                 string value = JsonConvert.SerializeObject(myDocument);
                 partitionKeyValue = new PartitionKey(partitionKey);

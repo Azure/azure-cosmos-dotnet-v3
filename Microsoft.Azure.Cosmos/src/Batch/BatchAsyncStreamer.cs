@@ -98,11 +98,10 @@ namespace Microsoft.Azure.Cosmos
 
             if (toDispatch != null)
             {
-                // Discarded for Fire & Forget
                 this.currentTimer.CancelTimer();
-                this.currentTimer = null;
-                this.timerTask = null;
                 this.ResetTimer();
+
+                // Discarded for Fire & Forget
                 _ = toDispatch.DispatchAsync(this.cancellationTokenSource.Token);
             }
         }
