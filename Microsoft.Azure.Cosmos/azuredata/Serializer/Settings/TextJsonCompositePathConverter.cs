@@ -53,8 +53,7 @@ namespace Azure.Cosmos
             writer.WriteStartObject();
             writer.WriteString(Constants.Properties.Path, compositePath.Path);
 
-            writer.WritePropertyName(Constants.Properties.Order);
-            writer.WriteStringValue(JsonSerializer.Serialize(compositePath.Order, options));
+            writer.WriteString(Constants.Properties.Order, compositePath.Order.ToString());
 
             writer.WriteEndObject();
         }

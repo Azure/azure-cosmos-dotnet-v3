@@ -52,8 +52,7 @@ namespace Azure.Cosmos
 
             writer.WriteStartObject();
 
-            writer.WritePropertyName(Constants.Properties.Mode);
-            writer.WriteStringValue(JsonSerializer.Serialize(policy.Mode, options));
+            writer.WriteString(Constants.Properties.Mode, policy.Mode.ToString());
 
             if (!string.IsNullOrEmpty(policy.ResolutionPath))
             {

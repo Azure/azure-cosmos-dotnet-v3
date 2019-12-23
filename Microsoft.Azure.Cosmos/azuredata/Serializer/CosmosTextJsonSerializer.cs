@@ -16,9 +16,8 @@ namespace Azure.Cosmos
     /// </summary>
     internal sealed class CosmosTextJsonSerializer : CosmosSerializer
     {
-        public static ReadOnlySpan<byte> Utf8Bom => new byte[] { 0xEF, 0xBB, 0xBF };
+        private static ReadOnlySpan<byte> Utf8Bom => new byte[] { 0xEF, 0xBB, 0xBF };
         private const int UnseekableStreamInitialRentSize = 4096;
-
         private readonly JsonSerializerOptions jsonSerializerSettings;
 
         /// <summary>

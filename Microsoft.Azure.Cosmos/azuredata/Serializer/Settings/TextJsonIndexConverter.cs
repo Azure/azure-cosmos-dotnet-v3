@@ -51,15 +51,14 @@ namespace Azure.Cosmos
 
             writer.WriteStartObject();
 
-            writer.WritePropertyName(Constants.Properties.IndexKind);
-            writer.WriteStringValue(JsonSerializer.Serialize(index.Kind, options));
+            writer.WriteString(Constants.Properties.IndexKind, index.Kind.ToString());
 
             writer.WritePropertyName(Constants.Properties.DataType);
             switch (index.Kind)
             {
                 case IndexKind.Hash:
                     HashIndex hashIndex = index as HashIndex;
-                    writer.WriteStringValue(JsonSerializer.Serialize(hashIndex.DataType, options));
+                    writer.WriteStringValue(hashIndex.DataType.ToString());
                     if (hashIndex.Precision.HasValue)
                     {
                         writer.WriteNumber(Constants.Properties.Precision, hashIndex.Precision.Value);
@@ -68,7 +67,7 @@ namespace Azure.Cosmos
                     break;
                 case IndexKind.Range:
                     RangeIndex rangeIndex = index as RangeIndex;
-                    writer.WriteStringValue(JsonSerializer.Serialize(rangeIndex.DataType, options));
+                    writer.WriteStringValue(rangeIndex.DataType.ToString());
                     if (rangeIndex.Precision.HasValue)
                     {
                         writer.WriteNumber(Constants.Properties.Precision, rangeIndex.Precision.Value);
@@ -77,7 +76,7 @@ namespace Azure.Cosmos
                     break;
                 case IndexKind.Spatial:
                     SpatialIndex spatialIndex = index as SpatialIndex;
-                    writer.WriteStringValue(JsonSerializer.Serialize(spatialIndex.DataType, options));
+                    writer.WriteStringValue(spatialIndex.DataType.ToString());
                     break;
             }
 

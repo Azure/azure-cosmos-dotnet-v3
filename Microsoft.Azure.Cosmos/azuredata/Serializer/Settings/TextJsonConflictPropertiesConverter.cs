@@ -55,8 +55,7 @@ namespace Azure.Cosmos
 
             TextJsonSettingsHelper.WriteId(writer, settings.Id);
 
-            writer.WritePropertyName(Constants.Properties.OperationType);
-            writer.WriteStringValue(JsonSerializer.Serialize(settings.OperationKind, options));
+            writer.WriteString(Constants.Properties.OperationType, settings.OperationKind.ToString());
 
             writer.WriteString(Constants.Properties.ResourceType, TextJsonConflictPropertiesConverter.ParseResourceType(settings.ResourceType));
 

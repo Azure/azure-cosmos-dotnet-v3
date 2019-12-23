@@ -56,8 +56,7 @@ namespace Azure.Cosmos
 
             writer.WriteBoolean(Constants.Properties.Automatic, policy.Automatic);
 
-            writer.WritePropertyName(Constants.Properties.IndexingMode);
-            writer.WriteStringValue(JsonSerializer.Serialize(policy.IndexingMode, options));
+            writer.WriteString(Constants.Properties.IndexingMode, policy.IndexingMode.ToString());
 
             writer.WritePropertyName(Constants.Properties.IncludedPaths);
             writer.WriteStartArray();

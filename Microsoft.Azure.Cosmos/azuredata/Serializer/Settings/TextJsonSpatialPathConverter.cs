@@ -61,7 +61,7 @@ namespace Azure.Cosmos
                 writer.WriteStartArray();
                 foreach (Spatial.SpatialType type in path.SpatialTypes)
                 {
-                    writer.WriteStringValue(JsonSerializer.Serialize(type, options));
+                    writer.WriteStringValue(type.ToString());
                 }
 
                 writer.WriteEndArray();
