@@ -75,14 +75,17 @@
             ConcurrentDictionary<HttpStatusCode, int> countsByStatus = new ConcurrentDictionary<HttpStatusCode, int>();
             DataSource dataSource = new DataSource(itemsToCreate, itemSize);
 
+            Console.WriteLine("Running workload");
             int docCounter = 0;
+            int taskCompleteCounter = 0;
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
             cancellationTokenSource.CancelAfter(runtimeInSeconds * 1000);
             CancellationToken cancellationToken = cancellationTokenSource.Token;
             try
             {
-                while (!cancellationToken.IsCancellationRequested && docCounter++ < itemsToCreate)
+                while (!cancellationToken.IsCancellationRequested && docCounter < itemsToCreate)
                 {
+                    docCounter++;
                     MemoryStream stream = dataSource.GetNextDocItem(out PartitionKey partitionKeyValue);
                     _ = container.CreateItemStreamAsync(stream, partitionKeyValue, null, cancellationToken)
                         .ContinueWith((Task<ResponseMessage> task) =>
@@ -94,6 +97,7 @@
                                 countsByStatus.AddOrUpdate(resultCode, 1, (_, old) => old + 1);
                                 if (task.Result != null) { task.Result.Dispose(); }
                             }
+                            Interlocked.Increment(ref taskCompleteCounter);
                             task.Dispose();
                         });
                 }
@@ -105,16 +109,14 @@
             }
             finally
             {
-                int created = countsByStatus.SingleOrDefault(x => x.Key == HttpStatusCode.Created).Value;
-                while (itemsToCreate > created)
+                while (docCounter > taskCompleteCounter)
                 {
                     if (cancellationToken.IsCancellationRequested)
                     {
                         Console.WriteLine($"Could not insert {itemsToCreate} items in {runtimeInSeconds} seconds.");
                         break;
                     }
-                    Thread.Sleep(10);
-                    created = countsByStatus.SingleOrDefault(x => x.Key == HttpStatusCode.Created).Value;
+                    Thread.Sleep(1000);
                 }
 
                 foreach (var countForStatus in countsByStatus)
@@ -125,7 +127,8 @@
                 client.Dispose();
             }
 
-            Console.WriteLine($"Inserted {countsByStatus.SingleOrDefault(x => x.Key == HttpStatusCode.Created).Value} items.");
+            int created = countsByStatus.SingleOrDefault(x => x.Key == HttpStatusCode.Created).Value;
+            Console.WriteLine($"Inserted {created} items.");
         }
 
         // <Model>
