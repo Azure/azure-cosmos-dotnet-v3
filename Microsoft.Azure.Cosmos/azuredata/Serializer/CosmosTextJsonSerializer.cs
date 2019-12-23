@@ -169,7 +169,7 @@ namespace Azure.Cosmos
                 }
                 while (lastRead > 0);
 
-                return JsonSerializer.Deserialize<T>(rented, jsonSerializerOptions);
+                return JsonSerializer.Deserialize<T>(rented.AsSpan(0, written), jsonSerializerOptions);
             }
             finally
             {
