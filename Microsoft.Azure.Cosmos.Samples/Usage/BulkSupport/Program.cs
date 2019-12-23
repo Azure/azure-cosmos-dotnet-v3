@@ -3,6 +3,7 @@
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using System.Net;
@@ -28,20 +29,20 @@
     public class Program
     {
         private static readonly JsonSerializer Serializer = new JsonSerializer();
-        private static CosmosClient client;
         private static Database database = null;
         private static int itemsToCreate;
         private static int itemSize;
         private static int runtimeInSeconds;
         private static bool shouldCleanupOnFinish;
 
+        // Async main requires c# 7.1 which is set in the csproj with the LangVersion attribute
         // <Main>
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             try
             {
                 // Intialize container or create a new container.
-                Container container = Program.Initalize();
+                Container container = await Program.Initalize();
 
                 // Running bulk ingestion on a container.
                 Program.CreateItemsConcurrently(container);
@@ -59,7 +60,7 @@
             {
                 if (Program.shouldCleanupOnFinish)
                 {
-                    Program.CleanupAsync();
+                    await Program.CleanupAsync();
                 }
                
                 Console.WriteLine("End of demo, press any key to exit.");
@@ -78,6 +79,8 @@
             Console.WriteLine("Running workload");
             int docCounter = 0;
             int taskCompleteCounter = 0;
+            Stopwatch stopwatch = Stopwatch.StartNew();
+
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
             cancellationTokenSource.CancelAfter(runtimeInSeconds * 1000);
             CancellationToken cancellationToken = cancellationTokenSource.Token;
@@ -116,6 +119,7 @@
                         Console.WriteLine($"Could not insert {itemsToCreate} items in {runtimeInSeconds} seconds.");
                         break;
                     }
+                    Console.WriteLine($"In progress. Processed: {taskCompleteCounter}, Pending: {docCounter - taskCompleteCounter}");
                     Thread.Sleep(1000);
                 }
 
@@ -123,12 +127,10 @@
                 {
                     Console.WriteLine(countForStatus.Key + " " + countForStatus.Value);
                 }
-
-                client.Dispose();
             }
 
             int created = countsByStatus.SingleOrDefault(x => x.Key == HttpStatusCode.Created).Value;
-            Console.WriteLine($"Inserted {created} items.");
+            Console.WriteLine($"Inserted {created} items in {stopwatch.Elapsed.Seconds} seconds");
         }
 
         // <Model>
@@ -142,7 +144,7 @@
         }
         // </Model>
 
-        private static Container Initalize()
+        private static async Task<Container> Initalize()
         {
             // Read the Cosmos endpointUrl and authorization keys from configuration
             // These values are available from the Azure Management Portal on the Cosmos Account Blade under "Keys"
@@ -184,17 +186,17 @@
             bool shouldCleanupOnStart = bool.Parse(string.IsNullOrEmpty(configuration["ShouldCleanupOnStart"]) ? "false" : configuration["ShouldCleanupOnStart"]);
             int collectionThroughput = int.Parse(string.IsNullOrEmpty(configuration["CollectionThroughput"]) ? "30000" : configuration["CollectionThroughput"]);
 
-            client = GetBulkClientInstance(endpointUrl, authKey);
+            CosmosClient client = GetBulkClientInstance(endpointUrl, authKey);
             Program.database = client.GetDatabase(DatabaseName);
             Container container = Program.database.GetContainer(CollectionName); ;
             if (shouldCleanupOnStart)
             {
-                container = CreateFreshCollection(client, DatabaseName, CollectionName, collectionThroughput);
+                container = await CreateFreshCollectionAsync(client, DatabaseName, CollectionName, collectionThroughput);
             }
 
             try
             {
-                container.ReadContainerAsync().GetAwaiter().GetResult();
+                await container.ReadContainerAsync();
             }
             catch (Exception ex)
             {
@@ -214,22 +216,22 @@
             new CosmosClient(endpoint, authKey, new CosmosClientOptions() { AllowBulkExecution = true });
         // </Initialization>
 
-        private static void CleanupAsync()
+        private static async Task CleanupAsync()
         {
             if (Program.database != null)
             {
-                Program.database.DeleteAsync().GetAwaiter().GetResult();
+                await Program.database.DeleteAsync();
             }
         }
 
-        private static Container CreateFreshCollection(CosmosClient client, string datbaseName, string collectionName, int throughput)
+        private static async Task<Container> CreateFreshCollectionAsync(CosmosClient client, string datbaseName, string collectionName, int throughput)
         {
-            Program.database = client.CreateDatabaseIfNotExistsAsync(datbaseName).Result;
+            Program.database = await client.CreateDatabaseIfNotExistsAsync(datbaseName);
 
             try
             {
                 Console.WriteLine("Deleting old collection if it exists.");
-                database.GetContainer(collectionName).DeleteContainerStreamAsync().GetAwaiter().GetResult();
+                await database.GetContainer(collectionName).DeleteContainerStreamAsync();
             }
             catch(Exception) {
                 // Do nothing
@@ -241,7 +243,7 @@
             Console.ReadKey();
 
             // Indexing Policy to exclude all attributes to maximize RU/s usage
-            Container container = database.DefineContainer(collectionName, "/pk")
+            Container container = await database.DefineContainer(collectionName, "/pk")
                     .WithIndexingPolicy()
                         .WithIndexingMode(IndexingMode.Consistent)
                         .WithIncludedPaths()
@@ -250,7 +252,7 @@
                             .Path("/*")
                             .Attach()
                     .Attach()
-                .CreateAsync(throughput).Result;
+                .CreateAsync(throughput);
 
             return container;
         }
