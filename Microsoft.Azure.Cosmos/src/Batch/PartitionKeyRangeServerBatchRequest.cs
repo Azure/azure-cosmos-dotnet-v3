@@ -18,13 +18,13 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="partitionKeyRangeId">The partition key range id associated with all requests.</param>
         /// <param name="maxBodyLength">Maximum length allowed for the request body.</param>
         /// <param name="maxOperationCount">Maximum number of operations allowed in the request.</param>
-        /// <param name="serializer">Serializer to serialize user provided objects to JSON.</param>
+        /// <param name="serializerCore">Serializer to serialize user provided objects to JSON.</param>
         public PartitionKeyRangeServerBatchRequest(
             string partitionKeyRangeId,
             int maxBodyLength,
             int maxOperationCount,
-            CosmosSerializer serializer)
-            : base(maxBodyLength, maxOperationCount, serializer)
+            CosmosSerializerCore serializerCore)
+            : base(maxBodyLength, maxOperationCount, serializerCore)
         {
             this.PartitionKeyRangeId = partitionKeyRangeId;
         }
@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="maxBodyLength">Desired maximum length of the request body.</param>
         /// <param name="maxOperationCount">Maximum number of operations allowed in the request.</param>
         /// <param name="ensureContinuousOperationIndexes">Whether to stop adding operations to the request once there is non-continuity in the operation indexes.</param>
-        /// <param name="serializer">Serializer to serialize user provided objects to JSON.</param>
+        /// <param name="serializerCore">Serializer to serialize user provided objects to JSON.</param>
         /// <param name="cancellationToken"><see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A newly created instance of <see cref="PartitionKeyRangeServerBatchRequest"/>.</returns>
         public static async Task<Tuple<PartitionKeyRangeServerBatchRequest, ArraySegment<ItemBatchOperation>>> CreateAsync(
@@ -53,10 +53,10 @@ namespace Microsoft.Azure.Cosmos
             int maxBodyLength,
             int maxOperationCount,
             bool ensureContinuousOperationIndexes,
-            CosmosSerializer serializer,
+            CosmosSerializerCore serializerCore,
             CancellationToken cancellationToken)
         {
-            PartitionKeyRangeServerBatchRequest request = new PartitionKeyRangeServerBatchRequest(partitionKeyRangeId, maxBodyLength, maxOperationCount, serializer);
+            PartitionKeyRangeServerBatchRequest request = new PartitionKeyRangeServerBatchRequest(partitionKeyRangeId, maxBodyLength, maxOperationCount, serializerCore);
             ArraySegment<ItemBatchOperation> pendingOperations = await request.CreateBodyStreamAsync(operations, cancellationToken, ensureContinuousOperationIndexes);
             return new Tuple<PartitionKeyRangeServerBatchRequest, ArraySegment<ItemBatchOperation>>(request, pendingOperations);
         }

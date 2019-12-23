@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using System;
     using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
-    using Microsoft.Azure.Cosmos.Client.Core.Tests;
+    using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 ChangeFeedProcessorOptions changeFeedProcessorOptions,
                 Container monitoredContainer) =>
                 {
-                    Assert.AreEqual(leaseContainerForBuilder, leaseContainer);
+                    Assert.AreEqual(leaseContainerForBuilder.Id, leaseContainer.Id);
                 };
             
             ChangeFeedProcessorBuilder builder = new ChangeFeedProcessorBuilder("workflowName",
@@ -228,10 +228,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Assert.IsInstanceOfType(builder.Build(), typeof(ChangeFeedProcessor));
         }
 
-        private static ContainerCore GetMockedContainer(string containerName = null)
+        private static ContainerInlineCore GetMockedContainer(string containerName = null)
         {
             Mock<ContainerCore> mockedContainer = MockCosmosUtil.CreateMockContainer(containerName: containerName);
-            return mockedContainer.Object;
+            return new ContainerInlineCore(mockedContainer.Object);
         }
 
         private static ChangeFeedProcessor GetMockedProcessor()

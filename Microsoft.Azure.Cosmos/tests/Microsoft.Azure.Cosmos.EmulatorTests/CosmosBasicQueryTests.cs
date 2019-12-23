@@ -406,7 +406,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task UserTests(bool directMode)
         {
             CosmosClient client = directMode ? DirectCosmosClient : GatewayCosmosClient;
-            DatabaseCore database = (DatabaseCore)client.GetDatabase(DatabaseId);
+            DatabaseCore database = (DatabaseInlineCore)client.GetDatabase(DatabaseId);
             List<string> createdIds = new List<string>();
 
             try
@@ -465,7 +465,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 UserResponse createUserResponse = await database.CreateUserAsync(userId);
                 Assert.AreEqual(HttpStatusCode.Created, createUserResponse.StatusCode);
-                user = (UserCore)createUserResponse.User;
+                user = (UserInlineCore)createUserResponse.User;
 
                 ContainerResponse createContainerResponse = await database.CreateContainerIfNotExistsAsync(Guid.NewGuid().ToString(), partitionKeyPath: "/pk");
                 Container container = createContainerResponse.Container;
@@ -555,8 +555,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 response.EnsureSuccessStatusCode();
                 Assert.AreEqual(expectedStatus, response.StatusCode);
 
-                ICollection<T> responseResults = TestCommon.Serializer.FromStream<CosmosFeedResponseUtil<T>>(response.Content).Data;
-                Assert.IsTrue(responseResults.Count <= 1);
+                IEnumerable<T> responseResults = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<T>>(response.Content).Data;
+                Assert.IsTrue(responseResults.Count() <= 1);
 
                 pagedStreamResults.AddRange(responseResults);
                 continuationToken = response.Headers.ContinuationToken;

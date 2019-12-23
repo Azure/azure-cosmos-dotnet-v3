@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
         /// </summary>
         /// <param name="context">The context specifying partition for this change event, etc.</param>
         /// <param name="docs">The documents changed.</param>
-        /// <param name="cancellationToken">Token to signal that the parition processing is going to finish.</param>
+        /// <param name="cancellationToken">Token to signal that the partition processing is going to finish.</param>
         /// <returns>A Task to allow asynchronous execution.</returns>
         public abstract Task ProcessChangesAsync(ChangeFeedObserverContext context, IReadOnlyCollection<T> docs, CancellationToken cancellationToken);
     }

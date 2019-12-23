@@ -139,7 +139,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: queryRequestOptions,
                 partitionKey: queryRequestOptions.PartitionKey,
                 cosmosContainerCore: this.cosmosContainerCore,
-                streamPayload: this.clientContext.SqlQuerySpecSerializer.ToStream(sqlQuerySpec),
+                streamPayload: this.clientContext.SerializerCore.ToStreamSqlQuerySpec(sqlQuerySpec, resourceType),
                 requestEnricher: (cosmosRequestMessage) =>
                 {
                     this.PopulatePartitionKeyRangeInfo(cosmosRequestMessage, partitionKeyRange);
@@ -180,7 +180,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: null,
                 partitionKey: null,
                 cosmosContainerCore: this.cosmosContainerCore,
-                streamPayload: this.clientContext.SqlQuerySpecSerializer.ToStream(sqlQuerySpec),
+                streamPayload: this.clientContext.SerializerCore.ToStreamSqlQuerySpec(sqlQuerySpec, resourceType),
                 requestEnricher: (requestMessage) =>
                 {
                     requestMessage.Headers.Add(HttpConstants.HttpHeaders.ContentType, RuntimeConstants.MediaTypes.QueryJson);
@@ -193,7 +193,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 // Syntax exception are argument exceptions and thrown to the user.
                 message.EnsureSuccessStatusCode();
-                partitionedQueryExecutionInfo = this.clientContext.CosmosSerializer.FromStream<PartitionedQueryExecutionInfo>(message.Content);
+                partitionedQueryExecutionInfo = this.clientContext.SerializerCore.FromStream<PartitionedQueryExecutionInfo>(message.Content);
             }
 
             return partitionedQueryExecutionInfo;
@@ -355,12 +355,13 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal override Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(
+        internal override async Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(
             string collectionResourceId,
             Range<string> range,
             bool forceRefresh = false)
         {
-            throw new NotImplementedException();
+            PartitionKeyRangeCache partitionKeyRangeCache = await this.GetRoutingMapProviderAsync();
+            return await partitionKeyRangeCache.TryGetOverlappingRangesAsync(collectionResourceId, range, forceRefresh);
         }
 
         private Task<PartitionKeyRangeCache> GetRoutingMapProviderAsync()

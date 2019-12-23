@@ -54,8 +54,6 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Default request timeout
         /// </summary>
-        private static readonly CosmosSerializer propertiesSerializer = new CosmosJsonSerializerWrapper(new CosmosJsonDotNetSerializer());
-
         private int gatewayModeMaxConnectionLimit;
         private CosmosSerializationOptions serializerOptions;
         private CosmosSerializer serializer;
@@ -396,14 +394,6 @@ namespace Microsoft.Azure.Cosmos
         public bool AllowBulkExecution { get; set; }
 
         /// <summary>
-        /// A JSON serializer used by the CosmosClient to serialize or de-serialize cosmos request/responses.
-        /// The default serializer is always used for all system owned types like DatabaseProperties.
-        /// The default serializer is used for user types if no UserJsonSerializer is specified
-        /// </summary>
-        [JsonConverter(typeof(ClientOptionJsonConverter))]
-        internal CosmosSerializer PropertiesSerializer => CosmosClientOptions.propertiesSerializer;
-
-        /// <summary>
         /// Gets or sets the connection protocol when connecting to the Azure Cosmos service.
         /// </summary>
         /// <value>
@@ -506,22 +496,6 @@ namespace Microsoft.Azure.Cosmos
         /// Flag that controls whether CPU monitoring thread is created to enrich timeout exceptions with additional diagnostic. Default value is true.
         /// </summary>
         internal bool? EnableCpuMonitor { get; set; }
-
-        /// <summary>
-        /// Gets the user json serializer with the CosmosJsonSerializerWrapper or the default
-        /// </summary>
-        internal CosmosSerializer GetCosmosSerializerWithWrapperOrDefault()
-        {
-            if (this.SerializerOptions != null)
-            {
-                CosmosJsonDotNetSerializer cosmosJsonDotNetSerializer = new CosmosJsonDotNetSerializer(this.SerializerOptions);
-                return new CosmosJsonSerializerWrapper(cosmosJsonDotNetSerializer);
-            }
-            else
-            {
-                return this.Serializer == null ? this.PropertiesSerializer : new CosmosJsonSerializerWrapper(this.Serializer);
-            }
-        }
 
         internal CosmosClientOptions Clone()
         {

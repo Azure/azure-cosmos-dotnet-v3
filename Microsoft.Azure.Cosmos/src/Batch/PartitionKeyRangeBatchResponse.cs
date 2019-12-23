@@ -25,11 +25,11 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="originalOperationsCount">Original operations that generated the server responses.</param>
         /// <param name="serverResponse">Response from the server.</param>
-        /// <param name="serializer">Serializer to deserialize response resource body streams.</param>
+        /// <param name="serializerCore">Serializer to deserialize response resource body streams.</param>
         internal PartitionKeyRangeBatchResponse(
             int originalOperationsCount,
             TransactionalBatchResponse serverResponse,
-            CosmosSerializer serializer)
+            CosmosSerializerCore serializerCore)
         {
             this.StatusCode = serverResponse.StatusCode;
 
@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.ErrorMessage = errorMessageBuilder.Length > 2 ? errorMessageBuilder.ToString(0, errorMessageBuilder.Length - 2) : null;
             this.Operations = itemBatchOperations;
-            this.Serializer = serializer;
+            this.SerializerCore = serializerCore;
         }
 
         /// <summary>
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos
         /// <inheritdoc />
         public override CosmosDiagnostics Diagnostics => this.serverResponse.Diagnostics;
 
-        internal override CosmosSerializer Serializer { get; }
+        internal override CosmosSerializerCore SerializerCore { get; }
 
         /// <summary>
         /// Gets the number of operation results.
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos
             T resource = default(T);
             if (result.ResourceStream != null)
             {
-                resource = this.Serializer.FromStream<T>(result.ResourceStream);
+                resource = this.SerializerCore.FromStream<T>(result.ResourceStream);
             }
 
             return new TransactionalBatchOperationResult<T>(result, resource);

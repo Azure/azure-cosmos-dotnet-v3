@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private QueryResponse(
-            IEnumerable<CosmosElement> result,
+            IReadOnlyList<CosmosElement> result,
             int count,
             long responseLengthBytes,
             CosmosQueryResponseMessageHeaders responseHeaders,
@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal virtual IEnumerable<CosmosElement> CosmosElements { get; }
+        internal virtual IReadOnlyList<CosmosElement> CosmosElements { get; }
 
         internal virtual CosmosQueryResponseMessageHeaders QueryHeaders => (CosmosQueryResponseMessageHeaders)this.Headers;
 
@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal static QueryResponse CreateSuccess(
-            IEnumerable<CosmosElement> result,
+            IReadOnlyList<CosmosElement> result,
             int count,
             long responseLengthBytes,
             CosmosQueryResponseMessageHeaders responseHeaders,
@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnostics diagnostics)
         {
             QueryResponse cosmosQueryResponse = new QueryResponse(
-                    result: Enumerable.Empty<CosmosElement>(),
+                    result: new List<CosmosElement>(),
                     count: 0,
                     responseLengthBytes: 0,
                     responseHeaders: responseHeaders,
@@ -153,25 +153,26 @@ namespace Microsoft.Azure.Cosmos
     /// <typeparam name="T">The type for the query response.</typeparam>
     internal class QueryResponse<T> : FeedResponse<T>
     {
-        private readonly IEnumerable<CosmosElement> cosmosElements;
-        private readonly CosmosSerializer jsonSerializer;
+        private readonly CosmosSerializerCore serializerCore;
         private readonly CosmosSerializationFormatOptions serializationOptions;
-        private IEnumerable<T> resources;
 
         private QueryResponse(
             HttpStatusCode httpStatusCode,
-            IEnumerable<CosmosElement> cosmosElements,
+            IReadOnlyList<CosmosElement> cosmosElements,
             CosmosQueryResponseMessageHeaders responseMessageHeaders,
             CosmosDiagnostics diagnostics,
-            CosmosSerializer jsonSerializer,
+            CosmosSerializerCore serializerCore,
             CosmosSerializationFormatOptions serializationOptions)
         {
-            this.cosmosElements = cosmosElements;
             this.QueryHeaders = responseMessageHeaders;
             this.Diagnostics = diagnostics;
-            this.jsonSerializer = jsonSerializer;
+            this.serializerCore = serializerCore;
             this.serializationOptions = serializationOptions;
             this.StatusCode = httpStatusCode;
+            this.Count = cosmosElements.Count;
+            this.Resource = CosmosElementSerializer.GetResources<T>(
+                cosmosArray: cosmosElements,
+                serializerCore: serializerCore);
         }
 
         public override string ContinuationToken => this.Headers.ContinuationToken;
@@ -184,7 +185,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override CosmosDiagnostics Diagnostics { get; }
 
-        public override int Count => this.cosmosElements?.Count() ?? 0;
+        public override int Count { get; }
 
         internal CosmosQueryResponseMessageHeaders QueryHeaders { get; }
 
@@ -193,45 +194,23 @@ namespace Microsoft.Azure.Cosmos
             return this.Resource.GetEnumerator();
         }
 
-        public override IEnumerable<T> Resource
-        {
-            get
-            {
-                if (this.resources == null)
-                {
-                    if (typeof(T) == typeof(CosmosElement))
-                    {
-                        this.resources = this.cosmosElements.Cast<T>();
-                    }
-                    else
-                    {
-                        this.resources = CosmosElementSerializer.Deserialize<T>(
-                            this.QueryHeaders.ContainerRid,
-                            this.cosmosElements,
-                            this.QueryHeaders.ResourceType,
-                            this.jsonSerializer,
-                            this.serializationOptions);
-                    }
-                }
-
-                return this.resources;
-            }
-        }
+        public override IEnumerable<T> Resource { get; }
 
         internal static QueryResponse<TInput> CreateResponse<TInput>(
             QueryResponse cosmosQueryResponse,
-            CosmosSerializer jsonSerializer)
+            CosmosSerializerCore serializerCore)
         {
             QueryResponse<TInput> queryResponse;
             using (cosmosQueryResponse)
             {
                 cosmosQueryResponse.EnsureSuccessStatusCode();
+
                 queryResponse = new QueryResponse<TInput>(
                     httpStatusCode: cosmosQueryResponse.StatusCode,
                     cosmosElements: cosmosQueryResponse.CosmosElements,
                     responseMessageHeaders: cosmosQueryResponse.QueryHeaders,
                     diagnostics: cosmosQueryResponse.Diagnostics,
-                    jsonSerializer: jsonSerializer,
+                    serializerCore: serializerCore,
                     serializationOptions: cosmosQueryResponse.CosmosSerializationOptions);
             }
             return queryResponse;

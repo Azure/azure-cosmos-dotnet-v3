@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
     /// <summary>
     /// Benchmark for Item related operations.
     /// </summary>
+    [MemoryDiagnoser]
     public class ItemBenchmark
     {
         private readonly CosmosClient clientForTests;
@@ -83,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         [Benchmark]
         public async Task UpsertItemStream()
         {
-            
+
             ResponseMessage response = await this.container.UpsertItemStreamAsync(
                     new MemoryStream(this.payloadBytes),
                     new Cosmos.PartitionKey(Constants.ValidOperationId));
@@ -134,7 +135,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         {
             ResponseMessage response = await this.container.ReplaceItemStreamAsync(
                 new MemoryStream(this.payloadBytes),
-                Constants.ValidOperationId, 
+                Constants.ValidOperationId,
                 new Cosmos.PartitionKey(Constants.ValidOperationId));
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound || response.Content == null)
             {

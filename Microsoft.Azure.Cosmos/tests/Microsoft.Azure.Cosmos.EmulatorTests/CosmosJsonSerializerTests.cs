@@ -5,11 +5,16 @@
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
+    using System.Collections.Generic;
+    using System.Globalization;
     using System.IO;
     using System.Net;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Serialization;
 
     [TestClass]
     public class CosmosJsonSerializerTests : BaseCosmosClientHelper
@@ -35,6 +40,102 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task TestQueryWithCustomJsonSerializer()
+        {
+            int toStreamCount = 0;
+            int fromStreamCount = 0;
+            CosmosSerializer serializer = new CosmosSerializerHelper(new Newtonsoft.Json.JsonSerializerSettings()
+            {
+                NullValueHandling = NullValueHandling.Ignore
+            },
+            (item) => fromStreamCount++,
+            (item) => toStreamCount++);
+
+            CosmosClient client = TestCommon.CreateCosmosClient(builder => builder.WithCustomSerializer(serializer));
+            Database database = await client.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            try
+            {
+                Container container = await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/id");
+                Assert.AreEqual(0, toStreamCount);
+                Assert.AreEqual(0, fromStreamCount);
+
+                double cost = 9001.42;
+                for (int i = 0; i < 5; i++)
+                {
+                    ToDoActivity toDoActivity = new ToDoActivity()
+                    {
+                        id = "TestId" + i,
+                        cost = cost
+                    };
+
+                    await container.CreateItemAsync<ToDoActivity>(toDoActivity, new PartitionKey(toDoActivity.id));
+                }
+
+                Assert.AreEqual(5, toStreamCount);
+                Assert.AreEqual(5, fromStreamCount);
+
+                toStreamCount = 0;
+                fromStreamCount = 0;
+
+                QueryDefinition query = new QueryDefinition("select * from T where T.id != @id").
+                    WithParameter("@id", Guid.NewGuid());
+
+                FeedIterator<DatabaseProperties> feedIterator = client.GetDatabaseQueryIterator<DatabaseProperties>(
+                    query);
+                List<DatabaseProperties> databases = new List<DatabaseProperties>();
+                while (feedIterator.HasMoreResults)
+                {
+                    databases.AddRange(await feedIterator.ReadNextAsync());
+                }
+
+                Assert.AreEqual(1, toStreamCount, "parameter should use custom serializer");
+                Assert.AreEqual(0, fromStreamCount);
+
+                toStreamCount = 0;
+                fromStreamCount = 0;
+
+                FeedIterator<ToDoActivity> itemIterator = container.GetItemQueryIterator<ToDoActivity>(
+                    query);
+                List<ToDoActivity> items = new List<ToDoActivity>();
+                while (itemIterator.HasMoreResults)
+                {
+                    items.AddRange(await itemIterator.ReadNextAsync());
+                }
+
+                Assert.AreEqual(1, toStreamCount);
+                Assert.AreEqual(5, fromStreamCount);
+
+                toStreamCount = 0;
+                fromStreamCount = 0;
+
+                // Verify that the custom serializer is actually being used via stream
+                FeedIterator itemStreamIterator = container.GetItemQueryStreamIterator(
+                    query);
+                while (itemStreamIterator.HasMoreResults)
+                {
+                    ResponseMessage response = await itemStreamIterator.ReadNextAsync();
+                    using (StreamReader reader = new StreamReader(response.Content))
+                    {
+                        string content = await reader.ReadToEndAsync();
+                        Assert.IsTrue(content.Contains("9001.42"));
+                        Assert.IsFalse(content.Contains("description"), "Description should be ignored and not in the JSON");
+                    }
+                }
+
+                Assert.AreEqual(1, toStreamCount);
+                Assert.AreEqual(0, fromStreamCount);
+
+            }
+            finally
+            {
+                if(database != null)
+                {
+                    using (await database.DeleteStreamAsync()) { }
+                }
+            }
+        }
+
+        [TestMethod]
         public async Task TestCustomJsonSerializer()
         {
             int toStreamCount = 0;
@@ -46,7 +147,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ToDoActivity testItem = this.CreateRandomToDoActivity();
             mockJsonSerializer.Setup(x => x.ToStream<ToDoActivity>(It.IsAny<ToDoActivity>()))
                 .Callback(() => toStreamCount++)
-                .Returns(TestCommon.Serializer.ToStream<ToDoActivity>(testItem));
+                .Returns(TestCommon.SerializerCore.ToStream<ToDoActivity>(testItem));
 
             mockJsonSerializer.Setup(x => x.FromStream<ToDoActivity>(It.IsAny<Stream>()))
                 .Callback<Stream>(x => { x.Dispose(); fromStreamCount++; })
@@ -111,6 +212,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         public class ToDoActivity
         {
+            [JsonProperty(PropertyName = "id")]
             public string id { get; set; }
             public int taskNum { get; set; }
             public double cost { get; set; }

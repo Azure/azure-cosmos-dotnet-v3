@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -67,13 +67,14 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 request.Headers[HttpConstants.HttpHeaders.XDate] = DateTime.UtcNow.ToString("r");
 
+                string payload;
                 string authorizationToken = this.tokenProvider.GetUserAuthorizationToken(
                     request.ResourceAddress,
                     PathsHelper.GetResourcePath(request.ResourceType),
                     HttpConstants.HttpMethods.Get,
                     request.Headers,
                     AuthorizationTokenType.PrimaryMasterKey,
-                    payload: out _);
+                    out payload);
 
                 request.Headers[HttpConstants.HttpHeaders.Authorization] = authorizationToken;
 

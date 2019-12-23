@@ -53,8 +53,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// </summary>
         private static readonly Version GeoFencing = new Version(1, 10, 0);
 
-        // TODO (brchon): Fill out this field when the composite sdk gets released
-        //private static readonly Version Composite = new Version(1, 23, 0);
+        private static readonly Version AdditionalIndexes = new Version(2, 4, 0);
 
         /// <summary>
         /// Reserved version for the latest SDK that got released (note that only the local version can be newer).
@@ -71,6 +70,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IndexingPolicyV2,
             Spatial,
             GeoFencing,
+            AdditionalIndexes,
             Latest,
             Local
         };
@@ -281,6 +281,69 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task SpatialBoundingBox()
+        {
+            await RetryOnNonAssertFailure(this.SpatialBoundingBoxImplementation);
+        }
+
+        private async Task SpatialBoundingBoxImplementation()
+        {
+            Cosmos.IndexingPolicy indexingPolicy = new Cosmos.IndexingPolicy()
+            {
+                Automatic = true,
+                IncludedPaths = new Collection<Cosmos.IncludedPath>()
+                {
+                    new  Cosmos.IncludedPath()
+                    {
+                        Path = DefaultPath,
+                    }
+                },
+                ExcludedPaths = new Collection<Cosmos.ExcludedPath>(),
+                IndexingMode = Cosmos.IndexingMode.Consistent,
+                SpatialIndexes = new Collection<Cosmos.SpatialPath>()
+                {
+                    new Cosmos.SpatialPath
+                    {
+                        Path = "/location/?",
+                        SpatialTypes = new Collection<Cosmos.SpatialType>()
+                        {
+                            Cosmos.SpatialType.LineString,
+                            Cosmos.SpatialType.MultiPolygon,
+                            Cosmos.SpatialType.Point,
+                            Cosmos.SpatialType.Polygon,
+                        },
+                        BoundingBox = new Cosmos.BoundingBoxProperties()
+                        {
+                            Xmin = 0,
+                            Ymin = 0,
+                            Xmax = 10,
+                            Ymax = 10,
+                        }
+                    },
+                     new Cosmos.SpatialPath
+                     {
+                        Path = "/spatial/*",
+                        SpatialTypes = new Collection<Cosmos.SpatialType>()
+                        {
+                            Cosmos.SpatialType.Point
+                        },
+                        BoundingBox = new Cosmos.BoundingBoxProperties()
+                        {
+                            Xmin = 0,
+                            Ymin = 0,
+                            Xmax = 10,
+                            Ymax = 10,
+                        }
+                     }
+                    }
+                };
+
+            Cosmos.GeospatialConfig geospatialConfig = new Cosmos.GeospatialConfig();
+            geospatialConfig.GeospatialType = Cosmos.GeospatialType.Geometry;
+            await IndexingPolicyTests.RoundTripWithLocal(indexingPolicy, geospatialConfig);
+        }
+
+        [TestMethod]
         public async Task ExcludeAll()
         {
             Cosmos.IndexingPolicy indexingPolicy = IndexingPolicyTests.CreateDefaultIndexingPolicy();
@@ -332,14 +395,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await IndexingPolicyTests.RoundTripWithLocal(indexingPolicy);
         }
 
-        private static async Task RoundTripWithLocal(Cosmos.IndexingPolicy indexingPolicy)
+        private static async Task RoundTripWithLocal(Cosmos.IndexingPolicy indexingPolicy, Cosmos.GeospatialConfig geospatialConfig = null)
         {
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/id" }), Kind = PartitionKind.Hash };
             ContainerProperties containerSetting = new ContainerProperties()
             {
                 Id = Guid.NewGuid().ToString(),
                 IndexingPolicy = indexingPolicy,
-                PartitionKey = partitionKeyDefinition
+                PartitionKey = partitionKeyDefinition,
+                GeospatialConfig = geospatialConfig
             };
 
             Cosmos.Database cosmosDatabase = await cosmosClient.CreateDatabaseIfNotExistsAsync(IndexingPolicyTests.database.Id);
