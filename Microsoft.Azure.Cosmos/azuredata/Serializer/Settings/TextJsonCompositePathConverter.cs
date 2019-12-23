@@ -79,7 +79,7 @@ namespace Azure.Cosmos
             }
             else if (property.NameEquals(Constants.Properties.Order))
             {
-                if (Enum.TryParse<CompositePathSortOrder>(property.Value.GetString(), out CompositePathSortOrder compositePathSortOrder))
+                if (Enum.TryParse(value: property.Value.GetString(), ignoreCase: true, out CompositePathSortOrder compositePathSortOrder))
                 {
                     compositePath.Order = compositePathSortOrder;
                 }

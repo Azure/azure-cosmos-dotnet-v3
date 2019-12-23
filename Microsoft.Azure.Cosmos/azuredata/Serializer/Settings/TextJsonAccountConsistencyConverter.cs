@@ -86,7 +86,7 @@ namespace Azure.Cosmos
             }
             else if (property.NameEquals(Constants.Properties.DefaultConsistencyLevel))
             {
-                if (Enum.TryParse(property.Value.GetString(), out ConsistencyLevel consistencyLevel))
+                if (Enum.TryParse(value: property.Value.GetString(), ignoreCase: true, out ConsistencyLevel consistencyLevel))
                 {
                     setting.DefaultConsistencyLevel = consistencyLevel;
                 }

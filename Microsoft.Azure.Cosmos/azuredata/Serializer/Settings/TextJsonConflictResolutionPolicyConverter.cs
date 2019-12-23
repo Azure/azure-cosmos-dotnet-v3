@@ -84,7 +84,7 @@ namespace Azure.Cosmos
         {
             if (property.NameEquals(Constants.Properties.Mode))
             {
-                if (Enum.TryParse<ConflictResolutionMode>(property.Value.GetString(), out ConflictResolutionMode conflictResolutionMode))
+                if (Enum.TryParse(value: property.Value.GetString(), ignoreCase: true, out ConflictResolutionMode conflictResolutionMode))
                 {
                     policy.Mode = conflictResolutionMode;
                 }

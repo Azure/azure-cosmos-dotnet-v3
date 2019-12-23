@@ -82,14 +82,14 @@ namespace Azure.Cosmos
             }
             else if (property.NameEquals(Constants.Properties.TriggerType))
             {
-                if (Enum.TryParse(property.Value.GetString(), out Scripts.TriggerType triggerType))
+                if (Enum.TryParse(value: property.Value.GetString(), ignoreCase: true, out Scripts.TriggerType triggerType))
                 {
                     setting.TriggerType = triggerType;
                 }
             }
             else if (property.NameEquals(Constants.Properties.TriggerOperation))
             {
-                if (Enum.TryParse(property.Value.GetString(), out Scripts.TriggerOperation triggerOperation))
+                if (Enum.TryParse(value: property.Value.GetString(), ignoreCase: true, out Scripts.TriggerOperation triggerOperation))
                 {
                     setting.TriggerOperation = triggerOperation;
                 }

@@ -71,6 +71,11 @@ namespace Azure.Cosmos
         {
             using (stream)
             {
+                if (stream.Length == 0)
+                {
+                    return default(T);
+                }
+
                 if (typeof(Stream).IsAssignableFrom(typeof(T)))
                 {
                     return (T)(object)stream;

@@ -119,7 +119,7 @@ namespace Azure.Cosmos
             }
             else if (property.NameEquals(Constants.Properties.IndexingMode))
             {
-                if (Enum.TryParse(property.Value.GetString(), out IndexingMode indexingMode))
+                if (Enum.TryParse(value: property.Value.GetString(), ignoreCase: true, out IndexingMode indexingMode))
                 {
                     policy.IndexingMode = indexingMode;
                 }

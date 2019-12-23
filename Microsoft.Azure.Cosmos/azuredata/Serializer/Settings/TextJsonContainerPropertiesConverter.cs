@@ -98,7 +98,7 @@ namespace Azure.Cosmos
 
                 writer.WriteEndArray();
 
-                writer.WriteString(Constants.Properties.PartitionKind, JsonSerializer.Serialize(setting.PartitionKey.Kind, options));
+                writer.WriteString(Constants.Properties.PartitionKind, setting.PartitionKey.Kind.ToString());
 
                 if (setting.PartitionKey.IsSystemKey.HasValue)
                 {
@@ -164,7 +164,7 @@ namespace Azure.Cosmos
                     }
                     else if (partitionKeyProperties.NameEquals(Constants.Properties.PartitionKind))
                     {
-                        if (Enum.TryParse(partitionKeyProperties.Value.GetString(), out PartitionKind partitionKind))
+                        if (Enum.TryParse(value: partitionKeyProperties.Value.GetString(), ignoreCase: true, out PartitionKind partitionKind))
                         {
                             setting.PartitionKey.Kind = partitionKind;
                         }

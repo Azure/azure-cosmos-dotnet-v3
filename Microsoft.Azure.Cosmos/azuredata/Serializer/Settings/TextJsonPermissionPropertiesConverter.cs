@@ -99,7 +99,7 @@ namespace Azure.Cosmos
             }
             else if (property.NameEquals(Constants.Properties.PermissionMode))
             {
-                if (Enum.TryParse(property.Value.GetString(), out PermissionMode permissionMode))
+                if (Enum.TryParse(value: property.Value.GetString(), ignoreCase: true, out PermissionMode permissionMode))
                 {
                     setting.PermissionMode = permissionMode;
                 }

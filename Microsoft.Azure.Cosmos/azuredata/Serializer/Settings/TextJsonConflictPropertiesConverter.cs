@@ -89,7 +89,7 @@ namespace Azure.Cosmos
             }
             else if (property.NameEquals(Constants.Properties.OperationType))
             {
-                if (Enum.TryParse<OperationKind>(property.Value.GetString(), out OperationKind operationKind))
+                if (Enum.TryParse(value: property.Value.GetString(), ignoreCase: true, out OperationKind operationKind))
                 {
                     settings.OperationKind = operationKind;
                 }

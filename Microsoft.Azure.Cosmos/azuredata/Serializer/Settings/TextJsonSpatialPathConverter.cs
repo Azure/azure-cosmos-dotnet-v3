@@ -94,7 +94,7 @@ namespace Azure.Cosmos
                 path.SpatialTypes = new Collection<Spatial.SpatialType>();
                 foreach (JsonElement item in property.Value.EnumerateArray())
                 {
-                    if (Enum.TryParse(item.GetString(), out Spatial.SpatialType type))
+                    if (Enum.TryParse(value: item.GetString(), ignoreCase: true, out Spatial.SpatialType type))
                     {
                         path.SpatialTypes.Add(type);
                     }
