@@ -257,7 +257,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 try
                 {
-                    Error error = JsonSerializer.Deserialize<Error>(this.content.AsReadOnlySpan(), TextJsonErrorConverter.ErrorSerializationOptions.Value);
+                    Error error = CosmosTextJsonSerializer.Deserialize<Error>(this.content, TextJsonErrorConverter.ErrorSerializationOptions.Value);
                     if (error != null)
                     {
                         // Error format is not consistent across modes
