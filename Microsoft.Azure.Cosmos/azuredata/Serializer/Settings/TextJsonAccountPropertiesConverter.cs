@@ -5,6 +5,7 @@
 namespace Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Globalization;
     using System.Text.Json;
@@ -95,6 +96,16 @@ namespace Azure.Cosmos
             writer.WriteBoolean(Constants.Properties.EnableMultipleWriteLocations, setting.EnableMultipleWriteLocations);
 
             writer.WriteEndObject();
+        }
+
+        /// <summary>
+        /// Reference https://github.com/dotnet/corefx/issues/39953
+        /// </summary>
+        public static Dictionary<string, object> GetQueryEngineConfiguration(string queryEngineConfigurationString)
+        {
+            JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions();
+            jsonSerializerOptions.Converters.Add(new TextJsonObjectToPrimitiveConverter());
+            return JsonSerializer.Deserialize<Dictionary<string, object>>(queryEngineConfigurationString, jsonSerializerOptions);
         }
 
         private static void ReadPropertyValue(
