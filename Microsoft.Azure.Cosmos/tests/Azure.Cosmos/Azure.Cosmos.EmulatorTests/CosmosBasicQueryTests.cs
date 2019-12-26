@@ -188,7 +188,7 @@ namespace Azure.Cosmos.EmulatorTests
                  CosmosBasicQueryTests.RequestOptions);
             }
 
-            List<string> ids = queryResults.Select(x => (string)x.id).ToList();
+            List<string> ids = queryResults.Select(x => ((JsonElement)x).GetProperty("id").GetString()).ToList();
             CollectionAssert.AreEquivalent(createdIds, ids);
 
             //Read All
@@ -199,7 +199,7 @@ namespace Azure.Cosmos.EmulatorTests
                 CosmosBasicQueryTests.RequestOptions);
 
 
-            ids = results.Select(x => (string)x.id).ToList();
+            ids = results.Select(x => ((JsonElement)x).GetProperty("id").GetString()).ToList();
             CollectionAssert.IsSubsetOf(createdIds, ids);
 
             //Read All with partition key

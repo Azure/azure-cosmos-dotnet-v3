@@ -62,7 +62,7 @@ namespace Azure.Cosmos.EmulatorTests
 
             public override void Write(Utf8JsonWriter writer, int value, JsonSerializerOptions options)
             {
-                writer.WriteNumberValue(value);
+                writer.WriteStringValue(value.ToString(CultureInfo.InvariantCulture));
 
             }
 
@@ -74,15 +74,9 @@ namespace Azure.Cosmos.EmulatorTests
 
         public sealed class FormatDoubleAsTextConverter : JsonConverter<double>
         {
-            public override bool CanConvert(Type type)
-            {
-                return type == typeof(double);
-            }
-
             public override void Write(Utf8JsonWriter writer, double value, JsonSerializerOptions options)
             {
-                writer.WriteNumberValue(value);
-
+                writer.WriteStringValue(value.ToString(CultureInfo.InvariantCulture));
             }
 
             public override double Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)

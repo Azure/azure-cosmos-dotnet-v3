@@ -592,8 +592,8 @@ namespace Azure.Cosmos.EmulatorTests
                 foreach (Dictionary<string, object> item in allItems)
                 {
                     Assert.IsFalse(string.Equals(testItem1.id, item["id"]) || string.Equals(testItem2.id, item["id"]));
-                    Assert.IsTrue((item["totalCost"] as string) != null);
-                    Assert.IsTrue((item["taskNum"] as string) != null);
+                    Assert.IsTrue(((JsonElement)item["totalCost"]).GetString() != null);
+                    Assert.IsTrue(((JsonElement)item["taskNum"]).GetString() != null);
                 }
 
                 // Each parameter in query spec should be a call to the custom serializer
