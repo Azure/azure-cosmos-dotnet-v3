@@ -62,6 +62,21 @@ namespace Azure.Cosmos
                 offer.Content = TextJsonOfferV2Converter.ReadOfferContent(offerContentElement);
             }
 
+            if (document.RootElement.TryGetProperty(Constants.Properties.SelfLink, out JsonElement selfLinkElement))
+            {
+                offer.SelfLink = selfLinkElement.GetString();
+            }
+
+            if (document.RootElement.TryGetProperty(Constants.Properties.Id, out JsonElement idElement))
+            {
+                offer.Id = idElement.GetString();
+            }
+
+            if (document.RootElement.TryGetProperty(Constants.Properties.RId, out JsonElement resourceIdElement))
+            {
+                offer.ResourceId = resourceIdElement.GetString();
+            }
+
             return offer;
         }
 
@@ -94,12 +109,27 @@ namespace Azure.Cosmos
 
             if (!string.IsNullOrEmpty(value.OfferResourceId))
             {
-                writer.WriteString(Constants.Properties.AdditionalErrorInfo, value.OfferResourceId);
+                writer.WriteString(Constants.Properties.OfferResourceId, value.OfferResourceId);
             }
 
             if (value.Content != null)
             {
                 TextJsonOfferV2Converter.WriteOfferContent(writer, value.Content, Constants.Properties.OfferContent);
+            }
+
+            if (!string.IsNullOrEmpty(value.Id))
+            {
+                writer.WriteString(Constants.Properties.Id, value.Id);
+            }
+
+            if (!string.IsNullOrEmpty(value.SelfLink))
+            {
+                writer.WriteString(Constants.Properties.SelfLink, value.SelfLink);
+            }
+
+            if (!string.IsNullOrEmpty(value.ResourceId))
+            {
+                writer.WriteString(Constants.Properties.RId, value.ResourceId);
             }
 
             writer.WriteEndObject();
