@@ -10,7 +10,10 @@ namespace Azure.Cosmos
 
     internal class TextJsonObjectToPrimitiveConverter : JsonConverter<object>
     {
-        public override object Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        public override object Read(
+            ref Utf8JsonReader reader,
+            Type typeToConvert,
+            JsonSerializerOptions options)
         {
             if (reader.TokenType == JsonTokenType.True)
             {
@@ -53,9 +56,12 @@ namespace Azure.Cosmos
             }
         }
 
-        public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
+        public override void Write(
+            Utf8JsonWriter writer,
+            object value,
+            JsonSerializerOptions options)
         {
-            throw new InvalidOperationException("Should not get here.");
+            throw new NotImplementedException();
         }
     }
 }
