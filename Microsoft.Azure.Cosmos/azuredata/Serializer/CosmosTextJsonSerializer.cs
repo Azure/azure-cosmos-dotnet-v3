@@ -29,6 +29,7 @@ namespace Azure.Cosmos
         /// </remarks>
         internal CosmosTextJsonSerializer()
         {
+            this.jsonSerializerSettings = new JsonSerializerOptions();
         }
 
         /// <summary>
@@ -94,7 +95,7 @@ namespace Azure.Cosmos
         public override Stream ToStream<T>(T input)
         {
             MemoryStream streamPayload = new MemoryStream();
-            using Utf8JsonWriter utf8JsonWriter = new Utf8JsonWriter(streamPayload);
+            using Utf8JsonWriter utf8JsonWriter = new Utf8JsonWriter(streamPayload, new JsonWriterOptions() { Indented = this.jsonSerializerSettings.WriteIndented });
             JsonSerializer.Serialize<T>(utf8JsonWriter, input, this.jsonSerializerSettings);
             streamPayload.Position = 0;
             return streamPayload;
