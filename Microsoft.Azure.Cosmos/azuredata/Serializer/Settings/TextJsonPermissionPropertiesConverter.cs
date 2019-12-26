@@ -61,7 +61,7 @@ namespace Azure.Cosmos
 
             writer.WriteString(Constants.Properties.ResourceLink, setting.ResourceUri);
 
-            writer.WriteString(Constants.Properties.PermissionMode, JsonSerializer.Serialize(setting.PermissionMode, options));
+            writer.WriteString(Constants.Properties.PermissionMode, setting.PermissionMode.ToString());
 
             if (!string.IsNullOrEmpty(setting.Token))
             {

@@ -188,8 +188,10 @@ namespace Azure.Cosmos
             {
                 throw new NotImplementedException();
             }
-
-            throw new JsonException(string.Format(CultureInfo.CurrentCulture, RMResources.UnsupportedPartitionKeyComponentValue, componentValue));
+            else
+            {
+                throw new JsonException(string.Format(CultureInfo.CurrentCulture, RMResources.UnsupportedPartitionKeyComponentValue, componentValue));
+            }
         }
 
         private static void JsonEncodeLimit(

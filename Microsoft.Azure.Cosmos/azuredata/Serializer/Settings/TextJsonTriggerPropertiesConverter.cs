@@ -57,9 +57,9 @@ namespace Azure.Cosmos
 
             writer.WriteString(Constants.Properties.Body, setting.Body);
 
-            writer.WriteString(Constants.Properties.TriggerType, JsonSerializer.Serialize(setting.TriggerType, options));
+            writer.WriteString(Constants.Properties.TriggerType, setting.TriggerType.ToString());
 
-            writer.WriteString(Constants.Properties.TriggerOperation, JsonSerializer.Serialize(setting.TriggerOperation, options));
+            writer.WriteString(Constants.Properties.TriggerOperation, setting.TriggerOperation.ToString());
 
             writer.WriteEndObject();
         }
