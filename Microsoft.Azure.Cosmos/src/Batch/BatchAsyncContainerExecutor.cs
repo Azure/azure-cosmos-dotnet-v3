@@ -48,6 +48,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly int additiveIncreaseFactor = 1;
         private readonly int congestionControllerDelayInMs = 2;
         private readonly double multiplicativeDecreaseFactor = 2.0;
+        private readonly bool enableCongestionControl;
 
         /// <summary>
         /// For unit testing.
@@ -90,6 +91,7 @@ namespace Microsoft.Azure.Cosmos
             this.dispatchTimerInSeconds = dispatchTimerInSeconds;
             this.timerPool = new TimerPool(BatchAsyncContainerExecutor.MinimumDispatchTimerInSeconds);
             this.retryOptions = cosmosClientContext.ClientOptions.GetConnectionPolicy().RetryOptions;
+            this.enableCongestionControl = cosmosClientContext.ClientOptions.EnableCongestionControlForBulkExecution;
 
             this.stopwatch.Start();
         }
@@ -292,7 +294,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 newLimiter.Dispose();
             }
-            else
+            else if (this.enableCongestionControl)
             {
                 // New limiter was created, so create congestion control on top of it.
                 this.CongestionControlTask(partitionKeyRangeId, newLimiter, cancellationToken);
@@ -317,7 +319,7 @@ namespace Microsoft.Azure.Cosmos
                     long elapsedTime = currentElapsedTimeInMs - lastElapsedTimeInMs;
                     lastElapsedTimeInMs = currentElapsedTimeInMs;
 
-                    if (elapsedTime > 0)
+                    if (elapsedTime > 100)
                     {
                         this.docsPartitionId.TryGetValue(partitionKeyRangeId, out int newDocCount);
                         this.throttlePartitionId.TryGetValue(partitionKeyRangeId, out int newThrottleCount);

@@ -394,6 +394,12 @@ namespace Microsoft.Azure.Cosmos
         public bool AllowBulkExecution { get; set; }
 
         /// <summary>
+        /// Allows parallelization of requests in bulk execution mode. This can lead to some level of throttling to maintain the highest degree of parallelism.
+        /// Useful in collections with RU >= 300K for consuming full RU.
+        /// </summary>
+        public bool EnableCongestionControlForBulkExecution { get; set; } = false;
+
+        /// <summary>
         /// Gets or sets the connection protocol when connecting to the Azure Cosmos service.
         /// </summary>
         /// <value>

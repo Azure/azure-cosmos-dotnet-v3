@@ -383,6 +383,18 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
+        /// Allows Parallelization of requests in bulk execution mode. This can lead to some level of throttling to maintain the highest degree of parallelism.
+        /// Useful in collections with RU >= 300K for consuming full RU.
+        /// </summary>
+        /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
+        /// <seealso cref="CosmosClientOptions.EnableCongestionControlForBulkExecution"/>
+        public CosmosClientBuilder WithCongestionControlForBulkExecutionEnabled()
+        {
+            this.clientOptions.EnableCongestionControlForBulkExecution = true;
+            return this;
+        }
+
+        /// <summary>
         /// The event handler to be invoked before the request is sent.
         /// </summary>
         internal CosmosClientBuilder WithSendingRequestEventArgs(EventHandler<SendingRequestEventArgs> sendingRequestEventArgs)

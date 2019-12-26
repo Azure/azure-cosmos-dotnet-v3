@@ -29,6 +29,7 @@
     public class Program
     {
         private static readonly JsonSerializer Serializer = new JsonSerializer();
+        private static CosmosClient client;
         private static Database database = null;
         private static int itemsToCreate;
         private static int itemSize;
@@ -62,7 +63,8 @@
                 {
                     await Program.CleanupAsync();
                 }
-               
+                client.Dispose();
+
                 Console.WriteLine("End of demo, press any key to exit.");
                 Console.ReadKey();
             }
@@ -72,6 +74,8 @@
         private static void CreateItemsConcurrently(Container container)
         {
             Console.WriteLine($"Initiating creation of {itemsToCreate} items of about {itemSize} bytes each in a limit of {runtimeInSeconds} seconds.");
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            long startMilliseconds = stopwatch.ElapsedMilliseconds;
 
             ConcurrentDictionary<HttpStatusCode, int> countsByStatus = new ConcurrentDictionary<HttpStatusCode, int>();
             DataSource dataSource = new DataSource(itemsToCreate, itemSize);
@@ -79,8 +83,6 @@
             Console.WriteLine("Running workload");
             int docCounter = 0;
             int taskCompleteCounter = 0;
-            Stopwatch stopwatch = Stopwatch.StartNew();
-            long startMilliseconds = stopwatch.ElapsedMilliseconds;
 
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
             cancellationTokenSource.CancelAfter(runtimeInSeconds * 1000);
@@ -121,7 +123,7 @@
                         break;
                     }
                     Console.WriteLine($"In progress. Processed: {taskCompleteCounter}, Pending: {docCounter - taskCompleteCounter}");
-                    Thread.Sleep(1000);
+                    Thread.Sleep(2000);
                 }
 
                 foreach (var countForStatus in countsByStatus)
@@ -187,7 +189,7 @@
             bool shouldCleanupOnStart = bool.Parse(string.IsNullOrEmpty(configuration["ShouldCleanupOnStart"]) ? "false" : configuration["ShouldCleanupOnStart"]);
             int collectionThroughput = int.Parse(string.IsNullOrEmpty(configuration["CollectionThroughput"]) ? "30000" : configuration["CollectionThroughput"]);
 
-            CosmosClient client = GetBulkClientInstance(endpointUrl, authKey);
+            Program.client = GetBulkClientInstance(endpointUrl, authKey);
             Program.database = client.GetDatabase(DatabaseName);
             Container container = Program.database.GetContainer(CollectionName); ;
             if (shouldCleanupOnStart)
@@ -214,7 +216,7 @@
             string endpoint,
             string authKey) =>
         // </Initialization>
-            new CosmosClient(endpoint, authKey, new CosmosClientOptions() { AllowBulkExecution = true });
+            new CosmosClient(endpoint, authKey, new CosmosClientOptions() { AllowBulkExecution = true, EnableCongestionControlForBulkExecution = true});
         // </Initialization>
 
         private static async Task CleanupAsync()
