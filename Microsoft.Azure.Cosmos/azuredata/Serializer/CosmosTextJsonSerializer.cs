@@ -43,7 +43,6 @@ namespace Azure.Cosmos
         internal CosmosTextJsonSerializer(JsonSerializerOptions jsonSerializerSettings)
         {
             this.jsonSerializerOptions = jsonSerializerSettings ?? throw new ArgumentNullException(nameof(jsonSerializerSettings));
-            this.InitializeConverters();
         }
 
         /// <summary>
