@@ -383,11 +383,11 @@ namespace Microsoft.Azure.Cosmos
             }
 
             DatabaseProperties databaseProperties = this.PrepareDatabaseProperties(id);
-            return this.CreateDatabaseAsync(
+            return TaskHelper.RunInlineIfNeededAsync(() => this.CreateDatabaseAsync(
                 databaseProperties: databaseProperties,
                 throughput: throughput,
                 requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
+                cancellationToken: cancellationToken));
         }
 
         /// <summary>
@@ -421,7 +421,7 @@ namespace Microsoft.Azure.Cosmos
         /// </list>
         /// </returns>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
-        public virtual async Task<DatabaseResponse> CreateDatabaseIfNotExistsAsync(
+        public virtual Task<DatabaseResponse> CreateDatabaseIfNotExistsAsync(
             string id,
             int? throughput = null,
             RequestOptions requestOptions = null,
@@ -432,24 +432,27 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(id));
             }
 
-            // Doing a Read before Create will give us better latency for existing databases
-            DatabaseProperties databaseProperties = this.PrepareDatabaseProperties(id);
-            Database database = this.GetDatabase(id);
-            ResponseMessage response = await database.ReadStreamAsync(requestOptions: requestOptions, cancellationToken: cancellationToken);
-            if (response.StatusCode != HttpStatusCode.NotFound)
+            return TaskHelper.RunInlineIfNeededAsync(async () =>
             {
-                return await this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(database, Task.FromResult(response));
-            }
+                // Doing a Read before Create will give us better latency for existing databases
+                DatabaseProperties databaseProperties = this.PrepareDatabaseProperties(id);
+                Database database = this.GetDatabase(id);
+                ResponseMessage response = await database.ReadStreamAsync(requestOptions: requestOptions, cancellationToken: cancellationToken);
+                if (response.StatusCode != HttpStatusCode.NotFound)
+                {
+                    return await this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(database, Task.FromResult(response));
+                }
 
-            response = await this.CreateDatabaseStreamAsync(databaseProperties, throughput, requestOptions, cancellationToken);
-            if (response.StatusCode != HttpStatusCode.Conflict)
-            {
-                return await this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(this.GetDatabase(databaseProperties.Id), Task.FromResult(response));
-            }
+                response = await this.CreateDatabaseStreamAsync(databaseProperties, throughput, requestOptions, cancellationToken);
+                if (response.StatusCode != HttpStatusCode.Conflict)
+                {
+                    return await this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(this.GetDatabase(databaseProperties.Id), Task.FromResult(response));
+                }
 
-            // This second Read is to handle the race condition when 2 or more threads have Read the database and only one succeeds with Create
-            // so for the remaining ones we should do a Read instead of throwing Conflict exception
-            return await database.ReadAsync(cancellationToken: cancellationToken);
+                // This second Read is to handle the race condition when 2 or more threads have Read the database and only one succeeds with Create
+                // so for the remaining ones we should do a Read instead of throwing Conflict exception
+                return await database.ReadAsync(cancellationToken: cancellationToken);
+            });
         }
 
         /// <summary>
@@ -471,19 +474,11 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            if (!(this.GetDatabaseQueryStreamIterator(
-                queryDefinition,
-                continuationToken,
-                requestOptions) is FeedIteratorInternal databaseStreamIterator))
-            {
-                throw new InvalidOperationException($"Expected a FeedIteratorInternal.");
-            }
-
-            return new FeedIteratorCore<T>(
-                databaseStreamIterator,
-                (response) => this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>(
-                    responseMessage: response,
-                    resourceType: ResourceType.Database));
+            return new FeedIteratorInlineCore<T>(
+                this.GetDatabaseQueryIteratorHelper<T>(
+                    queryDefinition,
+                    continuationToken,
+                    requestOptions));
         }
 
         /// <summary>
@@ -505,13 +500,11 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return new FeedIteratorCore(
-               this.ClientContext,
-               this.DatabaseRootUri,
-               ResourceType.Database,
-               queryDefinition,
-               continuationToken,
-               requestOptions);
+            return new FeedIteratorInlineCore(
+                this.GetDatabaseQueryStreamIteratorHelper(
+                    queryDefinition,
+                    continuationToken,
+                    requestOptions));
         }
 
         /// <summary>
@@ -539,10 +532,11 @@ namespace Microsoft.Azure.Cosmos
                 queryDefinition = new QueryDefinition(queryText);
             }
 
-            return this.GetDatabaseQueryIterator<T>(
-                queryDefinition,
-                continuationToken,
-                requestOptions);
+            return new FeedIteratorInlineCore<T>(
+                this.GetDatabaseQueryIteratorHelper<T>(
+                    queryDefinition,
+                    continuationToken,
+                    requestOptions));
         }
 
         /// <summary>
@@ -570,10 +564,11 @@ namespace Microsoft.Azure.Cosmos
                 queryDefinition = new QueryDefinition(queryText);
             }
 
-            return this.GetDatabaseQueryStreamIterator(
-                queryDefinition,
-                continuationToken,
-                requestOptions);
+            return new FeedIteratorInlineCore(
+                this.GetDatabaseQueryStreamIterator(
+                    queryDefinition,
+                    continuationToken,
+                    requestOptions));
         }
 
         /// <summary>
@@ -607,7 +602,11 @@ namespace Microsoft.Azure.Cosmos
             this.ClientContext.ValidateResource(databaseProperties.Id);
             Stream streamPayload = this.ClientContext.SerializerCore.ToStream<DatabaseProperties>(databaseProperties);
 
-            return this.CreateDatabaseStreamInternalAsync(streamPayload, throughput, requestOptions, cancellationToken);
+            return TaskHelper.RunInlineIfNeededAsync(() => this.CreateDatabaseStreamInternalAsync(
+                streamPayload,
+                throughput,
+                requestOptions,
+                cancellationToken));
         }
 
         /// <summary>
@@ -718,6 +717,40 @@ namespace Microsoft.Azure.Cosmos
             httpClientHandler.Proxy = clientOptions.WebProxy;
 
             return httpClientHandler;
+        }
+
+        private FeedIteratorInternal<T> GetDatabaseQueryIteratorHelper<T>(
+           QueryDefinition queryDefinition,
+           string continuationToken = null,
+           QueryRequestOptions requestOptions = null)
+        {
+            if (!(this.GetDatabaseQueryStreamIteratorHelper(
+                queryDefinition,
+                continuationToken,
+                requestOptions) is FeedIteratorInternal databaseStreamIterator))
+            {
+                throw new InvalidOperationException($"Expected a FeedIteratorInternal.");
+            }
+
+            return new FeedIteratorCore<T>(
+                    databaseStreamIterator,
+                    (response) => this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>(
+                        responseMessage: response,
+                        resourceType: ResourceType.Database));
+        }
+
+        private FeedIteratorInternal GetDatabaseQueryStreamIteratorHelper(
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null)
+        {
+            return new FeedIteratorCore(
+               this.ClientContext,
+               this.DatabaseRootUri,
+               ResourceType.Database,
+               queryDefinition,
+               continuationToken,
+               requestOptions);
         }
 
         /// <summary>
