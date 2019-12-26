@@ -50,16 +50,16 @@ namespace Azure.Cosmos
                 // Use the user serializer for the parameter values so custom conversions are correctly handled
                 using (Stream str = this.parameterSerializer.ToStream(sqlParameter.Value))
                 {
-                    using (StreamReader streamReader = new StreamReader(str))
+                    // Workaround to do a WriteRaw
+                    using (JsonDocument jsonDocument = JsonDocument.Parse(str))
                     {
-                        string parameterValue = streamReader.ReadToEnd();
-                        writer.WriteStringValue(parameterValue);
+                        jsonDocument.WriteTo(writer);
                     }
                 }
             }
             else
             {
-                writer.WriteStringValue(sqlParameter.Value.ToString());
+                JsonSerializer.Serialize(writer, sqlParameter.Value);
             }
 
             writer.WriteEndObject();
