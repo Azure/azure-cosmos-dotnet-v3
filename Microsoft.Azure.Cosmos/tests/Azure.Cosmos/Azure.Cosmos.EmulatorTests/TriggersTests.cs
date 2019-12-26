@@ -9,11 +9,12 @@ namespace Azure.Cosmos.EmulatorTests
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
     using System.Threading.Tasks;
     using Azure.Cosmos.Scripts;
     using Azure.Cosmos.Serialization;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json;
 
     [TestClass]
     public sealed class TriggersTests : BaseCosmosClientHelper
@@ -233,7 +234,7 @@ namespace Azure.Cosmos.EmulatorTests
 
             ItemResponse<dynamic> createdItem = await this.container.CreateItemAsync<dynamic>(item, requestOptions: options);
 
-            double itemTax = createdItem.Value.tax;
+            double itemTax = ((JsonElement)createdItem.Value).GetProperty("tax").GetDouble();
             Assert.AreEqual(item.cost * .20, itemTax);
             // Delete existing user defined functions.
             await this.scripts.DeleteTriggerAsync("addTax");
@@ -295,11 +296,11 @@ namespace Azure.Cosmos.EmulatorTests
 
         private class Job
         {
-            [JsonProperty(PropertyName = "id")]
+            [JsonPropertyName("id")]
             public Guid Id { get; set; }
-            [JsonProperty(PropertyName = "investigationKey")]
+            [JsonPropertyName("investigationKey")]
             public string InvestigationKey { get; set; }
-            [JsonProperty(PropertyName = "jobNumber")]
+            [JsonPropertyName("jobNumber")]
             public int JobNumber { get; set; }
         }
 
