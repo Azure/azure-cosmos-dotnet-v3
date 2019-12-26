@@ -5,7 +5,6 @@
 namespace Azure.Cosmos
 {
     using System;
-    using System.IO;
     using System.Text.Json;
     using System.Text.Json.Serialization;
     using Azure.Cosmos.Serialization;
@@ -14,41 +13,50 @@ namespace Azure.Cosmos
     /// <summary>
     /// A custom serializer converter for SQL query spec
     /// </summary>
-    internal sealed class TextJsonCosmosSqlQuerySpecConverter : JsonConverter<SqlParameter>
+    internal sealed class TextJsonCosmosSqlQuerySpecConverter : JsonConverter<SqlQuerySpec>
     {
-        private readonly CosmosSerializer UserSerializer;
+        private readonly TextJsonCosmosSqlParameterConverter sqlParameterConverter;
 
-        internal TextJsonCosmosSqlQuerySpecConverter(CosmosSerializer userSerializer)
+        internal TextJsonCosmosSqlQuerySpecConverter()
         {
-            this.UserSerializer = userSerializer ?? throw new ArgumentNullException(nameof(userSerializer));
+            this.sqlParameterConverter = new TextJsonCosmosSqlParameterConverter();
         }
 
-        public override bool CanConvert(Type objectType)
+        internal TextJsonCosmosSqlQuerySpecConverter(CosmosSerializer serializer)
         {
-            return typeof(SqlParameter) == objectType;
+            if (serializer == null)
+            {
+                throw new ArgumentNullException(nameof(serializer));
+            }
+
+            this.sqlParameterConverter = new TextJsonCosmosSqlParameterConverter(serializer);
         }
 
-        public override SqlParameter Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        public override SqlQuerySpec Read(
+            ref Utf8JsonReader reader,
+            Type typeToConvert,
+            JsonSerializerOptions options)
         {
             throw new NotImplementedException();
         }
 
-        public override void Write(Utf8JsonWriter writer, SqlParameter sqlParameter, JsonSerializerOptions options)
+        public override void Write(
+            Utf8JsonWriter writer,
+            SqlQuerySpec sqlQuerySpec,
+            JsonSerializerOptions options)
         {
             writer.WriteStartObject();
-            writer.WritePropertyName("name");
-            writer.WriteStringValue(sqlParameter.Name);
-            writer.WritePropertyName("value");
 
-            // Use the user serializer for the parameter values so custom conversions are correctly handled
-            using (Stream str = this.UserSerializer.ToStream(sqlParameter.Value))
+            writer.WriteString("query", sqlQuerySpec.QueryText);
+
+            writer.WritePropertyName("parameters");
+            writer.WriteStartArray();
+            foreach (SqlParameter sqlParameter in sqlQuerySpec.Parameters)
             {
-                using (StreamReader streamReader = new StreamReader(str))
-                {
-                    string parameterValue = streamReader.ReadToEnd();
-                    writer.WriteStringValue(parameterValue);
-                }
+                this.sqlParameterConverter.Write(writer, sqlParameter, options);
             }
+
+            writer.WriteEndArray();
 
             writer.WriteEndObject();
         }

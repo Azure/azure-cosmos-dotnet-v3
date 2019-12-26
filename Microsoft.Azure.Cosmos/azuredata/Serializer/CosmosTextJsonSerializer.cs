@@ -18,7 +18,7 @@ namespace Azure.Cosmos
     {
         private static ReadOnlySpan<byte> Utf8Bom => new byte[] { 0xEF, 0xBB, 0xBF };
         private const int UnseekableStreamInitialRentSize = 4096;
-        private readonly JsonSerializerOptions jsonSerializerSettings;
+        private readonly JsonSerializerOptions jsonSerializerOptions;
 
         /// <summary>
         /// Create a serializer that uses the JSON.net serializer
@@ -29,7 +29,8 @@ namespace Azure.Cosmos
         /// </remarks>
         internal CosmosTextJsonSerializer()
         {
-            this.jsonSerializerSettings = new JsonSerializerOptions();
+            this.jsonSerializerOptions = new JsonSerializerOptions();
+            this.InitializeConverters();
         }
 
         /// <summary>
@@ -41,7 +42,8 @@ namespace Azure.Cosmos
         /// </remarks>
         internal CosmosTextJsonSerializer(JsonSerializerOptions jsonSerializerSettings)
         {
-            this.jsonSerializerSettings = jsonSerializerSettings;
+            this.jsonSerializerOptions = jsonSerializerSettings ?? throw new ArgumentNullException(nameof(jsonSerializerSettings));
+            this.InitializeConverters();
         }
 
         /// <summary>
@@ -53,13 +55,14 @@ namespace Azure.Cosmos
         /// </remarks>
         internal CosmosTextJsonSerializer(CosmosSerializationOptions cosmosSerializerOptions)
         {
-            this.jsonSerializerSettings = new JsonSerializerOptions()
+            this.jsonSerializerOptions = new JsonSerializerOptions()
             {
                 IgnoreNullValues = cosmosSerializerOptions.IgnoreNullValues,
                 WriteIndented = cosmosSerializerOptions.Indented,
                 PropertyNamingPolicy = cosmosSerializerOptions.PropertyNamingPolicy == CosmosPropertyNamingPolicy.CamelCase ?
                         JsonNamingPolicy.CamelCase : null
             };
+            this.InitializeConverters();
         }
 
         /// <summary>
@@ -82,7 +85,7 @@ namespace Azure.Cosmos
                     return (T)(object)stream;
                 }
 
-                return CosmosTextJsonSerializer.Deserialize<T>(stream, this.jsonSerializerSettings);
+                return CosmosTextJsonSerializer.Deserialize<T>(stream, this.jsonSerializerOptions);
             }
         }
 
@@ -95,8 +98,8 @@ namespace Azure.Cosmos
         public override Stream ToStream<T>(T input)
         {
             MemoryStream streamPayload = new MemoryStream();
-            using Utf8JsonWriter utf8JsonWriter = new Utf8JsonWriter(streamPayload, new JsonWriterOptions() { Indented = this.jsonSerializerSettings.WriteIndented });
-            JsonSerializer.Serialize<T>(utf8JsonWriter, input, this.jsonSerializerSettings);
+            using Utf8JsonWriter utf8JsonWriter = new Utf8JsonWriter(streamPayload, new JsonWriterOptions() { Indented = this.jsonSerializerOptions.WriteIndented });
+            JsonSerializer.Serialize<T>(utf8JsonWriter, input, this.jsonSerializerOptions);
             streamPayload.Position = 0;
             return streamPayload;
         }
@@ -185,6 +188,15 @@ namespace Azure.Cosmos
                     ArrayPool<byte>.Shared.Return(rented);
                 }
             }
+        }
+
+        /// <summary>
+        /// System.Text.Json does not support DataContract, so all DataContract types require custom converters, and all Direct classes too.
+        /// </summary>
+        private void InitializeConverters()
+        {
+            this.jsonSerializerOptions.Converters.Add(new TextJsonCosmosSqlQuerySpecConverter());
+            this.jsonSerializerOptions.Converters.Add(new TextJsonOfferV2Converter());
         }
     }
 }
