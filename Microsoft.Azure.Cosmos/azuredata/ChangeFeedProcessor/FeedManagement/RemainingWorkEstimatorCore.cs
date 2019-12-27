@@ -11,13 +11,13 @@ namespace Azure.Cosmos.ChangeFeed
     using System.Globalization;
     using System.Linq;
     using System.Net;
+    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
     using Azure.Cosmos.Serialization;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
-    using Newtonsoft.Json.Linq;
 
     internal sealed class RemainingWorkEstimatorCore : RemainingWorkEstimator
     {
@@ -125,26 +125,26 @@ namespace Azure.Cosmos.ChangeFeed
             return segments[1];
         }
 
-        private static string GetFirstItemLSN(Collection<JObject> items)
+        private static string GetFirstItemLSN(Collection<JsonElement> items)
         {
-            JObject item = RemainingWorkEstimatorCore.GetFirstItem(items);
-            if (item == null)
+            JsonElement? item = RemainingWorkEstimatorCore.GetFirstItem(items);
+            if (!item.HasValue)
             {
                 return null;
             }
 
-            if (item.TryGetValue(LSNPropertyName, StringComparison.OrdinalIgnoreCase, out JToken property))
+            if (item.Value.TryGetProperty(LSNPropertyName, out JsonElement property))
             {
-                return property.Value<string>();
+                return property.GetString();
             }
 
             DefaultTrace.TraceWarning("Change Feed response item does not include LSN.");
             return null;
         }
 
-        private static JObject GetFirstItem(Collection<JObject> response)
+        private static JsonElement? GetFirstItem(Collection<JsonElement> response)
         {
-            using (IEnumerator<JObject> e = response.GetEnumerator())
+            using (IEnumerator<JsonElement> e = response.GetEnumerator())
             {
                 while (e.MoveNext())
                 {
@@ -167,14 +167,14 @@ namespace Azure.Cosmos.ChangeFeed
             return parsed;
         }
 
-        private static Collection<JObject> GetItemsFromResponse(Response response)
+        private static Collection<JsonElement> GetItemsFromResponse(Response response)
         {
             if (response.ContentStream == null)
             {
-                return new Collection<JObject>();
+                return new Collection<JsonElement>();
             }
 
-            return RemainingWorkEstimatorCore.DefaultSerializer.FromStream<CosmosFeedResponseUtil<JObject>>(response.ContentStream).Data;
+            return RemainingWorkEstimatorCore.DefaultSerializer.FromStream<CosmosFeedResponseUtil<JsonElement>>(response.ContentStream).Data;
         }
 
         private async Task<long> GetRemainingWorkAsync(DocumentServiceLease existingLease, CancellationToken cancellationToken)
@@ -196,7 +196,7 @@ namespace Azure.Cosmos.ChangeFeed
 
                 response.Headers.TryGetValue(HttpConstants.HttpHeaders.SessionToken, out string sessionToken);
                 long parsedLSNFromSessionToken = RemainingWorkEstimatorCore.TryConvertToNumber(ExtractLsnFromSessionToken(sessionToken));
-                Collection<JObject> items = RemainingWorkEstimatorCore.GetItemsFromResponse(response);
+                Collection<JsonElement> items = RemainingWorkEstimatorCore.GetItemsFromResponse(response);
                 long lastQueryLSN = items.Count > 0
                     ? RemainingWorkEstimatorCore.TryConvertToNumber(RemainingWorkEstimatorCore.GetFirstItemLSN(items)) - 1
                     : parsedLSNFromSessionToken;
