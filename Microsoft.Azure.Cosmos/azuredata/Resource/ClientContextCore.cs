@@ -43,6 +43,8 @@ namespace Azure.Cosmos
             this.DocumentClient = documentClient;
 
             this.ClientOptions.Transport = new ClientPipelineTransport(requestHandler);
+            // Disable Azure Core pipeline retry policies, the SDK has its own retries
+            this.ClientOptions.Retry.MaxRetries = 0;
             this.pipeline = HttpPipelineBuilder.Build(this.ClientOptions);
             this.diagnostics = new ClientDiagnostics(this.ClientOptions);
         }
