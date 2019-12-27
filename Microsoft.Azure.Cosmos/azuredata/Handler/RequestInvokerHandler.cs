@@ -61,17 +61,18 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     // Fill request options
                     promotedRequestOptions.PopulateRequestOptions(request);
                 }
+
+                await this.ValidateAndSetConsistencyLevelAsync(request);
+                (bool isError, ResponseMessage errorResponse) = await this.EnsureValidClientAsync(request);
+                if (isError)
+                {
+                    return errorResponse;
+                }
+
+                await request.AssertPartitioningDetailsAsync(this.clientPipelineBuilderContext.GetCollectionCacheAsync, cancellationToken);
+                this.FillMultiMasterContext(request);
             }
 
-            await this.ValidateAndSetConsistencyLevelAsync(request);
-            (bool isError, ResponseMessage errorResponse) = await this.EnsureValidClientAsync(request);
-            if (isError)
-            {
-                return errorResponse;
-            }
-
-            await request.AssertPartitioningDetailsAsync(this.clientPipelineBuilderContext.GetCollectionCacheAsync, cancellationToken);
-            this.FillMultiMasterContext(request);
             return await base.SendAsync(request, cancellationToken);
         }
 
