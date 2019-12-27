@@ -3,12 +3,9 @@
     "AccountConsistency": {
       "Subclasses": {},
       "Members": {
-        "Azure.Cosmos.ConsistencyLevel DefaultConsistencyLevel[Newtonsoft.Json.JsonConverterAttribute(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]-[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"defaultConsistencyLevel\")]": {
+        "Azure.Cosmos.ConsistencyLevel DefaultConsistencyLevel": {
           "Type": "Property",
-          "Attributes": [
-            "JsonConverterAttribute",
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "Azure.Cosmos.ConsistencyLevel get_DefaultConsistencyLevel()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -32,18 +29,14 @@
           ],
           "MethodInfo": "Int32 get_MaxStalenessPrefix()"
         },
-        "Int32 MaxStalenessIntervalInSeconds[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"maxIntervalInSeconds\")]": {
+        "Int32 MaxStalenessIntervalInSeconds": {
           "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
-        "Int32 MaxStalenessPrefix[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"maxStalenessPrefix\")]": {
+        "Int32 MaxStalenessPrefix": {
           "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "Void .ctor()": {
@@ -57,11 +50,9 @@
     "AccountProperties": {
       "Subclasses": {},
       "Members": {
-        "Azure.Cosmos.AccountConsistency Consistency[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"userConsistencyPolicy\")]": {
+        "Azure.Cosmos.AccountConsistency Consistency": {
           "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "Azure.Cosmos.AccountConsistency get_Consistency()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -81,26 +72,19 @@
           "Attributes": [],
           "MethodInfo": "System.Collections.Generic.IEnumerable`1[Azure.Cosmos.AccountRegion] get_WritableRegions()"
         },
-        "System.Collections.Generic.IEnumerable`1[Azure.Cosmos.AccountRegion] ReadableRegions[Newtonsoft.Json.JsonIgnoreAttribute()]": {
+        "System.Collections.Generic.IEnumerable`1[Azure.Cosmos.AccountRegion] ReadableRegions": {
           "Type": "Property",
-          "Attributes": [
-            "JsonIgnoreAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
-        "System.Collections.Generic.IEnumerable`1[Azure.Cosmos.AccountRegion] WritableRegions[Newtonsoft.Json.JsonIgnoreAttribute()]": {
+        "System.Collections.Generic.IEnumerable`1[Azure.Cosmos.AccountRegion] WritableRegions": {
           "Type": "Property",
-          "Attributes": [
-            "JsonIgnoreAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
-        "System.Nullable`1[Azure.ETag] ETag[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"_etag\")]-[Newtonsoft.Json.JsonConverterAttribute(typeof(Azure.Cosmos.ETagConverter))]": {
+        "System.Nullable`1[Azure.ETag] ETag": {
           "Type": "Property",
-          "Attributes": [
-            "JsonConverterAttribute",
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "System.Nullable`1[Azure.ETag] get_ETag()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -117,11 +101,9 @@
           ],
           "MethodInfo": "System.String get_Id()"
         },
-        "System.String Id[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"id\")]": {
+        "System.String Id": {
           "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         }
       },
@@ -130,11 +112,9 @@
     "AccountRegion": {
       "Subclasses": {},
       "Members": {
-        "System.String Endpoint[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"databaseAccountEndpoint\")]": {
+        "System.String Endpoint": {
           "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "System.String get_Endpoint()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -151,11 +131,9 @@
           ],
           "MethodInfo": "System.String get_Name()"
         },
-        "System.String Name[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"name\")]": {
+        "System.String Name": {
           "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "Void .ctor()": {
@@ -176,12 +154,9 @@
           ],
           "MethodInfo": "Azure.Cosmos.CompositePathSortOrder get_Order()"
         },
-        "Azure.Cosmos.CompositePathSortOrder Order[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"order\")]-[Newtonsoft.Json.JsonConverterAttribute(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]": {
+        "Azure.Cosmos.CompositePathSortOrder Order": {
           "Type": "Property",
-          "Attributes": [
-            "JsonConverterAttribute",
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "System.String get_Path()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -191,11 +166,9 @@
           ],
           "MethodInfo": "System.String get_Path()"
         },
-        "System.String Path[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"path\")]": {
+        "System.String Path": {
           "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "Void .ctor()": {
@@ -255,12 +228,9 @@
           ],
           "MethodInfo": "Azure.Cosmos.OperationKind get_OperationKind()"
         },
-        "Azure.Cosmos.OperationKind OperationKind[Newtonsoft.Json.JsonConverterAttribute(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]-[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"operationType\")]": {
+        "Azure.Cosmos.OperationKind OperationKind": {
           "Type": "Property",
-          "Attributes": [
-            "JsonConverterAttribute",
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "System.String get_Id()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -270,11 +240,9 @@
           ],
           "MethodInfo": "System.String get_Id()"
         },
-        "System.String Id[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"id\")]": {
+        "System.String Id": {
           "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "Void .ctor()": {
@@ -316,12 +284,9 @@
           ],
           "MethodInfo": "Azure.Cosmos.ConflictResolutionMode get_Mode()"
         },
-        "Azure.Cosmos.ConflictResolutionMode Mode[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"mode\")]-[Newtonsoft.Json.JsonConverterAttribute(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]": {
+        "Azure.Cosmos.ConflictResolutionMode Mode": {
           "Type": "Property",
-          "Attributes": [
-            "JsonConverterAttribute",
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "System.String get_ResolutionPath()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -338,18 +303,14 @@
           ],
           "MethodInfo": "System.String get_ResolutionProcedure()"
         },
-        "System.String ResolutionPath[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"conflictResolutionPath\")]": {
+        "System.String ResolutionPath": {
           "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
-        "System.String ResolutionProcedure[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"conflictResolutionProcedure\")]": {
+        "System.String ResolutionProcedure": {
           "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "Void .ctor()": {
@@ -441,11 +402,9 @@
     "ContainerProperties": {
       "Subclasses": {},
       "Members": {
-        "Azure.Cosmos.ConflictResolutionPolicy ConflictResolutionPolicy[Newtonsoft.Json.JsonIgnoreAttribute()]": {
+        "Azure.Cosmos.ConflictResolutionPolicy ConflictResolutionPolicy": {
           "Type": "Property",
-          "Attributes": [
-            "JsonIgnoreAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "Azure.Cosmos.ConflictResolutionPolicy get_ConflictResolutionPolicy()": {
@@ -458,11 +417,9 @@
           "Attributes": [],
           "MethodInfo": "Azure.Cosmos.IndexingPolicy get_IndexingPolicy()"
         },
-        "Azure.Cosmos.IndexingPolicy IndexingPolicy[Newtonsoft.Json.JsonIgnoreAttribute()]": {
+        "Azure.Cosmos.IndexingPolicy IndexingPolicy": {
           "Type": "Property",
-          "Attributes": [
-            "JsonIgnoreAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "Azure.Cosmos.UniqueKeyPolicy get_UniqueKeyPolicy()": {
@@ -470,11 +427,9 @@
           "Attributes": [],
           "MethodInfo": "Azure.Cosmos.UniqueKeyPolicy get_UniqueKeyPolicy()"
         },
-        "Azure.Cosmos.UniqueKeyPolicy UniqueKeyPolicy[Newtonsoft.Json.JsonIgnoreAttribute()]": {
+        "Azure.Cosmos.UniqueKeyPolicy UniqueKeyPolicy": {
           "Type": "Property",
-          "Attributes": [
-            "JsonIgnoreAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "System.Nullable`1[Azure.Cosmos.PartitionKeyDefinitionVersion] get_PartitionKeyDefinitionVersion()": {
@@ -482,19 +437,14 @@
           "Attributes": [],
           "MethodInfo": "System.Nullable`1[Azure.Cosmos.PartitionKeyDefinitionVersion] get_PartitionKeyDefinitionVersion()"
         },
-        "System.Nullable`1[Azure.Cosmos.PartitionKeyDefinitionVersion] PartitionKeyDefinitionVersion[Newtonsoft.Json.JsonIgnoreAttribute()]": {
+        "System.Nullable`1[Azure.Cosmos.PartitionKeyDefinitionVersion] PartitionKeyDefinitionVersion": {
           "Type": "Property",
-          "Attributes": [
-            "JsonIgnoreAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
-        "System.Nullable`1[Azure.ETag] ETag[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"_etag\")]-[Newtonsoft.Json.JsonConverterAttribute(typeof(Azure.Cosmos.ETagConverter))]": {
+        "System.Nullable`1[Azure.ETag] ETag": {
           "Type": "Property",
-          "Attributes": [
-            "JsonConverterAttribute",
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "System.Nullable`1[Azure.ETag] get_ETag()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -511,19 +461,14 @@
           ],
           "MethodInfo": "System.Nullable`1[System.DateTime] get_LastModified()"
         },
-        "System.Nullable`1[System.DateTime] LastModified[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"_ts\")]-[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Documents.UnixDateTimeConverter))]": {
+        "System.Nullable`1[System.DateTime] LastModified": {
           "Type": "Property",
-          "Attributes": [
-            "JsonConverterAttribute",
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
-        "System.Nullable`1[System.Int32] DefaultTimeToLive[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"defaultTtl\")]": {
+        "System.Nullable`1[System.Int32] DefaultTimeToLive": {
           "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "System.Nullable`1[System.Int32] get_DefaultTimeToLive()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -543,33 +488,14 @@
           "Attributes": [],
           "MethodInfo": "System.String get_PartitionKeyPath()"
         },
-        "System.String get_TimeToLivePropertyPath()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "System.String get_TimeToLivePropertyPath()"
-        },
-        "System.String Id[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"id\")]": {
+        "System.String Id": {
           "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
-        "System.String PartitionKeyPath[Newtonsoft.Json.JsonIgnoreAttribute()]": {
+        "System.String PartitionKeyPath": {
           "Type": "Property",
-          "Attributes": [
-            "JsonIgnoreAttribute"
-          ],
-          "MethodInfo": null
-        },
-        "System.String TimeToLivePropertyPath[System.ObsoleteAttribute()]-[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"ttlPropertyPath\")]": {
-          "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute",
-            "ObsoleteAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "Void .ctor()": {
@@ -613,13 +539,6 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Void set_PartitionKeyPath(System.String)"
-        },
-        "Void set_TimeToLivePropertyPath(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Void set_TimeToLivePropertyPath(System.String)"
         },
         "Void set_UniqueKeyPolicy(Azure.Cosmos.UniqueKeyPolicy)": {
           "Type": "Method",
@@ -826,11 +745,9 @@
           "Attributes": [],
           "MethodInfo": "Azure.Cosmos.Serialization.CosmosSerializer get_Serializer()"
         },
-        "Azure.Cosmos.Serialization.CosmosSerializer Serializer[Newtonsoft.Json.JsonConverterAttribute(typeof(Azure.Cosmos.CosmosClientOptions+ClientOptionJsonConverter))]": {
+        "Azure.Cosmos.Serialization.CosmosSerializer Serializer": {
           "Type": "Property",
-          "Attributes": [
-            "JsonConverterAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "Boolean get_LimitToEndpoint()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -860,11 +777,9 @@
           "Attributes": [],
           "MethodInfo": "System.Net.IWebProxy get_WebProxy()"
         },
-        "System.Net.IWebProxy WebProxy[Newtonsoft.Json.JsonIgnoreAttribute()]": {
+        "System.Net.IWebProxy WebProxy": {
           "Type": "Property",
-          "Attributes": [
-            "JsonIgnoreAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "System.Nullable`1[Azure.Cosmos.ConsistencyLevel] ConsistencyLevel": {
@@ -1523,12 +1438,9 @@
     "DatabaseProperties": {
       "Subclasses": {},
       "Members": {
-        "System.Nullable`1[Azure.ETag] ETag[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"_etag\")]-[Newtonsoft.Json.JsonConverterAttribute(typeof(Azure.Cosmos.ETagConverter))]": {
+        "System.Nullable`1[Azure.ETag] ETag": {
           "Type": "Property",
-          "Attributes": [
-            "JsonConverterAttribute",
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "System.Nullable`1[Azure.ETag] get_ETag()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -1545,12 +1457,9 @@
           ],
           "MethodInfo": "System.Nullable`1[System.DateTime] get_LastModified()"
         },
-        "System.Nullable`1[System.DateTime] LastModified[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Documents.UnixDateTimeConverter))]-[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"_ts\")]": {
+        "System.Nullable`1[System.DateTime] LastModified": {
           "Type": "Property",
-          "Attributes": [
-            "JsonConverterAttribute",
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "System.String get_Id()": {
@@ -1558,11 +1467,9 @@
           "Attributes": [],
           "MethodInfo": "System.String get_Id()"
         },
-        "System.String Id[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"id\")]": {
+        "System.String Id": {
           "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "Void .ctor()": {
@@ -1674,11 +1581,9 @@
           ],
           "MethodInfo": "System.String get_Path()"
         },
-        "System.String Path[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"path\")]": {
+        "System.String Path": {
           "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "Void .ctor()": {
@@ -1800,11 +1705,6 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "T WithPartitionKeyDefinitionVersion(Azure.Cosmos.PartitionKeyDefinitionVersion)"
-        },
-        "T WithTimeToLivePropertyPath(System.String)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "T WithTimeToLivePropertyPath(System.String)"
         },
         "Void .ctor()": {
           "Type": "Constructor",
@@ -1994,11 +1894,9 @@
           ],
           "MethodInfo": "System.String get_Path()"
         },
-        "System.String Path[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"path\")]": {
+        "System.String Path": {
           "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "Void .ctor()": {
@@ -2078,19 +1976,14 @@
           ],
           "MethodInfo": "Azure.Cosmos.IndexingMode get_IndexingMode()"
         },
-        "Azure.Cosmos.IndexingMode IndexingMode[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"indexingMode\")]-[Newtonsoft.Json.JsonConverterAttribute(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]": {
+        "Azure.Cosmos.IndexingMode IndexingMode": {
           "Type": "Property",
-          "Attributes": [
-            "JsonConverterAttribute",
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
-        "Boolean Automatic[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"automatic\")]": {
+        "Boolean Automatic": {
           "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "Boolean get_Automatic()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -2100,11 +1993,9 @@
           ],
           "MethodInfo": "Boolean get_Automatic()"
         },
-        "System.Collections.ObjectModel.Collection`1[Azure.Cosmos.ExcludedPath] ExcludedPaths[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"excludedPaths\")]": {
+        "System.Collections.ObjectModel.Collection`1[Azure.Cosmos.ExcludedPath] ExcludedPaths": {
           "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "System.Collections.ObjectModel.Collection`1[Azure.Cosmos.ExcludedPath] get_ExcludedPaths()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -2121,11 +2012,9 @@
           ],
           "MethodInfo": "System.Collections.ObjectModel.Collection`1[Azure.Cosmos.IncludedPath] get_IncludedPaths()"
         },
-        "System.Collections.ObjectModel.Collection`1[Azure.Cosmos.IncludedPath] IncludedPaths[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"includedPaths\")]": {
+        "System.Collections.ObjectModel.Collection`1[Azure.Cosmos.IncludedPath] IncludedPaths": {
           "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "System.Collections.ObjectModel.Collection`1[Azure.Cosmos.Spatial.SpatialPath] get_SpatialIndexes()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -2135,18 +2024,14 @@
           ],
           "MethodInfo": "System.Collections.ObjectModel.Collection`1[Azure.Cosmos.Spatial.SpatialPath] get_SpatialIndexes()"
         },
-        "System.Collections.ObjectModel.Collection`1[Azure.Cosmos.Spatial.SpatialPath] SpatialIndexes[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"spatialIndexes\")]": {
+        "System.Collections.ObjectModel.Collection`1[Azure.Cosmos.Spatial.SpatialPath] SpatialIndexes": {
           "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
-        "System.Collections.ObjectModel.Collection`1[System.Collections.ObjectModel.Collection`1[Azure.Cosmos.CompositePath]] CompositeIndexes[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"compositeIndexes\")]": {
+        "System.Collections.ObjectModel.Collection`1[System.Collections.ObjectModel.Collection`1[Azure.Cosmos.CompositePath]] CompositeIndexes": {
           "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "System.Collections.ObjectModel.Collection`1[System.Collections.ObjectModel.Collection`1[Azure.Cosmos.CompositePath]] get_CompositeIndexes()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -2485,12 +2370,9 @@
           ],
           "MethodInfo": "Azure.Cosmos.PermissionMode get_PermissionMode()"
         },
-        "Azure.Cosmos.PermissionMode PermissionMode[Newtonsoft.Json.JsonConverterAttribute(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]-[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"permissionMode\")]": {
+        "Azure.Cosmos.PermissionMode PermissionMode": {
           "Type": "Property",
-          "Attributes": [
-            "JsonConverterAttribute",
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "System.Nullable`1[Azure.Cosmos.PartitionKey] get_ResourcePartitionKey()": {
@@ -2498,19 +2380,14 @@
           "Attributes": [],
           "MethodInfo": "System.Nullable`1[Azure.Cosmos.PartitionKey] get_ResourcePartitionKey()"
         },
-        "System.Nullable`1[Azure.Cosmos.PartitionKey] ResourcePartitionKey[Newtonsoft.Json.JsonIgnoreAttribute()]": {
+        "System.Nullable`1[Azure.Cosmos.PartitionKey] ResourcePartitionKey": {
           "Type": "Property",
-          "Attributes": [
-            "JsonIgnoreAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
-        "System.Nullable`1[Azure.ETag] ETag[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"_etag\")]-[Newtonsoft.Json.JsonConverterAttribute(typeof(Azure.Cosmos.ETagConverter))]": {
+        "System.Nullable`1[Azure.ETag] ETag": {
           "Type": "Property",
-          "Attributes": [
-            "JsonConverterAttribute",
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "System.Nullable`1[Azure.ETag] get_ETag()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -2527,12 +2404,9 @@
           ],
           "MethodInfo": "System.Nullable`1[System.DateTime] get_LastModified()"
         },
-        "System.Nullable`1[System.DateTime] LastModified[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Documents.UnixDateTimeConverter))]-[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"_ts\")]": {
+        "System.Nullable`1[System.DateTime] LastModified": {
           "Type": "Property",
-          "Attributes": [
-            "JsonConverterAttribute",
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "System.String get_Id()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -2556,25 +2430,19 @@
           ],
           "MethodInfo": "System.String get_Token()"
         },
-        "System.String Id[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"id\")]": {
+        "System.String Id": {
           "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
-        "System.String ResourceUri[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"resource\")]": {
+        "System.String ResourceUri": {
           "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
-        "System.String Token[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"_token\")]": {
+        "System.String Token": {
           "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "Void .ctor(System.String, Azure.Cosmos.PermissionMode, Azure.Cosmos.CosmosContainer, Azure.Cosmos.PartitionKey, System.String)": {
@@ -3652,12 +3520,9 @@
     "StoredProcedureProperties": {
       "Subclasses": {},
       "Members": {
-        "System.Nullable`1[Azure.ETag] ETag[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"_etag\")]-[Newtonsoft.Json.JsonConverterAttribute(typeof(Azure.Cosmos.ETagConverter))]": {
+        "System.Nullable`1[Azure.ETag] ETag": {
           "Type": "Property",
-          "Attributes": [
-            "JsonConverterAttribute",
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "System.Nullable`1[Azure.ETag] get_ETag()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -3674,19 +3539,14 @@
           ],
           "MethodInfo": "System.Nullable`1[System.DateTime] get_LastModified()"
         },
-        "System.Nullable`1[System.DateTime] LastModified[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Documents.UnixDateTimeConverter))]-[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"_ts\")]": {
+        "System.Nullable`1[System.DateTime] LastModified": {
           "Type": "Property",
-          "Attributes": [
-            "JsonConverterAttribute",
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
-        "System.String Body[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"body\")]": {
+        "System.String Body": {
           "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "System.String get_Body()": {
@@ -3699,11 +3559,9 @@
           "Attributes": [],
           "MethodInfo": "System.String get_Id()"
         },
-        "System.String Id[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"id\")]": {
+        "System.String Id": {
           "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "Void .ctor()": {
@@ -3775,12 +3633,9 @@
           ],
           "MethodInfo": "Azure.Cosmos.Scripts.TriggerOperation get_TriggerOperation()"
         },
-        "Azure.Cosmos.Scripts.TriggerOperation TriggerOperation[Newtonsoft.Json.JsonConverterAttribute(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]-[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"triggerOperation\")]": {
+        "Azure.Cosmos.Scripts.TriggerOperation TriggerOperation": {
           "Type": "Property",
-          "Attributes": [
-            "JsonConverterAttribute",
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "Azure.Cosmos.Scripts.TriggerType get_TriggerType()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -3790,20 +3645,14 @@
           ],
           "MethodInfo": "Azure.Cosmos.Scripts.TriggerType get_TriggerType()"
         },
-        "Azure.Cosmos.Scripts.TriggerType TriggerType[Newtonsoft.Json.JsonConverterAttribute(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]-[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"triggerType\")]": {
+        "Azure.Cosmos.Scripts.TriggerType TriggerType": {
           "Type": "Property",
-          "Attributes": [
-            "JsonConverterAttribute",
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
-        "System.Nullable`1[Azure.ETag] ETag[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"_etag\")]-[Newtonsoft.Json.JsonConverterAttribute(typeof(Azure.Cosmos.ETagConverter))]": {
+        "System.Nullable`1[Azure.ETag] ETag": {
           "Type": "Property",
-          "Attributes": [
-            "JsonConverterAttribute",
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "System.Nullable`1[Azure.ETag] get_ETag()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -3813,11 +3662,9 @@
           ],
           "MethodInfo": "System.Nullable`1[Azure.ETag] get_ETag()"
         },
-        "System.String Body[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"body\")]": {
+        "System.String Body": {
           "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "System.String get_Body()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -3834,11 +3681,9 @@
           ],
           "MethodInfo": "System.String get_Id()"
         },
-        "System.String Id[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"id\")]": {
+        "System.String Id": {
           "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "Void .ctor()": {
@@ -3901,12 +3746,9 @@
     "UserDefinedFunctionProperties": {
       "Subclasses": {},
       "Members": {
-        "System.Nullable`1[Azure.ETag] ETag[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"_etag\")]-[Newtonsoft.Json.JsonConverterAttribute(typeof(Azure.Cosmos.ETagConverter))]": {
+        "System.Nullable`1[Azure.ETag] ETag": {
           "Type": "Property",
-          "Attributes": [
-            "JsonConverterAttribute",
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "System.Nullable`1[Azure.ETag] get_ETag()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -3916,11 +3758,9 @@
           ],
           "MethodInfo": "System.Nullable`1[Azure.ETag] get_ETag()"
         },
-        "System.String Body[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"body\")]": {
+        "System.String Body": {
           "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "System.String get_Body()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -3937,11 +3777,9 @@
           ],
           "MethodInfo": "System.String get_Id()"
         },
-        "System.String Id[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"id\")]": {
+        "System.String Id": {
           "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "Void .ctor()": {
@@ -5104,11 +4942,9 @@
           "Attributes": [],
           "MethodInfo": "System.Collections.ObjectModel.Collection`1[Azure.Cosmos.Spatial.SpatialType] get_SpatialTypes()"
         },
-        "System.Collections.ObjectModel.Collection`1[Azure.Cosmos.Spatial.SpatialType] SpatialTypes[Newtonsoft.Json.JsonPropertyAttribute(ItemConverterType = typeof(Newtonsoft.Json.Converters.StringEnumConverter), PropertyName = \"types\")]": {
+        "System.Collections.ObjectModel.Collection`1[Azure.Cosmos.Spatial.SpatialType] SpatialTypes": {
           "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "System.String get_Path()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -5118,11 +4954,9 @@
           ],
           "MethodInfo": "System.String get_Path()"
         },
-        "System.String Path[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"path\")]": {
+        "System.String Path": {
           "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "Void .ctor()": {
@@ -5238,27 +5072,9 @@
     "ThroughputProperties": {
       "Subclasses": {},
       "Members": {
-        "System.DateTime get_LastModified()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "System.DateTime get_LastModified()"
-        },
-        "System.DateTime LastModified[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Documents.UnixDateTimeConverter))]-[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"_ts\")]": {
+        "System.Nullable`1[Azure.ETag] ETag": {
           "Type": "Property",
-          "Attributes": [
-            "JsonConverterAttribute",
-            "JsonPropertyAttribute"
-          ],
-          "MethodInfo": null
-        },
-        "System.Nullable`1[Azure.ETag] ETag[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"_etag\")]-[Newtonsoft.Json.JsonConverterAttribute(typeof(Azure.Cosmos.ETagConverter))]": {
-          "Type": "Property",
-          "Attributes": [
-            "JsonConverterAttribute",
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "System.Nullable`1[Azure.ETag] get_ETag()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -5267,6 +5083,18 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "System.Nullable`1[Azure.ETag] get_ETag()"
+        },
+        "System.Nullable`1[System.DateTime] get_LastModified()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[System.DateTime] get_LastModified()"
+        },
+        "System.Nullable`1[System.DateTime] LastModified": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
         },
         "System.Nullable`1[System.Int32] get_Throughput()": {
           "Type": "Method",
@@ -5344,11 +5172,9 @@
           ],
           "MethodInfo": "System.Collections.ObjectModel.Collection`1[System.String] get_Paths()"
         },
-        "System.Collections.ObjectModel.Collection`1[System.String] Paths[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"paths\")]": {
+        "System.Collections.ObjectModel.Collection`1[System.String] Paths": {
           "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "Void .ctor()": {
@@ -5369,11 +5195,9 @@
           ],
           "MethodInfo": "System.Collections.ObjectModel.Collection`1[Azure.Cosmos.UniqueKey] get_UniqueKeys()"
         },
-        "System.Collections.ObjectModel.Collection`1[Azure.Cosmos.UniqueKey] UniqueKeys[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"uniqueKeys\")]": {
+        "System.Collections.ObjectModel.Collection`1[Azure.Cosmos.UniqueKey] UniqueKeys": {
           "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "Void .ctor()": {
@@ -5387,6 +5211,18 @@
     "UserProperties": {
       "Subclasses": {},
       "Members": {
+        "System.Nullable`1[Azure.ETag] ETag": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.Nullable`1[Azure.ETag] get_ETag()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[Azure.ETag] get_ETag()"
+        },
         "System.Nullable`1[System.DateTime] get_LastModified()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -5394,38 +5230,19 @@
           ],
           "MethodInfo": "System.Nullable`1[System.DateTime] get_LastModified()"
         },
-        "System.Nullable`1[System.DateTime] LastModified[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Documents.UnixDateTimeConverter))]-[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"_ts\")]": {
+        "System.Nullable`1[System.DateTime] LastModified": {
           "Type": "Property",
-          "Attributes": [
-            "JsonConverterAttribute",
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
-        },
-        "System.String ETag[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"_etag\")]": {
-          "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
-          "MethodInfo": null
-        },
-        "System.String get_ETag()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "System.String get_ETag()"
         },
         "System.String get_Id()": {
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "System.String get_Id()"
         },
-        "System.String Id[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"id\")]": {
+        "System.String Id": {
           "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "Void .ctor(System.String)": {
