@@ -7,11 +7,11 @@ namespace Azure.Cosmos.EmulatorTests.ChangeFeed
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
     using Azure.Cosmos.Scripts;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json;
 
     [TestClass]
     [TestCategory("ChangeFeed")]
@@ -46,12 +46,12 @@ namespace Azure.Cosmos.EmulatorTests.ChangeFeed
             int processedDocCount = 0;
             string accumulator = string.Empty;
             ChangeFeedProcessor processor = this.Container
-                .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
+                .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<JsonElement> docs, CancellationToken token) =>
                 {
                     processedDocCount += docs.Count();
-                    foreach (dynamic doc in docs)
+                    foreach (JsonElement doc in docs)
                     {
-                        accumulator += doc.id.ToString() + ".";
+                        accumulator += doc.GetProperty("id").GetString() + ".";
                     }
 
                     if (processedDocCount == 10)
@@ -69,7 +69,7 @@ namespace Azure.Cosmos.EmulatorTests.ChangeFeed
             await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
             foreach (int id in Enumerable.Range(0, 10))
             {
-                await this.Container.CreateItemAsync<dynamic>(new { id = id.ToString(), pk = partitionKey });
+                await this.Container.CreateItemAsync<Dictionary<string, object>>(new Dictionary<string, object> { { "id", id.ToString() }, { "pk", partitionKey } });
             }
 
             bool isStartOk = allDocsProcessed.WaitOne(10 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
@@ -96,12 +96,12 @@ namespace Azure.Cosmos.EmulatorTests.ChangeFeed
                 int processedDocCount = 0;
                 string accumulator = string.Empty;
                 ChangeFeedProcessor processor = this.Container
-                    .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
+                    .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<JsonElement> docs, CancellationToken token) =>
                     {
                         processedDocCount += docs.Count();
-                        foreach (dynamic doc in docs)
+                        foreach (JsonElement doc in docs)
                         {
-                            accumulator += doc.id.ToString() + ".";
+                            accumulator += doc.GetProperty("id").GetString() + ".";
                         }
 
                         if (processedDocCount == 10)
@@ -119,7 +119,7 @@ namespace Azure.Cosmos.EmulatorTests.ChangeFeed
                 await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
                 foreach (int id in Enumerable.Range(0, 10))
                 {
-                    await this.Container.CreateItemAsync<dynamic>(new { id = id.ToString(), pk = partitionKey });
+                    await this.Container.CreateItemAsync<Dictionary<string, object>>(new Dictionary<string, object> { { "id", id.ToString() }, { "pk", partitionKey } });
                 }
 
                 bool isStartOk = allDocsProcessed.WaitOne(10 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
@@ -156,12 +156,12 @@ namespace Azure.Cosmos.EmulatorTests.ChangeFeed
             int processedDocCount = 0;
             string accumulator = string.Empty;
             ChangeFeedProcessor processor = this.Container
-                .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
+                .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<JsonElement> docs, CancellationToken token) =>
                 {
                     processedDocCount += docs.Count();
-                    foreach (dynamic doc in docs)
+                    foreach (JsonElement doc in docs)
                     {
-                        accumulator += doc.id.ToString() + ".";
+                        accumulator += doc.GetProperty("id").GetString() + ".";
                     }
 
                     if (processedDocCount == 5)
@@ -184,7 +184,7 @@ namespace Azure.Cosmos.EmulatorTests.ChangeFeed
 
             // Create 3 docs each 1.5MB. All 3 do not fit into MAX_RESPONSE_SIZE (4 MB). 2nd and 3rd are in same transaction.
             string content = string.Format("{{\"id\": \"doc2\", \"value\": \"{0}\", \"pk\": 0}}", new string('x', 1500000));
-            await this.Container.CreateItemAsync(JsonConvert.DeserializeObject<dynamic>(content), new PartitionKey(partitionKey));
+            await this.Container.CreateItemAsync(JsonSerializer.Deserialize<Dictionary<string, object>>(content), new PartitionKey(partitionKey));
 
             await scripts.ExecuteStoredProcedureAsync<object>(sprocId, new PartitionKey(partitionKey), new dynamic[] { 3 });
 
@@ -203,7 +203,7 @@ namespace Azure.Cosmos.EmulatorTests.ChangeFeed
 
             foreach (int id in Enumerable.Range(0, 5))
             {
-                await this.Container.CreateItemAsync<dynamic>(new { id = $"doc{id}", pk = partitionKey });
+                await this.Container.CreateItemAsync<Dictionary<string, object>>(new Dictionary<string, object> { { "id", $"doc{id}" }, { "pk", partitionKey } });
             }
 
             ManualResetEvent allDocsProcessed = new ManualResetEvent(false);
@@ -211,13 +211,13 @@ namespace Azure.Cosmos.EmulatorTests.ChangeFeed
             int processedDocCount = 0;
             string accumulator = string.Empty;
             ChangeFeedProcessor processor = this.Container
-                .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
+                .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<JsonElement> docs, CancellationToken token) =>
                 {
                     Assert.IsTrue(docs.Count > 0);
                     processedDocCount += docs.Count;
-                    foreach (dynamic doc in docs)
+                    foreach (JsonElement doc in docs)
                     {
-                        accumulator += doc.id.ToString() + ".";
+                        accumulator += doc.GetProperty("id").GetString() + ".";
                     }
 
                     if (processedDocCount == 5)
