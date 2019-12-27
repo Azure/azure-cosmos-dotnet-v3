@@ -12,13 +12,6 @@ namespace Azure.Cosmos
 
     internal sealed class TextJsonOfferV2Converter : JsonConverter<OfferV2>
     {
-        public static Lazy<JsonSerializerOptions> ErrorSerializationOptions = new Lazy<JsonSerializerOptions>(() =>
-        {
-            JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions();
-            jsonSerializerOptions.Converters.Add(new TextJsonOfferV2Converter());
-            return jsonSerializerOptions;
-        });
-
         public override OfferV2 Read(
             ref Utf8JsonReader reader,
             Type typeToConvert,
