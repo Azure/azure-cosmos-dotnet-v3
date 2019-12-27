@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.IO;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core;
@@ -134,7 +133,15 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentException("SqlQuerySpec to stream must use the SqlQuerySpec override");
             }
 
-            Debug.Assert(inputType.IsPublic || inputType.IsNested, $"User serializer is being used for internal type:{inputType.FullName}.");
+#if DEBUG
+            // Users can pass in Newtonsoft types so ignore it for the tests where all the types are internal
+            if (inputType != typeof(Document) &&
+                !inputType.FullName.StartsWith("Newtonsoft.Json.") &&
+                (inputType.IsPublic || inputType.IsNested))
+            {
+                throw new ArgumentException($"User serializer is being used for internal type:{inputType.FullName}.");
+            }
+#endif
 
             return this.customSerializer;
         }
