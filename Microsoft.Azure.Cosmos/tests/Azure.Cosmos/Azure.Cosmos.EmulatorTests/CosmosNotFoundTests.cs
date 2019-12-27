@@ -48,7 +48,7 @@ namespace Azure.Cosmos.EmulatorTests
             CosmosDatabase db = await CosmosNotFoundTests.client.CreateDatabaseAsync("NotFoundTest" + Guid.NewGuid().ToString());
             CosmosContainer container = await db.CreateContainerAsync("NotFoundTest" + Guid.NewGuid().ToString(), "/pk", 500);
 
-            dynamic randomItem = new { id = "test", pk = "testpk" };
+            Dictionary<string, object> randomItem = new Dictionary<string, object> () { { "id", "test" }, { "pk", "testpk" } };
             await container.CreateItemAsync(randomItem);
 
             await container.DeleteContainerAsync();

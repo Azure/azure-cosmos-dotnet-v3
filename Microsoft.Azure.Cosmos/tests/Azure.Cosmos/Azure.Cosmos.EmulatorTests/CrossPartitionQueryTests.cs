@@ -623,6 +623,7 @@ namespace Azure.Cosmos.EmulatorTests
 
                 await foreach (Response cosmosQueryResponse in itemQuery)
                 {
+                    cosmosQueryResponse.EnsureSuccessStatusCode();
                     Collection<T> items = newtonsoftJsonSerializer.FromStream<CosmosFeedResponseUtil<T>>(cosmosQueryResponse.ContentStream).Data;
                     if (queryRequestOptions.MaxItemCount.HasValue)
                     {
@@ -661,6 +662,7 @@ namespace Azure.Cosmos.EmulatorTests
 
                 await foreach (Response cosmosQueryResponse in itemQuery)
                 {
+                    cosmosQueryResponse.EnsureSuccessStatusCode();
                     Collection<T> items = newtonsoftJsonSerializer.FromStream<CosmosFeedResponseUtil<T>>(cosmosQueryResponse.ContentStream).Data;
                     if (queryRequestOptions.MaxItemCount.HasValue)
                     {
@@ -697,6 +699,7 @@ namespace Azure.Cosmos.EmulatorTests
 
             await foreach (Response page in itemQuery)
             {
+                page.EnsureSuccessStatusCode();
                 Collection<T> items = newtonsoftJsonSerializer.FromStream<CosmosFeedResponseUtil<T>>(page.ContentStream).Data;
                 results.AddRange(items);
 
