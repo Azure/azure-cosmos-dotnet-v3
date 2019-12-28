@@ -149,11 +149,11 @@ namespace Azure.Cosmos.ChangeFeed.Tests
 
             Mock<FeedIterator> mockIteratorPKRange0 = new Mock<FeedIterator>();
             mockIteratorPKRange0.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>()))
-                .ReturnsAsync(GetResponse(HttpStatusCode.OK, "0:" + globalLsnPKRange0.ToString(), processedLsnPKRange0.ToString()));
+                .ReturnsAsync(GetResponse(HttpStatusCode.OK, "0:" + globalLsnPKRange0.ToString(), processedLsnPKRange0));
 
             Mock<FeedIterator> mockIteratorPKRange1 = new Mock<FeedIterator>();
             mockIteratorPKRange1.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>()))
-                .ReturnsAsync(GetResponse(HttpStatusCode.OK, "1:" + globalLsnPKRange1.ToString(), processedLsnPKRange1.ToString()));
+                .ReturnsAsync(GetResponse(HttpStatusCode.OK, "1:" + globalLsnPKRange1.ToString(), processedLsnPKRange1));
 
             Mock<DocumentServiceLeaseContainer> mockContainer = new Mock<DocumentServiceLeaseContainer>();
             mockContainer.Setup(c => c.GetAllLeasesAsync()).ReturnsAsync(leases);
@@ -202,11 +202,11 @@ namespace Azure.Cosmos.ChangeFeed.Tests
             Assert.AreEqual(expectedLsn, RemainingWorkEstimatorCore.ExtractLsnFromSessionToken(newTokenWithRegionalLsn));
         }
 
-        private static ResponseMessage GetResponse(HttpStatusCode statusCode, string localLsn, string itemLsn = null)
+        private static ResponseMessage GetResponse(HttpStatusCode statusCode, string localLsn, long itemLsn = 0)
         {
             ResponseMessage message = new ResponseMessage(statusCode);
             message.CosmosHeaders.Add(Microsoft.Azure.Documents.HttpConstants.HttpHeaders.SessionToken, localLsn);
-            if (!string.IsNullOrEmpty(itemLsn))
+            if (itemLsn > 0)
             {
                 Dictionary<string, object> firstDocument = new Dictionary<string, object>();
                 firstDocument["_lsn"] = itemLsn;
