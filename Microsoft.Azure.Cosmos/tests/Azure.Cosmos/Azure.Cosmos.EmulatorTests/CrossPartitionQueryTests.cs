@@ -2428,21 +2428,26 @@ namespace Azure.Cosmos.EmulatorTests
                 string queryWithoutDistinct = string.Format(query, "");
 
                 QueryRequestOptions requestOptions = new QueryRequestOptions() { MaxItemCount = 100, MaxConcurrency = 100 };
-                AsyncPageable<JToken> documentQueryWithoutDistinct = container.GetItemQueryIterator<JToken>(
+                IAsyncEnumerable<Response> documentQueryWithoutDistinct = container.GetItemQueryStreamIterator(
                         queryWithoutDistinct,
                         requestOptions: requestOptions);
 
                 MockDistinctMap documentsSeen = new MockDistinctMap();
                 List<JToken> documentsFromWithoutDistinct = new List<JToken>();
-                await foreach (JToken document in documentQueryWithoutDistinct)
+                await foreach (Response response in documentQueryWithoutDistinct)
                 {
-                    if (documentsSeen.Add(document, out UInt128 hash))
+                    response.EnsureSuccessStatusCode();
+                    Collection<JToken> items = newtonsoftJsonSerializer.FromStream<CosmosFeedResponseUtil<JToken>>(response.ContentStream).Data;
+                    foreach (JToken document in items)
                     {
-                        documentsFromWithoutDistinct.Add(document);
-                    }
-                    else
-                    {
-                        // No Op for debugging purposes.
+                        if (documentsSeen.Add(document, out UInt128 hash))
+                        {
+                            documentsFromWithoutDistinct.Add(document);
+                        }
+                        else
+                        {
+                            // No Op for debugging purposes.
+                        }
                     }
                 }
 
@@ -2450,12 +2455,17 @@ namespace Azure.Cosmos.EmulatorTests
                 {
                     string queryWithDistinct = string.Format(query, "DISTINCT");
                     List<JToken> documentsFromWithDistinct = new List<JToken>();
-                    AsyncPageable<JToken> documentQueryWithDistinct = container.GetItemQueryIterator<JToken>(
+                    IAsyncEnumerable<Response> documentQueryWithDistinct = container.GetItemQueryStreamIterator(
                         queryWithDistinct,
                         requestOptions: requestOptions);
-                    await foreach(JToken doc in documentQueryWithDistinct)
+                    await foreach(Response response in documentQueryWithDistinct)
                     {
-                        documentsFromWithDistinct.Add(doc);
+                        response.EnsureSuccessStatusCode();
+                        Collection<JToken> items = newtonsoftJsonSerializer.FromStream<CosmosFeedResponseUtil<JToken>>(response.ContentStream).Data;
+                        foreach (JToken document in items)
+                        {
+                            documentsFromWithDistinct.Add(document);
+                        }
                     }
 
                     Assert.AreEqual(documentsFromWithDistinct.Count, documentsFromWithoutDistinct.Count());
@@ -4896,6 +4906,7 @@ namespace Azure.Cosmos.EmulatorTests
                     default:
                         throw new ArgumentException();
                 }
+
             }
 
             public int GetHashCode(JToken obj)
