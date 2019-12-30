@@ -561,7 +561,7 @@ namespace Azure.Cosmos.EmulatorTests
                 response.EnsureSuccessStatusCode();
                 Assert.AreEqual((int)expectedStatus, response.Status);
 
-                ICollection<T> responseResults = TestCommon.Serializer.FromStream<CosmosFeedResponseUtil<T>>(response.ContentStream).Data;
+                ICollection<T> responseResults = TestCommon.Serializer.Value.FromStream<CosmosFeedResponseUtil<T>>(response.ContentStream).Data;
                 Assert.IsTrue(responseResults.Count <= 1);
 
                 pagedStreamResults.AddRange(responseResults);

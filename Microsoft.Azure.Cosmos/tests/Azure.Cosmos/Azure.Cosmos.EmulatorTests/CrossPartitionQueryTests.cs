@@ -616,24 +616,22 @@ namespace Azure.Cosmos.EmulatorTests
                 QueryRequestOptions computeRequestOptions = queryRequestOptions.Clone();
                 computeRequestOptions.ExecutionEnvironment = Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ExecutionEnvironment.Compute;
 
-                IAsyncEnumerable<Response> itemQuery = container.GetItemQueryStreamIterator(
+                IAsyncEnumerable<Page<T>> itemQuery = container.GetItemQueryIterator<T>(
                    queryText: query,
                    requestOptions: computeRequestOptions,
-                   continuationToken: state);
+                   continuationToken: state).AsPages();
 
-                await foreach (Response cosmosQueryResponse in itemQuery)
+                await foreach (Page<T> cosmosQueryResponse in itemQuery)
                 {
-                    cosmosQueryResponse.EnsureSuccessStatusCode();
-                    Collection<T> items = newtonsoftJsonSerializer.FromStream<CosmosFeedResponseUtil<T>>(cosmosQueryResponse.ContentStream).Data;
                     if (queryRequestOptions.MaxItemCount.HasValue)
                     {
                         Assert.IsTrue(
-                            items.Count <= queryRequestOptions.MaxItemCount.Value,
+                            cosmosQueryResponse.Values.Count <= queryRequestOptions.MaxItemCount.Value,
                             "Max Item Count is not being honored");
                     }
 
-                    resultsFromTryGetContinuationToken.AddRange(items);
-                    state = cosmosQueryResponse.Headers.GetContinuationToken();
+                    resultsFromTryGetContinuationToken.AddRange(cosmosQueryResponse.Values);
+                    state = cosmosQueryResponse.ContinuationToken;
                     break;
                 }
             } while (state != null);
@@ -655,24 +653,22 @@ namespace Azure.Cosmos.EmulatorTests
             string continuationToken = null;
             do
             {
-                IAsyncEnumerable<Response> itemQuery = container.GetItemQueryStreamIterator(
+                IAsyncEnumerable<Page<T>> itemQuery = container.GetItemQueryIterator<T>(
                    queryText: query,
                    requestOptions: queryRequestOptions,
-                   continuationToken: continuationToken);
+                   continuationToken: continuationToken).AsPages();
 
-                await foreach (Response cosmosQueryResponse in itemQuery)
+                await foreach (Page<T> cosmosQueryResponse in itemQuery)
                 {
-                    cosmosQueryResponse.EnsureSuccessStatusCode();
-                    Collection<T> items = newtonsoftJsonSerializer.FromStream<CosmosFeedResponseUtil<T>>(cosmosQueryResponse.ContentStream).Data;
                     if (queryRequestOptions.MaxItemCount.HasValue)
                     {
                         Assert.IsTrue(
-                            items.Count <= queryRequestOptions.MaxItemCount.Value,
+                            cosmosQueryResponse.Values.Count <= queryRequestOptions.MaxItemCount.Value,
                             "Max Item Count is not being honored");
                     }
 
-                    resultsFromContinuationToken.AddRange(items);
-                    continuationToken = cosmosQueryResponse.Headers.GetContinuationToken();
+                    resultsFromContinuationToken.AddRange(cosmosQueryResponse.Values);
+                    continuationToken = cosmosQueryResponse.ContinuationToken;
 
                     break;
                 }
@@ -693,20 +689,18 @@ namespace Azure.Cosmos.EmulatorTests
             }
 
             List<T> results = new List<T>();
-            IAsyncEnumerable<Response> itemQuery = container.GetItemQueryStreamIterator(
+            IAsyncEnumerable<Page<T>> itemQuery = container.GetItemQueryIterator<T>(
                 queryText: query,
-                requestOptions: queryRequestOptions);
+                requestOptions: queryRequestOptions).AsPages();
 
-            await foreach (Response page in itemQuery)
+            await foreach (Page<T> page in itemQuery)
             {
-                page.EnsureSuccessStatusCode();
-                Collection<T> items = newtonsoftJsonSerializer.FromStream<CosmosFeedResponseUtil<T>>(page.ContentStream).Data;
-                results.AddRange(items);
+                results.AddRange(page.Values);
 
                 if (queryRequestOptions.MaxItemCount.HasValue)
                 {
                     Assert.IsTrue(
-                        items.Count <= queryRequestOptions.MaxItemCount.Value,
+                        page.Values.Count <= queryRequestOptions.MaxItemCount.Value,
                         "Max Item Count is not being honored");
                 }
             }
@@ -2428,26 +2422,21 @@ namespace Azure.Cosmos.EmulatorTests
                 string queryWithoutDistinct = string.Format(query, "");
 
                 QueryRequestOptions requestOptions = new QueryRequestOptions() { MaxItemCount = 100, MaxConcurrency = 100 };
-                IAsyncEnumerable<Response> documentQueryWithoutDistinct = container.GetItemQueryStreamIterator(
+                AsyncPageable<JToken> documentQueryWithoutDistinct = container.GetItemQueryIterator<JToken>(
                         queryWithoutDistinct,
                         requestOptions: requestOptions);
 
                 MockDistinctMap documentsSeen = new MockDistinctMap();
                 List<JToken> documentsFromWithoutDistinct = new List<JToken>();
-                await foreach (Response response in documentQueryWithoutDistinct)
+                await foreach (JToken document in documentQueryWithoutDistinct)
                 {
-                    response.EnsureSuccessStatusCode();
-                    Collection<JToken> items = newtonsoftJsonSerializer.FromStream<CosmosFeedResponseUtil<JToken>>(response.ContentStream).Data;
-                    foreach (JToken document in items)
+                    if (documentsSeen.Add(document, out UInt128 hash))
                     {
-                        if (documentsSeen.Add(document, out UInt128 hash))
-                        {
-                            documentsFromWithoutDistinct.Add(document);
-                        }
-                        else
-                        {
-                            // No Op for debugging purposes.
-                        }
+                        documentsFromWithoutDistinct.Add(document);
+                    }
+                    else
+                    {
+                        // No Op for debugging purposes.
                     }
                 }
 
@@ -2455,17 +2444,12 @@ namespace Azure.Cosmos.EmulatorTests
                 {
                     string queryWithDistinct = string.Format(query, "DISTINCT");
                     List<JToken> documentsFromWithDistinct = new List<JToken>();
-                    IAsyncEnumerable<Response> documentQueryWithDistinct = container.GetItemQueryStreamIterator(
+                    AsyncPageable<JToken> documentQueryWithDistinct = container.GetItemQueryIterator<JToken>(
                         queryWithDistinct,
                         requestOptions: requestOptions);
-                    await foreach(Response response in documentQueryWithDistinct)
+                    await foreach (JToken doc in documentQueryWithDistinct)
                     {
-                        response.EnsureSuccessStatusCode();
-                        Collection<JToken> items = newtonsoftJsonSerializer.FromStream<CosmosFeedResponseUtil<JToken>>(response.ContentStream).Data;
-                        foreach (JToken document in items)
-                        {
-                            documentsFromWithDistinct.Add(document);
-                        }
+                        documentsFromWithDistinct.Add(doc);
                     }
 
                     Assert.AreEqual(documentsFromWithDistinct.Count, documentsFromWithoutDistinct.Count());

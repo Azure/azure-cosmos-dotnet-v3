@@ -47,7 +47,7 @@ namespace Azure.Cosmos.EmulatorTests
             ToDoActivity testItem = this.CreateRandomToDoActivity();
             mockJsonSerializer.Setup(x => x.ToStream<ToDoActivity>(It.IsAny<ToDoActivity>()))
                 .Callback(() => toStreamCount++)
-                .Returns(TestCommon.Serializer.ToStream<ToDoActivity>(testItem));
+                .Returns(TestCommon.Serializer.Value.ToStream<ToDoActivity>(testItem));
 
             mockJsonSerializer.Setup(x => x.FromStream<ToDoActivity>(It.IsAny<Stream>()))
                 .Callback<Stream>(x => { x.Dispose(); fromStreamCount++; })

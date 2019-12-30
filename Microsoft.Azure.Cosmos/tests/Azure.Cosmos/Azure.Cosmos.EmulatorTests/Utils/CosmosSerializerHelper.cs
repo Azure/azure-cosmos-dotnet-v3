@@ -17,7 +17,7 @@ namespace Azure.Cosmos.EmulatorTests
     /// </summary>
     internal class CosmosSerializerHelper : CosmosSerializer
     {
-        private readonly CosmosSerializer cosmosSerializer = TestCommon.Serializer;
+        private readonly CosmosSerializer cosmosSerializer;
         private readonly Action<dynamic> fromStreamCallback;
         private readonly Action<dynamic> toStreamCallBack;
 
@@ -28,7 +28,7 @@ namespace Azure.Cosmos.EmulatorTests
         {
             if (jsonSerializerSettings == null)
             {
-                this.cosmosSerializer = TestCommon.Serializer;
+                this.cosmosSerializer = TestCommon.Serializer.Value;
             }
             else
             {
