@@ -1,5 +1,4 @@
-﻿
-Microsoft Visual Studio Solution File, Format Version 12.00
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.28307.645
 MinimumVisualStudioVersion = 10.0.40219.1
@@ -32,8 +31,6 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IndexManagement", "IndexManagement\IndexManagement.csproj", "{BDAA451B-C9C8-4D29-AF1E-1748B8720BEC}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TransactionalBatch", "TransactionalBatch\TransactionalBatch.csproj", "{2F124644-761C-4DD8-9C4D-229AC71E6C3A}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.Cosmos", "..\..\Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj", "{C19BF1D9-62C0-4B4A-A7BC-BB5D2BD895CB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -101,10 +98,6 @@ Global
 		{2F124644-761C-4DD8-9C4D-229AC71E6C3A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2F124644-761C-4DD8-9C4D-229AC71E6C3A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2F124644-761C-4DD8-9C4D-229AC71E6C3A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{C19BF1D9-62C0-4B4A-A7BC-BB5D2BD895CB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C19BF1D9-62C0-4B4A-A7BC-BB5D2BD895CB}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C19BF1D9-62C0-4B4A-A7BC-BB5D2BD895CB}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C19BF1D9-62C0-4B4A-A7BC-BB5D2BD895CB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

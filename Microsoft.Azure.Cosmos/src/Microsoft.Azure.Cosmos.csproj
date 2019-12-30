@@ -43,7 +43,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Remove="Encryption\AzureKeyVaultKeyWrapProvider.cs" />
     <Compile Remove="RuntimePerfCounters.cs" />
   </ItemGroup>
   
