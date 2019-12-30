@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using System.Globalization;
@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Client.Core.Tests;
     using Microsoft.Azure.Cosmos.Collections;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Handlers;
@@ -310,10 +309,10 @@ namespace Microsoft.Azure.Cosmos
                 endpointManager,
                 sessionContainer,
                 TimeSpan.FromSeconds(5),
-                ConsistencyLevel.Eventual,
+                Cosmos.ConsistencyLevel.Eventual,
                 new DocumentClientEventSource(),
                 new JsonSerializerSettings(),
-                new UserAgentContainer(),
+                new Cosmos.UserAgentContainer(),
                 ApiType.None,
                 messageHandler);
         }

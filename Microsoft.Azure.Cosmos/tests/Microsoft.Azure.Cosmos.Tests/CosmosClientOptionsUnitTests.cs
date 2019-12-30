@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Linq;
     using System.Net;
     using System.Net.Http;
-    using Microsoft.Azure.Cosmos.Client.Core.Tests;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -211,62 +210,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public void GetCosmosSerializerWithWrapperOrDefaultTest()
-        {
-            CosmosJsonDotNetSerializer serializer = new CosmosJsonDotNetSerializer();
-            CosmosClientOptions options = new CosmosClientOptions()
-            {
-                Serializer = serializer
-            };
-
-            CosmosSerializer cosmosSerializer = options.GetCosmosSerializerWithWrapperOrDefault();
-            Assert.AreNotEqual(cosmosSerializer, options.PropertiesSerializer, "Serializer should be custom not the default");
-            Assert.AreNotEqual(cosmosSerializer, serializer, "Serializer should be in the CosmosJsonSerializerWrapper");
-
-            CosmosJsonSerializerWrapper cosmosJsonSerializerWrapper = cosmosSerializer as CosmosJsonSerializerWrapper;
-            Assert.IsNotNull(cosmosJsonSerializerWrapper);
-            Assert.AreEqual(cosmosJsonSerializerWrapper.InternalJsonSerializer, serializer);
-        }
-
-        [TestMethod]
-        public void GetCosmosSerializerWithWrapperOrDefaultWithOptionsTest()
-        {
-            CosmosSerializationOptions serializerOptions = new CosmosSerializationOptions();
-            Assert.IsFalse(serializerOptions.IgnoreNullValues);
-            Assert.IsFalse(serializerOptions.Indented);
-            Assert.AreEqual(CosmosPropertyNamingPolicy.Default, serializerOptions.PropertyNamingPolicy);
-
-            CosmosClientOptions options = new CosmosClientOptions()
-            {
-                SerializerOptions = new CosmosSerializationOptions()
-                {
-                    IgnoreNullValues = true,
-                    Indented = true,
-                    PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase
-                }
-            };
-
-            CosmosSerializer cosmosSerializer = options.GetCosmosSerializerWithWrapperOrDefault();
-            Assert.AreNotEqual(cosmosSerializer, options.PropertiesSerializer, "Serializer should be custom not the default");
-
-            CosmosJsonSerializerWrapper cosmosJsonSerializerWrapper = cosmosSerializer as CosmosJsonSerializerWrapper;
-            Assert.IsNotNull(cosmosJsonSerializerWrapper);
-
-            // Verify the custom settings are being honored
-            dynamic testItem = new { id = "testid", description = (string)null, CamelCaseProperty = "TestCamelCase" };
-            using (Stream stream = cosmosSerializer.ToStream<dynamic>(testItem))
-            {
-                using (StreamReader sr = new StreamReader(stream))
-                {
-                    string jsonString = sr.ReadToEnd();
-                    // Notice description is not included, camelCaseProperty starts lower case, the white space shows the indents
-                    string expectedJsonString = $"{{{Environment.NewLine}  \"id\": \"testid\",{Environment.NewLine}  \"camelCaseProperty\": \"TestCamelCase\"{Environment.NewLine}}}";
-                    Assert.AreEqual(expectedJsonString, jsonString);
-                }
-            }
-        }
-
-        [TestMethod]
         [ExpectedException(typeof(ArgumentException))]
         public void ThrowOnSerializerOptionsWithCustomSerializer()
         {
@@ -311,25 +254,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             string invalidConnectionString = "AccountKey=425Mcv8CXQqzRNCgFNjIhT424GK99CKJvASowTnq15Vt8LeahXTcN5wt3342vQ==;";
             new CosmosClientBuilder(invalidConnectionString);
-        }
-
-        [TestMethod]
-        public void AssertJsonSerializer()
-        {
-            string connectionString = "AccountEndpoint=https://localtestcosmos.documents.azure.com:443/;AccountKey=425Mcv8CXQqzRNCgFNjIhT424GK99CKJvASowTnq15Vt8LeahXTcN5wt3342vQ==;";
-            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(connectionString);
-            CosmosClient cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
-            Assert.IsInstanceOfType(cosmosClient.ClientOptions.GetCosmosSerializerWithWrapperOrDefault(), typeof(CosmosJsonSerializerWrapper));
-            Assert.AreEqual(cosmosClient.ClientOptions.GetCosmosSerializerWithWrapperOrDefault(), cosmosClient.ClientOptions.PropertiesSerializer);
-
-            CosmosSerializer defaultSerializer = cosmosClient.ClientOptions.PropertiesSerializer;
-            CosmosSerializer mockJsonSerializer = new Mock<CosmosSerializer>().Object;
-            cosmosClientBuilder.WithCustomSerializer(mockJsonSerializer);
-            CosmosClient cosmosClientCustom = cosmosClientBuilder.Build(new MockDocumentClient());
-            Assert.AreEqual(defaultSerializer, cosmosClientCustom.ClientOptions.PropertiesSerializer);
-            Assert.AreEqual(mockJsonSerializer, cosmosClientCustom.ClientOptions.Serializer);
-            Assert.IsInstanceOfType(cosmosClientCustom.ClientOptions.GetCosmosSerializerWithWrapperOrDefault(), typeof(CosmosJsonSerializerWrapper));
-            Assert.AreEqual(mockJsonSerializer, ((CosmosJsonSerializerWrapper)cosmosClientCustom.ClientOptions.GetCosmosSerializerWithWrapperOrDefault()).InternalJsonSerializer);
         }
 
         [TestMethod]

@@ -16,12 +16,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
         public PipelineContinuationTokenV0(string sourceContinuationToken)
             : base(PipelineContinuationTokenV0.VersionNumber)
         {
-            if (sourceContinuationToken == null)
-            {
-                throw new ArgumentNullException(nameof(sourceContinuationToken));
-            }
-
-            this.SourceContinuationToken = sourceContinuationToken;
+            this.SourceContinuationToken = sourceContinuationToken ?? throw new ArgumentNullException(nameof(sourceContinuationToken));
         }
 
         public string SourceContinuationToken { get; }

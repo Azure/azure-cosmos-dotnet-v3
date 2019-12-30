@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -107,23 +108,19 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             ResponseMessage triggerResponse = this.CreateResponse();
             ResponseMessage udfResponse = this.CreateResponse();
             ResponseMessage itemResponse = this.CreateResponse();
-            ResponseMessage feedResponse = this.CreateResponse();
 
             Mock<CosmosSerializer> mockUserJsonSerializer = new Mock<CosmosSerializer>();
-            Mock<CosmosSerializer> mockDefaultJsonSerializer = new Mock<CosmosSerializer>();
+            CosmosSerializerCore serializerCore = new CosmosSerializerCore(mockUserJsonSerializer.Object);
             CosmosResponseFactory cosmosResponseFactory = new CosmosResponseFactory(
-               defaultJsonSerializer: mockDefaultJsonSerializer.Object,
-               userJsonSerializer: mockUserJsonSerializer.Object);
+               serializerCore);
 
             // Test the user specified response
-            mockUserJsonSerializer.Setup(x => x.FromStream<ToDoActivity>(itemResponse.Content)).Returns(new ToDoActivity());
-            mockUserJsonSerializer.Setup(x => x.FromStream<ToDoActivity>(storedProcedureExecuteResponse.Content)).Returns(new ToDoActivity());
-            mockUserJsonSerializer.Setup(x => x.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(feedResponse.Content)).Returns(new CosmosFeedResponseUtil<ToDoActivity>() { Data = new Collection<ToDoActivity>() });
+            mockUserJsonSerializer.Setup(x => x.FromStream<ToDoActivity>(itemResponse.Content)).Callback<Stream>(input => input.Dispose()).Returns(new ToDoActivity());
+            mockUserJsonSerializer.Setup(x => x.FromStream<ToDoActivity>(storedProcedureExecuteResponse.Content)).Callback<Stream>(input => input.Dispose()).Returns(new ToDoActivity());
 
             // Verify all the user types use the user specified version
             await cosmosResponseFactory.CreateItemResponseAsync<ToDoActivity>(Task.FromResult(itemResponse), null, CancellationToken.None);
             await cosmosResponseFactory.CreateStoredProcedureExecuteResponseAsync<ToDoActivity>(Task.FromResult(storedProcedureExecuteResponse));
-            cosmosResponseFactory.CreateQueryFeedResponse<ToDoActivity>(feedResponse);
 
             // Throw if the setups were not called
             mockUserJsonSerializer.VerifyAll();
@@ -150,12 +147,6 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
                 Id = "mock"
             };
 
-            mockDefaultJsonSerializer.Setup(x => x.FromStream<DatabaseProperties>(databaseResponse.Content)).Returns(databaseSettings);
-            mockDefaultJsonSerializer.Setup(x => x.FromStream<ContainerProperties>(containerResponse.Content)).Returns(containerSettings);
-            mockDefaultJsonSerializer.Setup(x => x.FromStream<StoredProcedureProperties>(storedProcedureResponse.Content)).Returns(cosmosStoredProcedureSettings);
-            mockDefaultJsonSerializer.Setup(x => x.FromStream<TriggerProperties>(triggerResponse.Content)).Returns(cosmosTriggerSettings);
-            mockDefaultJsonSerializer.Setup(x => x.FromStream<UserDefinedFunctionProperties>(udfResponse.Content)).Returns(cosmosUserDefinedFunctionSettings);
-
             Mock<Container> mockContainer = new Mock<Container>();
             Mock<Database> mockDatabase = new Mock<Database>();
 
@@ -165,9 +156,6 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             await cosmosResponseFactory.CreateStoredProcedureResponseAsync(Task.FromResult(storedProcedureResponse));
             await cosmosResponseFactory.CreateTriggerResponseAsync(Task.FromResult(triggerResponse));
             await cosmosResponseFactory.CreateUserDefinedFunctionResponseAsync(Task.FromResult(udfResponse));
-
-            // Throw if the setups were not called
-            mockDefaultJsonSerializer.VerifyAll();
         }
 
         [TestMethod]

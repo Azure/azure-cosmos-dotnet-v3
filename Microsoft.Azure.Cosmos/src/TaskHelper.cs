@@ -84,5 +84,16 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
         }
+
+        static public Task<TResult> RunInlineIfNeededAsync<TResult>(Func<Task<TResult>> task)
+        {
+            if (SynchronizationContext.Current == null)
+            {
+                return task();
+            }
+
+            // Used on NETFX applications with SynchronizationContext when doing locking calls
+            return Task.Run(task);
+        }
     }
 }

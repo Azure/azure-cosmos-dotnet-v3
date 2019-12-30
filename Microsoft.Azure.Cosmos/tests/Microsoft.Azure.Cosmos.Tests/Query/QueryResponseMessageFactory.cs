@@ -5,24 +5,19 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
-    using System.Collections;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
     using System.IO;
     using System.Linq;
     using System.Net;
     using System.Net.Http;
-    using System.Threading;
-    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
-    using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Documents;
-    using Moq;
 
     internal static class QueryResponseMessageFactory
     {
-        private static readonly CosmosSerializer cosmosSerializer = new CosmosJsonDotNetSerializer();
         public const int SPLIT = -1;
 
         public static (QueryResponseCore queryResponse, IList<ToDoItem> items) Create(
@@ -38,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
 
             IList<ToDoItem> items = ToDoItem.CreateItems(itemCount, itemIdPrefix);
-            MemoryStream memoryStream = (MemoryStream)cosmosSerializer.ToStream<IList<ToDoItem>>(items);
+            MemoryStream memoryStream = (MemoryStream)MockCosmosUtil.Serializer.ToStream<IList<ToDoItem>>(items);
             long responseLengthBytes = memoryStream.Length;
 
             IJsonNavigator jsonNavigator = JsonNavigator.Create(memoryStream.ToArray());
@@ -96,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
             else
             {
-                memoryStream = (MemoryStream)cosmosSerializer.ToStream<IList<ToDoItem>>(items);
+                memoryStream = (MemoryStream)MockCosmosUtil.Serializer.ToStream<IList<ToDoItem>>(items);
             }
 
             long responseLengthBytes = memoryStream.Length;
@@ -138,7 +133,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public static QueryResponse<TItem> CreateQueryResponse<TItem>(
             QueryResponse queryResponse)
         {
-            return QueryResponse<TItem>.CreateResponse<TItem>(queryResponse, cosmosSerializer);
+            return QueryResponse<TItem>.CreateResponse<TItem>(queryResponse, MockCosmosUtil.Serializer);
         }
 
         public static QueryResponseCore CreateFailureResponse(
@@ -202,7 +197,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 orderByItems = new OrderbyItems[] { new OrderbyItems(item.id) }
             }).ToArray();
 
-            return (MemoryStream)cosmosSerializer.ToStream<OrderByReturnStructure[]>(payload);
+            return (MemoryStream)MockCosmosUtil.Serializer.ToStream<OrderByReturnStructure[]>(payload);
         }
 
         private class OrderByReturnStructure

@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Test
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Query.Core.ComparableTask;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 

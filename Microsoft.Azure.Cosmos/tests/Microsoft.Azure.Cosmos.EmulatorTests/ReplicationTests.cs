@@ -10,8 +10,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Linq;
     using System.Net;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Collections;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Utils;
     using Microsoft.Azure.Documents;
@@ -104,11 +102,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 BackoffRetryUtility<bool>.ExecuteAsync((bool isInRetry) =>
                 {
-                    var feeds = new DocumentFeedResponse<T>[replicaClients.Length];
-                    var allHeaders = new DictionaryNameValueCollection[replicaClients.Length];
+                    DocumentFeedResponse<T>[] feeds = new DocumentFeedResponse<T>[replicaClients.Length];
+                    DictionaryNameValueCollection[] allHeaders = new DictionaryNameValueCollection[replicaClients.Length];
                     for (int i = 0; i < replicaClients.Length; i++)
                     {
-                        var header = new DictionaryNameValueCollection();
+                        DictionaryNameValueCollection header = new DictionaryNameValueCollection();
                         if (headers != null)
                         {
                             foreach (string key in headers)
@@ -120,8 +118,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         allHeaders[i] = header;
                     }
 
-                    var continuations = new string[replicaClients.Length];
-                    var responseHeaders = new INameValueCollection[replicaClients.Length];
+                    string[] continuations = new string[replicaClients.Length];
+                    INameValueCollection[] responseHeaders = new INameValueCollection[replicaClients.Length];
 
                     do
                     {
@@ -152,8 +150,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                 Assert.AreEqual(continuations[i], continuations[j], "Collection Continuaton mismatch");
                                 if (verifyAddress)
                                 {
-                                    var address1 = replicaClients[i].GetAddress();
-                                    var address2 = replicaClients[j].GetAddress();
+                                    string address1 = replicaClients[i].GetAddress();
+                                    string address2 = replicaClients[j].GetAddress();
 
                                     // If the addresses match, we are in mid of reconfiguration, throw GoneException so that we retry on the entire loop
                                     // and take care of intermittent gone at the same time.
@@ -217,7 +215,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             if (typeof(T) == typeof(Database))
             {
-                var databases = resources.Cast<Database>().ToArray();
+                Database[] databases = resources.Cast<Database>().ToArray();
 
                 for (int i = 0; i < resources.Count - 1; i++)
                 {
@@ -230,7 +228,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             else if (typeof(T) == typeof(DocumentCollection))
             {
-                var documentCollections = resources.Cast<DocumentCollection>().ToArray();
+                DocumentCollection[] documentCollections = resources.Cast<DocumentCollection>().ToArray();
 
                 for (int i = 0; i < documentCollections.Length - 1; i++)
                 {
@@ -251,7 +249,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             else if (typeof(T) == typeof(User))
             {
-                var users = resources.Cast<User>().ToArray();
+                User[] users = resources.Cast<User>().ToArray();
 
                 for (int i = 0; i < users.Length - 1; i++)
                 {
@@ -264,7 +262,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             else if (typeof(T) == typeof(Permission))
             {
-                var permissions = resources.Cast<Permission>().ToArray();
+                Permission[] permissions = resources.Cast<Permission>().ToArray();
 
                 for (int i = 0; i < permissions.Length - 1; i++)
                 {
@@ -279,7 +277,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             else if (typeof(T) == typeof(Document))
             {
-                var documents = resources.Cast<Document>().ToArray();
+                Document[] documents = resources.Cast<Document>().ToArray();
 
                 for (int i = 0; i < documents.Length - 1; i++)
                 {
@@ -294,7 +292,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             else if (typeof(T) == typeof(Attachment))
             {
-                var attachments = resources.Cast<Attachment>().ToArray();
+                Attachment[] attachments = resources.Cast<Attachment>().ToArray();
 
                 for (int i = 0; i < attachments.Length - 1; i++)
                 {
@@ -309,7 +307,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             else if (typeof(T) == typeof(StoredProcedure))
             {
-                var storedProcedures = resources.Cast<StoredProcedure>().ToArray();
+                StoredProcedure[] storedProcedures = resources.Cast<StoredProcedure>().ToArray();
 
                 for (int i = 0; i < storedProcedures.Length - 1; i++)
                 {
@@ -322,7 +320,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             else if (typeof(T) == typeof(Trigger))
             {
-                var triggers = resources.Cast<Trigger>().ToArray();
+                Trigger[] triggers = resources.Cast<Trigger>().ToArray();
 
                 for (int i = 0; i < triggers.Length - 1; i++)
                 {
@@ -334,7 +332,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             else if (typeof(T) == typeof(UserDefinedFunction))
             {
-                var userDefinedFunctions = resources.Cast<UserDefinedFunction>().ToArray();
+                UserDefinedFunction[] userDefinedFunctions = resources.Cast<UserDefinedFunction>().ToArray();
 
                 for (int i = 0; i < userDefinedFunctions.Length - 1; i++)
                 {
@@ -347,7 +345,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             else if (typeof(T) == typeof(Conflict))
             {
-                var conflicts = resources.Cast<Conflict>().ToArray();
+                Conflict[] conflicts = resources.Cast<Conflict>().ToArray();
 
                 for (int i = 0; i < conflicts.Length - 1; i++)
                 {
@@ -511,7 +509,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal static DocumentClient[] GetClientsLocked(bool useGateway = false, Protocol protocol = Protocol.Tcp, int timeoutInSeconds = 10, ConsistencyLevel? defaultConsistencyLevel = null, AuthorizationTokenType tokenType = AuthorizationTokenType.PrimaryMasterKey)
         {
-            var toReturn = new DocumentClient[TestCommon.ReplicationFactor];
+            DocumentClient[] toReturn = new DocumentClient[TestCommon.ReplicationFactor];
             for (uint i = 0; i < toReturn.Length; i++)
             {
                 toReturn[i] = TestCommon.CreateClient(useGateway, protocol, timeoutInSeconds, defaultConsistencyLevel, tokenType);

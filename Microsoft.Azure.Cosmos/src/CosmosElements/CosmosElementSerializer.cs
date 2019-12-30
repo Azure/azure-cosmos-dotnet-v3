@@ -7,8 +7,10 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
     using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Documents;
 
 #if INTERNAL
@@ -20,6 +22,30 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #endif
     static class CosmosElementSerializer
     {
+        /// <summary>
+        /// Converts a list of CosmosElements into a memory stream.
+        /// </summary>
+        /// <param name="stream">The stream response from Azure Cosmos</param>
+        /// <param name="resourceType">The resource type</param>
+        /// <param name="cosmosSerializationOptions">The custom serialization options. This allows custom serialization types like BSON, JSON, or other formats</param>
+        /// <returns>Returns a memory stream of cosmos elements. By default the memory stream will contain JSON.</returns>
+        internal static CosmosArray ToCosmosElements(
+            Stream stream,
+            ResourceType resourceType,
+            CosmosSerializationFormatOptions cosmosSerializationOptions = null)
+        {
+            MemoryStream memoryStream = stream as MemoryStream;
+            if (memoryStream == null)
+            {
+                memoryStream = new MemoryStream();
+                stream.CopyTo(memoryStream);
+            }
+
+            return CosmosElementSerializer.ToCosmosElements(
+                    memoryStream,
+                    resourceType,
+                    cosmosSerializationOptions);
+        }
         /// <summary>
         /// Converts a list of CosmosElements into a memory stream.
         /// </summary>
@@ -219,6 +245,39 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return new MemoryStream(resultAsArray.Array, resultAsArray.Offset, resultAsArray.Count);
         }
 
+        internal static IEnumerable<T> GetResources<T>(
+            IReadOnlyList<CosmosElement> cosmosArray,
+            CosmosSerializerCore serializerCore)
+        {
+            if (cosmosArray == null)
+            {
+                return new List<T>();
+            }
+
+            if (typeof(T) == typeof(CosmosElement))
+            {
+                return cosmosArray.Cast<T>();
+            }
+
+            return CosmosElementSerializer.GetResourcesHelper<T>(
+                cosmosArray,
+                serializerCore);
+        }
+
+        private static IEnumerable<T> GetResourcesHelper<T>(
+            IReadOnlyList<CosmosElement> cosmosArray,
+            CosmosSerializerCore serializerCore)
+        {
+            List<T> result = new List<T>();
+            foreach (CosmosElement element in cosmosArray)
+            {
+                MemoryStream memory = CosmosElementSerializer.ElementToMemoryStream(element, null);
+                result.Add(serializerCore.FromStream<T>(memory));
+            }
+
+            return result;
+        }
+
         /// <summary>
         /// Converts a list of CosmosElements into a list of objects.
         /// </summary>
@@ -232,7 +291,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             string containerRid,
             IEnumerable<CosmosElement> cosmosElements,
             ResourceType resourceType,
-            CosmosSerializer jsonSerializer,
+            CosmosSerializerCore jsonSerializer,
             CosmosSerializationFormatOptions cosmosSerializationOptions = null)
         {
             if (!cosmosElements.Any())
@@ -246,9 +305,42 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 resourceType,
                 cosmosSerializationOptions);
 
-            IEnumerable<T> typedResults = jsonSerializer.FromStream<CosmosFeedResponseUtil<T>>(stream).Data;
+            IEnumerable<T> typedResults = jsonSerializer.FromFeedResponseStream<T>(
+                stream,
+                resourceType);
 
             return typedResults;
+        }
+
+        /// <summary>
+        /// Converts a list of CosmosElements into a memory stream.
+        /// </summary>
+        /// <param name="cosmosElement">The cosmos elements</param>
+        /// <param name="cosmosSerializationOptions">The custom serialization options. This allows custom serialization types like BSON, JSON, or other formats</param>
+        /// <returns>Returns a memory stream of cosmos elements. By default the memory stream will contain JSON.</returns>
+        private static MemoryStream ElementToMemoryStream(
+            CosmosElement cosmosElement,
+            CosmosSerializationFormatOptions cosmosSerializationOptions = null)
+        {
+            IJsonWriter jsonWriter;
+            if (cosmosSerializationOptions != null)
+            {
+                jsonWriter = cosmosSerializationOptions.CreateCustomWriterCallback();
+            }
+            else
+            {
+                jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
+            }
+
+            cosmosElement.WriteTo(jsonWriter);
+
+            ReadOnlyMemory<byte> result = jsonWriter.GetResult();
+            if (!MemoryMarshal.TryGetArray(result, out ArraySegment<byte> resultAsArray))
+            {
+                resultAsArray = new ArraySegment<byte>(result.ToArray());
+            }
+
+            return new MemoryStream(resultAsArray.Array, resultAsArray.Offset, resultAsArray.Count);
         }
 
         private static string GetRootNodeName(ResourceType resourceType)

@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public int? Throughput
         {
-            get => this.Content.OfferThroughput;
+            get => this.Content?.OfferThroughput;
             private set => this.Content = new OfferContentV2(value.Value);
         }
 

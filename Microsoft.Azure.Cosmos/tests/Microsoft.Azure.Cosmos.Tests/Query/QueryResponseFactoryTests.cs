@@ -6,9 +6,10 @@ namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
     using System.Net;
-    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using VisualStudio.TestTools.UnitTesting;
 
     [TestClass]

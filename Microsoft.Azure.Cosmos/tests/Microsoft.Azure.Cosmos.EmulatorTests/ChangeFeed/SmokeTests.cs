@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -211,7 +212,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             public override T FromStream<T>(Stream stream)
             {
                 // Only let changes serialization pass through
-                if (typeof(T) == typeof(CosmosFeedResponseUtil<TestClass>))
+                if (typeof(T) == typeof(TestClass))
                 {
                     return this.cosmosSerializer.FromStream<T>(stream);
                 }

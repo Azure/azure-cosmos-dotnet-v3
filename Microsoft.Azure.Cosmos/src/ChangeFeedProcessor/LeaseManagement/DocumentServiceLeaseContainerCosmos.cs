@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     using System.Collections.Generic;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
+    using Microsoft.Azure.Cosmos.Query.Core;
 
     internal sealed class DocumentServiceLeaseContainerCosmos : DocumentServiceLeaseContainer
     {
@@ -57,7 +58,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             {
                 using (ResponseMessage responseMessage = await iterator.ReadNextAsync().ConfigureAwait(false))
                 {
-                    leases.AddRange(CosmosContainerExtensions.DefaultJsonSerializer.FromStream<CosmosFeedResponseUtil<DocumentServiceLeaseCore>>(responseMessage.Content).Data);
+                    leases.AddRange(CosmosContainerExtensions.DefaultJsonSerializer.FromFeedResponseStream<DocumentServiceLeaseCore>(
+                        responseMessage.Content,
+                        Documents.ResourceType.Document));
                 }   
             }
 

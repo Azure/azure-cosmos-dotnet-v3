@@ -324,7 +324,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>Cosmos database proxy</returns>
         public virtual Database GetDatabase(string id)
         {
-            return new DatabaseCore(this.ClientContext, id);
+            return new DatabaseInlineCore(new DatabaseCore(this.ClientContext, id));
         }
 
         /// <summary>
@@ -471,14 +471,19 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            FeedIterator databaseStreamIterator = this.GetDatabaseQueryStreamIterator(
+            if (!(this.GetDatabaseQueryStreamIterator(
                 queryDefinition,
                 continuationToken,
-                requestOptions);
+                requestOptions) is FeedIteratorInternal databaseStreamIterator))
+            {
+                throw new InvalidOperationException($"Expected a FeedIteratorInternal.");
+            }
 
             return new FeedIteratorCore<T>(
                 databaseStreamIterator,
-                this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>);
+                (response) => this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>(
+                    responseMessage: response,
+                    resourceType: ResourceType.Database));
         }
 
         /// <summary>
@@ -600,7 +605,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.ClientContext.ValidateResource(databaseProperties.Id);
-            Stream streamPayload = this.ClientContext.PropertiesSerializer.ToStream<DatabaseProperties>(databaseProperties);
+            Stream streamPayload = this.ClientContext.SerializerCore.ToStream<DatabaseProperties>(databaseProperties);
 
             return this.CreateDatabaseStreamInternalAsync(streamPayload, throughput, requestOptions, cancellationToken);
         }
@@ -628,21 +633,16 @@ namespace Microsoft.Azure.Cosmos
 
             this.RequestHandler = clientPipelineBuilder.Build();
 
-            CosmosSerializer userSerializer = this.ClientOptions.GetCosmosSerializerWithWrapperOrDefault();
-            this.ResponseFactory = new CosmosResponseFactory(
-                defaultJsonSerializer: this.ClientOptions.PropertiesSerializer,
-                userJsonSerializer: userSerializer);
+            CosmosSerializerCore serializerCore = CosmosSerializerCore.Create(
+                this.ClientOptions.Serializer,
+                this.ClientOptions.SerializerOptions);
 
-            CosmosSerializer sqlQuerySpecSerializer = CosmosSqlQuerySpecJsonConverter.CreateSqlQuerySpecSerializer(
-                cosmosSerializer: userSerializer,
-                propertiesSerializer: this.ClientOptions.PropertiesSerializer);
+            this.ResponseFactory = new CosmosResponseFactory(serializerCore);
 
             this.ClientContext = new ClientContextCore(
                 client: this,
                 clientOptions: this.ClientOptions,
-                userJsonSerializer: userSerializer,
-                defaultJsonSerializer: this.ClientOptions.PropertiesSerializer,
-                sqlQuerySpecSerializer: sqlQuerySpecSerializer,
+                serializerCore: serializerCore,
                 cosmosResponseFactory: this.ResponseFactory,
                 requestHandler: this.RequestHandler,
                 documentClient: this.DocumentClient,
@@ -682,7 +682,7 @@ namespace Microsoft.Azure.Cosmos
                     CancellationToken cancellationToken = default(CancellationToken))
         {
             Task<ResponseMessage> response = this.CreateDatabaseStreamInternalAsync(
-                streamPayload: this.ClientContext.PropertiesSerializer.ToStream<DatabaseProperties>(databaseProperties),
+                streamPayload: this.ClientContext.SerializerCore.ToStream<DatabaseProperties>(databaseProperties),
                 throughput: throughput,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
@@ -705,32 +705,6 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey: null,
                 streamPayload: streamPayload,
                 requestEnricher: (httpRequestMessage) => httpRequestMessage.AddThroughputHeader(throughput),
-                cancellationToken: cancellationToken);
-        }
-
-        private Task<FeedResponse<DatabaseProperties>> DatabaseFeedRequestExecutorAsync(
-            int? maxItemCount,
-            string continuationToken,
-            RequestOptions options,
-            object state,
-            CancellationToken cancellationToken)
-        {
-            Debug.Assert(state == null);
-
-            return this.ClientContext.ProcessResourceOperationAsync<FeedResponse<DatabaseProperties>>(
-                resourceUri: this.DatabaseRootUri,
-                resourceType: ResourceType.Database,
-                operationType: OperationType.ReadFeed,
-                requestOptions: options,
-                cosmosContainerCore: null,
-                partitionKey: null,
-                streamPayload: null,
-                requestEnricher: request =>
-                {
-                    QueryRequestOptions.FillContinuationToken(request, continuationToken);
-                    QueryRequestOptions.FillMaxItemCount(request, maxItemCount);
-                },
-                responseCreator: response => this.ClientContext.ResponseFactory.CreateQueryFeedResponse<DatabaseProperties>(response),
                 cancellationToken: cancellationToken);
         }
 

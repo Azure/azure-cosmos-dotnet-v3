@@ -16,23 +16,23 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
         private readonly ContainerCore container;
         private readonly ChangeFeedProcessorOptions changeFeedProcessorOptions;
         private readonly DocumentServiceLeaseCheckpointer leaseCheckpointer;
-        private readonly CosmosSerializer cosmosJsonSerializer;
+        private readonly CosmosSerializerCore serializerCore;
 
         public FeedProcessorFactoryCore(
             ContainerCore container,
             ChangeFeedProcessorOptions changeFeedProcessorOptions,
             DocumentServiceLeaseCheckpointer leaseCheckpointer,
-            CosmosSerializer cosmosJsonSerializer)
+            CosmosSerializerCore serializerCore)
         {
             if (container == null) throw new ArgumentNullException(nameof(container));
             if (changeFeedProcessorOptions == null) throw new ArgumentNullException(nameof(changeFeedProcessorOptions));
             if (leaseCheckpointer == null) throw new ArgumentNullException(nameof(leaseCheckpointer));
-            if (cosmosJsonSerializer == null) throw new ArgumentNullException(nameof(cosmosJsonSerializer));
+            if (serializerCore == null) throw new ArgumentNullException(nameof(serializerCore));
 
             this.container = container;
             this.changeFeedProcessorOptions = changeFeedProcessorOptions;
             this.leaseCheckpointer = leaseCheckpointer;
-            this.cosmosJsonSerializer = cosmosJsonSerializer;
+            this.serializerCore = serializerCore;
         }
 
         public override FeedProcessor Create(DocumentServiceLease lease, ChangeFeedObserver<T> observer)
@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                 startTime: options.StartTime,
                 startFromBeginning: options.StartFromBeginning);
 
-            return new FeedProcessorCore<T>(observer, iterator, options, checkpointer, this.cosmosJsonSerializer);
+            return new FeedProcessorCore<T>(observer, iterator, options, checkpointer, this.serializerCore);
         }
     }
 }

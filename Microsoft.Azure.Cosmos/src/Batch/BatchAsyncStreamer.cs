@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly BatchAsyncBatcherExecuteDelegate executor;
         private readonly BatchAsyncBatcherRetryDelegate retrier;
         private readonly int dispatchTimerInSeconds;
-        private readonly CosmosSerializer cosmosSerializer;
+        private readonly CosmosSerializerCore serializerCore;
         private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
         private volatile BatchAsyncBatcher currentBatcher;
         private TimerPool timerPool;
@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos
             int maxBatchByteSize,
             int dispatchTimerInSeconds,
             TimerPool timerPool,
-            CosmosSerializer cosmosSerializer,
+            CosmosSerializerCore serializerCore,
             BatchAsyncBatcherExecuteDelegate executor,
             BatchAsyncBatcherRetryDelegate retrier)
         {
@@ -67,9 +67,9 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(retrier));
             }
 
-            if (cosmosSerializer == null)
+            if (serializerCore == null)
             {
-                throw new ArgumentNullException(nameof(cosmosSerializer));
+                throw new ArgumentNullException(nameof(serializerCore));
             }
 
             this.maxBatchOperationCount = maxBatchOperationCount;
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos
             this.retrier = retrier;
             this.dispatchTimerInSeconds = dispatchTimerInSeconds;
             this.timerPool = timerPool;
-            this.cosmosSerializer = cosmosSerializer;
+            this.serializerCore = serializerCore;
             this.currentBatcher = this.CreateBatchAsyncBatcher();
 
             this.ResetTimer();
@@ -157,7 +157,7 @@ namespace Microsoft.Azure.Cosmos
 
         private BatchAsyncBatcher CreateBatchAsyncBatcher()
         {
-            return new BatchAsyncBatcher(this.maxBatchOperationCount, this.maxBatchByteSize, this.cosmosSerializer, this.executor, this.retrier);
+            return new BatchAsyncBatcher(this.maxBatchOperationCount, this.maxBatchByteSize, this.serializerCore, this.executor, this.retrier);
         }
     }
 }

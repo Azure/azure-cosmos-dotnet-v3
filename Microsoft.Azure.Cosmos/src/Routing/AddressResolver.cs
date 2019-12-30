@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos
@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 throw new ArgumentException("parent");
             }
-
+            
             if (newlyResolved == null)
             {
                 return false;
@@ -168,6 +168,30 @@ namespace Microsoft.Azure.Cosmos
 
             if (request.ServiceIdentity != null)
             {
+                if (request.ServiceIdentity.IsMasterService &&
+                    request.ForceMasterRefresh &&
+                    this.masterServiceIdentityProvider != null)
+                {
+                    await this.masterServiceIdentityProvider.RefreshAsync(request.ServiceIdentity, cancellationToken);
+
+                    ServiceIdentity newMasterServiceIdentity = this.masterServiceIdentityProvider.MasterServiceIdentity;
+
+                    bool masterServiceIdentityChanged = newMasterServiceIdentity != null &&
+                        !newMasterServiceIdentity.Equals(request.ServiceIdentity);
+
+                    DefaultTrace.TraceInformation(
+                        "Refreshed master service identity. masterServiceIdentityChanged = {0}, " +
+                        "previousRequestServiceIdentity = {1}, newMasterServiceIdentity = {2}",
+                        masterServiceIdentityChanged,
+                        request.ServiceIdentity,
+                        newMasterServiceIdentity);
+
+                    if (masterServiceIdentityChanged)
+                    {
+                        request.RouteTo(newMasterServiceIdentity);
+                    }
+                }
+
                 // In this case we don't populate request.RequestContext.ResolvedPartitionKeyRangeId,
                 // which is needed for session token.
                 // The assumption is that:
@@ -177,6 +201,15 @@ namespace Microsoft.Azure.Cosmos
                 //        to send request to specific partition and will not set request.ServiceIdentity
                 ServiceIdentity identity = request.ServiceIdentity;
                 PartitionAddressInformation addresses = await this.addressCache.TryGetAddressesAsync(request, null, identity, forceRefreshPartitionAddresses, cancellationToken);
+
+                if (addresses == null && identity.IsMasterService && this.masterServiceIdentityProvider != null)
+                {
+                    DefaultTrace.TraceWarning("Could not get addresses for MasterServiceIdentity {0}. will refresh masterServiceIdentity and retry", identity);
+                    await this.masterServiceIdentityProvider.RefreshAsync(identity, cancellationToken);
+                    identity = this.masterServiceIdentityProvider.MasterServiceIdentity;
+                    addresses = await this.addressCache.TryGetAddressesAsync(request, null, identity, forceRefreshPartitionAddresses, cancellationToken);
+                }
+
                 if (addresses == null)
                 {
                     DefaultTrace.TraceInformation("Could not get addresses for explicitly specified ServiceIdentity {0}", identity);
@@ -395,7 +428,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (!request.ResourceType.IsPartitioned() &&
                !(request.ResourceType == ResourceType.StoredProcedure && request.OperationType == OperationType.ExecuteJavaScript) &&
-               // Collection head is sent internally for strong consistency given routing hints from original requst, which is for partitioned resource.
+                // Collection head is sent internally for strong consistency given routing hints from original requst, which is for partitioned resource.
                !(request.ResourceType == ResourceType.Collection && request.OperationType == OperationType.Head))
             {
                 DefaultTrace.TraceCritical(
@@ -439,7 +472,7 @@ namespace Microsoft.Azure.Cosmos
             }
             else
             {
-                range = this.TryResolveSinglePartitionCollection(request, routingMap, collectionCacheIsUptodate);
+                range = this.TryResolveSinglePartitionCollection(request, collection, routingMap, collectionCacheIsUptodate);
             }
 
             if (range == null)
@@ -472,6 +505,7 @@ namespace Microsoft.Azure.Cosmos
 
         private PartitionKeyRange TryResolveSinglePartitionCollection(
             DocumentServiceRequest request,
+            ContainerProperties collection,
             CollectionRoutingMap routingMap,
             bool collectionCacheIsUptoDate)
         {
@@ -598,8 +632,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 throw new BadRequestException(
                     string.Format(CultureInfo.InvariantCulture, RMResources.InvalidPartitionKey, partitionKeyString),
-                    ex)
-                { ResourceAddress = request.ResourceAddress };
+                    ex) { ResourceAddress = request.ResourceAddress };
             }
 
             if (partitionKey == null)

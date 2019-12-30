@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Net.Http;
     using System.Net.Http.Headers;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
@@ -178,9 +179,27 @@ namespace Microsoft.Azure.Cosmos
             }
             else
             {
+                StringBuilder context = new StringBuilder();
+                context.AppendLine(await responseMessage.Content.ReadAsStringAsync());
+
+                HttpRequestMessage requestMessage = responseMessage.RequestMessage;
+                if (requestMessage != null)
+                {
+                    context.AppendLine($"RequestUri: {requestMessage.RequestUri.ToString()};");
+                    context.AppendLine($"RequestMethod: {requestMessage.Method.Method};");
+
+                    if (requestMessage.Headers != null)
+                    {
+                        foreach (KeyValuePair<string, IEnumerable<string>> header in requestMessage.Headers)
+                        {
+                            context.AppendLine($"Header: {header.Key} Length: {string.Join(",", header.Value).Length};");
+                        }
+                    }
+                }
+
                 String message = await responseMessage.Content.ReadAsStringAsync();
                 return new DocumentClientException(
-                    message: message,
+                    message: context.ToString(),
                     innerException: null,
                     responseHeaders: responseMessage.Headers,
                     statusCode: responseMessage.StatusCode,
