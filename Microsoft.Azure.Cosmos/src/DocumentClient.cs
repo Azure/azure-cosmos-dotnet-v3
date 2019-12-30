@@ -447,8 +447,8 @@ namespace Microsoft.Azure.Cosmos
                 serviceEndpoint: serviceEndpoint,
                 connectionPolicy: connectionPolicy,
                 desiredConsistencyLevel: desiredConsistencyLevel,
-                handler: handler, 
-                sessionContainer: sessionContainer, 
+                handler: handler,
+                sessionContainer: sessionContainer,
                 enableCpuMonitor: enableCpuMonitor,
                 storeClientFactory: storeClientFactory);
         }

@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
                 {
-                    T item = this.ToObjectInternal<T>(cosmosResponseMessage, this.cosmosSerializer);
+                    T item = this.ToObjectInternal<T>(cosmosResponseMessage);
                     return new ItemResponse<T>(
                         cosmosResponseMessage.StatusCode,
                         cosmosResponseMessage.Headers,
@@ -86,7 +86,6 @@ namespace Microsoft.Azure.Cosmos
             {
                 return this.ProcessItemMessageWithEncryptionAsync<T>(
                     cosmosResponseMessageTask,
-                    this.cosmosSerializer,
                     containerCore,
                     cancellationToken);
             }
@@ -263,7 +262,6 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<ItemResponse<T>> ProcessItemMessageWithEncryptionAsync<T>(
             Task<ResponseMessage> cosmosResponseTask,
-            CosmosSerializer jsonSerializer,
             ContainerCore containerCore,
             CancellationToken cancellationToken)
         {

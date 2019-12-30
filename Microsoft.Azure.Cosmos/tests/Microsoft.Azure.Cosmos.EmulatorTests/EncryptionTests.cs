@@ -47,8 +47,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestInitialize]
         public async Task TestInitialize()
         {
-            this.database = (DatabaseCore)await EncryptionTests.client.CreateDatabaseAsync(Guid.NewGuid().ToString());
-            this.container = (ContainerCore)await this.database.CreateContainerAsync(Guid.NewGuid().ToString(), "/PK", 400);
+            this.database = (DatabaseInlineCore)await EncryptionTests.client.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            this.container = (ContainerInlineCore)await this.database.CreateContainerAsync(Guid.NewGuid().ToString(), "/PK", 400);
         }
 
         [TestCleanup]
@@ -184,7 +184,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ResponseMessage readResponseMessage = await this.container.ReadItemStreamAsync(testDoc.Id, new PartitionKey(testDoc.PK));
             Assert.AreEqual(HttpStatusCode.OK, readResponseMessage.StatusCode);
             Assert.IsNotNull(readResponseMessage.Content);
-            TestDoc readDocEncrypted = TestCommon.Serializer.FromStream<TestDoc>(readResponseMessage.Content);
+            TestDoc readDocEncrypted = TestCommon.SerializerCore.FromStream<TestDoc>(readResponseMessage.Content);
             Assert.AreEqual(testDoc.Id, readDocEncrypted.Id);
             Assert.AreEqual(testDoc.PK, readDocEncrypted.PK);
             Assert.IsNull(readDocEncrypted.Sensitive);

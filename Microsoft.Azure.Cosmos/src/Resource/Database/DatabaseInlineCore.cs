@@ -198,6 +198,21 @@ namespace Microsoft.Azure.Cosmos
             return TaskHelper.RunInlineIfNeededAsync(() => this.database.UpsertUserAsync(id, requestOptions, cancellationToken));
         }
 
+        internal override DataEncryptionKey GetDataEncryptionKey(string id)
+        {
+            return this.database.GetDataEncryptionKey(id);
+        }
+
+        internal override FeedIterator<DataEncryptionKeyProperties> GetDataEncryptionKeyIterator(string startId = null, string endId = null, bool isDescending = false, string continuationToken = null, QueryRequestOptions requestOptions = null)
+        {
+            return this.database.GetDataEncryptionKeyIterator(startId, endId, isDescending, continuationToken, requestOptions);
+        }
+
+        internal override Task<DataEncryptionKeyResponse> CreateDataEncryptionKeyAsync(string id, KeyWrapMetadata keyWrapMetadata, RequestOptions requestOptions = null, CancellationToken cancellationToken = default)
+        {
+            return TaskHelper.RunInlineIfNeededAsync(() => this.database.CreateDataEncryptionKeyAsync(id, keyWrapMetadata, requestOptions, cancellationToken));
+        }
+
         public static implicit operator DatabaseCore(DatabaseInlineCore databaseInlineCore) => databaseInlineCore.database;
     }
 }

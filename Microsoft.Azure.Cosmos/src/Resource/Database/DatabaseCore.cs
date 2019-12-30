@@ -540,13 +540,16 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            FeedIterator dekStreamIterator = this.GetDataEncryptionKeyStreamIterator(startId, endId, isDescending, continuationToken, requestOptions);
+            if (!(this.GetDataEncryptionKeyStreamIterator(startId, endId, isDescending, continuationToken, requestOptions) is FeedIteratorInternal dekStreamIterator))
+            {
+                throw new InvalidOperationException($"Expected FeedIteratorInternal.");
+            }
 
             return new FeedIteratorCore<DataEncryptionKeyProperties>(
                 dekStreamIterator,
                 (responseMessage) =>
                 {
-                    FeedResponse<DataEncryptionKeyProperties> results = this.ClientContext.ResponseFactory.CreateQueryFeedResponseWithPropertySerializer<DataEncryptionKeyProperties>(responseMessage);
+                    FeedResponse<DataEncryptionKeyProperties> results = this.ClientContext.ResponseFactory.CreateQueryFeedResponse<DataEncryptionKeyProperties>(responseMessage, ResourceType.ClientEncryptionKey);
                     foreach (DataEncryptionKeyProperties result in results)
                     {
                         Uri dekUri = DataEncryptionKeyCore.CreateLinkUri(this.ClientContext, this, result.Id);
@@ -621,7 +624,7 @@ namespace Microsoft.Azure.Cosmos
             (byte[] wrappedDek, KeyWrapMetadata updatedMetadata, InMemoryRawDek inMemoryRawDek) = await newDek.WrapAsync(rawDek, keyWrapMetadata, cancellationToken);
 
             DataEncryptionKeyProperties dekProperties = new DataEncryptionKeyProperties(id, wrappedDek, updatedMetadata);
-            Stream streamPayload = this.ClientContext.PropertiesSerializer.ToStream(dekProperties);
+            Stream streamPayload = this.ClientContext.SerializerCore.ToStream(dekProperties);
             Task<ResponseMessage> responseMessage = this.CreateDataEncryptionKeyStreamAsync(
                 streamPayload,
                 requestOptions,

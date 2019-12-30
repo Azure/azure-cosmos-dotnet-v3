@@ -121,6 +121,7 @@ namespace Microsoft.Azure.Cosmos
                 inputType == typeof(TriggerProperties) ||
                 inputType == typeof(UserDefinedFunctionProperties) ||
                 inputType == typeof(UserProperties) ||
+                inputType == typeof(DataEncryptionKeyProperties) ||
                 inputType == typeof(ConflictProperties) ||
                 inputType == typeof(ThroughputProperties) ||
                 inputType == typeof(OfferV2) ||

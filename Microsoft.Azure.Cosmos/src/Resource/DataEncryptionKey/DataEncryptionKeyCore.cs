@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos
             newDekProperties.KeyWrapMetadata = updatedMetadata;
 
             Task<ResponseMessage> responseMessage = this.ProcessStreamAsync(
-                this.ClientContext.PropertiesSerializer.ToStream(newDekProperties),
+                this.ClientContext.SerializerCore.ToStream(newDekProperties),
                 OperationType.Replace,
                 requestOptions,
                 cancellationToken);
