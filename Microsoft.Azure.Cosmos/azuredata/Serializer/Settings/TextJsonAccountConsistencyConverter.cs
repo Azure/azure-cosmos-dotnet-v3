@@ -52,7 +52,7 @@ namespace Azure.Cosmos
 
             writer.WriteStartObject();
 
-            writer.WriteString(Constants.Properties.DefaultConsistencyLevel, JsonSerializer.Serialize(setting.DefaultConsistencyLevel, options));
+            writer.WriteString(Constants.Properties.DefaultConsistencyLevel, setting.DefaultConsistencyLevel.ToString());
 
             writer.WriteNumber(Constants.Properties.MaxStalenessPrefix, setting.MaxStalenessPrefix);
 
