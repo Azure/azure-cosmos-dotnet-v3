@@ -97,12 +97,11 @@ namespace Azure.Cosmos.EmulatorTests
         internal static CosmosClient CreateCosmosClient(Action<CosmosClientBuilder> customizeClientBuilder = null)
         {
             CosmosClientBuilder cosmosClientBuilder = GetDefaultConfiguration();
+            cosmosClientBuilder.WithCustomSerializer(TestCommon.Serializer.Value);
             if (customizeClientBuilder != null)
             {
                 customizeClientBuilder(cosmosClientBuilder);
             }
-
-            cosmosClientBuilder.WithCustomSerializer(TestCommon.Serializer.Value);
 
             return cosmosClientBuilder.Build();
         }
