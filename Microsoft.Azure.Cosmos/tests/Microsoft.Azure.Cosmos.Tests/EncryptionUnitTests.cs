@@ -513,7 +513,7 @@ namespace Microsoft.Azure.Cosmos
                         dekProperties.LastModified = dekProperties.CreatedTime;
                         dekProperties.ETag = Guid.NewGuid().ToString();
                         dekProperties.SelfLink = string.Format(
-                            "dbs/{0}/{1}/{2}",
+                            "dbs/{0}/{1}/{2}/",
                            databaseRid,
                             Paths.ClientEncryptionKeysPathSegment,
                             dekProperties.ResourceId);
@@ -655,7 +655,7 @@ namespace Microsoft.Azure.Cosmos
 
             private static string ParseItemUri(Uri requestUri)
             {
-                string[] segments = requestUri.OriginalString.Split("/");
+                string[] segments = requestUri.OriginalString.Split("/", StringSplitOptions.RemoveEmptyEntries);
                 Assert.AreEqual(6, segments.Length);
                 Assert.AreEqual(Paths.DatabasesPathSegment, segments[0]);
                 Assert.AreEqual(EncryptionUnitTests.DatabaseId, segments[1]);
@@ -667,7 +667,7 @@ namespace Microsoft.Azure.Cosmos
 
             private static string ParseDekUri(Uri requestUri)
             {
-                string[] segments = requestUri.OriginalString.Split("/");
+                string[] segments = requestUri.OriginalString.Split("/", StringSplitOptions.RemoveEmptyEntries);
                 Assert.AreEqual(4, segments.Length);
                 Assert.AreEqual(Paths.DatabasesPathSegment, segments[0]);
                 Assert.AreEqual(EncryptionUnitTests.DatabaseId, segments[1]);

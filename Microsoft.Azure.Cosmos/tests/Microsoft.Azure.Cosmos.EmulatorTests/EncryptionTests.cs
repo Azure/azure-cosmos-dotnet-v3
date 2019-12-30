@@ -82,6 +82,96 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task EncryptionDekReadFeed()
+        {
+            string contosoV1 = "Contoso_v001";
+            string contosoV2 = "Contoso_v002";
+            string fabrikamV1 = "Fabrikam_v001";
+            string fabrikamV2 = "Fabrikam_v002";
+
+            await this.CreateDekAsync(contosoV1);
+            await this.CreateDekAsync(contosoV2);
+            await this.CreateDekAsync(fabrikamV1);
+            await this.CreateDekAsync(fabrikamV2);
+
+            // Test getting all keys
+            await this.IterateDekFeedAsync(
+                new List<string> { contosoV1, contosoV2, fabrikamV1, fabrikamV2 },
+                isResultOrderExpected: false);
+
+            // Test getting specific subset of keys
+            await this.IterateDekFeedAsync(
+                new List<string> { contosoV2 },
+                isResultOrderExpected: false,
+                startId: "Contoso_v000",
+                endId: "Contoso_v999",
+                isDescending: true,
+                itemCountInPage: 1);
+
+            // Test pagination
+            await this.IterateDekFeedAsync(
+                new List<string> { contosoV1, contosoV2, fabrikamV1, fabrikamV2 },
+                isResultOrderExpected: false,
+                itemCountInPage: 3);
+        }
+
+        private async Task IterateDekFeedAsync(
+            List<string> expectedDeks,
+            bool isResultOrderExpected,
+            string startId = null,
+            string endId = null,
+            bool isDescending = false,
+            int? itemCountInPage = null)
+        {
+            int remainingItemCount = expectedDeks.Count;
+            QueryRequestOptions options = null;
+            if(itemCountInPage.HasValue)
+            {
+                options = new QueryRequestOptions()
+                {
+                    MaxItemCount = itemCountInPage
+                };
+            }
+
+            FeedIterator<DataEncryptionKeyProperties> dekIterator = this.database.GetDataEncryptionKeyIterator(
+                startId, endId, isDescending, requestOptions: options);
+
+            Assert.IsTrue(dekIterator.HasMoreResults);
+
+            while (remainingItemCount > 0)
+            {
+                FeedResponse<DataEncryptionKeyProperties> page = await dekIterator.ReadNextAsync();
+                if (itemCountInPage.HasValue)
+                {
+                    Assert.AreEqual(itemCountInPage.Value, page.Count);
+                }
+                else
+                {
+                    Assert.AreEqual(expectedDeks.Count, page.Count);
+                }
+
+                remainingItemCount -= page.Count;
+                Assert.AreEqual(remainingItemCount > 0, dekIterator.HasMoreResults);
+
+                if (isResultOrderExpected)
+                {
+                    int index = 0;
+                    foreach (DataEncryptionKeyProperties dek in page.Resource)
+                    {
+
+                        Assert.AreEqual(expectedDeks[index++], dek.Id);
+                    }
+                }
+                else
+                {
+                    HashSet<string> expectedKeys = new HashSet<string>(expectedDeks);
+                    HashSet<string> readKeys = page.Resource.Select(dek => dek.Id).ToHashSet();
+                    Assert.IsTrue(expectedKeys.SetEquals(readKeys));
+                }
+            }
+        }
+
+        [TestMethod]
         public async Task EncryptionCreateItem()
         {
             await this.CreateDekAsync(EncryptionTests.dekId);
@@ -134,7 +224,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.VerifyItemByReadAsync(replacedDoc);
         }
-
+        
         private static CosmosClient GetClient()
         {
             (string endpoint, string authKey) = TestCommon.GetAccountInfo();

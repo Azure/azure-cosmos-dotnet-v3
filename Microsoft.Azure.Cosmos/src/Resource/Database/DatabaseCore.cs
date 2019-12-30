@@ -545,7 +545,7 @@ namespace Microsoft.Azure.Cosmos
                 });
         }
 
-        public FeedIterator GetDataEncryptionKeyStreamIterator(
+        internal FeedIterator GetDataEncryptionKeyStreamIterator(
             string startId = null,
             string endId = null,
             bool isDescending = false,
