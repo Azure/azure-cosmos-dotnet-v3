@@ -321,8 +321,8 @@ namespace Azure.Cosmos.EmulatorTests
                     pkValue = Cosmos.PartitionKey.None;
                 }
 
-                using Response createdDocument = await container.CreateItemStreamAsync(newtonsoftJsonSerializer.ToStream(documentObject), pkValue);
-                Document insertedDocument = newtonsoftJsonSerializer.FromStream<Document>(createdDocument.ContentStream);
+                JObject createdDocument = await container.CreateItemAsync<JObject>(documentObject, pkValue);
+                Document insertedDocument = Document.FromObject(createdDocument);
 
                 insertedDocuments.Add(insertedDocument);
             }
@@ -2661,8 +2661,6 @@ namespace Azure.Cosmos.EmulatorTests
             }
         }
 
-        // Until we sync with master due to query breaking changes
-        [TestCategory("Quarantine")]
         [TestMethod]
         public async Task TestMixedTypeOrderBy()
         {
