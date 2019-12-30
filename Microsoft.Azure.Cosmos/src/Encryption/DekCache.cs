@@ -12,9 +12,10 @@ namespace Microsoft.Azure.Cosmos
 
     internal class DekCache
     {
-        private readonly AsyncCache<Uri, CachedDekProperties> dekPropertiesByNameLinkUriCache = new AsyncCache<Uri, CachedDekProperties>();
-        private readonly AsyncCache<string, CachedDekProperties> dekPropertiesByRidSelfLinkCache = new AsyncCache<string, CachedDekProperties>();
-        private readonly AsyncCache<string, InMemoryRawDek> rawDekByRidSelfLinkCache = new AsyncCache<string, InMemoryRawDek>();
+        // these are internal for unit testing
+        internal readonly AsyncCache<Uri, CachedDekProperties> dekPropertiesByNameLinkUriCache = new AsyncCache<Uri, CachedDekProperties>();
+        internal readonly AsyncCache<string, CachedDekProperties> dekPropertiesByRidSelfLinkCache = new AsyncCache<string, CachedDekProperties>();
+        internal readonly AsyncCache<string, InMemoryRawDek> rawDekByRidSelfLinkCache = new AsyncCache<string, InMemoryRawDek>();
 
         private readonly TimeSpan dekPropertiesTimeToLive = TimeSpan.FromHours(1);
 

@@ -303,4 +303,7 @@
   <data name="CustomSerializerAndEncryptionNotSupportedTogether" xml:space="preserve">
     <value>A custom serializer may not be used along with client side encryption support.</value>
   </data>
+  <data name="DataEncryptionKeyNotFound" xml:space="preserve">
+    <value>A data encryption key with the provided name was not found - please ensure it has been created.</value>
+  </data>
 </root>

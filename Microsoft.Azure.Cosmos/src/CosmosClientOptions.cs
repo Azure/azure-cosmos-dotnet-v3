@@ -406,7 +406,12 @@ namespace Microsoft.Azure.Cosmos
         /// See <see href="tbd"/> for more information on client-side encryption support in Azure Cosmos DB.
         /// </summary>
         [JsonIgnore]
-        public KeyWrapProvider KeyWrapProvider
+#if PREVIEW
+    public
+#else
+        internal
+#endif
+        KeyWrapProvider KeyWrapProvider
         {
             get => this.keyWrapProvider;
             set

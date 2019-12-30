@@ -1,7 +1,6 @@
 ﻿namespace Cosmos.Samples.Shared
 {
     using System;
-    using Microsoft.Azure.Cosmos;
     using Newtonsoft.Json;
 
     public class SalesOrder
@@ -18,47 +17,27 @@
         public string Id { get; set; }
 
         [JsonProperty(PropertyName = "ponumber")]
-        [CosmosEncryptAttribute]
         public string PurchaseOrderNumber { get; set; }
 
         // used to set expiration policy
         [JsonProperty(PropertyName = "ttl", NullValueHandling = NullValueHandling.Ignore)]
         public int? TimeToLive { get; set; }
 
-        [CosmosEncryptAttribute]
         public DateTime OrderDate { get; set; }
-
-        [CosmosEncryptAttribute]
         public DateTime ShippedDate { get; set; }
-
         public string AccountNumber { get; set; }
-
-        [CosmosEncryptAttribute]
         public decimal SubTotal { get; set; }
-
-        [CosmosEncryptAttribute]
         public decimal TaxAmount { get; set; }
-
-        [CosmosEncryptAttribute]
         public decimal Freight { get; set; }
-
-        [CosmosEncryptAttribute]
         public decimal TotalDue { get; set; }
-
         public SalesOrderDetail[] Items { get; set; }
     }
 
     public class SalesOrderDetail
     {
-        [CosmosEncryptAttribute]
         public int OrderQty { get; set; }
-
-        [CosmosEncryptAttribute]
         public int ProductId { get; set; }
-
-        [CosmosEncryptAttribute]
         public decimal UnitPrice { get; set; }
-
         public decimal LineTotal { get; set; }
     }
 

@@ -101,7 +101,12 @@ namespace Microsoft.Azure.Cosmos
         /// Options to encrypt / decrypt properties of the item.
         /// See <see href="tbd"/> for more information on client-side encryption support in Azure Cosmos DB.
         /// </summary>
-        public EncryptionOptions EncryptionOptions { get; set; }
+#if PREVIEW
+    public
+#else
+        internal
+#endif
+        EncryptionOptions EncryptionOptions { get; set; }
 
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties

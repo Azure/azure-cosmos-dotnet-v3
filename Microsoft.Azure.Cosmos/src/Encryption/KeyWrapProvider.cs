@@ -11,7 +11,12 @@ namespace Microsoft.Azure.Cosmos
     /// Interface for interacting with a provider that can be used to wrap (encrypt) and unwrap (decrypt) data encryption keys for envelope based encryption.
     /// See https://tbd for more information on client-side encryption support in Azure Cosmos DB.
     /// </summary>
-    public abstract class KeyWrapProvider
+#if PREVIEW
+    public
+#else
+    internal
+#endif
+        abstract class KeyWrapProvider
     {
         /// <summary>
         /// Wraps (i.e. encrypts) the provided data encryption key.

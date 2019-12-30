@@ -7,7 +7,12 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Response from a <see cref="KeyWrapProvider"/> on wrapping a data encryption key.
     /// </summary>
-    public class KeyWrapResponse
+#if PREVIEW
+    public
+#else
+    internal
+#endif
+        class KeyWrapResponse
     {
         /// <summary>
         /// Initializes a new instance of the response of wrapping a data encryption key.

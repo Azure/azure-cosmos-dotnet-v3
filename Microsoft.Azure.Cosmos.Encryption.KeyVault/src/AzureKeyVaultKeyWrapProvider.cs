@@ -8,7 +8,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.KeyVault
     using System.Threading;
     using System.Threading.Tasks;
 
-    public class AzureKeyVaultKeyWrapProvider : KeyWrapProvider
+#if PREVIEW
+    public
+#else
+        internal
+#endif
+        class AzureKeyVaultKeyWrapProvider : KeyWrapProvider
     {
         private static KeyVaultAccessClientFactory keyVaultAccessClientFactory = new KeyVaultAccessClientFactory();
         private IKeyVaultAccessClient keyVaultAccessClient;

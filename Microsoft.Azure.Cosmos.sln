@@ -15,8 +15,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.Cosmos.Encr
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.Cosmos.Direct", "..\C1\Product\SDK\.net\Microsoft.Azure.Cosmos.Direct\src\Microsoft.Azure.Cosmos.Direct.csproj", "{8758A6A7-0880-4705-B1D7-037C2B3A9E99}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Encryption", "Microsoft.Azure.Cosmos.Samples\Usage\Encryption\Encryption.csproj", "{8CA04828-8318-4CDB-8D59-5484E1B6AE87}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Shared", "Microsoft.Azure.Cosmos.Samples\Usage\Shared\Shared.csproj", "{0F32BECF-9CD9-4AEE-912C-0EA44CD3D14A}"
 EndProject
 Global
@@ -137,24 +135,6 @@ Global
 		{8758A6A7-0880-4705-B1D7-037C2B3A9E99}.Release|x64.Build.0 = Release|x64
 		{8758A6A7-0880-4705-B1D7-037C2B3A9E99}.Release|x86.ActiveCfg = Release|x86
 		{8758A6A7-0880-4705-B1D7-037C2B3A9E99}.Release|x86.Build.0 = Release|x86
-		{8CA04828-8318-4CDB-8D59-5484E1B6AE87}.Cover|Any CPU.ActiveCfg = Debug|Any CPU
-		{8CA04828-8318-4CDB-8D59-5484E1B6AE87}.Cover|Any CPU.Build.0 = Debug|Any CPU
-		{8CA04828-8318-4CDB-8D59-5484E1B6AE87}.Cover|x64.ActiveCfg = Debug|Any CPU
-		{8CA04828-8318-4CDB-8D59-5484E1B6AE87}.Cover|x64.Build.0 = Debug|Any CPU
-		{8CA04828-8318-4CDB-8D59-5484E1B6AE87}.Cover|x86.ActiveCfg = Debug|Any CPU
-		{8CA04828-8318-4CDB-8D59-5484E1B6AE87}.Cover|x86.Build.0 = Debug|Any CPU
-		{8CA04828-8318-4CDB-8D59-5484E1B6AE87}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{8CA04828-8318-4CDB-8D59-5484E1B6AE87}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{8CA04828-8318-4CDB-8D59-5484E1B6AE87}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{8CA04828-8318-4CDB-8D59-5484E1B6AE87}.Debug|x64.Build.0 = Debug|Any CPU
-		{8CA04828-8318-4CDB-8D59-5484E1B6AE87}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{8CA04828-8318-4CDB-8D59-5484E1B6AE87}.Debug|x86.Build.0 = Debug|Any CPU
-		{8CA04828-8318-4CDB-8D59-5484E1B6AE87}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{8CA04828-8318-4CDB-8D59-5484E1B6AE87}.Release|Any CPU.Build.0 = Release|Any CPU
-		{8CA04828-8318-4CDB-8D59-5484E1B6AE87}.Release|x64.ActiveCfg = Release|Any CPU
-		{8CA04828-8318-4CDB-8D59-5484E1B6AE87}.Release|x64.Build.0 = Release|Any CPU
-		{8CA04828-8318-4CDB-8D59-5484E1B6AE87}.Release|x86.ActiveCfg = Release|Any CPU
-		{8CA04828-8318-4CDB-8D59-5484E1B6AE87}.Release|x86.Build.0 = Release|Any CPU
 		{0F32BECF-9CD9-4AEE-912C-0EA44CD3D14A}.Cover|Any CPU.ActiveCfg = Debug|Any CPU
 		{0F32BECF-9CD9-4AEE-912C-0EA44CD3D14A}.Cover|Any CPU.Build.0 = Debug|Any CPU
 		{0F32BECF-9CD9-4AEE-912C-0EA44CD3D14A}.Cover|x64.ActiveCfg = Debug|Any CPU

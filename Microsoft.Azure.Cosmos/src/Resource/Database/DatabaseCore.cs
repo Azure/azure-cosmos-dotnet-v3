@@ -498,7 +498,12 @@ namespace Microsoft.Azure.Cosmos
             return new ContainerBuilder(this, this.ClientContext, name, partitionKeyPath);
         }
 
-        public override DataEncryptionKey GetDataEncryptionKey(string id)
+#if PREVIEW
+    public
+#else
+        internal
+#endif
+        override DataEncryptionKey GetDataEncryptionKey(string id)
         {
             if (string.IsNullOrEmpty(id))
             {
@@ -511,7 +516,12 @@ namespace Microsoft.Azure.Cosmos
                     id);
         }
 
-        public override FeedIterator<DataEncryptionKeyProperties> GetDataEncryptionKeyIterator(
+#if PREVIEW
+    public
+#else
+        internal
+#endif
+        override FeedIterator<DataEncryptionKeyProperties> GetDataEncryptionKeyIterator(
             string startId = null,
             string endId = null,
             bool isDescending = false,
@@ -564,7 +574,12 @@ namespace Microsoft.Azure.Cosmos
                usePropertySerializer: true);
         }
 
-        public override async Task<DataEncryptionKeyResponse> CreateDataEncryptionKeyAsync(
+#if PREVIEW
+    public
+#else
+        internal
+#endif
+        override async Task<DataEncryptionKeyResponse> CreateDataEncryptionKeyAsync(
             string id,
             KeyWrapMetadata keyWrapMetadata,
             RequestOptions requestOptions = null,

@@ -7,7 +7,12 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Options around encryption / decryption of data.
     /// </summary>
-    public class EncryptionOptions
+#if PREVIEW
+    public
+#else
+    internal
+#endif
+        class EncryptionOptions
     {
         /// <summary>
         /// Reference to encryption key to be used for encryption / decrytion of data.

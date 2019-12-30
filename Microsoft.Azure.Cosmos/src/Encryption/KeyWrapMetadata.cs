@@ -12,7 +12,12 @@ namespace Microsoft.Azure.Cosmos
     /// Metadata that a key wrapping provider can use to wrap/unwrap keys.
     /// <seealso cref="KeyWrapProvider" />
     /// </summary>
-    public class KeyWrapMetadata : IEquatable<KeyWrapMetadata>
+#if PREVIEW
+    public
+#else
+    internal
+#endif
+         class KeyWrapMetadata : IEquatable<KeyWrapMetadata>
     {
         /// <summary>
         /// Creates a new instance of key wrap metadata.

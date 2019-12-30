@@ -865,7 +865,13 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract DataEncryptionKey GetDataEncryptionKey(string id);
+#if PREVIEW
+    public
+#else
+
+        internal
+#endif
+        abstract DataEncryptionKey GetDataEncryptionKey(string id);
 
         /// <summary>
         /// Returns an iterator that can be iterated to get properties of data encryption keys.
@@ -894,7 +900,12 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// <see cref="DataEncryptionKey.ReadAsync" /> is recommended for single data encryption key look-up.
         /// </remarks>
-        public abstract FeedIterator<DataEncryptionKeyProperties> GetDataEncryptionKeyIterator(
+#if PREVIEW
+    public
+#else
+        internal
+#endif
+        abstract FeedIterator<DataEncryptionKeyProperties> GetDataEncryptionKeyIterator(
             string startId = null,
             string endId = null,
             bool isDescending = false,
@@ -937,7 +948,12 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<DataEncryptionKeyResponse> CreateDataEncryptionKeyAsync(
+#if PREVIEW
+    public
+#else
+        internal
+#endif
+        abstract Task<DataEncryptionKeyResponse> CreateDataEncryptionKeyAsync(
             string id,
             KeyWrapMetadata keyWrapMetadata,
             RequestOptions requestOptions = null,

@@ -9,7 +9,12 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Metadata used by Azure Key Vault to wrap (encrypt) and unwrap (decrypt) keys.
     /// </summary>
-    public class AzureKeyVaultKeyWrapMetadata : KeyWrapMetadata
+#if PREVIEW
+    public
+#else
+        internal
+#endif
+        class AzureKeyVaultKeyWrapMetadata : KeyWrapMetadata
     {
         internal static string TypeConstant = "akv";
 

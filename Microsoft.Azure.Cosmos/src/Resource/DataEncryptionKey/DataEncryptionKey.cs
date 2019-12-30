@@ -13,7 +13,12 @@ namespace Microsoft.Azure.Cosmos
     /// See <see cref="Database"/> for operations to create and enumerate data encryption keys.
     /// See https://tbd for more information on client-side encryption support in Azure Cosmos DB.
     /// </summary>
-    public abstract class DataEncryptionKey
+#if PREVIEW
+    public
+#else
+    internal
+#endif
+        abstract class DataEncryptionKey
     {
         /// <summary>
         /// The unique identifier of the data encryption key.

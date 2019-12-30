@@ -277,6 +277,15 @@ namespace Microsoft.Azure.Cosmos {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to A data encryption key with the provided name was not found - please ensure it has been created..
+        /// </summary>
+        internal static string DataEncryptionKeyNotFound {
+            get {
+                return ResourceManager.GetString("DataEncryptionKeyNotFound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Expected valid byte[] value for {0} and string value for {1} when either property is set..
         /// </summary>
         internal static string EpkPropertiesPairingExpected {

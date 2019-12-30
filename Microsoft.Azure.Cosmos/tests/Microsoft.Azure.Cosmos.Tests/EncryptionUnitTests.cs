@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos
         private Mock<DatabaseCore> mockDatabaseCore;
 
         [TestMethod]
-        public void EncryptionKeyWrapProviderNotUsedWithCustomSerializer()
+        public void EncryptionUTKeyWrapProviderNotUsedWithCustomSerializer()
         {
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions();
             cosmosClientOptions.Serializer = new Mock<CosmosSerializer>().Object;
@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        public void EncryptionKeyWrapProviderSetInOptions()
+        public void EncryptionUTKeyWrapProviderSetInOptions()
         {
             KeyWrapProvider keyWrapProvider = new Mock<KeyWrapProvider>().Object;
             CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("http://localhost", Guid.NewGuid().ToString()).WithKeyWrapProvider(keyWrapProvider);
@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        public async Task EncryptionWriteDekWithoutKeyWrapProvider()
+        public async Task EncryptionUTWriteDekWithoutKeyWrapProvider()
         {
             Database database = ((ContainerCore)this.GetContainer()).Database;
 
@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        public async Task EncryptionCreateDek()
+        public async Task EncryptionUTCreateDek()
         {
             EncryptionTestHandler encryptionTestHandler = new EncryptionTestHandler();
             Container container = this.GetContainerWithMockSetup(encryptionTestHandler);
@@ -101,6 +101,7 @@ namespace Microsoft.Azure.Cosmos
             DataEncryptionKeyResponse dekResponse = await database.CreateDataEncryptionKeyAsync(dekId, this.metadata1);
             Assert.AreEqual(HttpStatusCode.Created, dekResponse.StatusCode);
             Assert.AreEqual(requestCharge, dekResponse.RequestCharge);
+            Assert.IsNotNull(dekResponse.ETag);
 
             DataEncryptionKeyProperties dekProperties = dekResponse.Resource;
             Assert.IsNotNull(dekProperties);
@@ -146,7 +147,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        public async Task EncryptionRewrapDek()
+        public async Task EncryptionUTRewrapDek()
         {
             EncryptionTestHandler encryptionTestHandler = new EncryptionTestHandler();
             Container container = this.GetContainerWithMockSetup(encryptionTestHandler);
@@ -190,7 +191,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        public async Task EncryptionCreateItemWithUnknownDek()
+        public async Task EncryptionUTCreateItemWithUnknownDek()
         {
             EncryptionTestHandler encryptionTestHandler = new EncryptionTestHandler();
             Container container = this.GetContainerWithMockSetup(encryptionTestHandler);
@@ -214,12 +215,12 @@ namespace Microsoft.Azure.Cosmos
             }
             catch(CosmosException ex)
             {
-                // Assert.IsTrue() // todo: put a good message
+                Assert.IsTrue(ex.Message.Contains(ClientResources.DataEncryptionKeyNotFound));
             }
         }
 
         [TestMethod]
-        public async Task EncryptionCreateItem()
+        public async Task EncryptionUTCreateItem()
         {
             EncryptionTestHandler encryptionTestHandler = new EncryptionTestHandler();
             Container container = this.GetContainerWithMockSetup(encryptionTestHandler);
@@ -257,7 +258,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        public async Task EncryptionReadItem()
+        public async Task EncryptionUTReadItem()
         {
             EncryptionTestHandler encryptionTestHandler = new EncryptionTestHandler();
             Container container = this.GetContainerWithMockSetup(encryptionTestHandler);
@@ -270,7 +271,6 @@ namespace Microsoft.Azure.Cosmos
 
             ItemResponse<MyItem> readResponse = await container.ReadItemAsync<MyItem>(item.Id, new PartitionKey(item.PK));
             Assert.AreEqual(item, readResponse.Resource);
-
         }
 
         private static async Task<MyItem> CreateItemAsync(Container container, string dekId)
@@ -510,7 +510,7 @@ namespace Microsoft.Azure.Cosmos
                         string databaseRid = ResourceId.NewDatabaseId(1).ToString();
                         dekProperties.ResourceId = ResourceId.NewClientEncryptionKeyId(databaseRid, (uint)this.Received.Count).ToString();
                         dekProperties.CreatedTime = DateTime.UtcNow;
-                        dekProperties.LastModified = dekProperties.CreatedTime + TimeSpan.FromSeconds(1);
+                        dekProperties.LastModified = dekProperties.CreatedTime;
                         dekProperties.ETag = Guid.NewGuid().ToString();
                         dekProperties.SelfLink = string.Format(
                             "dbs/{0}/{1}/{2}",
@@ -537,7 +537,7 @@ namespace Microsoft.Azure.Cosmos
                     {
                         string dekId = EncryptionTestHandler.ParseDekUri(request.RequestUri);
                         dekProperties = this.serializer.FromStream<DataEncryptionKeyProperties>(request.Content);
-                        dekProperties.LastModified = DateTime.UtcNow + TimeSpan.FromSeconds(2);
+                        dekProperties.LastModified = DateTime.UtcNow + TimeSpan.FromSeconds(1);
                         dekProperties.ETag = Guid.NewGuid().ToString();
 
                         httpStatusCode = HttpStatusCode.OK;

@@ -11,7 +11,7 @@
     <ProjectReference Include="..\..\Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj" />
   </ItemGroup>
   
-  <PropertyGroup Condition=" '$(ProjectRef)' != 'True' ">
+  <PropertyGroup>
     <SignAssembly>true</SignAssembly>
     <DelaySign>true</DelaySign>
     <AssemblyOriginatorKeyFile>..\..\35MSSharedLib1024.snk</AssemblyOriginatorKeyFile>

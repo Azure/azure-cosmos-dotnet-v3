@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.IO;
     using System.Linq;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
@@ -127,7 +128,17 @@ namespace Microsoft.Azure.Cosmos
 
         internal async Task<(DataEncryptionKeyProperties, InMemoryRawDek)> FetchUnwrappedAsync(CancellationToken cancellationToken)
         {
-            DataEncryptionKeyProperties dekProperties = await this.ClientContext.DekCache.GetOrAddByNameLinkUriAsync(this.LinkUri, this.Database.Id, this.ReadResourceAsync, cancellationToken);
+            DataEncryptionKeyProperties dekProperties = null;
+
+            try
+            {
+                dekProperties = await this.ClientContext.DekCache.GetOrAddByNameLinkUriAsync(this.LinkUri, this.Database.Id, this.ReadResourceAsync, cancellationToken);
+            }
+            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+            {
+                throw new CosmosException(HttpStatusCode.NotFound, ClientResources.DataEncryptionKeyNotFound, inner: ex);
+            }
+
             InMemoryRawDek inMemoryRawDek = await this.ClientContext.DekCache.GetOrAddRawDekAsync(dekProperties, this.UnwrapAsync, cancellationToken);
             return (dekProperties, inMemoryRawDek);
         }
@@ -135,12 +146,22 @@ namespace Microsoft.Azure.Cosmos
         internal async Task<(DataEncryptionKeyProperties, InMemoryRawDek)> FetchUnwrappedByRidAsync(string rid, CancellationToken cancellationToken)
         {
             string dekRidSelfLink = PathsHelper.GeneratePath(ResourceType.ClientEncryptionKey, rid, isFeed: false);
+            // Server self links end with / but client generate links don't - match them.
             if (!dekRidSelfLink.EndsWith("/"))
             {
                 dekRidSelfLink += "/";
             }
 
-            DataEncryptionKeyProperties dekProperties = await this.ClientContext.DekCache.GetOrAddByRidSelfLinkAsync(dekRidSelfLink, this.Database.Id, this.ReadResourceByRidSelfLinkAsync, cancellationToken);
+            DataEncryptionKeyProperties dekProperties = null;
+            try
+            {
+                dekProperties = await this.ClientContext.DekCache.GetOrAddByRidSelfLinkAsync(dekRidSelfLink, this.Database.Id, this.ReadResourceByRidSelfLinkAsync, cancellationToken);
+            }
+            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+            {
+                throw new CosmosException(HttpStatusCode.NotFound, ClientResources.DataEncryptionKeyNotFound, inner: ex);
+            }
+
             InMemoryRawDek inMemoryRawDek = await this.ClientContext.DekCache.GetOrAddRawDekAsync(dekProperties, this.UnwrapAsync, cancellationToken);
             return (dekProperties, inMemoryRawDek);
         }
