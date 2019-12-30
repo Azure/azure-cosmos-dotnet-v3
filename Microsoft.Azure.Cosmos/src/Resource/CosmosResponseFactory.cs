@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Scripts;
 
@@ -69,17 +70,34 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal Task<ItemResponse<T>> CreateItemResponseAsync<T>(
-            Task<ResponseMessage> cosmosResponseMessageTask)
+            Task<ResponseMessage> cosmosResponseMessageTask,
+            Container container,
+            CancellationToken cancellationToken)
         {
-            return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
+            ContainerCore containerCore = (ContainerCore)container;
+
+            // We use this as a way to detect whether customer may be using client side encryption instead of parsing the document
+            // or taking in an explicit option to decrypt fields. We don't want to rely on the current state of attributes on the POCO for decryption.
+            if (containerCore == null || containerCore.ClientContext.ClientOptions.KeyWrapProvider == null)
             {
-                T item = this.ToObjectInternal<T>(cosmosResponseMessage, this.cosmosSerializer);
-                return new ItemResponse<T>(
-                    cosmosResponseMessage.StatusCode,
-                    cosmosResponseMessage.Headers,
-                    item,
-                    cosmosResponseMessage.Diagnostics);
-            });
+                return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
+                {
+                    T item = this.ToObjectInternal<T>(cosmosResponseMessage, this.cosmosSerializer);
+                    return new ItemResponse<T>(
+                        cosmosResponseMessage.StatusCode,
+                        cosmosResponseMessage.Headers,
+                        item,
+                        cosmosResponseMessage.Diagnostics);
+                });
+            }
+            else
+            {
+                return this.ProcessItemMessageWithEncryptionAsync<T>(
+                    cosmosResponseMessageTask,
+                    this.cosmosSerializer,
+                    containerCore,
+                    cancellationToken);
+            }
         }
 
         internal Task<ContainerResponse> CreateContainerResponseAsync(
@@ -131,18 +149,18 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal Task<DataEncryptionKeyResponse> CreateDataEncryptionKeyResponseAsync(
-            DataEncryptionKey key,
+            DataEncryptionKey dataEncryptionKey,
             Task<ResponseMessage> cosmosResponseMessageTask)
         {
             return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                DataEncryptionKeyProperties keyProperties = this.ToObjectInternal<DataEncryptionKeyProperties>(cosmosResponseMessage, this.propertiesSerializer);
+                DataEncryptionKeyProperties dekProperties = this.ToObjectInternal<DataEncryptionKeyProperties>(cosmosResponseMessage, this.propertiesSerializer);
 
                 return new DataEncryptionKeyResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
-                    keyProperties,
-                    key,
+                    dekProperties,
+                    dataEncryptionKey,
                     cosmosResponseMessage.Diagnostics);
             });
         }
@@ -251,6 +269,31 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return jsonSerializer.FromStream<T>(cosmosResponseMessage.Content);
+        }
+
+        private async Task<ItemResponse<T>> ProcessItemMessageWithEncryptionAsync<T>(
+            Task<ResponseMessage> cosmosResponseTask,
+            CosmosSerializer jsonSerializer,
+            ContainerCore containerCore,
+            CancellationToken cancellationToken)
+        {
+            using (ResponseMessage responseMessage = await cosmosResponseTask)
+            {
+                //Throw the exception
+                responseMessage.EnsureSuccessStatusCode();
+
+                T item = default(T);
+                if (responseMessage.Content != null)
+                {
+                    item = await EncryptionHelper.DecryptAsync<T>(responseMessage.Content, containerCore.Database, cancellationToken);
+                }
+
+                return new ItemResponse<T>(
+                    responseMessage.StatusCode,
+                    responseMessage.Headers,
+                    item,
+                    responseMessage.Diagnostics);
+            }
         }
     }
 }

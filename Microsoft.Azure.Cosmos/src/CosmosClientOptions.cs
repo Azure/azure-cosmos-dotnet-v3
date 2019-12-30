@@ -405,6 +405,7 @@ namespace Microsoft.Azure.Cosmos
         /// The key wrapping provider to use to wrap and unwrap keys while using client side encryption support.
         /// See <see href="tbd"/> for more information on client-side encryption support in Azure Cosmos DB.
         /// </summary>
+        [JsonIgnore]
         public KeyWrapProvider KeyWrapProvider
         {
             get => this.keyWrapProvider;

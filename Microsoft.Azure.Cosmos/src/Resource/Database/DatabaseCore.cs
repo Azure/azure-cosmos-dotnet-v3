@@ -527,7 +527,8 @@ namespace Microsoft.Azure.Cosmos
                     FeedResponse<DataEncryptionKeyProperties> results = this.ClientContext.ResponseFactory.CreateQueryFeedResponseWithPropertySerializer<DataEncryptionKeyProperties>(responseMessage);
                     foreach (DataEncryptionKeyProperties result in results)
                     {
-                        this.ClientContext.DekCache.AddOrUpdate(new InMemoryDekProperties(result));
+                        Uri dekUri = DataEncryptionKeyCore.CreateLinkUri(this.ClientContext, this, result.Id);
+                        this.ClientContext.DekCache.Set(this.Id, dekUri, result);
                     }
 
                     return results;
@@ -556,7 +557,7 @@ namespace Microsoft.Azure.Cosmos
             return new FeedIteratorCore(
                clientContext: this.ClientContext,
                resourceLink: this.LinkUri,
-               resourceType: ResourceType.Key, // todo
+               resourceType: ResourceType.ClientEncryptionKey,
                queryDefinition: null,
                continuationToken: continuationToken,
                options: requestOptions,
@@ -586,42 +587,23 @@ namespace Microsoft.Azure.Cosmos
 
             this.ClientContext.ValidateResource(id);
 
-            DataEncryptionKeyCore newDek = new DataEncryptionKeyCore(this.ClientContext, this, id);
+            DataEncryptionKeyCore newDek = (DataEncryptionKeyCore)this.GetDataEncryptionKey(id);
 
-            byte[] rawDek = DataEncryptionKeyCore.GenerateKey();
-            (DataEncryptionKeyProperties dekProperties, TimeSpan cacheTtl) = await newDek.WrapAsync(rawDek, keyWrapMetadata);
+            byte[] rawDek = newDek.GenerateKey();
 
+            (byte[] wrappedDek, KeyWrapMetadata updatedMetadata, InMemoryRawDek inMemoryRawDek) = await newDek.WrapAsync(rawDek, keyWrapMetadata, cancellationToken);
+
+            DataEncryptionKeyProperties dekProperties = new DataEncryptionKeyProperties(id, wrappedDek, updatedMetadata);
             Stream streamPayload = this.ClientContext.PropertiesSerializer.ToStream(dekProperties);
-            Task<ResponseMessage> response = this.CreateDataEncryptionKeyStreamAsync(
+            Task<ResponseMessage> responseMessage = this.CreateDataEncryptionKeyStreamAsync(
                 streamPayload,
                 requestOptions,
                 cancellationToken);
 
-            DataEncryptionKeyResponse dekResponse = await this.ClientContext.ResponseFactory.CreateDataEncryptionKeyResponseAsync(newDek, response);
-            this.ClientContext.DekCache.AddOrUpdate(new InMemoryDekProperties(dekResponse.Resource, rawDek, cacheTtl));
+            DataEncryptionKeyResponse dekResponse = await this.ClientContext.ResponseFactory.CreateDataEncryptionKeyResponseAsync(newDek, responseMessage);
+            this.ClientContext.DekCache.Set(this.Id, newDek.LinkUri, dekResponse.Resource);
+            this.ClientContext.DekCache.SetRawDek(dekResponse.Resource.SelfLink, inMemoryRawDek);
             return dekResponse;
-        }
-
-        public Task<ResponseMessage> CreateDataEncryptionKeyStreamAsync(
-            Stream streamPayload,
-            RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
-        {
-            if (streamPayload == null)
-            {
-                throw new ArgumentNullException(nameof(streamPayload));
-            }
-
-            return this.ClientContext.ProcessResourceOperationStreamAsync(
-                resourceUri: this.LinkUri,
-                resourceType: ResourceType.Key, // todo
-                operationType: OperationType.Create,
-                cosmosContainerCore: null,
-                partitionKey: null,
-                streamPayload: streamPayload,
-                requestOptions: requestOptions,
-                requestEnricher: null,
-                cancellationToken: cancellationToken);
         }
 
         internal void ValidateContainerProperties(ContainerProperties containerProperties)
@@ -698,6 +680,28 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload: streamPayload,
                 throughput: throughput,
                 requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+        }
+
+        private Task<ResponseMessage> CreateDataEncryptionKeyStreamAsync(
+            Stream streamPayload,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (streamPayload == null)
+            {
+                throw new ArgumentNullException(nameof(streamPayload));
+            }
+
+            return this.ClientContext.ProcessResourceOperationStreamAsync(
+                resourceUri: this.LinkUri,
+                resourceType: ResourceType.ClientEncryptionKey,
+                operationType: OperationType.Create,
+                cosmosContainerCore: null,
+                partitionKey: null,
+                streamPayload: streamPayload,
+                requestOptions: requestOptions,
+                requestEnricher: null,
                 cancellationToken: cancellationToken);
         }
 

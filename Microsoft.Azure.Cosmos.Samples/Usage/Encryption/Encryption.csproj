@@ -19,6 +19,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\..\Microsoft.Azure.Cosmos.Encryption.KeyVault\src\Microsoft.Azure.Cosmos.Encryption.KeyVault.csproj" />
     <ProjectReference Include="..\..\..\Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj" />
     <ProjectReference Include="..\Shared\Shared.csproj" />
   </ItemGroup>

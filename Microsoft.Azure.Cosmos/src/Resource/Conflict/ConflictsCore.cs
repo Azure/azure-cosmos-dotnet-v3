@@ -164,7 +164,7 @@ namespace Microsoft.Azure.Cosmos
                 requestEnricher: null,
                 cancellationToken: cancellationToken);
 
-            return await this.clientContext.ResponseFactory.CreateItemResponseAsync<T>(response);
+            return await this.clientContext.ResponseFactory.CreateItemResponseAsync<T>(response, this.container, cancellationToken);
         }
 
         public override T ReadConflictContent<T>(ConflictProperties cosmosConflict)

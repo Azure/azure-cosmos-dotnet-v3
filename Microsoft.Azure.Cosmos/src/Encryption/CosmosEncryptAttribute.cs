@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos
 
     /// <summary> 
     /// Attribute to be added on properties that need to be encrypted.
-    /// See <see href="tbd"/> for more information on client-side encryption support in Azure Cosmos DB.
+    /// See https://tbd for more information on client-side encryption support in Azure Cosmos DB.
     /// </summary>
     public class CosmosEncryptAttribute : Attribute
     {

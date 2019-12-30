@@ -2,9 +2,11 @@
 {
     using System;
     using System.Diagnostics;
+    using System.Security.Cryptography.X509Certificates;
     using System.Threading.Tasks;
     using Cosmos.Samples.Shared;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.Encryption.KeyVault;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Extensions.Configuration;
     using Newtonsoft.Json;
@@ -88,19 +90,39 @@
             string clientId = configuration["ClientId"];
             if (string.IsNullOrEmpty(clientId))
             {
-                throw new ArgumentNullException("Please specify a valid clientId in the appSettings.json");
+                throw new ArgumentNullException("Please specify a valid ClientId in the appSettings.json");
             }
 
-            string clientSecret = configuration["ClientSecret"];
-            if (string.IsNullOrEmpty(clientSecret))
+            // Certificate's public key must be at least 2048 bits.
+            string clientCertThumbprint = configuration["ClientCertThumbprint"];
+            if (string.IsNullOrEmpty(clientCertThumbprint))
             {
-                throw new ArgumentNullException("Please specify a valid clientSecret in the appSettings.json");
+                throw new ArgumentNullException("Please specify a valid ClientCertThumbprint in the appSettings.json");
             }
 
+            TimeSpan rawDataEncryptionKeyCacheTimeToLive = TimeSpan.FromHours(1);
             CosmosClient client = new CosmosClientBuilder(endpoint, authKey)
-                .WithKeyWrapProvider(new AzureKeyVaultKeyWrapProvider(clientId, clientSecret))
+                .WithKeyWrapProvider(new AzureKeyVaultKeyWrapProvider(
+                    clientId, 
+                    Program.GetCertificate(clientCertThumbprint), 
+                    rawDataEncryptionKeyCacheTimeToLive))
                 .Build();
             return client;
+        }
+
+        private static X509Certificate2 GetCertificate(string clientCertThumbprint)
+        {
+            X509Store store = new X509Store(StoreName.My, StoreLocation.LocalMachine);
+            store.Open(OpenFlags.ReadOnly);
+            X509Certificate2Collection certs = store.Certificates.Find(X509FindType.FindByThumbprint, clientCertThumbprint, true);
+            store.Close();
+            
+            if(certs.Count == 0)
+            {
+                throw new ArgumentException("Certificate with thumbprint not found in LocalMachine certificate store");
+            }
+
+            return certs[0];
         }
 
         /// <summary>
@@ -123,18 +145,18 @@
 
 
             // Master key identifier: https://{keyvault-name}.vault.azure.net/{object-type}/{object-name}/{object-version}
-            string masterKeyUrl = configuration["masterKeyUrl"];
+            string masterKeyUrl = configuration["MasterKeyUrl"];
             if (string.IsNullOrEmpty(masterKeyUrl))
             {
-                throw new ArgumentException("Please specify a valid masterKeyUrl in the appSettings.json");
+                throw new ArgumentException("Please specify a valid MasterKeyUrl in the appSettings.json");
             }
 
-            AzureKeyVaultKeyWrapMetadata wrapMetadata = new AzureKeyVaultKeyWrapMetadata(masterKeyUrl);
+            AzureKeyVaultKeyWrapMetadata wrapMetadata = new AzureKeyVaultKeyWrapMetadata(new Uri(masterKeyUrl));
 
             /// Generates an encryption key, wraps it using the key wrap metadata provided
             /// with the key wrapping provider configured on the client
             /// and saves the wrapped encryption key as an asynchronous operation in the Azure Cosmos service.
-            await database.CreateDataEncryptionKeyAsync(myEncryptionKeyName, wrapMetadata, clientCacheTimeToLive: TimeSpan.FromHours(1));
+            await database.CreateDataEncryptionKeyAsync(myEncryptionKeyName, wrapMetadata);
         }
 
         private static async Task RunDemoAsync(CosmosClient client)

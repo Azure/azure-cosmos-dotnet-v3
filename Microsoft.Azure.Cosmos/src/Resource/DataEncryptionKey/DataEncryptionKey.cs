@@ -11,8 +11,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Provides operations for reading, re-wrapping, or deleting a specific data encryption key by Id.
     /// See <see cref="Database"/> for operations to create and enumerate data encryption keys.
-    /// See <see href="http://tbd"/> for details of using client side encryption to encrypt sensitive information where
-    /// the raw encryption keys are never revealed to the Azure Cosmos service.
+    /// See https://tbd for more information on client-side encryption support in Azure Cosmos DB.
     /// </summary>
     public abstract class DataEncryptionKey
     {
