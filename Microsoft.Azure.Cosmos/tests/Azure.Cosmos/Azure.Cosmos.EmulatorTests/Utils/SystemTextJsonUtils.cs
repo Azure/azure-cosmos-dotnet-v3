@@ -4,57 +4,58 @@
 
 namespace Azure.Cosmos.EmulatorTests
 {
-    using System.Collections.Generic;
+    using System;
     using System.Text.Json;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     public static class SystemTextJsonUtils
     {
-        public static T ToObject<T>(this JsonElement element)
+        public static void AssertJsonElementEquals(
+            object expected,
+            object actual,
+            string message = "")
         {
-            string json = element.GetRawText();
-            return JsonSerializer.Deserialize<T>(json);
-        }
-
-        public static T ToObject<T>(this JsonDocument document)
-        {
-            string json = document.RootElement.GetRawText();
-            return JsonSerializer.Deserialize<T>(json);
-        }
-
-        public static string ParseStringProperty(Dictionary<string, object> document, string propertyName)
-        {
-            if (document[propertyName] is JsonElement)
+            if (actual !is JsonElement
+                && actual! is JsonDocument)
             {
-                return ((JsonElement)document[propertyName]).GetString();
+                Assert.AreEqual(expected, actual, message);
             }
-
-            return (string)document[propertyName];
-        }
-
-        public static int ParseIntProperty(Dictionary<string, object> document, string propertyName)
-        {
-            if (document[propertyName] is JsonElement)
+            else
             {
-                return ((JsonElement)document[propertyName]).GetInt32();
+                JsonElement jsonElement = (JsonElement)actual;
+                if (expected is string)
+                {
+                    Assert.AreEqual(expected, jsonElement.GetString(), message);
+                    return;
+                }
+                else if (expected is int)
+                {
+                    Assert.AreEqual(expected, jsonElement.GetInt32(), message);
+                    return;
+                }
+                else if (expected is long)
+                {
+                    Assert.AreEqual(expected, jsonElement.GetInt64(), message);
+                    return;
+                }
+                else if (expected is double)
+                {
+                    Assert.AreEqual(expected, jsonElement.GetDouble(), message);
+                    return;
+                }
+                else if (expected is bool)
+                {
+                    Assert.AreEqual(expected, jsonElement.GetBoolean(), message);
+                    return;
+                }
+                else if (expected == null)
+                {
+                    Assert.IsTrue(jsonElement.ValueKind == JsonValueKind.Null, message);
+                    return;
+                }
+
+                throw new NotSupportedException("Cannot compare JsonElement to object " + expected.GetType().FullName);
             }
-
-            return (int)document[propertyName];
-        }
-
-        public static double ParseDoubleProperty(Dictionary<string, object> document, string propertyName)
-        {
-            if (document[propertyName] is JsonElement)
-            {
-                return ((JsonElement)document[propertyName]).GetDouble();
-            }
-
-            return (double)document[propertyName];
-        }
-
-        public static JsonElement ToJsonElement(Dictionary<string, object> document)
-        {
-            JsonDocument jsonDocument = JsonDocument.Parse(JsonSerializer.Serialize(document));
-            return jsonDocument.RootElement;
         }
     }
 }

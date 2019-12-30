@@ -1641,7 +1641,7 @@ namespace Azure.Cosmos.EmulatorTests
                                 actual = (double)(long)actual;
                             }
 
-                            Assert.AreEqual(expected, actual, message);
+                            SystemTextJsonUtils.AssertJsonElementEquals(expected, actual, message);
                         }
                     }
                 }
@@ -1677,7 +1677,7 @@ namespace Azure.Cosmos.EmulatorTests
                         expected = (long)expected;
                     }
 
-                    Assert.AreEqual(
+                    SystemTextJsonUtils.AssertJsonElementEquals(
                         expected,
                         aggregate,
                         string.Format(CultureInfo.InvariantCulture, "query: {0}, data: {1}", query, JsonConvert.SerializeObject(data)));
@@ -1776,7 +1776,7 @@ namespace Azure.Cosmos.EmulatorTests
                             MaxConcurrency = 10,
                         });
 
-                    Assert.AreEqual(valueOfInterest, items.Single());
+                    SystemTextJsonUtils.AssertJsonElementEquals(valueOfInterest, items.Single());
                 }
                 catch (Exception ex)
                 {
