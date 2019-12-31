@@ -214,7 +214,7 @@ namespace Azure.Cosmos
         {
             if (!string.IsNullOrEmpty(this.QueryEngineConfigurationString))
             {
-                return TextJsonAccountPropertiesConverter.GetQueryEngineConfiguration(this.QueryEngineConfigurationString);
+                return TextJsonObjectToPrimitiveConverter.DeserializeDictionary(this.QueryEngineConfigurationString);
             }
             else
             {
