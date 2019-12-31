@@ -52,5 +52,24 @@ namespace Azure.Cosmos
         }
 
         public static ETag ReadETag(JsonProperty jsonProperty) => new ETag(jsonProperty.Value.GetString());
+
+        public static bool TryParseEnum<TEnum>(
+            JsonProperty property,
+            Action<TEnum> action)
+            where TEnum : struct, IComparable => TextJsonSettingsHelper.TryParseEnum<TEnum>(property.Value, action);
+
+        public static bool TryParseEnum<TEnum>(
+            JsonElement element,
+            Action<TEnum> action)
+            where TEnum : struct, IComparable
+        {
+            if (Enum.TryParse(value: element.GetString(), ignoreCase: true, out TEnum enumValue))
+            {
+                action(enumValue);
+                return true;
+            }
+
+            return false;
+        }
     }
 }

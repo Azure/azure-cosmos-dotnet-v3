@@ -89,10 +89,7 @@ namespace Azure.Cosmos
             }
             else if (property.NameEquals(JsonEncodedStrings.OperationType.EncodedUtf8Bytes))
             {
-                if (Enum.TryParse(value: property.Value.GetString(), ignoreCase: true, out OperationKind operationKind))
-                {
-                    settings.OperationKind = operationKind;
-                }
+                TextJsonSettingsHelper.TryParseEnum<OperationKind>(property, operationKind => settings.OperationKind = operationKind);
             }
             else if (property.NameEquals(JsonEncodedStrings.ResourceType.EncodedUtf8Bytes))
             {

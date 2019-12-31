@@ -82,17 +82,11 @@ namespace Azure.Cosmos
             }
             else if (property.NameEquals(JsonEncodedStrings.TriggerType.EncodedUtf8Bytes))
             {
-                if (Enum.TryParse(value: property.Value.GetString(), ignoreCase: true, out Scripts.TriggerType triggerType))
-                {
-                    setting.TriggerType = triggerType;
-                }
+                TextJsonSettingsHelper.TryParseEnum<Scripts.TriggerType>(property, triggerType => setting.TriggerType = triggerType);
             }
             else if (property.NameEquals(JsonEncodedStrings.TriggerOperation.EncodedUtf8Bytes))
             {
-                if (Enum.TryParse(value: property.Value.GetString(), ignoreCase: true, out Scripts.TriggerOperation triggerOperation))
-                {
-                    setting.TriggerOperation = triggerOperation;
-                }
+                TextJsonSettingsHelper.TryParseEnum<Scripts.TriggerOperation>(property, triggerOperation => setting.TriggerOperation = triggerOperation);
             }
         }
     }

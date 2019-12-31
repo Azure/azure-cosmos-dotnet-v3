@@ -104,16 +104,16 @@ namespace Azure.Cosmos
                 precision = precisionElement.GetInt16();
             }
 
-            string indexKindString = indexKindElement.GetString();
-            string dataTypeString = dataTypeElement.GetString();
-            if (!Enum.TryParse(value: indexKindString, ignoreCase: true, out IndexKind indexKind))
+            IndexKind indexKind = IndexKind.Hash;
+            if (!TextJsonSettingsHelper.TryParseEnum<IndexKind>(indexKindElement, kind => indexKind = kind))
             {
-                throw new JsonException(string.Format(CultureInfo.CurrentCulture, RMResources.InvalidIndexKindValue, dataTypeString));
+                throw new JsonException(string.Format(CultureInfo.CurrentCulture, RMResources.InvalidIndexKindValue, indexKindElement.GetRawText()));
             }
 
-            if (!Enum.TryParse(value: dataTypeString, ignoreCase: true, out DataType dataType))
+            DataType dataType = DataType.Number;
+            if (!TextJsonSettingsHelper.TryParseEnum<DataType>(dataTypeElement, type => dataType = type))
             {
-                throw new JsonException(string.Format(CultureInfo.CurrentCulture, RMResources.InvalidIndexKindValue, dataTypeString));
+                throw new JsonException(string.Format(CultureInfo.CurrentCulture, RMResources.InvalidIndexKindValue, dataTypeElement.GetRawText()));
             }
 
             switch (indexKind)

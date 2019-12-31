@@ -86,10 +86,7 @@ namespace Azure.Cosmos
             }
             else if (property.NameEquals(JsonEncodedStrings.DefaultConsistencyLevel.EncodedUtf8Bytes))
             {
-                if (Enum.TryParse(value: property.Value.GetString(), ignoreCase: true, out ConsistencyLevel consistencyLevel))
-                {
-                    setting.DefaultConsistencyLevel = consistencyLevel;
-                }
+                TextJsonSettingsHelper.TryParseEnum<ConsistencyLevel>(property, consistencyLevel => setting.DefaultConsistencyLevel = consistencyLevel);
             }
         }
     }

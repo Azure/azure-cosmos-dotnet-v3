@@ -79,10 +79,7 @@ namespace Azure.Cosmos
             }
             else if (property.NameEquals(JsonEncodedStrings.Order.EncodedUtf8Bytes))
             {
-                if (Enum.TryParse(value: property.Value.GetString(), ignoreCase: true, out CompositePathSortOrder compositePathSortOrder))
-                {
-                    compositePath.Order = compositePathSortOrder;
-                }
+                TextJsonSettingsHelper.TryParseEnum<CompositePathSortOrder>(property, compositePathSortOrder => compositePath.Order = compositePathSortOrder);
             }
         }
     }

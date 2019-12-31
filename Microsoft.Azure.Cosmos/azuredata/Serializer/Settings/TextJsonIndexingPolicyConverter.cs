@@ -119,10 +119,7 @@ namespace Azure.Cosmos
             }
             else if (property.NameEquals(JsonEncodedStrings.IndexingMode.EncodedUtf8Bytes))
             {
-                if (Enum.TryParse(value: property.Value.GetString(), ignoreCase: true, out IndexingMode indexingMode))
-                {
-                    policy.IndexingMode = indexingMode;
-                }
+                TextJsonSettingsHelper.TryParseEnum<IndexingMode>(property, indexingMode => policy.IndexingMode = indexingMode);
             }
             else if (property.NameEquals(JsonEncodedStrings.IncludedPaths.EncodedUtf8Bytes))
             {

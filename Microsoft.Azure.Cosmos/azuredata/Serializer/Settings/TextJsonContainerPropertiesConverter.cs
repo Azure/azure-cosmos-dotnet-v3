@@ -160,10 +160,7 @@ namespace Azure.Cosmos
                     }
                     else if (partitionKeyProperties.NameEquals(JsonEncodedStrings.PartitionKind.EncodedUtf8Bytes))
                     {
-                        if (Enum.TryParse(value: partitionKeyProperties.Value.GetString(), ignoreCase: true, out PartitionKind partitionKind))
-                        {
-                            setting.PartitionKey.Kind = partitionKind;
-                        }
+                        TextJsonSettingsHelper.TryParseEnum<PartitionKind>(partitionKeyProperties, partitionKind => setting.PartitionKey.Kind = partitionKind);
                     }
                     else if (partitionKeyProperties.NameEquals(JsonEncodedStrings.SystemKey.EncodedUtf8Bytes))
                     {

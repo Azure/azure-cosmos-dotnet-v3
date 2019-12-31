@@ -84,10 +84,7 @@ namespace Azure.Cosmos
         {
             if (property.NameEquals(JsonEncodedStrings.Mode.EncodedUtf8Bytes))
             {
-                if (Enum.TryParse(value: property.Value.GetString(), ignoreCase: true, out ConflictResolutionMode conflictResolutionMode))
-                {
-                    policy.Mode = conflictResolutionMode;
-                }
+                TextJsonSettingsHelper.TryParseEnum<ConflictResolutionMode>(property, conflictResolutionMode => policy.Mode = conflictResolutionMode);
             }
             else if (property.NameEquals(JsonEncodedStrings.ConflictResolutionPath.EncodedUtf8Bytes))
             {

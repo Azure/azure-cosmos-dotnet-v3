@@ -99,10 +99,7 @@ namespace Azure.Cosmos
             }
             else if (property.NameEquals(JsonEncodedStrings.PermissionMode.EncodedUtf8Bytes))
             {
-                if (Enum.TryParse(value: property.Value.GetString(), ignoreCase: true, out PermissionMode permissionMode))
-                {
-                    setting.PermissionMode = permissionMode;
-                }
+                TextJsonSettingsHelper.TryParseEnum<PermissionMode>(property, permissionMode => setting.PermissionMode = permissionMode);
             }
             else if (property.NameEquals(JsonEncodedStrings.Token.EncodedUtf8Bytes))
             {
