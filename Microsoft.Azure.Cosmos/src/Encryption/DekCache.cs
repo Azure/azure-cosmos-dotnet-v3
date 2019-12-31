@@ -12,12 +12,14 @@ namespace Microsoft.Azure.Cosmos
 
     internal class DekCache
     {
-        // these are internal for unit testing
-        internal readonly AsyncCache<Uri, CachedDekProperties> dekPropertiesByNameLinkUriCache = new AsyncCache<Uri, CachedDekProperties>();
-        internal readonly AsyncCache<string, CachedDekProperties> dekPropertiesByRidSelfLinkCache = new AsyncCache<string, CachedDekProperties>();
-        internal readonly AsyncCache<string, InMemoryRawDek> rawDekByRidSelfLinkCache = new AsyncCache<string, InMemoryRawDek>();
-
         private readonly TimeSpan dekPropertiesTimeToLive = TimeSpan.FromHours(1);
+
+        // Internal for unit testing
+        internal AsyncCache<Uri, CachedDekProperties> DekPropertiesByNameLinkUriCache { get; } = new AsyncCache<Uri, CachedDekProperties>();
+
+        internal AsyncCache<string, CachedDekProperties> DekPropertiesByRidSelfLinkCache { get; } = new AsyncCache<string, CachedDekProperties>();
+
+        internal AsyncCache<string, InMemoryRawDek> RawDekByRidSelfLinkCache { get; } = new AsyncCache<string, InMemoryRawDek>();
 
         public DekCache(TimeSpan? dekPropertiesTimeToLive = null)
         {
@@ -31,9 +33,10 @@ namespace Microsoft.Azure.Cosmos
             string dekRidSelfLink,
             string databaseId,
             Func<string, CancellationToken, Task<DataEncryptionKeyProperties>> fetcher,
+            Uri dekNameLinkUri,
             CancellationToken cancellationToken)
         {
-            CachedDekProperties cachedDekProperties = await this.dekPropertiesByRidSelfLinkCache.GetAsync(
+            CachedDekProperties cachedDekProperties = await this.DekPropertiesByRidSelfLinkCache.GetAsync(
                     dekRidSelfLink,
                     null,
                     () => this.FetchAsync(fetcher, dekRidSelfLink, databaseId, cancellationToken),
@@ -41,7 +44,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (cachedDekProperties.ServerPropertiesExpiry <= DateTime.UtcNow)
             {
-                cachedDekProperties = await this.dekPropertiesByRidSelfLinkCache.GetAsync(
+                cachedDekProperties = await this.DekPropertiesByRidSelfLinkCache.GetAsync(
                     dekRidSelfLink,
                     null,
                     () => this.FetchAsync(fetcher, dekRidSelfLink, databaseId, cancellationToken),
@@ -49,9 +52,7 @@ namespace Microsoft.Azure.Cosmos
                     forceRefresh: true);
             }
 
-            // todo: use existing impl
-            Uri dekNameLinkUri = new Uri(string.Format("{0}/{1}/{2}/{3}", Paths.DatabasesPathSegment, databaseId, Paths.ClientEncryptionKeysPathSegment, cachedDekProperties.ServerProperties.Id), UriKind.Relative);
-            this.dekPropertiesByNameLinkUriCache.Set(dekNameLinkUri, cachedDekProperties);
+            this.DekPropertiesByNameLinkUriCache.Set(dekNameLinkUri, cachedDekProperties);
             return cachedDekProperties.ServerProperties;
         }
 
@@ -61,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
             Func<CancellationToken, Task<DataEncryptionKeyProperties>> fetcher,
             CancellationToken cancellationToken)
         { 
-            CachedDekProperties cachedDekProperties = await this.dekPropertiesByNameLinkUriCache.GetAsync(
+            CachedDekProperties cachedDekProperties = await this.DekPropertiesByNameLinkUriCache.GetAsync(
                     dekNameLinkUri,
                     null,
                     () => this.FetchAsync(fetcher, databaseId, cancellationToken),
@@ -69,7 +70,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (cachedDekProperties.ServerPropertiesExpiry <= DateTime.UtcNow)
             {
-                cachedDekProperties = await this.dekPropertiesByNameLinkUriCache.GetAsync(
+                cachedDekProperties = await this.DekPropertiesByNameLinkUriCache.GetAsync(
                     dekNameLinkUri,
                     null,
                     () => this.FetchAsync(fetcher, databaseId, cancellationToken),
@@ -77,7 +78,7 @@ namespace Microsoft.Azure.Cosmos
                     forceRefresh: true);
             }
 
-            this.dekPropertiesByRidSelfLinkCache.Set(cachedDekProperties.ServerProperties.SelfLink, cachedDekProperties);
+            this.DekPropertiesByRidSelfLinkCache.Set(cachedDekProperties.ServerProperties.SelfLink, cachedDekProperties);
             return cachedDekProperties.ServerProperties;
         }
 
@@ -86,7 +87,7 @@ namespace Microsoft.Azure.Cosmos
             Func<DataEncryptionKeyProperties, CancellationToken, Task<InMemoryRawDek>> unwrapper,
             CancellationToken cancellationToken)
         {
-            InMemoryRawDek inMemoryRawDek = await this.rawDekByRidSelfLinkCache.GetAsync(
+            InMemoryRawDek inMemoryRawDek = await this.RawDekByRidSelfLinkCache.GetAsync(
                    dekProperties.SelfLink,
                    null,
                    () => unwrapper(dekProperties, cancellationToken),
@@ -94,7 +95,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (inMemoryRawDek.RawDekExpiry <= DateTime.UtcNow)
             {
-                inMemoryRawDek = await this.rawDekByRidSelfLinkCache.GetAsync(
+                inMemoryRawDek = await this.RawDekByRidSelfLinkCache.GetAsync(
                    dekProperties.SelfLink,
                    null,
                    () => unwrapper(dekProperties, cancellationToken),
@@ -109,31 +110,23 @@ namespace Microsoft.Azure.Cosmos
         {
             // todo: should we not overwrite if the input is the same so we don't lose raw DEK?
             CachedDekProperties cachedDekProperties = new CachedDekProperties(databaseId, dekProperties, DateTime.UtcNow + this.dekPropertiesTimeToLive);
-            this.dekPropertiesByNameLinkUriCache.Set(dekNameLinkUri, cachedDekProperties);
-            this.dekPropertiesByRidSelfLinkCache.Set(dekProperties.SelfLink, cachedDekProperties);
+            this.DekPropertiesByNameLinkUriCache.Set(dekNameLinkUri, cachedDekProperties);
+            this.DekPropertiesByRidSelfLinkCache.Set(dekProperties.SelfLink, cachedDekProperties);
         }
 
         public void SetRawDek(string dekRidSelfLink, InMemoryRawDek inMemoryRawDek)
         {
-            this.rawDekByRidSelfLinkCache.Set(dekRidSelfLink, inMemoryRawDek);
+            this.RawDekByRidSelfLinkCache.Set(dekRidSelfLink, inMemoryRawDek);
         }
 
         public async Task RemoveAsync(Uri linkUri)
         {
-            CachedDekProperties cachedDekProperties = await this.dekPropertiesByNameLinkUriCache.RemoveAsync(linkUri);
+            CachedDekProperties cachedDekProperties = await this.DekPropertiesByNameLinkUriCache.RemoveAsync(linkUri);
             if (cachedDekProperties != null)
             {
-                this.dekPropertiesByRidSelfLinkCache.Remove(cachedDekProperties.ServerProperties.SelfLink);
-                this.rawDekByRidSelfLinkCache.Remove(cachedDekProperties.ServerProperties.SelfLink);
+                this.DekPropertiesByRidSelfLinkCache.Remove(cachedDekProperties.ServerProperties.SelfLink);
+                this.RawDekByRidSelfLinkCache.Remove(cachedDekProperties.ServerProperties.SelfLink);
             }
-        }
-
-        // For unit testing
-        internal void Clear()
-        {
-            this.dekPropertiesByNameLinkUriCache.Clear();
-            this.dekPropertiesByRidSelfLinkCache.Clear();
-            this.rawDekByRidSelfLinkCache.Clear();
         }
 
         private async Task<CachedDekProperties> FetchAsync(

@@ -155,7 +155,12 @@ namespace Microsoft.Azure.Cosmos
             DataEncryptionKeyProperties dekProperties = null;
             try
             {
-                dekProperties = await this.ClientContext.DekCache.GetOrAddByRidSelfLinkAsync(dekRidSelfLink, this.Database.Id, this.ReadResourceByRidSelfLinkAsync, cancellationToken);
+                dekProperties = await this.ClientContext.DekCache.GetOrAddByRidSelfLinkAsync(
+                    dekRidSelfLink,
+                    this.Database.Id,
+                    this.ReadResourceByRidSelfLinkAsync,
+                    this.LinkUri,
+                    cancellationToken);
             }
             catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
             {
