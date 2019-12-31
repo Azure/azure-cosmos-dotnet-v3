@@ -52,9 +52,6 @@ namespace Azure.Cosmos
                 return;
             }
 
-            writer.WriteStartObject();
-
-            writer.WritePropertyName("Coordinates");
             writer.WriteStartArray();
             foreach (double coordinate in position.Coordinates)
             {
@@ -62,27 +59,32 @@ namespace Azure.Cosmos
             }
 
             writer.WriteEndArray();
-
-            writer.WriteEndObject();
         }
 
         public static Position ReadProperty(JsonElement root)
         {
-            if (root.TryGetProperty("Coordinates", out JsonElement coordinatesElement))
+            if (root.ValueKind == JsonValueKind.Null)
             {
-                List<double> coordinates = new List<double>(coordinatesElement.GetArrayLength());
-                foreach (JsonElement item in coordinatesElement.EnumerateArray())
-                {
-                    if (item.TryGetDouble(out double coordinate))
-                    {
-                        coordinates.Add(coordinate);
-                    }
-                }
-
-                return new Position(coordinates);
+                throw new JsonException(RMResources.SpatialInvalidPosition);
             }
 
-            return null;
+            if (root.ValueKind != JsonValueKind.Array)
+            {
+                throw new JsonException(RMResources.SpatialInvalidPosition);
+            }
+
+            List<double> coordinates = new List<double>(root.GetArrayLength());
+            foreach (JsonElement item in root.EnumerateArray())
+            {
+                if (!item.TryGetDouble(out double coordinate))
+                {
+                    throw new JsonException(RMResources.SpatialInvalidPosition);
+                }
+
+                coordinates.Add(coordinate);
+            }
+
+            return new Position(coordinates);
         }
     }
 }

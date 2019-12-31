@@ -6,11 +6,13 @@ namespace Azure.Cosmos.Spatial
 {
     using System;
     using System.Runtime.Serialization;
+    using System.Text.Json.Serialization;
 
     /// <summary>
     /// Coordinate Reference System which is identified by name in the Azure Cosmos DB service.
     /// </summary>
     [DataContract]
+    [JsonConverter(typeof(TextJsonCrsConverterFactory))]
     public sealed class NamedCrs : Crs, IEquatable<NamedCrs>
     {
         /// <summary>

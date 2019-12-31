@@ -5,6 +5,7 @@
 namespace Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.Globalization;
     using System.Text.Json;
     using System.Text.Json.Serialization;
@@ -67,8 +68,7 @@ namespace Azure.Cosmos
 
             if (geometryParams.AdditionalProperties != null)
             {
-                writer.WritePropertyName("properties");
-                JsonSerializer.Serialize(writer, geometryParams.AdditionalProperties, options);
+                TextJsonObjectToPrimitiveConverter.SerializeDictionary(writer, geometryParams.AdditionalProperties, options);
             }
 
             writer.WriteEndObject();
@@ -89,9 +89,21 @@ namespace Azure.Cosmos
                 geometryParams.BoundingBox = TextJsonBoundingBoxConverter.ReadProperty(bboxElement);
             }
 
-            if (root.TryGetProperty("properties", out JsonElement propertiesElement))
+            geometryParams.AdditionalProperties = new Dictionary<string, object>();
+
+            // JsonExtensionData support
+            foreach (JsonProperty jsonProperty in root.EnumerateObject())
             {
-                geometryParams.AdditionalProperties = TextJsonObjectToPrimitiveConverter.DeserializeDictionary(propertiesElement.GetRawText());
+                if (jsonProperty.NameEquals("crs")
+                    || jsonProperty.NameEquals("type")
+                    || jsonProperty.NameEquals("bbox")
+                    || jsonProperty.NameEquals("coordinates")
+                    || jsonProperty.NameEquals("geometries"))
+                {
+                    continue;
+                }
+
+                geometryParams.AdditionalProperties.Add(jsonProperty.Name, TextJsonObjectToPrimitiveConverter.ReadProperty(jsonProperty.Value));
             }
 
             return geometryParams;

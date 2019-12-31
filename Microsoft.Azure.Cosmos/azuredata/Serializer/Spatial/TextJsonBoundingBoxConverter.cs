@@ -5,7 +5,9 @@
 namespace Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.Globalization;
+    using System.Linq;
     using System.Text.Json;
     using System.Text.Json.Serialization;
     using Azure.Cosmos.Spatial;
@@ -51,38 +53,48 @@ namespace Azure.Cosmos
                 return;
             }
 
-            writer.WriteStartObject();
-
-            if (boundingBox.Min != null)
+            writer.WriteStartArray();
+            foreach (double coordinate in boundingBox.Min.Coordinates.Concat(boundingBox.Max.Coordinates))
             {
-                writer.WritePropertyName("min");
-                TextJsonPositionConverter.WritePropertyValues(writer, boundingBox.Min, options);
+                writer.WriteNumberValue(coordinate);
             }
 
-            if (boundingBox.Max != null)
-            {
-                writer.WritePropertyName("max");
-                TextJsonPositionConverter.WritePropertyValues(writer, boundingBox.Max, options);
-            }
-
-            writer.WriteEndObject();
+            writer.WriteEndArray();
         }
 
         public static BoundingBox ReadProperty(JsonElement root)
         {
-            Position min = null;
-            if (root.TryGetProperty("min", out JsonElement minElement))
+            if (root.ValueKind == JsonValueKind.Null)
             {
-                min = TextJsonPositionConverter.ReadProperty(minElement);
+                return null;
             }
 
-            Position max = null;
-            if (root.TryGetProperty("max", out JsonElement maxElement))
+            if (root.ValueKind != JsonValueKind.Array)
             {
-                max = TextJsonPositionConverter.ReadProperty(maxElement);
+                throw new JsonException(RMResources.SpatialBoundingBoxInvalidCoordinates);
             }
 
-            return new BoundingBox(min, max);
+            int coordinateCount = root.GetArrayLength();
+            if (coordinateCount % 2 != 0
+                || coordinateCount < 4)
+            {
+                throw new JsonException(RMResources.SpatialBoundingBoxInvalidCoordinates);
+            }
+
+            List<double> coordinates = new List<double>(coordinateCount);
+            foreach (JsonElement coordinateElement in root.EnumerateArray())
+            {
+                if (!coordinateElement.TryGetDouble(out double coordinate))
+                {
+                    throw new JsonException(RMResources.SpatialBoundingBoxInvalidCoordinates);
+                }
+
+                coordinates.Add(coordinate);
+            }
+
+            return new BoundingBox(
+                new Position(coordinates.Take(coordinateCount / 2).ToList()),
+                new Position(coordinates.Skip(coordinateCount / 2).ToList()));
         }
     }
 }

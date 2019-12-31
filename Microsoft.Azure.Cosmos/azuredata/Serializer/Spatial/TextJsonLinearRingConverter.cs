@@ -52,9 +52,6 @@ namespace Azure.Cosmos
                 return;
             }
 
-            writer.WriteStartObject();
-
-            writer.WritePropertyName("coordinates");
             writer.WriteStartArray();
             foreach (Position position in linearRing.Positions)
             {
@@ -62,18 +59,24 @@ namespace Azure.Cosmos
             }
 
             writer.WriteEndArray();
-            writer.WriteEndObject();
         }
 
         public static LinearRing ReadProperty(JsonElement root)
         {
-            List<Position> positions = new List<Position>();
-            if (root.TryGetProperty("coordinates", out JsonElement coordinatesElement))
+            if (root.ValueKind == JsonValueKind.Null)
             {
-                foreach (JsonElement jsonElement in coordinatesElement.EnumerateArray())
-                {
-                    positions.Add(TextJsonPositionConverter.ReadProperty(jsonElement));
-                }
+                return null;
+            }
+
+            if (root.ValueKind != JsonValueKind.Array)
+            {
+                throw new JsonException(RMResources.SpatialInvalidPosition);
+            }
+
+            List<Position> positions = new List<Position>();
+            foreach (JsonElement jsonElement in root.EnumerateArray())
+            {
+                positions.Add(TextJsonPositionConverter.ReadProperty(jsonElement));
             }
 
             return new LinearRing(positions);

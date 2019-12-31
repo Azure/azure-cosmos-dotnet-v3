@@ -59,8 +59,7 @@ namespace Azure.Cosmos
 
             if (geometry.AdditionalProperties != null)
             {
-                writer.WritePropertyName("properties");
-                JsonSerializer.Serialize(writer, geometry.AdditionalProperties, options);
+                TextJsonObjectToPrimitiveConverter.SerializeDictionary(writer, geometry.AdditionalProperties, options);
             }
 
             switch (geometry.Type)
@@ -215,6 +214,7 @@ namespace Azure.Cosmos
                         if (root.TryGetProperty("coordinates", out JsonElement coordinatesElement))
                         {
                             position = TextJsonPositionConverter.ReadProperty(coordinatesElement);
+                            geometry = new Point(position, geometryParams);
                         }
 
                         geometry = new Point(position, geometryParams);

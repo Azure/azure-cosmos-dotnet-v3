@@ -19,6 +19,11 @@ namespace Azure.Cosmos
             Type typeToConvert,
             JsonSerializerOptions options)
         {
+            if (reader.TokenType == JsonTokenType.Null)
+            {
+                return Crs.Unspecified;
+            }
+
             using JsonDocument json = JsonDocument.ParseValue(ref reader);
             JsonElement root = json.RootElement;
             return TextJsonCrsConverter.ReadProperty(root);
@@ -39,6 +44,7 @@ namespace Azure.Cosmos
         {
             if (crs == null)
             {
+                writer.WriteNullValue();
                 return;
             }
 

@@ -6,9 +6,9 @@ namespace Azure.Cosmos.Test.Spatial
 {
     using System;
     using System.Collections.Generic;
+    using System.Text.Json;
     using Azure.Cosmos.Spatial;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json;
 
     /// <summary>
     /// Tests <see cref="GeometryCollection"/> class and serialization.
@@ -31,7 +31,7 @@ namespace Azure.Cosmos.Test.Spatial
                    ""crs"":{""type"":""name"", ""properties"":{""name"":""hello""}}
                   }";
 
-            var geometryCollection = JsonConvert.DeserializeObject<GeometryCollection>(json);
+            var geometryCollection = JsonSerializer.Deserialize<GeometryCollection>(json);
 
             Assert.AreEqual(1, geometryCollection.Geometries.Count);
             Assert.IsInstanceOfType(geometryCollection.Geometries[0], typeof(Point));
@@ -41,13 +41,13 @@ namespace Azure.Cosmos.Test.Spatial
             Assert.AreEqual(1, geometryCollection.AdditionalProperties.Count);
             Assert.AreEqual(1L, geometryCollection.AdditionalProperties["extra"]);
 
-            var geom = JsonConvert.DeserializeObject<Geometry>(json);
+            var geom = JsonSerializer.Deserialize<Geometry>(json);
             Assert.AreEqual(GeometryType.GeometryCollection, geom.Type);
 
             Assert.AreEqual(geom, geometryCollection);
 
-            string json1 = JsonConvert.SerializeObject(geometryCollection);
-            var geom1 = JsonConvert.DeserializeObject<Geometry>(json1);
+            string json1 = JsonSerializer.Serialize(geometryCollection);
+            var geom1 = JsonSerializer.Deserialize<Geometry>(json1);
             Assert.AreEqual(geom1, geom);
         }
 
