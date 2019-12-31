@@ -6,12 +6,9 @@ namespace Azure.Cosmos.Test.Spatial
 {
     using System;
     using System.Collections.Generic;
-
+    using System.Text.Json;
     using Azure.Cosmos.Spatial;
-    using Azure.Cosmos.Spatial.Converters;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-    using Newtonsoft.Json;
 
     /// <summary>
     /// Tests <see cref="MultiLineString"/> class and serialization.
@@ -33,7 +30,7 @@ namespace Azure.Cosmos.Test.Spatial
                    ""extra"":1,
                    ""crs"":{""type"":""name"", ""properties"":{""name"":""hello""}}
                   }";
-            var multiLineString = JsonConvert.DeserializeObject<MultiLineString>(json);
+            var multiLineString = JsonSerializer.Deserialize<MultiLineString>(json);
 
             Assert.AreEqual(2, multiLineString.LineStrings.Count);
             Assert.AreEqual(new Position(20, 30), multiLineString.LineStrings[0].Positions[0]);
@@ -45,13 +42,13 @@ namespace Azure.Cosmos.Test.Spatial
             Assert.AreEqual(1, multiLineString.AdditionalProperties.Count);
             Assert.AreEqual(1L, multiLineString.AdditionalProperties["extra"]);
 
-            var geom = JsonConvert.DeserializeObject<Geometry>(json);
+            var geom = JsonSerializer.Deserialize<Geometry>(json);
             Assert.AreEqual(GeometryType.MultiLineString, geom.Type);
 
             Assert.AreEqual(geom, multiLineString);
 
-            string json1 = JsonConvert.SerializeObject(multiLineString);
-            var geom1 = JsonConvert.DeserializeObject<Geometry>(json1);
+            string json1 = JsonSerializer.Serialize(multiLineString);
+            var geom1 = JsonSerializer.Deserialize<Geometry>(json1);
             Assert.AreEqual(geom1, geom);
         }
 

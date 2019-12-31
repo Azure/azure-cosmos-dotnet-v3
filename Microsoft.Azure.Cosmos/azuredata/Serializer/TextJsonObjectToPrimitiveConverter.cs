@@ -5,11 +5,19 @@
 namespace Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.Text.Json;
     using System.Text.Json.Serialization;
 
     internal class TextJsonObjectToPrimitiveConverter : JsonConverter<object>
     {
+        private static Lazy<JsonSerializerOptions> DictionarySerializeOptions = new Lazy<JsonSerializerOptions>(() =>
+        {
+            JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions();
+            jsonSerializerOptions.Converters.Add(new TextJsonObjectToPrimitiveConverter());
+            return jsonSerializerOptions;
+        });
+
         public override object Read(
             ref Utf8JsonReader reader,
             Type typeToConvert,
@@ -27,6 +35,15 @@ namespace Azure.Cosmos
 
             if (reader.TokenType == JsonTokenType.Number)
             {
+                if (reader.TryGetInt32(out int intValue))
+                {
+                    return intValue;
+                }
+                else if (reader.TryGetInt64(out long longValue))
+                {
+                    return longValue;
+                }
+
                 return reader.GetDouble();
             }
 
@@ -63,5 +80,10 @@ namespace Azure.Cosmos
         {
             throw new NotImplementedException();
         }
+
+        /// <summary>
+        /// System.Text.Json does not honor object as Json.Net https://github.com/dotnet/corefx/issues/39953
+        /// </summary>
+        public static Dictionary<string, object> DeserializeDictionary(string serializedDictionary) => JsonSerializer.Deserialize<Dictionary<string, object>>(serializedDictionary, TextJsonObjectToPrimitiveConverter.DictionarySerializeOptions.Value);
     }
 }

@@ -4,13 +4,9 @@
 
 namespace Azure.Cosmos.Test.Spatial
 {
-    using System;
-
+    using System.Text.Json;
     using Azure.Cosmos.Spatial;
-    using Azure.Cosmos.Spatial.Converters;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-    using Newtonsoft.Json;
 
     /// <summary>
     /// Serialization tests applying to all geometry types.
@@ -22,66 +18,66 @@ namespace Azure.Cosmos.Test.Spatial
         /// Tests that incorrect JSON throws exception.
         /// </summary>
         [TestMethod]
-        [ExpectedException(typeof(JsonReaderException))]
+        [ExpectedException(typeof(JsonException))]
         public void TestInvalidJson()
         {
             string json = @"{""type"":""Poi}";
-            var point = JsonConvert.DeserializeObject<Point>(json);
+            var point = JsonSerializer.Deserialize<Point>(json);
         }
 
         /// <summary>
         /// Tests that coordinates cannot be null.
         /// </summary>
         [TestMethod]
-        [ExpectedException(typeof(JsonSerializationException))]
+        [ExpectedException(typeof(JsonException))]
         public void TestNullCoordinates()
         {
             string json = @"{""type"":""Point"",""coordinates"":null}";
-            var point = JsonConvert.DeserializeObject<Point>(json);
+            var point = JsonSerializer.Deserialize<Point>(json);
         }
 
         /// <summary>
         /// Tests that type cannot be null.
         /// </summary>
         [TestMethod]
-        [ExpectedException(typeof(JsonSerializationException))]
+        [ExpectedException(typeof(JsonException))]
         public void TestNullType()
         {
             string json = @"{""type"":null, ""coordinates"":[20, 30]}";
-            var point = JsonConvert.DeserializeObject<Point>(json);
+            var point = JsonSerializer.Deserialize<Point>(json);
         }
 
         /// <summary>
         /// Tests that type cannot be null and uses <see cref="GeometryJsonConverter"/>.
         /// </summary>
         [TestMethod]
-        [ExpectedException(typeof(JsonSerializationException))]
+        [ExpectedException(typeof(JsonException))]
         public void TestNullTypeGeometry()
         {
             string json = @"{""type"":null, ""coordinates"":[20, 30]}";
-            var point = JsonConvert.DeserializeObject<Geometry>(json);
+            var point = JsonSerializer.Deserialize<Geometry>(json);
         }
 
         /// <summary>
         /// Tests bounding box with not even number of coordinates.
         /// </summary>
         [TestMethod]
-        [ExpectedException(typeof(JsonSerializationException))]
+        [ExpectedException(typeof(JsonException))]
         public void TestBoundingBoxWithNonEvenNumberOfCoordinates()
         {
             string json = @"{""type"":""Point"", ""coordinates"":[20, 30], ""bbox"":[0, 0, 0, 5, 5]}";
-            var point = JsonConvert.DeserializeObject<Point>(json);
+            var point = JsonSerializer.Deserialize<Point>(json);
         }
 
         /// <summary>
         /// Tests bounding box with insufficient number of coordinates.
         /// </summary>
         [TestMethod]
-        [ExpectedException(typeof(JsonSerializationException))]
+        [ExpectedException(typeof(JsonException))]
         public void TestBoundingBoxWithNotEnoughCoordinates()
         {
             string json = @"{""type"":""Point"", ""coordinates"":[20, 30], ""bbox"":[0, 0]}";
-            var point = JsonConvert.DeserializeObject<Point>(json);
+            var point = JsonSerializer.Deserialize<Point>(json);
         }
 
         /// <summary>
@@ -91,7 +87,7 @@ namespace Azure.Cosmos.Test.Spatial
         public void TestNullBoundingBox()
         {
             string json = @"{""type"":""Point"", ""coordinates"":[20, 30], ""bbox"":null}";
-            var point = JsonConvert.DeserializeObject<Point>(json);
+            var point = JsonSerializer.Deserialize<Point>(json);
             Assert.IsNull(point.BoundingBox);
         }
 
@@ -99,14 +95,14 @@ namespace Azure.Cosmos.Test.Spatial
         /// Tests empty coordinates.
         /// </summary>
         [TestMethod]
-        [ExpectedException(typeof(JsonSerializationException))]
+        [ExpectedException(typeof(JsonException))]
         public void TestEmptyCoordinates()
         {
             string json = @"{
                     ""type"":""Point"",
                     ""coordinates"":[],
                     }";
-            JsonConvert.DeserializeObject<Point>(json);
+            JsonSerializer.Deserialize<Point>(json);
         }
     }
 }

@@ -98,16 +98,6 @@ namespace Azure.Cosmos
             writer.WriteEndObject();
         }
 
-        /// <summary>
-        /// Reference https://github.com/dotnet/corefx/issues/39953
-        /// </summary>
-        public static Dictionary<string, object> GetQueryEngineConfiguration(string queryEngineConfigurationString)
-        {
-            JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions();
-            jsonSerializerOptions.Converters.Add(new TextJsonObjectToPrimitiveConverter());
-            return JsonSerializer.Deserialize<Dictionary<string, object>>(queryEngineConfigurationString, jsonSerializerOptions);
-        }
-
         private static void ReadPropertyValue(
             AccountProperties setting,
             JsonProperty property)

@@ -75,8 +75,8 @@
     <Compile Include="..\src\Json\**\*.cs">
       <Link>Json\%(RecursiveDir)\%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="..\src\Spatial\**\*.cs">
-      <Link>Spatial\%(RecursiveDir)\%(Filename)%(Extension)</Link>
+    <Compile Include="..\src\Serializer\DefaultJsonSerializationSettings.cs">
+      <Link>Serializer\%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="..\src\Serializer\CosmosJsonSerializerWrapper.cs">
       <Link>Serializer\%(Filename)%(Extension)</Link>
