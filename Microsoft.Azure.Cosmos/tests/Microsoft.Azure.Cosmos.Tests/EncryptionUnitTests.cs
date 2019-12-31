@@ -396,7 +396,7 @@ namespace Microsoft.Azure.Cosmos
                  mockDekCore.Setup(m => m.GenerateKey()).Returns(this.dek);
                  mockDekCore.Setup(m => m.GetEncryptionAlgorithm(It.IsAny<byte[]>(), It.IsAny<EncryptionType>()))
                     .Returns(this.mockEncryptionAlgorithm.Object);
-                 return mockDekCore.Object;
+                 return new DataEncryptionKeyInlineCore(mockDekCore.Object);
              });
 
             ContainerCore container = new ContainerCore(client.ClientContext, this.mockDatabaseCore.Object, EncryptionUnitTests.ContainerId);

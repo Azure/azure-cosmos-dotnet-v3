@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Globalization;
+    using System.Text;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Documents;
@@ -205,12 +206,17 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.StartId != null)
             {
-                request.Headers.Set(HttpConstants.HttpHeaders.StartId, this.StartId);
+                request.Headers.Set(HttpConstants.HttpHeaders.StartId, Convert.ToBase64String(Encoding.UTF8.GetBytes(this.StartId)));
             }
 
             if (this.EndId != null)
             {
-                request.Headers.Set(HttpConstants.HttpHeaders.EndId, this.EndId);
+                request.Headers.Set(HttpConstants.HttpHeaders.EndId, Convert.ToBase64String(Encoding.UTF8.GetBytes(this.EndId)));
+            }
+
+            if (this.StartId != null || this.EndId != null)
+            {
+                request.Headers.Set(HttpConstants.HttpHeaders.ReadFeedKeyType, ReadFeedKeyType.ResourceId.ToString());
             }
 
             if (this.EnumerationDirection.HasValue)

@@ -522,10 +522,11 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(id));
             }
 
-            return new DataEncryptionKeyCore(
+            return new DataEncryptionKeyInlineCore(
+                new DataEncryptionKeyCore(
                     this.ClientContext,
                     this,
-                    id);
+                    id));
         }
 
 #if PREVIEW
@@ -617,7 +618,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.ClientContext.ValidateResource(id);
 
-            DataEncryptionKeyCore newDek = (DataEncryptionKeyCore)this.GetDataEncryptionKey(id);
+            DataEncryptionKeyCore newDek = (DataEncryptionKeyInlineCore)this.GetDataEncryptionKey(id);
 
             byte[] rawDek = newDek.GenerateKey();
 

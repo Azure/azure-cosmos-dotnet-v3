@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos
     {
         public static async Task<Stream> EncryptAsync<T>(T item, DataEncryptionKey dek, CancellationToken cancellationToken)
         {
-            DataEncryptionKeyCore dekCore = (DataEncryptionKeyCore)dek;
+            DataEncryptionKeyCore dekCore = (DataEncryptionKeyInlineCore)dek;
             (DataEncryptionKeyProperties dekProperties, InMemoryRawDek inMemoryRawDek) = await dekCore.FetchUnwrappedAsync(cancellationToken);
 
             PropertyInfo[] typeProperties = typeof(T).GetProperties();
@@ -96,15 +96,15 @@ namespace Microsoft.Azure.Cosmos
             EncryptionProperties encryptionProperties = encryptionPropertiesJObj.ToObject<EncryptionProperties>();
             if (encryptionProperties.EncryptionFormatVersion != 1)
             {
-                throw new CosmosException(HttpStatusCode.InternalServerError, "Unknown encryption format version");
+                throw new CosmosException(HttpStatusCode.InternalServerError, "Unknown encryption format version. Please upgrade your SDK to the latest version.");
             }
 
             if (encryptionProperties.EncryptionAlgorithmId != 1)
             {
-                throw new CosmosException(HttpStatusCode.InternalServerError, "Unknown encryption algorithm");
+                throw new CosmosException(HttpStatusCode.InternalServerError, "Unknown encryption algorithm. Please upgrade your SDK to the latest version.");
             }
 
-            DataEncryptionKeyCore tempDek = (DataEncryptionKeyCore)database.GetDataEncryptionKey(id: "unknown");
+            DataEncryptionKeyCore tempDek = (DataEncryptionKeyInlineCore)database.GetDataEncryptionKey(id: "unknown");
             (DataEncryptionKeyProperties _, InMemoryRawDek inMemoryRawDek) = await tempDek.FetchUnwrappedByRidAsync(encryptionProperties.DataEncryptionKeyRid, cancellationToken);
             byte[] plainText = inMemoryRawDek.AlgorithmUsingRawDek.DecryptData(encryptionProperties.EncryptedData);
 

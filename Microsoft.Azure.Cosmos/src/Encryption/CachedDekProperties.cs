@@ -14,7 +14,10 @@ namespace Microsoft.Azure.Cosmos
 
         public DateTime ServerPropertiesExpiry { get; }
 
-        public CachedDekProperties(string databaseId, DataEncryptionKeyProperties serverProperties, DateTime serverPropertiesExpiry)
+        public CachedDekProperties(
+            string databaseId,
+            DataEncryptionKeyProperties serverProperties,
+            DateTime serverPropertiesExpiry)
         {
             this.DatabaseId = databaseId;
             this.ServerProperties = serverProperties;

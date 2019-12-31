@@ -31,9 +31,14 @@ namespace Microsoft.Azure.Cosmos
             byte[] wrappedDataEncryptionKey,
             KeyWrapMetadata keyWrapMetadata)
         {
+            if (string.IsNullOrEmpty(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
             this.Id = id;
-            this.WrappedDataEncryptionKey = wrappedDataEncryptionKey;
-            this.KeyWrapMetadata = keyWrapMetadata;
+            this.WrappedDataEncryptionKey = wrappedDataEncryptionKey ?? throw new ArgumentNullException(nameof(wrappedDataEncryptionKey));
+            this.KeyWrapMetadata = keyWrapMetadata ?? throw new ArgumentNullException(nameof(keyWrapMetadata));
         }
 
         /// <summary>

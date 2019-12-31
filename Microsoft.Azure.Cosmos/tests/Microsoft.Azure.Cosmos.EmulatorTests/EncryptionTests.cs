@@ -97,35 +97,59 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Test getting all keys
             await this.IterateDekFeedAsync(
                 new List<string> { contosoV1, contosoV2, fabrikamV1, fabrikamV2 },
+                isExpectedDeksCompleteSetForRequest: true,
                 isResultOrderExpected: false);
 
-            // Test getting specific subset of keys
+            //// Test getting specific subset of keys
             await this.IterateDekFeedAsync(
                 new List<string> { contosoV2 },
-                isResultOrderExpected: false,
+                isExpectedDeksCompleteSetForRequest: false,
+                isResultOrderExpected: true,
                 startId: "Contoso_v000",
                 endId: "Contoso_v999",
                 isDescending: true,
                 itemCountInPage: 1);
 
+            // Ensure only required results are returned (ascending)
+            await this.IterateDekFeedAsync(
+                new List<string> { contosoV1 },
+                isExpectedDeksCompleteSetForRequest: true,
+                isResultOrderExpected: true,
+                startId: "Contoso_v000",
+                endId: "Contoso_v001",
+                isDescending: false);
+
+            // Ensure only required results are returned (descending)
+            await this.IterateDekFeedAsync(
+                new List<string> { contosoV2, contosoV1 },
+                isExpectedDeksCompleteSetForRequest: true,
+                isResultOrderExpected: true,
+                startId: "Contoso_v000",
+                endId: "Contoso_v999",
+                isDescending: true);
+
             // Test pagination
             await this.IterateDekFeedAsync(
                 new List<string> { contosoV1, contosoV2, fabrikamV1, fabrikamV2 },
+                isExpectedDeksCompleteSetForRequest: true,
                 isResultOrderExpected: false,
                 itemCountInPage: 3);
+
+            // todo: test whether boundaries are inclusive/exclusive.
         }
 
         private async Task IterateDekFeedAsync(
-            List<string> expectedDeks,
+            List<string> expectedDekIds,
+            bool isExpectedDeksCompleteSetForRequest,
             bool isResultOrderExpected,
             string startId = null,
             string endId = null,
             bool isDescending = false,
             int? itemCountInPage = null)
         {
-            int remainingItemCount = expectedDeks.Count;
+            int remainingItemCount = expectedDekIds.Count;
             QueryRequestOptions options = null;
-            if(itemCountInPage.HasValue)
+            if (itemCountInPage.HasValue)
             {
                 options = new QueryRequestOptions()
                 {
@@ -138,6 +162,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Assert.IsTrue(dekIterator.HasMoreResults);
 
+            List<string> readDekIds = new List<string>();
             while (remainingItemCount > 0)
             {
                 FeedResponse<DataEncryptionKeyProperties> page = await dekIterator.ReadNextAsync();
@@ -147,27 +172,28 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
                 else
                 {
-                    Assert.AreEqual(expectedDeks.Count, page.Count);
+                    Assert.AreEqual(expectedDekIds.Count, page.Count);
                 }
 
                 remainingItemCount -= page.Count;
-                Assert.AreEqual(remainingItemCount > 0, dekIterator.HasMoreResults);
-
-                if (isResultOrderExpected)
+                if (isExpectedDeksCompleteSetForRequest)
                 {
-                    int index = 0;
-                    foreach (DataEncryptionKeyProperties dek in page.Resource)
-                    {
+                    Assert.AreEqual(remainingItemCount > 0, dekIterator.HasMoreResults);
+                }
 
-                        Assert.AreEqual(expectedDeks[index++], dek.Id);
-                    }
-                }
-                else
+                foreach (DataEncryptionKeyProperties dek in page.Resource)
                 {
-                    HashSet<string> expectedKeys = new HashSet<string>(expectedDeks);
-                    HashSet<string> readKeys = page.Resource.Select(dek => dek.Id).ToHashSet();
-                    Assert.IsTrue(expectedKeys.SetEquals(readKeys));
+                    readDekIds.Add(dek.Id);
                 }
+            }
+
+            if (isResultOrderExpected)
+            {
+                Assert.IsTrue(expectedDekIds.SequenceEqual(readDekIds));
+            }
+            else
+            {
+                Assert.IsTrue(expectedDekIds.ToHashSet().SetEquals(readDekIds));
             }
         }
 
