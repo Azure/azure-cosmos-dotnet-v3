@@ -43,17 +43,17 @@ namespace Azure.Cosmos
             }
 
             writer.WriteStartObject();
-            writer.WriteString("type", geometry.Type.ToString());
+            writer.WriteString(JsonEncodedStrings.Type, geometry.Type.ToString());
 
             if (geometry.CrsForSerialization != null)
             {
-                writer.WritePropertyName("crs");
+                writer.WritePropertyName(JsonEncodedStrings.Crs);
                 TextJsonCrsConverter.WritePropertyValues(writer, geometry.CrsForSerialization, options);
             }
 
             if (geometry.BoundingBox != null)
             {
-                writer.WritePropertyName("bbox");
+                writer.WritePropertyName(JsonEncodedStrings.BoundingBox);
                 TextJsonBoundingBoxConverter.WritePropertyValues(writer, geometry.BoundingBox, options);
             }
 
@@ -65,12 +65,12 @@ namespace Azure.Cosmos
             switch (geometry.Type)
             {
                 case GeometryType.Point:
-                    writer.WritePropertyName("coordinates");
+                    writer.WritePropertyName(JsonEncodedStrings.Coordinates);
                     Point point = geometry as Point;
                     TextJsonPositionConverter.WritePropertyValues(writer, point.Position, options);
                     break;
                 case GeometryType.MultiPoint:
-                    writer.WritePropertyName("coordinates");
+                    writer.WritePropertyName(JsonEncodedStrings.Coordinates);
                     MultiPoint multiPoint = geometry as MultiPoint;
                     writer.WriteStartArray();
                     foreach (Position position in multiPoint.Points)
@@ -81,7 +81,7 @@ namespace Azure.Cosmos
                     writer.WriteEndArray();
                     break;
                 case GeometryType.LineString:
-                    writer.WritePropertyName("coordinates");
+                    writer.WritePropertyName(JsonEncodedStrings.Coordinates);
                     LineString lineString = geometry as LineString;
                     writer.WriteStartArray();
                     foreach (Position position in lineString.Positions)
@@ -92,7 +92,7 @@ namespace Azure.Cosmos
                     writer.WriteEndArray();
                     break;
                 case GeometryType.MultiLineString:
-                    writer.WritePropertyName("coordinates");
+                    writer.WritePropertyName(JsonEncodedStrings.Coordinates);
                     MultiLineString multiLineString = geometry as MultiLineString;
                     writer.WriteStartArray();
                     foreach (LineStringCoordinates lineCoordinates in multiLineString.LineStrings)
@@ -103,7 +103,7 @@ namespace Azure.Cosmos
                     writer.WriteEndArray();
                     break;
                 case GeometryType.Polygon:
-                    writer.WritePropertyName("coordinates");
+                    writer.WritePropertyName(JsonEncodedStrings.Coordinates);
                     Polygon polygon = geometry as Polygon;
                     writer.WriteStartArray();
                     foreach (LinearRing linearRing in polygon.Rings)
@@ -114,7 +114,7 @@ namespace Azure.Cosmos
                     writer.WriteEndArray();
                     break;
                 case GeometryType.MultiPolygon:
-                    writer.WritePropertyName("coordinates");
+                    writer.WritePropertyName(JsonEncodedStrings.Coordinates);
                     MultiPolygon multiPolygon = geometry as MultiPolygon;
                     writer.WriteStartArray();
                     foreach (PolygonCoordinates polygonCoordinates in multiPolygon.Polygons)
@@ -125,7 +125,7 @@ namespace Azure.Cosmos
                     writer.WriteEndArray();
                     break;
                 case GeometryType.GeometryCollection:
-                    writer.WritePropertyName("geometries");
+                    writer.WritePropertyName(JsonEncodedStrings.Geometries);
                     GeometryCollection geometryCollection = geometry as GeometryCollection;
                     writer.WriteStartArray();
                     foreach (Geometry geometryIn in geometryCollection.Geometries)
@@ -154,7 +154,7 @@ namespace Azure.Cosmos
                 throw new JsonException(string.Format(CultureInfo.CurrentCulture, RMResources.JsonUnexpectedToken));
             }
 
-            if (!root.TryGetProperty("type", out JsonElement typeElement)
+            if (!root.TryGetProperty(JsonEncodedStrings.Type.EncodedUtf8Bytes, out JsonElement typeElement)
                 || typeElement.ValueKind != JsonValueKind.String
                 || !Enum.TryParse(typeElement.GetString(), out GeometryType geometryType))
             {
@@ -169,7 +169,7 @@ namespace Azure.Cosmos
                 case GeometryType.GeometryCollection:
                     {
                         List<Geometry> geometries = new List<Geometry>();
-                        if (root.TryGetProperty("geometries", out JsonElement coordinatesElement))
+                        if (root.TryGetProperty(JsonEncodedStrings.Geometries.EncodedUtf8Bytes, out JsonElement coordinatesElement))
                         {
                             foreach (JsonElement jsonElement in coordinatesElement.EnumerateArray())
                             {
@@ -183,7 +183,7 @@ namespace Azure.Cosmos
                 case GeometryType.LineString:
                     {
                         List<Position> positions = new List<Position>();
-                        if (root.TryGetProperty("coordinates", out JsonElement coordinatesElement))
+                        if (root.TryGetProperty(JsonEncodedStrings.Coordinates.EncodedUtf8Bytes, out JsonElement coordinatesElement))
                         {
                             foreach (JsonElement jsonElement in coordinatesElement.EnumerateArray())
                             {
@@ -197,7 +197,7 @@ namespace Azure.Cosmos
                 case GeometryType.MultiLineString:
                     {
                         List<LineStringCoordinates> lines = new List<LineStringCoordinates>();
-                        if (root.TryGetProperty("coordinates", out JsonElement coordinatesElement))
+                        if (root.TryGetProperty(JsonEncodedStrings.Coordinates.EncodedUtf8Bytes, out JsonElement coordinatesElement))
                         {
                             foreach (JsonElement lineElement in coordinatesElement.EnumerateArray())
                             {
@@ -211,7 +211,7 @@ namespace Azure.Cosmos
                 case GeometryType.Point:
                     {
                         Position position = null;
-                        if (root.TryGetProperty("coordinates", out JsonElement coordinatesElement))
+                        if (root.TryGetProperty(JsonEncodedStrings.Coordinates.EncodedUtf8Bytes, out JsonElement coordinatesElement))
                         {
                             position = TextJsonPositionConverter.ReadProperty(coordinatesElement);
                             geometry = new Point(position, geometryParams);
@@ -223,7 +223,7 @@ namespace Azure.Cosmos
                 case GeometryType.MultiPoint:
                     {
                         List<Position> positions = new List<Position>();
-                        if (root.TryGetProperty("coordinates", out JsonElement coordinatesElement))
+                        if (root.TryGetProperty(JsonEncodedStrings.Coordinates.EncodedUtf8Bytes, out JsonElement coordinatesElement))
                         {
                             foreach (JsonElement jsonElement in coordinatesElement.EnumerateArray())
                             {
@@ -237,7 +237,7 @@ namespace Azure.Cosmos
                 case GeometryType.Polygon:
                     {
                         List<LinearRing> linearRings = new List<LinearRing>();
-                        if (root.TryGetProperty("coordinates", out JsonElement coordinatesElement))
+                        if (root.TryGetProperty(JsonEncodedStrings.Coordinates.EncodedUtf8Bytes, out JsonElement coordinatesElement))
                         {
                             foreach (JsonElement jsonElement in coordinatesElement.EnumerateArray())
                             {
@@ -251,7 +251,7 @@ namespace Azure.Cosmos
                 case GeometryType.MultiPolygon:
                     {
                         List<PolygonCoordinates> polygonCoordinates = new List<PolygonCoordinates>();
-                        if (root.TryGetProperty("coordinates", out JsonElement coordinatesElement))
+                        if (root.TryGetProperty(JsonEncodedStrings.Coordinates.EncodedUtf8Bytes, out JsonElement coordinatesElement))
                         {
                             foreach (JsonElement jsonElement in coordinatesElement.EnumerateArray())
                             {

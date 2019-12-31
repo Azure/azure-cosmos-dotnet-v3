@@ -37,22 +37,22 @@ namespace Azure.Cosmos
             using JsonDocument document = JsonDocument.ParseValue(ref reader);
             Error error = new Error();
 
-            if (document.RootElement.TryGetProperty(Constants.Properties.Code, out JsonElement codeElement))
+            if (document.RootElement.TryGetProperty(JsonEncodedStrings.Code.EncodedUtf8Bytes, out JsonElement codeElement))
             {
                 error.Code = codeElement.GetString();
             }
 
-            if (document.RootElement.TryGetProperty(Constants.Properties.Message, out JsonElement messageElement))
+            if (document.RootElement.TryGetProperty(JsonEncodedStrings.Message.EncodedUtf8Bytes, out JsonElement messageElement))
             {
                 error.Message = messageElement.GetString();
             }
 
-            if (document.RootElement.TryGetProperty(Constants.Properties.ErrorDetails, out JsonElement errorDetailsElement))
+            if (document.RootElement.TryGetProperty(JsonEncodedStrings.ErrorDetails.EncodedUtf8Bytes, out JsonElement errorDetailsElement))
             {
                 error.ErrorDetails = errorDetailsElement.GetString();
             }
 
-            if (document.RootElement.TryGetProperty(Constants.Properties.AdditionalErrorInfo, out JsonElement additionalErrorInfoElement))
+            if (document.RootElement.TryGetProperty(JsonEncodedStrings.AdditionalErrorInfo.EncodedUtf8Bytes, out JsonElement additionalErrorInfoElement))
             {
                 error.AdditionalErrorInfo = additionalErrorInfoElement.GetString();
             }
@@ -74,22 +74,22 @@ namespace Azure.Cosmos
 
             if (!string.IsNullOrEmpty(value.Code))
             {
-                writer.WriteString(Constants.Properties.Code, value.Code);
+                writer.WriteString(JsonEncodedStrings.Code, value.Code);
             }
 
             if (!string.IsNullOrEmpty(value.Message))
             {
-                writer.WriteString(Constants.Properties.Message, value.Message);
+                writer.WriteString(JsonEncodedStrings.Message, value.Message);
             }
 
             if (!string.IsNullOrEmpty(value.ErrorDetails))
             {
-                writer.WriteString(Constants.Properties.ErrorDetails, value.ErrorDetails);
+                writer.WriteString(JsonEncodedStrings.ErrorDetails, value.ErrorDetails);
             }
 
             if (!string.IsNullOrEmpty(value.AdditionalErrorInfo))
             {
-                writer.WriteString(Constants.Properties.AdditionalErrorInfo, value.AdditionalErrorInfo);
+                writer.WriteString(JsonEncodedStrings.AdditionalErrorInfo, value.AdditionalErrorInfo);
             }
 
             writer.WriteEndObject();

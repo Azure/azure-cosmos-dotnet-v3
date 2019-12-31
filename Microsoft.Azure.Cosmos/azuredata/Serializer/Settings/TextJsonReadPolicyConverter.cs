@@ -51,9 +51,9 @@ namespace Azure.Cosmos
 
             writer.WriteStartObject();
 
-            writer.WriteNumber(Constants.Properties.PrimaryReadCoefficient, policy.PrimaryReadCoefficient);
+            writer.WriteNumber(JsonEncodedStrings.PrimaryReadCoefficient, policy.PrimaryReadCoefficient);
 
-            writer.WriteNumber(Constants.Properties.SecondaryReadCoefficient, policy.SecondaryReadCoefficient);
+            writer.WriteNumber(JsonEncodedStrings.SecondaryReadCoefficient, policy.SecondaryReadCoefficient);
 
             writer.WriteEndObject();
         }
@@ -73,11 +73,11 @@ namespace Azure.Cosmos
             ReadPolicy policy,
             JsonProperty property)
         {
-            if (property.NameEquals(Constants.Properties.PrimaryReadCoefficient))
+            if (property.NameEquals(JsonEncodedStrings.PrimaryReadCoefficient.EncodedUtf8Bytes))
             {
                 policy.PrimaryReadCoefficient = property.Value.GetInt32();
             }
-            else if (property.NameEquals(Constants.Properties.SecondaryReadCoefficient))
+            else if (property.NameEquals(JsonEncodedStrings.SecondaryReadCoefficient.EncodedUtf8Bytes))
             {
                 policy.SecondaryReadCoefficient = property.Value.GetInt32();
             }

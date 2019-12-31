@@ -51,9 +51,9 @@ namespace Azure.Cosmos
             }
 
             writer.WriteStartObject();
-            writer.WriteString(Constants.Properties.Path, compositePath.Path);
+            writer.WriteString(JsonEncodedStrings.Path, compositePath.Path);
 
-            writer.WriteString(Constants.Properties.Order, compositePath.Order.ToString());
+            writer.WriteString(JsonEncodedStrings.Order, compositePath.Order.ToString());
 
             writer.WriteEndObject();
         }
@@ -73,11 +73,11 @@ namespace Azure.Cosmos
             CompositePath compositePath,
             JsonProperty property)
         {
-            if (property.NameEquals(Constants.Properties.Path))
+            if (property.NameEquals(JsonEncodedStrings.Path.EncodedUtf8Bytes))
             {
                 compositePath.Path = property.Value.GetString();
             }
-            else if (property.NameEquals(Constants.Properties.Order))
+            else if (property.NameEquals(JsonEncodedStrings.Order.EncodedUtf8Bytes))
             {
                 if (Enum.TryParse(value: property.Value.GetString(), ignoreCase: true, out CompositePathSortOrder compositePathSortOrder))
                 {

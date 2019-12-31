@@ -51,9 +51,9 @@ namespace Azure.Cosmos
 
             writer.WriteStartObject();
 
-            writer.WriteString(Constants.Properties.Name, region.Name);
+            writer.WriteString(JsonEncodedStrings.Name, region.Name);
 
-            writer.WriteString(Constants.Properties.DatabaseAccountEndpoint, region.Endpoint);
+            writer.WriteString(JsonEncodedStrings.DatabaseAccountEndpoint, region.Endpoint);
 
             writer.WriteEndObject();
         }
@@ -73,11 +73,11 @@ namespace Azure.Cosmos
             AccountRegion region,
             JsonProperty property)
         {
-            if (property.NameEquals(Constants.Properties.Name))
+            if (property.NameEquals(JsonEncodedStrings.Name.EncodedUtf8Bytes))
             {
                 region.Name = property.Value.GetString();
             }
-            else if (property.NameEquals(Constants.Properties.DatabaseAccountEndpoint))
+            else if (property.NameEquals(JsonEncodedStrings.DatabaseAccountEndpoint.EncodedUtf8Bytes))
             {
                 region.Endpoint = property.Value.GetString();
             }

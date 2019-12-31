@@ -52,11 +52,11 @@ namespace Azure.Cosmos
             }
 
             writer.WriteStartObject();
-            writer.WriteString(Constants.Properties.Path, path.Path);
+            writer.WriteString(JsonEncodedStrings.Path, path.Path);
 
             if (path.Indexes != null)
             {
-                writer.WritePropertyName(Constants.Properties.Indexes);
+                writer.WritePropertyName(JsonEncodedStrings.Indexes);
                 writer.WriteStartArray();
                 foreach (Index index in path.Indexes)
                 {
@@ -84,11 +84,11 @@ namespace Azure.Cosmos
             IncludedPath path,
             JsonProperty property)
         {
-            if (property.NameEquals(Constants.Properties.Path))
+            if (property.NameEquals(JsonEncodedStrings.Path.EncodedUtf8Bytes))
             {
                 path.Path = property.Value.GetString();
             }
-            else if (property.NameEquals(Constants.Properties.Indexes))
+            else if (property.NameEquals(JsonEncodedStrings.Indexes.EncodedUtf8Bytes))
             {
                 path.Indexes = new Collection<Index>();
                 foreach (JsonElement item in property.Value.EnumerateArray())

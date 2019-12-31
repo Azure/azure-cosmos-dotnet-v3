@@ -55,7 +55,7 @@ namespace Azure.Cosmos
 
             if (policy.UniqueKeys != null)
             {
-                writer.WritePropertyName(Constants.Properties.UniqueKeys);
+                writer.WritePropertyName(JsonEncodedStrings.UniqueKeys);
                 writer.WriteStartArray();
                 foreach (UniqueKey uniqueKey in policy.UniqueKeys)
                 {
@@ -71,26 +71,16 @@ namespace Azure.Cosmos
         public static UniqueKeyPolicy ReadProperty(JsonElement root)
         {
             UniqueKeyPolicy policy = new UniqueKeyPolicy();
-            foreach (JsonProperty property in root.EnumerateObject())
-            {
-                TextJsonUniqueKeyPolicyConverter.ReadPropertyValue(policy, property);
-            }
-
-            return policy;
-        }
-
-        private static void ReadPropertyValue(
-            UniqueKeyPolicy policy,
-            JsonProperty property)
-        {
-            if (property.NameEquals(Constants.Properties.UniqueKeys))
+            if (root.TryGetProperty(JsonEncodedStrings.UniqueKeys.EncodedUtf8Bytes, out JsonElement property))
             {
                 policy.UniqueKeys = new Collection<UniqueKey>();
-                foreach (JsonElement item in property.Value.EnumerateArray())
+                foreach (JsonElement item in property.EnumerateArray())
                 {
                     policy.UniqueKeys.Add(TextJsonUniqueKeyConverter.ReadProperty(item));
                 }
             }
+
+            return policy;
         }
     }
 }

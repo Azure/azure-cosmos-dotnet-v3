@@ -6,7 +6,6 @@ namespace Azure.Cosmos
 {
     using System;
     using System.Text.Json;
-    using Microsoft.Azure.Documents;
 
     internal static class TextJsonSettingsHelper
     {
@@ -16,7 +15,7 @@ namespace Azure.Cosmos
         {
             if (!string.IsNullOrEmpty(id))
             {
-                writer.WriteString(Constants.Properties.Id, id);
+                writer.WriteString(JsonEncodedStrings.Id, id);
             }
         }
 
@@ -26,7 +25,7 @@ namespace Azure.Cosmos
         {
             if (etag.HasValue)
             {
-                writer.WriteString(Constants.Properties.ETag, etag.ToString());
+                writer.WriteString(JsonEncodedStrings.ETag, etag.ToString());
             }
         }
 
@@ -36,7 +35,7 @@ namespace Azure.Cosmos
         {
             if (!string.IsNullOrEmpty(resourceId))
             {
-                writer.WriteString(Constants.Properties.RId, resourceId);
+                writer.WriteString(JsonEncodedStrings.RId, resourceId);
             }
         }
 
@@ -47,7 +46,7 @@ namespace Azure.Cosmos
         {
             if (lastModified.HasValue)
             {
-                writer.WritePropertyName(Constants.Properties.LastModified);
+                writer.WritePropertyName(JsonEncodedStrings.LastModified);
                 TextJsonUnixDateTimeConverter.WritePropertyValues(writer, lastModified, options);
             }
         }

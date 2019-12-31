@@ -30,42 +30,42 @@ namespace Azure.Cosmos
             using JsonDocument document = JsonDocument.ParseValue(ref reader);
             OfferV2 offer = new OfferV2();
 
-            if (document.RootElement.TryGetProperty(Constants.Properties.OfferVersion, out JsonElement versionElement))
+            if (document.RootElement.TryGetProperty(JsonEncodedStrings.OfferVersion.EncodedUtf8Bytes, out JsonElement versionElement))
             {
                 offer.OfferVersion = versionElement.GetString();
             }
 
-            if (document.RootElement.TryGetProperty(Constants.Properties.ResourceLink, out JsonElement resourceLinkElement))
+            if (document.RootElement.TryGetProperty(JsonEncodedStrings.ResourceLink.EncodedUtf8Bytes, out JsonElement resourceLinkElement))
             {
                 offer.ResourceLink = resourceLinkElement.GetString();
             }
 
-            if (document.RootElement.TryGetProperty(Constants.Properties.OfferType, out JsonElement typeElement))
+            if (document.RootElement.TryGetProperty(JsonEncodedStrings.OfferType.EncodedUtf8Bytes, out JsonElement typeElement))
             {
                 offer.OfferType = typeElement.GetString();
             }
 
-            if (document.RootElement.TryGetProperty(Constants.Properties.OfferResourceId, out JsonElement offerResourceIdElement))
+            if (document.RootElement.TryGetProperty(JsonEncodedStrings.OfferResourceId.EncodedUtf8Bytes, out JsonElement offerResourceIdElement))
             {
                 offer.OfferResourceId = offerResourceIdElement.GetString();
             }
 
-            if (document.RootElement.TryGetProperty(Constants.Properties.OfferContent, out JsonElement offerContentElement))
+            if (document.RootElement.TryGetProperty(JsonEncodedStrings.OfferContent.EncodedUtf8Bytes, out JsonElement offerContentElement))
             {
                 offer.Content = TextJsonOfferV2Converter.ReadOfferContent(offerContentElement);
             }
 
-            if (document.RootElement.TryGetProperty(Constants.Properties.SelfLink, out JsonElement selfLinkElement))
+            if (document.RootElement.TryGetProperty(JsonEncodedStrings.SelfLink.EncodedUtf8Bytes, out JsonElement selfLinkElement))
             {
                 offer.SelfLink = selfLinkElement.GetString();
             }
 
-            if (document.RootElement.TryGetProperty(Constants.Properties.Id, out JsonElement idElement))
+            if (document.RootElement.TryGetProperty(JsonEncodedStrings.Id.EncodedUtf8Bytes, out JsonElement idElement))
             {
                 offer.Id = idElement.GetString();
             }
 
-            if (document.RootElement.TryGetProperty(Constants.Properties.RId, out JsonElement resourceIdElement))
+            if (document.RootElement.TryGetProperty(JsonEncodedStrings.RId.EncodedUtf8Bytes, out JsonElement resourceIdElement))
             {
                 offer.ResourceId = resourceIdElement.GetString();
             }
@@ -87,43 +87,36 @@ namespace Azure.Cosmos
 
             if (!string.IsNullOrEmpty(value.OfferVersion))
             {
-                writer.WriteString(Constants.Properties.OfferVersion, value.OfferVersion);
+                writer.WriteString(JsonEncodedStrings.OfferVersion, value.OfferVersion);
             }
 
             if (!string.IsNullOrEmpty(value.ResourceLink))
             {
-                writer.WriteString(Constants.Properties.ResourceLink, value.ResourceLink);
+                writer.WriteString(JsonEncodedStrings.ResourceLink, value.ResourceLink);
             }
 
             if (!string.IsNullOrEmpty(value.OfferType))
             {
-                writer.WriteString(Constants.Properties.OfferType, value.OfferType);
+                writer.WriteString(JsonEncodedStrings.OfferType, value.OfferType);
             }
 
             if (!string.IsNullOrEmpty(value.OfferResourceId))
             {
-                writer.WriteString(Constants.Properties.OfferResourceId, value.OfferResourceId);
+                writer.WriteString(JsonEncodedStrings.OfferResourceId, value.OfferResourceId);
             }
 
             if (value.Content != null)
             {
-                TextJsonOfferV2Converter.WriteOfferContent(writer, value.Content, Constants.Properties.OfferContent);
-            }
-
-            if (!string.IsNullOrEmpty(value.Id))
-            {
-                writer.WriteString(Constants.Properties.Id, value.Id);
+                TextJsonOfferV2Converter.WriteOfferContent(writer, value.Content, JsonEncodedStrings.OfferContent);
             }
 
             if (!string.IsNullOrEmpty(value.SelfLink))
             {
-                writer.WriteString(Constants.Properties.SelfLink, value.SelfLink);
+                writer.WriteString(JsonEncodedStrings.SelfLink, value.SelfLink);
             }
 
-            if (!string.IsNullOrEmpty(value.ResourceId))
-            {
-                writer.WriteString(Constants.Properties.RId, value.ResourceId);
-            }
+            TextJsonSettingsHelper.WriteId(writer, value.Id);
+            TextJsonSettingsHelper.WriteResourceId(writer, value.ResourceId);
 
             writer.WriteEndObject();
         }
@@ -132,12 +125,12 @@ namespace Azure.Cosmos
         {
             int? offerThroughput = null;
             bool? offerIsRUPerMinuteThroughputEnabled = null;
-            if (jsonElement.TryGetProperty(Constants.Properties.OfferThroughput, out JsonElement offerThroughputElement))
+            if (jsonElement.TryGetProperty(JsonEncodedStrings.OfferThroughput.EncodedUtf8Bytes, out JsonElement offerThroughputElement))
             {
                 offerThroughput = offerThroughputElement.GetInt32();
             }
 
-            if (jsonElement.TryGetProperty(Constants.Properties.OfferIsRUPerMinuteThroughputEnabled, out JsonElement offerIsRUPerMinuteThroughputEnabledElement)
+            if (jsonElement.TryGetProperty(JsonEncodedStrings.OfferIsRUPerMinuteThroughputEnabled.EncodedUtf8Bytes, out JsonElement offerIsRUPerMinuteThroughputEnabledElement)
                 && offerIsRUPerMinuteThroughputEnabledElement.ValueKind != JsonValueKind.Null)
             {
                 offerIsRUPerMinuteThroughputEnabled = offerIsRUPerMinuteThroughputEnabledElement.GetBoolean();
@@ -149,18 +142,18 @@ namespace Azure.Cosmos
         public static void WriteOfferContent(
             Utf8JsonWriter writer,
             OfferContentV2 content,
-            string propertyName)
+            JsonEncodedText propertyName)
         {
             writer.WritePropertyName(propertyName);
             writer.WriteStartObject();
             if (content.OfferThroughput > 0)
             {
-                writer.WriteNumber(Constants.Properties.OfferThroughput, content.OfferThroughput);
+                writer.WriteNumber(JsonEncodedStrings.OfferThroughput, content.OfferThroughput);
             }
 
             if (content.OfferIsRUPerMinuteThroughputEnabled.HasValue)
             {
-                writer.WriteBoolean(Constants.Properties.OfferIsRUPerMinuteThroughputEnabled, content.OfferIsRUPerMinuteThroughputEnabled.Value);
+                writer.WriteBoolean(JsonEncodedStrings.OfferIsRUPerMinuteThroughputEnabled, content.OfferIsRUPerMinuteThroughputEnabled.Value);
             }
 
             writer.WriteEndObject();

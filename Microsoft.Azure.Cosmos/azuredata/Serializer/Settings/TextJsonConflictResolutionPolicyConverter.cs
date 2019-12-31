@@ -52,16 +52,16 @@ namespace Azure.Cosmos
 
             writer.WriteStartObject();
 
-            writer.WriteString(Constants.Properties.Mode, policy.Mode.ToString());
+            writer.WriteString(JsonEncodedStrings.Mode, policy.Mode.ToString());
 
             if (!string.IsNullOrEmpty(policy.ResolutionPath))
             {
-                writer.WriteString(Constants.Properties.ConflictResolutionPath, policy.ResolutionPath);
+                writer.WriteString(JsonEncodedStrings.ConflictResolutionPath, policy.ResolutionPath);
             }
 
             if (!string.IsNullOrEmpty(policy.ResolutionProcedure))
             {
-                writer.WriteString(Constants.Properties.ConflictResolutionProcedure, policy.ResolutionProcedure);
+                writer.WriteString(JsonEncodedStrings.ConflictResolutionProcedure, policy.ResolutionProcedure);
             }
 
             writer.WriteEndObject();
@@ -82,18 +82,18 @@ namespace Azure.Cosmos
             ConflictResolutionPolicy policy,
             JsonProperty property)
         {
-            if (property.NameEquals(Constants.Properties.Mode))
+            if (property.NameEquals(JsonEncodedStrings.Mode.EncodedUtf8Bytes))
             {
                 if (Enum.TryParse(value: property.Value.GetString(), ignoreCase: true, out ConflictResolutionMode conflictResolutionMode))
                 {
                     policy.Mode = conflictResolutionMode;
                 }
             }
-            else if (property.NameEquals(Constants.Properties.ConflictResolutionPath))
+            else if (property.NameEquals(JsonEncodedStrings.ConflictResolutionPath.EncodedUtf8Bytes))
             {
                 policy.ResolutionPath = property.Value.GetString();
             }
-            else if (property.NameEquals(Constants.Properties.ConflictResolutionProcedure))
+            else if (property.NameEquals(JsonEncodedStrings.ConflictResolutionProcedure.EncodedUtf8Bytes))
             {
                 policy.ResolutionProcedure = property.Value.GetString();
             }

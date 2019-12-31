@@ -51,11 +51,11 @@ namespace Azure.Cosmos
 
             writer.WriteStartObject();
 
-            writer.WriteNumber(Constants.Properties.MaxReplicaSetSize, policy.MaxReplicaSetSize);
+            writer.WriteNumber(JsonEncodedStrings.MaxReplicaSetSize, policy.MaxReplicaSetSize);
 
-            writer.WriteNumber(Constants.Properties.MinReplicaSetSize, policy.MinReplicaSetSize);
+            writer.WriteNumber(JsonEncodedStrings.MinReplicaSetSize, policy.MinReplicaSetSize);
 
-            writer.WriteBoolean(Constants.Properties.AsyncReplication, policy.AsyncReplication);
+            writer.WriteBoolean(JsonEncodedStrings.AsyncReplication, policy.AsyncReplication);
 
             writer.WriteEndObject();
         }
@@ -75,15 +75,15 @@ namespace Azure.Cosmos
             ReplicationPolicy policy,
             JsonProperty property)
         {
-            if (property.NameEquals(Constants.Properties.MaxReplicaSetSize))
+            if (property.NameEquals(JsonEncodedStrings.MaxReplicaSetSize.EncodedUtf8Bytes))
             {
                 policy.MaxReplicaSetSize = property.Value.GetInt32();
             }
-            else if (property.NameEquals(Constants.Properties.MinReplicaSetSize))
+            else if (property.NameEquals(JsonEncodedStrings.MinReplicaSetSize.EncodedUtf8Bytes))
             {
                 policy.MinReplicaSetSize = property.Value.GetInt32();
             }
-            else if (property.NameEquals(Constants.Properties.AsyncReplication))
+            else if (property.NameEquals(JsonEncodedStrings.AsyncReplication.EncodedUtf8Bytes))
             {
                 policy.AsyncReplication = property.Value.GetBoolean();
             }

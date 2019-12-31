@@ -59,18 +59,18 @@ namespace Azure.Cosmos
 
             TextJsonSettingsHelper.WriteLastModified(writer, setting.LastModified, options);
 
-            writer.WriteString(Constants.Properties.ResourceLink, setting.ResourceUri);
+            writer.WriteString(JsonEncodedStrings.ResourceLink, setting.ResourceUri);
 
-            writer.WriteString(Constants.Properties.PermissionMode, setting.PermissionMode.ToString());
+            writer.WriteString(JsonEncodedStrings.PermissionMode, setting.PermissionMode.ToString());
 
             if (!string.IsNullOrEmpty(setting.Token))
             {
-                writer.WriteString(Constants.Properties.Token, setting.Token);
+                writer.WriteString(JsonEncodedStrings.Token, setting.Token);
             }
 
             if (setting.InternalResourcePartitionKey != null)
             {
-                writer.WritePropertyName(Constants.Properties.ResourcePartitionKey);
+                writer.WritePropertyName(JsonEncodedStrings.ResourcePartitionKey);
                 TextJsonPartitionKeyInternalConverter.WriteElement(writer, setting.InternalResourcePartitionKey);
             }
 
@@ -81,38 +81,38 @@ namespace Azure.Cosmos
             PermissionProperties setting,
             JsonProperty property)
         {
-            if (property.NameEquals(Constants.Properties.Id))
+            if (property.NameEquals(JsonEncodedStrings.Id.EncodedUtf8Bytes))
             {
                 setting.Id = property.Value.GetString();
             }
-            else if (property.NameEquals(Constants.Properties.ETag))
+            else if (property.NameEquals(JsonEncodedStrings.ETag.EncodedUtf8Bytes))
             {
                 setting.ETag = TextJsonSettingsHelper.ReadETag(property);
             }
-            else if (property.NameEquals(Constants.Properties.RId))
+            else if (property.NameEquals(JsonEncodedStrings.RId.EncodedUtf8Bytes))
             {
                 setting.ResourceId = property.Value.GetString();
             }
-            else if (property.NameEquals(Constants.Properties.ResourceLink))
+            else if (property.NameEquals(JsonEncodedStrings.ResourceLink.EncodedUtf8Bytes))
             {
                 setting.ResourceUri = property.Value.GetString();
             }
-            else if (property.NameEquals(Constants.Properties.PermissionMode))
+            else if (property.NameEquals(JsonEncodedStrings.PermissionMode.EncodedUtf8Bytes))
             {
                 if (Enum.TryParse(value: property.Value.GetString(), ignoreCase: true, out PermissionMode permissionMode))
                 {
                     setting.PermissionMode = permissionMode;
                 }
             }
-            else if (property.NameEquals(Constants.Properties.Token))
+            else if (property.NameEquals(JsonEncodedStrings.Token.EncodedUtf8Bytes))
             {
                 setting.Token = property.Value.GetString();
             }
-            else if (property.NameEquals(Constants.Properties.LastModified))
+            else if (property.NameEquals(JsonEncodedStrings.LastModified.EncodedUtf8Bytes))
             {
                 setting.LastModified = TextJsonUnixDateTimeConverter.ReadProperty(property);
             }
-            else if (property.NameEquals(Constants.Properties.ResourcePartitionKey))
+            else if (property.NameEquals(JsonEncodedStrings.ResourcePartitionKey.EncodedUtf8Bytes))
             {
                 setting.InternalResourcePartitionKey = TextJsonPartitionKeyInternalConverter.ReadElement(property.Value);
             }

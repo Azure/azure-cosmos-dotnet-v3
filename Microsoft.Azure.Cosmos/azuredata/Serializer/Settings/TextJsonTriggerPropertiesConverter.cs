@@ -55,11 +55,11 @@ namespace Azure.Cosmos
 
             TextJsonSettingsHelper.WriteETag(writer, setting.ETag);
 
-            writer.WriteString(Constants.Properties.Body, setting.Body);
+            writer.WriteString(JsonEncodedStrings.Body, setting.Body);
 
-            writer.WriteString(Constants.Properties.TriggerType, setting.TriggerType.ToString());
+            writer.WriteString(JsonEncodedStrings.TriggerType, setting.TriggerType.ToString());
 
-            writer.WriteString(Constants.Properties.TriggerOperation, setting.TriggerOperation.ToString());
+            writer.WriteString(JsonEncodedStrings.TriggerOperation, setting.TriggerOperation.ToString());
 
             writer.WriteEndObject();
         }
@@ -68,26 +68,26 @@ namespace Azure.Cosmos
             TriggerProperties setting,
             JsonProperty property)
         {
-            if (property.NameEquals(Constants.Properties.Id))
+            if (property.NameEquals(JsonEncodedStrings.Id.EncodedUtf8Bytes))
             {
                 setting.Id = property.Value.GetString();
             }
-            else if (property.NameEquals(Constants.Properties.ETag))
+            else if (property.NameEquals(JsonEncodedStrings.ETag.EncodedUtf8Bytes))
             {
                 setting.ETag = TextJsonSettingsHelper.ReadETag(property);
             }
-            else if (property.NameEquals(Constants.Properties.Body))
+            else if (property.NameEquals(JsonEncodedStrings.Body.EncodedUtf8Bytes))
             {
                 setting.Body = property.Value.GetString();
             }
-            else if (property.NameEquals(Constants.Properties.TriggerType))
+            else if (property.NameEquals(JsonEncodedStrings.TriggerType.EncodedUtf8Bytes))
             {
                 if (Enum.TryParse(value: property.Value.GetString(), ignoreCase: true, out Scripts.TriggerType triggerType))
                 {
                     setting.TriggerType = triggerType;
                 }
             }
-            else if (property.NameEquals(Constants.Properties.TriggerOperation))
+            else if (property.NameEquals(JsonEncodedStrings.TriggerOperation.EncodedUtf8Bytes))
             {
                 if (Enum.TryParse(value: property.Value.GetString(), ignoreCase: true, out Scripts.TriggerOperation triggerOperation))
                 {

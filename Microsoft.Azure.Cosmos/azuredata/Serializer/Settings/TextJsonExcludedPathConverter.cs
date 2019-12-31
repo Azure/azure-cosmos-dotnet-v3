@@ -51,7 +51,7 @@ namespace Azure.Cosmos
             }
 
             writer.WriteStartObject();
-            writer.WriteString(Constants.Properties.Path, compositePath.Path);
+            writer.WriteString(JsonEncodedStrings.Path, compositePath.Path);
 
             writer.WriteEndObject();
         }
@@ -59,22 +59,12 @@ namespace Azure.Cosmos
         public static ExcludedPath ReadProperty(JsonElement root)
         {
             ExcludedPath path = new ExcludedPath();
-            foreach (JsonProperty property in root.EnumerateObject())
+            if (root.TryGetProperty(JsonEncodedStrings.Path.EncodedUtf8Bytes, out JsonElement pathProperty))
             {
-                TextJsonExcludedPathConverter.ReadPropertyValue(path, property);
+                path.Path = pathProperty.GetString();
             }
 
             return path;
-        }
-
-        private static void ReadPropertyValue(
-            ExcludedPath path,
-            JsonProperty property)
-        {
-            if (property.NameEquals(Constants.Properties.Path))
-            {
-                path.Path = property.Value.GetString();
-            }
         }
     }
 }

@@ -52,11 +52,11 @@ namespace Azure.Cosmos
 
             writer.WriteStartObject();
 
-            writer.WriteString(Constants.Properties.DefaultConsistencyLevel, setting.DefaultConsistencyLevel.ToString());
+            writer.WriteString(JsonEncodedStrings.DefaultConsistencyLevel, setting.DefaultConsistencyLevel.ToString());
 
-            writer.WriteNumber(Constants.Properties.MaxStalenessPrefix, setting.MaxStalenessPrefix);
+            writer.WriteNumber(JsonEncodedStrings.MaxStalenessPrefix, setting.MaxStalenessPrefix);
 
-            writer.WriteNumber(Constants.Properties.MaxStalenessIntervalInSeconds, setting.MaxStalenessIntervalInSeconds);
+            writer.WriteNumber(JsonEncodedStrings.MaxStalenessIntervalInSeconds, setting.MaxStalenessIntervalInSeconds);
 
             writer.WriteEndObject();
         }
@@ -76,15 +76,15 @@ namespace Azure.Cosmos
             AccountConsistency setting,
             JsonProperty property)
         {
-            if (property.NameEquals(Constants.Properties.MaxStalenessPrefix))
+            if (property.NameEquals(JsonEncodedStrings.MaxStalenessPrefix.EncodedUtf8Bytes))
             {
                 setting.MaxStalenessPrefix = property.Value.GetInt32();
             }
-            else if (property.NameEquals(Constants.Properties.MaxStalenessIntervalInSeconds))
+            else if (property.NameEquals(JsonEncodedStrings.MaxStalenessIntervalInSeconds.EncodedUtf8Bytes))
             {
                 setting.MaxStalenessIntervalInSeconds = property.Value.GetInt32();
             }
-            else if (property.NameEquals(Constants.Properties.DefaultConsistencyLevel))
+            else if (property.NameEquals(JsonEncodedStrings.DefaultConsistencyLevel.EncodedUtf8Bytes))
             {
                 if (Enum.TryParse(value: property.Value.GetString(), ignoreCase: true, out ConsistencyLevel consistencyLevel))
                 {

@@ -5,7 +5,6 @@
 namespace Azure.Cosmos
 {
     using System;
-    using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Globalization;
     using System.Text.Json;
@@ -59,7 +58,7 @@ namespace Azure.Cosmos
 
             TextJsonSettingsHelper.WriteResourceId(writer, setting.ResourceId);
 
-            writer.WritePropertyName(Constants.Properties.WritableLocations);
+            writer.WritePropertyName(JsonEncodedStrings.WritableLocations);
             writer.WriteStartArray();
             foreach (AccountRegion accountRegion in setting.WriteLocationsInternal)
             {
@@ -68,7 +67,7 @@ namespace Azure.Cosmos
 
             writer.WriteEndArray();
 
-            writer.WritePropertyName(Constants.Properties.ReadableLocations);
+            writer.WritePropertyName(JsonEncodedStrings.ReadableLocations);
             writer.WriteStartArray();
             foreach (AccountRegion accountRegion in setting.ReadLocationsInternal)
             {
@@ -77,23 +76,23 @@ namespace Azure.Cosmos
 
             writer.WriteEndArray();
 
-            writer.WritePropertyName(Constants.Properties.UserConsistencyPolicy);
+            writer.WritePropertyName(JsonEncodedStrings.UserConsistencyPolicy);
             TextJsonAccountConsistencyConverter.WritePropertyValue(writer, setting.Consistency, options);
 
-            writer.WriteString(Constants.Properties.AddressesLink, setting.AddressesLink);
+            writer.WriteString(JsonEncodedStrings.AddressesLink, setting.AddressesLink);
 
-            writer.WritePropertyName(Constants.Properties.UserReplicationPolicy);
+            writer.WritePropertyName(JsonEncodedStrings.UserReplicationPolicy);
             TextJsonReplicationPolicyConverter.WritePropertyValue(writer, setting.ReplicationPolicy);
 
-            writer.WritePropertyName(Constants.Properties.SystemReplicationPolicy);
+            writer.WritePropertyName(JsonEncodedStrings.SystemReplicationPolicy);
             TextJsonReplicationPolicyConverter.WritePropertyValue(writer, setting.SystemReplicationPolicy);
 
-            writer.WritePropertyName(Constants.Properties.ReadPolicy);
+            writer.WritePropertyName(JsonEncodedStrings.ReadPolicy);
             TextJsonReadPolicyConverter.WritePropertyValue(writer, setting.ReadPolicy);
 
-            writer.WriteString(Constants.Properties.QueryEngineConfiguration, setting.QueryEngineConfigurationString);
+            writer.WriteString(JsonEncodedStrings.QueryEngineConfiguration, setting.QueryEngineConfigurationString);
 
-            writer.WriteBoolean(Constants.Properties.EnableMultipleWriteLocations, setting.EnableMultipleWriteLocations);
+            writer.WriteBoolean(JsonEncodedStrings.EnableMultipleWriteLocations, setting.EnableMultipleWriteLocations);
 
             writer.WriteEndObject();
         }
@@ -102,19 +101,19 @@ namespace Azure.Cosmos
             AccountProperties setting,
             JsonProperty property)
         {
-            if (property.NameEquals(Constants.Properties.Id))
+            if (property.NameEquals(JsonEncodedStrings.Id.EncodedUtf8Bytes))
             {
                 setting.Id = property.Value.GetString();
             }
-            else if (property.NameEquals(Constants.Properties.ETag))
+            else if (property.NameEquals(JsonEncodedStrings.ETag.EncodedUtf8Bytes))
             {
                 setting.ETag = TextJsonSettingsHelper.ReadETag(property);
             }
-            else if (property.NameEquals(Constants.Properties.RId))
+            else if (property.NameEquals(JsonEncodedStrings.RId.EncodedUtf8Bytes))
             {
                 setting.ResourceId = property.Value.GetString();
             }
-            else if (property.NameEquals(Constants.Properties.WritableLocations))
+            else if (property.NameEquals(JsonEncodedStrings.WritableLocations.EncodedUtf8Bytes))
             {
                 setting.WriteLocationsInternal = new Collection<AccountRegion>();
                 foreach (JsonElement item in property.Value.EnumerateArray())
@@ -122,7 +121,7 @@ namespace Azure.Cosmos
                     setting.WriteLocationsInternal.Add(TextJsonAccountRegionConverter.ReadProperty(item));
                 }
             }
-            else if (property.NameEquals(Constants.Properties.ReadableLocations))
+            else if (property.NameEquals(JsonEncodedStrings.ReadableLocations.EncodedUtf8Bytes))
             {
                 setting.ReadLocationsInternal = new Collection<AccountRegion>();
                 foreach (JsonElement item in property.Value.EnumerateArray())
@@ -130,31 +129,31 @@ namespace Azure.Cosmos
                     setting.ReadLocationsInternal.Add(TextJsonAccountRegionConverter.ReadProperty(item));
                 }
             }
-            else if (property.NameEquals(Constants.Properties.UserConsistencyPolicy))
+            else if (property.NameEquals(JsonEncodedStrings.UserConsistencyPolicy.EncodedUtf8Bytes))
             {
                 setting.Consistency = TextJsonAccountConsistencyConverter.ReadProperty(property.Value);
             }
-            else if (property.NameEquals(Constants.Properties.AddressesLink))
+            else if (property.NameEquals(JsonEncodedStrings.AddressesLink.EncodedUtf8Bytes))
             {
                 setting.AddressesLink = property.Value.GetString();
             }
-            else if (property.NameEquals(Constants.Properties.UserReplicationPolicy))
+            else if (property.NameEquals(JsonEncodedStrings.UserReplicationPolicy.EncodedUtf8Bytes))
             {
                 setting.ReplicationPolicy = TextJsonReplicationPolicyConverter.ReadProperty(property.Value);
             }
-            else if (property.NameEquals(Constants.Properties.SystemReplicationPolicy))
+            else if (property.NameEquals(JsonEncodedStrings.SystemReplicationPolicy.EncodedUtf8Bytes))
             {
                 setting.SystemReplicationPolicy = TextJsonReplicationPolicyConverter.ReadProperty(property.Value);
             }
-            else if (property.NameEquals(Constants.Properties.ReadPolicy))
+            else if (property.NameEquals(JsonEncodedStrings.ReadPolicy.EncodedUtf8Bytes))
             {
                 setting.ReadPolicy = TextJsonReadPolicyConverter.ReadProperty(property.Value);
             }
-            else if (property.NameEquals(Constants.Properties.QueryEngineConfiguration))
+            else if (property.NameEquals(JsonEncodedStrings.QueryEngineConfiguration.EncodedUtf8Bytes))
             {
                 setting.QueryEngineConfigurationString = property.Value.GetString();
             }
-            else if (property.NameEquals(Constants.Properties.EnableMultipleWriteLocations))
+            else if (property.NameEquals(JsonEncodedStrings.EnableMultipleWriteLocations.EncodedUtf8Bytes))
             {
                 setting.EnableMultipleWriteLocations = property.Value.GetBoolean();
             }

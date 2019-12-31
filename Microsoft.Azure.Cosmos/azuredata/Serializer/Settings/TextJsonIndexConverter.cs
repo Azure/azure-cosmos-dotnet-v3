@@ -51,9 +51,9 @@ namespace Azure.Cosmos
 
             writer.WriteStartObject();
 
-            writer.WriteString(Constants.Properties.IndexKind, index.Kind.ToString());
+            writer.WriteString(JsonEncodedStrings.IndexKind, index.Kind.ToString());
 
-            writer.WritePropertyName(Constants.Properties.DataType);
+            writer.WritePropertyName(JsonEncodedStrings.DataType);
             switch (index.Kind)
             {
                 case IndexKind.Hash:
@@ -61,7 +61,7 @@ namespace Azure.Cosmos
                     writer.WriteStringValue(hashIndex.DataType.ToString());
                     if (hashIndex.Precision.HasValue)
                     {
-                        writer.WriteNumber(Constants.Properties.Precision, hashIndex.Precision.Value);
+                        writer.WriteNumber(JsonEncodedStrings.Precision, hashIndex.Precision.Value);
                     }
 
                     break;
@@ -70,7 +70,7 @@ namespace Azure.Cosmos
                     writer.WriteStringValue(rangeIndex.DataType.ToString());
                     if (rangeIndex.Precision.HasValue)
                     {
-                        writer.WriteNumber(Constants.Properties.Precision, rangeIndex.Precision.Value);
+                        writer.WriteNumber(JsonEncodedStrings.Precision, rangeIndex.Precision.Value);
                     }
 
                     break;
@@ -85,20 +85,20 @@ namespace Azure.Cosmos
 
         public static Index ReadProperty(JsonElement root)
         {
-            if (!root.TryGetProperty(Constants.Properties.IndexKind, out JsonElement indexKindElement)
+            if (!root.TryGetProperty(JsonEncodedStrings.IndexKind.EncodedUtf8Bytes, out JsonElement indexKindElement)
                 || indexKindElement.ValueKind != JsonValueKind.String)
             {
                 throw new JsonException(string.Format(CultureInfo.CurrentCulture, RMResources.InvalidIndexSpecFormat));
             }
 
-            if (!root.TryGetProperty(Constants.Properties.DataType, out JsonElement dataTypeElement)
+            if (!root.TryGetProperty(JsonEncodedStrings.DataType.EncodedUtf8Bytes, out JsonElement dataTypeElement)
                 || dataTypeElement.ValueKind != JsonValueKind.String)
             {
                 throw new JsonException(string.Format(CultureInfo.CurrentCulture, RMResources.InvalidIndexSpecFormat));
             }
 
             short? precision = null;
-            if (root.TryGetProperty(Constants.Properties.Precision, out JsonElement precisionElement)
+            if (root.TryGetProperty(JsonEncodedStrings.Precision.EncodedUtf8Bytes, out JsonElement precisionElement)
                 && precisionElement.ValueKind != JsonValueKind.Null)
             {
                 precision = precisionElement.GetInt16();

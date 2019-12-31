@@ -61,12 +61,12 @@ namespace Azure.Cosmos
 
             if (!string.IsNullOrEmpty(setting.SelfLink))
             {
-                writer.WriteString(Constants.Properties.SelfLink, setting.SelfLink);
+                writer.WriteString(JsonEncodedStrings.SelfLink, setting.SelfLink);
             }
 
             if (!string.IsNullOrEmpty(setting.Permissions))
             {
-                writer.WriteString(Constants.Properties.PermissionsLink, setting.Permissions);
+                writer.WriteString(JsonEncodedStrings.PermissionsLink, setting.Permissions);
             }
 
             writer.WriteEndObject();
@@ -76,31 +76,31 @@ namespace Azure.Cosmos
             UserProperties setting,
             JsonProperty property)
         {
-            if (property.NameEquals(Constants.Properties.Id))
+            if (property.NameEquals(JsonEncodedStrings.Id.EncodedUtf8Bytes))
             {
                 setting.Id = property.Value.GetString();
             }
-            else if (property.NameEquals(Constants.Properties.ETag))
+            else if (property.NameEquals(JsonEncodedStrings.ETag.EncodedUtf8Bytes))
             {
                 setting.ETag = TextJsonSettingsHelper.ReadETag(property);
             }
-            else if (property.NameEquals(Constants.Properties.RId))
+            else if (property.NameEquals(JsonEncodedStrings.RId.EncodedUtf8Bytes))
             {
                 setting.ResourceId = property.Value.GetString();
             }
-            else if (property.NameEquals(Constants.Properties.ResourceLink))
+            else if (property.NameEquals(JsonEncodedStrings.ResourceLink.EncodedUtf8Bytes))
             {
                 setting.ResourceId = property.Value.GetString();
             }
-            else if (property.NameEquals(Constants.Properties.SelfLink))
+            else if (property.NameEquals(JsonEncodedStrings.SelfLink.EncodedUtf8Bytes))
             {
                 setting.SelfLink = property.Value.GetString();
             }
-            else if (property.NameEquals(Constants.Properties.LastModified))
+            else if (property.NameEquals(JsonEncodedStrings.LastModified.EncodedUtf8Bytes))
             {
                 setting.LastModified = TextJsonUnixDateTimeConverter.ReadProperty(property);
             }
-            else if (property.NameEquals(Constants.Properties.PermissionsLink))
+            else if (property.NameEquals(JsonEncodedStrings.PermissionsLink.EncodedUtf8Bytes))
             {
                 setting.Permissions = property.Value.GetString();
             }

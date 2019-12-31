@@ -65,19 +65,19 @@ namespace Azure.Cosmos
             DatabaseProperties setting,
             JsonProperty property)
         {
-            if (property.NameEquals(Constants.Properties.Id))
+            if (property.NameEquals(JsonEncodedStrings.Id.EncodedUtf8Bytes))
             {
                 setting.Id = property.Value.GetString();
             }
-            else if (property.NameEquals(Constants.Properties.ETag))
+            else if (property.NameEquals(JsonEncodedStrings.ETag.EncodedUtf8Bytes))
             {
                 setting.ETag = TextJsonSettingsHelper.ReadETag(property);
             }
-            else if (property.NameEquals(Constants.Properties.RId))
+            else if (property.NameEquals(JsonEncodedStrings.RId.EncodedUtf8Bytes))
             {
                 setting.ResourceId = property.Value.GetString();
             }
-            else if (property.NameEquals(Constants.Properties.LastModified))
+            else if (property.NameEquals(JsonEncodedStrings.LastModified.EncodedUtf8Bytes))
             {
                 setting.LastModified = TextJsonUnixDateTimeConverter.ReadProperty(property);
             }

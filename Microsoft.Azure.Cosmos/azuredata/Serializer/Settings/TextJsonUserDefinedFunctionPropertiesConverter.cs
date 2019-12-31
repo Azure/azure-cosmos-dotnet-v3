@@ -55,7 +55,7 @@ namespace Azure.Cosmos
 
             TextJsonSettingsHelper.WriteETag(writer, setting.ETag);
 
-            writer.WriteString(Constants.Properties.Body, setting.Body);
+            writer.WriteString(JsonEncodedStrings.Body, setting.Body);
 
             writer.WriteEndObject();
         }
@@ -64,15 +64,15 @@ namespace Azure.Cosmos
             UserDefinedFunctionProperties setting,
             JsonProperty property)
         {
-            if (property.NameEquals(Constants.Properties.Id))
+            if (property.NameEquals(JsonEncodedStrings.Id.EncodedUtf8Bytes))
             {
                 setting.Id = property.Value.GetString();
             }
-            else if (property.NameEquals(Constants.Properties.ETag))
+            else if (property.NameEquals(JsonEncodedStrings.ETag.EncodedUtf8Bytes))
             {
                 setting.ETag = TextJsonSettingsHelper.ReadETag(property);
             }
-            else if (property.NameEquals(Constants.Properties.Body))
+            else if (property.NameEquals(JsonEncodedStrings.Body.EncodedUtf8Bytes))
             {
                 setting.Body = property.Value.GetString();
             }

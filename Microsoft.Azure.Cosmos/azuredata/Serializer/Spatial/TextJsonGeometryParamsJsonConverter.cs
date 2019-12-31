@@ -56,13 +56,13 @@ namespace Azure.Cosmos
 
             if (geometryParams.Crs != null)
             {
-                writer.WritePropertyName("crs");
+                writer.WritePropertyName(JsonEncodedStrings.Crs);
                 TextJsonCrsConverter.WritePropertyValues(writer, geometryParams.Crs, options);
             }
 
             if (geometryParams.BoundingBox != null)
             {
-                writer.WritePropertyName("bbox");
+                writer.WritePropertyName(JsonEncodedStrings.BoundingBox);
                 TextJsonBoundingBoxConverter.WritePropertyValues(writer, geometryParams.BoundingBox, options);
             }
 
@@ -79,12 +79,12 @@ namespace Azure.Cosmos
             JsonSerializerOptions options)
         {
             GeometryParams geometryParams = new GeometryParams();
-            if (root.TryGetProperty("crs", out JsonElement crsElement))
+            if (root.TryGetProperty(JsonEncodedStrings.Crs.EncodedUtf8Bytes, out JsonElement crsElement))
             {
                 geometryParams.Crs = TextJsonCrsConverter.ReadProperty(crsElement);
             }
 
-            if (root.TryGetProperty("bbox", out JsonElement bboxElement))
+            if (root.TryGetProperty(JsonEncodedStrings.BoundingBox.EncodedUtf8Bytes, out JsonElement bboxElement))
             {
                 geometryParams.BoundingBox = TextJsonBoundingBoxConverter.ReadProperty(bboxElement);
             }
@@ -94,11 +94,11 @@ namespace Azure.Cosmos
             // JsonExtensionData support
             foreach (JsonProperty jsonProperty in root.EnumerateObject())
             {
-                if (jsonProperty.NameEquals("crs")
-                    || jsonProperty.NameEquals("type")
-                    || jsonProperty.NameEquals("bbox")
-                    || jsonProperty.NameEquals("coordinates")
-                    || jsonProperty.NameEquals("geometries"))
+                if (jsonProperty.NameEquals(JsonEncodedStrings.Crs.EncodedUtf8Bytes)
+                    || jsonProperty.NameEquals(JsonEncodedStrings.Type.EncodedUtf8Bytes)
+                    || jsonProperty.NameEquals(JsonEncodedStrings.BoundingBox.EncodedUtf8Bytes)
+                    || jsonProperty.NameEquals(JsonEncodedStrings.Coordinates.EncodedUtf8Bytes)
+                    || jsonProperty.NameEquals(JsonEncodedStrings.Geometries.EncodedUtf8Bytes))
                 {
                     continue;
                 }

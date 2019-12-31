@@ -53,11 +53,11 @@ namespace Azure.Cosmos
             }
 
             writer.WriteStartObject();
-            writer.WriteString(Constants.Properties.Path, path.Path);
+            writer.WriteString(JsonEncodedStrings.Path, path.Path);
 
             if (path.SpatialTypes != null)
             {
-                writer.WritePropertyName(Constants.Properties.Types);
+                writer.WritePropertyName(JsonEncodedStrings.Types);
                 writer.WriteStartArray();
                 foreach (Spatial.SpatialType type in path.SpatialTypes)
                 {
@@ -85,11 +85,11 @@ namespace Azure.Cosmos
             SpatialPath path,
             JsonProperty property)
         {
-            if (property.NameEquals(Constants.Properties.Path))
+            if (property.NameEquals(JsonEncodedStrings.Path.EncodedUtf8Bytes))
             {
                 path.Path = property.Value.GetString();
             }
-            else if (property.NameEquals(Constants.Properties.Types))
+            else if (property.NameEquals(JsonEncodedStrings.Types.EncodedUtf8Bytes))
             {
                 path.SpatialTypes = new Collection<Spatial.SpatialType>();
                 foreach (JsonElement item in property.Value.EnumerateArray())

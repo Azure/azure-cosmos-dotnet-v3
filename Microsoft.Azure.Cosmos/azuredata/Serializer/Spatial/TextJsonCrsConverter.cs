@@ -5,8 +5,6 @@
 namespace Azure.Cosmos
 {
     using System;
-    using System.Collections.Generic;
-    using System.Globalization;
     using System.Text.Json;
     using System.Text.Json.Serialization;
     using Azure.Cosmos.Spatial;
@@ -14,6 +12,9 @@ namespace Azure.Cosmos
 
     internal sealed class TextJsonCrsConverter : JsonConverter<Crs>
     {
+        private const string LinkType = "link";
+        private const string NameType = "name";
+
         public override Crs Read(
             ref Utf8JsonReader reader,
             Type typeToConvert,
@@ -53,13 +54,13 @@ namespace Azure.Cosmos
                 case CrsType.Linked:
                     LinkedCrs linkedCrs = (LinkedCrs)crs;
                     writer.WriteStartObject();
-                    writer.WriteString("type", "link");
-                    writer.WritePropertyName("properties");
+                    writer.WriteString(JsonEncodedStrings.Type, LinkType);
+                    writer.WritePropertyName(JsonEncodedStrings.Properties);
                     writer.WriteStartObject();
-                    writer.WriteString("href", linkedCrs.Href);
+                    writer.WriteString(JsonEncodedStrings.Href, linkedCrs.Href);
                     if (linkedCrs.HrefType != null)
                     {
-                        writer.WriteString("type", linkedCrs.HrefType);
+                        writer.WriteString(JsonEncodedStrings.Type, linkedCrs.HrefType);
                     }
 
                     writer.WriteEndObject();
@@ -69,10 +70,10 @@ namespace Azure.Cosmos
                 case CrsType.Named:
                     NamedCrs namedCrs = (NamedCrs)crs;
                     writer.WriteStartObject();
-                    writer.WriteString("type", "name");
-                    writer.WritePropertyName("properties");
+                    writer.WriteString(JsonEncodedStrings.Type, NameType);
+                    writer.WritePropertyName(JsonEncodedStrings.Properties);
                     writer.WriteStartObject();
-                    writer.WriteString("name", namedCrs.Name);
+                    writer.WriteString(JsonEncodedStrings.Name, namedCrs.Name);
                     writer.WriteEndObject();
                     writer.WriteEndObject();
                     break;
@@ -95,20 +96,20 @@ namespace Azure.Cosmos
                 throw new JsonException(RMResources.SpatialFailedToDeserializeCrs);
             }
 
-            if (!root.TryGetProperty("properties", out JsonElement propertiesJsonElement))
+            if (!root.TryGetProperty(JsonEncodedStrings.Properties.EncodedUtf8Bytes, out JsonElement propertiesJsonElement))
             {
                 throw new JsonException(RMResources.SpatialFailedToDeserializeCrs);
             }
 
-            if (!root.TryGetProperty("type", out JsonElement typeJsonElement))
+            if (!root.TryGetProperty(JsonEncodedStrings.Type.EncodedUtf8Bytes, out JsonElement typeJsonElement))
             {
                 throw new JsonException(RMResources.SpatialFailedToDeserializeCrs);
             }
 
             switch (typeJsonElement.GetString())
             {
-                case "name":
-                    if (!propertiesJsonElement.TryGetProperty("name", out JsonElement nameJsonElement)
+                case NameType:
+                    if (!propertiesJsonElement.TryGetProperty(JsonEncodedStrings.Name.EncodedUtf8Bytes, out JsonElement nameJsonElement)
                         || nameJsonElement.ValueKind != JsonValueKind.String)
                     {
                         throw new JsonException(RMResources.SpatialFailedToDeserializeCrs);
@@ -116,14 +117,14 @@ namespace Azure.Cosmos
 
                     return new NamedCrs(nameJsonElement.GetString());
 
-                case "link":
-                    if (!propertiesJsonElement.TryGetProperty("href", out JsonElement hrefJsonElement)
+                case LinkType:
+                    if (!propertiesJsonElement.TryGetProperty(JsonEncodedStrings.Href.EncodedUtf8Bytes, out JsonElement hrefJsonElement)
                         || hrefJsonElement.ValueKind != JsonValueKind.String)
                     {
                         throw new JsonException(RMResources.SpatialFailedToDeserializeCrs);
                     }
 
-                    if (!propertiesJsonElement.TryGetProperty("type", out JsonElement typeLinkJsonElement)
+                    if (!propertiesJsonElement.TryGetProperty(JsonEncodedStrings.Type.EncodedUtf8Bytes, out JsonElement typeLinkJsonElement)
                         || typeLinkJsonElement.ValueKind != JsonValueKind.String)
                     {
                         throw new JsonException(RMResources.SpatialFailedToDeserializeCrs);

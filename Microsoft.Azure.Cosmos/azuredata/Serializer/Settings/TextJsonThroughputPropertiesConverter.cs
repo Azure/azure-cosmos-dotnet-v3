@@ -59,12 +59,12 @@ namespace Azure.Cosmos
 
             if (!string.IsNullOrEmpty(setting.ResourceRID))
             {
-                writer.WriteString(Constants.Properties.OfferResourceId, setting.ResourceRID);
+                writer.WriteString(JsonEncodedStrings.OfferResourceId, setting.ResourceRID);
             }
 
             if (setting.Content != null)
             {
-                TextJsonOfferV2Converter.WriteOfferContent(writer, setting.Content, Constants.Properties.Content);
+                TextJsonOfferV2Converter.WriteOfferContent(writer, setting.Content, JsonEncodedStrings.Content);
             }
 
             writer.WriteEndObject();
@@ -74,23 +74,23 @@ namespace Azure.Cosmos
             ThroughputProperties setting,
             JsonProperty property)
         {
-            if (property.NameEquals(Constants.Properties.ETag))
+            if (property.NameEquals(JsonEncodedStrings.ETag.EncodedUtf8Bytes))
             {
                 setting.ETag = TextJsonSettingsHelper.ReadETag(property);
             }
-            else if (property.NameEquals(Constants.Properties.LastModified))
+            else if (property.NameEquals(JsonEncodedStrings.LastModified.EncodedUtf8Bytes))
             {
                 setting.LastModified = TextJsonUnixDateTimeConverter.ReadProperty(property);
             }
-            else if (property.NameEquals(Constants.Properties.RId))
+            else if (property.NameEquals(JsonEncodedStrings.RId.EncodedUtf8Bytes))
             {
                 setting.OfferRID = property.Value.GetString();
             }
-            else if (property.NameEquals(Constants.Properties.OfferResourceId))
+            else if (property.NameEquals(JsonEncodedStrings.OfferResourceId.EncodedUtf8Bytes))
             {
                 setting.ResourceRID = property.Value.GetString();
             }
-            else if (property.NameEquals(Constants.Properties.Content))
+            else if (property.NameEquals(JsonEncodedStrings.Content.EncodedUtf8Bytes))
             {
                 setting.Content = TextJsonOfferV2Converter.ReadOfferContent(property.Value);
             }

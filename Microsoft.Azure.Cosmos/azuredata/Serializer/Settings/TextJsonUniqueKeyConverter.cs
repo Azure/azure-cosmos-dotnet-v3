@@ -55,7 +55,7 @@ namespace Azure.Cosmos
 
             if (key.Paths != null)
             {
-                writer.WritePropertyName(Constants.Properties.Paths);
+                writer.WritePropertyName(JsonEncodedStrings.Paths);
                 writer.WriteStartArray();
                 foreach (string path in key.Paths)
                 {
@@ -71,26 +71,16 @@ namespace Azure.Cosmos
         public static UniqueKey ReadProperty(JsonElement root)
         {
             UniqueKey key = new UniqueKey();
-            foreach (JsonProperty property in root.EnumerateObject())
-            {
-                TextJsonUniqueKeyConverter.ReadPropertyValue(key, property);
-            }
-
-            return key;
-        }
-
-        private static void ReadPropertyValue(
-            UniqueKey key,
-            JsonProperty property)
-        {
-            if (property.NameEquals(Constants.Properties.Paths))
+            if (root.TryGetProperty(JsonEncodedStrings.Paths.EncodedUtf8Bytes, out JsonElement pathsProperty))
             {
                 key.Paths = new Collection<string>();
-                foreach (JsonElement item in property.Value.EnumerateArray())
+                foreach (JsonElement item in pathsProperty.EnumerateArray())
                 {
                     key.Paths.Add(item.GetString());
                 }
             }
+
+            return key;
         }
     }
 }

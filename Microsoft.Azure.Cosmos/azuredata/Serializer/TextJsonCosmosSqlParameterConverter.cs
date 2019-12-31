@@ -42,9 +42,9 @@ namespace Azure.Cosmos
         {
             writer.WriteStartObject();
 
-            writer.WriteString("name", sqlParameter.Name);
+            writer.WriteString(JsonEncodedStrings.Name, sqlParameter.Name);
 
-            writer.WritePropertyName("value");
+            writer.WritePropertyName(JsonEncodedStrings.Value);
             if (this.parameterSerializer != null)
             {
                 // Use the user serializer for the parameter values so custom conversions are correctly handled

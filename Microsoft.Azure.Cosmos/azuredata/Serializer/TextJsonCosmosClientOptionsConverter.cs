@@ -34,70 +34,75 @@ namespace Azure.Cosmos
             CosmosJsonSerializerWrapper cosmosJsonSerializerWrapper = value.Serializer as CosmosJsonSerializerWrapper;
             if (value.Serializer is CosmosJsonSerializerWrapper)
             {
-                writer.WriteString("CosmosSerializer", cosmosJsonSerializerWrapper.InternalJsonSerializer.GetType().ToString());
+                writer.WriteString(JsonEncodedStrings.CosmosSerializer, cosmosJsonSerializerWrapper.InternalJsonSerializer.GetType().ToString());
             }
 
             CosmosSerializer cosmosSerializer = value.Serializer as CosmosSerializer;
             if (cosmosSerializer is CosmosSerializer)
             {
-                writer.WriteString("CosmosSerializer", cosmosSerializer.GetType().ToString());
+                writer.WriteString(JsonEncodedStrings.CosmosSerializer, cosmosSerializer.GetType().ToString());
             }
 
             if (!string.IsNullOrEmpty(value.ApplicationName))
             {
-                writer.WriteString("ApplicationName", value.ApplicationName);
+                writer.WriteString(JsonEncodedStrings.ApplicationName, value.ApplicationName);
             }
 
             if (value.GatewayModeMaxConnectionLimit > 0)
             {
-                writer.WriteNumber("GatewayModeMaxConnectionLimit", value.GatewayModeMaxConnectionLimit);
+                writer.WriteNumber(JsonEncodedStrings.GatewayModeMaxConnectionLimit, value.GatewayModeMaxConnectionLimit);
             }
 
             if (value.RequestTimeout != null)
             {
-                writer.WriteString("RequestTimeout", value.RequestTimeout.ToString());
+                writer.WriteString(JsonEncodedStrings.RequestTimeout, value.RequestTimeout.ToString());
             }
 
-            writer.WriteString("ConnectionMode", JsonSerializer.Serialize(value.ConnectionMode));
+            writer.WriteString(JsonEncodedStrings.ConnectionMode, value.ConnectionMode.ToString());
 
             if (value.ConsistencyLevel.HasValue)
             {
-                writer.WriteString("ConsistencyLevel", JsonSerializer.Serialize(value.ConsistencyLevel.Value));
+                writer.WriteString(JsonEncodedStrings.ConsistencyLevel, value.ConsistencyLevel.Value.ToString());
             }
 
             if (value.MaxRetryAttemptsOnRateLimitedRequests.HasValue)
             {
-                writer.WriteNumber("MaxRetryAttemptsOnRateLimitedRequests", value.MaxRetryAttemptsOnRateLimitedRequests.Value);
+                writer.WriteNumber(JsonEncodedStrings.MaxRetryAttemptsOnRateLimitedRequests, value.MaxRetryAttemptsOnRateLimitedRequests.Value);
             }
 
             if (value.MaxRetryWaitTimeOnRateLimitedRequests.HasValue)
             {
-                writer.WriteString("MaxRetryWaitTimeOnRateLimitedRequests", value.MaxRetryWaitTimeOnRateLimitedRequests.Value.ToString());
+                writer.WriteString(JsonEncodedStrings.MaxRetryWaitTimeOnRateLimitedRequests, value.MaxRetryWaitTimeOnRateLimitedRequests.Value.ToString());
             }
 
             if (value.IdleTcpConnectionTimeout.HasValue)
             {
-                writer.WriteString("IdleTcpConnectionTimeout", value.IdleTcpConnectionTimeout.Value.ToString());
+                writer.WriteString(JsonEncodedStrings.IdleTcpConnectionTimeout, value.IdleTcpConnectionTimeout.Value.ToString());
             }
 
             if (value.OpenTcpConnectionTimeout.HasValue)
             {
-                writer.WriteString("MaxRetryWaitTimeOnRateLimitedRequests", value.OpenTcpConnectionTimeout.Value.ToString());
+                writer.WriteString(JsonEncodedStrings.OpenTcpConnectionTimeout, value.OpenTcpConnectionTimeout.Value.ToString());
             }
 
             if (value.MaxRequestsPerTcpConnection.HasValue)
             {
-                writer.WriteNumber("MaxRequestsPerTcpConnection", value.MaxRequestsPerTcpConnection.Value);
+                writer.WriteNumber(JsonEncodedStrings.MaxRequestsPerTcpConnection, value.MaxRequestsPerTcpConnection.Value);
             }
 
             if (value.MaxTcpConnectionsPerEndpoint.HasValue)
             {
-                writer.WriteNumber("MaxTcpConnectionsPerEndpoint", value.MaxTcpConnectionsPerEndpoint.Value);
+                writer.WriteNumber(JsonEncodedStrings.MaxTcpConnectionsPerEndpoint, value.MaxTcpConnectionsPerEndpoint.Value);
             }
 
             if (value.LimitToEndpoint)
             {
-                writer.WriteBoolean("LimitToEndpoint", value.LimitToEndpoint);
+                writer.WriteBoolean(JsonEncodedStrings.LimitToEndpoint, value.LimitToEndpoint);
+            }
+
+            if (value.AllowBulkExecution)
+            {
+                writer.WriteBoolean(JsonEncodedStrings.AllowBulkExecution, value.AllowBulkExecution);
             }
 
             writer.WriteEndObject();

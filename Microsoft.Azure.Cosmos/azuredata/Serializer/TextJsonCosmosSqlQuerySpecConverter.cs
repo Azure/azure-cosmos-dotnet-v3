@@ -47,9 +47,9 @@ namespace Azure.Cosmos
         {
             writer.WriteStartObject();
 
-            writer.WriteString("query", sqlQuerySpec.QueryText);
+            writer.WriteString(JsonEncodedStrings.Query, sqlQuerySpec.QueryText);
 
-            writer.WritePropertyName("parameters");
+            writer.WritePropertyName(JsonEncodedStrings.Parameters);
             writer.WriteStartArray();
             foreach (SqlParameter sqlParameter in sqlQuerySpec.Parameters)
             {

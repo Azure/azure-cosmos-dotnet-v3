@@ -32,12 +32,12 @@ namespace Azure.Cosmos
             JsonElement root = json.RootElement;
 
             GeometryValidationResult geometryValidationResult = new GeometryValidationResult();
-            if (root.TryGetProperty("valid", out JsonElement validElement))
+            if (root.TryGetProperty(JsonEncodedStrings.Valid.EncodedUtf8Bytes, out JsonElement validElement))
             {
                 geometryValidationResult.IsValid = validElement.GetBoolean();
             }
 
-            if (root.TryGetProperty("reason", out JsonElement reasonElement))
+            if (root.TryGetProperty(JsonEncodedStrings.Reason.EncodedUtf8Bytes, out JsonElement reasonElement))
             {
                 geometryValidationResult.Reason = reasonElement.GetString();
             }
@@ -57,9 +57,9 @@ namespace Azure.Cosmos
 
             writer.WriteStartObject();
 
-            writer.WriteBoolean("valid", geometryValidationResult.IsValid);
+            writer.WriteBoolean(JsonEncodedStrings.Valid, geometryValidationResult.IsValid);
 
-            writer.WriteString("reason", geometryValidationResult.Reason);
+            writer.WriteString(JsonEncodedStrings.Reason, geometryValidationResult.Reason);
 
             writer.WriteEndObject();
         }

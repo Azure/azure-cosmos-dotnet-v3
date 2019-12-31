@@ -15,7 +15,6 @@ namespace Azure.Cosmos
 
     internal sealed class TextJsonPartitionKeyInternalConverter : JsonConverter<PartitionKeyInternal>
     {
-        private const string Type = "type";
         private const string MinNumber = "MinNumber";
         private const string MaxNumber = "MaxNumber";
         private const string MinString = "MinString";
@@ -47,7 +46,8 @@ namespace Azure.Cosmos
 
         public static PartitionKeyInternal ReadElement(JsonElement root)
         {
-            if (root.ValueKind == JsonValueKind.String && root.GetString() == TextJsonPartitionKeyInternalConverter.Infinity)
+            if (root.ValueKind == JsonValueKind.String
+                && root.GetString() == TextJsonPartitionKeyInternalConverter.Infinity)
             {
                 return PartitionKeyInternal.ExclusiveMaximum;
             }
@@ -69,25 +69,25 @@ namespace Azure.Cosmos
                     else
                     {
                         bool valid = false;
-                        if (arrayItem.TryGetProperty(TextJsonPartitionKeyInternalConverter.Type, out JsonElement typeElement))
+                        if (arrayItem.TryGetProperty(JsonEncodedStrings.Type.EncodedUtf8Bytes, out JsonElement typeElement))
                         {
                             if (typeElement.ValueKind == JsonValueKind.String)
                             {
                                 valid = true;
 
-                                if (typeElement.GetString() == TextJsonPartitionKeyInternalConverter.MinNumber)
+                                if (TextJsonPartitionKeyInternalConverter.MinNumber.Equals(typeElement.GetString(), StringComparison.OrdinalIgnoreCase))
                                 {
                                     values.Add(Microsoft.Azure.Documents.Routing.MinNumber.Value);
                                 }
-                                else if (typeElement.GetString() == TextJsonPartitionKeyInternalConverter.MaxNumber)
+                                else if (TextJsonPartitionKeyInternalConverter.MaxNumber.Equals(typeElement.GetString(), StringComparison.OrdinalIgnoreCase))
                                 {
                                     values.Add(Microsoft.Azure.Documents.Routing.MaxNumber.Value);
                                 }
-                                else if (typeElement.GetString() == TextJsonPartitionKeyInternalConverter.MinString)
+                                else if (TextJsonPartitionKeyInternalConverter.MinString.Equals(typeElement.GetString(), StringComparison.OrdinalIgnoreCase))
                                 {
                                     values.Add(Microsoft.Azure.Documents.Routing.MinString.Value);
                                 }
-                                else if (typeElement.GetString() == TextJsonPartitionKeyInternalConverter.MaxString)
+                                else if (TextJsonPartitionKeyInternalConverter.MaxString.Equals(typeElement.GetString(), StringComparison.OrdinalIgnoreCase))
                                 {
                                     values.Add(Microsoft.Azure.Documents.Routing.MaxString.Value);
                                 }
@@ -200,7 +200,7 @@ namespace Azure.Cosmos
         {
             writer.WriteStartObject();
 
-            writer.WritePropertyName(TextJsonPartitionKeyInternalConverter.Type);
+            writer.WritePropertyName(JsonEncodedStrings.Type);
 
             writer.WriteStringValue(value);
 

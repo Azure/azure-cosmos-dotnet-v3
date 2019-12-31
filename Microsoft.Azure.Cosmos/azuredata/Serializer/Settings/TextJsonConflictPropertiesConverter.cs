@@ -55,15 +55,15 @@ namespace Azure.Cosmos
 
             TextJsonSettingsHelper.WriteId(writer, settings.Id);
 
-            writer.WriteString(Constants.Properties.OperationType, settings.OperationKind.ToString());
+            writer.WriteString(JsonEncodedStrings.OperationType, settings.OperationKind.ToString());
 
-            writer.WriteString(Constants.Properties.ResourceType, TextJsonConflictPropertiesConverter.ParseResourceType(settings.ResourceType));
+            writer.WriteString(JsonEncodedStrings.ResourceType, TextJsonConflictPropertiesConverter.ParseResourceType(settings.ResourceType));
 
-            writer.WriteString(Constants.Properties.SourceResourceId, settings.SourceResourceId);
+            writer.WriteString(JsonEncodedStrings.SourceResourceId, settings.SourceResourceId);
 
-            writer.WriteString(Constants.Properties.Content, settings.Content);
+            writer.WriteString(JsonEncodedStrings.Content, settings.Content);
 
-            writer.WriteNumber(Constants.Properties.ConflictLSN, settings.ConflictLSN);
+            writer.WriteNumber(JsonEncodedStrings.ConflictLSN, settings.ConflictLSN);
 
             writer.WriteEndObject();
         }
@@ -83,30 +83,30 @@ namespace Azure.Cosmos
             ConflictProperties settings,
             JsonProperty property)
         {
-            if (property.NameEquals(Constants.Properties.Id))
+            if (property.NameEquals(JsonEncodedStrings.Id.EncodedUtf8Bytes))
             {
                 settings.Id = property.Value.GetString();
             }
-            else if (property.NameEquals(Constants.Properties.OperationType))
+            else if (property.NameEquals(JsonEncodedStrings.OperationType.EncodedUtf8Bytes))
             {
                 if (Enum.TryParse(value: property.Value.GetString(), ignoreCase: true, out OperationKind operationKind))
                 {
                     settings.OperationKind = operationKind;
                 }
             }
-            else if (property.NameEquals(Constants.Properties.ResourceType))
+            else if (property.NameEquals(JsonEncodedStrings.ResourceType.EncodedUtf8Bytes))
             {
                 settings.ResourceType = TextJsonConflictPropertiesConverter.ParseResourceType(property.Value.GetString());
             }
-            else if (property.NameEquals(Constants.Properties.SourceResourceId))
+            else if (property.NameEquals(JsonEncodedStrings.SourceResourceId.EncodedUtf8Bytes))
             {
                 settings.SourceResourceId = property.Value.GetString();
             }
-            else if (property.NameEquals(Constants.Properties.Content))
+            else if (property.NameEquals(JsonEncodedStrings.Content.EncodedUtf8Bytes))
             {
                 settings.Content = property.Value.GetString();
             }
-            else if (property.NameEquals(Constants.Properties.ConflictLSN))
+            else if (property.NameEquals(JsonEncodedStrings.ConflictLSN.EncodedUtf8Bytes))
             {
                 settings.ConflictLSN = property.Value.GetInt64();
             }
