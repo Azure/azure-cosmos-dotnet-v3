@@ -38,6 +38,11 @@ namespace Azure.Cosmos
 
         public static DateTime? ReadProperty(JsonProperty property)
         {
+            if (property.Value.ValueKind == JsonValueKind.Null)
+            {
+                return null;
+            }
+
             if (property.Value.ValueKind != JsonValueKind.Number)
             {
                 throw new JsonException(RMResources.DateTimeConverterInvalidReaderValue);
@@ -55,6 +60,10 @@ namespace Azure.Cosmos
             {
                 Int64 totalSeconds = (Int64)((DateTime)value - TextJsonUnixDateTimeConverter.UnixStartTime).TotalSeconds;
                 writer.WriteNumberValue(totalSeconds);
+            }
+            else
+            {
+                writer.WriteNullValue();
             }
         }
     }
