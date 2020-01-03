@@ -57,7 +57,6 @@ namespace Microsoft.Azure.Cosmos
         private int gatewayModeMaxConnectionLimit;
         private CosmosSerializationOptions serializerOptions;
         private CosmosSerializer serializer;
-        private KeyWrapProvider keyWrapProvider;
 
         private ConnectionMode connectionMode;
         private Protocol connectionProtocol;
@@ -371,11 +370,6 @@ namespace Microsoft.Azure.Cosmos
                         $"{nameof(this.Serializer)} is not compatible with {nameof(this.SerializerOptions)}. Only one can be set.  ");
                 }
 
-                if (this.KeyWrapProvider != null)
-                {
-                    throw new ArgumentException(ClientResources.CustomSerializerAndEncryptionNotSupportedTogether);
-                }
-
                 this.serializer = value;
             }
         }
@@ -398,30 +392,6 @@ namespace Microsoft.Azure.Cosmos
         /// Allows optimistic batching of requests to service. Setting this option might impact the latency of the operations. Hence this option is recommended for non-latency sensitive scenarios only.
         /// </summary>
         public bool AllowBulkExecution { get; set; }
-
-        /// <summary>
-        /// The key wrapping provider to use to wrap and unwrap keys while using client side encryption support.
-        /// See <see href="tbd"/> for more information on client-side encryption support in Azure Cosmos DB.
-        /// </summary>
-        [JsonIgnore]
-#if PREVIEW
-    public
-#else
-        internal
-#endif
-        KeyWrapProvider KeyWrapProvider
-        {
-            get => this.keyWrapProvider;
-            set
-            {
-                if (this.Serializer != null)
-                {
-                    throw new ArgumentException(ClientResources.CustomSerializerAndEncryptionNotSupportedTogether);
-                }
-
-                this.keyWrapProvider = value;
-            }
-        }
 
         /// <summary>
         /// Gets or sets the connection protocol when connecting to the Azure Cosmos service.

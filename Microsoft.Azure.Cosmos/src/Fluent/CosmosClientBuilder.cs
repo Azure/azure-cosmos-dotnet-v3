@@ -383,22 +383,6 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Specifies the key wrapping provider to use to wrap (encrypt) and unwrap (decrypt) keys while using client-side encryption support.
-        /// </summary>
-        /// <param name="keyWrapper">The key wrapping provider.</param>
-        /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
-#if PREVIEW
-    public
-#else
-        internal
-#endif
-        CosmosClientBuilder WithKeyWrapProvider(KeyWrapProvider keyWrapper)
-        {
-            this.clientOptions.KeyWrapProvider = keyWrapper;
-            return this;
-        }
-
-        /// <summary>
         /// The event handler to be invoked before the request is sent.
         /// </summary>
         internal CosmosClientBuilder WithSendingRequestEventArgs(EventHandler<SendingRequestEventArgs> sendingRequestEventArgs)

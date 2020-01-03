@@ -8,6 +8,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
+    using System.Threading;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
@@ -61,6 +63,16 @@ namespace Microsoft.Azure.Cosmos
         {
             CosmosSerializer serializer = this.GetSerializer<T>();
             return serializer.FromStream<T>(stream);
+        }
+
+        internal Task<T> FromStreamAsync<T>(Stream stream, Container container, ItemRequestOptions itemRequestOptions, CancellationToken cancellationToken)
+        {
+            return this.customSerializer.FromStreamAsync<T>(stream, container, itemRequestOptions, cancellationToken);
+        }
+
+        internal Task<Stream> ToStreamAsync<T>(T input, Container container, ItemRequestOptions itemRequestOptions, CancellationToken cancellationToken)
+        {
+            return this.customSerializer.ToStreamAsync<T>(input, container, itemRequestOptions, cancellationToken);
         }
 
         internal Stream ToStream<T>(T input)

@@ -7,24 +7,24 @@ namespace Microsoft.Azure.Cosmos
     using System;
 
     /// <summary>
-    /// Response from a <see cref="KeyWrapProvider"/> on unwrapping a wrapped data encryption key.
+    /// Result from a <see cref="EncryptionKeyWrapProvider"/> on unwrapping a wrapped data encryption key.
     /// </summary>
 #if PREVIEW
     public
 #else
     internal
 #endif
-         class KeyUnwrapResponse
+        class EncryptionKeyUnwrapResult
     {
         /// <summary>
-        /// Initializes a new instance of the response of unwrapping a wrapped data encryption key.
+        /// Initializes a new instance of the result of unwrapping a wrapped data encryption key.
         /// </summary>
         /// <param name="dataEncryptionKey">Raw form of data encryption key.</param>
         /// <param name="clientCacheTimeToLive">
         /// Amount of time after which the raw data encryption key must not be used
-        /// without invoking the <see cref="KeyWrapProvider.UnwrapKeyAsync"/> again.
+        /// without invoking the <see cref="EncryptionKeyWrapProvider.UnwrapKeyAsync"/> again.
         /// </param>
-        public KeyUnwrapResponse(byte[] dataEncryptionKey, TimeSpan clientCacheTimeToLive)
+        public EncryptionKeyUnwrapResult(byte[] dataEncryptionKey, TimeSpan clientCacheTimeToLive)
         {
             this.DataEncryptionKey = dataEncryptionKey;
             this.ClientCacheTimeToLive = clientCacheTimeToLive;
@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Amount of time after which the raw data encryption key must not be used
-        /// without invoking the <see cref="KeyWrapProvider.UnwrapKeyAsync"/> again.
+        /// without invoking the <see cref="EncryptionKeyWrapProvider.UnwrapKeyAsync"/> again.
         /// </summary>
         public TimeSpan ClientCacheTimeToLive { get; }
     }

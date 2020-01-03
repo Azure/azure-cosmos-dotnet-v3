@@ -17,8 +17,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public class EncryptionTests
     {
-        private static KeyWrapMetadata metadata1 = new KeyWrapMetadata("metadata1");
-        private static KeyWrapMetadata metadata2 = new KeyWrapMetadata("metadata2");
+        private static EncryptionKeyWrapMetadata metadata1 = new EncryptionKeyWrapMetadata("metadata1");
+        private static EncryptionKeyWrapMetadata metadata2 = new EncryptionKeyWrapMetadata("metadata2");
         private const string metadataUpdateSuffix = "updated";
         private static TimeSpan cacheTTL = TimeSpan.FromDays(1);
 
@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(dekProperties.ResourceId);
 
             // Assert.AreEqual(dekProperties.LastModified, dekProperties.CreatedTime);
-            Assert.AreEqual(new KeyWrapMetadata(EncryptionTests.metadata1.Value + EncryptionTests.metadataUpdateSuffix), dekProperties.KeyWrapMetadata);
+            Assert.AreEqual(new EncryptionKeyWrapMetadata(EncryptionTests.metadata1.Value + EncryptionTests.metadataUpdateSuffix), dekProperties.EncryptionKeyWrapMetadata);
 
             // Use a different client instance to avoid (unintentional) cache impact
             using (CosmosClient client = EncryptionTests.GetClient())
@@ -255,7 +255,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             (string endpoint, string authKey) = TestCommon.GetAccountInfo();
             return new CosmosClientBuilder(endpoint, authKey)
-                .WithKeyWrapProvider(new TestKeyWrapProvider())
+                .WithCustomSerializer(new EncryptionSerializer(new TestKeyWrapProvider()))
                 .Build();
         }
 
@@ -389,19 +389,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        private class TestKeyWrapProvider : KeyWrapProvider
+        private class TestKeyWrapProvider : EncryptionKeyWrapProvider
         {
-            public override Task<KeyUnwrapResponse> UnwrapKeyAsync(byte[] wrappedKey, KeyWrapMetadata metadata, CancellationToken cancellationToken)
+            public override Task<EncryptionKeyUnwrapResult> UnwrapKeyAsync(byte[] wrappedKey, EncryptionKeyWrapMetadata metadata, CancellationToken cancellationToken)
             {
                 int moveBy = metadata.Value == EncryptionTests.metadata1.Value + EncryptionTests.metadataUpdateSuffix ? 1 : 2;
-                return Task.FromResult(new KeyUnwrapResponse(wrappedKey.Select(b => (byte)(b - moveBy)).ToArray(), EncryptionTests.cacheTTL));
+                return Task.FromResult(new EncryptionKeyUnwrapResult(wrappedKey.Select(b => (byte)(b - moveBy)).ToArray(), EncryptionTests.cacheTTL));
             }
 
-            public override Task<KeyWrapResponse> WrapKeyAsync(byte[] key, KeyWrapMetadata metadata, CancellationToken cancellationToken)
+            public override Task<EncryptionKeyWrapResult> WrapKeyAsync(byte[] key, EncryptionKeyWrapMetadata metadata, CancellationToken cancellationToken)
             {
-                KeyWrapMetadata responseMetadata = new KeyWrapMetadata(metadata.Value + EncryptionTests.metadataUpdateSuffix);
+                EncryptionKeyWrapMetadata responseMetadata = new EncryptionKeyWrapMetadata(metadata.Value + EncryptionTests.metadataUpdateSuffix);
                 int moveBy = metadata.Value == EncryptionTests.metadata1.Value ? 1 : 2;
-                return Task.FromResult(new KeyWrapResponse(key.Select(b => (byte)(b + moveBy)).ToArray(), responseMetadata));
+                return Task.FromResult(new EncryptionKeyWrapResult(key.Select(b => (byte)(b + moveBy)).ToArray(), responseMetadata));
             }
         }
     }

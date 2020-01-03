@@ -69,8 +69,9 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Wraps the raw data encryption key (after unwrapping using the old metadata if needed) using the provided
-        /// metadata with the help of the key wrapping provider configured on the client via <see cref="CosmosClientBuilder.WithKeyWrapProvider"/>,
-        /// and saves the re-wrapped data encryption key as an asynchronous operation in the Azure Cosmos service.
+        /// metadata with the help of the key wrapping provider in the EncryptionSerializer configured on the client via
+        /// <see cref="CosmosClientBuilder.WithCustomSerializer"/>, and saves the re-wrapped data encryption key as an asynchronous
+        /// operation in the Azure Cosmos service.
         /// </summary>
         /// <param name="newWrapMetadata">The metadata using which the data encryption key needs to now be wrapped.</param>
         /// <param name="requestOptions">(Optional) The options for the request.</param>
@@ -109,7 +110,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         public abstract Task<DataEncryptionKeyResponse> RewrapAsync(
-            KeyWrapMetadata newWrapMetadata,
+            EncryptionKeyWrapMetadata newWrapMetadata,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 

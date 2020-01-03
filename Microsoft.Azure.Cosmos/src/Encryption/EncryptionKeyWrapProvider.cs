@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos
 #else
     internal
 #endif
-        abstract class KeyWrapProvider
+        abstract class EncryptionKeyWrapProvider
     {
         /// <summary>
         /// Wraps (i.e. encrypts) the provided data encryption key.
@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="metadata">Metadata for the wrap provider that should be used to wrap / unwrap the key.</param>
         /// <param name="cancellationToken">Cancellation token allowing for cancellation of this operation.</param>
         /// <returns>Awaitable wrapped (i.e. encrypted) version of data encryption key passed in possibly with updated metadata.</returns>
-        public abstract Task<KeyWrapResponse> WrapKeyAsync(byte[] key, KeyWrapMetadata metadata, CancellationToken cancellationToken);
+        public abstract Task<EncryptionKeyWrapResult> WrapKeyAsync(byte[] key, EncryptionKeyWrapMetadata metadata, CancellationToken cancellationToken);
 
         /// <summary>
         /// Unwraps (i.e. decrypts) the provided wrapped data encryption key.
@@ -34,6 +34,6 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="metadata">Metadata for the wrap provider that should be used to wrap / unwrap the key.</param>
         /// <param name="cancellationToken">Cancellation token allowing for cancellation of this operation.</param>
         /// <returns>Awaitable unwrapped (i.e. unencrypted) version of data encryption key passed in and how long the raw data encryption key can be cached on the client.</returns>
-        public abstract Task<KeyUnwrapResponse> UnwrapKeyAsync(byte[] wrappedKey, KeyWrapMetadata metadata, CancellationToken cancellationToken);
+        public abstract Task<EncryptionKeyUnwrapResult> UnwrapKeyAsync(byte[] wrappedKey, EncryptionKeyWrapMetadata metadata, CancellationToken cancellationToken);
     }
 }

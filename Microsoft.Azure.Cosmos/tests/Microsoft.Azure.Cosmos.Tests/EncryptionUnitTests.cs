@@ -30,43 +30,19 @@ namespace Microsoft.Azure.Cosmos
 
         private TimeSpan cacheTTL = TimeSpan.FromDays(1);
         private byte[] dek = new byte[] { 1, 2, 3, 4 };
-        private KeyWrapMetadata metadata1 = new KeyWrapMetadata("metadata1");
-        private KeyWrapMetadata metadata2 = new KeyWrapMetadata("metadata2");
+        private EncryptionKeyWrapMetadata metadata1 = new EncryptionKeyWrapMetadata("metadata1");
+        private EncryptionKeyWrapMetadata metadata2 = new EncryptionKeyWrapMetadata("metadata2");
         private string metadataUpdateSuffix = "updated";
 
-        private Mock<KeyWrapProvider> mockKeyWrapProvider;
+        private EncryptionTestHandler testHandler;
+        private Mock<EncryptionKeyWrapProvider> mockKeyWrapProvider;
         private Mock<EncryptionAlgorithm> mockEncryptionAlgorithm;
         private Mock<DatabaseCore> mockDatabaseCore;
 
         [TestMethod]
-        public void EncryptionUTKeyWrapProviderNotUsedWithCustomSerializer()
+        public async Task EncryptionUTCreateDekWithoutEncryptionSerializer()
         {
-            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions();
-            cosmosClientOptions.Serializer = new Mock<CosmosSerializer>().Object;
-            try
-            {
-                cosmosClientOptions.KeyWrapProvider = new Mock<KeyWrapProvider>().Object;
-                Assert.Fail();
-            }
-            catch(ArgumentException ex)
-            {
-                Assert.AreEqual(ClientResources.CustomSerializerAndEncryptionNotSupportedTogether, ex.Message);
-            }
-        }
-
-        [TestMethod]
-        public void EncryptionUTKeyWrapProviderSetInOptions()
-        {
-            KeyWrapProvider keyWrapProvider = new Mock<KeyWrapProvider>().Object;
-            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("http://localhost", Guid.NewGuid().ToString()).WithKeyWrapProvider(keyWrapProvider);
-            CosmosClient client = cosmosClientBuilder.Build(new MockDocumentClient());
-            Assert.AreEqual(keyWrapProvider, client.ClientOptions.KeyWrapProvider);
-        }
-
-        [TestMethod]
-        public async Task EncryptionUTWriteDekWithoutKeyWrapProvider()
-        {
-            Database database = ((ContainerCore)this.GetContainer()).Database;
+            Database database = ((ContainerCore)(ContainerInlineCore)this.GetContainer()).Database;
 
             try
             {
@@ -75,27 +51,46 @@ namespace Microsoft.Azure.Cosmos
             }
             catch (ArgumentException ex)
             {
-                Assert.AreEqual(ClientResources.KeyWrapProviderNotConfigured, ex.Message);
+                Assert.AreEqual(ClientResources.EncryptionSerializerNotConfigured, ex.Message);
             }
 
+        }
+
+        [TestMethod]
+        public async Task EncryptionUTRewrapDekWithoutEncryptionSerializer()
+        {
+            string dekId = "mydek";
+            EncryptionTestHandler testHandler = new EncryptionTestHandler();
+
+            // Create a DEK using a properly setup client first
+            Container container = this.GetContainerWithMockSetup(testHandler);
+            Database databaseWithSerializer = ((ContainerCore)(ContainerInlineCore)container).Database;
+
+            DataEncryptionKeyResponse dekResponse = await databaseWithSerializer.CreateDataEncryptionKeyAsync(dekId, this.metadata1);
+            Assert.AreEqual(HttpStatusCode.Created, dekResponse.StatusCode);
+
+            // Clear the handler pipeline that would have got setup
+            testHandler.InnerHandler = null;
+
+            // Ensure rewrap for this key fails on improperly configured client
             try
             {
-                DataEncryptionKey dek = database.GetDataEncryptionKey("mydek");
+                Database database = ((ContainerCore)(ContainerInlineCore)this.GetContainer(testHandler)).Database;
+                DataEncryptionKey dek = database.GetDataEncryptionKey(dekId);
                 await dek.RewrapAsync(this.metadata2);
                 Assert.Fail();
             }
             catch (ArgumentException ex)
             {
-                Assert.AreEqual(ClientResources.KeyWrapProviderNotConfigured, ex.Message);
+                Assert.AreEqual(ClientResources.EncryptionSerializerNotConfigured, ex.Message);
             }
         }
 
         [TestMethod]
         public async Task EncryptionUTCreateDek()
         {
-            EncryptionTestHandler encryptionTestHandler = new EncryptionTestHandler();
-            Container container = this.GetContainerWithMockSetup(encryptionTestHandler);
-            Database database = ((ContainerCore)container).Database;
+            Container container = this.GetContainerWithMockSetup();
+            Database database = ((ContainerCore)(ContainerInlineCore)container).Database;
 
             string dekId = "mydek";
             DataEncryptionKeyResponse dekResponse = await database.CreateDataEncryptionKeyAsync(dekId, this.metadata1);
@@ -108,13 +103,13 @@ namespace Microsoft.Azure.Cosmos
             Assert.AreEqual(dekResponse.ETag, dekProperties.ETag);
             Assert.AreEqual(dekId, dekProperties.Id);
 
-            Assert.AreEqual(1, encryptionTestHandler.Received.Count);
-            RequestMessage createDekRequestMessage = encryptionTestHandler.Received[0];
+            Assert.AreEqual(1, this.testHandler.Received.Count);
+            RequestMessage createDekRequestMessage = this.testHandler.Received[0];
             Assert.AreEqual(ResourceType.ClientEncryptionKey, createDekRequestMessage.ResourceType);
             Assert.AreEqual(OperationType.Create, createDekRequestMessage.OperationType);
 
-            Assert.IsTrue(encryptionTestHandler.Deks.ContainsKey(dekId));
-            DataEncryptionKeyProperties serverDekProperties = encryptionTestHandler.Deks[dekId];
+            Assert.IsTrue(this.testHandler.Deks.ContainsKey(dekId));
+            DataEncryptionKeyProperties serverDekProperties = this.testHandler.Deks[dekId];
             Assert.IsTrue(serverDekProperties.Equals(dekProperties));
 
             // Make sure we didn't push anything else in the JSON (such as raw DEK) by comparing JSON properties
@@ -134,7 +129,7 @@ namespace Microsoft.Azure.Cosmos
             JObject keyWrapMetadataJObj = (JObject)objectChildren.First();
             Assert.AreEqual(Constants.Properties.KeyWrapMetadata, ((JProperty)keyWrapMetadataJObj.Parent).Name);
 
-            IEnumerable<string> keyWrapMetadataPropertyNames = GetJsonPropertyNamesForType(typeof(KeyWrapMetadata));
+            IEnumerable<string> keyWrapMetadataPropertyNames = GetJsonPropertyNamesForType(typeof(EncryptionKeyWrapMetadata));
             foreach (JProperty property in keyWrapMetadataJObj.Properties())
             {
                 Assert.IsTrue(keyWrapMetadataPropertyNames.Contains(property.Name));
@@ -149,9 +144,8 @@ namespace Microsoft.Azure.Cosmos
         [TestMethod]
         public async Task EncryptionUTRewrapDek()
         {
-            EncryptionTestHandler encryptionTestHandler = new EncryptionTestHandler();
-            Container container = this.GetContainerWithMockSetup(encryptionTestHandler);
-            Database database = ((ContainerCore)container).Database;
+            Container container = this.GetContainerWithMockSetup();
+            Database database = ((ContainerCore)(ContainerInlineCore)container).Database;
 
             string dekId = "mydek";
             DataEncryptionKeyResponse createResponse = await database.CreateDataEncryptionKeyAsync(dekId, this.metadata1);
@@ -174,16 +168,16 @@ namespace Microsoft.Azure.Cosmos
             IEnumerable<byte> expectedRewrappedKey = this.dek.Select(b => (byte)(b + 2));
             Assert.IsTrue(expectedRewrappedKey.SequenceEqual(rewrappedProperties.WrappedDataEncryptionKey));
 
-            Assert.AreEqual(new KeyWrapMetadata(this.metadata2.Value + this.metadataUpdateSuffix), rewrappedProperties.KeyWrapMetadata);
+            Assert.AreEqual(new EncryptionKeyWrapMetadata(this.metadata2.Value + this.metadataUpdateSuffix), rewrappedProperties.EncryptionKeyWrapMetadata);
 
-            Assert.AreEqual(2, encryptionTestHandler.Received.Count);
-            RequestMessage rewrapRequestMessage = encryptionTestHandler.Received[1];
+            Assert.AreEqual(2, this.testHandler.Received.Count);
+            RequestMessage rewrapRequestMessage = this.testHandler.Received[1];
             Assert.AreEqual(ResourceType.ClientEncryptionKey, rewrapRequestMessage.ResourceType);
             Assert.AreEqual(OperationType.Replace, rewrapRequestMessage.OperationType);
             Assert.AreEqual(createResponse.ETag, rewrapRequestMessage.Headers[HttpConstants.HttpHeaders.IfMatch]);
 
-            Assert.IsTrue(encryptionTestHandler.Deks.ContainsKey(dekId));
-            DataEncryptionKeyProperties serverDekProperties = encryptionTestHandler.Deks[dekId];
+            Assert.IsTrue(this.testHandler.Deks.ContainsKey(dekId));
+            DataEncryptionKeyProperties serverDekProperties = this.testHandler.Deks[dekId];
             Assert.IsTrue(serverDekProperties.Equals(rewrappedProperties));
 
             this.VerifyWrap(this.dek, this.metadata2);
@@ -193,9 +187,8 @@ namespace Microsoft.Azure.Cosmos
         [TestMethod]
         public async Task EncryptionUTCreateItemWithUnknownDek()
         {
-            EncryptionTestHandler encryptionTestHandler = new EncryptionTestHandler();
-            Container container = this.GetContainerWithMockSetup(encryptionTestHandler);
-            Database database = ((ContainerCore)container).Database;
+            Container container = this.GetContainerWithMockSetup();
+            Database database = ((ContainerCore)(ContainerInlineCore)container).Database;
 
             MyItem item = EncryptionUnitTests.GetNewItem();
             try
@@ -222,9 +215,8 @@ namespace Microsoft.Azure.Cosmos
         [TestMethod]
         public async Task EncryptionUTCreateItem()
         {
-            EncryptionTestHandler encryptionTestHandler = new EncryptionTestHandler();
-            Container container = this.GetContainerWithMockSetup(encryptionTestHandler);
-            Database database = ((ContainerCore)container).Database;
+            Container container = this.GetContainerWithMockSetup();
+            Database database = ((ContainerCore)(ContainerInlineCore)container).Database;
 
             string dekId = "mydek";
             DataEncryptionKeyResponse dekResponse = await database.CreateDataEncryptionKeyAsync(dekId, this.metadata1);
@@ -232,7 +224,7 @@ namespace Microsoft.Azure.Cosmos
             MyItem item = await EncryptionUnitTests.CreateItemAsync(container, dekId);
 
             // Validate server state
-            Assert.IsTrue(encryptionTestHandler.Items.TryGetValue(item.Id, out JObject serverItem));
+            Assert.IsTrue(this.testHandler.Items.TryGetValue(item.Id, out JObject serverItem));
             Assert.IsNotNull(serverItem);
             Assert.AreEqual(item.Id, serverItem.Property(Constants.Properties.Id).Value.Value<string>());
             Assert.AreEqual(item.PK, serverItem.Property(nameof(MyItem.PK)).Value.Value<string>());
@@ -260,9 +252,8 @@ namespace Microsoft.Azure.Cosmos
         [TestMethod]
         public async Task EncryptionUTReadItem()
         {
-            EncryptionTestHandler encryptionTestHandler = new EncryptionTestHandler();
-            Container container = this.GetContainerWithMockSetup(encryptionTestHandler);
-            Database database = ((ContainerCore)container).Database;
+            Container container = this.GetContainerWithMockSetup();
+            Database database = ((ContainerCore)(ContainerInlineCore)container).Database;
 
             string dekId = "mydek";
             DataEncryptionKeyResponse dekResponse = await database.CreateDataEncryptionKeyAsync(dekId, this.metadata1);
@@ -275,7 +266,7 @@ namespace Microsoft.Azure.Cosmos
 
         private static async Task<MyItem> CreateItemAsync(Container container, string dekId)
         {
-            Database database = ((ContainerCore)container).Database;
+            Database database = ((ContainerCore)(ContainerInlineCore)container).Database;
 
             MyItem item = EncryptionUnitTests.GetNewItem();
 
@@ -313,7 +304,7 @@ namespace Microsoft.Azure.Cosmos
                 .Select(p => ((JsonPropertyAttribute)Attribute.GetCustomAttribute(p, typeof(JsonPropertyAttribute))).PropertyName);
         }
 
-        private IEnumerable<byte> VerifyWrap(IEnumerable<byte> dek, KeyWrapMetadata inputMetadata)
+        private IEnumerable<byte> VerifyWrap(IEnumerable<byte> dek, EncryptionKeyWrapMetadata inputMetadata)
         {
             this.mockKeyWrapProvider.Verify(m => m.WrapKeyAsync(
                 It.Is<byte[]>(key => key.SequenceEqual(dek)),
@@ -337,13 +328,13 @@ namespace Microsoft.Azure.Cosmos
             }
 
             // Verify we did unwrap to check on the wrapping
-            KeyWrapMetadata expectedUpdatedMetadata = new KeyWrapMetadata(inputMetadata.Value + this.metadataUpdateSuffix);
+            EncryptionKeyWrapMetadata expectedUpdatedMetadata = new EncryptionKeyWrapMetadata(inputMetadata.Value + this.metadataUpdateSuffix);
             this.VerifyUnwrap(expectedWrappedKey, expectedUpdatedMetadata);
 
             return expectedWrappedKey;
         }
 
-        private void VerifyUnwrap(IEnumerable<byte> wrappedDek, KeyWrapMetadata inputMetadata)
+        private void VerifyUnwrap(IEnumerable<byte> wrappedDek, EncryptionKeyWrapMetadata inputMetadata)
         {
             this.mockKeyWrapProvider.Verify(m => m.UnwrapKeyAsync(
                 It.Is<byte[]>(wrappedKey => wrappedKey.SequenceEqual(wrappedDek)),
@@ -352,32 +343,36 @@ namespace Microsoft.Azure.Cosmos
             Times.Exactly(1));
         }
 
-        private Container GetContainer()
+        private Container GetContainer(EncryptionTestHandler encryptionTestHandler = null)
         {
-            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("http://localhost", Guid.NewGuid().ToString());
-            CosmosClient client = cosmosClientBuilder.Build(new MockDocumentClient());
+            this.testHandler = encryptionTestHandler ?? new EncryptionTestHandler();
+            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient((builder) => builder.AddCustomHandlers(this.testHandler));
             DatabaseCore database = new DatabaseCore(client.ClientContext, EncryptionUnitTests.DatabaseId);
-            return new ContainerCore(client.ClientContext, database, EncryptionUnitTests.ContainerId);
+            return new ContainerInlineCore(new ContainerCore(client.ClientContext, database, EncryptionUnitTests.ContainerId));
         }
 
-        private Container GetContainerWithMockSetup(EncryptionTestHandler testHandler)
+        private Container GetContainerWithMockSetup(EncryptionTestHandler encryptionTestHandler = null)
         {
-            this.mockKeyWrapProvider = new Mock<KeyWrapProvider>();
-            this.mockKeyWrapProvider.Setup(m => m.WrapKeyAsync(It.IsAny<byte[]>(), It.IsAny<KeyWrapMetadata>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync((byte[] key, KeyWrapMetadata metadata, CancellationToken cancellationToken) =>
+            this.testHandler = encryptionTestHandler ?? new EncryptionTestHandler();
+
+            this.mockKeyWrapProvider = new Mock<EncryptionKeyWrapProvider>();
+            this.mockKeyWrapProvider.Setup(m => m.WrapKeyAsync(It.IsAny<byte[]>(), It.IsAny<EncryptionKeyWrapMetadata>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync((byte[] key, EncryptionKeyWrapMetadata metadata, CancellationToken cancellationToken) =>
                 {
-                    KeyWrapMetadata responseMetadata = new KeyWrapMetadata(metadata.Value + this.metadataUpdateSuffix);
+                    EncryptionKeyWrapMetadata responseMetadata = new EncryptionKeyWrapMetadata(metadata.Value + this.metadataUpdateSuffix);
                     int moveBy = metadata.Value == this.metadata1.Value ? 1 : 2;
-                    return new KeyWrapResponse(key.Select(b => (byte)(b + moveBy)).ToArray(), responseMetadata);
+                    return new EncryptionKeyWrapResult(key.Select(b => (byte)(b + moveBy)).ToArray(), responseMetadata);
                 });
-            this.mockKeyWrapProvider.Setup(m => m.UnwrapKeyAsync(It.IsAny<byte[]>(), It.IsAny<KeyWrapMetadata>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync((byte[] wrappedKey, KeyWrapMetadata metadata, CancellationToken cancellationToken) =>
+            this.mockKeyWrapProvider.Setup(m => m.UnwrapKeyAsync(It.IsAny<byte[]>(), It.IsAny<EncryptionKeyWrapMetadata>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync((byte[] wrappedKey, EncryptionKeyWrapMetadata metadata, CancellationToken cancellationToken) =>
                 {
                     int moveBy = metadata.Value == this.metadata1.Value + this.metadataUpdateSuffix ? 1 : 2;
-                    return new KeyUnwrapResponse(wrappedKey.Select(b => (byte)(b - moveBy)).ToArray(), this.cacheTTL);
+                    return new EncryptionKeyUnwrapResult(wrappedKey.Select(b => (byte)(b - moveBy)).ToArray(), this.cacheTTL);
                 });
 
-            CosmosClient client = this.GetClient(testHandler);
+            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient((builder) => builder
+                .AddCustomHandlers(this.testHandler)
+                .WithCustomSerializer(new EncryptionSerializer(this.mockKeyWrapProvider.Object)));
 
             this.mockEncryptionAlgorithm = new Mock<EncryptionAlgorithm>();
             this.mockEncryptionAlgorithm.Setup(m => m.EncryptData(It.IsAny<byte[]>()))
@@ -399,13 +394,7 @@ namespace Microsoft.Azure.Cosmos
                  return new DataEncryptionKeyInlineCore(mockDekCore.Object);
              });
 
-            ContainerCore container = new ContainerCore(client.ClientContext, this.mockDatabaseCore.Object, EncryptionUnitTests.ContainerId);
-            return container;
-        }
-
-        private CosmosClient GetClient(EncryptionTestHandler testHandler)
-        {
-            return MockCosmosUtil.CreateMockCosmosClient((builder) => builder.AddCustomHandlers(testHandler).WithKeyWrapProvider(this.mockKeyWrapProvider.Object));
+            return new ContainerInlineCore(new ContainerCore(client.ClientContext, this.mockDatabaseCore.Object, EncryptionUnitTests.ContainerId));
         }
 
         private static JObject ParseStream(Stream stream)

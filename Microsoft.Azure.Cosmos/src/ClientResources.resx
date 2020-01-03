@@ -297,13 +297,10 @@
   <data name="KeyWrappingDidNotRoundtrip" xml:space="preserve">
     <value>The key wrapping provider configured was unable to unwrap the wrapped key correctly.</value>
   </data>
-  <data name="KeyWrapProviderNotConfigured" xml:space="preserve">
-    <value>The key wrapping provider was not configured for the client. Please ensure this is done while initializing the client before invoking this API.</value>
-  </data>
-  <data name="CustomSerializerAndEncryptionNotSupportedTogether" xml:space="preserve">
-    <value>A custom serializer may not be used along with client side encryption support.</value>
-  </data>
   <data name="DataEncryptionKeyNotFound" xml:space="preserve">
     <value>A data encryption key with the provided name was not found - please ensure it has been created.</value>
+  </data>
+  <data name="EncryptionSerializerNotConfigured" xml:space="preserve">
+    <value>The client was not configured to use the EncryptionSerializer. Initialize the client by providing an instance of EncryptionSerializer to cosmosClientBuilder.WithCustomSerializer.</value>
   </data>
 </root>

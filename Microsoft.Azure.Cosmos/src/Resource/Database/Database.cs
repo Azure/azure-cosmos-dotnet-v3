@@ -914,11 +914,11 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Generates a data encryption key, wraps it using the key wrap metadata provided
-        /// with the key wrapping provider configured on the client via <see cref="CosmosClientBuilder.WithKeyWrapProvider"/>,
+        /// with the key wrapping provider in the EncryptionSerializer configured on the client via <see cref="CosmosClientBuilder.WithCustomSerializer"/>,
         /// and saves the wrapped data encryption key as an asynchronous operation in the Azure Cosmos service.
         /// </summary>
         /// <param name="id">Unique identifier for the data encryption key.</param>
-        /// <param name="keyWrapMetadata">Metadata used by the configured key wrapping provider in order to wrap the key.</param>
+        /// <param name="encryptionKeyWrapMetadata">Metadata used by the configured key wrapping provider in order to wrap the key.</param>
         /// <param name="requestOptions">(Optional) The options for the request.</param>
         /// <param name="cancellationToken">(Optional) Token representing request cancellation.</param>
         /// <returns>An awaitable response which wraps a <see cref="DataEncryptionKeyProperties"/> containing the read resource record.</returns>
@@ -955,7 +955,7 @@ namespace Microsoft.Azure.Cosmos
 #endif
         abstract Task<DataEncryptionKeyResponse> CreateDataEncryptionKeyAsync(
             string id,
-            KeyWrapMetadata keyWrapMetadata,
+            EncryptionKeyWrapMetadata encryptionKeyWrapMetadata,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
     }

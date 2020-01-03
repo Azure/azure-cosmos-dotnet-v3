@@ -25,11 +25,11 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="id">Unique identifier for the data encryption key.</param>
         /// <param name="wrappedDataEncryptionKey">Wrapped (encrypted) form of the data encryption key.</param>
-        /// <param name="keyWrapMetadata">Metadata used by the configured key wrapping provider in order to unwrap the key.</param>
+        /// <param name="encryptionKeyWrapMetadata">Metadata used by the configured key wrapping provider in order to unwrap the key.</param>
         public DataEncryptionKeyProperties(
             string id,
             byte[] wrappedDataEncryptionKey,
-            KeyWrapMetadata keyWrapMetadata)
+            EncryptionKeyWrapMetadata encryptionKeyWrapMetadata)
         {
             if (string.IsNullOrEmpty(id))
             {
@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.Id = id;
             this.WrappedDataEncryptionKey = wrappedDataEncryptionKey ?? throw new ArgumentNullException(nameof(wrappedDataEncryptionKey));
-            this.KeyWrapMetadata = keyWrapMetadata ?? throw new ArgumentNullException(nameof(keyWrapMetadata));
+            this.EncryptionKeyWrapMetadata = encryptionKeyWrapMetadata ?? throw new ArgumentNullException(nameof(encryptionKeyWrapMetadata));
         }
 
         /// <summary>
@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos
             this.CreatedTime = source.CreatedTime;
             this.ETag = source.ETag;
             this.Id = source.Id;
-            this.KeyWrapMetadata = new KeyWrapMetadata(source.KeyWrapMetadata);
+            this.EncryptionKeyWrapMetadata = new EncryptionKeyWrapMetadata(source.EncryptionKeyWrapMetadata);
             this.LastModified = source.LastModified;
             this.ResourceId = source.ResourceId;
             this.SelfLink = source.SelfLink;
@@ -86,10 +86,10 @@ namespace Microsoft.Azure.Cosmos
         public byte[] WrappedDataEncryptionKey { get; internal set; }
 
         /// <summary>
-        /// Metadata for the wrapping provider than can be used to unwrap the wrapped data encryption key.
+        /// Metadata for the wrapping provider that can be used to unwrap the wrapped data encryption key.
         /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.KeyWrapMetadata, NullValueHandling = NullValueHandling.Ignore)]
-        public KeyWrapMetadata KeyWrapMetadata { get; internal set; }
+        public EncryptionKeyWrapMetadata EncryptionKeyWrapMetadata { get; internal set; }
 
         /// <summary>
         /// Gets the creation time of the resource from the Azure Cosmos DB service.
@@ -163,7 +163,7 @@ namespace Microsoft.Azure.Cosmos
             return other != null &&
                    this.Id == other.Id &&
                    this.Equals(this.WrappedDataEncryptionKey, other.WrappedDataEncryptionKey) &&
-                   EqualityComparer<KeyWrapMetadata>.Default.Equals(this.KeyWrapMetadata, other.KeyWrapMetadata) &&
+                   EqualityComparer<EncryptionKeyWrapMetadata>.Default.Equals(this.EncryptionKeyWrapMetadata, other.EncryptionKeyWrapMetadata) &&
                    this.Equals(this.CreatedTime, other.CreatedTime) &&
                    this.ETag == other.ETag &&
                    this.Equals(this.LastModified, other.LastModified) &&
@@ -179,7 +179,7 @@ namespace Microsoft.Azure.Cosmos
         {
             int hashCode = -1673632966;
             hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.Id);
-            hashCode = (hashCode * -1521134295) + EqualityComparer<KeyWrapMetadata>.Default.GetHashCode(this.KeyWrapMetadata);
+            hashCode = (hashCode * -1521134295) + EqualityComparer<EncryptionKeyWrapMetadata>.Default.GetHashCode(this.EncryptionKeyWrapMetadata);
             hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.ETag);
             hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.SelfLink);
             hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.ResourceId);

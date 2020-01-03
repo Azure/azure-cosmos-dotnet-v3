@@ -597,7 +597,7 @@ namespace Microsoft.Azure.Cosmos
 #endif
         override async Task<DataEncryptionKeyResponse> CreateDataEncryptionKeyAsync(
             string id,
-            KeyWrapMetadata keyWrapMetadata,
+            EncryptionKeyWrapMetadata encryptionKeyWrapMetadata,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
@@ -606,14 +606,9 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(id));
             }
 
-            if (keyWrapMetadata == null)
+            if (encryptionKeyWrapMetadata == null)
             {
-                throw new ArgumentNullException(nameof(keyWrapMetadata));
-            }
-
-            if (this.ClientContext.ClientOptions.KeyWrapProvider == null)
-            {
-                throw new ArgumentException(ClientResources.KeyWrapProviderNotConfigured);
+                throw new ArgumentNullException(nameof(encryptionKeyWrapMetadata));
             }
 
             this.ClientContext.ValidateResource(id);
@@ -622,7 +617,7 @@ namespace Microsoft.Azure.Cosmos
 
             byte[] rawDek = newDek.GenerateKey();
 
-            (byte[] wrappedDek, KeyWrapMetadata updatedMetadata, InMemoryRawDek inMemoryRawDek) = await newDek.WrapAsync(rawDek, keyWrapMetadata, cancellationToken);
+            (byte[] wrappedDek, EncryptionKeyWrapMetadata updatedMetadata, InMemoryRawDek inMemoryRawDek) = await newDek.WrapAsync(rawDek, encryptionKeyWrapMetadata, cancellationToken);
 
             DataEncryptionKeyProperties dekProperties = new DataEncryptionKeyProperties(id, wrappedDek, updatedMetadata);
             Stream streamPayload = this.ClientContext.SerializerCore.ToStream(dekProperties);

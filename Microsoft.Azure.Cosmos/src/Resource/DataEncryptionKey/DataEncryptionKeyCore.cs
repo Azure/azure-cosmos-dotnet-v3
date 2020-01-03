@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos
 
         /// <inheritdoc/>
         public override async Task<DataEncryptionKeyResponse> RewrapAsync(
-           KeyWrapMetadata newWrapMetadata,
+           EncryptionKeyWrapMetadata newWrapMetadata,
            RequestOptions requestOptions = null,
            CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -70,14 +70,9 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(newWrapMetadata));
             }
 
-            if (this.ClientContext.ClientOptions.KeyWrapProvider == null)
-            {
-                throw new ArgumentException(ClientResources.KeyWrapProviderNotConfigured);
-            }
-
             (DataEncryptionKeyProperties dekProperties, InMemoryRawDek inMemoryRawDek) = await this.FetchUnwrappedAsync(cancellationToken);
 
-            (byte[] wrappedDek, KeyWrapMetadata updatedMetadata, InMemoryRawDek updatedRawDek) = await this.WrapAsync(inMemoryRawDek.RawDek, newWrapMetadata, cancellationToken);
+            (byte[] wrappedDek, EncryptionKeyWrapMetadata updatedMetadata, InMemoryRawDek updatedRawDek) = await this.WrapAsync(inMemoryRawDek.RawDek, newWrapMetadata, cancellationToken);
 
             if (requestOptions == null)
             {
@@ -88,7 +83,7 @@ namespace Microsoft.Azure.Cosmos
 
             DataEncryptionKeyProperties newDekProperties = new DataEncryptionKeyProperties(dekProperties);
             newDekProperties.WrappedDataEncryptionKey = wrappedDek;
-            newDekProperties.KeyWrapMetadata = updatedMetadata;
+            newDekProperties.EncryptionKeyWrapMetadata = updatedMetadata;
 
             Task<ResponseMessage> responseMessage = this.ProcessStreamAsync(
                 this.ClientContext.SerializerCore.ToStream(newDekProperties),
@@ -184,27 +179,39 @@ namespace Microsoft.Azure.Cosmos
             return rawDek;
         }
 
-        internal async Task<(byte[], KeyWrapMetadata, InMemoryRawDek)> WrapAsync(byte[] key, KeyWrapMetadata metadata, CancellationToken cancellationToken)
+        internal async Task<(byte[], EncryptionKeyWrapMetadata, InMemoryRawDek)> WrapAsync(byte[] key, EncryptionKeyWrapMetadata metadata, CancellationToken cancellationToken)
         {
-            KeyWrapProvider keyWrapProvider = this.ClientContext.ClientOptions.KeyWrapProvider;
-            KeyWrapResponse keyWrapResponse = await keyWrapProvider.WrapKeyAsync(key, metadata, cancellationToken);
+            EncryptionSerializer encryptionSerializer = this.ClientContext.ClientOptions.Serializer as EncryptionSerializer;
+            if (encryptionSerializer == null)
+            {
+                throw new ArgumentException(ClientResources.EncryptionSerializerNotConfigured);
+            }
+
+            EncryptionKeyWrapProvider keyWrapProvider = encryptionSerializer.EncryptionKeyWrapProvider;
+            EncryptionKeyWrapResult keyWrapResponse = await keyWrapProvider.WrapKeyAsync(key, metadata, cancellationToken);
 
             // Verify
-            DataEncryptionKeyProperties tempDekProperties = new DataEncryptionKeyProperties(this.Id, keyWrapResponse.WrappedDataEncryptionKey, keyWrapResponse.KeyWrapMetadata);
+            DataEncryptionKeyProperties tempDekProperties = new DataEncryptionKeyProperties(this.Id, keyWrapResponse.WrappedDataEncryptionKey, keyWrapResponse.EncryptionKeyWrapMetadata);
             InMemoryRawDek roundTripResponse = await this.UnwrapAsync(tempDekProperties, cancellationToken);
             if (!roundTripResponse.RawDek.SequenceEqual(key))
             {
                 throw new CosmosException(System.Net.HttpStatusCode.BadRequest, ClientResources.KeyWrappingDidNotRoundtrip);
             }
 
-            return (keyWrapResponse.WrappedDataEncryptionKey, keyWrapResponse.KeyWrapMetadata, roundTripResponse);
+            return (keyWrapResponse.WrappedDataEncryptionKey, keyWrapResponse.EncryptionKeyWrapMetadata, roundTripResponse);
         }
 
         internal async Task<InMemoryRawDek> UnwrapAsync(DataEncryptionKeyProperties dekProperties, CancellationToken cancellationToken)
         {
-            KeyUnwrapResponse unwrapResponse = await this.ClientContext.ClientOptions.KeyWrapProvider.UnwrapKeyAsync(
+            EncryptionSerializer encryptionSerializer = this.ClientContext.ClientOptions.Serializer as EncryptionSerializer;
+            if (encryptionSerializer == null)
+            {
+                throw new ArgumentException(ClientResources.EncryptionSerializerNotConfigured);
+            }
+
+            EncryptionKeyUnwrapResult unwrapResponse = await encryptionSerializer.EncryptionKeyWrapProvider.UnwrapKeyAsync(
                     dekProperties.WrappedDataEncryptionKey,
-                    dekProperties.KeyWrapMetadata,
+                    dekProperties.EncryptionKeyWrapMetadata,
                     cancellationToken);
 
             EncryptionAlgorithm encryptionAlgorithm = this.GetEncryptionAlgorithm(unwrapResponse.DataEncryptionKey);

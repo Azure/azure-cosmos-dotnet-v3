@@ -9,27 +9,27 @@ namespace Microsoft.Azure.Cosmos
     using Newtonsoft.Json;
 
     /// <summary>
-    /// Metadata that a key wrapping provider can use to wrap/unwrap keys.
-    /// <seealso cref="KeyWrapProvider" />
+    /// Metadata that a key wrapping provider can use to wrap/unwrap data encryption keys.
+    /// <seealso cref="EncryptionKeyWrapProvider" />
     /// </summary>
 #if PREVIEW
     public
 #else
     internal
 #endif
-         class KeyWrapMetadata : IEquatable<KeyWrapMetadata>
+         class EncryptionKeyWrapMetadata : IEquatable<EncryptionKeyWrapMetadata>
     {
         /// <summary>
         /// Creates a new instance of key wrap metadata.
         /// </summary>
         /// <param name="value">Value of the metadata.</param>
-        public KeyWrapMetadata(string value)
+        public EncryptionKeyWrapMetadata(string value)
         {
             this.Type = "custom";
             this.Value = value;
         }
 
-        internal KeyWrapMetadata(KeyWrapMetadata source)
+        internal EncryptionKeyWrapMetadata(EncryptionKeyWrapMetadata source)
         {
             this.Type = source.Type;
             this.Value = source.Value;
@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos
         /// <inheritdoc/>
         public override bool Equals(object obj)
         {
-            KeyWrapMetadata metadata = obj as KeyWrapMetadata;
+            EncryptionKeyWrapMetadata metadata = obj as EncryptionKeyWrapMetadata;
             return this.Equals(metadata);
         }
 
@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>
         /// True if the properties of the key wrap metadata passed in matches with those in the current instance, else false.
         /// </returns>
-        public bool Equals(KeyWrapMetadata other)
+        public bool Equals(EncryptionKeyWrapMetadata other)
         {
             return other != null &&
                    this.Type == other.Type &&

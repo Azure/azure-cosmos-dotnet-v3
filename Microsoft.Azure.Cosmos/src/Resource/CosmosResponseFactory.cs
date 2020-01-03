@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Scripts;
@@ -64,13 +63,12 @@ namespace Microsoft.Azure.Cosmos
         internal Task<ItemResponse<T>> CreateItemResponseAsync<T>(
             Task<ResponseMessage> cosmosResponseMessageTask,
             Container container,
+            ItemRequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
             ContainerCore containerCore = (ContainerCore)container;
 
-            // We use this as a way to detect whether customer may be using client side encryption instead of parsing the document
-            // or taking in an explicit option to decrypt fields. We don't want to rely on the current state of attributes on the POCO for decryption.
-            if (containerCore == null || containerCore.ClientContext.ClientOptions.KeyWrapProvider == null)
+            if ((containerCore.ClientContext.ClientOptions.Serializer as EncryptionSerializer) == null)
             {
                 return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
                 {
@@ -87,6 +85,7 @@ namespace Microsoft.Azure.Cosmos
                 return this.ProcessItemMessageWithEncryptionAsync<T>(
                     cosmosResponseMessageTask,
                     containerCore,
+                    requestOptions,
                     cancellationToken);
             }
         }
@@ -262,7 +261,8 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<ItemResponse<T>> ProcessItemMessageWithEncryptionAsync<T>(
             Task<ResponseMessage> cosmosResponseTask,
-            ContainerCore containerCore,
+            Container container,
+            ItemRequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
             using (ResponseMessage responseMessage = await cosmosResponseTask)
@@ -273,7 +273,7 @@ namespace Microsoft.Azure.Cosmos
                 T item = default(T);
                 if (responseMessage.Content != null)
                 {
-                    item = await EncryptionHelper.DecryptAsync<T>(responseMessage.Content, containerCore.Database, cancellationToken);
+                    item = await this.serializerCore.FromStreamAsync<T>(responseMessage.Content, container, requestOptions, cancellationToken);
                 }
 
                 return new ItemResponse<T>(

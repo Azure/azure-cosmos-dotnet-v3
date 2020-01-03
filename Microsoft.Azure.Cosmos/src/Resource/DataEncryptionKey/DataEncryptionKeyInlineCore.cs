@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos
 
         /// <inheritdoc/>
         public override Task<DataEncryptionKeyResponse> RewrapAsync(
-           KeyWrapMetadata newWrapMetadata,
+           EncryptionKeyWrapMetadata newWrapMetadata,
            RequestOptions requestOptions = null,
            CancellationToken cancellationToken = default(CancellationToken))
         {

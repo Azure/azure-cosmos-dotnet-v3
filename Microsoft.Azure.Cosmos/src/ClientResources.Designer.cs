@@ -268,20 +268,20 @@ namespace Microsoft.Azure.Cosmos {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to A custom serializer may not be used along with client side encryption support..
-        /// </summary>
-        internal static string CustomSerializerAndEncryptionNotSupportedTogether {
-            get {
-                return ResourceManager.GetString("CustomSerializerAndEncryptionNotSupportedTogether", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to A data encryption key with the provided name was not found - please ensure it has been created..
         /// </summary>
         internal static string DataEncryptionKeyNotFound {
             get {
                 return ResourceManager.GetString("DataEncryptionKeyNotFound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The client was not configured to use the EncryptionSerializer. Initialize the client by providing an instance of EncryptionSerializer to cosmosClientBuilder.WithCustomSerializer..
+        /// </summary>
+        internal static string EncryptionSerializerNotConfigured {
+            get {
+                return ResourceManager.GetString("EncryptionSerializerNotConfigured", resourceCulture);
             }
         }
         
@@ -399,15 +399,6 @@ namespace Microsoft.Azure.Cosmos {
         internal static string KeyWrappingDidNotRoundtrip {
             get {
                 return ResourceManager.GetString("KeyWrappingDidNotRoundtrip", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to The key wrapping provider was not configured for the client. Please ensure this is done while initializing the client before invoking this API..
-        /// </summary>
-        internal static string KeyWrapProviderNotConfigured {
-            get {
-                return ResourceManager.GetString("KeyWrapProviderNotConfigured", resourceCulture);
             }
         }
         

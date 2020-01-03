@@ -16,16 +16,48 @@ namespace Microsoft.Azure.Cosmos
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
-    internal static class EncryptionHelper
+    /// <summary>
+    /// A serializer implementation that allows for encryption of properties during serialization and decryption during deserialization.
+    /// See https://tbd for more information on client-side encryption support in Azure Cosmos DB.
+    /// </summary>
+#if PREVIEW
+    public
+#else
+    internal
+#endif
+        class EncryptionSerializer : CosmosSerializer
     {
-        public static async Task<Stream> EncryptAsync<T>(T item, DataEncryptionKey dek, CancellationToken cancellationToken)
+        private readonly CosmosSerializer baseSerializer = new CosmosJsonSerializerWrapper(new CosmosJsonDotNetSerializer());
+
+        public EncryptionKeyWrapProvider EncryptionKeyWrapProvider { get; }
+
+        /// <summary>
+        /// Creates a new instance of a serializer that allows for encryption of properties during serialization and decryption during deserialization.
+        /// </summary>
+        /// <param name="encryptionKeyWrapProvider">New instance of serializer.</param>
+        public EncryptionSerializer(EncryptionKeyWrapProvider encryptionKeyWrapProvider)
         {
+            this.EncryptionKeyWrapProvider = encryptionKeyWrapProvider ?? throw new ArgumentNullException(nameof(encryptionKeyWrapProvider));
+        }
+
+        /// <inheritdoc />
+        public override async Task<Stream> ToStreamAsync<T>(T input, Container container, ItemRequestOptions itemRequestOptions, CancellationToken cancellationToken)
+        {
+            ContainerCore containerCore = (ContainerCore)container;
+
+            if (itemRequestOptions == null || itemRequestOptions.EncryptionOptions == null || itemRequestOptions.EncryptionOptions.DataEncryptionKey == null)
+            {
+                return this.baseSerializer.ToStream<T>(input);
+            }
+
+            DataEncryptionKey dek = containerCore.Database.GetDataEncryptionKey(itemRequestOptions.EncryptionOptions.DataEncryptionKey.Id);
+
             DataEncryptionKeyCore dekCore = (DataEncryptionKeyInlineCore)dek;
             (DataEncryptionKeyProperties dekProperties, InMemoryRawDek inMemoryRawDek) = await dekCore.FetchUnwrappedAsync(cancellationToken);
 
             PropertyInfo[] typeProperties = typeof(T).GetProperties();
 
-            JObject itemJObj = JObject.FromObject(item);
+            JObject itemJObj = JObject.FromObject(input);
 
             JObject toEncryptJObj = new JObject();
 
@@ -53,10 +85,9 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            CosmosJsonDotNetSerializer serializer = new CosmosJsonDotNetSerializer();
             if (!toEncryptJObj.HasValues)
             {
-                return serializer.ToStream(item);
+                return this.baseSerializer.ToStream(input);
             }
 
             byte[] plainText = Encoding.UTF8.GetBytes(toEncryptJObj.ToString(Formatting.None));
@@ -69,10 +100,11 @@ namespace Microsoft.Azure.Cosmos
                 encryptedData: inMemoryRawDek.AlgorithmUsingRawDek.EncryptData(plainText));
 
             itemJObj.Add(Constants.Properties.EncryptedInfo, JObject.FromObject(encryptionProperties));
-            return serializer.ToStream(itemJObj);
+            return this.baseSerializer.ToStream(itemJObj);
         }
 
-        public static async Task<T> DecryptAsync<T>(Stream stream, Database database, CancellationToken cancellationToken)
+        /// <inheritdoc />
+        public override async Task<T> FromStreamAsync<T>(Stream stream, Container container, ItemRequestOptions itemRequestOptions, CancellationToken cancellationToken)
         {
             JObject itemJObj = null;
             using (StreamReader streamReader = new StreamReader(stream))
@@ -104,7 +136,8 @@ namespace Microsoft.Azure.Cosmos
                 throw new CosmosException(HttpStatusCode.InternalServerError, "Unknown encryption algorithm. Please upgrade your SDK to the latest version.");
             }
 
-            DataEncryptionKeyCore tempDek = (DataEncryptionKeyInlineCore)database.GetDataEncryptionKey(id: "unknown");
+            ContainerCore containerCore = (ContainerCore)container;
+            DataEncryptionKeyCore tempDek = (DataEncryptionKeyInlineCore)containerCore.Database.GetDataEncryptionKey(id: "unknown");
             (DataEncryptionKeyProperties _, InMemoryRawDek inMemoryRawDek) = await tempDek.FetchUnwrappedByRidAsync(encryptionProperties.DataEncryptionKeyRid, cancellationToken);
             byte[] plainText = inMemoryRawDek.AlgorithmUsingRawDek.DecryptData(encryptionProperties.EncryptedData);
 
@@ -123,6 +156,16 @@ namespace Microsoft.Azure.Cosmos
 
             itemJObj.Remove(Constants.Properties.EncryptedInfo);
             return itemJObj.ToObject<T>();
+        }
+
+        public override T FromStream<T>(Stream stream)
+        {
+            throw new NotImplementedException("Method should not have been called");
+        }
+
+        public override Stream ToStream<T>(T input)
+        {
+            throw new NotImplementedException("Method should not have been called");
         }
     }
 }

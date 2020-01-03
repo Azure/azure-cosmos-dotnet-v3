@@ -208,9 +208,9 @@ namespace Microsoft.Azure.Cosmos
             return this.database.GetDataEncryptionKeyIterator(startId, endId, isDescending, continuationToken, requestOptions);
         }
 
-        internal override Task<DataEncryptionKeyResponse> CreateDataEncryptionKeyAsync(string id, KeyWrapMetadata keyWrapMetadata, RequestOptions requestOptions = null, CancellationToken cancellationToken = default)
+        internal override Task<DataEncryptionKeyResponse> CreateDataEncryptionKeyAsync(string id, EncryptionKeyWrapMetadata encryptionKeyWrapMetadata, RequestOptions requestOptions = null, CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => this.database.CreateDataEncryptionKeyAsync(id, keyWrapMetadata, requestOptions, cancellationToken));
+            return TaskHelper.RunInlineIfNeededAsync(() => this.database.CreateDataEncryptionKeyAsync(id, encryptionKeyWrapMetadata, requestOptions, cancellationToken));
         }
 
         public static implicit operator DatabaseCore(DatabaseInlineCore databaseInlineCore) => databaseInlineCore.database;

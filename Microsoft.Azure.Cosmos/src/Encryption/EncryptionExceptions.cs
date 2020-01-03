@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
 
-    // todo: should these return CosmosException?
     internal static class EncryptionExceptions
     {
         internal static Exception InvalidKeySize(string algorithmName, int actualKeylength, int expectedLength)

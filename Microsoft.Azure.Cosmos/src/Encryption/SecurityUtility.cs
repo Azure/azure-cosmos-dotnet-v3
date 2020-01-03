@@ -75,6 +75,7 @@ namespace Microsoft.Azure.Cosmos
                 return false;
             }
 
+            Debug.Assert(buffer1.Length >= lengthToCompare, "invalid lengthToCompare");
             Debug.Assert(buffer2Index > -1 && buffer2Index < buffer2.Length, "invalid index");
             if ((buffer2.Length - buffer2Index) < lengthToCompare)
             {
@@ -96,7 +97,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets hex representation of byte array.
         /// <param name="input">input byte array</param>
         /// </summary>
-        internal static string GetHexString(byte[] input)
+        private static string GetHexString(byte[] input)
         {
             Debug.Assert(input != null);
 

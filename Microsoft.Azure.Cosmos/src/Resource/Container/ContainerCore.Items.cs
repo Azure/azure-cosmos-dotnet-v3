@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(item));
             }
 
-            Task<ResponseMessage> response = this.PreprocessAndProcessItemAsync(
+            Task<ResponseMessage> response = this.ExtractPartitionKeyAndProcessItemStreamAsync(
                 partitionKey: partitionKey,
                 itemId: null,
                 item: item,
@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response, this, cancellationToken);
+            return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response, this, requestOptions, cancellationToken);
         }
 
         public override Task<ResponseMessage> ReadItemStreamAsync(
@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response, this, cancellationToken);
+            return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response, this, requestOptions, cancellationToken);
         }
 
         public override Task<ResponseMessage> UpsertItemStreamAsync(
@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(item));
             }
 
-            Task<ResponseMessage> response = this.PreprocessAndProcessItemAsync(
+            Task<ResponseMessage> response = this.ExtractPartitionKeyAndProcessItemStreamAsync(
                 partitionKey: partitionKey,
                 itemId: null,
                 item: item,
@@ -139,7 +139,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response, this, cancellationToken);
+            return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response, this, requestOptions, cancellationToken);
         }
 
         public override Task<ResponseMessage> ReplaceItemStreamAsync(
@@ -175,7 +175,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(item));
             }
 
-            Task<ResponseMessage> response = this.PreprocessAndProcessItemAsync(
+            Task<ResponseMessage> response = this.ExtractPartitionKeyAndProcessItemStreamAsync(
                partitionKey: partitionKey,
                itemId: id,
                item: item,
@@ -183,7 +183,7 @@ namespace Microsoft.Azure.Cosmos
                requestOptions: requestOptions,
                cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response, this, cancellationToken);
+            return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response, this, requestOptions, cancellationToken);
         }
 
         public override Task<ResponseMessage> DeleteItemStreamAsync(
@@ -213,7 +213,7 @@ namespace Microsoft.Azure.Cosmos
                requestOptions: requestOptions,
                cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response, this, cancellationToken);
+            return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response, this, requestOptions, cancellationToken);
         }
 
         public override FeedIterator GetItemQueryStreamIterator(
@@ -508,7 +508,10 @@ namespace Microsoft.Azure.Cosmos
                 partitionedQueryExecutionInfo: null);
         }
 
-        internal async Task<ResponseMessage> PreprocessAndProcessItemAsync<T>(
+        // Extracted partition key might be invalid as CollectionCache might be stale.
+        // Stale collection cache is refreshed through PartitionKeyMismatchRetryPolicy
+        // and partition-key is extracted again. 
+        internal async Task<ResponseMessage> ExtractPartitionKeyAndProcessItemStreamAsync<T>(
             PartitionKey? partitionKey,
             string itemId,
             T item,
@@ -516,15 +519,7 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
-            Stream streamPayload = null;
-            if (requestOptions.EncryptionOptions != null && requestOptions.EncryptionOptions.DataEncryptionKey != null)
-            {
-                streamPayload = await EncryptionHelper.EncryptAsync<T>(item, requestOptions.EncryptionOptions.DataEncryptionKey, cancellationToken);
-            }
-            else
-            {
-                streamPayload = this.ClientContext.SerializerCore.ToStream<T>(item);
-            }
+            Stream streamPayload = await this.ClientContext.SerializerCore.ToStreamAsync<T>(item, this, requestOptions, cancellationToken);
 
             // User specified PK value, no need to extract it
             if (partitionKey.HasValue)
@@ -556,9 +551,6 @@ namespace Microsoft.Azure.Cosmos
                     return responseMessage;
                 }
 
-                // Extracted partition key might be invalid as CollectionCache might be stale.
-                // Stale collection cache is refreshed through PartitionKeyMismatchRetryPolicy
-                // and partition-key is extracted again. 
                 if (requestRetryPolicy == null)
                 {
                     requestRetryPolicy = new PartitionKeyMismatchRetryPolicy(await this.ClientContext.DocumentClient.GetCollectionCacheAsync(), null);
