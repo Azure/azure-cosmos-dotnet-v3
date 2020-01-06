@@ -217,7 +217,7 @@ namespace Microsoft.Azure.Cosmos
         /// 1. This create the type feed iterator for permission with queryText as input,
         /// <code language="c#">
         /// <![CDATA[
-        /// string queryText = "SELECT * FROM c where c.id like '%testId%'";
+        /// string queryText = "SELECT * FROM c where c.status like 'start%'";
         /// FeedIterator<PermissionProperties> feedIterator = this.users.GetPermissionQueryIterator<PermissionProperties>(queryText);
         /// while (feedIterator.HasMoreResults)
         /// {
@@ -266,8 +266,8 @@ namespace Microsoft.Azure.Cosmos
         /// This create the type feed iterator for permissions with queryDefinition as input.
         /// <code language="c#">
         /// <![CDATA[
-        /// QueryDefinition queryDefinition = new QueryDefinition("SELECT * FROM c where c.id like @testId")
-        ///     .WithParameter("@testId", "testPermissionId");
+        /// QueryDefinition queryDefinition = new QueryDefinition("SELECT * FROM c where c.status like @status")
+        ///     .WithParameter("@status", "start%");
         /// FeedIterator<PermissionProperties> resultSet = this.user.GetPermissionQueryIterator<PermissionProperties>(queryDefinition);
         /// while (feedIterator.HasMoreResults)
         /// {

@@ -470,8 +470,8 @@ namespace Microsoft.Azure.Cosmos
         /// This create the type feed iterator for database with queryText as input,
         /// <code language="c#">
         /// <![CDATA[
-        /// QueryDefinition queryDefinition = new QueryDefinition("SELECT * FROM c where c.id like ")
-        ///     .WithParameter("@id", "%testId%");
+        /// QueryDefinition queryDefinition = new QueryDefinition("SELECT * FROM c where c.status like @status")
+        ///     .WithParameter("@status", "start%");
         /// FeedIterator<DatabaseProperties> feedIterator = this.users.GetDatabaseQueryIterator<DatabaseProperties>(queryDefinition);
         /// while (feedIterator.HasMoreResults)
         /// {
@@ -573,7 +573,7 @@ namespace Microsoft.Azure.Cosmos
         /// This create the type feed iterator for database with queryText as input,
         /// <code language="c#">
         /// <![CDATA[
-        /// string queryText = "SELECT * FROM c where c.id like '%testId%'";
+        /// string queryText = "SELECT * FROM c where c.status like 'start%'";
         /// FeedIterator<DatabaseProperties> feedIterator = this.users.GetDatabaseQueryIterator<DatabaseProperties>(queryText);
         /// while (feedIterator.HasMoreResults)
         /// {
