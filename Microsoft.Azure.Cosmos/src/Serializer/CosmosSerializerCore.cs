@@ -135,9 +135,13 @@ namespace Microsoft.Azure.Cosmos
 
 #if DEBUG
             // Users can pass in Newtonsoft types so ignore it for the tests where all the types are internal
-            if (inputType != typeof(Document) &&
+            // If the type is from internal namespace and not from a test project then throw
+            if ((inputType.FullName.StartsWith("Microsoft.Azure.Documents") ||
+                inputType.FullName.StartsWith("Microsoft.Azure.Cosmos")) && 
                 !inputType.FullName.StartsWith("Newtonsoft.Json.") &&
-                (inputType.IsPublic || inputType.IsNested))
+                !inputType.FullName.StartsWith("Microsoft.Azure.Cosmos.SDK.EmulatorTests") &&
+                !inputType.FullName.StartsWith("Microsoft.Azure.Cosmos.ChangeFeed.Tests") &&
+                !inputType.FullName.StartsWith("Microsoft.Azure.Cosmos.Client.Tests")) 
             {
                 throw new ArgumentException($"User serializer is being used for internal type:{inputType.FullName}.");
             }
