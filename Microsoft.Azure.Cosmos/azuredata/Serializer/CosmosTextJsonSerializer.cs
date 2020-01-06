@@ -74,7 +74,8 @@ namespace Azure.Cosmos
         {
             using (stream)
             {
-                if (stream.Length == 0)
+                if (stream.CanSeek
+                    && stream.Length == 0)
                 {
                     return default(T);
                 }
@@ -112,14 +113,17 @@ namespace Azure.Cosmos
             JsonSerializerOptions jsonSerializerOptions)
         {
             MemoryStream memoryStream = stream as MemoryStream;
-            if (stream is MemoryStream)
+            if (stream is MemoryStream
+                && memoryStream.TryGetBuffer(out ArraySegment<byte> buffer))
             {
-                if (memoryStream.TryGetBuffer(out ArraySegment<byte> buffer))
+                if (buffer.Count >= CosmosTextJsonSerializer.Utf8Bom.Length
+                    && CosmosTextJsonSerializer.Utf8Bom.SequenceEqual(buffer.AsSpan(0, CosmosTextJsonSerializer.Utf8Bom.Length)))
                 {
-                    return JsonSerializer.Deserialize<T>(buffer, jsonSerializerOptions);
+                    // Skip 3 BOM bytes
+                    return JsonSerializer.Deserialize<T>(buffer.AsSpan(CosmosTextJsonSerializer.Utf8Bom.Length), jsonSerializerOptions);
                 }
 
-                return JsonSerializer.Deserialize<T>(memoryStream.ToArray(), jsonSerializerOptions);
+                return JsonSerializer.Deserialize<T>(buffer, jsonSerializerOptions);
             }
 
             int written = 0;
