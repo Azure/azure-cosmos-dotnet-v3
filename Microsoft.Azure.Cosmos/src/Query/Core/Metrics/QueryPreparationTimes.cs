@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             TimeSpan physicalPlanBuildTime,
             TimeSpan queryOptimizationTime)
         {
-            this.CompileTime = queryCompilationTime;
+            this.QueryCompilationTime = queryCompilationTime;
             this.LogicalPlanBuildTime = logicalPlanBuildTime;
             this.PhysicalPlanBuildTime = physicalPlanBuildTime;
             this.QueryOptimizationTime = queryOptimizationTime;
@@ -41,18 +41,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// <summary>
         /// Gets the query compile time in the Azure DocumentDB database service. 
         /// </summary>
-        internal TimeSpan QueryCompilationTime
-        {
-            get
-            {
-                return this.CompileTime;
-            }
-        }
-
-        /// <summary>
-        /// Gets the query compile time in the Azure DocumentDB database service. 
-        /// </summary>
-        public TimeSpan CompileTime { get; }
+        public TimeSpan QueryCompilationTime { get; }
 
         /// <summary>
         /// Gets the query logical plan build time in the Azure DocumentDB database service. 
@@ -109,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                     throw new ArgumentException("queryPreparationTimesList can not have a null element");
                 }
 
-                queryCompilationTime += queryPreparationTimes.CompileTime;
+                queryCompilationTime += queryPreparationTimes.QueryCompilationTime;
                 logicalPlanBuildTime += queryPreparationTimes.LogicalPlanBuildTime;
                 physicalPlanBuildTime += queryPreparationTimes.PhysicalPlanBuildTime;
                 queryOptimizationTime += queryPreparationTimes.QueryOptimizationTime;

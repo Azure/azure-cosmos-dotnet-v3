@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             this.WriteOutputDocumentSize(queryMetrics.OutputDocumentSize);
             this.WriteIndexHitRatio(queryMetrics.IndexHitRatio);
 
-            this.WriteTotalQueryExecutionTime(queryMetrics.TotalQueryExecutionTime);
+            this.WriteTotalQueryExecutionTime(queryMetrics.TotalTime);
 
             // QueryPreparationTimes
             this.WriteQueryPreparationTimes(queryMetrics.QueryPreparationTimes);

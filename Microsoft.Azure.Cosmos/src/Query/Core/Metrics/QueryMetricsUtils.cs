@@ -49,7 +49,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             TimeSpan timeSpanFromMetrics;
             if (metrics.TryGetValue(key, out double timeSpanInMilliseconds))
             {
-                // Can not use TimeSpan.FromMilliseconds since double has a loss of precision
                 timeSpanFromMetrics = QueryMetricsUtils.DoubleMillisecondsToTimeSpan(timeSpanInMilliseconds);
             }
             else

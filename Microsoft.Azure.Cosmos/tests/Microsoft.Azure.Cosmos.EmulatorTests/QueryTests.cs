@@ -1803,7 +1803,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private void AssertQueryMetricsPublicMembers(QueryMetrics queryMetrics)
         {
-            Assert.IsNotNull(queryMetrics.TotalQueryExecutionTime.TotalMilliseconds);
+            Assert.IsNotNull(queryMetrics.TotalTime.TotalMilliseconds);
             Assert.IsNotNull(queryMetrics.RetrievedDocumentCount);
             Assert.IsNotNull(queryMetrics.RetrievedDocumentSize);
             Assert.IsNotNull(queryMetrics.OutputDocumentCount);
@@ -1886,7 +1886,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(m1.OutputDocumentSize, m2.OutputDocumentSize);
             Assert.AreEqual(m1.RetrievedDocumentCount, m2.RetrievedDocumentCount);
             Assert.AreEqual(m1.RetrievedDocumentSize, m2.RetrievedDocumentSize);
-            Assert.AreEqual(m1.TotalQueryExecutionTime, m2.TotalQueryExecutionTime);
+            Assert.AreEqual(m1.TotalTime, m2.TotalTime);
 
             Assert.AreEqual(m1.DocumentLoadTime, m2.DocumentLoadTime);
             Assert.AreEqual(m1.DocumentWriteTime, m2.DocumentWriteTime);
@@ -1981,7 +1981,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(queryMetricsFromAddition.OutputDocumentSize, outputDocumentSize * 2);
             Assert.AreEqual(queryMetricsFromAddition.RetrievedDocumentCount, retrievedDocumentCount * 2);
             Assert.AreEqual(queryMetricsFromAddition.RetrievedDocumentSize, retrievedDocumentSize * 2);
-            Assert.AreEqual(queryMetricsFromAddition.TotalQueryExecutionTime, totalExecutionTime + totalExecutionTime);
+            Assert.AreEqual(queryMetricsFromAddition.TotalTime, totalExecutionTime + totalExecutionTime);
 
             Assert.AreEqual(queryMetricsFromAddition.DocumentLoadTime, documentLoadTime + documentLoadTime);
             Assert.AreEqual(queryMetricsFromAddition.DocumentWriteTime, documentWriteTime + documentWriteTime);
@@ -2572,7 +2572,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //We are not checking DocumentLoadTime and RetrievedDocumentCount, since some queries don't return any documents (especially in the last continuation).
             //Assert.IsTrue(metrics.QueryEngineTimes.DocumentLoadTime.TotalMilliseconds > 0, "Expected DocumentLoadTimeInMs to be > 0, metrics = {0}", metrics);
             //Assert.IsTrue(metrics.RetrievedDocumentCount > 0, "Expected RetrievedDocumentCount to be > 0, metrics = {0}", metrics);
-            Assert.IsTrue(metrics.TotalQueryExecutionTime.TotalMilliseconds > 0, "Expected TotalExecutionTimeInMs to be > 0, metrics = {0}", metrics);
+            Assert.IsTrue(metrics.TotalTime.TotalMilliseconds > 0, "Expected TotalExecutionTimeInMs to be > 0, metrics = {0}", metrics);
             //Assert.IsTrue(metrics.QueryEngineTimes.WriteOutputTime.TotalMilliseconds > 0, "Expected WriteOutputTimeInMs to be > 0, metrics = {0}", metrics);
             //Assert.IsTrue(metrics.RetrievedDocumentSize > 0, "Expected RetrievedDocumentSize to be > 0, metrics = {0}", metrics);
             Assert.IsTrue(metrics.IndexLookupTime.TotalMilliseconds > 0, "Expected IndexLookupTimeInMs to be > 0, metrics = {0}", metrics);

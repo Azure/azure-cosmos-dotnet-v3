@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// <param name="documentWriteTime">Time spent writing output document</param>
         /// <param name="clientSideMetrics">Client Side Metrics</param>
         [JsonConstructor]
-        internal QueryMetrics(
+        public QueryMetrics(
             long retrievedDocumentCount,
             long retrievedDocumentSize,
             long outputDocumentCount,
@@ -81,7 +81,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             this.RuntimeExecutionTimes = runtimeExecutionTimes ?? throw new ArgumentNullException($"{nameof(runtimeExecutionTimes)} can not be null.");
             this.DocumentWriteTime = documentWriteTime;
             this.ClientSideMetrics = clientSideMetrics ?? throw new ArgumentNullException($"{nameof(clientSideMetrics)} can not be null.");
-            this.QueryEngineTimes = new QueryEngineTimes(indexLookupTime, documentLoadTime, vmExecutionTime, documentWriteTime, runtimeExecutionTimes);
         }
 
         /// <summary>
@@ -110,19 +109,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         internal long OutputDocumentSize { get; }
 
         /// <summary>
-        /// Gets the total query time in the Azure Cosmos database service.
-        /// </summary>
-        internal TimeSpan TotalQueryExecutionTime => this.TotalTime;
-
-        /// <summary>
         /// Gets the query QueryPreparationTimes in the Azure Cosmos database service.
         /// </summary>
         public QueryPreparationTimes QueryPreparationTimes { get; }
-
-        /// <summary>
-        /// Gets the <see cref="QueryEngineTimes"/> instance in the Azure Cosmos database service.
-        /// </summary>
-        public QueryEngineTimes QueryEngineTimes { get; }
 
         /// <summary>
         /// Gets number of reties in the Azure Cosmos database service.
@@ -346,7 +335,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                 queryMetrics.OutputDocumentSize,
                 queryMetrics.IndexHitDocumentCount,
                 queryMetrics.IndexUtilizationInfo,
-                queryMetrics.TotalQueryExecutionTime,
+                queryMetrics.TotalTime,
                 queryMetrics.QueryPreparationTimes,
                 queryMetrics.IndexLookupTime,
                 queryMetrics.DocumentLoadTime,
@@ -374,45 +363,4 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             return QueryMetrics.CreateFromIEnumerable(combinedQueryMetricsList);
         }
     }
-
-    #region QueryEngineTimes
-
-    /// <summary>
-    /// Query engine time in the Azure Cosmos database service.
-    /// (dummy class that will be deprecated).
-    /// </summary>
-    internal sealed class QueryEngineTimes
-    {
-        internal QueryEngineTimes(TimeSpan indexLookupTime, TimeSpan documentLoadTime, TimeSpan vmExecutionTime, TimeSpan writeOutputTime, RuntimeExecutionTimes runtimeExecutionTimes)
-        {
-            this.IndexLookupTime = indexLookupTime;
-            this.DocumentLoadTime = documentLoadTime;
-            this.VMExecutionTime = vmExecutionTime;
-            this.WriteOutputTime = writeOutputTime;
-            this.RuntimeExecutionTimes = runtimeExecutionTimes;
-        }
-
-        /// <summary>
-        /// Gets the query index lookup time in the Azure Cosmos database service.
-        /// </summary>
-        public TimeSpan IndexLookupTime { get; }
-
-        /// <summary>
-        /// Gets the document loading time during query in the Azure Cosmos database service.
-        /// </summary>
-        public TimeSpan DocumentLoadTime { get; }
-
-        /// <summary>
-        /// Gets the output writing/serializing time during query in the Azure Cosmos database service.
-        /// </summary>
-        public TimeSpan WriteOutputTime { get; }
-
-        /// <summary>
-        /// Gets the query runtime execution times during query in the Azure Cosmos database service.
-        /// </summary>
-        public RuntimeExecutionTimes RuntimeExecutionTimes { get; }
-
-        internal TimeSpan VMExecutionTime { get; }
-    }
-    #endregion
 }
