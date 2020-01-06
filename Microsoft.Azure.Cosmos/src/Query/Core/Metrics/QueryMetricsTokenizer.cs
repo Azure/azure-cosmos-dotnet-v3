@@ -57,6 +57,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
         public static Token Read(ReadOnlySpan<byte> corpus)
         {
+            // This can be converted to a fancy prefix tree switch case in the future if we need better perf.
+
             Token token;
             if (corpus[0] == '=')
             {

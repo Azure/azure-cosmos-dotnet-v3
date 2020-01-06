@@ -16,6 +16,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                 throw new ArgumentNullException(nameof(deliminatedString));
             }
 
+            if (deliminatedString.Length == 0)
+            {
+                // Stack allocating a zero length buffer returns a null pointer
+                // so we special case the zero length string.
+                queryMetrics = QueryMetrics.Zero;
+                return true;
+            }
+
             // QueryMetrics
             long retrievedDocumentCount = default;
             long retrievedDocumentSize = default;
@@ -199,6 +207,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                         {
                             queryMetrics = default;
                             return false;
+                        }
+                        break;
+
+                    case QueryMetricsTokenizer.Token.Unknown:
+                        // If the token is unknown, then just skip till the next field (';' or EOF)
+                        // since the token must have been added recently in the service and the newer SDKs should know how to parse it
+                        // this avoids breaking old clients
+                        int nextTokenIndex = corpus.IndexOf((byte)';');
+                        if (nextTokenIndex == -1)
+                        {
+                            // The next token does not exist, so just seek to the end
+                            bytesConsumed = corpus.Length;
+                        }
+                        else
+                        {
+                            bytesConsumed = nextTokenIndex;
                         }
                         break;
 
