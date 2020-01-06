@@ -241,7 +241,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     Debug.Assert(serverRequestPayload != null, "Server request payload expected to be non-null");
 
-                    TimeSpan start = this.stopwatch.Elapsed;
+                    long startMilliseconds = this.stopwatch.ElapsedMilliseconds;
                     ResponseMessage responseMessage = await this.cosmosClientContext.ProcessResourceOperationStreamAsync(
                         this.cosmosContainer.LinkUri,
                         ResourceType.Document,
@@ -256,7 +256,7 @@ namespace Microsoft.Azure.Cosmos
                     TransactionalBatchResponse serverResponse = await TransactionalBatchResponse.FromResponseMessageAsync(responseMessage, serverRequest, this.cosmosClientContext.SerializerCore).ConfigureAwait(false);
 
                     int numThrottle = serverResponse.Any(r => r.StatusCode == (System.Net.HttpStatusCode)StatusCodes.TooManyRequests) ? 1 : 0;
-                    long milliSecondsElapsed = (this.stopwatch.Elapsed - start).Milliseconds;
+                    long milliSecondsElapsed = this.stopwatch.ElapsedMilliseconds - startMilliseconds;
                     this.throttlePartitionId.AddOrUpdate(serverRequest.PartitionKeyRangeId, numThrottle, (_, old) => old + numThrottle);
                     this.docsPartitionId.AddOrUpdate(serverRequest.PartitionKeyRangeId, serverResponse.Count, (_, old) => old + serverResponse.Count);
                     this.timePartitionid.AddOrUpdate(serverRequest.PartitionKeyRangeId, milliSecondsElapsed, (_, old) => old + milliSecondsElapsed);
