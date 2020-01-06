@@ -37,7 +37,10 @@ namespace Microsoft.Azure.Cosmos.Scripts
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return this.scripts.GetStoredProcedureQueryIterator<T>(queryDefinition, continuationToken, requestOptions);
+            return new FeedIteratorInlineCore<T>(this.scripts.GetStoredProcedureQueryIterator<T>(
+                queryDefinition,
+                continuationToken,
+                requestOptions));
         }
 
         public override FeedIterator GetStoredProcedureQueryStreamIterator(
@@ -45,7 +48,10 @@ namespace Microsoft.Azure.Cosmos.Scripts
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return this.scripts.GetStoredProcedureQueryStreamIterator(queryDefinition, continuationToken, requestOptions);
+            return new FeedIteratorInlineCore(this.scripts.GetStoredProcedureQueryStreamIterator(
+                queryDefinition,
+                continuationToken,
+                requestOptions));
         }
 
         public override FeedIterator<T> GetStoredProcedureQueryIterator<T>(
@@ -53,7 +59,10 @@ namespace Microsoft.Azure.Cosmos.Scripts
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return this.scripts.GetStoredProcedureQueryIterator<T>(queryText, continuationToken, requestOptions);
+            return new FeedIteratorInlineCore<T>(this.scripts.GetStoredProcedureQueryIterator<T>(
+                queryText,
+                continuationToken,
+                requestOptions));
         }
 
         public override FeedIterator GetStoredProcedureQueryStreamIterator(
@@ -61,7 +70,10 @@ namespace Microsoft.Azure.Cosmos.Scripts
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return this.scripts.GetStoredProcedureQueryStreamIterator(queryText, continuationToken, requestOptions);
+            return new FeedIteratorInlineCore(this.scripts.GetStoredProcedureQueryStreamIterator(
+                queryText,
+                continuationToken,
+                requestOptions));
         }
 
         public override Task<StoredProcedureResponse> ReadStoredProcedureAsync(
@@ -131,7 +143,10 @@ namespace Microsoft.Azure.Cosmos.Scripts
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return this.scripts.GetTriggerQueryIterator<T>(queryDefinition, continuationToken, requestOptions);
+            return new FeedIteratorInlineCore<T>(this.scripts.GetTriggerQueryIterator<T>(
+                queryDefinition,
+                continuationToken,
+                requestOptions));
         }
 
         public override FeedIterator GetTriggerQueryStreamIterator(
@@ -139,7 +154,10 @@ namespace Microsoft.Azure.Cosmos.Scripts
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return this.scripts.GetTriggerQueryStreamIterator(queryDefinition, continuationToken, requestOptions);
+            return new FeedIteratorInlineCore(this.scripts.GetTriggerQueryStreamIterator(
+                queryDefinition,
+                continuationToken,
+                requestOptions));
         }
 
         public override FeedIterator<T> GetTriggerQueryIterator<T>(
@@ -147,7 +165,10 @@ namespace Microsoft.Azure.Cosmos.Scripts
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return this.scripts.GetTriggerQueryIterator<T>(queryText, continuationToken, requestOptions);
+            return new FeedIteratorInlineCore<T>(this.scripts.GetTriggerQueryIterator<T>(
+                queryText,
+                continuationToken,
+                requestOptions));
         }
 
         public override FeedIterator GetTriggerQueryStreamIterator(
@@ -155,7 +176,10 @@ namespace Microsoft.Azure.Cosmos.Scripts
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return this.scripts.GetTriggerQueryStreamIterator(queryText, continuationToken, requestOptions);
+            return new FeedIteratorInlineCore(this.scripts.GetTriggerQueryStreamIterator(
+                queryText,
+                continuationToken,
+                requestOptions));
         }
 
         public override Task<TriggerResponse> ReadTriggerAsync(
@@ -195,7 +219,10 @@ namespace Microsoft.Azure.Cosmos.Scripts
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return this.scripts.GetUserDefinedFunctionQueryIterator<T>(queryDefinition, continuationToken, requestOptions);
+            return new FeedIteratorInlineCore<T>(this.scripts.GetUserDefinedFunctionQueryIterator<T>(
+                queryDefinition,
+                continuationToken,
+                requestOptions));
         }
 
         public override FeedIterator GetUserDefinedFunctionQueryStreamIterator(
@@ -203,7 +230,10 @@ namespace Microsoft.Azure.Cosmos.Scripts
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return this.scripts.GetUserDefinedFunctionQueryStreamIterator(queryDefinition, continuationToken, requestOptions);
+            return new FeedIteratorInlineCore(this.scripts.GetUserDefinedFunctionQueryStreamIterator(
+                queryDefinition,
+                continuationToken,
+                requestOptions));
         }
 
         public override FeedIterator<T> GetUserDefinedFunctionQueryIterator<T>(
@@ -211,7 +241,10 @@ namespace Microsoft.Azure.Cosmos.Scripts
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return this.scripts.GetUserDefinedFunctionQueryIterator<T>(queryText, continuationToken, requestOptions);
+            return new FeedIteratorInlineCore<T>(this.scripts.GetUserDefinedFunctionQueryIterator<T>(
+                queryText,
+                continuationToken,
+                requestOptions));
         }
 
         public override FeedIterator GetUserDefinedFunctionQueryStreamIterator(
@@ -219,7 +252,10 @@ namespace Microsoft.Azure.Cosmos.Scripts
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return this.scripts.GetUserDefinedFunctionQueryStreamIterator(queryText, continuationToken, requestOptions);
+            return new FeedIteratorInlineCore(this.scripts.GetUserDefinedFunctionQueryStreamIterator(
+                queryText,
+                continuationToken,
+                requestOptions));
         }
 
         public override Task<UserDefinedFunctionResponse> ReadUserDefinedFunctionAsync(

@@ -619,7 +619,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 QueryRequestOptions computeRequestOptions = queryRequestOptions.Clone();
                 computeRequestOptions.ExecutionEnvironment = Cosmos.Query.Core.ExecutionContext.ExecutionEnvironment.Compute;
 
-                FeedIteratorCore<T> itemQuery = (FeedIteratorCore<T>)container.GetItemQueryIterator<T>(
+                FeedIteratorInternal<T> itemQuery = (FeedIteratorInternal<T>)container.GetItemQueryIterator<T>(
                    queryText: query,
                    requestOptions: computeRequestOptions,
                    continuationToken: continuationToken);
@@ -644,7 +644,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
                 catch (CosmosException cosmosException) when (cosmosException.StatusCode == (HttpStatusCode)429)
                 {
-                    itemQuery = (FeedIteratorCore<T>)container.GetItemQueryIterator<T>(
+                    itemQuery = (FeedIteratorInternal<T>)container.GetItemQueryIterator<T>(
                             queryText: query,
                             requestOptions: queryRequestOptions,
                             continuationToken: continuationToken);
