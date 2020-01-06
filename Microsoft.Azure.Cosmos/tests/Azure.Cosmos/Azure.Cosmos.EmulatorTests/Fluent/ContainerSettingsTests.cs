@@ -10,6 +10,7 @@ namespace Azure.Cosmos.EmulatorTests
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Globalization;
     using System.IO;
     using System.Linq;
     using System.Net;
@@ -457,32 +458,44 @@ namespace Azure.Cosmos.EmulatorTests
         [TestMethod]
         public async Task TimeToLiveTest()
         {
-            string containerName = Guid.NewGuid().ToString();
-            string partitionKeyPath = "/users";
-            int timeToLiveInSeconds = 10;
-            ContainerResponse containerResponse = await this.database.DefineContainer(containerName, partitionKeyPath)
-                .WithDefaultTimeToLive(timeToLiveInSeconds)
-                .CreateAsync();
+            CultureInfo defaultCultureInfo = System.Threading.Thread.CurrentThread.CurrentCulture;
 
-            Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
-            CosmosContainer container = containerResponse;
-            ContainerProperties responseSettings = containerResponse;
+            CultureInfo[] cultureInfoList = new CultureInfo[]
+            {
+                defaultCultureInfo,
+                System.Globalization.CultureInfo.GetCultureInfo("fr-FR")
+            };
 
-            Assert.AreEqual(timeToLiveInSeconds, responseSettings.DefaultTimeToLive);
+            foreach (CultureInfo cultureInfo in cultureInfoList)
+            {
+                System.Threading.Thread.CurrentThread.CurrentCulture = cultureInfo;
+                string containerName = Guid.NewGuid().ToString();
+                string partitionKeyPath = "/users";
+                int timeToLiveInSeconds = 10;
+                ContainerResponse containerResponse = await this.database.DefineContainer(containerName, partitionKeyPath)
+                    .WithDefaultTimeToLive(timeToLiveInSeconds)
+                    .CreateAsync();
 
-            ContainerResponse readResponse = await container.ReadContainerAsync();
-            Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
-            Assert.AreEqual(timeToLiveInSeconds, readResponse.Value.DefaultTimeToLive);
+                Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
+                CosmosContainer container = containerResponse;
+                ContainerProperties responseSettings = containerResponse;
 
-            Dictionary<string, object> itemTest = new Dictionary<string, object>();
-            itemTest["id"] = Guid.NewGuid().ToString();
-            itemTest["users"] = "testUser42";
-            ItemResponse<Dictionary<string, object>> createResponse = await container.CreateItemAsync<Dictionary<string, object>>(item: itemTest);
-            Dictionary<string, object> responseItem = createResponse;
-            Assert.IsFalse(responseItem.ContainsKey("ttl"));
+                Assert.AreEqual(timeToLiveInSeconds, responseSettings.DefaultTimeToLive);
 
-            containerResponse = await container.DeleteContainerAsync();
-            Assert.AreEqual((int)HttpStatusCode.NoContent, containerResponse.GetRawResponse().Status);
+                ContainerResponse readResponse = await container.ReadContainerAsync();
+                Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
+                Assert.AreEqual(timeToLiveInSeconds, readResponse.Value.DefaultTimeToLive);
+
+                Dictionary<string, object> itemTest = new Dictionary<string, object>();
+                itemTest["id"] = Guid.NewGuid().ToString();
+                itemTest["users"] = "testUser42";
+                ItemResponse<Dictionary<string, object>> createResponse = await container.CreateItemAsync<Dictionary<string, object>>(item: itemTest);
+                Dictionary<string, object> responseItem = createResponse;
+                Assert.IsFalse(responseItem.ContainsKey("ttl"));
+
+                containerResponse = await container.DeleteContainerAsync();
+                Assert.AreEqual((int)HttpStatusCode.NoContent, containerResponse.GetRawResponse().Status);
+            }
         }
 
         [TestMethod]
