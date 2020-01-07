@@ -7,12 +7,14 @@ namespace Azure.Cosmos.EmulatorTests
     using Azure.Cosmos.Spatial;
     using Microsoft.Azure.Cosmos;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json.Linq;
     using System;
+    using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Globalization;
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Text.Json;
     using System.Threading.Tasks;
 
     // Similar tests to CosmosContainerTests but with Fluent syntax
@@ -86,7 +88,9 @@ namespace Azure.Cosmos.EmulatorTests
                 }
             };
 
-            CosmosJsonDotNetSerializer serializer = new CosmosJsonDotNetSerializer();
+            string test = JsonSerializer.Serialize(containerProperties);
+
+            CosmosTextJsonSerializer serializer = new CosmosTextJsonSerializer();
             Stream stream = serializer.ToStream(containerProperties);
             ContainerProperties deserialziedTest = serializer.FromStream<ContainerProperties>(stream);
 
@@ -454,30 +458,44 @@ namespace Azure.Cosmos.EmulatorTests
         [TestMethod]
         public async Task TimeToLiveTest()
         {
-            string containerName = Guid.NewGuid().ToString();
-            string partitionKeyPath = "/users";
-            int timeToLiveInSeconds = 10;
-            ContainerResponse containerResponse = await this.database.DefineContainer(containerName, partitionKeyPath)
-                .WithDefaultTimeToLive(timeToLiveInSeconds)
-                .CreateAsync();
+            CultureInfo defaultCultureInfo = System.Threading.Thread.CurrentThread.CurrentCulture;
 
-            Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
-            CosmosContainer container = containerResponse;
-            ContainerProperties responseSettings = containerResponse;
+            CultureInfo[] cultureInfoList = new CultureInfo[]
+            {
+                defaultCultureInfo,
+                System.Globalization.CultureInfo.GetCultureInfo("fr-FR")
+            };
 
-            Assert.AreEqual(timeToLiveInSeconds, responseSettings.DefaultTimeToLive);
+            foreach (CultureInfo cultureInfo in cultureInfoList)
+            {
+                System.Threading.Thread.CurrentThread.CurrentCulture = cultureInfo;
+                string containerName = Guid.NewGuid().ToString();
+                string partitionKeyPath = "/users";
+                int timeToLiveInSeconds = 10;
+                ContainerResponse containerResponse = await this.database.DefineContainer(containerName, partitionKeyPath)
+                    .WithDefaultTimeToLive(timeToLiveInSeconds)
+                    .CreateAsync();
 
-            ContainerResponse readResponse = await container.ReadContainerAsync();
-            Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
-            Assert.AreEqual(timeToLiveInSeconds, readResponse.Value.DefaultTimeToLive);
+                Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
+                CosmosContainer container = containerResponse;
+                ContainerProperties responseSettings = containerResponse;
 
-            JObject itemTest = JObject.FromObject(new { id = Guid.NewGuid().ToString(), users = "testUser42" });
-            ItemResponse<JObject> createResponse = await container.CreateItemAsync<JObject>(item: itemTest);
-            JObject responseItem = createResponse;
-            Assert.IsNull(responseItem["ttl"]);
+                Assert.AreEqual(timeToLiveInSeconds, responseSettings.DefaultTimeToLive);
 
-            containerResponse = await container.DeleteContainerAsync();
-            Assert.AreEqual((int)HttpStatusCode.NoContent, containerResponse.GetRawResponse().Status);
+                ContainerResponse readResponse = await container.ReadContainerAsync();
+                Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
+                Assert.AreEqual(timeToLiveInSeconds, readResponse.Value.DefaultTimeToLive);
+
+                Dictionary<string, object> itemTest = new Dictionary<string, object>();
+                itemTest["id"] = Guid.NewGuid().ToString();
+                itemTest["users"] = "testUser42";
+                ItemResponse<Dictionary<string, object>> createResponse = await container.CreateItemAsync<Dictionary<string, object>>(item: itemTest);
+                Dictionary<string, object> responseItem = createResponse;
+                Assert.IsFalse(responseItem.ContainsKey("ttl"));
+
+                containerResponse = await container.DeleteContainerAsync();
+                Assert.AreEqual((int)HttpStatusCode.NoContent, containerResponse.GetRawResponse().Status);
+            }
         }
 
         [TestMethod]
@@ -494,51 +512,6 @@ namespace Azure.Cosmos.EmulatorTests
             {
                 Assert.IsNotNull(ae);
             }
-        }
-
-        [TestMethod]
-        public async Task TimeToLivePropertyPath()
-        {
-            string containerName = Guid.NewGuid().ToString();
-            string partitionKeyPath = "/user";
-            int timeToLivetimeToLiveInSeconds = 10;
-
-            ContainerResponse containerResponse = null;
-            try
-            {
-                containerResponse = await this.database.DefineContainer(containerName, partitionKeyPath)
-                    .WithTimeToLivePropertyPath("/creationDate")
-                    .CreateAsync();
-                Assert.Fail("CreateColleciton with TtlPropertyPath and with no DefaultTimeToLive should have failed.");
-            }
-            catch (CosmosException exeption)
-            {
-                // expected because DefaultTimeToLive was not specified
-                Assert.AreEqual(HttpStatusCode.BadRequest, exeption.StatusCode);
-            }
-
-            // Verify the container content.
-            containerResponse = await this.database.DefineContainer(containerName, partitionKeyPath)
-                   .WithTimeToLivePropertyPath("/creationDate")
-                   .WithDefaultTimeToLive(timeToLivetimeToLiveInSeconds)
-                   .CreateAsync();
-            CosmosContainer container = containerResponse;
-            Assert.AreEqual(timeToLivetimeToLiveInSeconds, containerResponse.Value.DefaultTimeToLive);
-#pragma warning disable 0612
-            Assert.AreEqual("/creationDate", containerResponse.Value.TimeToLivePropertyPath);
-#pragma warning restore 0612
-
-            //Creating an item and reading before expiration
-            var payload = new { id = "testId", user = "testUser", creationDate = ToEpoch(DateTime.UtcNow) };
-            ItemResponse<dynamic> createItemResponse = await container.CreateItemAsync<dynamic>(payload);
-            Assert.IsNotNull(createItemResponse.Value);
-            Assert.AreEqual(createItemResponse.GetRawResponse().Status, (int)HttpStatusCode.Created);
-            ItemResponse<dynamic> readItemResponse = await container.ReadItemAsync<dynamic>(payload.id, new PartitionKey(payload.user));
-            Assert.IsNotNull(readItemResponse.Value);
-            Assert.AreEqual(readItemResponse.GetRawResponse().Status, (int)HttpStatusCode.OK);
-
-            containerResponse = await container.DeleteContainerAsync();
-            Assert.AreEqual((int)HttpStatusCode.NoContent, containerResponse.GetRawResponse().Status);
         }
     }
 }

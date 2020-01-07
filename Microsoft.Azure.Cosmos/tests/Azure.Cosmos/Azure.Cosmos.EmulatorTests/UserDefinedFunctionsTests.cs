@@ -12,6 +12,7 @@ namespace Azure.Cosmos.EmulatorTests
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Text.Json;
     using System.Threading.Tasks;
 
     [TestClass]
@@ -132,12 +133,12 @@ namespace Azure.Cosmos.EmulatorTests
                  .WithParameter("@status", "Done");
 
             HashSet<string> iterIds = new HashSet<string>();
-            await foreach(dynamic response in this.container.GetItemQueryIterator<dynamic>(
+            await foreach(JsonElement response in this.container.GetItemQueryIterator<JsonElement>(
                  queryDefinition: sqlQuery))
             {
-                Assert.IsTrue(response.cost > 9000);
-                Assert.AreEqual(response.cost * .05, response.total);
-                iterIds.Add(response.id.Value);
+                Assert.IsTrue(response.GetProperty("cost").GetInt32() > 9000);
+                Assert.AreEqual(response.GetProperty("cost").GetInt32() * .05, response.GetProperty("total").GetDouble());
+                iterIds.Add(response.GetProperty("id").GetString());
             }
 
             Assert.IsTrue(iterIds.Count > 0);

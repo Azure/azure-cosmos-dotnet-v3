@@ -5,8 +5,8 @@
 namespace Azure.Cosmos.ChangeFeed
 {
     using System;
+    using System.Text.Json.Serialization;
     using System.Threading.Tasks;
-    using Newtonsoft.Json;
 
     /// <summary>
     /// Implementation of <see cref="DocumentServiceLeaseStore"/> for state in Azure Cosmos DB
@@ -96,10 +96,10 @@ namespace Azure.Cosmos.ChangeFeed
 
         private class LockDocument
         {
-            [JsonProperty("id")]
+            [JsonPropertyName("id")]
             public string Id { get; set; }
 
-            [JsonProperty("ttl")]
+            [JsonPropertyName("ttl")]
             public int TimeToLive { get; set; }
         }
     }

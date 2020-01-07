@@ -2,11 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-#if AZURECORE
-namespace Azure.Cosmos.Spatial
-#else
 namespace Microsoft.Azure.Cosmos.Spatial
-#endif
 {
     /// <summary>
     /// Geometry type in the Azure Cosmos DB service.

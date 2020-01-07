@@ -4,8 +4,8 @@
 
 namespace Azure.Cosmos.Scripts
 {
+    using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
-    using Newtonsoft.Json;
 
     /// <summary>
     /// Represents a user defined function in the Azure Cosmos service.
@@ -40,6 +40,7 @@ namespace Azure.Cosmos.Scripts
     /// ]]>
     /// </code>
     /// </example>
+    [JsonConverter(typeof(TextJsonUserDefinedFunctionPropertiesConverter))]
     public class UserDefinedFunctionProperties
     {
         /// <summary>
@@ -47,7 +48,6 @@ namespace Azure.Cosmos.Scripts
         /// </summary>
         /// <value>The body of the user defined function.</value>
         /// <remarks>This must be a valid JavaScript function e.g. "function (input) { return input.toLowerCase(); }".</remarks>
-        [JsonProperty(PropertyName = Constants.Properties.Body)]
         public string Body { get; set; }
 
         /// <summary>
@@ -71,7 +71,6 @@ namespace Azure.Cosmos.Scripts
         ///  '/', '\\', '?', '#'
         /// </para>
         /// </remarks>
-        [JsonProperty(PropertyName = Constants.Properties.Id)]
         public string Id { get; set; }
 
         /// <summary>
@@ -83,8 +82,6 @@ namespace Azure.Cosmos.Scripts
         /// <remarks>
         /// ETags are used for concurrency checking when updating resources. 
         /// </remarks>
-        [JsonProperty(PropertyName = Constants.Properties.ETag, NullValueHandling = NullValueHandling.Ignore)]
-        [JsonConverter(typeof(ETagConverter))]
-        public ETag? ETag { get; private set; }
+        public ETag? ETag { get; internal set; }
     }
 }

@@ -13,7 +13,7 @@
         [TestMethod]
         public async Task VerifyScope()
         {
-            using var testListener = new ClientDiagnosticListener();
+            using ClientDiagnosticListener testListener = new ClientDiagnosticListener();
 
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
 
@@ -23,7 +23,7 @@
             });
 
             client.RequestHandler.InnerHandler = testHandler;
-            await client.GetContainer("test", "test").CreateItemAsync(new { id = "test" });
+            await client.GetContainer("test", "test").CreateItemAsync(new Dictionary<string, object> { { "id", "test" } });
             ClientDiagnosticListener.ProducedDiagnosticScope sendScope = testListener.AssertScope(DiagnosticProperty.ResourceOperationActivityName(ResourceType.Document, OperationType.Create),
                 new KeyValuePair<string, string>(DiagnosticProperty.Diagnostics, new MockDiagnostics().ToString()),
                 new KeyValuePair<string, string>(DiagnosticProperty.ResourceUri, "dbs/test/colls/test"),

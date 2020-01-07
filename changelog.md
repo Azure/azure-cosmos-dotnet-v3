@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#934](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/934) Preserved the ordering of projections in a GROUP BY query.
 - [#952](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/952) ORDER BY Undefined and Mixed Type ORDER BY support
 - [#1072](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1072) and [#1110](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1110)  Public contract renames, using Azure.ETag, new Azure.Cosmos.Serialization namespace
+- [#1119](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1119) System.Text.Json as default serialization mechanism.
 
 ### Fixed
 

@@ -6,12 +6,9 @@ namespace Azure.Cosmos.Test.Spatial
 {
     using System;
     using System.Collections.Generic;
-
+    using System.Text.Json;
     using Azure.Cosmos.Spatial;
-    using Azure.Cosmos.Spatial.Converters;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-    using Newtonsoft.Json;
 
     /// <summary>
     /// Tests <see cref="MultiPolygon"/> class and serialization.
@@ -35,7 +32,7 @@ namespace Azure.Cosmos.Test.Spatial
                     ""extra"":1,
                     ""crs"":{""type"":""name"", ""properties"":{""name"":""hello""}}}";
 
-            var multiPolygon = JsonConvert.DeserializeObject<MultiPolygon>(json);
+            var multiPolygon = JsonSerializer.Deserialize<MultiPolygon>(json);
 
             Assert.AreEqual(2, multiPolygon.Polygons.Count);
             Assert.AreEqual(2, multiPolygon.Polygons[0].Rings.Count);
@@ -48,13 +45,13 @@ namespace Azure.Cosmos.Test.Spatial
             Assert.AreEqual(1, multiPolygon.AdditionalProperties.Count);
             Assert.AreEqual(1L, multiPolygon.AdditionalProperties["extra"]);
 
-            var geom = JsonConvert.DeserializeObject<Geometry>(json);
+            var geom = JsonSerializer.Deserialize<Geometry>(json);
             Assert.AreEqual(GeometryType.MultiPolygon, geom.Type);
 
             Assert.AreEqual(geom, multiPolygon);
 
-            string json1 = JsonConvert.SerializeObject(multiPolygon);
-            var geom1 = JsonConvert.DeserializeObject<Geometry>(json1);
+            string json1 = JsonSerializer.Serialize(multiPolygon);
+            var geom1 = JsonSerializer.Deserialize<Geometry>(json1);
             Assert.AreEqual(geom1, geom);
         }
 

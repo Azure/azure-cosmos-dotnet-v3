@@ -84,7 +84,7 @@ namespace Azure.Cosmos.EmulatorTests
                 Assert.AreEqual(pkRangesCount, deserializedToken.Count);
                 if (responseMessage.IsSuccessStatusCode())
                 {
-                    Collection<ToDoActivity> response = TestCommon.Serializer.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.ContentStream).Data;
+                    Collection<ToDoActivity> response = TestCommon.Serializer.Value.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.ContentStream).Data;
                     totalCount += response.Count;
                 }
 
@@ -120,7 +120,7 @@ namespace Azure.Cosmos.EmulatorTests
 
                 if (responseMessage.IsSuccessStatusCode())
                 {
-                    Collection<ToDoActivity> response = TestCommon.Serializer.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.ContentStream).Data;
+                    Collection<ToDoActivity> response = TestCommon.Serializer.Value.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.ContentStream).Data;
                     totalCount += response.Count;
                 }
 
@@ -167,7 +167,7 @@ namespace Azure.Cosmos.EmulatorTests
                 currentRange = deserializedToken[0].Range;
                 if (responseMessage.IsSuccessStatusCode())
                 {
-                    Collection<ToDoActivity> response = TestCommon.Serializer.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.ContentStream).Data;
+                    Collection<ToDoActivity> response = TestCommon.Serializer.Value.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.ContentStream).Data;
                     totalCount += response.Count;
                 }
                 else
@@ -237,7 +237,7 @@ namespace Azure.Cosmos.EmulatorTests
             {
                 if (responseMessage.IsSuccessStatusCode())
                 {
-                    Collection<ToDoActivity> response = TestCommon.Serializer.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.ContentStream).Data;
+                    Collection<ToDoActivity> response = TestCommon.Serializer.Value.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.ContentStream).Data;
                     if (response.Count > 0)
                     {
                         Assert.AreEqual(1, response.Count);
@@ -274,7 +274,7 @@ namespace Azure.Cosmos.EmulatorTests
                     continuationToken = responseMessage.Headers.GetContinuationToken();
                     if (responseMessage.IsSuccessStatusCode())
                     {
-                        Collection<ToDoActivity> response = TestCommon.Serializer.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.ContentStream).Data;
+                        Collection<ToDoActivity> response = TestCommon.Serializer.Value.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.ContentStream).Data;
                         count += response.Count;
                     }
 
@@ -346,7 +346,7 @@ namespace Azure.Cosmos.EmulatorTests
                         break;
                     }
 
-                    Collection<ToDoActivity> response = TestCommon.Serializer.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.ContentStream).Data;
+                    Collection<ToDoActivity> response = TestCommon.Serializer.Value.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.ContentStream).Data;
                     count += response.Count;
                 }
 

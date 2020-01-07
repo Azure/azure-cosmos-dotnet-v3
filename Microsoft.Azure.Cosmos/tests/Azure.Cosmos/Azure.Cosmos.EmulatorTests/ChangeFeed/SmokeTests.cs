@@ -6,6 +6,7 @@ namespace Azure.Cosmos.EmulatorTests.ChangeFeed
 {
     using System.Collections.Generic;
     using System.Linq;
+    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -61,16 +62,16 @@ namespace Azure.Cosmos.EmulatorTests.ChangeFeed
         }
 
         [TestMethod]
-        public async Task WritesTriggerDelegate_WithLeaseContainerWithDynamic()
+        public async Task WritesTriggerDelegate_WithLeaseContainerWithJsonElement()
         {
             IEnumerable<int> expectedIds = Enumerable.Range(0, 100);
             List<int> receivedIds = new List<int>();
             ChangeFeedProcessor processor = this.Container
-                .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
+                .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<JsonElement> docs, CancellationToken token) =>
                 {
-                    foreach (dynamic doc in docs)
+                    foreach (JsonElement doc in docs)
                     {
-                        receivedIds.Add(int.Parse(doc.id.Value));
+                        receivedIds.Add(int.Parse(doc.GetProperty("id").GetString()));
                     }
 
                     return Task.CompletedTask;
@@ -84,7 +85,7 @@ namespace Azure.Cosmos.EmulatorTests.ChangeFeed
             // Inserting documents
             foreach (int id in expectedIds)
             {
-                await this.Container.CreateItemAsync<dynamic>(new { id = id.ToString() });
+                await this.Container.CreateItemAsync<Dictionary<string, object>>(new Dictionary<string, object> { { "id", id.ToString() } });
             }
 
             // Waiting on all notifications to finish
@@ -129,16 +130,16 @@ namespace Azure.Cosmos.EmulatorTests.ChangeFeed
         }
 
         [TestMethod]
-        public async Task WritesTriggerDelegate_WithInMemoryContainerWithDynamic()
+        public async Task WritesTriggerDelegate_WithInMemoryContainerWithJsonElement()
         {
             IEnumerable<int> expectedIds = Enumerable.Range(0, 100);
             List<int> receivedIds = new List<int>();
             ChangeFeedProcessor processor = this.Container
-                .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
+                .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<JsonElement> docs, CancellationToken token) =>
                 {
-                    foreach (dynamic doc in docs)
+                    foreach (JsonElement doc in docs)
                     {
-                        receivedIds.Add(int.Parse(doc.id.Value));
+                        receivedIds.Add(int.Parse(doc.GetProperty("id").GetString()));
                     }
 
                     return Task.CompletedTask;
@@ -152,7 +153,7 @@ namespace Azure.Cosmos.EmulatorTests.ChangeFeed
             // Inserting documents
             foreach (int id in expectedIds)
             {
-                await this.Container.CreateItemAsync<dynamic>(new { id = id.ToString() });
+                await this.Container.CreateItemAsync<Dictionary<string, object>>(new Dictionary<string, object> { { "id", id.ToString() } });
             }
 
             // Waiting on all notifications to finish

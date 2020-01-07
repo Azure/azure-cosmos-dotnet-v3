@@ -5,8 +5,8 @@
 namespace Azure.Cosmos
 {
     using System;
+    using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
-    using Newtonsoft.Json;
 
     /// <summary>
     /// Represents a throughput of the resources in the Azure Cosmos DB service.
@@ -20,10 +20,11 @@ namespace Azure.Cosmos
     /// The example below fetch the ThroughputProperties on testContainer.
     /// <code language="c#">
     /// <![CDATA[ 
-    /// ThroughputProperties throughputProperties = await testContainer.ReadThroughputAsync().Resource;
+    /// ThroughputProperties throughputProperties = await testContainer.ReadThroughputAsync().Value;
     /// ]]>
     /// </code>
     /// </example>
+    [JsonConverter(typeof(TextJsonThroughputPropertiesConverter))]
     public class ThroughputProperties
     {
         /// <summary>
@@ -35,17 +36,13 @@ namespace Azure.Cosmos
         /// <remarks>
         /// ETags are used for concurrency checking when updating resources.
         /// </remarks>
-        [JsonProperty(PropertyName = Constants.Properties.ETag, NullValueHandling = NullValueHandling.Ignore)]
-        [JsonConverter(typeof(ETagConverter))]
-        public ETag? ETag { get; private set; }
+        public ETag? ETag { get; internal set; }
 
         /// <summary>
         /// Gets the last modified time stamp associated with <see cref="DatabaseProperties" /> from the Azure Cosmos DB service.
         /// </summary>
         /// <value>The last modified time stamp associated with the resource.</value>
-        [JsonConverter(typeof(UnixDateTimeConverter))]
-        [JsonProperty(PropertyName = Constants.Properties.LastModified)]
-        public DateTime LastModified { get; private set; }
+        public DateTime? LastModified { get; internal set; }
 
         /// <summary>
         /// Gets the provisioned throughput for a resource in measurement of request units per second in the Azure Cosmos service.
@@ -59,16 +56,13 @@ namespace Azure.Cosmos
         /// <summary>
         /// Gets the offer rid.
         /// </summary>
-        [JsonProperty(PropertyName = Constants.Properties.RId)]
-        internal string OfferRID { get; private set; }
+        internal string OfferRID { get; set; }
 
         /// <summary>
         /// Gets the resource rid.
         /// </summary>
-        [JsonProperty(PropertyName = Constants.Properties.OfferResourceId)]
-        internal string ResourceRID { get; private set; }
+        internal string ResourceRID { get; set; }
 
-        [JsonProperty(PropertyName = "content", DefaultValueHandling = DefaultValueHandling.Ignore)]
-        private OfferContentV2 Content { get; set; }
+        internal OfferContentV2 Content { get; set; }
     }
 }

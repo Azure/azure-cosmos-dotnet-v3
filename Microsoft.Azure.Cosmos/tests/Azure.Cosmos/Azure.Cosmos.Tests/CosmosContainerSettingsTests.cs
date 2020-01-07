@@ -4,12 +4,12 @@
 
 namespace Azure.Cosmos.Tests
 {
+    using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.IO;
     using System.Linq;
+    using System.Text.Json;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class CosmosContainerSettingsTests
@@ -126,41 +126,16 @@ namespace Azure.Cosmos.Tests
 
         private static void AssertSerializedPayloads(ContainerProperties settings, Microsoft.Azure.Documents.DocumentCollection documentCollection)
         {
-            JsonSerializerSettings jsonSettings = new JsonSerializerSettings
-            {
-                NullValueHandling = NullValueHandling.Ignore
-            };
-
             // HAKC: Work-around till BE fixes defautls 
             settings.ValidateRequiredProperties();
 
-            string containerSerialized = JsonConvert.SerializeObject(settings, jsonSettings);
+            string containerSerialized = JsonSerializer.Serialize(settings);
             string collectionSerialized = CosmosContainerSettingsTests.SerializeDocumentCollection(documentCollection);
 
-            JObject containerJObject = JObject.Parse(containerSerialized);
-            JObject collectionJObject = JObject.Parse(collectionSerialized);
+            Dictionary<string, object> containerJObject = JsonSerializer.Deserialize<Dictionary<string, object>>(containerSerialized);
+            Dictionary<string, object> collectionJObject = JsonSerializer.Deserialize<Dictionary<string, object>>(collectionSerialized);
 
-            Assert.AreEqual(JsonConvert.SerializeObject(OrderProeprties(collectionJObject)), JsonConvert.SerializeObject(OrderProeprties(containerJObject)));
-        }
-
-        private static JObject OrderProeprties(JObject input)
-        {
-            System.Collections.Generic.List<JProperty> props = input.Properties().ToList();
-            foreach (JProperty prop in props)
-            {
-                prop.Remove();
-            }
-
-            foreach (JProperty prop in props.OrderBy(p => p.Name))
-            {
-                input.Add(prop);
-                if (prop.Value is JObject)
-                {
-                    OrderProeprties((JObject)prop.Value);
-                }
-            }
-
-            return input;
+            CollectionAssert.AreEqual(containerJObject.Keys.OrderBy( k => k).ToList(), collectionJObject.Keys.OrderBy(k => k).ToList());
         }
     }
 }

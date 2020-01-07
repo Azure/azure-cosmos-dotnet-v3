@@ -5,8 +5,7 @@
 namespace Azure.Cosmos
 {
     using System;
-    using Microsoft.Azure.Documents;
-    using Newtonsoft.Json;
+    using System.Text.Json.Serialization;
 
     /// <summary>
     /// Represents a database in the Azure Cosmos DB account.
@@ -56,6 +55,7 @@ namespace Azure.Cosmos
     /// </code>
     /// </example>
     /// <seealso cref="ContainerProperties"/>
+    [JsonConverter(typeof(TextJsonDatabasePropertiesConverter))]
     public class DatabaseProperties
     {
         private string id;
@@ -96,7 +96,6 @@ namespace Azure.Cosmos
         ///  '/', '\\', '?', '#'
         /// </para>
         /// </remarks>
-        [JsonProperty(PropertyName = Constants.Properties.Id)]
         public string Id
         {
             get => this.id;
@@ -112,17 +111,13 @@ namespace Azure.Cosmos
         /// <remarks>
         /// ETags are used for concurrency checking when updating resources. 
         /// </remarks>
-        [JsonProperty(PropertyName = Constants.Properties.ETag, NullValueHandling = NullValueHandling.Ignore)]
-        [JsonConverter(typeof(ETagConverter))]
-        public ETag? ETag { get; private set; }
+        public ETag? ETag { get; internal set; }
 
         /// <summary>
         /// Gets the last modified time stamp associated with <see cref="DatabaseProperties" /> from the Azure Cosmos DB service.
         /// </summary>
         /// <value>The last modified time stamp associated with the resource.</value>
-        [JsonConverter(typeof(UnixDateTimeConverter))]
-        [JsonProperty(PropertyName = Constants.Properties.LastModified)]
-        public DateTime? LastModified { get; private set; }
+        public DateTime? LastModified { get; internal set; }
 
         /// <summary>
         /// Gets the Resource Id associated with the resource in the Azure Cosmos DB service.
@@ -135,7 +130,6 @@ namespace Azure.Cosmos
         /// resource whether that is a database, a collection or a document.
         /// These resource ids are used when building up SelfLinks, a static addressable Uri for each resource within a database account.
         /// </remarks>
-        [JsonProperty(PropertyName = Constants.Properties.RId)]
-        internal string ResourceId { get; private set; }
+        internal string ResourceId { get; set; }
     }
 }

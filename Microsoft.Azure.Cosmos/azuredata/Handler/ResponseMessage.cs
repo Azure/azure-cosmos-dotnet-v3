@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics;
     using System.IO;
     using System.Net;
+    using System.Text.Json;
     using global::Azure;
     using global::Azure.Core;
     using global::Azure.Cosmos;
@@ -256,7 +257,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 try
                 {
-                    Error error = Resource.LoadFrom<Error>(this.content);
+                    Error error = CosmosTextJsonSerializer.Deserialize<Error>(this.content, TextJsonErrorConverter.ErrorSerializationOptions.Value);
                     if (error != null)
                     {
                         // Error format is not consistent across modes
@@ -270,7 +271,7 @@ namespace Microsoft.Azure.Cosmos
                         }
                     }
                 }
-                catch (Newtonsoft.Json.JsonReaderException)
+                catch (JsonException)
                 {
                     // Content is not Json
                     this.content.Position = 0;

@@ -10,12 +10,12 @@ namespace Azure.Cosmos.EmulatorTests
     using System.Globalization;
     using System.Linq;
     using System.Net;
+    using System.Text.Json;
     using System.Threading.Tasks;
     using Azure.Core;
     using Azure.Cosmos;
     using Microsoft.Azure.Cosmos;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class CosmosContainerTests
@@ -455,11 +455,11 @@ namespace Azure.Cosmos.EmulatorTests
                     requestOptions: new QueryRequestOptions() { MaxItemCount = 1 }))
              {
                 Assert.AreEqual((int)HttpStatusCode.OK, message.Status);
-                CosmosJsonDotNetSerializer defaultJsonSerializer = new CosmosJsonDotNetSerializer();
-                dynamic containers = defaultJsonSerializer.FromStream<dynamic>(message.ContentStream).DocumentCollections;
-                foreach (dynamic container in containers)
+                CosmosTextJsonSerializer defaultJsonSerializer = new CosmosTextJsonSerializer();
+                Dictionary<string, JsonElement> containers = defaultJsonSerializer.FromStream<Dictionary<string, JsonElement>>(message.ContentStream);
+                foreach (JsonElement container in containers["DocumentCollections"].EnumerateArray())
                 {
-                    string id = container.id.ToString();
+                    string id = container.GetProperty("id").GetString();
                     containerIds.Add(id);
                 }
             }
@@ -500,39 +500,6 @@ namespace Azure.Cosmos.EmulatorTests
 
             int? readThroughput = await container.ReadThroughputAsync();
             Assert.IsNotNull(readThroughput);
-
-            containerResponse = await container.DeleteContainerAsync();
-            Assert.AreEqual((int)HttpStatusCode.NoContent, containerResponse.GetRawResponse().Status);
-        }
-
-        [TestMethod]
-        public async Task TimeToLiveTest()
-        {
-            string containerName = Guid.NewGuid().ToString();
-            string partitionKeyPath = "/users";
-            int timeToLiveInSeconds = 10;
-            ContainerProperties setting = new ContainerProperties()
-            {
-                Id = containerName,
-                PartitionKey = new Microsoft.Azure.Documents.PartitionKeyDefinition() { Paths = new Collection<string> { partitionKeyPath }, Kind = Microsoft.Azure.Documents.PartitionKind.Hash },
-                DefaultTimeToLive = timeToLiveInSeconds,
-            };
-
-            ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(setting);
-            Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
-            CosmosContainer container = containerResponse;
-            ContainerProperties responseSettings = containerResponse;
-
-            Assert.AreEqual(timeToLiveInSeconds, responseSettings.DefaultTimeToLive);
-
-            ContainerResponse readResponse = await container.ReadContainerAsync();
-            Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
-            Assert.AreEqual(timeToLiveInSeconds, readResponse.Value.DefaultTimeToLive);
-
-            JObject itemTest = JObject.FromObject(new { id = Guid.NewGuid().ToString(), users = "testUser42" });
-            ItemResponse<JObject> createResponse = await container.CreateItemAsync<JObject>(item: itemTest);
-            JObject responseItem = createResponse;
-            Assert.IsNull(responseItem["ttl"]);
 
             containerResponse = await container.DeleteContainerAsync();
             Assert.AreEqual((int)HttpStatusCode.NoContent, containerResponse.GetRawResponse().Status);
@@ -661,69 +628,6 @@ namespace Azure.Cosmos.EmulatorTests
             containerSettings = containerResponse;
             Assert.IsNotNull(container);
             Assert.IsNull(containerSettings);
-        }
-
-        /// <summary>
-        /// This test verifies that we are able to set the ttl property path correctly using SDK.
-        /// Also this test will successfully read active item based on its TimeToLivePropertyPath value.
-        /// </summary>
-        [Obsolete]
-        [TestMethod]
-        public async Task TimeToLivePropertyPath()
-        {
-            string containerName = Guid.NewGuid().ToString();
-            string partitionKeyPath = "/user";
-            int timeToLivetimeToLiveInSeconds = 10;
-            ContainerProperties setting = new ContainerProperties()
-            {
-                Id = containerName,
-                PartitionKey = new Microsoft.Azure.Documents.PartitionKeyDefinition() { Paths = new Collection<string> { partitionKeyPath }, Kind = Microsoft.Azure.Documents.PartitionKind.Hash },
-                TimeToLivePropertyPath = "/creationDate",
-            };
-
-            ContainerResponse containerResponse = null;
-            try
-            {
-                containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(setting);
-                Assert.Fail("CreateColleciton with TtlPropertyPath and with no DefaultTimeToLive should have failed.");
-            }
-            catch (CosmosException exeption)
-            {
-                // expected because DefaultTimeToLive was not specified
-                Assert.AreEqual(HttpStatusCode.BadRequest, exeption.StatusCode);
-            }
-
-            // Verify the container content.
-            setting.DefaultTimeToLive = timeToLivetimeToLiveInSeconds;
-            containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(setting);
-            CosmosContainer container = containerResponse;
-            Assert.AreEqual(timeToLivetimeToLiveInSeconds, containerResponse.Value.DefaultTimeToLive);
-            Assert.AreEqual("/creationDate", containerResponse.Value.TimeToLivePropertyPath);
-
-            //verify removing the ttl property path
-            setting.TimeToLivePropertyPath = null;
-            containerResponse = await container.ReplaceContainerAsync(setting);
-            container = containerResponse;
-            Assert.AreEqual(timeToLivetimeToLiveInSeconds, containerResponse.Value.DefaultTimeToLive);
-            Assert.IsNull(containerResponse.Value.TimeToLivePropertyPath);
-
-            //adding back the ttl property path
-            setting.TimeToLivePropertyPath = "/creationDate";
-            containerResponse = await container.ReplaceContainerAsync(setting);
-            container = containerResponse;
-            Assert.AreEqual(containerResponse.Value.TimeToLivePropertyPath, "/creationDate");
-
-            //Creating an item and reading before expiration
-            var payload = new { id = "testId", user = "testUser", creationDate = ToEpoch(DateTime.UtcNow) };
-            ItemResponse<dynamic> createItemResponse = await container.CreateItemAsync<dynamic>(payload);
-            Assert.IsNotNull(createItemResponse.Value);
-            Assert.AreEqual(createItemResponse.GetRawResponse().Status, (int)HttpStatusCode.Created);
-            ItemResponse<dynamic> readItemResponse = await container.ReadItemAsync<dynamic>(payload.id, new PartitionKey(payload.user));
-            Assert.IsNotNull(readItemResponse.Value);
-            Assert.AreEqual(readItemResponse.GetRawResponse().Status, (int)HttpStatusCode.OK);
-
-            containerResponse = await container.DeleteContainerAsync();
-            Assert.AreEqual((int)HttpStatusCode.NoContent, containerResponse.GetRawResponse().Status);
         }
 
         private void ValidateCreateContainerResponseContract(ContainerResponse containerResponse)

@@ -9,12 +9,13 @@ namespace Azure.Cosmos.EmulatorTests
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
     using System.Threading;
     using System.Threading.Tasks;
     using Cosmos.Scripts;
     using Microsoft.Azure.Cosmos;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json;
 
     [TestClass]
     public class CosmosBasicQueryTests
@@ -187,7 +188,7 @@ namespace Azure.Cosmos.EmulatorTests
                  CosmosBasicQueryTests.RequestOptions);
             }
 
-            List<string> ids = queryResults.Select(x => (string)x.id).ToList();
+            List<string> ids = queryResults.Select(x => ((JsonElement)x).GetProperty("id").GetString()).ToList();
             CollectionAssert.AreEquivalent(createdIds, ids);
 
             //Read All
@@ -198,7 +199,7 @@ namespace Azure.Cosmos.EmulatorTests
                 CosmosBasicQueryTests.RequestOptions);
 
 
-            ids = results.Select(x => (string)x.id).ToList();
+            ids = results.Select(x => ((JsonElement)x).GetProperty("id").GetString()).ToList();
             CollectionAssert.IsSubsetOf(createdIds, ids);
 
             //Read All with partition key
@@ -539,7 +540,7 @@ namespace Azure.Cosmos.EmulatorTests
 
                 StreamReader sr = new StreamReader(response.ContentStream);
                 string result = await sr.ReadToEndAsync();
-                ICollection<T> responseResults = JsonConvert.DeserializeObject<CosmosFeedResponseUtil<T>>(result).Data;
+                ICollection<T> responseResults = JsonSerializer.Deserialize<CosmosFeedResponseUtil<T>>(result).Data;
                 Assert.IsTrue(responseResults.Count <= 1);
 
                 streamResults.AddRange(responseResults);
@@ -560,7 +561,7 @@ namespace Azure.Cosmos.EmulatorTests
                 response.EnsureSuccessStatusCode();
                 Assert.AreEqual((int)expectedStatus, response.Status);
 
-                ICollection<T> responseResults = TestCommon.Serializer.FromStream<CosmosFeedResponseUtil<T>>(response.ContentStream).Data;
+                ICollection<T> responseResults = TestCommon.Serializer.Value.FromStream<CosmosFeedResponseUtil<T>>(response.ContentStream).Data;
                 Assert.IsTrue(responseResults.Count <= 1);
 
                 pagedStreamResults.AddRange(responseResults);
@@ -570,8 +571,8 @@ namespace Azure.Cosmos.EmulatorTests
             Assert.AreEqual(pagedStreamResults.Count, streamResults.Count);
 
             // Both lists should be the same if not PermssionsProperties. PermissionProperties will have a different ResouceToken in the payload when read.
-            string streamResultString = JsonConvert.SerializeObject(streamResults);
-            string streamPagedResultString = JsonConvert.SerializeObject(pagedStreamResults);
+            string streamResultString = JsonSerializer.Serialize(streamResults);
+            string streamPagedResultString = JsonSerializer.Serialize(pagedStreamResults);
 
             if (typeof(T) != typeof(PermissionProperties))
             {
@@ -606,8 +607,8 @@ namespace Azure.Cosmos.EmulatorTests
             Assert.AreEqual(pagedResults.Count, results.Count);
 
             // Both lists should be the same
-            string resultString = JsonConvert.SerializeObject(results);
-            string pagedResultString = JsonConvert.SerializeObject(pagedResults);
+            string resultString = JsonSerializer.Serialize(results);
+            string pagedResultString = JsonSerializer.Serialize(pagedResults);
 
             if (typeof(T) != typeof(PermissionProperties))
             {
@@ -681,13 +682,13 @@ namespace Azure.Cosmos.EmulatorTests
 
     public class TestCollectionObject
     {
-        [JsonProperty("id")]
+        [JsonPropertyName("id")]
         public Guid Id { get; set; }
-        [JsonProperty(CosmosBasicQueryTests.DefaultKey)]
+        [JsonPropertyName(CosmosBasicQueryTests.DefaultKey)]
         public string ObjectKey { get; set; }
-        [JsonProperty("text")]
+        [JsonPropertyName("text")]
         public string Text { get; set; }
-        [JsonProperty("text2")]
+        [JsonPropertyName("text2")]
         public string Text2 { get; set; }
     }
 }

@@ -13,6 +13,8 @@ namespace Azure.Cosmos.EmulatorTests
     using System.Linq;
     using System.Net;
     using System.Text;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
     using System.Threading;
     using System.Threading.Tasks;
     using Azure;
@@ -25,8 +27,8 @@ namespace Azure.Cosmos.EmulatorTests
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
+    //using Newtonsoft.Json;
+    //using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class CosmosItemTests : BaseCosmosClientHelper
@@ -82,13 +84,13 @@ namespace Azure.Cosmos.EmulatorTests
             { }
 
             // Both items have null description
-            dynamic testItem = new { id = id1, status = pk, description = (string)null };
-            dynamic testItem2 = new { id = id2, status = pk, description = (string)null };
+            ToDoActivity testItem = new ToDoActivity { id = id1, status = pk };
+            ToDoActivity testItem2 = new ToDoActivity { id = id2, status = pk };
 
             // Create a client that ignore null
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
-                Serializer = new CosmosJsonDotNetSerializer(
+                Serializer = new CosmosTextJsonSerializer(
                     new CosmosSerializationOptions()
                     {
                         IgnoreNullValues = true
@@ -97,16 +99,17 @@ namespace Azure.Cosmos.EmulatorTests
 
             CosmosClient ignoreNullClient = TestCommon.CreateCosmosClient(clientOptions);
             CosmosContainer ignoreContainer = ignoreNullClient.GetContainer(this.database.Id, this.Container.Id);
-
-            Response<dynamic> ignoreNullResponse = await ignoreContainer.CreateItemAsync<dynamic>(item: testItem);
+            await ignoreContainer.CreateItemAsync<ToDoActivity>(item: testItem);
+            Response<Dictionary<string, object>> ignoreNullResponse = await ignoreContainer.ReadItemAsync<Dictionary<string, object>>(id1, new PartitionKey(pk));
             Assert.IsNotNull(ignoreNullResponse);
             Assert.IsNotNull(ignoreNullResponse.Value);
-            Assert.IsNull(ignoreNullResponse.Value["description"]);
+            Assert.IsFalse(ignoreNullResponse.Value.ContainsKey("description"));
 
-            Response<dynamic> keepNullResponse = await this.Container.CreateItemAsync<dynamic>(item: testItem2);
+            await this.Container.CreateItemAsync<ToDoActivity>(item: testItem2);
+            Response<Dictionary<string, object>> keepNullResponse = await this.Container.ReadItemAsync<Dictionary<string, object>>(id2, new PartitionKey(pk));
             Assert.IsNotNull(keepNullResponse);
             Assert.IsNotNull(keepNullResponse.Value);
-            Assert.IsNotNull(keepNullResponse.Value["description"]);
+            Assert.IsTrue(keepNullResponse.Value.ContainsKey("description"));
 
             using (await this.Container.DeleteItemStreamAsync(id1, new PartitionKey(pk)))
             { }
@@ -313,7 +316,7 @@ namespace Azure.Cosmos.EmulatorTests
         public async Task CreateDropItemStreamTest()
         {
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
-            using (Stream stream = TestCommon.Serializer.ToStream<ToDoActivity>(testItem))
+            using (Stream stream = TestCommon.Serializer.Value.ToStream<ToDoActivity>(testItem))
             {
                 using (Response response = await this.Container.CreateItemStreamAsync(partitionKey: new PartitionKey(testItem.status), streamPayload: stream))
                 {
@@ -345,7 +348,7 @@ namespace Azure.Cosmos.EmulatorTests
         public async Task UpsertItemStreamTest()
         {
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
-            using (Stream stream = TestCommon.Serializer.ToStream<ToDoActivity>(testItem))
+            using (Stream stream = TestCommon.Serializer.Value.ToStream<ToDoActivity>(testItem))
             {
                 //Create the object
                 using (Response response = await this.Container.UpsertItemStreamAsync(partitionKey: new PartitionKey(testItem.status), streamPayload: stream))
@@ -361,7 +364,7 @@ namespace Azure.Cosmos.EmulatorTests
 
             //Updated the taskNum field
             testItem.taskNum = 9001;
-            using (Stream stream = TestCommon.Serializer.ToStream<ToDoActivity>(testItem))
+            using (Stream stream = TestCommon.Serializer.Value.ToStream<ToDoActivity>(testItem))
             {
                 using (Response response = await this.Container.UpsertItemStreamAsync(partitionKey: new PartitionKey(testItem.status), streamPayload: stream))
                 {
@@ -380,7 +383,7 @@ namespace Azure.Cosmos.EmulatorTests
         public async Task ReplaceItemStreamTest()
         {
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
-            using (Stream stream = TestCommon.Serializer.ToStream<ToDoActivity>(testItem))
+            using (Stream stream = TestCommon.Serializer.Value.ToStream<ToDoActivity>(testItem))
             {
                 //Replace a non-existing item. It should fail, and not throw an exception.
                 using (Response response = await this.Container.ReplaceItemStreamAsync(
@@ -394,7 +397,7 @@ namespace Azure.Cosmos.EmulatorTests
                 }
             }
 
-            using (Stream stream = TestCommon.Serializer.ToStream<ToDoActivity>(testItem))
+            using (Stream stream = TestCommon.Serializer.Value.ToStream<ToDoActivity>(testItem))
             {
                 //Create the item
                 using (Response response = await this.Container.CreateItemStreamAsync(partitionKey: new PartitionKey(testItem.status), streamPayload: stream))
@@ -406,7 +409,7 @@ namespace Azure.Cosmos.EmulatorTests
 
             //Updated the taskNum field
             testItem.taskNum = 9001;
-            using (Stream stream = TestCommon.Serializer.ToStream<ToDoActivity>(testItem))
+            using (Stream stream = TestCommon.Serializer.Value.ToStream<ToDoActivity>(testItem))
             {
                 using (Response response = await this.Container.ReplaceItemStreamAsync(partitionKey: new PartitionKey(testItem.status), id: testItem.id, streamPayload: stream))
                 {
@@ -446,7 +449,7 @@ namespace Azure.Cosmos.EmulatorTests
                         requestOptions: requestOptions))
                     {
                         responseMessage.Headers.TryGetValue(Microsoft.Azure.Documents.HttpConstants.HttpHeaders.Continuation, out lastContinuationToken);
-                        Collection<ToDoActivity> response = TestCommon.Serializer.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.ContentStream).Data;
+                        Collection<ToDoActivity> response = TestCommon.Serializer.Value.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.ContentStream).Data;
                         foreach (ToDoActivity toDoActivity in response)
                         {
                             if (itemIds.Contains(toDoActivity.id))
@@ -463,7 +466,7 @@ namespace Azure.Cosmos.EmulatorTests
                 await foreach (Response responseMessage in this.Container.GetItemQueryStreamIterator(requestOptions: requestOptions))
                 {
                     responseMessage.Headers.TryGetValue(Microsoft.Azure.Documents.HttpConstants.HttpHeaders.Continuation, out lastContinuationToken);
-                    Collection<ToDoActivity> response = TestCommon.Serializer.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.ContentStream).Data;
+                    Collection<ToDoActivity> response = TestCommon.Serializer.Value.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.ContentStream).Data;
                     foreach (ToDoActivity toDoActivity in response)
                     {
                         if (itemIds.Contains(toDoActivity.id))
@@ -514,10 +517,9 @@ namespace Azure.Cosmos.EmulatorTests
                 dictionary = keyValuePairs
             };
 
-            JsonSerializerSettings jsonSerializerSettings = new JsonSerializerSettings()
-            {
-                Converters = new List<JsonConverter>() { new CosmosSerializerHelper.FormatNumbersAsTextConverter() }
-            };
+            JsonSerializerOptions jsonSerializerSettings = new JsonSerializerOptions();
+            jsonSerializerSettings.Converters.Add(new CosmosSerializerHelper.FormatNumbersTextConverter());
+            jsonSerializerSettings.Converters.Add(new CosmosSerializerHelper.FormatDoubleAsTextConverter());
 
             List<QueryDefinition> queryDefinitions = new List<QueryDefinition>()
             {
@@ -580,18 +582,18 @@ namespace Azure.Cosmos.EmulatorTests
 
                 List<dynamic> allItems = new List<dynamic>();
 
-                await foreach(Page<dynamic> response in containerSerializer.GetItemQueryIterator<dynamic>(
+                await foreach(Page<Dictionary<string, object>> response in containerSerializer.GetItemQueryIterator<Dictionary<string, object>>(
                     queryDefinition: queryDefinition).AsPages())
                 {
                     allItems.AddRange(response.Values);
                 }
 
                 Assert.AreEqual(2, allItems.Count, $"missing query results. Only found: {allItems.Count} items for query:{queryDefinition.ToSqlQuerySpec().QueryText}");
-                foreach (dynamic item in allItems)
+                foreach (Dictionary<string, object> item in allItems)
                 {
-                    Assert.IsFalse(string.Equals(testItem1.id, item.id) || string.Equals(testItem2.id, item.id));
-                    Assert.IsTrue(((JObject)item)["totalCost"].Type == JTokenType.String);
-                    Assert.IsTrue(((JObject)item)["taskNum"].Type == JTokenType.String);
+                    Assert.IsFalse(string.Equals(testItem1.id, item["id"]) || string.Equals(testItem2.id, item["id"]));
+                    Assert.IsTrue(((JsonElement)item["totalCost"]).GetString() != null);
+                    Assert.IsTrue(((JsonElement)item["taskNum"]).GetString() != null);
                 }
 
                 // Each parameter in query spec should be a call to the custom serializer
@@ -682,26 +684,26 @@ namespace Azure.Cosmos.EmulatorTests
                     {
                         string jsonString = await sr.ReadToEndAsync();
                         Assert.IsNotNull(jsonString);
-                        JObject jObject = JsonConvert.DeserializeObject<JObject>(jsonString);
-                        Assert.IsNotNull(jObject["Documents"]);
-                        Assert.IsNotNull(jObject["_rid"]);
-                        Assert.IsNotNull(jObject["_count"]);
-                        Assert.IsTrue(jObject["_count"].ToObject<int>() >= 0);
-                        foreach (JObject item in jObject["Documents"])
+                        JsonDocument jObject = JsonDocument.Parse(jsonString);
+                        Assert.IsNotNull(jObject.RootElement.GetProperty("Documents"));
+                        Assert.IsNotNull(jObject.RootElement.GetProperty("_rid"));
+                        Assert.IsNotNull(jObject.RootElement.GetProperty("_count"));
+                        Assert.IsTrue(jObject.RootElement.GetProperty("_count").GetInt32() >= 0);
+                        foreach (JsonElement item in jObject.RootElement.GetProperty("Documents").EnumerateArray())
                         {
                             count++;
-                            Assert.IsNotNull(item["id"]);
-                            ToDoActivity createdItem = toDoActivities[item["id"].ToString()];
+                            Assert.IsNotNull(item.GetProperty("id"));
+                            ToDoActivity createdItem = toDoActivities[item.GetProperty("id").GetString()];
 
-                            Assert.AreEqual(createdItem.taskNum, item["taskNum"].ToObject<int>());
-                            Assert.AreEqual(createdItem.cost, item["cost"].ToObject<double>());
-                            Assert.AreEqual(createdItem.description, item["description"].ToString());
-                            Assert.AreEqual(createdItem.status, item["status"].ToString());
-                            Assert.IsNotNull(item["_rid"]);
-                            Assert.IsNotNull(item["_self"]);
-                            Assert.IsNotNull(item["_etag"]);
-                            Assert.IsNotNull(item["_attachments"]);
-                            Assert.IsNotNull(item["_ts"]);
+                            Assert.AreEqual(createdItem.taskNum, item.GetProperty("taskNum").GetInt32());
+                            Assert.AreEqual(createdItem.cost, item.GetProperty("cost").GetDouble());
+                            Assert.AreEqual(createdItem.description, item.GetProperty("description").GetString());
+                            Assert.AreEqual(createdItem.status, item.GetProperty("status").GetString());
+                            Assert.IsNotNull(item.GetProperty("_rid"));
+                            Assert.IsNotNull(item.GetProperty("_self"));
+                            Assert.IsNotNull(item.GetProperty("_etag"));
+                            Assert.IsNotNull(item.GetProperty("_attachments"));
+                            Assert.IsNotNull(item.GetProperty("_ts"));
                         }
 
                         if (previousResult != null)
@@ -758,34 +760,29 @@ namespace Azure.Cosmos.EmulatorTests
                 }
 
                 Trace.TraceInformation($"ContinuationToken: {lastContinuationToken}");
-                JsonSerializer serializer = new JsonSerializer();
 
-                using (StreamReader sr = new StreamReader(content))
-                using (JsonTextReader jtr = new JsonTextReader(sr))
-                {
-                    ToDoActivity[] results = serializer.Deserialize<CosmosFeedResponseUtil<ToDoActivity>>(jtr).Data.ToArray();
-                    ToDoActivity[] readTodoActivities = results.OrderBy(e => e.id)
+                ToDoActivity[] results = (await JsonSerializer.DeserializeAsync<CosmosFeedResponseUtil<ToDoActivity>>(content)).Data.ToArray();
+                ToDoActivity[] readTodoActivities = results.OrderBy(e => e.id)
+                    .ToArray();
+
+                ToDoActivity[] expectedTodoActivities = deleteList
+                        .Where(e => e.status == find.status)
+                        .Where(e => readTodoActivities.Any(e1 => e1.id == e.id))
+                        .OrderBy(e => e.id)
                         .ToArray();
 
-                    ToDoActivity[] expectedTodoActivities = deleteList
-                            .Where(e => e.status == find.status)
-                            .Where(e => readTodoActivities.Any(e1 => e1.id == e.id))
-                            .OrderBy(e => e.id)
-                            .ToArray();
+                totalReadItem += expectedTodoActivities.Length;
+                string expectedSerialized = JsonSerializer.Serialize(expectedTodoActivities);
+                string readSerialized = JsonSerializer.Serialize(readTodoActivities);
+                Trace.TraceInformation($"Expected: {Environment.NewLine} {expectedSerialized}");
+                Trace.TraceInformation($"Read: {Environment.NewLine} {readSerialized}");
 
-                    totalReadItem += expectedTodoActivities.Length;
-                    string expectedSerialized = JsonConvert.SerializeObject(expectedTodoActivities);
-                    string readSerialized = JsonConvert.SerializeObject(readTodoActivities);
-                    Trace.TraceInformation($"Expected: {Environment.NewLine} {expectedSerialized}");
-                    Trace.TraceInformation($"Read: {Environment.NewLine} {readSerialized}");
+                int count = results.Length;
+                Assert.AreEqual(maxItemCount, count);
 
-                    int count = results.Length;
-                    Assert.AreEqual(maxItemCount, count);
+                Assert.AreEqual(expectedSerialized, readSerialized);
 
-                    Assert.AreEqual(expectedSerialized, readSerialized);
-
-                    Assert.AreEqual(maxItemCount, expectedTodoActivities.Length);
-                }
+                Assert.AreEqual(maxItemCount, expectedTodoActivities.Length);
             }
             while (lastContinuationToken != null);
 
@@ -865,7 +862,7 @@ namespace Azure.Cosmos.EmulatorTests
 
                         totalRequstCharge += iter.Headers.GetRequestCharge();
 
-                        ToDoActivity[] activities = TestCommon.Serializer.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(iter.ContentStream).Data.ToArray();
+                        ToDoActivity[] activities = TestCommon.Serializer.Value.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(iter.ContentStream).Data.ToArray();
                         Assert.AreEqual(1, activities.Length);
                         ToDoActivity response = activities.First();
                         resultList.Add(response);
@@ -911,7 +908,7 @@ namespace Azure.Cosmos.EmulatorTests
                 Assert.IsNull(iter.ReasonPhrase);
                 totalRequstCharge += iter.Headers.GetRequestCharge();
 
-                ToDoActivity[] response = TestCommon.Serializer.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(iter.ContentStream).Data.ToArray();
+                ToDoActivity[] response = TestCommon.Serializer.Value.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(iter.ContentStream).Data.ToArray();
                 Assert.IsTrue(response.Length <= 5);
                 resultList.AddRange(response);
             }
@@ -961,7 +958,7 @@ namespace Azure.Cosmos.EmulatorTests
                     totalRequstCharge += double.Parse(requestChargeString, CultureInfo.InvariantCulture);
                 }
 
-                Collection<ToDoActivity> response = TestCommon.Serializer.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(iter.ContentStream).Data;
+                Collection<ToDoActivity> response = TestCommon.Serializer.Value.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(iter.ContentStream).Data;
                 foundItems.AddRange(response);
             }
 
@@ -1114,7 +1111,7 @@ namespace Azure.Cosmos.EmulatorTests
                 textWriter.WriteAll(reader);
                 string json = Encoding.UTF8.GetString(textWriter.GetResult().ToArray());
                 Assert.IsNotNull(json);
-                ToDoActivity[] responseActivities = JsonConvert.DeserializeObject<CosmosFeedResponseUtil<ToDoActivity>>(json).Data.ToArray();
+                ToDoActivity[] responseActivities = JsonSerializer.Deserialize<CosmosFeedResponseUtil<ToDoActivity>>(json).Data.ToArray();
                 Assert.IsTrue(responseActivities.Length <= 5);
                 resultList.AddRange(responseActivities);
             }
@@ -1459,7 +1456,7 @@ namespace Azure.Cosmos.EmulatorTests
                     ToDoActivity temp = ToDoActivity.CreateRandomToDoActivity();
                     createItems[i] = container.CreateItemStreamAsync(
                         partitionKey: new PartitionKey(temp.status),
-                        streamPayload: TestCommon.Serializer.ToStream<ToDoActivity>(temp));
+                        streamPayload: TestCommon.Serializer.Value.ToStream<ToDoActivity>(temp));
                 }
 
                 Task.WaitAll(createItems);
@@ -1607,13 +1604,17 @@ namespace Azure.Cosmos.EmulatorTests
         {
             string autoId = Guid.NewGuid().ToString();
 
-            JObject tmpJObject = JObject.FromObject(itemWithoutId);
-            tmpJObject["id"] = autoId;
+            Dictionary<string, object> tmpJObject = JsonSerializer.Deserialize<Dictionary<string, object>>(JsonSerializer.Serialize(itemWithoutId));
 
-            Response<JObject> response = await this.Container.CreateItemAsync<JObject>(
+            if (!tmpJObject.ContainsKey("id") || tmpJObject["id"] == null)
+            {
+                tmpJObject["id"] = autoId;
+            }
+
+            Response<Dictionary<string, object>> response = await this.Container.CreateItemAsync<Dictionary<string, object>>(
                 partitionKey: pk, item: tmpJObject);
 
-            return response.Value.ToObject<T>();
+            return JsonSerializer.Deserialize<T>(JsonSerializer.Serialize(response.Value));
         }
 
         private static async Task VerifyQueryToManyExceptionAsync(
@@ -1659,7 +1660,7 @@ namespace Azure.Cosmos.EmulatorTests
             public int taskNum { get; set; }
             public double cost { get; set; }
             public string description { get; set; }
-            [JsonProperty("_partitionKey")]
+            [JsonPropertyName("_partitionKey")]
             public string status { get; set; }
         }
 

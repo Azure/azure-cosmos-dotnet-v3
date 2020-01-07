@@ -5,9 +5,7 @@
 namespace Azure.Cosmos
 {
     using System;
-    using Microsoft.Azure.Documents;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Converters;
+    using System.Text.Json.Serialization;
 
     /// <summary>
     /// Represents a conflict in the Azure Cosmos DB service.
@@ -18,6 +16,7 @@ namespace Azure.Cosmos
     /// Inspecting Conflict resources will allow you to determine which operations and resources resulted in conflicts.
     /// This is not related to operations returning a Conflict status code.
     /// </remarks>
+    [JsonConverter(typeof(TextJsonConflictPropertiesConverter))]
     public class ConflictProperties
     {
         /// <summary>
@@ -33,27 +32,19 @@ namespace Azure.Cosmos
         ///  '/', '\\', '?', '#'
         /// </para>
         /// </remarks>
-        [JsonProperty(PropertyName = Constants.Properties.Id)]
         public string Id { get; internal set; }
 
         /// <summary>
         /// Gets the operation that resulted in the conflict in the Azure Cosmos DB service.
         /// </summary>
-        [JsonConverter(typeof(StringEnumConverter))]
-        [JsonProperty(PropertyName = Constants.Properties.OperationType)]
         public OperationKind OperationKind { get; internal set; }
 
-        [JsonConverter(typeof(ConflictResourceTypeJsonConverter))]
-        [JsonProperty(PropertyName = Constants.Properties.ResourceType)]
         internal Type ResourceType { get; set; }
 
-        [JsonProperty(PropertyName = Constants.Properties.SourceResourceId)]
         internal string SourceResourceId { get; set; }
 
-        [JsonProperty(PropertyName = Constants.Properties.Content)]
         internal string Content { get; set; }
 
-        [JsonProperty(PropertyName = Constants.Properties.ConflictLSN)]
         internal long ConflictLSN { get; set; }
     }
 }

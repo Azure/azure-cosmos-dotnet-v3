@@ -69,16 +69,22 @@
     <Compile Include="..\src\SqlObjects\**\*.cs">
       <Link>SqlObjects\%(RecursiveDir)\%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="..\src\Fluent\Settings\*.cs" Exclude="..\src\Fluent\Settings\ContainerBuilder.cs">
+    <Compile Include="..\src\Fluent\Settings\*.cs" Exclude="..\src\Fluent\Settings\ContainerBuilder.cs;..\src\Fluent\Settings\ContainerDefinition.cs">
       <Link>Fluent\Settings\%(RecursiveDir)\%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="..\src\Json\**\*.cs">
       <Link>Json\%(RecursiveDir)\%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="..\src\Spatial\**\*.cs">
-      <Link>Spatial\%(RecursiveDir)\%(Filename)%(Extension)</Link>
+    <Compile Include="..\src\Serializer\DefaultJsonSerializationSettings.cs">
+      <Link>Serializer\%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\Serializer\CosmosJsonSerializerWrapper.cs">
+      <Link>Serializer\%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="..\src\Serializer\CosmosSerializationOptions.cs">
+      <Link>Serializer\%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\Serializer\CosmosSerializer.cs">
       <Link>Serializer\%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="..\src\Serializer\CosmosSerializationFormatOptions.cs">
@@ -105,7 +111,7 @@
     <Compile Include="..\src\CosmosElements\**\*.cs">
       <Link>CosmosElements\%(RecursiveDir)\%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="..\src\ChangeFeedProcessor\**\*.cs" Exclude="..\src\ChangeFeedProcessor\FeedManagement\RemainingWorkEstimatorCore.cs;..\src\ChangeFeedProcessor\FeedProcessing\ChangeFeedObserverContextCore.cs;..\src\ChangeFeedProcessor\FeedProcessing\FeedProcessorCore.cs;..\src\ChangeFeedProcessor\Utils\CosmosContainerExtensions.cs;..\src\ChangeFeedProcessor\LeaseManagement\DocumentServiceLeaseContainerCosmos.cs;..\src\ChangeFeedProcessor\LeaseManagement\DocumentServiceLeaseUpdaterCosmos.cs;..\src\ChangeFeedProcessor\LeaseManagement\DocumentServiceLeaseStoreCosmos.cs">
+    <Compile Include="..\src\ChangeFeedProcessor\**\*.cs" Exclude="..\src\ChangeFeedProcessor\FeedManagement\RemainingWorkEstimatorCore.cs;..\src\ChangeFeedProcessor\FeedProcessing\ChangeFeedObserverContextCore.cs;..\src\ChangeFeedProcessor\FeedProcessing\FeedProcessorCore.cs;..\src\ChangeFeedProcessor\Utils\CosmosContainerExtensions.cs;..\src\ChangeFeedProcessor\LeaseManagement\DocumentServiceLeaseContainerCosmos.cs;..\src\ChangeFeedProcessor\LeaseManagement\DocumentServiceLeaseUpdaterCosmos.cs;..\src\ChangeFeedProcessor\LeaseManagement\DocumentServiceLeaseStoreCosmos.cs;..\src\ChangeFeedProcessor\LeaseManagement\DocumentServiceLeaseCore.cs">
       <Link>ChangeFeedProcessor\%(RecursiveDir)\%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="..\src\Headers\*.cs" Exclude="..\src\Headers\Headers.cs;..\src\Headers\CosmosMessageHeadersInternal.cs">
@@ -226,7 +232,7 @@
   
   <ItemGroup>
     <PackageReference Include="Azure.Core" Version="1.0.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="10.0.2" />
+    <PackageReference Include="System.Text.Json" Version="4.7.0" />
     <PackageReference Include="StyleCop.Analyzers" Version="1.1.118" PrivateAssets="All" />
     <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="16.4.16" PrivateAssets="All" />
 
@@ -236,7 +242,7 @@
     
     <!--HybridRow & Azure.Core Dependencies-->
     <PackageReference Include="System.Memory" Version="4.5.3" />
-    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="4.6.0" />
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="4.7.0" />
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.2" />
     <PackageReference Include="System.ValueTuple" Version="4.5.0" />
   </ItemGroup>

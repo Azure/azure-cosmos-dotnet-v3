@@ -5,6 +5,7 @@
 namespace Azure.Cosmos
 {
     using System;
+    using System.Buffers;
     using System.Globalization;
     using System.IO;
     using Azure;

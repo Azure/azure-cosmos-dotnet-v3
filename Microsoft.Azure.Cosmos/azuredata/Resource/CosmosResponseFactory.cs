@@ -35,33 +35,32 @@ namespace Azure.Cosmos
         internal IReadOnlyList<T> CreateQueryFeedResponseWithPropertySerializer<T>(
             Response cosmosResponseMessage)
         {
-            FeedResponse<T> feedResponse = this.CreateQueryFeedResponseHelper<T>(
-                cosmosResponseMessage,
-                true);
-
-            return feedResponse.Value.ToList().AsReadOnly();
+            return this.CreateQueryFeedResponseWithSerializer<T>(cosmosResponseMessage, this.propertiesSerializer);
         }
 
         internal IReadOnlyList<T> CreateQueryFeedResponse<T>(
             Response cosmosResponseMessage)
         {
+            return this.CreateQueryFeedResponseWithSerializer<T>(cosmosResponseMessage, this.cosmosSerializer);
+        }
+
+        private IReadOnlyList<T> CreateQueryFeedResponseWithSerializer<T>(
+            Response cosmosResponseMessage,
+            CosmosSerializer serializer)
+        {
             FeedResponse<T> feedResponse = this.CreateQueryFeedResponseHelper<T>(
                 cosmosResponseMessage,
-                false);
+                serializer);
 
             return feedResponse.Value.ToList().AsReadOnly();
         }
 
         private FeedResponse<T> CreateQueryFeedResponseHelper<T>(
             Response cosmosResponseMessage,
-            bool usePropertySerializer)
+            CosmosSerializer serializer)
         {
             //Throw the exception
             cosmosResponseMessage.EnsureSuccessStatusCode();
-
-            // The property serializer should be used for internal
-            // query operations like throughput since user serializer can break the logic
-            CosmosSerializer serializer = usePropertySerializer ? this.propertiesSerializer : this.cosmosSerializer;
 
             QueryResponse queryResponse = cosmosResponseMessage as QueryResponse;
             if (queryResponse != null)

@@ -13,6 +13,7 @@ namespace Azure.Cosmos.EmulatorTests
     using System.Net;
     using System.Net.Http;
     using System.Text;
+    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
     using Azure.Cosmos;
@@ -43,7 +44,18 @@ namespace Azure.Cosmos.EmulatorTests
 
         private static readonly int serverStalenessIntervalInSeconds;
         private static readonly int masterStalenessIntervalInSeconds;
-        public static readonly CosmosSerializer Serializer = new CosmosJsonDotNetSerializer();
+        public static Lazy<CosmosSerializer> Serializer = new Lazy<CosmosSerializer>(() =>
+        {
+            // Adding converters to support V2 types in existing tests
+            JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions();
+            jsonSerializerOptions.Converters.Add(new TextJsonJTokenConverter());
+            jsonSerializerOptions.Converters.Add(new TextJsonDocumentConverter());
+            jsonSerializerOptions.Converters.Add(new TextJsonCosmosElementConverter());
+            jsonSerializerOptions.Converters.Add(new TextJsonCosmosElementListConverter());
+            jsonSerializerOptions.Converters.Add(new TextJsonJObjectConverter());
+            jsonSerializerOptions.Converters.Add(new TextJsonJTokenListConverter());
+            return new CosmosTextJsonSerializer(jsonSerializerOptions);
+        });
 
         static TestCommon()
         {
@@ -85,6 +97,7 @@ namespace Azure.Cosmos.EmulatorTests
         internal static CosmosClient CreateCosmosClient(Action<CosmosClientBuilder> customizeClientBuilder = null)
         {
             CosmosClientBuilder cosmosClientBuilder = GetDefaultConfiguration();
+            cosmosClientBuilder.WithCustomSerializer(TestCommon.Serializer.Value);
             if (customizeClientBuilder != null)
             {
                 customizeClientBuilder(cosmosClientBuilder);

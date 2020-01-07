@@ -5,13 +5,13 @@
 namespace Azure.Cosmos
 {
     using System;
+    using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Converters;
 
     /// <summary> 
     /// Represents a permission in the Azure Cosmos DB service.
     /// </summary>
+    [JsonConverter(typeof(TextJsonPermissionPropertiesConverter))]
     public class PermissionProperties
     {
         /// <summary>
@@ -87,8 +87,7 @@ namespace Azure.Cosmos
         ///  '/', '\\', '?', '#'
         /// </para>
         /// </remarks>
-        [JsonProperty(PropertyName = Constants.Properties.Id)]
-        public string Id { get; private set; }
+        public string Id { get; internal set; }
 
         /// <summary> 
         /// Gets the self-uri of resource to which the permission applies in the Azure Cosmos DB service.
@@ -96,8 +95,7 @@ namespace Azure.Cosmos
         /// <value>
         /// The-uri of the resource to which the permission applies.
         /// </value>
-        [JsonProperty(PropertyName = Constants.Properties.ResourceLink)]
-        public string ResourceUri { get; private set; }
+        public string ResourceUri { get; internal set; }
 
         /// <summary>
         /// Gets optional partition key value for the permission in the Azure Cosmos DB service.
@@ -107,7 +105,6 @@ namespace Azure.Cosmos
         ///       2. <see cref="ResourcePartitionKey"/> is superset of resource's partition key.
         ///             For example absent/empty partition key is superset of all partition keys.
         /// </summary>
-        [JsonIgnore]
         public PartitionKey? ResourcePartitionKey
         {
             get
@@ -141,9 +138,7 @@ namespace Azure.Cosmos
         /// <value>
         /// The <see cref="PermissionMode"/> mode: Read or All.
         /// </value>
-        [JsonConverter(typeof(StringEnumConverter))]
-        [JsonProperty(PropertyName = Constants.Properties.PermissionMode)]
-        public PermissionMode PermissionMode { get; private set; }
+        public PermissionMode PermissionMode { get; internal set; }
 
         /// <summary>
         /// Gets the access token granting the defined permission from the Azure Cosmos DB service.
@@ -151,8 +146,7 @@ namespace Azure.Cosmos
         /// <value>
         /// The access token granting the defined permission.
         /// </value>
-        [JsonProperty(PropertyName = Constants.Properties.Token, NullValueHandling = NullValueHandling.Ignore)]
-        public string Token { get; private set; }
+        public string Token { get; internal set; }
 
         /// <summary>
         /// Gets the entity tag associated with the resource from the Azure Cosmos DB service.
@@ -163,18 +157,14 @@ namespace Azure.Cosmos
         /// <remarks>
         /// ETags are used for concurrency checking when updating resources. 
         /// </remarks>
-        [JsonProperty(PropertyName = Constants.Properties.ETag, NullValueHandling = NullValueHandling.Ignore)]
-        [JsonConverter(typeof(ETagConverter))]
-        public ETag? ETag { get; private set; }
+        public ETag? ETag { get; internal set; }
 
         /// <summary>
         /// Gets the last modified time stamp associated with <see cref="PermissionProperties" /> from the Azure Cosmos DB service.
         /// </summary>
         /// <value>The last modified time stamp associated with the resource.</value>
         /// <remarks>ResourceToken generation and reading does not apply.</remarks>
-        [JsonConverter(typeof(UnixDateTimeConverter))]
-        [JsonProperty(PropertyName = Constants.Properties.LastModified, NullValueHandling = NullValueHandling.Ignore)]
-        public DateTime? LastModified { get; private set; }
+        public DateTime? LastModified { get; internal set; }
 
         /// <summary>
         /// Gets the Resource Id associated with the resource in the Azure Cosmos DB service.
@@ -187,10 +177,8 @@ namespace Azure.Cosmos
         /// resource whether that is a database, a collection or a document.
         /// These resource ids are used when building up SelfLinks, a static addressable Uri for each resource within a database account.
         /// </remarks>
-        [JsonProperty(PropertyName = Constants.Properties.RId, NullValueHandling = NullValueHandling.Ignore)]
-        internal string ResourceId { get; private set; }
+        internal string ResourceId { get; set; }
 
-        [JsonProperty(PropertyName = Constants.Properties.ResourcePartitionKey, NullValueHandling = NullValueHandling.Ignore)]
-        internal Microsoft.Azure.Documents.Routing.PartitionKeyInternal InternalResourcePartitionKey { get; private set; }
+        internal Microsoft.Azure.Documents.Routing.PartitionKeyInternal InternalResourcePartitionKey { get; set; }
     }
 }

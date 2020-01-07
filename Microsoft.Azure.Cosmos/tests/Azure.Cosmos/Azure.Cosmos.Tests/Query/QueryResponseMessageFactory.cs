@@ -24,7 +24,7 @@ namespace Azure.Cosmos.Tests
 
     internal static class QueryResponseMessageFactory
     {
-        private static readonly CosmosSerializer cosmosSerializer = new CosmosJsonDotNetSerializer();
+        private static readonly CosmosSerializer cosmosSerializer = new CosmosTextJsonSerializer();
         public const int SPLIT = -1;
 
         public static (QueryResponseCore queryResponse, IList<ToDoItem> items) Create(

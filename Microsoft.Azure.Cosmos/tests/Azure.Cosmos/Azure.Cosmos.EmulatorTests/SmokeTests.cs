@@ -6,11 +6,11 @@ namespace Azure.Cosmos.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Utils;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
 
     [TestClass]
     [TestCategory("Emulator")]
@@ -305,17 +305,17 @@ namespace Azure.Cosmos.EmulatorTests
 
         private async Task CleanupDocumentCollection(CosmosContainer container)
         {
-            await foreach(JObject doc in container.GetItemQueryIterator<JObject>())
+            await foreach(JsonElement doc in container.GetItemQueryIterator<JsonElement>())
             {
-                string id = doc["id"].ToString();
-                await container.DeleteItemAsync<JObject>(id, new PartitionKey(id));
+                string id = doc.GetProperty("id").GetString();
+                await container.DeleteItemAsync<JsonElement>(id, new PartitionKey(id));
             }
         }
     }
 
     internal sealed class Person
     {
-        [JsonProperty(PropertyName = "id")]
+        [JsonPropertyName("id")]
         public string Id { get; set; }
 
         public string FirstName { get; set; }

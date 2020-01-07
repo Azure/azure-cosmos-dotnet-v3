@@ -30,11 +30,12 @@ namespace Microsoft.Azure.Cosmos
         {
             get
             {
+#if !AZURECORE
                 if (this.DisallowContinuationTokenMessage != null)
                 {
                     throw new ArgumentException(this.DisallowContinuationTokenMessage);
                 }
-
+#endif
                 return base.ContinuationToken;
             }
 

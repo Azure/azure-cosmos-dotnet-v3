@@ -25,6 +25,7 @@ namespace Azure.Cosmos.Query
 
     internal class CosmosQueryClientCore : CosmosQueryClient
     {
+        private static CosmosJsonDotNetSerializer CosmosJsonDotNetSerializer = new CosmosJsonDotNetSerializer();
         private readonly CosmosClientContext clientContext;
         private readonly ContainerCore cosmosContainerCore;
         private readonly DocumentClient documentClient;
@@ -194,7 +195,8 @@ namespace Azure.Cosmos.Query
             {
                 // Syntax exception are argument exceptions and thrown to the user.
                 message.EnsureSuccessStatusCode();
-                partitionedQueryExecutionInfo = this.clientContext.CosmosSerializer.FromStream<PartitionedQueryExecutionInfo>(message.ContentStream);
+                // TODO: Internal models still use Newtonsoft.Json
+                partitionedQueryExecutionInfo = CosmosQueryClientCore.CosmosJsonDotNetSerializer.FromStream<PartitionedQueryExecutionInfo>(message.ContentStream);
             }
 
             return partitionedQueryExecutionInfo;

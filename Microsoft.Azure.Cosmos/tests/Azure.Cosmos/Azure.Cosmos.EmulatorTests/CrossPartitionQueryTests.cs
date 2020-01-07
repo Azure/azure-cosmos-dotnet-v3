@@ -42,6 +42,7 @@ namespace Azure.Cosmos.EmulatorTests
     [TestCategory("Query")]
     public class CrossPartitionQueryTests
     {
+        private static CosmosJsonDotNetSerializer newtonsoftJsonSerializer = new CosmosJsonDotNetSerializer();
         private static readonly string[] NoDocuments = new string[] { };
         private CosmosClient GatewayClient = TestCommon.CreateCosmosClient(true);
         private CosmosClient Client = TestCommon.CreateCosmosClient(false);
@@ -322,6 +323,7 @@ namespace Azure.Cosmos.EmulatorTests
 
                 JObject createdDocument = await container.CreateItemAsync<JObject>(documentObject, pkValue);
                 Document insertedDocument = Document.FromObject(createdDocument);
+
                 insertedDocuments.Add(insertedDocument);
             }
 
@@ -1639,7 +1641,7 @@ namespace Azure.Cosmos.EmulatorTests
                                 actual = (double)(long)actual;
                             }
 
-                            Assert.AreEqual(expected, actual, message);
+                            SystemTextJsonUtils.AssertJsonElementEquals(expected, actual, message);
                         }
                     }
                 }
@@ -1675,7 +1677,7 @@ namespace Azure.Cosmos.EmulatorTests
                         expected = (long)expected;
                     }
 
-                    Assert.AreEqual(
+                    SystemTextJsonUtils.AssertJsonElementEquals(
                         expected,
                         aggregate,
                         string.Format(CultureInfo.InvariantCulture, "query: {0}, data: {1}", query, JsonConvert.SerializeObject(data)));
@@ -1774,7 +1776,7 @@ namespace Azure.Cosmos.EmulatorTests
                             MaxConcurrency = 10,
                         });
 
-                    Assert.AreEqual(valueOfInterest, items.Single());
+                    SystemTextJsonUtils.AssertJsonElementEquals(valueOfInterest, items.Single());
                 }
                 catch (Exception ex)
                 {
@@ -2445,7 +2447,7 @@ namespace Azure.Cosmos.EmulatorTests
                     AsyncPageable<JToken> documentQueryWithDistinct = container.GetItemQueryIterator<JToken>(
                         queryWithDistinct,
                         requestOptions: requestOptions);
-                    await foreach(JToken doc in documentQueryWithDistinct)
+                    await foreach (JToken doc in documentQueryWithDistinct)
                     {
                         documentsFromWithDistinct.Add(doc);
                     }
@@ -4888,6 +4890,7 @@ namespace Azure.Cosmos.EmulatorTests
                     default:
                         throw new ArgumentException();
                 }
+
             }
 
             public int GetHashCode(JToken obj)

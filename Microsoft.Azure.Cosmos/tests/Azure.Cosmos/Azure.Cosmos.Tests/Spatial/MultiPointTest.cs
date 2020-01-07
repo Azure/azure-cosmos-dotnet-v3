@@ -6,12 +6,9 @@ namespace Azure.Cosmos.Test.Spatial
 {
     using System;
     using System.Collections.Generic;
-
+    using System.Text.Json;
     using Azure.Cosmos.Spatial;
-    using Azure.Cosmos.Spatial.Converters;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-    using Newtonsoft.Json;
 
     /// <summary>
     /// Tests <see cref="MultiPoint"/> class and serialization.
@@ -32,7 +29,7 @@ namespace Azure.Cosmos.Test.Spatial
                     ""bbox"":[20, 20, 30, 30],
                     ""extra"":1,
                     ""crs"":{""type"":""name"", ""properties"":{""name"":""hello""}}}";
-            var multiPoint = JsonConvert.DeserializeObject<MultiPoint>(json);
+            var multiPoint = JsonSerializer.Deserialize<MultiPoint>(json);
 
             Assert.AreEqual(new Position(20, 30), multiPoint.Points[0]);
             Assert.AreEqual(new Position(30, 40), multiPoint.Points[1]);
@@ -43,13 +40,13 @@ namespace Azure.Cosmos.Test.Spatial
             Assert.AreEqual(1, multiPoint.AdditionalProperties.Count);
             Assert.AreEqual(1L, multiPoint.AdditionalProperties["extra"]);
 
-            var geom = JsonConvert.DeserializeObject<Geometry>(json);
+            var geom = JsonSerializer.Deserialize<Geometry>(json);
             Assert.AreEqual(GeometryType.MultiPoint, geom.Type);
 
             Assert.AreEqual(geom, multiPoint);
 
-            string json1 = JsonConvert.SerializeObject(multiPoint);
-            var geom1 = JsonConvert.DeserializeObject<Geometry>(json1);
+            string json1 = JsonSerializer.Serialize(multiPoint);
+            var geom1 = JsonSerializer.Deserialize<Geometry>(json1);
             Assert.AreEqual(geom1, geom);
         }
 

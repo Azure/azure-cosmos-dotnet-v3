@@ -8,13 +8,13 @@ namespace Azure.Cosmos.EmulatorTests
     using System.Collections.Generic;
     using System.IO;
     using System.Net;
+    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
     using Azure.Cosmos.Fluent;
     using Azure.Cosmos.Scripts;
     using Azure.Cosmos.Serialization;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public sealed class StoredProcedureTests : BaseCosmosClientHelper
@@ -239,15 +239,15 @@ namespace Azure.Cosmos.EmulatorTests
             Assert.AreEqual((int)HttpStatusCode.Created, createItemResponse.GetRawResponse().Status);
 
             StoredProcedureProperties storedProcedure = storedProcedureResponse;
-            StoredProcedureExecuteResponse<JArray> sprocResponse = await this.scripts.ExecuteStoredProcedureAsync<JArray>(
+            StoredProcedureExecuteResponse<JsonElement> sprocResponse = await this.scripts.ExecuteStoredProcedureAsync<JsonElement>(
                 sprocId,
                 new Cosmos.PartitionKey(testPartitionId),
                 parameters: null);
 
             Assert.AreEqual((int)HttpStatusCode.OK, sprocResponse.GetRawResponse().Status);
 
-            JArray jArray = sprocResponse;
-            Assert.AreEqual(1, jArray.Count);
+            JsonElement jArray = sprocResponse;
+            Assert.AreEqual(1, jArray.GetArrayLength());
 
             Response<StoredProcedureProperties> deleteResponse = await this.scripts.DeleteStoredProcedureAsync(sprocId);
             Assert.AreEqual((int)HttpStatusCode.NoContent, deleteResponse.GetRawResponse().Status);
@@ -294,8 +294,8 @@ namespace Azure.Cosmos.EmulatorTests
             using (StreamReader sr = new System.IO.StreamReader(sprocResponse.ContentStream))
             {
                 string stringResponse = sr.ReadToEnd();
-                JArray jArray = JArray.Parse(stringResponse);
-                Assert.AreEqual(1, jArray.Count);
+                JsonDocument jArray = JsonDocument.Parse(stringResponse);
+                Assert.AreEqual(1, jArray.RootElement.GetArrayLength());
             }
 
             Response<StoredProcedureProperties> deleteResponse = await this.scripts.DeleteStoredProcedureAsync(sprocId);

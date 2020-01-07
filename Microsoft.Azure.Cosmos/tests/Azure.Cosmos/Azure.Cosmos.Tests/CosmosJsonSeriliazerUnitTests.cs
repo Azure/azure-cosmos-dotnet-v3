@@ -10,6 +10,7 @@ namespace Azure.Cosmos.Tests
     using System.IO;
     using System.Net;
     using System.Text;
+    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
     using Azure.Cosmos.Scripts;
@@ -17,9 +18,6 @@ namespace Azure.Cosmos.Tests
     using Microsoft.Azure.Cosmos;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
-    using Newtonsoft.Json.Serialization;
 
     [TestClass]
     public class CosmosJsonSeriliazerUnitTests
@@ -38,7 +36,7 @@ namespace Azure.Cosmos.Tests
         [TestMethod]
         public void ValidateSerializer()
         {
-            CosmosJsonDotNetSerializer cosmosDefaultJsonSerializer = new CosmosJsonDotNetSerializer();
+            CosmosTextJsonSerializer cosmosDefaultJsonSerializer = new CosmosTextJsonSerializer();
             using (Stream stream = cosmosDefaultJsonSerializer.ToStream<ToDoActivity>(this.toDoActivity))
             {
                 Assert.IsNotNull(stream);
@@ -55,7 +53,7 @@ namespace Azure.Cosmos.Tests
         [TestMethod]
         public void ValidateJson()
         {
-            CosmosJsonDotNetSerializer cosmosDefaultJsonSerializer = new CosmosJsonDotNetSerializer();
+            CosmosTextJsonSerializer cosmosDefaultJsonSerializer = new CosmosTextJsonSerializer();
             using (Stream stream = cosmosDefaultJsonSerializer.ToStream<ToDoActivity>(this.toDoActivity))
             {
                 Assert.IsNotNull(stream);
@@ -71,9 +69,9 @@ namespace Azure.Cosmos.Tests
         [TestMethod]
         public void ValidateCustomSerializerSettings()
         {
-            JsonSerializerSettings settings = new JsonSerializerSettings()
+            JsonSerializerOptions settings = new JsonSerializerOptions()
             {
-                NullValueHandling = NullValueHandling.Ignore
+                IgnoreNullValues = true
             };
 
             ToDoActivity toDoActivityNoDescription = new ToDoActivity()
@@ -86,7 +84,7 @@ namespace Azure.Cosmos.Tests
             };
 
             string toDoActivityJson = @"{""id"":""c1d433c1-369d-430e-91e5-14e3ce588f71"",""taskNum"":42,""cost"":1.7976931348623157E+308,""status"":""TBD""}";
-            CosmosJsonDotNetSerializer cosmosDefaultJsonSerializer = new CosmosJsonDotNetSerializer(settings);
+            CosmosTextJsonSerializer cosmosDefaultJsonSerializer = new CosmosTextJsonSerializer(settings);
             using (Stream stream = cosmosDefaultJsonSerializer.ToStream<ToDoActivity>(toDoActivityNoDescription))
             {
                 Assert.IsNotNull(stream);
@@ -208,10 +206,10 @@ namespace Azure.Cosmos.Tests
                 Parameters = sqlParameters
             });
 
-            CosmosJsonDotNetSerializer userSerializer = new CosmosJsonDotNetSerializer();
-            CosmosJsonDotNetSerializer propertiesSerializer = new CosmosJsonDotNetSerializer();
+            CosmosTextJsonSerializer userSerializer = new CosmosTextJsonSerializer();
+            CosmosTextJsonSerializer propertiesSerializer = new CosmosTextJsonSerializer();
 
-            CosmosSerializer sqlQuerySpecSerializer = CosmosSqlQuerySpecJsonConverter.CreateSqlQuerySpecSerializer(
+            CosmosSerializer sqlQuerySpecSerializer = TextJsonCosmosSqlQuerySpecConverter.CreateSqlQuerySpecSerializer(
                 userSerializer,
                 propertiesSerializer);
 

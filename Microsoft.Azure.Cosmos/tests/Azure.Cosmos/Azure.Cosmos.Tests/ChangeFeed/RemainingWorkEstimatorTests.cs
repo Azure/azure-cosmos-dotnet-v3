@@ -6,12 +6,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.Cosmos;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
-using Newtonsoft.Json.Linq;
 
 namespace Azure.Cosmos.ChangeFeed.Tests
 {
@@ -149,11 +149,11 @@ namespace Azure.Cosmos.ChangeFeed.Tests
 
             Mock<FeedIterator> mockIteratorPKRange0 = new Mock<FeedIterator>();
             mockIteratorPKRange0.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>()))
-                .ReturnsAsync(GetResponse(HttpStatusCode.OK, "0:" + globalLsnPKRange0.ToString(), processedLsnPKRange0.ToString()));
+                .ReturnsAsync(GetResponse(HttpStatusCode.OK, "0:" + globalLsnPKRange0.ToString(), processedLsnPKRange0));
 
             Mock<FeedIterator> mockIteratorPKRange1 = new Mock<FeedIterator>();
             mockIteratorPKRange1.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>()))
-                .ReturnsAsync(GetResponse(HttpStatusCode.OK, "1:" + globalLsnPKRange1.ToString(), processedLsnPKRange1.ToString()));
+                .ReturnsAsync(GetResponse(HttpStatusCode.OK, "1:" + globalLsnPKRange1.ToString(), processedLsnPKRange1));
 
             Mock<DocumentServiceLeaseContainer> mockContainer = new Mock<DocumentServiceLeaseContainer>();
             mockContainer.Setup(c => c.GetAllLeasesAsync()).ReturnsAsync(leases);
@@ -202,21 +202,21 @@ namespace Azure.Cosmos.ChangeFeed.Tests
             Assert.AreEqual(expectedLsn, RemainingWorkEstimatorCore.ExtractLsnFromSessionToken(newTokenWithRegionalLsn));
         }
 
-        private static ResponseMessage GetResponse(HttpStatusCode statusCode, string localLsn, string itemLsn = null)
+        private static ResponseMessage GetResponse(HttpStatusCode statusCode, string localLsn, long itemLsn = 0)
         {
             ResponseMessage message = new ResponseMessage(statusCode);
             message.CosmosHeaders.Add(Microsoft.Azure.Documents.HttpConstants.HttpHeaders.SessionToken, localLsn);
-            if (!string.IsNullOrEmpty(itemLsn))
+            if (itemLsn > 0)
             {
-                JObject firstDocument = new JObject();
+                Dictionary<string, object> firstDocument = new Dictionary<string, object>();
                 firstDocument["_lsn"] = itemLsn;
-                CosmosFeedResponseUtil<JObject> cosmosFeedResponse = new CosmosFeedResponseUtil<JObject>();
-                cosmosFeedResponse.Data = new System.Collections.ObjectModel.Collection<JObject>()
+                CosmosFeedResponseUtil<Dictionary<string, object>> cosmosFeedResponse = new CosmosFeedResponseUtil<Dictionary<string, object>>();
+                cosmosFeedResponse.Data = new System.Collections.ObjectModel.Collection<Dictionary<string, object>>()
                 {
                     firstDocument
                 };
 
-                message.Content = new CosmosJsonDotNetSerializer().ToStream(cosmosFeedResponse);
+                message.Content = new CosmosTextJsonSerializer().ToStream(cosmosFeedResponse);
             }
 
             return message;
