@@ -9,7 +9,7 @@
     <CurrentDate>$([System.DateTime]::Now.ToString(yyyyMMdd))</CurrentDate>
     <AzureSDKClientVersion>4.0.0</AzureSDKClientVersion>
     <VersionSuffix Condition=" '$(IsNightly)' == 'true' ">nightly-$(CurrentDate)</VersionSuffix>
-    <VersionSuffix Condition=" '$(IsPreview)' == 'true' ">preview</VersionSuffix>
+    <VersionSuffix Condition=" '$(IsPreview)' == 'true' ">preview2</VersionSuffix>
     <Version Condition=" '$(VersionSuffix)' == '' ">$(AzureSDKClientVersion)</Version>
     <Version Condition=" '$(VersionSuffix)' != '' ">$(AzureSDKClientVersion)-$(VersionSuffix)</Version>
     <FileVersion>$(AzureSDKClientVersion)</FileVersion>

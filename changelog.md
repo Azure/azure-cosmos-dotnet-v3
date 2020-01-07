@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Fixed
+
+## <a name="4.0.0-preview2"/> [4.0.0-preview2](https://www.nuget.org/packages/Azure.Cosmos/4.0.0-preview2) - 2020-01-07
+
+### Added
+
 - [#853](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/853) ORDER BY Arrays and Object support.
 - [#877](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/877) Query diagnostics now contains client side request diagnostics information
 - [#934](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/934) Preserved the ordering of projections in a GROUP BY query.
@@ -26,6 +32,7 @@ Initial preview release of the new 4.0.0 SDK that aligns with [Azure.Core for .N
 
 ### Key differences with [V3](https://github.com/Azure/azure-cosmos-dotnet-v3/)
 
+* [System.Text.Json](https://docs.microsoft.com/dotnet/standard/serialization/system-text-json-overview) used as default serialization mechanism instead of Newtonsoft.Json.
 * Queries now support `await foreach` through `IAsyncEnumerable` available in C# 8 for streams and types. This replaces the `FeedIterator` class in the v3 SDK.
     * For Typed queries async enumeration is supported at the [item level](https://github.com/Azure/azure-sdk-for-net/blob/master/sdk/core/Azure.Core/samples/Response.md#iterating-over-asyncpageable-using-await-foreach), or at the Page level with [AsPages](https://github.com/Azure/azure-sdk-for-net/blob/master/sdk/core/Azure.Core/samples/Response.md#iterating-over-asyncpageable-pages).
     * For stream queries, async enumeration can be done directly over the [Response](https://github.com/Azure/azure-sdk-for-net/blob/master/sdk/core/Azure.Core/samples/Response.md).
