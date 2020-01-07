@@ -5,14 +5,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 {
     using System;
     using System.Collections.Generic;
-    using Newtonsoft.Json;
 
     /// <summary>
     /// Query runtime execution times in the Azure Cosmos DB service.
     /// </summary>
     internal sealed class RuntimeExecutionTimes
     {
-        internal static readonly RuntimeExecutionTimes Zero = new RuntimeExecutionTimes(
+        public static readonly RuntimeExecutionTimes Zero = new RuntimeExecutionTimes(
             queryEngineExecutionTime: default,
             systemFunctionExecutionTime: default,
             userDefinedFunctionExecutionTime: default);
@@ -23,8 +22,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// <param name="queryEngineExecutionTime">Query end - to - end execution time</param>
         /// <param name="systemFunctionExecutionTime">Total time spent executing system functions</param>
         /// <param name="userDefinedFunctionExecutionTime">Total time spent executing user - defined functions</param>
-        [JsonConstructor]
-        internal RuntimeExecutionTimes(
+        public RuntimeExecutionTimes(
             TimeSpan queryEngineExecutionTime,
             TimeSpan systemFunctionExecutionTime,
             TimeSpan userDefinedFunctionExecutionTime)
@@ -37,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// <summary>
         /// Gets the total query runtime execution time in the Azure Cosmos DB service.
         /// </summary>
-        internal TimeSpan QueryEngineExecutionTime { get; }
+        public TimeSpan QueryEngineExecutionTime { get; }
 
         /// <summary>
         /// Gets the query system function execution time in the Azure Cosmos DB service.
@@ -49,72 +47,39 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// </summary>
         public TimeSpan UserDefinedFunctionExecutionTime { get; }
 
-        /// <summary>
-        /// Gets the total query runtime execution time in the Azure DocumentDB database service.
-        /// </summary>
-        public TimeSpan TotalTime
+        public ref struct Accumulator
         {
-            get
+            public Accumulator(TimeSpan queryEngineExecutionTime, TimeSpan systemFunctionExecutionTime, TimeSpan userDefinedFunctionExecutionTimes)
             {
-                return this.QueryEngineExecutionTime;
-            }
-        }
-
-        /// <summary>
-        /// Creates a new RuntimeExecutionTimes from the backend delimited string.
-        /// </summary>
-        /// <param name="delimitedString">The backend delimited string to deserialize from.</param>
-        /// <returns>A new RuntimeExecutionTimes from the backend delimited string.</returns>
-        internal static RuntimeExecutionTimes CreateFromDelimitedString(string delimitedString)
-        {
-            Dictionary<string, double> metrics = QueryMetricsUtils.ParseDelimitedString(delimitedString);
-
-            TimeSpan vmExecutionTime = QueryMetricsUtils.TimeSpanFromMetrics(
-                metrics,
-                QueryMetricsConstants.VMExecutionTimeInMs);
-            TimeSpan indexLookupTime = QueryMetricsUtils.TimeSpanFromMetrics(
-                metrics,
-                QueryMetricsConstants.IndexLookupTimeInMs);
-            TimeSpan documentLoadTime = QueryMetricsUtils.TimeSpanFromMetrics(
-                metrics,
-                QueryMetricsConstants.DocumentLoadTimeInMs);
-            TimeSpan documentWriteTime = QueryMetricsUtils.TimeSpanFromMetrics(
-                metrics,
-                QueryMetricsConstants.DocumentWriteTimeInMs);
-
-            return new RuntimeExecutionTimes(
-                vmExecutionTime - indexLookupTime - documentLoadTime - documentWriteTime,
-                QueryMetricsUtils.TimeSpanFromMetrics(metrics, QueryMetricsConstants.SystemFunctionExecuteTimeInMs),
-                QueryMetricsUtils.TimeSpanFromMetrics(metrics, QueryMetricsConstants.UserDefinedFunctionExecutionTimeInMs));
-        }
-
-        /// <summary>
-        /// Creates a new RuntimeExecutionTimes that is the sum of all elements in an IEnumerable.
-        /// </summary>
-        /// <param name="runtimeExecutionTimesList">The IEnumerable to aggregate.</param>
-        /// <returns>A new RuntimeExecutionTimes that is the sum of all elements in an IEnumerable.</returns>
-        internal static RuntimeExecutionTimes CreateFromIEnumerable(IEnumerable<RuntimeExecutionTimes> runtimeExecutionTimesList)
-        {
-            if (runtimeExecutionTimesList == null)
-            {
-                throw new ArgumentNullException("runtimeExecutionTimesList");
+                this.QueryEngineExecutionTime = queryEngineExecutionTime;
+                this.SystemFunctionExecutionTime = systemFunctionExecutionTime;
+                this.UserDefinedFunctionExecutionTime = userDefinedFunctionExecutionTimes;
             }
 
-            TimeSpan queryEngineExecutionTime = new TimeSpan();
-            TimeSpan systemFunctionExecutionTime = new TimeSpan();
-            TimeSpan userDefinedFunctionExecutionTime = new TimeSpan();
+            public TimeSpan QueryEngineExecutionTime { get; set; }
+            public TimeSpan SystemFunctionExecutionTime { get; set; }
+            public TimeSpan UserDefinedFunctionExecutionTime { get; set; }
 
-            foreach (RuntimeExecutionTimes runtimeExecutionTime in runtimeExecutionTimesList)
+            public Accumulator Accumulate(RuntimeExecutionTimes runtimeExecutionTimes)
             {
-                queryEngineExecutionTime += runtimeExecutionTime.QueryEngineExecutionTime;
-                systemFunctionExecutionTime += runtimeExecutionTime.SystemFunctionExecutionTime;
-                userDefinedFunctionExecutionTime += runtimeExecutionTime.UserDefinedFunctionExecutionTime;
+                if (runtimeExecutionTimes == null)
+                {
+                    throw new ArgumentNullException(nameof(runtimeExecutionTimes));
+                }
+
+                return new Accumulator(
+                    queryEngineExecutionTime: this.QueryEngineExecutionTime + runtimeExecutionTimes.QueryEngineExecutionTime,
+                    systemFunctionExecutionTime: this.SystemFunctionExecutionTime + runtimeExecutionTimes.SystemFunctionExecutionTime,
+                    userDefinedFunctionExecutionTimes: this.UserDefinedFunctionExecutionTime + runtimeExecutionTimes.UserDefinedFunctionExecutionTime);
             }
 
-            return new RuntimeExecutionTimes(
-                queryEngineExecutionTime,
-                systemFunctionExecutionTime,
-                userDefinedFunctionExecutionTime);
+            public static RuntimeExecutionTimes ToRuntimeExecutionTimes(Accumulator accumulator)
+            {
+                return new RuntimeExecutionTimes(
+                    queryEngineExecutionTime: accumulator.QueryEngineExecutionTime,
+                    systemFunctionExecutionTime: accumulator.SystemFunctionExecutionTime,
+                    userDefinedFunctionExecutionTime: accumulator.UserDefinedFunctionExecutionTime);
+            }
         }
     }
 }

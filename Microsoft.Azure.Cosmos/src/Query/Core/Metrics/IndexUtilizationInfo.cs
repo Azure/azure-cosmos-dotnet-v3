@@ -89,6 +89,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             }
         }
 
+        public static IndexUtilizationInfo CreateFromString(string delimitedString)
+        {
+            if (!TryCreateFromDelimitedString(delimitedString, out IndexUtilizationInfo indexUtilizationInfo))
+            {
+                throw new FormatException();
+            }
+
+            return indexUtilizationInfo;
+        }
+
         /// <summary>
         /// Creates a new IndexUtilizationInfo that is the sum of all elements in an IEnumerable.
         /// </summary>

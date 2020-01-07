@@ -1801,209 +1801,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
         */
 
-        private void AssertQueryMetricsPublicMembers(QueryMetrics queryMetrics)
-        {
-            Assert.IsNotNull(queryMetrics.TotalTime.TotalMilliseconds);
-            Assert.IsNotNull(queryMetrics.RetrievedDocumentCount);
-            Assert.IsNotNull(queryMetrics.RetrievedDocumentSize);
-            Assert.IsNotNull(queryMetrics.OutputDocumentCount);
-            Assert.IsNotNull(queryMetrics.IndexHitRatio);
-            Assert.IsNotNull(queryMetrics.IndexUtilizationInfo);
-            Assert.IsNotNull(queryMetrics.ClientSideMetrics.Retries);
-
-            Assert.IsNotNull(queryMetrics.QueryPreparationTimes.QueryCompilationTime.TotalMilliseconds);
-            Assert.IsNotNull(queryMetrics.QueryPreparationTimes.LogicalPlanBuildTime.TotalMilliseconds);
-            Assert.IsNotNull(queryMetrics.QueryPreparationTimes.PhysicalPlanBuildTime.TotalMilliseconds);
-            Assert.IsNotNull(queryMetrics.QueryPreparationTimes.QueryOptimizationTime.TotalMilliseconds);
-
-            Assert.IsNotNull(queryMetrics.IndexLookupTime.TotalMilliseconds);
-            Assert.IsNotNull(queryMetrics.DocumentLoadTime.TotalMilliseconds);
-            Assert.IsNotNull(queryMetrics.DocumentWriteTime.TotalMilliseconds);
-
-            Assert.IsNotNull(queryMetrics.RuntimeExecutionTimes.QueryEngineExecutionTime.TotalMilliseconds);
-            Assert.IsNotNull(queryMetrics.RuntimeExecutionTimes.SystemFunctionExecutionTime.TotalMilliseconds);
-            Assert.IsNotNull(queryMetrics.RuntimeExecutionTimes.UserDefinedFunctionExecutionTime.TotalMilliseconds);
-        }
-
-        /// <summary>
-        /// Ensures that there are no breaking changes to the public api
-        /// </summary>
-        [TestMethod]
-        [Owner("brchon")]
-        public void TestQueryMetricsAPI()
-        {
-            // Checking all public members
-            QueryMetrics queryMetrics = QueryMetrics.CreateFromDelimitedString(
-                delimitedString: "totalExecutionTimeInMs=33.67;queryCompileTimeInMs=0.06;queryLogicalPlanBuildTimeInMs=0.02;queryPhysicalPlanBuildTimeInMs=0.10;queryOptimizationTimeInMs=0.00;VMExecutionTimeInMs=32.56;indexLookupTimeInMs=0.36;documentLoadTimeInMs=9.58;systemFunctionExecuteTimeInMs=0.00;userFunctionExecuteTimeInMs=0.00;retrievedDocumentCount=2000;retrievedDocumentSize=1125600;outputDocumentCount=2000;outputDocumentSize=1125600;writeOutputTimeInMs=18.10;indexUtilizationRatio=1.00",
-                indexUtilization: "eyJVdGlsaXplZEluZGV4ZXMiOlt7IkZpbHRlckV4cHJlc3Npb24iOiIoUk9PVC5leWVDb2xvciA9IFwiYmx1ZVwiKSIsIkluZGV4U3BlYyI6IlwvZXllQ29sb3JcLz8iLCJGaWx0ZXJQcmVjaXNlU2V0Ijp0cnVlLCJJbmRleFByZWNpc2VTZXQiOnRydWV9LHsiRmlsdGVyRXhwcmVzc2lvbiI6IihST09ULmFnZSA9IDI3KSIsIkluZGV4U3BlYyI6IlwvYWdlXC8/IiwiRmlsdGVyUHJlY2lzZVNldCI6dHJ1ZSwiSW5kZXhQcmVjaXNlU2V0Ijp0cnVlfSx7IkZpbHRlckV4cHJlc3Npb24iOiIoUk9PVC5pZCA+IDApIiwiSW5kZXhTcGVjIjoiXC9pZFwvPyIsIkZpbHRlclByZWNpc2VTZXQiOnRydWUsIkluZGV4UHJlY2lzZVNldCI6dHJ1ZX0seyJGaWx0ZXJFeHByZXNzaW9uIjoiSXNEZWZpbmVkKFJPT1QuZmlyc3ROYW1lKSIsIkluZGV4U3BlYyI6IlwvZmlyc3ROYW1lXC8/IiwiRmlsdGVyUHJlY2lzZVNldCI6ZmFsc2UsIkluZGV4UHJlY2lzZVNldCI6dHJ1ZX0seyJGaWx0ZXJFeHByZXNzaW9uIjoiSXNEZWZpbmVkKFJPT1QubGFzdE5hbWUpIiwiSW5kZXhTcGVjIjoiXC9sYXN0TmFtZVwvPyIsIkZpbHRlclByZWNpc2VTZXQiOmZhbHNlLCJJbmRleFByZWNpc2VTZXQiOnRydWV9LHsiRmlsdGVyRXhwcmVzc2lvbiI6IihST09ULmdlbmRlciA9IFwiZmVtYWxlXCIpIiwiSW5kZXhTcGVjIjoiXC9nZW5kZXJcLz8iLCJGaWx0ZXJQcmVjaXNlU2V0Ijp0cnVlLCJJbmRleFByZWNpc2VTZXQiOnRydWV9LHsiRmlsdGVyRXhwcmVzc2lvbiI6IihST09ULnNhbGFyeSA+IDE4NjAwMCkiLCJJbmRleFNwZWMiOiJcL3NhbGFyeVwvPyIsIkZpbHRlclByZWNpc2VTZXQiOnRydWUsIkluZGV4UHJlY2lzZVNldCI6dHJ1ZX0seyJGaWx0ZXJFeHByZXNzaW9uIjoiKFJPT1QuY29tcGFueSA9IFwiRmFjZWJvb2tcIikiLCJJbmRleFNwZWMiOiJcL2NvbXBhbnlcLz8iLCJGaWx0ZXJQcmVjaXNlU2V0Ijp0cnVlLCJJbmRleFByZWNpc2VTZXQiOnRydWV9XSwiUG90ZW50aWFsSW5kZXhlcyI6W119");
-            this.AssertQueryMetricsPublicMembers(queryMetrics);
-
-            // Checking to see if you can serialize and deserialize using ToString and the constructor.
-            QueryMetrics queryMetrics2 = QueryMetrics.CreateFromDelimitedString(
-                delimitedString: queryMetrics.ToDelimitedString(),
-                indexUtilization: Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(Newtonsoft.Json.JsonConvert.SerializeObject(queryMetrics.IndexUtilizationInfo))));
-            this.AssertQueryMetricsPublicMembers(queryMetrics2);
-
-            this.AssertQueryMetricsEquality(queryMetrics, queryMetrics2);
-
-            // Empty IndexUtilization String test
-            QueryMetrics queryMetrics3 = QueryMetrics.CreateFromDelimitedString(
-                delimitedString: "totalExecutionTimeInMs=33.67;queryCompileTimeInMs=0.06;queryLogicalPlanBuildTimeInMs=0.02;queryPhysicalPlanBuildTimeInMs=0.10;queryOptimizationTimeInMs=0.00;VMExecutionTimeInMs=32.56;indexLookupTimeInMs=0.36;documentLoadTimeInMs=9.58;systemFunctionExecuteTimeInMs=0.00;userFunctionExecuteTimeInMs=0.00;retrievedDocumentCount=2000;retrievedDocumentSize=1125600;outputDocumentCount=2000;outputDocumentSize=1125600;writeOutputTimeInMs=18.10;indexUtilizationRatio=1.00",
-                indexUtilization: "");
-            this.AssertQueryMetricsPublicMembers(queryMetrics3);
-
-            // Checking to see if you can serialize and deserialize using ToString and the constructor.
-            QueryMetrics queryMetrics4 = QueryMetrics.CreateFromDelimitedString(
-                delimitedString: queryMetrics3.ToDelimitedString(),
-                indexUtilization: Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(Newtonsoft.Json.JsonConvert.SerializeObject(queryMetrics3.IndexUtilizationInfo))));
-            this.AssertQueryMetricsPublicMembers(queryMetrics4);
-
-            this.AssertQueryMetricsEquality(queryMetrics3, queryMetrics4);
-        }
-
-        /// <summary>
-        /// Ensures that QueryMetrics Serialization function is accesible.
-        /// </summary>
-        [TestMethod]
-        [Owner("brchon")]
-        public void TestQueryMetricsToStrings()
-        {
-            QueryMetrics queryMetrics = QueryMetrics.CreateFromDelimitedString(
-                delimitedString: "totalExecutionTimeInMs=33.67;queryCompileTimeInMs=0.06;queryLogicalPlanBuildTimeInMs=0.02;queryPhysicalPlanBuildTimeInMs=0.10;queryOptimizationTimeInMs=0.00;VMExecutionTimeInMs=32.56;indexLookupTimeInMs=0.36;documentLoadTimeInMs=9.58;systemFunctionExecuteTimeInMs=0.00;userFunctionExecuteTimeInMs=0.00;retrievedDocumentCount=2000;retrievedDocumentSize=1125600;outputDocumentCount=2000;outputDocumentSize=1125600;writeOutputTimeInMs=18.10;indexUtilizationRatio=1.00",
-                indexUtilization: "eyJVdGlsaXplZEluZGV4ZXMiOlt7IkZpbHRlckV4cHJlc3Npb24iOiIoUk9PVC5leWVDb2xvciA9IFwiYmx1ZVwiKSIsIkluZGV4U3BlYyI6IlwvZXllQ29sb3JcLz8iLCJGaWx0ZXJQcmVjaXNlU2V0Ijp0cnVlLCJJbmRleFByZWNpc2VTZXQiOnRydWV9LHsiRmlsdGVyRXhwcmVzc2lvbiI6IihST09ULmFnZSA9IDI3KSIsIkluZGV4U3BlYyI6IlwvYWdlXC8/IiwiRmlsdGVyUHJlY2lzZVNldCI6dHJ1ZSwiSW5kZXhQcmVjaXNlU2V0Ijp0cnVlfSx7IkZpbHRlckV4cHJlc3Npb24iOiIoUk9PVC5pZCA+IDApIiwiSW5kZXhTcGVjIjoiXC9pZFwvPyIsIkZpbHRlclByZWNpc2VTZXQiOnRydWUsIkluZGV4UHJlY2lzZVNldCI6dHJ1ZX0seyJGaWx0ZXJFeHByZXNzaW9uIjoiSXNEZWZpbmVkKFJPT1QuZmlyc3ROYW1lKSIsIkluZGV4U3BlYyI6IlwvZmlyc3ROYW1lXC8/IiwiRmlsdGVyUHJlY2lzZVNldCI6ZmFsc2UsIkluZGV4UHJlY2lzZVNldCI6dHJ1ZX0seyJGaWx0ZXJFeHByZXNzaW9uIjoiSXNEZWZpbmVkKFJPT1QubGFzdE5hbWUpIiwiSW5kZXhTcGVjIjoiXC9sYXN0TmFtZVwvPyIsIkZpbHRlclByZWNpc2VTZXQiOmZhbHNlLCJJbmRleFByZWNpc2VTZXQiOnRydWV9LHsiRmlsdGVyRXhwcmVzc2lvbiI6IihST09ULmdlbmRlciA9IFwiZmVtYWxlXCIpIiwiSW5kZXhTcGVjIjoiXC9nZW5kZXJcLz8iLCJGaWx0ZXJQcmVjaXNlU2V0Ijp0cnVlLCJJbmRleFByZWNpc2VTZXQiOnRydWV9LHsiRmlsdGVyRXhwcmVzc2lvbiI6IihST09ULnNhbGFyeSA+IDE4NjAwMCkiLCJJbmRleFNwZWMiOiJcL3NhbGFyeVwvPyIsIkZpbHRlclByZWNpc2VTZXQiOnRydWUsIkluZGV4UHJlY2lzZVNldCI6dHJ1ZX0seyJGaWx0ZXJFeHByZXNzaW9uIjoiKFJPT1QuY29tcGFueSA9IFwiRmFjZWJvb2tcIikiLCJJbmRleFNwZWMiOiJcL2NvbXBhbnlcLz8iLCJGaWx0ZXJQcmVjaXNlU2V0Ijp0cnVlLCJJbmRleFByZWNpc2VTZXQiOnRydWV9XSwiUG90ZW50aWFsSW5kZXhlcyI6W119");
-
-            string queryMetricsToTextString = queryMetrics.ToString();
-            Assert.IsFalse(string.IsNullOrWhiteSpace(queryMetricsToTextString));
-
-            string queryMetricsToDelimitedString = queryMetrics.ToDelimitedString();
-            Assert.IsFalse(string.IsNullOrWhiteSpace(queryMetricsToDelimitedString));
-        }
-
-        private void AssertQueryMetricsEquality(QueryMetrics m1, QueryMetrics m2)
-        {
-            Assert.AreEqual(m1.IndexHitRatio, m2.IndexHitRatio);
-            Assert.AreEqual(m1.OutputDocumentCount, m2.OutputDocumentCount);
-            Assert.AreEqual(m1.OutputDocumentSize, m2.OutputDocumentSize);
-            Assert.AreEqual(m1.RetrievedDocumentCount, m2.RetrievedDocumentCount);
-            Assert.AreEqual(m1.RetrievedDocumentSize, m2.RetrievedDocumentSize);
-            Assert.AreEqual(m1.TotalTime, m2.TotalTime);
-
-            Assert.AreEqual(m1.DocumentLoadTime, m2.DocumentLoadTime);
-            Assert.AreEqual(m1.DocumentWriteTime, m2.DocumentWriteTime);
-            Assert.AreEqual(m1.IndexLookupTime, m2.IndexLookupTime);
-            Assert.AreEqual(m1.VMExecutionTime, m2.VMExecutionTime);
-
-            Assert.AreEqual(m1.IndexUtilizationInfo.UtilizedIndexes.Count, m2.IndexUtilizationInfo.UtilizedIndexes.Count);
-            Assert.AreEqual(m1.IndexUtilizationInfo.PotentialIndexes.Count, m2.IndexUtilizationInfo.PotentialIndexes.Count);
-
-            for (int ind = 0; ind < m1.IndexUtilizationInfo.UtilizedIndexes.Count; ind++)
-            {
-                Assert.AreEqual(m1.IndexUtilizationInfo.UtilizedIndexes[ind].FilterExpression, m2.IndexUtilizationInfo.UtilizedIndexes[ind].FilterExpression);
-                Assert.AreEqual(m1.IndexUtilizationInfo.UtilizedIndexes[ind].IndexDocumentExpression, m2.IndexUtilizationInfo.UtilizedIndexes[ind].IndexDocumentExpression);
-                Assert.AreEqual(m1.IndexUtilizationInfo.UtilizedIndexes[ind].FilterExpressionPrecision, m2.IndexUtilizationInfo.UtilizedIndexes[ind].FilterExpressionPrecision);
-                Assert.AreEqual(m1.IndexUtilizationInfo.UtilizedIndexes[ind].IndexPlanFullFidelity, m2.IndexUtilizationInfo.UtilizedIndexes[ind].IndexPlanFullFidelity);
-            }
-
-            for (int ind = 0; ind < m1.IndexUtilizationInfo.PotentialIndexes.Count; ind++)
-            {
-                Assert.AreEqual(m1.IndexUtilizationInfo.PotentialIndexes[ind].FilterExpression, m2.IndexUtilizationInfo.PotentialIndexes[ind].FilterExpression);
-                Assert.AreEqual(m1.IndexUtilizationInfo.PotentialIndexes[ind].IndexDocumentExpression, m2.IndexUtilizationInfo.PotentialIndexes[ind].IndexDocumentExpression);
-                Assert.AreEqual(m1.IndexUtilizationInfo.PotentialIndexes[ind].FilterExpressionPrecision, m2.IndexUtilizationInfo.PotentialIndexes[ind].FilterExpressionPrecision);
-                Assert.AreEqual(m1.IndexUtilizationInfo.PotentialIndexes[ind].IndexPlanFullFidelity, m2.IndexUtilizationInfo.PotentialIndexes[ind].IndexPlanFullFidelity);
-            }
-
-            Assert.AreEqual(m1.QueryPreparationTimes.LogicalPlanBuildTime, m2.QueryPreparationTimes.LogicalPlanBuildTime);
-            Assert.AreEqual(m1.QueryPreparationTimes.PhysicalPlanBuildTime, m2.QueryPreparationTimes.PhysicalPlanBuildTime);
-            Assert.AreEqual(m1.QueryPreparationTimes.QueryCompilationTime, m2.QueryPreparationTimes.QueryCompilationTime);
-            Assert.AreEqual(m1.QueryPreparationTimes.QueryOptimizationTime, m2.QueryPreparationTimes.QueryOptimizationTime);
-
-            Assert.AreEqual(m1.RuntimeExecutionTimes.QueryEngineExecutionTime, m2.RuntimeExecutionTimes.QueryEngineExecutionTime);
-            Assert.AreEqual(m1.RuntimeExecutionTimes.SystemFunctionExecutionTime, m2.RuntimeExecutionTimes.SystemFunctionExecutionTime);
-            Assert.AreEqual(m1.RuntimeExecutionTimes.UserDefinedFunctionExecutionTime, m2.RuntimeExecutionTimes.UserDefinedFunctionExecutionTime);
-
-            Assert.AreEqual(m1.ClientSideMetrics.FetchExecutionRanges.Count(), m2.ClientSideMetrics.FetchExecutionRanges.Count());
-            Assert.AreEqual(m1.ClientSideMetrics.RequestCharge, m2.ClientSideMetrics.RequestCharge);
-            Assert.AreEqual(m1.ClientSideMetrics.Retries, m2.ClientSideMetrics.Retries);
-        }
-
-        /// <summary>
-        /// Ensures that QueryMetrics Serialization function is accesible.
-        /// </summary>
-        [TestMethod]
-        [Owner("brchon")]
-        public void TestQueryMetricsCreateAPI()
-        {
-            TimeSpan totalExecutionTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 33.67));
-            TimeSpan queryCompileTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 0.06));
-            TimeSpan logicalPlanBuildTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 0.02));
-            TimeSpan queryPhysicalPlanBuildTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 0.10));
-            TimeSpan queryOptimizationTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 0.01));
-            TimeSpan vmExecutionTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 32.56));
-            TimeSpan indexLookupTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 0.36));
-            TimeSpan documentLoadTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 9.58));
-            TimeSpan systemFunctionExecuteTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 0.05));
-            TimeSpan userFunctionExecuteTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 0.07));
-            TimeSpan documentWriteTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 18.10));
-            long retrievedDocumentCount = 2000;
-            long retrievedDocumentSize = 1125600;
-            long outputDocumentCount = 2000;
-            long outputDocumentSize = 1125600;
-            double indexUtilizationRatio = 1.00;
-
-            double requestCharge = 42;
-            long retries = 5;
-
-            Guid guid = Guid.NewGuid();
-            List<FetchExecutionRange> fetchExecutionRanges = new List<FetchExecutionRange>
-            {
-                new FetchExecutionRange(null, guid.ToString(), new DateTime(), new DateTime(), 5, 5)
-            };
-
-            QueryMetrics queryMetrics = QueryMetrics.CreateFromDelimitedStringAndClientSideMetrics(
-                delimitedString: "totalExecutionTimeInMs=33.67;queryCompileTimeInMs=0.06;queryLogicalPlanBuildTimeInMs=0.02;queryPhysicalPlanBuildTimeInMs=0.10;queryOptimizationTimeInMs=0.01;VMExecutionTimeInMs=32.56;indexLookupTimeInMs=0.36;documentLoadTimeInMs=9.58;systemFunctionExecuteTimeInMs=0.05;userFunctionExecuteTimeInMs=0.07;retrievedDocumentCount=2000;retrievedDocumentSize=1125600;outputDocumentCount=2000;outputDocumentSize=1125600;writeOutputTimeInMs=18.10;indexUtilizationRatio=1.00",
-                indexUtilization: "eyJVdGlsaXplZEluZGV4ZXMiOlt7IkZpbHRlckV4cHJlc3Npb24iOiIoUk9PVC5leWVDb2xvciA9IFwiYmx1ZVwiKSIsIkluZGV4U3BlYyI6IlwvZXllQ29sb3JcLz8iLCJGaWx0ZXJQcmVjaXNlU2V0Ijp0cnVlLCJJbmRleFByZWNpc2VTZXQiOnRydWV9LHsiRmlsdGVyRXhwcmVzc2lvbiI6IihST09ULmFnZSA9IDI3KSIsIkluZGV4U3BlYyI6IlwvYWdlXC8/IiwiRmlsdGVyUHJlY2lzZVNldCI6dHJ1ZSwiSW5kZXhQcmVjaXNlU2V0Ijp0cnVlfSx7IkZpbHRlckV4cHJlc3Npb24iOiIoUk9PVC5pZCA+IDApIiwiSW5kZXhTcGVjIjoiXC9pZFwvPyIsIkZpbHRlclByZWNpc2VTZXQiOnRydWUsIkluZGV4UHJlY2lzZVNldCI6dHJ1ZX0seyJGaWx0ZXJFeHByZXNzaW9uIjoiSXNEZWZpbmVkKFJPT1QuZmlyc3ROYW1lKSIsIkluZGV4U3BlYyI6IlwvZmlyc3ROYW1lXC8/IiwiRmlsdGVyUHJlY2lzZVNldCI6ZmFsc2UsIkluZGV4UHJlY2lzZVNldCI6dHJ1ZX0seyJGaWx0ZXJFeHByZXNzaW9uIjoiSXNEZWZpbmVkKFJPT1QubGFzdE5hbWUpIiwiSW5kZXhTcGVjIjoiXC9sYXN0TmFtZVwvPyIsIkZpbHRlclByZWNpc2VTZXQiOmZhbHNlLCJJbmRleFByZWNpc2VTZXQiOnRydWV9LHsiRmlsdGVyRXhwcmVzc2lvbiI6IihST09ULmdlbmRlciA9IFwiZmVtYWxlXCIpIiwiSW5kZXhTcGVjIjoiXC9nZW5kZXJcLz8iLCJGaWx0ZXJQcmVjaXNlU2V0Ijp0cnVlLCJJbmRleFByZWNpc2VTZXQiOnRydWV9LHsiRmlsdGVyRXhwcmVzc2lvbiI6IihST09ULnNhbGFyeSA+IDE4NjAwMCkiLCJJbmRleFNwZWMiOiJcL3NhbGFyeVwvPyIsIkZpbHRlclByZWNpc2VTZXQiOnRydWUsIkluZGV4UHJlY2lzZVNldCI6dHJ1ZX0seyJGaWx0ZXJFeHByZXNzaW9uIjoiKFJPT1QuY29tcGFueSA9IFwiRmFjZWJvb2tcIikiLCJJbmRleFNwZWMiOiJcL2NvbXBhbnlcLz8iLCJGaWx0ZXJQcmVjaXNlU2V0Ijp0cnVlLCJJbmRleFByZWNpc2VTZXQiOnRydWV9XSwiUG90ZW50aWFsSW5kZXhlcyI6W119",
-                clientSideMetrics: new ClientSideMetrics(retries, requestCharge, fetchExecutionRanges));
-
-            QueryMetrics queryMetrics2 = QueryMetrics.CreateFromDelimitedStringAndClientSideMetrics(
-                delimitedString: queryMetrics.ToDelimitedString(),
-                indexUtilization: Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(Newtonsoft.Json.JsonConvert.SerializeObject(queryMetrics.IndexUtilizationInfo))),
-                clientSideMetrics: queryMetrics.ClientSideMetrics);
-            this.AssertQueryMetricsEquality(queryMetrics, queryMetrics2);
-
-            // Test for QueryMetrics create from IEnumerable
-            QueryMetrics queryMetricsFromIEnumberable = QueryMetrics.CreateFromIEnumerable(new List<QueryMetrics> { queryMetrics, queryMetrics });
-            QueryMetrics queryMetricsFromAddition = queryMetrics + queryMetrics2;
-
-            this.AssertQueryMetricsEquality(queryMetricsFromIEnumberable, queryMetricsFromAddition);
-
-            Assert.AreEqual(queryMetricsFromAddition.IndexHitRatio, indexUtilizationRatio);
-            Assert.AreEqual(queryMetricsFromAddition.OutputDocumentCount, outputDocumentCount * 2);
-            Assert.AreEqual(queryMetricsFromAddition.OutputDocumentSize, outputDocumentSize * 2);
-            Assert.AreEqual(queryMetricsFromAddition.RetrievedDocumentCount, retrievedDocumentCount * 2);
-            Assert.AreEqual(queryMetricsFromAddition.RetrievedDocumentSize, retrievedDocumentSize * 2);
-            Assert.AreEqual(queryMetricsFromAddition.TotalTime, totalExecutionTime + totalExecutionTime);
-
-            Assert.AreEqual(queryMetricsFromAddition.DocumentLoadTime, documentLoadTime + documentLoadTime);
-            Assert.AreEqual(queryMetricsFromAddition.DocumentWriteTime, documentWriteTime + documentWriteTime);
-            Assert.AreEqual(queryMetricsFromAddition.IndexLookupTime, indexLookupTime + indexLookupTime);
-            Assert.AreEqual(queryMetricsFromAddition.VMExecutionTime, vmExecutionTime + vmExecutionTime);
-
-            Assert.AreEqual(queryMetricsFromAddition.QueryPreparationTimes.LogicalPlanBuildTime, logicalPlanBuildTime + logicalPlanBuildTime);
-            Assert.AreEqual(queryMetricsFromAddition.QueryPreparationTimes.PhysicalPlanBuildTime, queryPhysicalPlanBuildTime + queryPhysicalPlanBuildTime);
-            Assert.AreEqual(queryMetricsFromAddition.QueryPreparationTimes.QueryCompilationTime, queryCompileTime + queryCompileTime);
-            Assert.AreEqual(queryMetricsFromAddition.QueryPreparationTimes.QueryOptimizationTime, queryOptimizationTime + queryOptimizationTime);
-
-            //Assert.AreEqual(queryMetricsFromAddition.RuntimeExecutionTimes.QueryEngineExecutionTime, RuntimeExecutionTimes.QueryEngineExecutionTime);
-            Assert.AreEqual(queryMetricsFromAddition.RuntimeExecutionTimes.SystemFunctionExecutionTime, systemFunctionExecuteTime + systemFunctionExecuteTime);
-            Assert.AreEqual(queryMetricsFromAddition.RuntimeExecutionTimes.UserDefinedFunctionExecutionTime, userFunctionExecuteTime + userFunctionExecuteTime);
-
-            Assert.AreEqual(queryMetricsFromAddition.ClientSideMetrics.FetchExecutionRanges.Count(), 2 * fetchExecutionRanges.Count());
-            Assert.AreEqual(queryMetricsFromAddition.ClientSideMetrics.RequestCharge, requestCharge * 2);
-            Assert.AreEqual(queryMetricsFromAddition.ClientSideMetrics.Retries, retries * 2);
-            Assert.AreEqual(queryMetricsFromAddition.ClientSideMetrics.FetchExecutionRanges.ToList()[0].ActivityId, guid.ToString());
-            Assert.AreEqual(queryMetricsFromAddition.ClientSideMetrics.FetchExecutionRanges.ToList()[1].ActivityId, guid.ToString());
-        }
-
         //Query metrics are not on by default anymore, but turned on hin Feed options. This to be quarantined until a recent FI from master to direct and sdk is completed
         [Ignore] // Need to use v3 pipeline
         [TestMethod]
@@ -2065,11 +1862,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             QueryMetrics queryMetrics = QueryMetrics.CreateFromIEnumerable(feedResonse.QueryMetrics.Values);
 
-            Assert.IsTrue(queryMetrics.RetrievedDocumentCount > 0);
-            Assert.IsTrue(queryMetrics.RetrievedDocumentSize > 0);
-            Assert.IsTrue(queryMetrics.OutputDocumentCount > 0);
-            Assert.IsTrue(queryMetrics.OutputDocumentSize > 0);
-            Assert.IsTrue(queryMetrics.IndexHitRatio > 0);
+            Assert.IsTrue(queryMetrics.BackendMetrics.RetrievedDocumentCount > 0);
+            Assert.IsTrue(queryMetrics.BackendMetrics.RetrievedDocumentSize > 0);
+            Assert.IsTrue(queryMetrics.BackendMetrics.OutputDocumentCount > 0);
+            Assert.IsTrue(queryMetrics.BackendMetrics.OutputDocumentSize > 0);
+            Assert.IsTrue(queryMetrics.BackendMetrics.IndexHitRatio > 0);
 
             await client.DeleteDatabaseAsync(database);
         }
@@ -2155,7 +1952,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     query,
                     feedOptions).AsDocumentQuery().ExecuteNextAsync().Result;
             queryMetrics = result.QueryMetrics.Values.Aggregate((curr, acc) => curr + acc);
-            Assert.AreEqual(TimeSpan.Zero, queryMetrics.IndexLookupTime);
+            Assert.AreEqual(TimeSpan.Zero, queryMetrics.BackendMetrics.IndexLookupTime);
 
             // Without ForceQueryScan
             feedOptions = new FeedOptions()
@@ -2171,7 +1968,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     query,
                     feedOptions).AsDocumentQuery().ExecuteNextAsync().Result;
             queryMetrics = result.QueryMetrics.Values.Aggregate((curr, acc) => curr + acc);
-            Assert.AreNotEqual(TimeSpan.Zero, queryMetrics.IndexLookupTime);
+            Assert.AreNotEqual(TimeSpan.Zero, queryMetrics.BackendMetrics.IndexLookupTime);
         }
 
         [Ignore] // Need to use v3 pipeline
@@ -2547,7 +2344,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             string responseQueryMetrics = response.ResponseHeaders[WFConstants.BackendHeaders.QueryMetrics];
                             string indexUtilization = response.ResponseHeaders[WFConstants.BackendHeaders.IndexUtilization];
 
-                            this.ValidateQueryMetrics(QueryMetrics.CreateFromDelimitedString(responseQueryMetrics, indexUtilization));
+                            QueryMetrics queryMetrics = new QueryMetrics(
+                                BackendMetrics.ParseFromDelimitedString(responseQueryMetrics),
+                                IndexUtilizationInfo.CreateFromString(indexUtilization),
+                                ClientSideMetrics.Empty);
+                            this.ValidateQueryMetrics(queryMetrics);
 
                             foreach (KeyValuePair<string, QueryMetrics> pair in response.QueryMetrics)
                             {
@@ -2568,19 +2369,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(0, metrics.ClientSideMetrics.Retries);
             //We are not checking VMExecutionTime, since that is not a public property
             //Assert.IsTrue(metrics.QueryEngineTimes.VMExecutionTime.TotalMilliseconds > 0, "Expected VMExecutionTimeInMs to be > 0, metrics = {0}", metrics);
-            Assert.IsTrue(metrics.QueryPreparationTimes.QueryCompilationTime.TotalMilliseconds > 0, "Expected CompileTimeInMs to be > 0, metrics = {0}", metrics);
+            Assert.IsTrue(metrics.BackendMetrics.QueryPreparationTimes.QueryCompilationTime.TotalMilliseconds > 0, "Expected CompileTimeInMs to be > 0, metrics = {0}", metrics);
             //We are not checking DocumentLoadTime and RetrievedDocumentCount, since some queries don't return any documents (especially in the last continuation).
             //Assert.IsTrue(metrics.QueryEngineTimes.DocumentLoadTime.TotalMilliseconds > 0, "Expected DocumentLoadTimeInMs to be > 0, metrics = {0}", metrics);
             //Assert.IsTrue(metrics.RetrievedDocumentCount > 0, "Expected RetrievedDocumentCount to be > 0, metrics = {0}", metrics);
-            Assert.IsTrue(metrics.TotalTime.TotalMilliseconds > 0, "Expected TotalExecutionTimeInMs to be > 0, metrics = {0}", metrics);
+            Assert.IsTrue(metrics.BackendMetrics.TotalTime.TotalMilliseconds > 0, "Expected TotalExecutionTimeInMs to be > 0, metrics = {0}", metrics);
             //Assert.IsTrue(metrics.QueryEngineTimes.WriteOutputTime.TotalMilliseconds > 0, "Expected WriteOutputTimeInMs to be > 0, metrics = {0}", metrics);
             //Assert.IsTrue(metrics.RetrievedDocumentSize > 0, "Expected RetrievedDocumentSize to be > 0, metrics = {0}", metrics);
-            Assert.IsTrue(metrics.IndexLookupTime.TotalMilliseconds > 0, "Expected IndexLookupTimeInMs to be > 0, metrics = {0}", metrics);
-            Assert.IsTrue(metrics.QueryPreparationTimes.LogicalPlanBuildTime.TotalMilliseconds > 0, "Expected LogicalPlanBuildTimeInMs to be > 0, metrics = {0}", metrics);
+            Assert.IsTrue(metrics.BackendMetrics.IndexLookupTime.TotalMilliseconds > 0, "Expected IndexLookupTimeInMs to be > 0, metrics = {0}", metrics);
+            Assert.IsTrue(metrics.BackendMetrics.QueryPreparationTimes.LogicalPlanBuildTime.TotalMilliseconds > 0, "Expected LogicalPlanBuildTimeInMs to be > 0, metrics = {0}", metrics);
             //Assert.AreEqual(metrics.QueryEngineTimes.VMExecutionTime - metrics.QueryEngineTimes.IndexLookupTime - metrics.QueryEngineTimes.DocumentLoadTime - metrics.QueryEngineTimes.WriteOutputTime,
             //    metrics.QueryEngineTimes.RuntimeExecutionTimes.TotalTime);
-            Assert.IsTrue(metrics.RuntimeExecutionTimes.QueryEngineExecutionTime >= metrics.RuntimeExecutionTimes.SystemFunctionExecutionTime + metrics.RuntimeExecutionTimes.UserDefinedFunctionExecutionTime,
-                "Expected Query VM Execution Time to be > {0}, metrics = {1}", metrics.RuntimeExecutionTimes.SystemFunctionExecutionTime + metrics.RuntimeExecutionTimes.UserDefinedFunctionExecutionTime, metrics);
+            Assert.IsTrue(metrics.BackendMetrics.RuntimeExecutionTimes.QueryEngineExecutionTime >= metrics.BackendMetrics.RuntimeExecutionTimes.SystemFunctionExecutionTime + metrics.BackendMetrics.RuntimeExecutionTimes.UserDefinedFunctionExecutionTime,
+                "Expected Query VM Execution Time to be > {0}, metrics = {1}", metrics.BackendMetrics.RuntimeExecutionTimes.SystemFunctionExecutionTime + metrics.BackendMetrics.RuntimeExecutionTimes.UserDefinedFunctionExecutionTime, metrics);
             //Assert.IsTrue(metrics.QueryEngineTimes.VMExecutionTime >= metrics.QueryEngineTimes.RuntimeExecutionTimes.TotalTime,
             //    "Expected Query VM Execution Time to be > {0}, metrics = {1}", metrics.QueryEngineTimes.RuntimeExecutionTimes.TotalTime, metrics);
         }

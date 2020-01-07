@@ -5,14 +5,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 {
     using System;
     using System.Collections.Generic;
-    using Newtonsoft.Json;
 
     /// <summary>
     /// Query preparation metrics in the Azure DocumentDB database service.
     /// </summary>
     internal sealed class QueryPreparationTimes
     {
-        internal static readonly QueryPreparationTimes Zero = new QueryPreparationTimes(
+        public static readonly QueryPreparationTimes Zero = new QueryPreparationTimes(
             queryCompilationTime: default,
             logicalPlanBuildTime: default,
             physicalPlanBuildTime: default,
@@ -25,8 +24,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// <param name="logicalPlanBuildTime">Query logical plan build time</param>
         /// <param name="physicalPlanBuildTime">Query physical plan build time</param>
         /// <param name="queryOptimizationTime">Query optimization time</param>
-        [JsonConstructor]
-        internal QueryPreparationTimes(
+        public QueryPreparationTimes(
             TimeSpan queryCompilationTime,
             TimeSpan logicalPlanBuildTime,
             TimeSpan physicalPlanBuildTime,
@@ -58,57 +56,43 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// </summary>
         public TimeSpan QueryOptimizationTime { get; }
 
-        /// <summary>
-        /// Creates a new QueryPreparationTimes from the backend delimited string.
-        /// </summary>
-        /// <param name="delimitedString">The backend delimited string to deserialize from.</param>
-        /// <returns>A new QueryPreparationTimes from the backend delimited string.</returns>
-        internal static QueryPreparationTimes CreateFromDelimitedString(string delimitedString)
+        public ref struct Accumulator
         {
-            Dictionary<string, double> metrics = QueryMetricsUtils.ParseDelimitedString(delimitedString);
-
-            return new QueryPreparationTimes(
-                QueryMetricsUtils.TimeSpanFromMetrics(metrics, QueryMetricsConstants.QueryCompileTimeInMs),
-                QueryMetricsUtils.TimeSpanFromMetrics(metrics, QueryMetricsConstants.LogicalPlanBuildTimeInMs),
-                QueryMetricsUtils.TimeSpanFromMetrics(metrics, QueryMetricsConstants.PhysicalPlanBuildTimeInMs),
-                QueryMetricsUtils.TimeSpanFromMetrics(metrics, QueryMetricsConstants.QueryOptimizationTimeInMs));
-        }
-
-        /// <summary>
-        /// Creates a new QueryPreparationTimes that is the sum of all elements in an IEnumerable.
-        /// </summary>
-        /// <param name="queryPreparationTimesList">The IEnumerable to aggregate.</param>
-        /// <returns>A new QueryPreparationTimes that is the sum of all elements in an IEnumerable.</returns>
-        internal static QueryPreparationTimes CreateFromIEnumerable(IEnumerable<QueryPreparationTimes> queryPreparationTimesList)
-        {
-            if (queryPreparationTimesList == null)
+            public Accumulator(TimeSpan queryCompliationTime, TimeSpan logicalPlanBuildTime, TimeSpan physicalPlanBuildTime, TimeSpan queryOptimizationTime)
             {
-                throw new ArgumentNullException("queryPreparationTimesList");
+                this.QueryCompilationTime = queryCompliationTime;
+                this.LogicalPlanBuildTime = logicalPlanBuildTime;
+                this.PhysicalPlanBuildTime = physicalPlanBuildTime;
+                this.QueryOptimizationTime = queryOptimizationTime;
             }
 
-            TimeSpan queryCompilationTime = new TimeSpan();
-            TimeSpan logicalPlanBuildTime = new TimeSpan();
-            TimeSpan physicalPlanBuildTime = new TimeSpan();
-            TimeSpan queryOptimizationTime = new TimeSpan();
+            public TimeSpan QueryCompilationTime { get; }
+            public TimeSpan LogicalPlanBuildTime { get; }
+            public TimeSpan PhysicalPlanBuildTime { get; }
+            public TimeSpan QueryOptimizationTime { get; }
 
-            foreach (QueryPreparationTimes queryPreparationTimes in queryPreparationTimesList)
+            public Accumulator Accumulate(QueryPreparationTimes queryPreparationTimes)
             {
                 if (queryPreparationTimes == null)
                 {
-                    throw new ArgumentException("queryPreparationTimesList can not have a null element");
+                    throw new ArgumentNullException(nameof(queryPreparationTimes));
                 }
 
-                queryCompilationTime += queryPreparationTimes.QueryCompilationTime;
-                logicalPlanBuildTime += queryPreparationTimes.LogicalPlanBuildTime;
-                physicalPlanBuildTime += queryPreparationTimes.PhysicalPlanBuildTime;
-                queryOptimizationTime += queryPreparationTimes.QueryOptimizationTime;
+                return new Accumulator(
+                    queryCompliationTime: this.QueryCompilationTime + queryPreparationTimes.QueryCompilationTime,
+                    logicalPlanBuildTime: this.LogicalPlanBuildTime + queryPreparationTimes.LogicalPlanBuildTime,
+                    physicalPlanBuildTime: this.PhysicalPlanBuildTime + queryPreparationTimes.PhysicalPlanBuildTime,
+                    queryOptimizationTime: this.QueryOptimizationTime + queryPreparationTimes.QueryOptimizationTime);
             }
 
-            return new QueryPreparationTimes(
-                queryCompilationTime,
-                logicalPlanBuildTime,
-                physicalPlanBuildTime,
-                queryOptimizationTime);
+            public static QueryPreparationTimes ToQueryPreparationTimes(QueryPreparationTimes.Accumulator accumulator)
+            {
+                return new QueryPreparationTimes(
+                    queryCompilationTime: accumulator.QueryCompilationTime,
+                    logicalPlanBuildTime: accumulator.LogicalPlanBuildTime,
+                    physicalPlanBuildTime: accumulator.PhysicalPlanBuildTime,
+                    queryOptimizationTime: accumulator.QueryOptimizationTime);
+            }
         }
     }
 }
