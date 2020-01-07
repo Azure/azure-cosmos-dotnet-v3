@@ -784,44 +784,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public void TestContinuationTokenSerialization()
-        {
-            CompositeContinuationToken[] tokens = JsonConvert.DeserializeObject<CompositeContinuationToken[]>("[{\"token\":null,\"range\":{\"min\":\"05C1C9CD673398\",\"max\":\"05C1D9CD673398\"}}]");
-            CompositeContinuationToken compositeContinuationToken = new CompositeContinuationToken()
-            {
-                Token = "asdf",
-                Range = new Range<string>("asdf", "asdf", false, false),
-            };
-
-            string serializedCompositeContinuationToken = JsonConvert.SerializeObject(compositeContinuationToken);
-            CompositeContinuationToken deserializedCompositeContinuationToken = JsonConvert.DeserializeObject<CompositeContinuationToken>(serializedCompositeContinuationToken);
-            Assert.AreEqual(compositeContinuationToken.Token, deserializedCompositeContinuationToken.Token);
-            //Assert.IsTrue(compositeContinuationToken.Range.Equals(deserializedCompositeContinuationToken.Range));
-
-
-            string orderByItemSerialized = @"{""item"" : 1337 }";
-            byte[] bytes = Encoding.UTF8.GetBytes(orderByItemSerialized);
-            OrderByItem orderByItem = new OrderByItem(CosmosElement.CreateFromBuffer(bytes));
-            OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
-                compositeContinuationToken,
-                new List<OrderByItem> { orderByItem },
-                "asdf",
-                42,
-                "asdf");
-            string serializedOrderByContinuationToken = JsonConvert.SerializeObject(orderByContinuationToken);
-            OrderByContinuationToken deserializedOrderByContinuationToken = JsonConvert.DeserializeObject<OrderByContinuationToken>(serializedOrderByContinuationToken);
-            Assert.AreEqual(
-                orderByContinuationToken.CompositeContinuationToken.Token,
-                deserializedOrderByContinuationToken.CompositeContinuationToken.Token);
-            //Assert.IsTrue(
-            //    orderByContinuationToken.CompositeContinuationToken.Range.Equals(
-            //    deserializedOrderByContinuationToken.CompositeContinuationToken.Range));
-            Assert.IsTrue(CosmosElementEqualityComparer.Value.Equals(orderByContinuationToken.OrderByItems[0].Item, deserializedOrderByContinuationToken.OrderByItems[0].Item));
-            Assert.AreEqual(orderByContinuationToken.Rid, deserializedOrderByContinuationToken.Rid);
-            Assert.AreEqual(orderByContinuationToken.SkipCount, deserializedOrderByContinuationToken.SkipCount);
-        }
-
-        [TestMethod]
         public async Task TestBadQueriesOverMultiplePartitions()
         {
             await this.CreateIngestQueryDelete(

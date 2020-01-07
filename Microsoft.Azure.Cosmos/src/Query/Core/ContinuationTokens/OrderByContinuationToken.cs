@@ -204,32 +204,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
             get;
         }
 
-        /// <summary>
-        /// Tries to parse out the TopContinuationToken.
-        /// </summary>
-        /// <param name="value">The value to parse from.</param>
-        /// <param name="orderByContinuationToken">The result of parsing out the token.</param>
-        /// <returns>Whether or not the TopContinuationToken was successfully parsed out.</returns>
-        public static bool TryParse(string value, out OrderByContinuationToken orderByContinuationToken)
-        {
-            orderByContinuationToken = default;
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                return false;
-            }
-
-            try
-            {
-                orderByContinuationToken = JsonConvert.DeserializeObject<OrderByContinuationToken>(value);
-                return true;
-            }
-            catch (JsonException ex)
-            {
-                DefaultTrace.TraceWarning($"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)} Invalid continuation token {value} for Top~Component, exception: {ex.Message}");
-                return false;
-            }
-        }
-
         public static CosmosElement ToCosmosElement(OrderByContinuationToken orderByContinuationToken)
         {
             CosmosElement compositeContinuationToken = CompositeContinuationToken.ToCosmosElement(orderByContinuationToken.CompositeContinuationToken);
