@@ -12,8 +12,21 @@ Container container = await database.CreateContainerIfNotExistsAsync(
     "/partitionKeyPath",
     400);
 
-dynamic testItem = new { id = "MyTestItemId", partitionKeyPath = "MyTestPkValue", details = "it's working" };
+// Create an item
+dynamic testItem = new { id = "MyTestItemId", partitionKeyPath = "MyTestPkValue", details = "it's working", status = "done" };
 ItemResponse<dynamic> response = await container.CreateItemAsync(testItem);
+
+// Query for an item
+FeedIterator<dynamic> feedIterator = await container.GetItemQueryIterator<dynamic>(
+    "select * from T where T.status = 'done'");
+while (feedIterator.HasMoreResults)
+{
+    FeedResponse<dynamic> response = await feedIterator.ReadNextAsync();
+    foreach (var item in response)
+    {
+        Console.WriteLine(item);
+    }
+}
 ```
 
 ## Install via [Nuget.org](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/)
