@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ServerBatchRequest batchRequest = await SinglePartitionKeyServerBatchRequest.CreateAsync(
                 new Cosmos.PartitionKey(partitionKey1),
                 new ArraySegment<ItemBatchOperation>(operations),
-                serializer: new CosmosJsonDotNetSerializer(),
+                serializerCore: MockCosmosUtil.Serializer,
                 cancellationToken: CancellationToken.None);
 
             Assert.AreEqual(2, batchRequest.Operations.Count);
@@ -90,12 +90,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                         new ItemBatchOperation(OperationType.Read, operationIndex: 0, id: "someId"),
                         new ItemBatchOperation(OperationType.Read, operationIndex: 0, id: "someId")
                     }),
-                serializer: serializer,
+                serializerCore: MockCosmosUtil.Serializer,
                 cancellationToken: CancellationToken.None);
             TransactionalBatchResponse batchResponse = await TransactionalBatchResponse.FromResponseMessageAsync(
                 new ResponseMessage((HttpStatusCode)StatusCodes.MultiStatus) { Content = responseContent },
                 batchRequest,
-                serializer);
+                MockCosmosUtil.Serializer);
 
             Assert.IsNotNull(batchRequest);
             Assert.AreEqual(HttpStatusCode.Conflict, batchResponse.StatusCode);

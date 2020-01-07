@@ -12,6 +12,24 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Spatial index specification
     /// </summary>
+    /// <example>
+    /// <![CDATA[
+    ///     "spatialIndexes":
+    ///     [
+    ///         {  
+    ///             "path":"/'region'/?",
+    ///             "types":["Polygon"],
+    ///             "boundingBox": 
+    ///                 {
+    ///                    "xmin":0, 
+    ///                    "ymin":0,
+    ///                    "xmax":10, 
+    ///                    "ymax":10
+    ///                 }
+    ///        }
+    ///   ]
+    /// ]]>
+    /// </example>
     public sealed class SpatialPath
     {
         private Collection<SpatialType> spatialTypesInternal;
@@ -45,6 +63,15 @@ namespace Microsoft.Azure.Cosmos
 
                 this.spatialTypesInternal = value;
             }
+        }
+
+        /// <summary>
+        /// Gets or sets the bounding box
+        /// </summary>
+        [JsonProperty(PropertyName = "boundingBox", NullValueHandling = NullValueHandling.Ignore)]
+        public BoundingBoxProperties BoundingBox
+        {
+            get; set;
         }
     }
 }

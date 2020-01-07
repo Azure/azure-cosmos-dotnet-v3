@@ -60,6 +60,10 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = Constants.Properties.IndexingPolicy, NullValueHandling = NullValueHandling.Ignore)]
         private IndexingPolicy indexingPolicyInternal;
 
+        // TODO: update spatial properties to Constants.Properties.* after the new direct package is released
+        [JsonProperty(PropertyName = "geospatialConfig", NullValueHandling = NullValueHandling.Ignore)]
+        private GeospatialConfig geospatialConfigInternal;
+
         [JsonProperty(PropertyName = Constants.Properties.UniqueKeyPolicy, NullValueHandling = NullValueHandling.Ignore)]
         private UniqueKeyPolicy uniqueKeyPolicyInternal;
 
@@ -240,6 +244,29 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        /// <summary>
+        /// Gets the <see cref="GeospatialConfig"/> associated with the collection from the Azure Cosmos DB service. 
+        /// </summary>
+        /// <value>
+        /// Geospatial type of collection i.e. geography or geometry 
+        /// </value>
+        [JsonIgnore]
+        public GeospatialConfig GeospatialConfig
+        {
+            get
+            {
+                if (this.geospatialConfigInternal == null)
+                {
+                    this.geospatialConfigInternal = new GeospatialConfig();
+                }
+
+                return this.geospatialConfigInternal;
+            }
+            set
+            {
+                this.geospatialConfigInternal = value;
+            }
+        }
         /// <summary>
         /// JSON path used for containers partitioning
         /// </summary>

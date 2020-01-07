@@ -210,7 +210,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             FeedIteratorInternal streamIterator = this.CreateStreamIterator(isContinuationExcpected);
             return new FeedIteratorCore<T>(
                 streamIterator,
-                this.responseFactory.CreateQueryFeedResponse<T>);
+                this.responseFactory.CreateQueryFeedUserTypeResponse<T>);
         }
     }
 }

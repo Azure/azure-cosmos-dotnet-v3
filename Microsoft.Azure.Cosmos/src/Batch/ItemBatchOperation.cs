@@ -287,9 +287,9 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Materializes the operation's resource into a Memory{byte} wrapping a byte array.
         /// </summary>
-        /// <param name="serializer">Serializer to serialize user provided objects to JSON.</param>
+        /// <param name="serializerCore">Serializer to serialize user provided objects to JSON.</param>
         /// <param name="cancellationToken"><see cref="CancellationToken"/> for cancellation.</param>
-        internal virtual async Task MaterializeResourceAsync(CosmosSerializer serializer, CancellationToken cancellationToken)
+        internal virtual async Task MaterializeResourceAsync(CosmosSerializerCore serializerCore, CancellationToken cancellationToken)
         {
             if (this.body.IsEmpty && this.ResourceStream != null)
             {
@@ -361,14 +361,14 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Materializes the operation's resource into a Memory{byte} wrapping a byte array.
         /// </summary>
-        /// <param name="serializer">Serializer to serialize user provided objects to JSON.</param>
+        /// <param name="serializerCore">Serializer to serialize user provided objects to JSON.</param>
         /// <param name="cancellationToken"><see cref="CancellationToken"/> for cancellation.</param>
-        internal override Task MaterializeResourceAsync(CosmosSerializer serializer, CancellationToken cancellationToken)
+        internal override Task MaterializeResourceAsync(CosmosSerializerCore serializerCore, CancellationToken cancellationToken)
         {
             if (this.body.IsEmpty && this.Resource != null)
             {
-                this.ResourceStream = serializer.ToStream(this.Resource);
-                return base.MaterializeResourceAsync(serializer, cancellationToken);
+                this.ResourceStream = serializerCore.ToStream(this.Resource);
+                return base.MaterializeResourceAsync(serializerCore, cancellationToken);
             }
 
             return Task.FromResult(true);

@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Client.Core.Tests;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;

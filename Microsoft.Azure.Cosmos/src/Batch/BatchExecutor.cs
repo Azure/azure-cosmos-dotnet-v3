@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos
             SinglePartitionKeyServerBatchRequest serverRequest = await SinglePartitionKeyServerBatchRequest.CreateAsync(
                       serverRequestPartitionKey,
                       new ArraySegment<ItemBatchOperation>(this.inputOperations.ToArray()),
-                      this.clientContext.CosmosSerializer,
+                      this.clientContext.SerializerCore,
                       cancellationToken);
 
             return await this.ExecuteServerRequestAsync(serverRequest, cancellationToken);
@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos
                 return await TransactionalBatchResponse.FromResponseMessageAsync(
                     responseMessage,
                     serverRequest,
-                    this.clientContext.CosmosSerializer);
+                    this.clientContext.SerializerCore);
             }
         }
     }

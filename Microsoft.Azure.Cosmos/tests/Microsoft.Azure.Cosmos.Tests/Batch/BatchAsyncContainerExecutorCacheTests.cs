@@ -25,9 +25,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosClientContext context = new ClientContextCore(
                 client: mockClient.Object,
                 clientOptions: new CosmosClientOptions() { AllowBulkExecution = true },
-                userJsonSerializer: null,
-                defaultJsonSerializer: null,
-                sqlQuerySpecSerializer: null,
+                serializerCore: null,
                 cosmosResponseFactory: null,
                 requestHandler: null,
                 documentClient: null);
@@ -37,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             List<Task<ContainerCore>> tasks = new List<Task<ContainerCore>>();
             for (int i = 0; i < 20; i++)
             {
-                tasks.Add(Task.Run(() => Task.FromResult((ContainerCore)db.GetContainer("test"))));
+                tasks.Add(Task.Run(() => Task.FromResult(new ContainerCore(context, db, "test"))));
             }
 
             await Task.WhenAll(tasks);
@@ -61,9 +59,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosClientContext context = new ClientContextCore(
                 client: mockClient.Object,
                 clientOptions: new CosmosClientOptions() { AllowBulkExecution = true },
-                userJsonSerializer: null,
-                defaultJsonSerializer: null,
-                sqlQuerySpecSerializer: null,
+                serializerCore: null,
                 cosmosResponseFactory: null,
                 requestHandler: null,
                 documentClient: null);
@@ -74,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             for (int i = 0; i < 20; i++)
             {
                 tasks.Add(
-                    Task.Factory.StartNew(() => (ContainerCore)db.GetContainer("test"),
+                    Task.Factory.StartNew(() => new ContainerCore(context, db, "test"),
                     CancellationToken.None,
                     TaskCreationOptions.None,
                     new SingleTaskScheduler()));
@@ -100,15 +96,13 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosClientContext context = new ClientContextCore(
                 client: mockClient.Object,
                 clientOptions: new CosmosClientOptions() { },
-                userJsonSerializer: null,
-                defaultJsonSerializer: null,
-                sqlQuerySpecSerializer: null,
+                serializerCore: null,
                 cosmosResponseFactory: null,
                 requestHandler: null,
                 documentClient: null);
 
             DatabaseCore db = new DatabaseCore(context, "test");
-            ContainerCore container = (ContainerCore)db.GetContainer("test");
+            ContainerCore container = new ContainerCore(context, db, "test");
             Assert.IsNull(container.BatchExecutor);
         }
     }

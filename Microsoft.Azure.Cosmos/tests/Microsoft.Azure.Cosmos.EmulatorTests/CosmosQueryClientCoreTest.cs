@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response);
             Assert.IsNotNull(response.Container);
             Assert.IsNotNull(response.Resource);
-            this.Container = (ContainerCore)response;
+            this.Container = (ContainerInlineCore)response;
             this.queryClientCore = new CosmosQueryClientCore(this.Container.ClientContext, this.Container);
         }
 
