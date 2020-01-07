@@ -51,11 +51,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
         /// </summary>
         private static readonly Func<ItemProducerTree, int> FetchPriorityFunction = itemProducerTree => itemProducerTree.BufferedItemCount;
 
-        private static readonly JsonSerializerSettings NoAsciiCharactersSerializerSettings = new JsonSerializerSettings()
-        {
-            StringEscapeHandling = StringEscapeHandling.EscapeNonAscii,
-        };
-
         /// <summary>
         /// Skip count used for JOIN queries.
         /// You can read up more about this in the documentation for the continuation token.
@@ -150,6 +145,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
                 {
                     continuationToken = null;
                 }
+
+                // Note we are no longer escaping non ascii continuation tokens.
+                // It is the callers job to encode a continuation token before adding it to a header in their service.
 
                 return continuationToken;
             }
