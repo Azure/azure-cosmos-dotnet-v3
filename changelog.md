@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- [#1118](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1118) Key already present exception when using custom retry policies on Core pipeline
+
 ## <a name="4.0.0-preview"/> [4.0.0-preview](https://www.nuget.org/packages/Azure.Cosmos/4.0.0-preview) - 2019-10-31
 
 Initial preview release of the new 4.0.0 SDK that aligns with [Azure.Core for .NET](https://github.com/Azure/azure-sdk-for-net/blob/master/sdk/core/Azure.Core/README.md).

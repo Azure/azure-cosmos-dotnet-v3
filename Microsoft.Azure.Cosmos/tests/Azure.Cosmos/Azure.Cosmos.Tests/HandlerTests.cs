@@ -310,6 +310,40 @@ namespace Azure.Cosmos.Tests
             Assert.IsTrue(response.ErrorMessage.StartsWith(errorMessage));
         }
 
+        [TestMethod]
+        public async Task RequestOptionsNotPopulatedOnPipelineRetry()
+        {
+            const string PropertyKey = "propkey";
+            const string Condition = "*";
+            object propertyValue = Encoding.UTF8.GetBytes("test");
+            RequestOptions options = new ItemRequestOptions
+            {
+                Properties = new Dictionary<string, object>(new List<KeyValuePair<string, object>> {
+                    new KeyValuePair<string, object>(PropertyKey, propertyValue)
+                }),
+                IfMatch = new ETag(Condition),
+            };
+
+            TestHandler testHandler = new TestHandler((request, cancellationToken) =>
+            {
+                Assert.IsFalse(request.Properties.ContainsKey(PropertyKey));
+                Assert.IsNull(request.CosmosHeaders.GetValueOrDefault(HttpConstants.HttpHeaders.IfMatch));
+                return TestHandler.ReturnSuccess();
+            });
+
+            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
+
+            RequestInvokerHandler invoker = new RequestInvokerHandler(new CosmosClientDriverContext(client));
+            invoker.InnerHandler = testHandler;
+            RequestMessage requestMessage = new RequestMessage(RequestMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"));
+            requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[]");
+            requestMessage.ResourceType = ResourceType.Document;
+            requestMessage.OperationType = OperationType.Read;
+            requestMessage.RequestOptions = options;
+
+            await invoker.SendAsync(request: requestMessage, isComingFromPipelineRetry: true, cancellationToken: new CancellationToken());
+        }
+
         private class SomePayload
         {
             public string V1 { get; set; }

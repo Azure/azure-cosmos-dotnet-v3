@@ -40,7 +40,9 @@ namespace Azure.Cosmos
                 throw new NotImplementedException();
             }
 
-            message.Response = await this.requestInvokerHandler.SendAsync(requestMessage, message.CancellationToken);
+            // If the message previously has a response, it means the pipeline is retrying
+            bool isComingFromPipelineRetry = message.HasResponse;
+            message.Response = await this.requestInvokerHandler.SendAsync(requestMessage, isComingFromPipelineRetry, message.CancellationToken);
         }
     }
 }

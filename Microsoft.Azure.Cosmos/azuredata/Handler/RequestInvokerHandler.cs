@@ -32,8 +32,19 @@ namespace Microsoft.Azure.Cosmos.Handlers
             this.RequestedClientConsistencyLevel = clientPipelineBuilderContext.ConsistencyLevel;
         }
 
-        public override async Task<ResponseMessage> SendAsync(
+        public override Task<ResponseMessage> SendAsync(
             RequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            return this.SendAsync(
+                request: request,
+                isComingFromPipelineRetry: false,
+                cancellationToken: cancellationToken);
+        }
+
+        public async Task<ResponseMessage> SendAsync(
+            RequestMessage request,
+            bool isComingFromPipelineRetry,
             CancellationToken cancellationToken)
         {
             if (request == null)
@@ -41,22 +52,27 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 throw new ArgumentNullException(nameof(request));
             }
 
-            RequestOptions promotedRequestOptions = request.RequestOptions;
-            if (promotedRequestOptions != null)
+            // Headers are already populated
+            if (!isComingFromPipelineRetry)
             {
-                // Fill request options
-                promotedRequestOptions.PopulateRequestOptions(request);
+                RequestOptions promotedRequestOptions = request.RequestOptions;
+                if (promotedRequestOptions != null)
+                {
+                    // Fill request options
+                    promotedRequestOptions.PopulateRequestOptions(request);
+                }
+
+                await this.ValidateAndSetConsistencyLevelAsync(request);
+                (bool isError, ResponseMessage errorResponse) = await this.EnsureValidClientAsync(request);
+                if (isError)
+                {
+                    return errorResponse;
+                }
+
+                await request.AssertPartitioningDetailsAsync(this.clientPipelineBuilderContext.GetCollectionCacheAsync, cancellationToken);
+                this.FillMultiMasterContext(request);
             }
 
-            await this.ValidateAndSetConsistencyLevelAsync(request);
-            (bool isError, ResponseMessage errorResponse) = await this.EnsureValidClientAsync(request);
-            if (isError)
-            {
-                return errorResponse;
-            }
-
-            await request.AssertPartitioningDetailsAsync(this.clientPipelineBuilderContext.GetCollectionCacheAsync, cancellationToken);
-            this.FillMultiMasterContext(request);
             return await base.SendAsync(request, cancellationToken);
         }
 
