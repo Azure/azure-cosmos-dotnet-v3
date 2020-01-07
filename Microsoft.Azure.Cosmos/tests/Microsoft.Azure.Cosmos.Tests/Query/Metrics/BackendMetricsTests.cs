@@ -13,48 +13,49 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
     [TestClass]
     public class BackendMetricsTests
     {
+        private static readonly TimeSpan totalExecutionTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 33.67));
+        private static readonly TimeSpan queryCompileTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 0.06));
+        private static readonly TimeSpan logicalPlanBuildTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 0.02));
+        private static readonly TimeSpan physicalPlanBuildTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 0.10));
+        private static readonly TimeSpan queryOptimizationTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 0.01));
+        private static readonly TimeSpan vmExecutionTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 32.56));
+        private static readonly TimeSpan indexLookupTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 0.36));
+        private static readonly TimeSpan documentLoadTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 9.58));
+        private static readonly TimeSpan documentWriteTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 18.10));
+        private static readonly TimeSpan systemFunctionExecuteTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 0.05));
+        private static readonly TimeSpan userFunctionExecuteTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 0.07));
+        private static readonly long retrievedDocumentCount = 2000;
+        private static readonly long retrievedDocumentSize = 1125600;
+        private static readonly long outputDocumentCount = 2000;
+        private static readonly long outputDocumentSize = 1125600;
+
+        private static readonly string delimitedString = $"totalExecutionTimeInMs={totalExecutionTime.TotalMilliseconds};queryCompileTimeInMs={queryCompileTime.TotalMilliseconds};queryLogicalPlanBuildTimeInMs={logicalPlanBuildTime.TotalMilliseconds};queryPhysicalPlanBuildTimeInMs={physicalPlanBuildTime.TotalMilliseconds};queryOptimizationTimeInMs={queryOptimizationTime.TotalMilliseconds};VMExecutionTimeInMs={vmExecutionTime.TotalMilliseconds};indexLookupTimeInMs={indexLookupTime.TotalMilliseconds};documentLoadTimeInMs={documentLoadTime.TotalMilliseconds};systemFunctionExecuteTimeInMs={systemFunctionExecuteTime.TotalMilliseconds};userFunctionExecuteTimeInMs={userFunctionExecuteTime.TotalMilliseconds};retrievedDocumentCount={retrievedDocumentCount};retrievedDocumentSize={retrievedDocumentSize};outputDocumentCount={outputDocumentCount};outputDocumentSize={outputDocumentSize};writeOutputTimeInMs={documentWriteTime.TotalMilliseconds}";
+
+        internal static readonly BackendMetrics MockBackendMetrics = new BackendMetrics(
+            retrievedDocumentCount,
+            retrievedDocumentSize,
+            outputDocumentCount,
+            outputDocumentSize,
+            totalExecutionTime,
+            new QueryPreparationTimes(
+                queryCompileTime,
+                logicalPlanBuildTime,
+                physicalPlanBuildTime,
+                queryOptimizationTime),
+            indexLookupTime,
+            documentLoadTime,
+            vmExecutionTime,
+            new RuntimeExecutionTimes(
+                totalExecutionTime - systemFunctionExecuteTime - userFunctionExecuteTime,
+                systemFunctionExecuteTime,
+                userFunctionExecuteTime),
+            documentWriteTime);
+
+
         [TestMethod]
         public void TestParse()
         {
-            TimeSpan totalExecutionTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 33.67));
-            TimeSpan queryCompileTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 0.06));
-            TimeSpan logicalPlanBuildTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 0.02));
-            TimeSpan physicalPlanBuildTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 0.10));
-            TimeSpan queryOptimizationTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 0.01));
-            TimeSpan vmExecutionTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 32.56));
-            TimeSpan indexLookupTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 0.36));
-            TimeSpan documentLoadTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 9.58));
-            TimeSpan documentWriteTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 18.10));
-            TimeSpan systemFunctionExecuteTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 0.05));
-            TimeSpan userFunctionExecuteTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 0.07));
-            long retrievedDocumentCount = 2000;
-            long retrievedDocumentSize = 1125600;
-            long outputDocumentCount = 2000;
-            long outputDocumentSize = 1125600;
-
-            string delimitedString = $"totalExecutionTimeInMs={totalExecutionTime.TotalMilliseconds};queryCompileTimeInMs={queryCompileTime.TotalMilliseconds};queryLogicalPlanBuildTimeInMs={logicalPlanBuildTime.TotalMilliseconds};queryPhysicalPlanBuildTimeInMs={physicalPlanBuildTime.TotalMilliseconds};queryOptimizationTimeInMs={queryOptimizationTime.TotalMilliseconds};VMExecutionTimeInMs={vmExecutionTime.TotalMilliseconds};indexLookupTimeInMs={indexLookupTime.TotalMilliseconds};documentLoadTimeInMs={documentLoadTime.TotalMilliseconds};systemFunctionExecuteTimeInMs={systemFunctionExecuteTime.TotalMilliseconds};userFunctionExecuteTimeInMs={userFunctionExecuteTime.TotalMilliseconds};retrievedDocumentCount={retrievedDocumentCount};retrievedDocumentSize={retrievedDocumentSize};outputDocumentCount={outputDocumentCount};outputDocumentSize={outputDocumentSize};writeOutputTimeInMs={documentWriteTime.TotalMilliseconds}";
-
-            BackendMetrics expected = new BackendMetrics(
-                retrievedDocumentCount,
-                retrievedDocumentSize,
-                outputDocumentCount,
-                outputDocumentSize,
-                totalExecutionTime,
-                new QueryPreparationTimes(
-                    queryCompileTime,
-                    logicalPlanBuildTime,
-                    physicalPlanBuildTime,
-                    queryOptimizationTime),
-                indexLookupTime,
-                documentLoadTime,
-                vmExecutionTime,
-                new RuntimeExecutionTimes(
-                    totalExecutionTime - systemFunctionExecuteTime - userFunctionExecuteTime,
-                    systemFunctionExecuteTime,
-                    userFunctionExecuteTime),
-                documentWriteTime);
-
-            BackendMetricsTests.ValidateParse(delimitedString, expected);
+            BackendMetricsTests.ValidateParse(delimitedString, MockBackendMetrics);
         }
 
         [TestMethod]
@@ -150,45 +151,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
         [TestMethod]
         public void TestAccumulator()
         {
-            TimeSpan totalExecutionTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 33.67));
-            TimeSpan queryCompileTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 0.06));
-            TimeSpan logicalPlanBuildTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 0.02));
-            TimeSpan physicalPlanBuildTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 0.10));
-            TimeSpan queryOptimizationTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 0.01));
-            TimeSpan vmExecutionTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 32.56));
-            TimeSpan indexLookupTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 0.36));
-            TimeSpan documentLoadTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 9.58));
-            TimeSpan documentWriteTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 18.10));
-            TimeSpan systemFunctionExecuteTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 0.05));
-            TimeSpan userFunctionExecuteTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 0.07));
-            long retrievedDocumentCount = 2000;
-            long retrievedDocumentSize = 1125600;
-            long outputDocumentCount = 2000;
-            long outputDocumentSize = 1125600;
-
-            BackendMetrics singleMetric = new BackendMetrics(
-                retrievedDocumentCount,
-                retrievedDocumentSize,
-                outputDocumentCount,
-                outputDocumentSize,
-                totalExecutionTime,
-                new QueryPreparationTimes(
-                    queryCompileTime,
-                    logicalPlanBuildTime,
-                    physicalPlanBuildTime,
-                    queryOptimizationTime),
-                indexLookupTime,
-                documentLoadTime,
-                vmExecutionTime,
-                new RuntimeExecutionTimes(
-                    totalExecutionTime - systemFunctionExecuteTime - userFunctionExecuteTime,
-                    systemFunctionExecuteTime,
-                    userFunctionExecuteTime),
-                documentWriteTime);
-
             BackendMetrics.Accumulator accumulator = new BackendMetrics.Accumulator();
-            accumulator = accumulator.Accumulate(singleMetric);
-            accumulator = accumulator.Accumulate(singleMetric);
+            accumulator = accumulator.Accumulate(MockBackendMetrics);
+            accumulator = accumulator.Accumulate(MockBackendMetrics);
 
             BackendMetrics backendMetricsFromAddition = BackendMetrics.Accumulator.ToBackendMetrics(accumulator);
             BackendMetrics expected = new BackendMetrics(

@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -99,32 +100,32 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             return indexUtilizationInfo;
         }
 
-        /// <summary>
-        /// Creates a new IndexUtilizationInfo that is the sum of all elements in an IEnumerable.
-        /// </summary>
-        /// <param name="indexUtilizationInfoList">The IEnumerable to aggregate.</param>
-        /// <returns>A new QueryPreparationTimes that is the sum of all elements in an IEnumerable.</returns>
-        internal static IndexUtilizationInfo CreateFromIEnumerable(IEnumerable<IndexUtilizationInfo> indexUtilizationInfoList)
+        public ref struct Accumulator
         {
-            if (indexUtilizationInfoList == null)
+            public Accumulator(
+                IEnumerable<IndexUtilizationData> utilizedIndexes,
+                IEnumerable<IndexUtilizationData> potentialIndexes)
             {
-                throw new ArgumentNullException(nameof(indexUtilizationInfoList));
+                this.UtilizedIndexes = utilizedIndexes;
+                this.PotentialIndexes = potentialIndexes;
             }
 
-            List<IndexUtilizationData> utilizedIndexesCopy = new List<IndexUtilizationData>();
-            List<IndexUtilizationData> potentialIndexesCopy = new List<IndexUtilizationData>();
-            foreach (IndexUtilizationInfo indexUtilizationInfo in indexUtilizationInfoList)
-            {
-                if (indexUtilizationInfo == null)
-                {
-                    throw new ArgumentException(nameof(indexUtilizationInfoList) + " can not have a null element");
-                }
+            public IEnumerable<IndexUtilizationData> UtilizedIndexes { get; }
+            public IEnumerable<IndexUtilizationData> PotentialIndexes { get; }
 
-                utilizedIndexesCopy.AddRange(indexUtilizationInfo.UtilizedIndexes);
-                potentialIndexesCopy.AddRange(indexUtilizationInfo.PotentialIndexes);
+            public Accumulator Accumulate(IndexUtilizationInfo indexUtilizationInfo)
+            {
+                return new Accumulator(
+                    utilizedIndexes: (this.UtilizedIndexes ?? Enumerable.Empty<IndexUtilizationData>()).Concat(indexUtilizationInfo.UtilizedIndexes),
+                    potentialIndexes: (this.PotentialIndexes ?? Enumerable.Empty<IndexUtilizationData>()).Concat(indexUtilizationInfo.PotentialIndexes));
             }
 
-            return new IndexUtilizationInfo(utilizedIndexesCopy, potentialIndexesCopy);
+            public static IndexUtilizationInfo ToIndexUtilizationInfo(Accumulator accumulator)
+            {
+                return new IndexUtilizationInfo(
+                    utilizedIndexes: accumulator.UtilizedIndexes.ToList(),
+                    potentialIndexes: accumulator.PotentialIndexes.ToList());
+            }
         }
     }
 }

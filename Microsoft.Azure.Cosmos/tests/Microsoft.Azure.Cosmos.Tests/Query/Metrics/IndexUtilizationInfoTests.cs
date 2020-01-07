@@ -7,10 +7,21 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
     using System;
     using VisualStudio.TestTools.UnitTesting;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
+    using System.Collections.Generic;
 
     [TestClass]
     public class IndexUtilizationInfoTests
     {
+        private static readonly IndexUtilizationData data = new IndexUtilizationData(
+                nameof(IndexUtilizationData.FilterExpression),
+                nameof(IndexUtilizationData.IndexDocumentExpression),
+                default(bool),
+                default(bool));
+
+        internal static readonly IndexUtilizationInfo MockIndexUtilizationInfo = new IndexUtilizationInfo(
+            new List<IndexUtilizationData>() { data },
+            new List<IndexUtilizationData>() { data });
+
         [TestMethod]
         public void TestParse()
         {
@@ -25,6 +36,18 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
             Assert.IsTrue(IndexUtilizationInfo.TryCreateFromDelimitedString(string.Empty,
                 out IndexUtilizationInfo parsedInfo));
             Assert.AreEqual(IndexUtilizationInfo.Empty, parsedInfo);
+        }
+
+        [TestMethod]
+        public void TestAccumulator()
+        {
+            IndexUtilizationInfo.Accumulator accumulator = new IndexUtilizationInfo.Accumulator();
+            accumulator = accumulator.Accumulate(MockIndexUtilizationInfo);
+            accumulator = accumulator.Accumulate(MockIndexUtilizationInfo);
+
+            IndexUtilizationInfo doubleInfo = IndexUtilizationInfo.Accumulator.ToIndexUtilizationInfo(accumulator);
+            Assert.AreEqual(2 * MockIndexUtilizationInfo.PotentialIndexes.Count, doubleInfo.PotentialIndexes.Count);
+            Assert.AreEqual(2 * MockIndexUtilizationInfo.UtilizedIndexes.Count, doubleInfo.UtilizedIndexes.Count);
         }
     }
 }
