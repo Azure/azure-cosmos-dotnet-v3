@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Collections;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
@@ -67,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
         /// </summary>
         private string previousRid;
 
-        private IList<OrderByItem> previousOrderByItems;
+        private IReadOnlyList<OrderByItem> previousOrderByItems;
 
         /// <summary>
         /// Initializes a new instance of the CosmosOrderByItemQueryExecutionContext class.
@@ -156,6 +157,42 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
                 }
 
                 return continuationToken;
+            }
+        }
+
+        public override void SerializeState(IJsonWriter jsonWriter)
+        {
+            if (jsonWriter == null)
+            {
+                throw new ArgumentNullException(nameof(jsonWriter));
+            }
+
+            IEnumerable<ItemProducer> activeItemProducers = this.GetActiveItemProducers();
+            if (activeItemProducers.Any())
+            {
+                jsonWriter.WriteArrayStart();
+
+                foreach (ItemProducer activeItemProducer in activeItemProducers)
+                {
+                    OrderByQueryResult orderByQueryResult = new OrderByQueryResult(activeItemProducer.Current);
+                    OrderByContinuationTokenRefStruct orderByContinuationToken = new OrderByContinuationTokenRefStruct(
+                        compositeContinuationTokenRefStruct: new CompositeContinuationTokenRefStruct(
+                            backendContinuationToken: activeItemProducer.PreviousContinuationToken,
+                            range: new RangeRefStruct(
+                                min: activeItemProducer.PartitionKeyRange.MinInclusive,
+                                max: activeItemProducer.PartitionKeyRange.MaxExclusive)),
+                        orderByItems: orderByQueryResult.OrderByItems,
+                        rid: orderByQueryResult.Rid,
+                        skipCount: this.ShouldIncrementSkipCount(activeItemProducer) ? this.skipCount + 1 : 0,
+                        filter: activeItemProducer.Filter);
+                    orderByContinuationToken.WriteTo(jsonWriter);
+                }
+
+                jsonWriter.WriteArrayEnd();
+            }
+            else
+            {
+                jsonWriter.WriteNullValue();
             }
         }
 

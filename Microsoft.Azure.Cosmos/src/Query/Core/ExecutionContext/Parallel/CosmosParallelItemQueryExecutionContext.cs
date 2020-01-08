@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Collections;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
@@ -100,6 +101,36 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
                 }
 
                 return continuationToken;
+            }
+        }
+
+        public override void SerializeState(IJsonWriter jsonWriter)
+        {
+            if (jsonWriter == null)
+            {
+                throw new ArgumentNullException(nameof(jsonWriter));
+            }
+
+            IEnumerable<ItemProducer> activeItemProducers = this.GetActiveItemProducers();
+            if (activeItemProducers.Any())
+            {
+                jsonWriter.WriteArrayStart();
+
+                foreach (ItemProducer activeItemProducer in activeItemProducers)
+                {
+                    CompositeContinuationTokenRefStruct compositeToken = new CompositeContinuationTokenRefStruct(
+                        backendContinuationToken: activeItemProducer.BackendContinuationToken,
+                        range: new RangeRefStruct(
+                            min: activeItemProducer.PartitionKeyRange.MinInclusive,
+                            max: activeItemProducer.PartitionKeyRange.MaxExclusive));
+                    compositeToken.WriteTo(jsonWriter);
+                }
+
+                jsonWriter.WriteArrayEnd();
+            }
+            else
+            {
+                jsonWriter.WriteNullValue();
             }
         }
 

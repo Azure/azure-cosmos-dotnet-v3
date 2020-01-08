@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using System.Threading.Tasks;
     using Core.ExecutionComponent;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Collections;
     using Microsoft.Azure.Cosmos.Query.Core.ComparableTask;
@@ -643,6 +644,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             state = this.ContinuationToken;
             return true;
         }
+
+        public abstract void SerializeState(IJsonWriter jsonWriter);
 
         public readonly struct InitInfo<TContinuationToken>
         {

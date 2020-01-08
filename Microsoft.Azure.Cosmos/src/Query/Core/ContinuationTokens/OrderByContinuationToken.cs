@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
         /// <param name="filter">The filter (refer to property documentation).</param>
         public OrderByContinuationToken(
             CompositeContinuationToken compositeContinuationToken,
-            IList<OrderByItem> orderByItems,
+            IReadOnlyList<OrderByItem> orderByItems,
             string rid,
             int skipCount,
             string filter)
@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
         /// Right now, we don't support orderBy by multiple fields, so orderByItems is an array of one element. 
         /// </remarks>>
         [JsonProperty("orderByItems")]
-        public IList<OrderByItem> OrderByItems
+        public IReadOnlyList<OrderByItem> OrderByItems
         {
             get;
         }

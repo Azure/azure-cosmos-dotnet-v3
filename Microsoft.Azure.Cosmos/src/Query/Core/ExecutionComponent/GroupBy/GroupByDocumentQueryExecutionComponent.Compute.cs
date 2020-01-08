@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
@@ -137,6 +138,26 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                 return response;
             }
 
+            public override void SerializeState(IJsonWriter jsonWriter)
+            {
+                if (jsonWriter == null)
+                {
+                    throw new ArgumentNullException(nameof(jsonWriter));
+                }
+
+                if (this.IsDone)
+                {
+                    jsonWriter.WriteNullValue();
+                }
+                else
+                {
+                    if (this.Source.IsDone)
+                    {
+
+                    }
+                }
+            }
+
             public override bool TryGetContinuationToken(out string continuationToken)
             {
                 if (this.IsDone)
@@ -168,7 +189,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                 return true;
             }
 
-            private sealed class GroupByContinuationToken
+            private readonly struct GroupByContinuationToken
             {
                 public GroupByContinuationToken(
                     string groupingTableContinuationToken,
@@ -246,6 +267,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                 public IReadOnlyDictionary<string, QueryMetrics> GetQueryMetrics()
                 {
                     throw new NotImplementedException();
+                }
+
+                public void SerializeState(IJsonWriter jsonWriter)
+                {
+                    if (jsonWriter == null)
+                    {
+                        throw new ArgumentNullException(nameof(jsonWriter));
+                    }
+
+                    jsonWriter.WriteNullValue();
                 }
 
                 public void Stop()
