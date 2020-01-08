@@ -637,10 +637,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Assert.IsTrue(
                         itemQuery.TryGetContinuationToken(out continuationToken),
                         "Failed to get state for query");
-                    if (continuationToken != null)
-                    {
-                        Assert.IsTrue(continuationToken.All((character) => character < 128));
-                    }
                 }
                 catch (CosmosException cosmosException) when (cosmosException.StatusCode == (HttpStatusCode)429)
                 {
@@ -687,10 +683,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                         resultsFromContinuationToken.AddRange(cosmosQueryResponse);
                         continuationToken = cosmosQueryResponse.ContinuationToken;
-                        if (continuationToken != null)
-                        {
-                            Assert.IsTrue(continuationToken.All((character) => character < 128));
-                        }
                         break;
                     }
                     catch (CosmosException cosmosException) when (cosmosException.StatusCode == (HttpStatusCode)429)
@@ -744,11 +736,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         // Grabbing a continuation token is not supported on all queries.
                     }
-
-                    if (continuationTokenForRetries != null)
-                    {
-                        Assert.IsTrue(continuationTokenForRetries.All((character) => character < 128));
-                    }
                 }
                 catch (CosmosException cosmosException) when (cosmosException.StatusCode == (HttpStatusCode)429)
                 {
@@ -781,44 +768,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 throw exception;
             }
-        }
-
-        [TestMethod]
-        public void TestContinuationTokenSerialization()
-        {
-            CompositeContinuationToken[] tokens = JsonConvert.DeserializeObject<CompositeContinuationToken[]>("[{\"token\":null,\"range\":{\"min\":\"05C1C9CD673398\",\"max\":\"05C1D9CD673398\"}}]");
-            CompositeContinuationToken compositeContinuationToken = new CompositeContinuationToken()
-            {
-                Token = "asdf",
-                Range = new Range<string>("asdf", "asdf", false, false),
-            };
-
-            string serializedCompositeContinuationToken = JsonConvert.SerializeObject(compositeContinuationToken);
-            CompositeContinuationToken deserializedCompositeContinuationToken = JsonConvert.DeserializeObject<CompositeContinuationToken>(serializedCompositeContinuationToken);
-            Assert.AreEqual(compositeContinuationToken.Token, deserializedCompositeContinuationToken.Token);
-            //Assert.IsTrue(compositeContinuationToken.Range.Equals(deserializedCompositeContinuationToken.Range));
-
-
-            string orderByItemSerialized = @"{""item"" : 1337 }";
-            byte[] bytes = Encoding.UTF8.GetBytes(orderByItemSerialized);
-            OrderByItem orderByItem = new OrderByItem(CosmosElement.CreateFromBuffer(bytes));
-            OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
-                compositeContinuationToken,
-                new List<OrderByItem> { orderByItem },
-                "asdf",
-                42,
-                "asdf");
-            string serializedOrderByContinuationToken = JsonConvert.SerializeObject(orderByContinuationToken);
-            OrderByContinuationToken deserializedOrderByContinuationToken = JsonConvert.DeserializeObject<OrderByContinuationToken>(serializedOrderByContinuationToken);
-            Assert.AreEqual(
-                orderByContinuationToken.CompositeContinuationToken.Token,
-                deserializedOrderByContinuationToken.CompositeContinuationToken.Token);
-            //Assert.IsTrue(
-            //    orderByContinuationToken.CompositeContinuationToken.Range.Equals(
-            //    deserializedOrderByContinuationToken.CompositeContinuationToken.Range));
-            Assert.IsTrue(CosmosElementEqualityComparer.Value.Equals(orderByContinuationToken.OrderByItems[0].Item, deserializedOrderByContinuationToken.OrderByItems[0].Item));
-            Assert.AreEqual(orderByContinuationToken.Rid, deserializedOrderByContinuationToken.Rid);
-            Assert.AreEqual(orderByContinuationToken.SkipCount, deserializedOrderByContinuationToken.SkipCount);
         }
 
         [TestMethod]
@@ -2736,69 +2685,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 });
 
             Assert.AreEqual(string.Join(", ", expected), string.Join(", ", query.Select(doc => doc.Id)));
-        }
-
-        [TestMethod]
-        public async Task TestOrderByNonAsciiCharacters()
-        {
-            string[] specialStrings = new string[]
-            {
-                // Strings which may be used elsewhere in code
-                "undefined",
-                // Numeric Strings
-                "-9223372036854775808/-1",
-                // Non-whitespace C0 controls: U+0001 through U+0008, U+000E through U+001F,
-                "\u0001",
-                // "Byte order marks"
-                "U+FEFF",
-                // Unicode Symbols
-                "ЁЂЃЄЅІЇЈЉЊЋЌЍЎЏАБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвгдежзийклмнопрстуфхцчшщъыьэюя",
-                // Quotation Marks
-                "<foo val=“bar” />",
-                // Strings which contain two-byte characters: can cause rendering issues or character-length issues
-                "찦차를 타고 온 펲시맨과 쑛다리 똠방각하",
-                // Changing length when lowercased
-                "Ⱥ",
-                // Japanese Emoticons
-                "ﾟ･✿ヾ╲(｡◕‿◕｡)╱✿･ﾟ",
-                // Emoji
-                "❤️ 💔 💌 💕 💞 💓 💗 💖 💘 💝 💟 💜 💛 💚 💙",
-                // Strings which contain "corrupted" text. The corruption will not appear in non-HTML text, however. (via http://www.eeemo.net)
-                "Ṱ̺̺̕o͞ ̷i̲̬͇̪͙n̝̗͕v̟̜̘̦͟o̶̙̰̠kè͚̮̺̪̹̱̤ ̖t̝͕̳̣̻̪͞h̼͓̲̦̳̘̲e͇̣̰̦̬͎ ̢̼̻̱̘h͚͎͙̜̣̲ͅi̦̲̣̰̤v̻͍e̺̭̳̪̰-m̢iͅn̖̺̞̲̯̰d̵̼̟͙̩̼̘̳ ̞̥̱̳̭r̛̗̘e͙p͠r̼̞̻̭̗e̺̠̣͟s̘͇̳͍̝͉e͉̥̯̞̲͚̬͜ǹ̬͎͎̟̖͇̤t͍̬̤͓̼̭͘ͅi̪̱n͠g̴͉ ͏͉ͅc̬̟h͡a̫̻̯͘o̫̟̖͍̙̝͉s̗̦̲.̨̹͈̣"
-
-            };
-
-            IEnumerable<string> documents = specialStrings.Select((specialString) => $@"{{ ""field"" : ""{specialString}""}}");
-            await this.CreateIngestQueryDelete(
-                ConnectionModes.Direct | ConnectionModes.Gateway,
-                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
-                documents,
-                this.TestOrderByNonAsciiCharactersHelper);
-        }
-
-        private async Task TestOrderByNonAsciiCharactersHelper(
-            Container container,
-            IEnumerable<Document> documents)
-        {
-            foreach (int maxDegreeOfParallelism in new int[] { 1, 100 })
-            {
-                foreach (int maxItemCount in new int[] { 10, 100 })
-                {
-                    QueryRequestOptions feedOptions = new QueryRequestOptions
-                    {
-                        MaxBufferedItemCount = 7000,
-                        MaxConcurrency = maxDegreeOfParallelism,
-                        MaxItemCount = maxItemCount,
-                    };
-
-                    List<JToken> actualFromQueryWithoutContinutionTokens = await QueryWithContinuationTokens<JToken>(
-                        container,
-                        "SELECT * FROM c ORDER BY c.field",
-                        feedOptions);
-
-                    Assert.AreEqual(documents.Count(), actualFromQueryWithoutContinutionTokens.Count);
-                }
-            }
         }
 
         [TestMethod]
