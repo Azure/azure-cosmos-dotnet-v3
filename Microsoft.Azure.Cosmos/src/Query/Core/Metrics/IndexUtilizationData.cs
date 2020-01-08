@@ -9,7 +9,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     /// <summary>
     /// Query index utilization data (sub-structure of the Index Utilization metrics) in the Azure Cosmos database service.
     /// </summary>
-    internal sealed class IndexUtilizationData
+#if INTERNAL
+    public
+#else
+    internal
+#endif
+    sealed class IndexUtilizationData
     {
         [JsonProperty(PropertyName = "FilterExpression")]
         public string FilterExpression { get; }

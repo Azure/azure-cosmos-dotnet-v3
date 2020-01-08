@@ -5,9 +5,16 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 {
     using System;
-    using System.Collections.Generic;
 
-    internal sealed class BackendMetrics
+    /// <summary>
+    /// Metrics received for queries from the backend.
+    /// </summary>
+#if INTERNAL
+    public
+#else
+    internal
+#endif
+    sealed class BackendMetrics
     {
         /// <summary>
         /// QueryMetrics that with all members having default (but not null) members.

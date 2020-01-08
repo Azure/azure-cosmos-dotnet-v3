@@ -7,7 +7,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     using System.Buffers.Text;
     using System.Text;
 
-    internal static class BackendMetricsParser
+    /// <summary>
+    /// Parser for <see cref="BackendMetrics"/>.
+    /// </summary>
+#if INTERNAL
+    public
+#else
+    internal
+#endif
+    static class BackendMetricsParser
     {
         public static unsafe bool TryParse(string deliminatedString, out BackendMetrics backendMetrics)
         {

@@ -11,7 +11,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     /// Query metrics in the Azure Cosmos database service.
     /// This metric represents a moving average for a set of queries whose metrics have been aggregated together.
     /// </summary>
-    internal sealed class QueryMetrics
+#if INTERNAL
+    public
+#else
+    internal
+#endif
+    sealed class QueryMetrics
     {
         /// <summary>
         /// QueryMetrics that with all members having default (but not null) members.

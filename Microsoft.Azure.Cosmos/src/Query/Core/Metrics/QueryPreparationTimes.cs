@@ -4,12 +4,16 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 {
     using System;
-    using System.Collections.Generic;
 
     /// <summary>
     /// Query preparation metrics in the Azure DocumentDB database service.
     /// </summary>
-    internal sealed class QueryPreparationTimes
+#if INTERNAL
+    public
+#else
+    internal
+#endif
+    sealed class QueryPreparationTimes
     {
         public static readonly QueryPreparationTimes Zero = new QueryPreparationTimes(
             queryCompilationTime: default,

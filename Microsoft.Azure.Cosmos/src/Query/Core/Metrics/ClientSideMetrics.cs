@@ -10,7 +10,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     /// <summary>
     /// Stores client side QueryMetrics.
     /// </summary>
-    internal sealed class ClientSideMetrics
+#if INTERNAL
+    public
+#else
+    internal
+#endif
+    sealed class ClientSideMetrics
     {
         public static readonly ClientSideMetrics Empty = new ClientSideMetrics(
             retries: 0,

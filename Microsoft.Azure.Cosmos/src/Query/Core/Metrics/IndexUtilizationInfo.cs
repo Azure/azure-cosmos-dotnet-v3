@@ -11,7 +11,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     /// <summary>
     /// Query index utilization metrics in the Azure Cosmos database service.
     /// </summary>
-    internal sealed class IndexUtilizationInfo
+#if INTERNAL
+    public
+#else
+    internal
+#endif
+    sealed class IndexUtilizationInfo
     {
         public static readonly IndexUtilizationInfo Empty = new IndexUtilizationInfo(
             utilizedIndexes: new List<IndexUtilizationData>(),

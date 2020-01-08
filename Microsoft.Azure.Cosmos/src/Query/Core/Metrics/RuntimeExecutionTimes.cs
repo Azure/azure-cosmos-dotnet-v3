@@ -9,7 +9,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     /// <summary>
     /// Query runtime execution times in the Azure Cosmos DB service.
     /// </summary>
-    internal sealed class RuntimeExecutionTimes
+#if INTERNAL
+    public
+#else
+    internal
+#endif
+    sealed class RuntimeExecutionTimes
     {
         public static readonly RuntimeExecutionTimes Empty = new RuntimeExecutionTimes(
             queryEngineExecutionTime: default,

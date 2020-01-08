@@ -7,7 +7,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     using System;
     using System.Text;
 
-    internal static class BackendMetricsTokenizer
+    /// <summary>
+    /// Tokenizer for <see cref="BackendMetrics"/>
+    /// </summary>
+#if INTERNAL
+    public
+#else
+    internal
+#endif
+    static class BackendMetricsTokenizer
     {
         public enum TokenType
         {

@@ -6,7 +6,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     using System;
     using System.Linq;
 
-    internal abstract class QueryMetricsWriter
+    /// <summary>
+    /// Base class for visting and serializing a <see cref="QueryMetrics"/>.
+    /// </summary>
+#if INTERNAL
+    public
+#else
+    internal
+#endif
+    abstract class QueryMetricsWriter
     {
         public void WriteQueryMetrics(QueryMetrics queryMetrics)
         {
