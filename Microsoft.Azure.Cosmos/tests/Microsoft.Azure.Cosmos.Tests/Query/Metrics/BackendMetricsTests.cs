@@ -28,14 +28,16 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
         private static readonly long retrievedDocumentSize = 1125600;
         private static readonly long outputDocumentCount = 2000;
         private static readonly long outputDocumentSize = 1125600;
+        private static readonly double indexHitRatio = 1.0;
 
-        private static readonly string delimitedString = $"totalExecutionTimeInMs={totalExecutionTime.TotalMilliseconds};queryCompileTimeInMs={queryCompileTime.TotalMilliseconds};queryLogicalPlanBuildTimeInMs={logicalPlanBuildTime.TotalMilliseconds};queryPhysicalPlanBuildTimeInMs={physicalPlanBuildTime.TotalMilliseconds};queryOptimizationTimeInMs={queryOptimizationTime.TotalMilliseconds};VMExecutionTimeInMs={vmExecutionTime.TotalMilliseconds};indexLookupTimeInMs={indexLookupTime.TotalMilliseconds};documentLoadTimeInMs={documentLoadTime.TotalMilliseconds};systemFunctionExecuteTimeInMs={systemFunctionExecuteTime.TotalMilliseconds};userFunctionExecuteTimeInMs={userFunctionExecuteTime.TotalMilliseconds};retrievedDocumentCount={retrievedDocumentCount};retrievedDocumentSize={retrievedDocumentSize};outputDocumentCount={outputDocumentCount};outputDocumentSize={outputDocumentSize};writeOutputTimeInMs={documentWriteTime.TotalMilliseconds}";
+        private static readonly string delimitedString = $"totalExecutionTimeInMs={totalExecutionTime.TotalMilliseconds};queryCompileTimeInMs={queryCompileTime.TotalMilliseconds};queryLogicalPlanBuildTimeInMs={logicalPlanBuildTime.TotalMilliseconds};queryPhysicalPlanBuildTimeInMs={physicalPlanBuildTime.TotalMilliseconds};queryOptimizationTimeInMs={queryOptimizationTime.TotalMilliseconds};VMExecutionTimeInMs={vmExecutionTime.TotalMilliseconds};indexLookupTimeInMs={indexLookupTime.TotalMilliseconds};documentLoadTimeInMs={documentLoadTime.TotalMilliseconds};systemFunctionExecuteTimeInMs={systemFunctionExecuteTime.TotalMilliseconds};userFunctionExecuteTimeInMs={userFunctionExecuteTime.TotalMilliseconds};retrievedDocumentCount={retrievedDocumentCount};retrievedDocumentSize={retrievedDocumentSize};outputDocumentCount={outputDocumentCount};outputDocumentSize={outputDocumentSize};writeOutputTimeInMs={documentWriteTime.TotalMilliseconds};indexUtilizationRatio={indexHitRatio}";
 
         internal static readonly BackendMetrics MockBackendMetrics = new BackendMetrics(
             retrievedDocumentCount,
             retrievedDocumentSize,
             outputDocumentCount,
             outputDocumentSize,
+            indexHitRatio,
             totalExecutionTime,
             new QueryPreparationTimes(
                 queryCompileTime,
@@ -75,6 +77,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
                 default(long),
                 default(long),
                 default(long),
+                default(double),
                 totalExecutionTime,
                 new QueryPreparationTimes(
                     default(TimeSpan),
@@ -102,6 +105,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
                 default(long),
                 default(long),
                 default(long),
+                default(double),
                 default(TimeSpan),
                 new QueryPreparationTimes(
                     default(TimeSpan),
@@ -130,6 +134,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
                 default(long),
                 default(long),
                 default(long),
+                default(double),
                 totalExecutionTime,
                 new QueryPreparationTimes(
                     default(TimeSpan),
@@ -161,6 +166,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
                 retrievedDocumentSize * 2,
                 outputDocumentCount * 2,
                 outputDocumentSize * 2,
+                indexHitRatio,
                 totalExecutionTime * 2,
                 new QueryPreparationTimes(
                     queryCompileTime * 2,
@@ -193,6 +199,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
             Assert.AreEqual(expected.OutputDocumentSize, actual.OutputDocumentSize);
             Assert.AreEqual(expected.RetrievedDocumentCount, actual.RetrievedDocumentCount);
             Assert.AreEqual(expected.RetrievedDocumentSize, actual.RetrievedDocumentSize);
+            Assert.AreEqual(expected.IndexHitRatio, actual.IndexHitRatio);
             Assert.AreEqual(expected.QueryPreparationTimes.QueryCompilationTime, actual.QueryPreparationTimes.QueryCompilationTime);
             Assert.AreEqual(expected.QueryPreparationTimes.LogicalPlanBuildTime, actual.QueryPreparationTimes.LogicalPlanBuildTime);
             Assert.AreEqual(expected.QueryPreparationTimes.PhysicalPlanBuildTime, actual.QueryPreparationTimes.PhysicalPlanBuildTime);

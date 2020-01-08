@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             retrievedDocumentSize: default,
             outputDocumentCount: default,
             outputDocumentSize: default,
+            indexHitRatio: default,
             totalQueryExecutionTime: default,
             queryPreparationTimes: QueryPreparationTimes.Zero,
             indexLookupTime: default,
@@ -30,6 +31,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
            long retrievedDocumentSize,
            long outputDocumentCount,
            long outputDocumentSize,
+           double indexHitRatio,
            TimeSpan totalQueryExecutionTime,
            QueryPreparationTimes queryPreparationTimes,
            TimeSpan indexLookupTime,
@@ -42,6 +44,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             this.RetrievedDocumentSize = retrievedDocumentSize;
             this.OutputDocumentCount = outputDocumentCount;
             this.OutputDocumentSize = outputDocumentSize;
+            this.IndexHitRatio = indexHitRatio;
             this.TotalTime = totalQueryExecutionTime;
             this.QueryPreparationTimes = queryPreparationTimes ?? throw new ArgumentNullException($"{nameof(queryPreparationTimes)} can not be null.");
             this.IndexLookupTime = indexLookupTime;
@@ -104,14 +107,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// <summary>
         /// Gets the index hit ratio by query in the Azure Cosmos database service.
         /// </summary>
-        public double IndexHitRatio => this.RetrievedDocumentCount == 0
-                    ? 1
-                    : (double)this.IndexHitDocumentCount / this.RetrievedDocumentCount;
-
-        /// <summary>
-        /// Gets the Index Hit Document Count.
-        /// </summary>
-        public long IndexHitDocumentCount { get; }
+        public double IndexHitRatio { get; }
 
         /// <summary>
         /// Gets the VMExecution Time.
@@ -141,6 +137,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                 long retrievedDocumentSize,
                 long outputDocumentCount,
                 long outputDocumentSize,
+                double indexHitRatio,
                 QueryPreparationTimes.Accumulator queryPreparationTimesAccumulator,
                 TimeSpan indexLookupTime,
                 TimeSpan documentLoadTime,
@@ -153,6 +150,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                 this.RetrievedDocumentSize = retrievedDocumentSize;
                 this.OutputDocumentCount = outputDocumentCount;
                 this.OutputDocumentSize = outputDocumentSize;
+                this.IndexHitRatio = indexHitRatio;
                 this.QueryPreparationTimesAccumulator = queryPreparationTimesAccumulator;
                 this.IndexLookupTime = indexLookupTime;
                 this.DocumentLoadTime = documentLoadTime;
@@ -166,6 +164,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             public long RetrievedDocumentSize { get; }
             public long OutputDocumentCount { get; }
             public long OutputDocumentSize { get; }
+            public double IndexHitRatio { get; }
             public QueryPreparationTimes.Accumulator QueryPreparationTimesAccumulator { get; }
             public TimeSpan IndexLookupTime { get; }
             public TimeSpan DocumentLoadTime { get; }
@@ -181,6 +180,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                     retrievedDocumentSize: this.RetrievedDocumentSize + backendMetrics.RetrievedDocumentSize,
                     outputDocumentCount: this.OutputDocumentCount + backendMetrics.OutputDocumentCount,
                     outputDocumentSize: this.OutputDocumentSize + backendMetrics.OutputDocumentSize,
+                    indexHitRatio: ((this.OutputDocumentCount * this.IndexHitRatio) + (backendMetrics.OutputDocumentCount * backendMetrics.IndexHitRatio)) / (this.RetrievedDocumentCount + backendMetrics.RetrievedDocumentCount),
                     queryPreparationTimesAccumulator: this.QueryPreparationTimesAccumulator.Accumulate(backendMetrics.QueryPreparationTimes),
                     indexLookupTime: this.IndexLookupTime + backendMetrics.IndexLookupTime,
                     documentLoadTime: this.DocumentLoadTime + backendMetrics.DocumentLoadTime,
@@ -197,6 +197,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                    retrievedDocumentSize: accumulator.RetrievedDocumentSize,
                    outputDocumentCount: accumulator.OutputDocumentCount,
                    outputDocumentSize: accumulator.OutputDocumentSize,
+                   indexHitRatio: accumulator.IndexHitRatio,
                    totalQueryExecutionTime: accumulator.TotalTime,
                    queryPreparationTimes: QueryPreparationTimes.Accumulator.ToQueryPreparationTimes(accumulator.QueryPreparationTimesAccumulator),
                    indexLookupTime: accumulator.IndexLookupTime,

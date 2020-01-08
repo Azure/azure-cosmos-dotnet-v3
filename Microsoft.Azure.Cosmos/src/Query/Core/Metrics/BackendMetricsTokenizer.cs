@@ -14,7 +14,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             DocumentLoadTimeInMs,
             DocumentWriteTimeInMs,
             EqualDelimiter,
-            IndexHitDocumentCount,
             IndexHitRatio,
             IndexLookupTimeInMs,
             LogicalPlanBuildTimeInMs,
@@ -38,7 +37,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         {
             public static readonly ReadOnlyMemory<byte> DocumentLoadTimeInMs = Encoding.UTF8.GetBytes("documentLoadTimeInMs");
             public static readonly ReadOnlyMemory<byte> DocumentWriteTimeInMs = Encoding.UTF8.GetBytes("writeOutputTimeInMs");
-            public static readonly ReadOnlyMemory<byte> IndexHitDocumentCount = Encoding.UTF8.GetBytes("indexHitDocumentCount");
             public static readonly ReadOnlyMemory<byte> IndexHitRatio = Encoding.UTF8.GetBytes("indexUtilizationRatio");
             public static readonly ReadOnlyMemory<byte> IndexLookupTimeInMs = Encoding.UTF8.GetBytes("indexLookupTimeInMs");
             public static readonly ReadOnlyMemory<byte> LogicalPlanBuildTimeInMs = Encoding.UTF8.GetBytes("queryLogicalPlanBuildTimeInMs");
@@ -79,10 +77,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             else if (corpus.StartsWith(TokenBuffers.DocumentWriteTimeInMs.Span))
             {
                 token = Token.DocumentWriteTimeInMs;
-            }
-            else if (corpus.StartsWith(TokenBuffers.IndexHitDocumentCount.Span))
-            {
-                token = Token.IndexHitDocumentCount;
             }
             else if (corpus.StartsWith(TokenBuffers.IndexHitRatio.Span))
             {

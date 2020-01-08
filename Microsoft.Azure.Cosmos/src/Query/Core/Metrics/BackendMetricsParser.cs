@@ -29,6 +29,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             long retrievedDocumentSize = default;
             long outputDocumentCount = default;
             long outputDocumentSize = default;
+            double indexHitRatio = default;
             TimeSpan totalQueryExecutionTime = default;
 
             // QueryPreparationTimes
@@ -86,6 +87,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                     case BackendMetricsTokenizer.Token.IndexLookupTimeInMs:
                         corpus = corpus.Slice(BackendMetricsTokenizer.TokenBuffers.IndexLookupTimeInMs.Length);
                         if (!BackendMetricsParser.TryParseTimeSpanField(corpus, out indexLookupTime, out bytesConsumed))
+                        {
+                            backendMetrics = default;
+                            return false;
+                        }
+                        break;
+
+                    case BackendMetricsTokenizer.Token.IndexHitRatio:
+                        corpus = corpus.Slice(BackendMetricsTokenizer.TokenBuffers.IndexHitRatio.Length);
+                        if (!BackendMetricsParser.TryParseDoubleField(corpus, out indexHitRatio, out bytesConsumed))
                         {
                             backendMetrics = default;
                             return false;
@@ -240,6 +250,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                 retrievedDocumentSize: retrievedDocumentSize,
                 outputDocumentCount: outputDocumentCount,
                 outputDocumentSize: outputDocumentSize,
+                indexHitRatio: indexHitRatio,
                 totalQueryExecutionTime: totalQueryExecutionTime,
                 queryPreparationTimes: new QueryPreparationTimes(
                     queryCompilationTime: queryCompilationTime,
@@ -281,6 +292,27 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         }
 
         private static bool TryParseLongField(ReadOnlySpan<byte> corpus, out long value, out int bytesConsumed)
+        {
+            BackendMetricsTokenizer.Token equalsDelimiterToken = BackendMetricsTokenizer.Read(corpus);
+            if (equalsDelimiterToken != BackendMetricsTokenizer.Token.EqualDelimiter)
+            {
+                value = default;
+                bytesConsumed = default;
+                return false;
+            }
+
+            corpus = corpus.Slice(1);
+            if (!Utf8Parser.TryParse(corpus, out value, out bytesConsumed))
+            {
+                value = default;
+                return false;
+            }
+
+            bytesConsumed++;
+            return true;
+        }
+
+        private static bool TryParseDoubleField(ReadOnlySpan<byte> corpus, out double value, out int bytesConsumed)
         {
             BackendMetricsTokenizer.Token equalsDelimiterToken = BackendMetricsTokenizer.Read(corpus);
             if (equalsDelimiterToken != BackendMetricsTokenizer.Token.EqualDelimiter)
