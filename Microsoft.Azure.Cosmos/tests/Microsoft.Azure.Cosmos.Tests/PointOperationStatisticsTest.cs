@@ -19,7 +19,6 @@ namespace Microsoft.Azure.Cosmos
 
             CosmosClientSideRequestStatistics cosmosClientSideRequestStatistics = new CosmosClientSideRequestStatistics();
             //Setting null supplementalResponseStatisticsList
-            cosmosClientSideRequestStatistics.SupplementalResponseStatisticsList = null;
             PointOperationStatistics pointOperationStatistics = new PointOperationStatistics(
                 activityId: Guid.NewGuid().ToString(),
                 statusCode: System.Net.HttpStatusCode.OK,
@@ -32,18 +31,13 @@ namespace Microsoft.Azure.Cosmos
                 responseSessionToken: null,
                 clientSideRequestStatistics: cosmosClientSideRequestStatistics);
 
-            pointOperationStatistics.ToString();
-            Assert.IsNull(pointOperationStatistics.ClientSideRequestStatistics.SupplementalResponseStatisticsList);
+            Assert.IsNotNull(pointOperationStatistics.ToString());
 
             //Adding 5 objects supplementalResponseStatisticsList
-            cosmosClientSideRequestStatistics.SupplementalResponseStatisticsList = new List<StoreResponseStatistics>
+            for (int i = 0; i < 5; i++)
             {
-                new StoreResponseStatistics(),
-                new StoreResponseStatistics(),
-                new StoreResponseStatistics(),
-                new StoreResponseStatistics(),
-                new StoreResponseStatistics()
-            };
+                cosmosClientSideRequestStatistics.SupplementalResponseStatisticsList.Add(new StoreResponseStatistics());
+            }
 
             pointOperationStatistics = new PointOperationStatistics(
                 activityId: Guid.NewGuid().ToString(),
@@ -56,6 +50,7 @@ namespace Microsoft.Azure.Cosmos
                 requestSessionToken: null,
                 responseSessionToken: null,
                 clientSideRequestStatistics: cosmosClientSideRequestStatistics);
+
             pointOperationStatistics.ToString();
             Assert.AreEqual(5, pointOperationStatistics.ClientSideRequestStatistics.SupplementalResponseStatisticsList.Count);
 

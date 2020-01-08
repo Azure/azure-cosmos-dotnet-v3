@@ -35,9 +35,9 @@ namespace Microsoft.Azure.Cosmos
 
         internal DateTime? RequestEndTimeUtc { get; private set; }
 
-        public List<StoreResponseStatistics> ResponseStatisticsList { get; private set; }
+        public List<StoreResponseStatistics> ResponseStatisticsList { get; }
 
-        public List<StoreResponseStatistics> SupplementalResponseStatisticsList { get; internal set; }
+        public List<StoreResponseStatistics> SupplementalResponseStatisticsList { get; }
 
         /// <summary>
         /// Only take last 10 responses from SupplementalResponseStatisticsList list
@@ -57,13 +57,13 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public Dictionary<string, AddressResolutionStatistics> EndpointToAddressResolutionStatistics { get; private set; }
+        public Dictionary<string, AddressResolutionStatistics> EndpointToAddressResolutionStatistics { get; }
 
         public List<Uri> ContactedReplicas { get; set; }
 
-        public HashSet<Uri> FailedReplicas { get; private set; }
+        public HashSet<Uri> FailedReplicas { get; }
 
-        public HashSet<Uri> RegionsContacted { get; private set; }
+        public HashSet<Uri> RegionsContacted { get; }
 
         public TimeSpan RequestLatency
         {
@@ -196,32 +196,42 @@ namespace Microsoft.Azure.Cosmos
             stringBuilder.Append(this.RequestStartTimeUtc);
             stringBuilder.Append("\",\"RequestEndTimeUtc\":\"");
             stringBuilder.Append(this.RequestEndTimeUtc);
+            stringBuilder.Append("\"");
 
-            stringBuilder.Append("\",\"ResponseStatisticsList\":[");
-            foreach (StoreResponseStatistics stat in this.ResponseStatisticsList)
+            if (this.ResponseStatisticsList.Any())
             {
-                stat.WriteJsonObject(stringBuilder);
-                stringBuilder.Append(",");
+                stringBuilder.Append(",\"ResponseStatisticsList\":[");
+                foreach (StoreResponseStatistics stat in this.ResponseStatisticsList)
+                {
+                    stat.WriteJsonObject(stringBuilder);
+                    stringBuilder.Append(",");
+                }
+
+                if (this.ResponseStatisticsList.Count > 0)
+                {
+                    stringBuilder.Length -= 1;
+                }
+
+                stringBuilder.Append("]");
             }
 
-            if (this.ResponseStatisticsList.Count > 0)
+            if (this.SupplementalResponseStatisticsList != null)
             {
-                stringBuilder.Length -= 1;
+                stringBuilder.Append(",\"SupplementalResponseStatisticsListLast10\":[");
+                foreach (StoreResponseStatistics stat in this.SupplementalResponseStatisticsListLast10)
+                {
+                    stat.WriteJsonObject(stringBuilder);
+                    stringBuilder.Append(",");
+                }
+
+                if (stringBuilder[stringBuilder.Length - 1] == ',')
+                {
+                    stringBuilder.Length--;
+                }
+                stringBuilder.Append("]");
             }
 
-            stringBuilder.Append("],\"SupplementalResponseStatisticsListLast10\":[");
-            foreach (StoreResponseStatistics stat in this.SupplementalResponseStatisticsListLast10)
-            {
-                stat.WriteJsonObject(stringBuilder);
-                stringBuilder.Append(",");
-            }
-
-            if (stringBuilder[stringBuilder.Length - 1] == ',')
-            {
-                stringBuilder.Length--;
-            }
-
-            stringBuilder.Append("],\"EndpointToAddressResolutionStatistics\":[");
+            stringBuilder.Append(",\"EndpointToAddressResolutionStatistics\":[");
             foreach (KeyValuePair<string, AddressResolutionStatistics> keyValuePair in this.EndpointToAddressResolutionStatistics)
             {
                 stringBuilder.Append("{\"");
@@ -386,8 +396,12 @@ namespace Microsoft.Azure.Cosmos
                 stringBuilder.Append(this.RequestResourceType);
                 stringBuilder.Append("\",\"RequestOperationType\":\"");
                 stringBuilder.Append(this.RequestOperationType);
-                stringBuilder.Append("\",\"StoreResult\":\"");
-                this.StoreResult.AppendToBuilder(stringBuilder);
+                if (this.StoreResult != null)
+                {
+                    stringBuilder.Append("\",\"StoreResult\":\"");
+                    this.StoreResult.AppendToBuilder(stringBuilder);
+                }
+                
                 stringBuilder.Append("\"}");
             }
         }
