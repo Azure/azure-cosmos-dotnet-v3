@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Query
             Assert.IsNull(deserializedToken.Token);
             Assert.AreEqual("05C1C9CD673398", deserializedToken.Range.Min);
             Assert.AreEqual("05C1D9CD673398", deserializedToken.Range.Max);
-            Assert.AreEqual(serializedContinuationToken, JsonConvert.SerializeObject(deserializedTokens));
+            Assert.AreEqual(serializedContinuationToken, JsonConvert.SerializeObject(deserializedTokens, Formatting.None));
         }
 
         [TestMethod]

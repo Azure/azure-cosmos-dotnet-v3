@@ -235,13 +235,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
             if (!(cosmosElement is CosmosObject cosmosObject))
             {
                 return TryCatch<OrderByContinuationToken>.FromException(
-                    new MalformedContinuationTokenException($"{nameof(OrderByContinuationToken)} is not an object"));
+                    new MalformedContinuationTokenException($"{nameof(OrderByContinuationToken)} is not an object: {cosmosElement}"));
             }
 
             if (!cosmosObject.TryGetValue(CompositeTokenName, out CosmosElement compositeContinuationTokenElement))
             {
                 return TryCatch<OrderByContinuationToken>.FromException(
-                    new MalformedContinuationTokenException($"{nameof(OrderByContinuationToken)} is missing field: '{CompositeTokenName}'"));
+                    new MalformedContinuationTokenException($"{nameof(OrderByContinuationToken)} is missing field: '{CompositeTokenName}': {cosmosElement}"));
             }
 
             TryCatch<CompositeContinuationToken> tryCompositeContinuation = CompositeContinuationToken.TryCreateFromCosmosElement(compositeContinuationTokenElement);
@@ -255,7 +255,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
             if (!cosmosObject.TryGetValue(OrderByItemsName, out CosmosArray orderByItemsRaw))
             {
                 return TryCatch<OrderByContinuationToken>.FromException(
-                    new MalformedContinuationTokenException($"{nameof(OrderByContinuationToken)} is missing field: '{OrderByItemsName}'"));
+                    new MalformedContinuationTokenException($"{nameof(OrderByContinuationToken)} is missing field: '{OrderByItemsName}': {cosmosElement}"));
             }
 
             List<OrderByItem> orderByItems = orderByItemsRaw.Select(x => OrderByItem.FromCosmosElement(x)).ToList();
@@ -263,7 +263,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
             if (!cosmosObject.TryGetValue(RidName, out CosmosString ridRaw))
             {
                 return TryCatch<OrderByContinuationToken>.FromException(
-                    new MalformedContinuationTokenException($"{nameof(OrderByContinuationToken)} is missing field: '{RidName}'"));
+                    new MalformedContinuationTokenException($"{nameof(OrderByContinuationToken)} is missing field: '{RidName}': {cosmosElement}"));
             }
 
             string rid = ridRaw.Value;
@@ -271,7 +271,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
             if (!cosmosObject.TryGetValue(SkipCountName, out CosmosNumber64 skipCountRaw))
             {
                 return TryCatch<OrderByContinuationToken>.FromException(
-                    new MalformedContinuationTokenException($"{nameof(OrderByContinuationToken)} is missing field: '{SkipCountName}'"));
+                    new MalformedContinuationTokenException($"{nameof(OrderByContinuationToken)} is missing field: '{SkipCountName}': {cosmosElement}"));
             }
 
             int skipCount = (int)Number64.ToLong(skipCountRaw.GetValue());
@@ -279,7 +279,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
             if (!cosmosObject.TryGetValue(FilterName, out CosmosElement filterRaw))
             {
                 return TryCatch<OrderByContinuationToken>.FromException(
-                    new MalformedContinuationTokenException($"{nameof(OrderByContinuationToken)} is missing field: '{FilterName}'"));
+                    new MalformedContinuationTokenException($"{nameof(OrderByContinuationToken)} is missing field: '{FilterName}': {cosmosElement}"));
             }
 
             string filter;

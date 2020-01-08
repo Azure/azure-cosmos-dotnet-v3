@@ -66,13 +66,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
             if (!(cosmosElement is CosmosObject cosmosObject))
             {
                 return TryCatch<CompositeContinuationToken>.FromException(
-                    new MalformedContinuationTokenException($"{nameof(CompositeContinuationToken)} is not an object"));
+                    new MalformedContinuationTokenException($"{nameof(CompositeContinuationToken)} is not an object: {cosmosElement}"));
             }
 
             if (!cosmosObject.TryGetValue(TokenName, out CosmosElement rawToken))
             {
                 return TryCatch<CompositeContinuationToken>.FromException(
-                    new MalformedContinuationTokenException($"{nameof(CompositeContinuationToken)} is missing field: '{TokenName}'"));
+                    new MalformedContinuationTokenException($"{nameof(CompositeContinuationToken)} is missing field: '{TokenName}': {cosmosElement}"));
             }
 
             string token;
@@ -88,13 +88,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
             if (!cosmosObject.TryGetValue(RangeName, out CosmosObject rawRange))
             {
                 return TryCatch<CompositeContinuationToken>.FromException(
-                    new MalformedContinuationTokenException($"{nameof(CompositeContinuationToken)} is missing field: '{RangeName}'"));
+                    new MalformedContinuationTokenException($"{nameof(CompositeContinuationToken)} is missing field: '{RangeName}': {cosmosElement}"));
             }
 
             if (!rawRange.TryGetValue(MinName, out CosmosString rawMin))
             {
                 return TryCatch<CompositeContinuationToken>.FromException(
-                    new MalformedContinuationTokenException($"{nameof(CompositeContinuationToken)} is missing field: '{MinName}'"));
+                    new MalformedContinuationTokenException($"{nameof(CompositeContinuationToken)} is missing field: '{MinName}': {cosmosElement}"));
             }
 
             string min = rawMin.Value;
@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
             if (!rawRange.TryGetValue(MaxName, out CosmosString rawMax))
             {
                 return TryCatch<CompositeContinuationToken>.FromException(
-                    new MalformedContinuationTokenException($"{nameof(CompositeContinuationToken)} is missing field: '{MaxName}'"));
+                    new MalformedContinuationTokenException($"{nameof(CompositeContinuationToken)} is missing field: '{MaxName}': {cosmosElement}"));
             }
 
             string max = rawMax.Value;
