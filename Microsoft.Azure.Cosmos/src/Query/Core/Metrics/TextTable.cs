@@ -11,7 +11,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     /// <summary>
     /// Query runtime execution times in the Azure Cosmos DB service.
     /// </summary>
-    internal sealed class TextTable
+#if INTERNAL
+    public
+#else
+    internal
+#endif
+    sealed class TextTable
     {
         private const char CellLeftTop = '┌';
         private const char CellRightTop = '┐';

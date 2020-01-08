@@ -10,7 +10,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     /// <summary>
     /// Accumlator that acts as a builder of FetchExecutionRanges
     /// </summary>
-    internal sealed class FetchExecutionRangeAccumulator
+#if INTERNAL
+    public
+#else
+    internal
+#endif
+    sealed class FetchExecutionRangeAccumulator
     {
         private readonly DateTime constructionTime;
         private readonly Stopwatch stopwatch;

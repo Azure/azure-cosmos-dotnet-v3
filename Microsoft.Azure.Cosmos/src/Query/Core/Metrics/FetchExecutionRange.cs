@@ -8,7 +8,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     /// <summary>
     /// Stores information about fetch execution (for cross partition queries).
     /// </summary>
-    internal sealed class FetchExecutionRange
+#if INTERNAL
+    public
+#else
+    internal
+#endif
+    sealed class FetchExecutionRange
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="FetchExecutionRange"/> class.
