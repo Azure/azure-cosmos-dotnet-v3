@@ -29,9 +29,9 @@ namespace Microsoft.Azure.Cosmos
             return item;
         }
 
-        public override async Task<T> FromStreamAsync<T>(Stream stream, Container container, ItemRequestOptions itemRequestOptions, CancellationToken cancellationToken)
+        internal override async Task<T> FromStreamAsync<T>(Stream stream, Container container, RequestOptions requestOptions, CancellationToken cancellationToken)
         {
-            T item = await this.InternalJsonSerializer.FromStreamAsync<T>(stream, container, itemRequestOptions, cancellationToken);
+            T item = await this.InternalJsonSerializer.FromStreamAsync<T>(stream, container, requestOptions, cancellationToken);
             if (stream.CanRead)
             {
                 throw new InvalidOperationException("Json Serializer left an open stream.");
@@ -56,9 +56,9 @@ namespace Microsoft.Azure.Cosmos
             return stream;
         }
 
-        public override async Task<Stream> ToStreamAsync<T>(T input, Container container, ItemRequestOptions itemRequestOptions, CancellationToken cancellationToken)
+        internal override async Task<Stream> ToStreamAsync<T>(T input, Container container, RequestOptions requestOptions, CancellationToken cancellationToken)
         {
-            Stream stream = await this.InternalJsonSerializer.ToStreamAsync(input, container, itemRequestOptions, cancellationToken);
+            Stream stream = await this.InternalJsonSerializer.ToStreamAsync(input, container, requestOptions, cancellationToken);
             if (stream == null)
             {
                 throw new InvalidOperationException("Json Serializer returned a null stream.");

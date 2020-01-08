@@ -23,17 +23,17 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Encryption Key Salt format. This is used to derive the encryption key from the root key.
         /// </summary>
-        private const string encryptionKeySaltFormat = @"Microsoft Azure Cosmos DB cell encryption key with encryption algorithm:{0} and key length:{1}";
+        private const string encryptionKeySaltFormat = @"Microsoft Azure Cosmos DB encryption key with encryption algorithm:{0} and key length:{1}";
 
         /// <summary>
         /// MAC Key Salt format. This is used to derive the MAC key from the root key.
         /// </summary>
-        private const string macKeySaltFormat = @"Microsoft Azure Cosmos DB cell MAC key with encryption algorithm:{0} and key length:{1}";
+        private const string macKeySaltFormat = @"Microsoft Azure Cosmos DB MAC key with encryption algorithm:{0} and key length:{1}";
 
         /// <summary>
         /// IV Key Salt format. This is used to derive the IV key from the root key. This is only used for Deterministic encryption.
         /// </summary>
-        private const string ivKeySaltFormat = @"Microsoft Azure Cosmos DB cell IV key with encryption algorithm:{0} and key length:{1}";
+        private const string ivKeySaltFormat = @"Microsoft Azure Cosmos DB IV key with encryption algorithm:{0} and key length:{1}";
 
         /// <summary>
         /// Encryption Key

@@ -40,10 +40,19 @@ namespace Microsoft.Azure.Cosmos
             this.EncryptionKeyWrapProvider = encryptionKeyWrapProvider ?? throw new ArgumentNullException(nameof(encryptionKeyWrapProvider));
         }
 
-        /// <inheritdoc />
-        public override async Task<Stream> ToStreamAsync<T>(T input, Container container, ItemRequestOptions itemRequestOptions, CancellationToken cancellationToken)
+        /// <summary>
+        /// Converts the input object to a Stream and encrypts top level properties of the type T which have been annotated with the <see cref="CosmosEncryptAttribute"/>. 
+        /// </summary>
+        /// <param name="input">Any type passed to <see cref="Container"/>.</param>
+        /// <param name="container">Container that the item is in.</param>
+        /// <param name="requestOptions">Request options for the request.</param>
+        /// <param name="cancellationToken">Cancellation token allowing for cancellation of the operation.</param>
+        /// <returns>A readable Stream containing JSON of the serialized object.</returns>
+        // The caller will take ownership of the stream and ensure it is correctly disposed of.
+        internal override async Task<Stream> ToStreamAsync<T>(T input, Container container, RequestOptions requestOptions, CancellationToken cancellationToken)
         {
             ContainerCore containerCore = (ContainerCore)container;
+            ItemRequestOptions itemRequestOptions = requestOptions as ItemRequestOptions;
 
             if (itemRequestOptions == null || itemRequestOptions.EncryptionOptions == null || itemRequestOptions.EncryptionOptions.DataEncryptionKey == null)
             {
@@ -61,7 +70,6 @@ namespace Microsoft.Azure.Cosmos
 
             JObject toEncryptJObj = new JObject();
 
-            // todo: currently supports only top level properties
             foreach (PropertyInfo typeProperty in typeProperties)
             {
                 Attribute shouldEncrypt = Attribute.GetCustomAttribute(typeProperty, typeof(CosmosEncryptAttribute));
@@ -104,7 +112,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <inheritdoc />
-        public override async Task<T> FromStreamAsync<T>(Stream stream, Container container, ItemRequestOptions itemRequestOptions, CancellationToken cancellationToken)
+        internal override async Task<T> FromStreamAsync<T>(Stream stream, Container container, RequestOptions requestOptions, CancellationToken cancellationToken)
         {
             JObject itemJObj = null;
             using (StreamReader streamReader = new StreamReader(stream))
@@ -128,12 +136,12 @@ namespace Microsoft.Azure.Cosmos
             EncryptionProperties encryptionProperties = encryptionPropertiesJObj.ToObject<EncryptionProperties>();
             if (encryptionProperties.EncryptionFormatVersion != 1)
             {
-                throw new CosmosException(HttpStatusCode.InternalServerError, "Unknown encryption format version. Please upgrade your SDK to the latest version.");
+                throw new CosmosException(HttpStatusCode.InternalServerError, $"Unknown encryption format version: {encryptionProperties.EncryptionFormatVersion}. Please upgrade your SDK to the latest version.");
             }
 
             if (encryptionProperties.EncryptionAlgorithmId != 1)
             {
-                throw new CosmosException(HttpStatusCode.InternalServerError, "Unknown encryption algorithm. Please upgrade your SDK to the latest version.");
+                throw new CosmosException(HttpStatusCode.InternalServerError, $"Unknown encryption algorithm id: {encryptionProperties.EncryptionAlgorithmId}. Please upgrade your SDK to the latest version.");
             }
 
             ContainerCore containerCore = (ContainerCore)container;

@@ -8,11 +8,10 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
-    using Microsoft.Azure.Documents;
 
     internal class DekCache
     {
-        private readonly TimeSpan dekPropertiesTimeToLive = TimeSpan.FromHours(1);
+        private readonly TimeSpan dekPropertiesTimeToLive = TimeSpan.FromMinutes(30);
 
         // Internal for unit testing
         internal AsyncCache<Uri, CachedDekProperties> DekPropertiesByNameLinkUriCache { get; } = new AsyncCache<Uri, CachedDekProperties>();
@@ -42,7 +41,7 @@ namespace Microsoft.Azure.Cosmos
                     () => this.FetchAsync(fetcher, dekRidSelfLink, databaseId, cancellationToken),
                     cancellationToken);
 
-            if (cachedDekProperties.ServerPropertiesExpiry <= DateTime.UtcNow)
+            if (cachedDekProperties.ServerPropertiesExpiryUtc <= DateTime.UtcNow)
             {
                 cachedDekProperties = await this.DekPropertiesByRidSelfLinkCache.GetAsync(
                     dekRidSelfLink,
@@ -68,7 +67,7 @@ namespace Microsoft.Azure.Cosmos
                     () => this.FetchAsync(fetcher, databaseId, cancellationToken),
                     cancellationToken);
 
-            if (cachedDekProperties.ServerPropertiesExpiry <= DateTime.UtcNow)
+            if (cachedDekProperties.ServerPropertiesExpiryUtc <= DateTime.UtcNow)
             {
                 cachedDekProperties = await this.DekPropertiesByNameLinkUriCache.GetAsync(
                     dekNameLinkUri,
@@ -108,7 +107,6 @@ namespace Microsoft.Azure.Cosmos
 
         public void Set(string databaseId, Uri dekNameLinkUri, DataEncryptionKeyProperties dekProperties)
         {
-            // todo: should we not overwrite if the input is the same so we don't lose raw DEK?
             CachedDekProperties cachedDekProperties = new CachedDekProperties(databaseId, dekProperties, DateTime.UtcNow + this.dekPropertiesTimeToLive);
             this.DekPropertiesByNameLinkUriCache.Set(dekNameLinkUri, cachedDekProperties);
             this.DekPropertiesByRidSelfLinkCache.Set(dekProperties.SelfLink, cachedDekProperties);

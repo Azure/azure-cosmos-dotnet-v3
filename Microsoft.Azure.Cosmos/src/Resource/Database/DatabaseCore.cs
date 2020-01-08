@@ -529,12 +529,7 @@ namespace Microsoft.Azure.Cosmos
                     id));
         }
 
-#if PREVIEW
-    public
-#else
-        internal
-#endif
-        override FeedIterator<DataEncryptionKeyProperties> GetDataEncryptionKeyIterator(
+        internal FeedIterator<DataEncryptionKeyProperties> GetDataEncryptionKeyIterator(
             string startId = null,
             string endId = null,
             bool isDescending = false,

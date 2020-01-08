@@ -65,14 +65,14 @@ namespace Microsoft.Azure.Cosmos
             return serializer.FromStream<T>(stream);
         }
 
-        internal Task<T> FromStreamAsync<T>(Stream stream, Container container, ItemRequestOptions itemRequestOptions, CancellationToken cancellationToken)
+        internal Task<T> FromStreamAsync<T>(Stream stream, Container container, RequestOptions requestOptions, CancellationToken cancellationToken)
         {
-            return this.customSerializer.FromStreamAsync<T>(stream, container, itemRequestOptions, cancellationToken);
+            return this.customSerializer.FromStreamAsync<T>(stream, container, requestOptions, cancellationToken);
         }
 
-        internal Task<Stream> ToStreamAsync<T>(T input, Container container, ItemRequestOptions itemRequestOptions, CancellationToken cancellationToken)
+        internal Task<Stream> ToStreamAsync<T>(T input, Container container, RequestOptions requestOptions, CancellationToken cancellationToken)
         {
-            return this.customSerializer.ToStreamAsync<T>(input, container, itemRequestOptions, cancellationToken);
+            return this.customSerializer.ToStreamAsync<T>(input, container, requestOptions, cancellationToken);
         }
 
         internal Stream ToStream<T>(T input)

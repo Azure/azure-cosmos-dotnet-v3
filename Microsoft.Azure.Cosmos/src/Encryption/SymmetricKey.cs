@@ -33,14 +33,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Finalizes an instance of the <see cref="SymmetricKey"/> class.
-        /// Empty destructor for binary back compat.
-        /// </summary>
-        ~SymmetricKey()
-        {
-        }
-
-        /// <summary>
         /// Returns a copy of the plain text key
         /// This is needed for actual encryption/decryption.
         /// </summary>

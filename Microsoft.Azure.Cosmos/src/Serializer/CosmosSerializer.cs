@@ -40,10 +40,10 @@ namespace Microsoft.Azure.Cosmos
         /// <typeparam name="T">Any type passed to <see cref="Container"/>.</typeparam>
         /// <param name="stream">The Stream response containing JSON from Cosmos DB.</param>
         /// <param name="container">Container that the item is in.</param>
-        /// <param name="itemRequestOptions">Request options for the item request.</param>
+        /// <param name="requestOptions">Request options for the request.</param>
         /// <param name="cancellationToken">Cancellation token allowing for cancellation of the operation.</param>
         /// <returns>The object deserialized from the stream.</returns>
-        public virtual Task<T> FromStreamAsync<T>(Stream stream, Container container, ItemRequestOptions itemRequestOptions, CancellationToken cancellationToken)
+        internal virtual Task<T> FromStreamAsync<T>(Stream stream, Container container, RequestOptions requestOptions, CancellationToken cancellationToken)
         {
             return Task.FromResult(this.FromStream<T>(stream));
         }
@@ -55,10 +55,10 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="input">Any type passed to <see cref="Container"/>.</param>
         /// <param name="container">Container that the item is in.</param>
-        /// <param name="itemRequestOptions">Request options for the item request.</param>
+        /// <param name="requestOptions">Request options for the request.</param>
         /// <param name="cancellationToken">Cancellation token allowing for cancellation of the operation.</param>
         /// <returns>A readable Stream containing JSON of the serialized object.</returns>
-        public virtual Task<Stream> ToStreamAsync<T>(T input, Container container, ItemRequestOptions itemRequestOptions, CancellationToken cancellationToken)
+        internal virtual Task<Stream> ToStreamAsync<T>(T input, Container container, RequestOptions requestOptions, CancellationToken cancellationToken)
         {
             return Task.FromResult(this.ToStream<T>(input));
         }
