@@ -7,7 +7,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Globalization;
-    using Newtonsoft.Json;
+    using System.Text;
+    using Microsoft.Azure.Documents.Routing;
 
     /// <summary>
     /// This represents the core diagnostics object used in the SDK.
@@ -15,28 +16,19 @@ namespace Microsoft.Azure.Cosmos
     /// through the pipeline appending information as it goes into a list
     /// where it is lazily converted to a JSON string.
     /// </summary>
-    internal class CosmosDiagnosticsContext : CosmosDiagnostics
+    internal class CosmosDiagnosticsContext : CosmosDiagnostics, ICosmosDiagnosticWriter
     {
-        internal static readonly JsonSerializerSettings JsonSerializerSettings = new JsonSerializerSettings()
-        {
-            NullValueHandling = NullValueHandling.Ignore,
-            Culture = CultureInfo.InvariantCulture,
-            Formatting = Formatting.None
-        };
-
         private static readonly string DefaultUserAgentString;
 
-        [JsonProperty(PropertyName = "RetryCount")]
+        private readonly DateTime StartUtc;
+
         private long? retryCount;
 
-        [JsonProperty(PropertyName = "RetryBackoffTimeSpan")]
         private TimeSpan? retryBackoffTimeSpan;
 
-        [JsonProperty(PropertyName = "UserAgent")]
         private string userAgent;
 
-        [JsonProperty(PropertyName = "ContextList")]
-        private List<object> contextList { get; }
+        private List<ICosmosDiagnosticWriter> contextList { get; }
 
         static CosmosDiagnosticsContext()
         {
@@ -47,10 +39,11 @@ namespace Microsoft.Azure.Cosmos
 
         internal CosmosDiagnosticsContext()
         {
+            this.StartUtc = DateTime.UtcNow;
             this.retryCount = null;
             this.retryBackoffTimeSpan = null;
             this.userAgent = CosmosDiagnosticsContext.DefaultUserAgentString;
-            this.contextList = new List<object>();
+            this.contextList = new List<ICosmosDiagnosticWriter>(10);
         }
 
         internal CosmosDiagnosticsScope CreateScope(string name)
@@ -62,7 +55,10 @@ namespace Microsoft.Azure.Cosmos
 
         public override string ToString()
         {
-            return JsonConvert.SerializeObject(this, CosmosDiagnosticsContext.JsonSerializerSettings);
+            StringBuilder stringBuilder = new StringBuilder();        
+            this.WriteJsonObject(stringBuilder);
+
+            return stringBuilder.ToString();
         }
 
         internal void SetSdkUserAgent(string userAgent)
@@ -81,29 +77,70 @@ namespace Microsoft.Azure.Cosmos
             this.retryCount = this.retryCount.GetValueOrDefault(0) + 1;
         }
 
-        internal void AddJsonAttribute(string name, dynamic property)
+        internal void AddJsonAttribute(ICosmosDiagnosticWriter diagnosticWriter)
         {
-            this.contextList.Add(new CosmosDiagnosticAttribute(name, property));
+            this.contextList.Add(diagnosticWriter);
         }
 
-        /// <summary>
-        /// Supports appending an object that implements ICosmosDiagnosticsJsonWriter so
-        /// it can be lazy.
-        /// </summary>
-        private class CosmosDiagnosticAttribute
+        internal void AddJsonAttribute(string key, string value)
         {
-            [JsonProperty(PropertyName = "Id")]
-            private readonly string id;
+            this.contextList.Add(new CosmosDiagnosticsAttribute(key, value));
+        }
 
-            [JsonProperty(PropertyName = "Value")]
-            private readonly dynamic value;
-
-            internal CosmosDiagnosticAttribute(
-                string name,
-                dynamic value)
+        public void WriteJsonObject(StringBuilder stringBuilder)
+        {
+            stringBuilder.Append("{\"StartUtc\":\"");
+            stringBuilder.Append(this.StartUtc);
+            stringBuilder.Append("\",\"UserAgent\":\"");
+            stringBuilder.Append(this.userAgent);
+            if (this.retryCount.HasValue && this.retryCount.Value > 0)
             {
-                this.id = name ?? throw new ArgumentNullException(nameof(name));
-                this.value = value ?? throw new ArgumentNullException(nameof(value));
+                stringBuilder.Append("\",\"RetryCount\":\"");
+                stringBuilder.Append(this.retryCount.Value);
+            }
+
+            if (this.retryBackoffTimeSpan.HasValue && this.retryBackoffTimeSpan.Value > TimeSpan.Zero)
+            {
+                stringBuilder.Append("\",\"RetryBackOffTime\":\"");
+                stringBuilder.Append(this.retryBackoffTimeSpan.Value);
+            }
+
+            stringBuilder.Append("\",\"Context\":[");
+            foreach (ICosmosDiagnosticWriter writer in this.contextList)
+            {
+                writer.WriteJsonObject(stringBuilder);
+                stringBuilder.Append(",");
+            }
+
+            // Remove the last comma to make valid json
+            if (this.contextList.Count > 0)
+            {
+                stringBuilder.Length -= 1;
+            }
+
+            stringBuilder.Append("]}");
+        }
+
+        internal class CosmosDiagnosticsAttribute : ICosmosDiagnosticWriter
+        {
+            private readonly string key;
+            private readonly string value;
+
+            internal CosmosDiagnosticsAttribute(
+                string key,
+                string value)
+            {
+                this.key = key;
+                this.value = value;
+            }
+
+            public void WriteJsonObject(StringBuilder stringBuilder)
+            {
+                stringBuilder.Append("{\"");
+                stringBuilder.Append(this.key);
+                stringBuilder.Append("\",\"");
+                stringBuilder.Append(this.value);
+                stringBuilder.Append("\"}");
             }
         }
 
@@ -112,24 +149,18 @@ namespace Microsoft.Azure.Cosmos
         /// A scope is a section of code that is important to track.
         /// For example there is a scope for serialization, retry handlers, etc..
         /// </summary>
-        internal class CosmosDiagnosticsScope : IDisposable
+        internal class CosmosDiagnosticsScope : ICosmosDiagnosticWriter, IDisposable
         {
-            [JsonProperty(PropertyName = "Id")]
             private string Id { get; }
-
-            [JsonProperty(PropertyName = "StartTimeUtc")]
-            private DateTime StartTimeUtc { get; }
 
             private Stopwatch ElapsedTimeStopWatch { get; }
 
-            [JsonProperty(PropertyName = "ElapsedTime")]
             private TimeSpan? ElapsedTime { get; set; }
 
             internal CosmosDiagnosticsScope(
                 string name)
             {
                 this.Id = name;
-                this.StartTimeUtc = DateTime.UtcNow;
                 this.ElapsedTimeStopWatch = Stopwatch.StartNew();
                 this.ElapsedTime = null;
             }
@@ -138,6 +169,23 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.ElapsedTimeStopWatch.Stop();
                 this.ElapsedTime = this.ElapsedTimeStopWatch.Elapsed;
+            }
+
+            public void WriteJsonObject(StringBuilder stringBuilder)
+            {
+                stringBuilder.Append("{\"Id\":\"");
+                stringBuilder.Append(this.Id);
+                stringBuilder.Append("\",\"ElapsedTime\":\"");
+                if (this.ElapsedTime.HasValue)
+                {
+                    stringBuilder.Append(this.ElapsedTime.Value);
+                }
+                else
+                {
+                    stringBuilder.Append("NoElapsedTime");
+                }
+
+                stringBuilder.Append("\"}");
             }
         }
     }

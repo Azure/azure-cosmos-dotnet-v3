@@ -8,35 +8,45 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     using System.Text;
     using Newtonsoft.Json;
 
-    internal sealed class QueryPageDiagnostics
+    internal sealed class QueryPageDiagnostics : ICosmosDiagnosticWriter
     {
         public QueryPageDiagnostics(
             string partitionKeyRangeId,
             string queryMetricText,
             string indexUtilizationText,
-            CosmosDiagnostics requestDiagnostics,
+            CosmosDiagnosticsContext diagnosticsContext,
             SchedulingStopwatch schedulingStopwatch)
         {
             this.PartitionKeyRangeId = partitionKeyRangeId ?? throw new ArgumentNullException(nameof(partitionKeyRangeId));
             this.QueryMetricText = queryMetricText ?? string.Empty;
             this.IndexUtilizationText = indexUtilizationText ?? string.Empty;
-            this.RequestDiagnostics = requestDiagnostics;
+            this.DiagnosticsContext = diagnosticsContext;
             this.SchedulingTimeSpan = schedulingStopwatch.Elapsed;
         }
 
-        [JsonProperty(PropertyName = "PartitionKeyRangeId" )]
         internal string PartitionKeyRangeId { get; }
 
-        [JsonProperty(PropertyName = "QueryMetricText")]
         internal string QueryMetricText { get; }
 
-        [JsonProperty(PropertyName = "IndexUtilizationText")]
         internal string IndexUtilizationText { get; }
 
-        [JsonProperty(PropertyName = "RequestDiagnostics")]
-        internal CosmosDiagnostics RequestDiagnostics { get; }
+        internal CosmosDiagnosticsContext DiagnosticsContext { get; }
 
-        [JsonProperty(PropertyName = "SchedulingTimeSpan")]
         internal SchedulingTimeSpan SchedulingTimeSpan { get; }
+
+        public void WriteJsonObject(StringBuilder stringBuilder)
+        {
+            stringBuilder.Append("{\"PKRangeId\":\"");
+            stringBuilder.Append(this.PartitionKeyRangeId);
+            stringBuilder.Append("\",\"QueryMetric\":\"");
+            stringBuilder.Append(this.QueryMetricText);
+            stringBuilder.Append("\",\"IndexUtilization\":\"");
+            stringBuilder.Append(this.IndexUtilizationText);
+            stringBuilder.Append("\",\"Context\":");
+            this.DiagnosticsContext.WriteJsonObject(stringBuilder);
+            stringBuilder.Append(",\"SchedulingTimeSpan\":");
+            this.SchedulingTimeSpan.AppendJsonObjectToBuilder(stringBuilder);
+            stringBuilder.Append("}");
+        }
     }
 }

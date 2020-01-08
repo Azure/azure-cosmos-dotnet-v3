@@ -336,14 +336,9 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         private (Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>>, QueryResponseCore) SetupBaseContextToVerifyFailureScenario()
-        {
-            IReadOnlyCollection<QueryPageDiagnostics> diagnostics = new List<QueryPageDiagnostics>()
-            {
-                new QueryPageDiagnostics(
-                    "0",
-                    "SomeQueryMetricText",
-                    "SomeIndexUtilText",
-                new PointOperationStatistics(
+        { 
+            CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContext();
+            diagnosticsContext.AddJsonAttribute( new PointOperationStatistics(
                     Guid.NewGuid().ToString(),
                     System.Net.HttpStatusCode.Unauthorized,
                     subStatusCode: SubStatusCodes.PartitionKeyMismatch,
@@ -353,7 +348,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                     requestUri: new Uri("http://localhost.com"),
                     requestSessionToken: null,
                     responseSessionToken: null,
-                    clientSideRequestStatistics: null),
+                    clientSideRequestStatistics: null));
+            IReadOnlyCollection<QueryPageDiagnostics> diagnostics = new List<QueryPageDiagnostics>()
+            {
+                new QueryPageDiagnostics(
+                    "0",
+                    "SomeQueryMetricText",
+                    "SomeIndexUtilText",
+                diagnosticsContext,
                 new SchedulingStopwatch())
             };
 

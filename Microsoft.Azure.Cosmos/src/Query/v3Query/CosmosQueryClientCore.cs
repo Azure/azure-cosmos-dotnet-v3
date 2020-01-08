@@ -278,7 +278,7 @@ namespace Microsoft.Azure.Cosmos
                     partitionKeyRangeId: partitionKeyRangeIdentity.PartitionKeyRangeId,
                     queryMetricText: cosmosResponseMessage.Headers.QueryMetricsText,
                     indexUtilizationText: cosmosResponseMessage.Headers[HttpConstants.HttpHeaders.IndexUtilization],
-                    requestDiagnostics: cosmosResponseMessage.Diagnostics,
+                    diagnosticsContext: cosmosResponseMessage.DiagnosticsContext,
                     schedulingStopwatch: schedulingStopwatch);
 
                 IReadOnlyCollection<QueryPageDiagnostics> pageDiagnostics = new List<QueryPageDiagnostics>() { diagnostics };

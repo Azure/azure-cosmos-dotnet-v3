@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 foreach (QueryPageDiagnostics queryPage in responseCore.Diagnostics)
                 {
-                    diagnostics.AddJsonAttribute(queryPage.PartitionKeyRangeId, queryPage);
+                    diagnostics.AddJsonAttribute(queryPage);
                 }
 
                 QueryResponse queryResponse;

@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos
                 responseSessionToken: responseMessage.Headers.Session,
                 clientSideRequestStatistics: cosmosClientSideRequestStatistics);
 
-            requestMessage.DiagnosticsContext.AddJsonAttribute("PointOperationStatistics", pointOperationStatistics);
+            requestMessage.DiagnosticsContext.AddJsonAttribute(pointOperationStatistics);
             return responseMessage;
         }
 
@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos
             PointOperationStatistics pointOperationStatistics = new PointOperationStatistics(
                 activityId: responseMessage.Headers.ActivityId,
                 statusCode: documentClientException.StatusCode.Value,
-                subStatusCode: SubStatusCodes.Unknown,
+                subStatusCode: (int)SubStatusCodes.Unknown,
                 requestCharge: responseMessage.Headers.RequestCharge,
                 errorMessage: responseMessage.ErrorMessage,
                 method: requestMessage?.Method,
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos
                 responseSessionToken: responseMessage.Headers.Session,
                 clientSideRequestStatistics: documentClientException.RequestStatistics as CosmosClientSideRequestStatistics);
 
-            responseMessage.DiagnosticsContext.AddJsonAttribute("PointOperationStatistics", pointOperationStatistics);
+            responseMessage.DiagnosticsContext.AddJsonAttribute(pointOperationStatistics);
             if (requestMessage != null)
             {
                 requestMessage.Properties.Remove(nameof(DocumentClientException));

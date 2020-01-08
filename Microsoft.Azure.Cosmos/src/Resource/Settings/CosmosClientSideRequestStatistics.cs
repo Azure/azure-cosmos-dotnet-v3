@@ -8,11 +8,12 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Globalization;
     using System.Linq;
+    using System.Runtime.CompilerServices;
     using System.Text;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
-    internal sealed class CosmosClientSideRequestStatistics : IClientSideRequestStatistics
+    internal sealed class CosmosClientSideRequestStatistics : IClientSideRequestStatistics, ICosmosDiagnosticWriter
     {
         internal const int MaxSupplementalRequestsForToString = 10;
 
@@ -30,16 +31,12 @@ namespace Microsoft.Azure.Cosmos
             this.RegionsContacted = new HashSet<Uri>();
         }
 
-        [JsonProperty(PropertyName = "RequestStartTimeUtc")]
         internal DateTime RequestStartTimeUtc { get; }
 
-        [JsonProperty(PropertyName = "RequestEndTimeUtc")]
         internal DateTime? RequestEndTimeUtc { get; private set; }
 
-        [JsonProperty(PropertyName = "ResponseStatisticsList")]
         public List<StoreResponseStatistics> ResponseStatisticsList { get; private set; }
 
-        [JsonIgnore]
         public List<StoreResponseStatistics> SupplementalResponseStatisticsList { get; internal set; }
 
         /// <summary>
@@ -47,8 +44,7 @@ namespace Microsoft.Azure.Cosmos
         /// This has potential of having large number of entries. 
         /// Since this is for establishing consistency, we can make do with the last responses to paint a meaningful picture.
         /// </summary>
-        [JsonProperty(PropertyName = "SupplementalResponseStatisticsListLast10")]
-        public IEnumerable<StoreResponseStatistics> SupplementalResponseStatisticsListLast10
+        private IEnumerable<StoreResponseStatistics> SupplementalResponseStatisticsListLast10
         {
             get
             {
@@ -61,19 +57,14 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        [JsonProperty(PropertyName = "EndpointToAddressResolutionStatistics")]
         public Dictionary<string, AddressResolutionStatistics> EndpointToAddressResolutionStatistics { get; private set; }
 
-        [JsonProperty(PropertyName = "ContactedReplicas")]
         public List<Uri> ContactedReplicas { get; set; }
 
-        [JsonProperty(PropertyName = "FailedReplicas")]
         public HashSet<Uri> FailedReplicas { get; private set; }
 
-        [JsonProperty(PropertyName = "RegionsContacted")]
         public HashSet<Uri> RegionsContacted { get; private set; }
 
-        [JsonProperty(PropertyName = "RequestLatency")]
         public TimeSpan RequestLatency
         {
             get
@@ -87,7 +78,6 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        [JsonProperty(PropertyName = "IsCpuOverloaded")]
         public bool IsCpuOverloaded
         {
             get
@@ -196,8 +186,100 @@ namespace Microsoft.Azure.Cosmos
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            this.AppendToBuilder(sb);
+            this.WriteJsonObject(sb);
             return sb.ToString();
+        }
+
+        public void WriteJsonObject(StringBuilder stringBuilder)
+        {
+            stringBuilder.Append("{\"RequestStartTimeUtc\":\"");
+            stringBuilder.Append(this.RequestStartTimeUtc);
+            stringBuilder.Append("\",\"RequestEndTimeUtc\":\"");
+            stringBuilder.Append(this.RequestEndTimeUtc);
+
+            stringBuilder.Append("\",\"ResponseStatisticsList\":[");
+            foreach (StoreResponseStatistics stat in this.ResponseStatisticsList)
+            {
+                stat.WriteJsonObject(stringBuilder);
+                stringBuilder.Append(",");
+            }
+
+            if (this.ResponseStatisticsList.Count > 0)
+            {
+                stringBuilder.Length -= 1;
+            }
+
+            stringBuilder.Append("],\"SupplementalResponseStatisticsListLast10\":[");
+            foreach (StoreResponseStatistics stat in this.SupplementalResponseStatisticsListLast10)
+            {
+                stat.WriteJsonObject(stringBuilder);
+                stringBuilder.Append(",");
+            }
+
+            if (stringBuilder[stringBuilder.Length - 1] == ',')
+            {
+                stringBuilder.Length--;
+            }
+
+            stringBuilder.Append("],\"EndpointToAddressResolutionStatistics\":[");
+            foreach (KeyValuePair<string, AddressResolutionStatistics> keyValuePair in this.EndpointToAddressResolutionStatistics)
+            {
+                stringBuilder.Append("{\"");
+                stringBuilder.Append(keyValuePair.Key);
+                stringBuilder.Append("\":\"");
+                stringBuilder.Append(keyValuePair.Value);
+                stringBuilder.Append("\"},");
+            }
+
+            if (stringBuilder[stringBuilder.Length - 1] == ',')
+            {
+                stringBuilder.Length--;
+            }
+
+            stringBuilder.Append("],\"ContactedReplicas\":[");
+            foreach (Uri replica in this.ContactedReplicas)
+            {
+                stringBuilder.Append("\"");
+                stringBuilder.Append(replica.OriginalString);
+                stringBuilder.Append("\",");
+            }
+
+            if (stringBuilder[stringBuilder.Length - 1] == ',')
+            {
+                stringBuilder.Length--;
+            }
+
+            stringBuilder.Append("],\"FailedReplicas\":[");
+            foreach (Uri replica in this.FailedReplicas)
+            {
+                stringBuilder.Append("\"");
+                stringBuilder.Append(replica.OriginalString);
+                stringBuilder.Append("\",");
+            }
+
+            if (stringBuilder[stringBuilder.Length - 1] == ',')
+            {
+                stringBuilder.Length--;
+            }
+
+            stringBuilder.Append("],\"RegionsContacted\":[");
+            foreach (Uri region in this.RegionsContacted)
+            {
+                stringBuilder.Append("\"");
+                stringBuilder.Append(region.OriginalString);
+                stringBuilder.Append("\",");
+            }
+
+            if (stringBuilder[stringBuilder.Length - 1] == ',')
+            {
+                stringBuilder.Length--;
+            }
+
+            stringBuilder.Append("],\"RequestLatency\":\"");
+            stringBuilder.Append(this.RequestLatency);
+            stringBuilder.Append("\",\"IsCpuOverloaded\":\"");
+            stringBuilder.Append(this.IsCpuOverloaded);
+            stringBuilder.Append("\"}");
         }
 
         public void AppendToBuilder(StringBuilder stringBuilder)
@@ -265,23 +347,7 @@ namespace Microsoft.Azure.Cosmos
             public DateTime RequestResponseTime;
             public ResourceType RequestResourceType;
             public OperationType RequestOperationType;
-
-            [JsonIgnore]
             public StoreResult StoreResult;
-            public string StoreResultString
-            {
-                get
-                {
-                    if (this.StoreResult == null)
-                    {
-                        return null;
-                    }
-
-                    StringBuilder stringBuilder = new StringBuilder();
-                    this.StoreResult.AppendToBuilder(stringBuilder);
-                    return stringBuilder.ToString();
-                }
-            }
 
             public override string ToString()
             {
@@ -311,9 +377,22 @@ namespace Microsoft.Azure.Cosmos
                     this.RequestResourceType,
                     this.RequestOperationType);
             }
+
+            public void WriteJsonObject(StringBuilder stringBuilder)
+            {
+                stringBuilder.Append("{\"RequestResponseTime\":\"");
+                stringBuilder.Append(this.RequestResponseTime);
+                stringBuilder.Append("\",\"RequestResourceType\":\"");
+                stringBuilder.Append(this.RequestResourceType);
+                stringBuilder.Append("\",\"RequestOperationType\":\"");
+                stringBuilder.Append(this.RequestOperationType);
+                stringBuilder.Append("\",\"StoreResult\":\"");
+                this.StoreResult.AppendToBuilder(stringBuilder);
+                stringBuilder.Append("\"}");
+            }
         }
 
-        internal class AddressResolutionStatistics
+        internal class AddressResolutionStatistics : ICosmosDiagnosticWriter
         {
             public DateTime StartTime { get; set; }
             public DateTime EndTime { get; set; }
@@ -338,6 +417,17 @@ namespace Microsoft.Azure.Cosmos
                     .Append($"EndTime: {this.EndTime.ToString("o", CultureInfo.InvariantCulture)}, ")
                     .Append("TargetEndpoint: ")
                     .Append(this.TargetEndpoint);
+            }
+
+            public void WriteJsonObject(StringBuilder stringBuilder)
+            {
+                stringBuilder.Append("{\"StartTime\":\"");
+                stringBuilder.Append(this.StartTime);
+                stringBuilder.Append("\",\"EndTime\":\"");
+                stringBuilder.Append(this.EndTime);
+                stringBuilder.Append("\",\"TargetEndpoint\":\"");
+                stringBuilder.Append(this.TargetEndpoint);
+                stringBuilder.Append("\"}");
             }
         }
     }

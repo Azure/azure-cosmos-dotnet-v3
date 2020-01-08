@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual("[]", jObject["ContextList"].ToString());
 
             // Test all the different operations on diagnostics context
-            cosmosDiagnostics.AddJsonAttribute("Test", new { secret = "JsonAttributeTestValue" });
+            cosmosDiagnostics.AddJsonAttribute("Test", "JsonAttributeTestValue");
             cosmosDiagnostics.AddSdkRetry(TimeSpan.FromSeconds(42));
             using (cosmosDiagnostics.CreateScope("ValidateScope"))
             {

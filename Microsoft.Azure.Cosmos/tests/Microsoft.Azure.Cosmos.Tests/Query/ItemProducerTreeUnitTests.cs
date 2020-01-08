@@ -179,11 +179,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new Mock<CosmosElement>(CosmosElementType.Object).Object
             };
 
-            QueryPageDiagnostics diagnostics = new QueryPageDiagnostics(
-                   partitionKeyRangeId: "0",
-                   queryMetricText: "SomeRandomQueryMetricText",
-                   indexUtilizationText: null,
-                   requestDiagnostics: new PointOperationStatistics(
+            CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContext();
+            diagnosticsContext.AddJsonAttribute(new PointOperationStatistics(
                         Guid.NewGuid().ToString(),
                         System.Net.HttpStatusCode.OK,
                         subStatusCode: SubStatusCodes.Unknown,
@@ -193,7 +190,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                         requestUri: new Uri("http://localhost.com"),
                         requestSessionToken: null,
                         responseSessionToken: null,
-                        clientSideRequestStatistics: null),
+                        clientSideRequestStatistics: null));
+
+            QueryPageDiagnostics diagnostics = new QueryPageDiagnostics(
+                   partitionKeyRangeId: "0",
+                   queryMetricText: "SomeRandomQueryMetricText",
+                   indexUtilizationText: null,
+                   diagnosticsContext: diagnosticsContext,
                    schedulingStopwatch: new SchedulingStopwatch());
             IReadOnlyCollection<QueryPageDiagnostics> pageDiagnostics = new List<QueryPageDiagnostics>() { diagnostics };
 
@@ -232,11 +235,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             await itemProducerTree.BufferMoreDocumentsAsync(cancellationTokenSource.Token);
             await itemProducerTree.BufferMoreDocumentsAsync(cancellationTokenSource.Token);
 
-            diagnostics = new QueryPageDiagnostics(
-                   partitionKeyRangeId: "0",
-                   queryMetricText: null,
-                   indexUtilizationText: null,
-                   requestDiagnostics: new PointOperationStatistics(
+            CosmosDiagnosticsContext diagnosticsContextInternalServerError = new CosmosDiagnosticsContext();
+            diagnosticsContextInternalServerError.AddJsonAttribute(new PointOperationStatistics(
                         Guid.NewGuid().ToString(),
                         System.Net.HttpStatusCode.InternalServerError,
                         subStatusCode: SubStatusCodes.Unknown,
@@ -246,7 +246,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                         requestUri: new Uri("http://localhost.com"),
                         requestSessionToken: null,
                         responseSessionToken: null,
-                        clientSideRequestStatistics: null),
+                        clientSideRequestStatistics: null));
+
+            diagnostics = new QueryPageDiagnostics(
+                   partitionKeyRangeId: "0",
+                   queryMetricText: null,
+                   indexUtilizationText: null,
+                   diagnosticsContext: diagnosticsContextInternalServerError,
                    schedulingStopwatch: new SchedulingStopwatch());
             pageDiagnostics = new List<QueryPageDiagnostics>() { diagnostics };
 

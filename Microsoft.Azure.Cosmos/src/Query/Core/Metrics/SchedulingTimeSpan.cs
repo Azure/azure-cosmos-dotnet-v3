@@ -139,7 +139,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// <summary>
         /// Appends a JSON version of this SchedulingMetricsResult
         /// </summary>
-        public void AppendJsonToBuilder(StringBuilder stringBuilder)
+        public void AppendJsonObjectToBuilder(StringBuilder stringBuilder)
         {
             if (stringBuilder == null)
             {

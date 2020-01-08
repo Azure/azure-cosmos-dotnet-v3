@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string diagnostics = databaseResponse.Diagnostics.ToString();
             Assert.IsNotNull(diagnostics);
             JObject jObject = JObject.Parse(diagnostics);
-            JArray contextList = jObject["ContextList"].ToObject<JArray>();
+            JArray contextList = jObject["Context"].ToObject<JArray>();
             JObject customHandler = GetJObjectInContextList(contextList, typeof(RequestHandlerSleepHelper).FullName);
             Assert.IsNotNull(customHandler);
             TimeSpan elapsedTime = customHandler["ElapsedTime"].ToObject<TimeSpan>();
@@ -173,7 +173,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             JObject jObject = JObject.Parse(info);
             Assert.IsNotNull(jObject["UserAgent"].ToString());
 
-            JArray contextList = jObject["ContextList"].ToObject<JArray>();
+            JArray contextList = jObject["Context"].ToObject<JArray>();
             Assert.IsTrue(contextList.Count > 0);
 
             // Find the PointOperationStatistics object
@@ -201,12 +201,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             JObject jObject = JObject.Parse(info);
             
             Assert.IsNotNull(jObject["UserAgent"].ToString());
-            Assert.IsNotNull(jObject["ContextList"].ToString());
-            JArray contextList = jObject["ContextList"].ToObject<JArray>();
+            Assert.IsNotNull(jObject["Context"].ToString());
+            JArray contextList = jObject["Context"].ToObject<JArray>();
             Assert.IsTrue(contextList.Count > 3);
 
             // Find the PointOperationStatistics object
-            JObject pointStatistics = GetPropertyInContextList(
+            JObject pointStatistics = GetJObjectInContextList(
                 contextList,
                 "PointOperationStatistics");
 
@@ -216,8 +216,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(pointStatistics["StatusCode"].ToString());
             Assert.IsNotNull(pointStatistics["RequestCharge"].ToString());
             Assert.IsNotNull(pointStatistics["RequestUri"].ToString());
-            Assert.IsNotNull(pointStatistics["ClientSideRequestStatistics"].ToString());
-            JObject clientJObject = pointStatistics["ClientSideRequestStatistics"].ToObject<JObject>();
+            Assert.IsNotNull(pointStatistics["ClientRequestStats"].ToString());
+            JObject clientJObject = pointStatistics["ClientRequestStats"].ToObject<JObject>();
             Assert.IsNotNull(clientJObject["RequestStartTimeUtc"].ToString()); 
             Assert.IsNotNull(clientJObject["ResponseStatisticsList"].ToString());
             Assert.IsNotNull(clientJObject["EndpointToAddressResolutionStatistics"].ToString());

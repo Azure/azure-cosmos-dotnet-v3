@@ -183,10 +183,17 @@ namespace Microsoft.Azure.Cosmos.Linq
                 headers.RequestCharge += response.RequestCharge;
 
                 // If the first page has a diagnostic context use that. Else create a new one and add the diagnostic to it.
-                if (diagnosticsContext == null &&
-                    response.Diagnostics is CosmosDiagnosticsContext responseDiagnosticContext)
+                if (response.Diagnostics is CosmosDiagnosticsContext responseDiagnosticContext)
                 {
-                    diagnosticsContext = responseDiagnosticContext;
+                    if (diagnosticsContext == null)
+                    {
+                        diagnosticsContext = responseDiagnosticContext;
+                    }
+                    else
+                    {
+                        diagnosticsContext.AddJsonAttribute(responseDiagnosticContext);
+                    }
+                    
                 }
                 else
                 {
@@ -196,7 +203,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                         diagnosticsContext = new CosmosDiagnosticsContext();
                     }
 
-                    diagnosticsContext.AddJsonAttribute("QueryPage", response.Diagnostics);
+                    diagnosticsContext.AddJsonAttribute("QueryPage", response.Diagnostics.ToString());
                 }
 
                 result.AddRange(response);

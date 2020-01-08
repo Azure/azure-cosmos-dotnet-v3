@@ -203,7 +203,6 @@ namespace Microsoft.Azure.Cosmos
 
         internal ResponseMessage ToCosmosResponseMessage(RequestMessage request)
         {
-            request.DiagnosticsContext.AddJsonAttribute("CosmosException", this.Message);
             return new ResponseMessage(
                  headers: this.Headers,
                  requestMessage: request,
