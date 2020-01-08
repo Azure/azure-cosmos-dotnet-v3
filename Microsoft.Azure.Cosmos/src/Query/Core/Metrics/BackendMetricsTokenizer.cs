@@ -9,8 +9,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
     internal static class BackendMetricsTokenizer
     {
-        public enum Token
+        public enum TokenType
         {
+            Unknown,
             DocumentLoadTimeInMs,
             DocumentWriteTimeInMs,
             EqualDelimiter,
@@ -28,7 +29,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             SemiColonDelimiter,
             SystemFunctionExecuteTimeInMs,
             TotalQueryExecutionTimeInMs,
-            Unknown,
             UserDefinedFunctionExecutionTimeInMs,
             VMExecutionTimeInMs,
         }
@@ -53,90 +53,90 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             public static readonly ReadOnlyMemory<byte> VMExecutionTimeInMs = Encoding.UTF8.GetBytes("VMExecutionTimeInMs");
         }
 
-        public static Token Read(ReadOnlySpan<byte> corpus)
+        public static TokenType Read(ReadOnlySpan<byte> corpus)
         {
             // This can be converted to a fancy prefix tree switch case in the future if we need better perf.
 
-            Token token;
+            TokenType token;
             if (corpus[0] == '=')
             {
-                token = Token.EqualDelimiter;
+                token = TokenType.EqualDelimiter;
             }
             else if (corpus[0] == ';')
             {
-                token = Token.SemiColonDelimiter;
+                token = TokenType.SemiColonDelimiter;
             }
             else if (char.IsDigit((char)corpus[0]))
             {
-                token = Token.NumberValue;
+                token = TokenType.NumberValue;
             }
             else if (corpus.StartsWith(TokenBuffers.DocumentLoadTimeInMs.Span))
             {
-                token = Token.DocumentLoadTimeInMs;
+                token = TokenType.DocumentLoadTimeInMs;
             }
             else if (corpus.StartsWith(TokenBuffers.DocumentWriteTimeInMs.Span))
             {
-                token = Token.DocumentWriteTimeInMs;
+                token = TokenType.DocumentWriteTimeInMs;
             }
             else if (corpus.StartsWith(TokenBuffers.IndexHitRatio.Span))
             {
-                token = Token.IndexHitRatio;
+                token = TokenType.IndexHitRatio;
             }
             else if (corpus.StartsWith(TokenBuffers.IndexLookupTimeInMs.Span))
             {
-                token = Token.IndexLookupTimeInMs;
+                token = TokenType.IndexLookupTimeInMs;
             }
             else if (corpus.StartsWith(TokenBuffers.LogicalPlanBuildTimeInMs.Span))
             {
-                token = Token.LogicalPlanBuildTimeInMs;
+                token = TokenType.LogicalPlanBuildTimeInMs;
             }
             else if (corpus.StartsWith(TokenBuffers.OutputDocumentCount.Span))
             {
-                token = Token.OutputDocumentCount;
+                token = TokenType.OutputDocumentCount;
             }
             else if (corpus.StartsWith(TokenBuffers.OutputDocumentSize.Span))
             {
-                token = Token.OutputDocumentSize;
+                token = TokenType.OutputDocumentSize;
             }
             else if (corpus.StartsWith(TokenBuffers.PhysicalPlanBuildTimeInMs.Span))
             {
-                token = Token.PhysicalPlanBuildTimeInMs;
+                token = TokenType.PhysicalPlanBuildTimeInMs;
             }
             else if (corpus.StartsWith(TokenBuffers.QueryCompileTimeInMs.Span))
             {
-                token = Token.QueryCompileTimeInMs;
+                token = TokenType.QueryCompileTimeInMs;
             }
             else if (corpus.StartsWith(TokenBuffers.QueryOptimizationTimeInMs.Span))
             {
-                token = Token.QueryOptimizationTimeInMs;
+                token = TokenType.QueryOptimizationTimeInMs;
             }
             else if (corpus.StartsWith(TokenBuffers.RetrievedDocumentCount.Span))
             {
-                token = Token.RetrievedDocumentCount;
+                token = TokenType.RetrievedDocumentCount;
             }
             else if (corpus.StartsWith(TokenBuffers.RetrievedDocumentSize.Span))
             {
-                token = Token.RetrievedDocumentSize;
+                token = TokenType.RetrievedDocumentSize;
             }
             else if (corpus.StartsWith(TokenBuffers.SystemFunctionExecuteTimeInMs.Span))
             {
-                token = Token.SystemFunctionExecuteTimeInMs;
+                token = TokenType.SystemFunctionExecuteTimeInMs;
             }
             else if (corpus.StartsWith(TokenBuffers.TotalQueryExecutionTimeInMs.Span))
             {
-                token = Token.TotalQueryExecutionTimeInMs;
+                token = TokenType.TotalQueryExecutionTimeInMs;
             }
             else if (corpus.StartsWith(TokenBuffers.UserDefinedFunctionExecutionTimeInMs.Span))
             {
-                token = Token.UserDefinedFunctionExecutionTimeInMs;
+                token = TokenType.UserDefinedFunctionExecutionTimeInMs;
             }
             else if (corpus.StartsWith(TokenBuffers.VMExecutionTimeInMs.Span))
             {
-                token = Token.VMExecutionTimeInMs;
+                token = TokenType.VMExecutionTimeInMs;
             }
             else
             {
-                token = Token.Unknown;
+                token = TokenType.Unknown;
             }
 
             return token;

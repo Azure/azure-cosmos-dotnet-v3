@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     /// </summary>
     internal sealed class RuntimeExecutionTimes
     {
-        public static readonly RuntimeExecutionTimes Zero = new RuntimeExecutionTimes(
+        public static readonly RuntimeExecutionTimes Empty = new RuntimeExecutionTimes(
             queryEngineExecutionTime: default,
             systemFunctionExecutionTime: default,
             userDefinedFunctionExecutionTime: default);

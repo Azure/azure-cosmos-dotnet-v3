@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             indexLookupTime: default,
             documentLoadTime: default,
             vmExecutionTime: default,
-            runtimeExecutionTimes: RuntimeExecutionTimes.Zero,
+            runtimeExecutionTimes: RuntimeExecutionTimes.Empty,
             documentWriteTime: default);
 
         public BackendMetrics(

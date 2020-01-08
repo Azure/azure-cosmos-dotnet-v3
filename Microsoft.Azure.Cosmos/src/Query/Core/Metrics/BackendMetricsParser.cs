@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             TimeSpan userDefinedFunctionExecutionTime = default;
 
             const int MaxStackAlloc = 4 * 1024;
-            int corpusLengthInBytes = deliminatedString.Length * 2;
+            int corpusLengthInBytes = deliminatedString.Length * 4;
             ReadOnlySpan<byte> corpus = (corpusLengthInBytes <= MaxStackAlloc) ? stackalloc byte[corpusLengthInBytes] : new byte[corpusLengthInBytes];
             fixed (char* deliminatedStringPointer = deliminatedString)
             {
@@ -62,11 +62,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
             while (!corpus.IsEmpty)
             {
-                BackendMetricsTokenizer.Token token = BackendMetricsTokenizer.Read(corpus);
+                BackendMetricsTokenizer.TokenType token = BackendMetricsTokenizer.Read(corpus);
                 int bytesConsumed;
                 switch (token)
                 {
-                    case BackendMetricsTokenizer.Token.DocumentLoadTimeInMs:
+                    case BackendMetricsTokenizer.TokenType.DocumentLoadTimeInMs:
                         corpus = corpus.Slice(BackendMetricsTokenizer.TokenBuffers.DocumentLoadTimeInMs.Length);
                         if (!BackendMetricsParser.TryParseTimeSpanField(corpus, out documentLoadTime, out bytesConsumed))
                         {
@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                         }
                         break;
 
-                    case BackendMetricsTokenizer.Token.DocumentWriteTimeInMs:
+                    case BackendMetricsTokenizer.TokenType.DocumentWriteTimeInMs:
                         corpus = corpus.Slice(BackendMetricsTokenizer.TokenBuffers.DocumentWriteTimeInMs.Length);
                         if (!BackendMetricsParser.TryParseTimeSpanField(corpus, out documentWriteTime, out bytesConsumed))
                         {
@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                         }
                         break;
 
-                    case BackendMetricsTokenizer.Token.IndexLookupTimeInMs:
+                    case BackendMetricsTokenizer.TokenType.IndexLookupTimeInMs:
                         corpus = corpus.Slice(BackendMetricsTokenizer.TokenBuffers.IndexLookupTimeInMs.Length);
                         if (!BackendMetricsParser.TryParseTimeSpanField(corpus, out indexLookupTime, out bytesConsumed))
                         {
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                         }
                         break;
 
-                    case BackendMetricsTokenizer.Token.IndexHitRatio:
+                    case BackendMetricsTokenizer.TokenType.IndexHitRatio:
                         corpus = corpus.Slice(BackendMetricsTokenizer.TokenBuffers.IndexHitRatio.Length);
                         if (!BackendMetricsParser.TryParseDoubleField(corpus, out indexHitRatio, out bytesConsumed))
                         {
@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                         }
                         break;
 
-                    case BackendMetricsTokenizer.Token.LogicalPlanBuildTimeInMs:
+                    case BackendMetricsTokenizer.TokenType.LogicalPlanBuildTimeInMs:
                         corpus = corpus.Slice(BackendMetricsTokenizer.TokenBuffers.LogicalPlanBuildTimeInMs.Length);
                         if (!BackendMetricsParser.TryParseTimeSpanField(corpus, out logicalPlanBuildTime, out bytesConsumed))
                         {
@@ -111,7 +111,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                         }
                         break;
 
-                    case BackendMetricsTokenizer.Token.OutputDocumentCount:
+                    case BackendMetricsTokenizer.TokenType.OutputDocumentCount:
                         corpus = corpus.Slice(BackendMetricsTokenizer.TokenBuffers.OutputDocumentCount.Length);
                         if (!BackendMetricsParser.TryParseLongField(corpus, out outputDocumentCount, out bytesConsumed))
                         {
@@ -120,7 +120,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                         }
                         break;
 
-                    case BackendMetricsTokenizer.Token.OutputDocumentSize:
+                    case BackendMetricsTokenizer.TokenType.OutputDocumentSize:
                         corpus = corpus.Slice(BackendMetricsTokenizer.TokenBuffers.OutputDocumentSize.Length);
                         if (!BackendMetricsParser.TryParseLongField(corpus, out outputDocumentSize, out bytesConsumed))
                         {
@@ -129,7 +129,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                         }
                         break;
 
-                    case BackendMetricsTokenizer.Token.PhysicalPlanBuildTimeInMs:
+                    case BackendMetricsTokenizer.TokenType.PhysicalPlanBuildTimeInMs:
                         corpus = corpus.Slice(BackendMetricsTokenizer.TokenBuffers.PhysicalPlanBuildTimeInMs.Length);
                         if (!BackendMetricsParser.TryParseTimeSpanField(corpus, out physicalPlanBuildTime, out bytesConsumed))
                         {
@@ -138,7 +138,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                         }
                         break;
 
-                    case BackendMetricsTokenizer.Token.QueryCompileTimeInMs:
+                    case BackendMetricsTokenizer.TokenType.QueryCompileTimeInMs:
                         corpus = corpus.Slice(BackendMetricsTokenizer.TokenBuffers.QueryCompileTimeInMs.Length);
                         if (!BackendMetricsParser.TryParseTimeSpanField(corpus, out queryCompilationTime, out bytesConsumed))
                         {
@@ -147,7 +147,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                         }
                         break;
 
-                    case BackendMetricsTokenizer.Token.QueryOptimizationTimeInMs:
+                    case BackendMetricsTokenizer.TokenType.QueryOptimizationTimeInMs:
                         corpus = corpus.Slice(BackendMetricsTokenizer.TokenBuffers.QueryOptimizationTimeInMs.Length);
                         if (!BackendMetricsParser.TryParseTimeSpanField(corpus, out queryOptimizationTime, out bytesConsumed))
                         {
@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                         }
                         break;
 
-                    case BackendMetricsTokenizer.Token.RetrievedDocumentCount:
+                    case BackendMetricsTokenizer.TokenType.RetrievedDocumentCount:
                         corpus = corpus.Slice(BackendMetricsTokenizer.TokenBuffers.RetrievedDocumentCount.Length);
                         if (!BackendMetricsParser.TryParseLongField(corpus, out retrievedDocumentCount, out bytesConsumed))
                         {
@@ -165,7 +165,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                         }
                         break;
 
-                    case BackendMetricsTokenizer.Token.RetrievedDocumentSize:
+                    case BackendMetricsTokenizer.TokenType.RetrievedDocumentSize:
                         corpus = corpus.Slice(BackendMetricsTokenizer.TokenBuffers.RetrievedDocumentSize.Length);
                         if (!BackendMetricsParser.TryParseLongField(corpus, out retrievedDocumentSize, out bytesConsumed))
                         {
@@ -174,7 +174,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                         }
                         break;
 
-                    case BackendMetricsTokenizer.Token.SystemFunctionExecuteTimeInMs:
+                    case BackendMetricsTokenizer.TokenType.SystemFunctionExecuteTimeInMs:
                         corpus = corpus.Slice(BackendMetricsTokenizer.TokenBuffers.SystemFunctionExecuteTimeInMs.Length);
                         if (!BackendMetricsParser.TryParseTimeSpanField(corpus, out systemFunctionExecutionTime, out bytesConsumed))
                         {
@@ -183,7 +183,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                         }
                         break;
 
-                    case BackendMetricsTokenizer.Token.TotalQueryExecutionTimeInMs:
+                    case BackendMetricsTokenizer.TokenType.TotalQueryExecutionTimeInMs:
                         corpus = corpus.Slice(BackendMetricsTokenizer.TokenBuffers.TotalQueryExecutionTimeInMs.Length);
                         if (!BackendMetricsParser.TryParseTimeSpanField(corpus, out totalQueryExecutionTime, out bytesConsumed))
                         {
@@ -192,7 +192,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                         }
                         break;
 
-                    case BackendMetricsTokenizer.Token.UserDefinedFunctionExecutionTimeInMs:
+                    case BackendMetricsTokenizer.TokenType.UserDefinedFunctionExecutionTimeInMs:
                         corpus = corpus.Slice(BackendMetricsTokenizer.TokenBuffers.UserDefinedFunctionExecutionTimeInMs.Length);
                         if (!BackendMetricsParser.TryParseTimeSpanField(corpus, out userDefinedFunctionExecutionTime, out bytesConsumed))
                         {
@@ -201,7 +201,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                         }
                         break;
 
-                    case BackendMetricsTokenizer.Token.VMExecutionTimeInMs:
+                    case BackendMetricsTokenizer.TokenType.VMExecutionTimeInMs:
                         corpus = corpus.Slice(BackendMetricsTokenizer.TokenBuffers.VMExecutionTimeInMs.Length);
                         if (!BackendMetricsParser.TryParseTimeSpanField(corpus, out vmExecutionTime, out bytesConsumed))
                         {
@@ -210,7 +210,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                         }
                         break;
 
-                    case BackendMetricsTokenizer.Token.Unknown:
+                    case BackendMetricsTokenizer.TokenType.Unknown:
                         // If the token is unknown, then just skip till the next field (';' or EOF)
                         // since the token must have been added recently in the service and the newer SDKs should know how to parse it
                         // this avoids breaking old clients
@@ -234,8 +234,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                 corpus = corpus.Slice(bytesConsumed);
                 if (!corpus.IsEmpty)
                 {
-                    BackendMetricsTokenizer.Token semicolonToken = BackendMetricsTokenizer.Read(corpus);
-                    if (semicolonToken != BackendMetricsTokenizer.Token.SemiColonDelimiter)
+                    BackendMetricsTokenizer.TokenType semicolonToken = BackendMetricsTokenizer.Read(corpus);
+                    if (semicolonToken != BackendMetricsTokenizer.TokenType.SemiColonDelimiter)
                     {
                         backendMetrics = default;
                         return false;
@@ -270,8 +270,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
         private static bool TryParseTimeSpanField(ReadOnlySpan<byte> corpus, out TimeSpan timeSpan, out int bytesConsumed)
         {
-            BackendMetricsTokenizer.Token equalsDelimiterToken = BackendMetricsTokenizer.Read(corpus);
-            if (equalsDelimiterToken != BackendMetricsTokenizer.Token.EqualDelimiter)
+            BackendMetricsTokenizer.TokenType equalsDelimiterToken = BackendMetricsTokenizer.Read(corpus);
+            if (equalsDelimiterToken != BackendMetricsTokenizer.TokenType.EqualDelimiter)
             {
                 timeSpan = default;
                 bytesConsumed = default;
@@ -293,8 +293,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
         private static bool TryParseLongField(ReadOnlySpan<byte> corpus, out long value, out int bytesConsumed)
         {
-            BackendMetricsTokenizer.Token equalsDelimiterToken = BackendMetricsTokenizer.Read(corpus);
-            if (equalsDelimiterToken != BackendMetricsTokenizer.Token.EqualDelimiter)
+            BackendMetricsTokenizer.TokenType equalsDelimiterToken = BackendMetricsTokenizer.Read(corpus);
+            if (equalsDelimiterToken != BackendMetricsTokenizer.TokenType.EqualDelimiter)
             {
                 value = default;
                 bytesConsumed = default;
@@ -314,8 +314,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
         private static bool TryParseDoubleField(ReadOnlySpan<byte> corpus, out double value, out int bytesConsumed)
         {
-            BackendMetricsTokenizer.Token equalsDelimiterToken = BackendMetricsTokenizer.Read(corpus);
-            if (equalsDelimiterToken != BackendMetricsTokenizer.Token.EqualDelimiter)
+            BackendMetricsTokenizer.TokenType equalsDelimiterToken = BackendMetricsTokenizer.Read(corpus);
+            if (equalsDelimiterToken != BackendMetricsTokenizer.TokenType.EqualDelimiter)
             {
                 value = default;
                 bytesConsumed = default;
