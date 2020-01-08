@@ -90,22 +90,24 @@ namespace Microsoft.Azure.Cosmos
         public void WriteJsonObject(StringBuilder stringBuilder)
         {
             stringBuilder.Append("{\"StartUtc\":\"");
-            stringBuilder.Append(this.StartUtc);
+            stringBuilder.Append(this.StartUtc.ToString("o", CultureInfo.InvariantCulture));
             stringBuilder.Append("\",\"UserAgent\":\"");
             stringBuilder.Append(this.userAgent);
+            stringBuilder.Append("\"");
             if (this.retryCount.HasValue && this.retryCount.Value > 0)
             {
-                stringBuilder.Append("\",\"RetryCount\":\"");
+                stringBuilder.Append(",\"RetryCount\":");
                 stringBuilder.Append(this.retryCount.Value);
             }
 
             if (this.retryBackoffTimeSpan.HasValue && this.retryBackoffTimeSpan.Value > TimeSpan.Zero)
             {
-                stringBuilder.Append("\",\"RetryBackOffTime\":\"");
+                stringBuilder.Append(",\"RetryBackOffTime\":\"");
                 stringBuilder.Append(this.retryBackoffTimeSpan.Value);
+                stringBuilder.Append("\"");
             }
 
-            stringBuilder.Append("\",\"Context\":[");
+            stringBuilder.Append(",\"Context\":[");
             foreach (ICosmosDiagnosticWriter writer in this.contextList)
             {
                 writer.WriteJsonObject(stringBuilder);
@@ -138,7 +140,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 stringBuilder.Append("{\"");
                 stringBuilder.Append(this.key);
-                stringBuilder.Append("\",\"");
+                stringBuilder.Append("\":\"");
                 stringBuilder.Append(this.value);
                 stringBuilder.Append("\"}");
             }

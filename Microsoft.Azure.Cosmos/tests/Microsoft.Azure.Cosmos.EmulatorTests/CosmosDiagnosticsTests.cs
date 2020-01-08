@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Linq;
+    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -163,7 +164,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(diagnostics.Contains("StatusCode"));
             Assert.IsTrue(diagnostics.Contains("SubStatusCode"));
             Assert.IsTrue(diagnostics.Contains("RequestUri"));
-            Assert.IsTrue(diagnostics.Contains("Method"));
         }
 
         public static void VerifyQueryDiagnostics(CosmosDiagnostics diagnostics, bool isFirstPage)
@@ -177,19 +177,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(contextList.Count > 0);
 
             // Find the PointOperationStatistics object
-            JObject page = GetPropertyInContextList(
+            JObject page = GetJObjectInContextList(
                 contextList,
-                "0");
+                "0",
+                "PKRangeId");
 
             // First page will have a request
             // Query might use cache pages which don't have the following info. It was returned in the previous call.
             if(isFirstPage || page != null)
             {
-                string queryMetrics = page["QueryMetricText"].ToString();
+                string queryMetrics = page["QueryMetric"].ToString();
                 Assert.IsNotNull(queryMetrics);
-                Assert.IsNotNull(page["IndexUtilizationText"].ToString());
-                Assert.IsNotNull(page["PartitionKeyRangeId"].ToString());
-                JObject requestDiagnostics = page["RequestDiagnostics"].ToObject<JObject>();
+                Assert.IsNotNull(page["IndexUtilization"].ToString());
+                Assert.IsNotNull(page["PKRangeId"].ToString());
+                JObject requestDiagnostics = page["Context"].ToObject<JObject>();
                 Assert.IsNotNull(requestDiagnostics);
             }
         }
@@ -235,12 +236,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        private static JObject GetJObjectInContextList(JArray contextList, string id)
+        private static JObject GetJObjectInContextList(JArray contextList, string value, string key = "Id")
         {
             foreach (JObject tempJObject in contextList)
             {
-                string name = tempJObject["Id"].Value<string>();
-                if (string.Equals(id, name))
+                JToken jsonId = tempJObject[key];
+                string name = jsonId?.Value<string>();
+                if (string.Equals(value, name))
                 {
                     return tempJObject;
                 }
