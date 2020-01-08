@@ -125,6 +125,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
         }
 
         [TestMethod]
+        [DataRow("totalExecutionTimeInMs+33.67", DisplayName = "Wrong Delimiter")]
+        [DataRow("totalExecutionTimeInMs=asdf", DisplayName = "Not a valid value")]
+        [DataRow("totalExecutionTimeInMs=33.6+totalExecutionTimeInMs=33.6", DisplayName = "Wrong delimiter 2")]
+        public void TestNegativeCases(string delimitedString)
+        {
+            Assert.IsFalse(BackendMetricsParser.TryParse(delimitedString, out BackendMetrics backendMetrics));
+        }
+
+        [TestMethod]
         public void TestParseStringWithUnknownField()
         {
             TimeSpan totalExecutionTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 33.67));
