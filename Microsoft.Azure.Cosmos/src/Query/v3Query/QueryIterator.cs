@@ -13,14 +13,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
 
-#if INTERNAL
-#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-#pragma warning disable SA1601 // Partial elements should be documented
-    public
-#else
-    internal
-#endif
-    sealed class QueryIterator : FeedIteratorInternal
+    internal sealed class QueryIterator : FeedIteratorInternal
     {
         private readonly CosmosQueryContext cosmosQueryContext;
         private readonly CosmosQueryExecutionContext cosmosQueryExecutionContext;
@@ -136,8 +129,4 @@ namespace Microsoft.Azure.Cosmos.Query
             return this.cosmosQueryExecutionContext.TryGetContinuationToken(out continuationToken);
         }
     }
-#if INTERNAL
-#pragma warning restore SA1601 // Partial elements should be documented
-#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-#endif
 }
