@@ -110,7 +110,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             return lineFormatStringBuilder.ToString();
         }
 
-        internal struct Column
+#if INTERNAL
+        public
+#else
+        internal
+#endif
+       struct Column
         {
             public readonly string ColumnName;
             public readonly int ColumnWidth;
