@@ -8,7 +8,7 @@ properties:
       command:
       - '/bin/bash'
       - '-c'
-      - 'chmod +x /mounts/sdk/azure-cosmos-dotnet-v3/Microsoft.Azure.Cosmos.Samples/Tools/Benchmark/AzureContainerInstances/run.sh;cd /mounts/sdk/azure-cosmos-dotnet-v3/Microsoft.Azure.Cosmos.Samples/Tools/Benchmark/AzureContainerInstance/;./run.sh'
+      - 'chmod +x /mounts/sdk/azure-cosmos-dotnet-v3/Microsoft.Azure.Cosmos.Samples/Tools/Benchmark/AzureContainerInstances/run.sh;cd /mounts/sdk/azure-cosmos-dotnet-v3/Microsoft.Azure.Cosmos.Samples/Tools/Benchmark/AzureContainerInstances/;./run.sh'
       environmentVariables:  # Customize your connection information and the provisioned throughput
       - name: ENDPOINT
         value: '<your-account-endpoint>'
