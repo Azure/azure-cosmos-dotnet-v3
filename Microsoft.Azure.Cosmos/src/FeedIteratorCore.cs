@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Cosmos feed stream iterator. This is used to get the query responses with a Stream content
     /// </summary>
-    internal class FeedIteratorCore : FeedIteratorInternal
+    internal sealed class FeedIteratorCore : FeedIteratorInternal
     {
         private readonly CosmosClientContext clientContext;
         private readonly Uri resourceLink;

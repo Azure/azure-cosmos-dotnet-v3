@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos
     /// 
     /// <see cref="Cosmos.Database"/> for creating new containers, and reading/querying all containers;
     /// </summary>
-    internal partial class ContainerCore : Container
+    internal sealed partial class ContainerCore : Container
     {
         /// <summary>
         /// Only used for unit testing

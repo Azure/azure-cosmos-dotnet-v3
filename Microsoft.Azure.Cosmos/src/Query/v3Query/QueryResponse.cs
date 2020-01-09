@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Represents the template class used by feed methods (enumeration operations) for the Azure Cosmos DB service.
     /// </summary>
-    internal class QueryResponse : ResponseMessage
+    internal sealed class QueryResponse : ResponseMessage
     {
         private readonly Lazy<MemoryStream> memoryStream;
 

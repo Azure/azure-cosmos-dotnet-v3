@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
 
-    internal class ClientContextCore : CosmosClientContext
+    internal sealed class ClientContextCore : CosmosClientContext
     {
         internal ClientContextCore(
             CosmosClient client,

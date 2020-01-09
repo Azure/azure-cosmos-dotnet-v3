@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
     /// 
     /// <see cref="Cosmos.User"/> for creating new users, and reading/querying all user;
     /// </summary>
-    internal class UserCore : User
+    internal sealed class UserCore : User
     {
         /// <summary>
         /// Only used for unit testing
