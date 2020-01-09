@@ -36,7 +36,7 @@ Copyright (C) 2019 CosmosBenchmark
 
   --partitionkeypath     Container partition key path
 
-  -p                     Degree of parallism
+  --pl                   Degree of parallism
 
   --itemtemplatefile     Item tempplate
 
