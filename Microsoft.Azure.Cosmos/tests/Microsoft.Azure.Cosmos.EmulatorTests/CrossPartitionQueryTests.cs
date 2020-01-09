@@ -5022,7 +5022,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// <summary>
         /// A helper that forces the SDK to use the gateway or the service interop for the query plan
         /// </summary>
-        private class MockCosmosQueryClient : CosmosQueryClientCore
+        internal class MockCosmosQueryClient : CosmosQueryClientCore
         {
             /// <summary>
             /// True it will use the gateway query plan.

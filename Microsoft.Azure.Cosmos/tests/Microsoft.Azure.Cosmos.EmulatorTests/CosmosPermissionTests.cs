@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.Generic;
     using System.Net;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Cosmos.Utils;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -161,6 +162,134 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     .GetContainer(containerId)
                     .DeleteContainerAsync();
                 Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
+            }
+        }
+
+        [TestMethod]
+        public async Task ContainerPartitionResourcePermissionTest()
+        {
+            CosmosClientBuilder clientBuilder = new CosmosClientBuilder(
+                "https://jawilleytemp.documents.azure.com:443/",
+                "V8uLVUaKNeKy4np8galPyL56ALfKEcfgs7zfSfDfUY3LiZjU7YGGbE0dVz8TZg0MVy2qimBql5Fq8n61iHBGMA==")
+                .WithConnectionModeGateway();
+            CosmosClient cosmosClient = clientBuilder.Build();
+
+            Database database = await cosmosClient.CreateDatabaseIfNotExistsAsync("PermissionTest");
+
+            //create user
+            string userId = Guid.NewGuid().ToString();
+            UserResponse userResponse = await database.CreateUserAsync(userId);
+            Assert.AreEqual(HttpStatusCode.Created, userResponse.StatusCode);
+            Assert.AreEqual(userId, userResponse.Resource.Id);
+            User user = userResponse.User;
+
+            //create resource
+            string containerId = Guid.NewGuid().ToString();
+
+            ContainerResponse containerResponse = await database.CreateContainerAsync(
+                id: containerId,
+                partitionKeyPath: "/id");
+
+            Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
+            Container container = containerResponse.Container;
+
+            // Create items to read
+            ToDoActivity itemAccess = ToDoActivity.CreateRandomToDoActivity();
+            ToDoActivity itemNoAccess = ToDoActivity.CreateRandomToDoActivity();
+
+            await container.CreateItemAsync<ToDoActivity>(
+                itemAccess,
+                new PartitionKey(itemAccess.id));
+
+            await container.CreateItemAsync<ToDoActivity>(
+                itemNoAccess,
+                new PartitionKey(itemNoAccess.id));
+
+            //create permission
+            string permissionId = Guid.NewGuid().ToString();
+            PartitionKey partitionKey = new PartitionKey(itemAccess.id);
+            PermissionProperties permissionProperties = new PermissionProperties(
+                permissionId,
+                PermissionMode.Read,
+                container,
+                partitionKey);
+
+            PermissionResponse permissionResponse = await user.CreatePermissionAsync(permissionProperties);
+            PermissionProperties permission = permissionResponse.Resource;
+            Assert.AreEqual(HttpStatusCode.Created, userResponse.StatusCode);
+            Assert.AreEqual(permissionId, permission.Id);
+            Assert.AreEqual(permissionProperties.PermissionMode, permission.PermissionMode);
+
+            //delete resource with PermissionMode.Read
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            {
+                ConnectionMode = ConnectionMode.Gateway,
+                ConnectionProtocol = Documents.Client.Protocol.Https
+            };
+
+            CosmosClientBuilder tokenClientBuilder = new CosmosClientBuilder(
+               "https://jawilleytemp.documents.azure.com:443/",
+               permission.Token)
+               .WithConnectionModeGateway();
+
+            using (CosmosClient tokenCosmosClient = tokenClientBuilder.Build())
+            {
+                Container tokenContainer = tokenCosmosClient.GetContainer(database.Id, containerId);
+                await tokenContainer.ReadItemAsync<ToDoActivity>(itemAccess.id, new PartitionKey(itemAccess.id));
+
+                try
+                {
+                    await tokenContainer.ReadItemAsync<ToDoActivity>(itemNoAccess.id, new PartitionKey(itemNoAccess.id));
+                    Assert.Fail();
+                }
+                catch (CosmosException ex)
+                {
+                    Assert.AreEqual(HttpStatusCode.Forbidden, ex.StatusCode);
+                }
+
+                QueryRequestOptions queryRequestOptions = new QueryRequestOptions()
+                {
+                    PartitionKey = new PartitionKey(itemAccess.id)
+                };
+
+                FeedIterator<ToDoActivity> feedIterator = tokenContainer.GetItemQueryIterator<ToDoActivity>(
+                    queryText: "select * from T",
+                    requestOptions: queryRequestOptions);
+
+                List<ToDoActivity> result = new List<ToDoActivity>();
+                while (feedIterator.HasMoreResults)
+                {
+                    FeedResponse<ToDoActivity> toDoActivities = await feedIterator.ReadNextAsync();
+                    result.AddRange(toDoActivities);
+                }
+
+                Assert.AreEqual(1, result.Count);
+
+                // Test query with no service interop via gateway query plan to replicate x32 app
+                ContainerCore containerCore = (ContainerInlineCore)tokenContainer;
+                CrossPartitionQueryTests.MockCosmosQueryClient mock = new CrossPartitionQueryTests.MockCosmosQueryClient(
+                    clientContext: containerCore.ClientContext,
+                    cosmosContainerCore: containerCore,
+                    forceQueryPlanGatewayElseServiceInterop: true);
+
+                Container tokenGatewayQueryPlan = new ContainerCore(
+                    containerCore.ClientContext,
+                    (DatabaseCore)containerCore.Database,
+                    containerCore.Id,
+                    mock);
+
+                FeedIterator<ToDoActivity> feedIteratorGateway = tokenContainer.GetItemQueryIterator<ToDoActivity>(
+                    queryText: "select * from T",
+                    requestOptions: queryRequestOptions);
+
+                List<ToDoActivity> resultGateway = new List<ToDoActivity>();
+                while (feedIteratorGateway.HasMoreResults)
+                {
+                    FeedResponse<ToDoActivity> toDoActivities = await feedIteratorGateway.ReadNextAsync();
+                    resultGateway.AddRange(toDoActivities);
+                }
+
+                Assert.AreEqual(1, resultGateway.Count);
             }
         }
 
