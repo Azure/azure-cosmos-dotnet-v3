@@ -167,12 +167,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         public async Task ContainerPartitionResourcePermissionTest()
-        {
-            CosmosClientBuilder clientBuilder = new CosmosClientBuilder(
-                "https://jawilleytemp.documents.azure.com:443/",
-                "V8uLVUaKNeKy4np8galPyL56ALfKEcfgs7zfSfDfUY3LiZjU7YGGbE0dVz8TZg0MVy2qimBql5Fq8n61iHBGMA==")
-                .WithConnectionModeGateway();
-            CosmosClient cosmosClient = clientBuilder.Build();
+        { 
+            CosmosClient cosmosClient = TestCommon.CreateCosmosClient(
+                builder => builder.WithConnectionModeGateway());
 
             Database database = await cosmosClient.CreateDatabaseIfNotExistsAsync("PermissionTest");
 
@@ -227,12 +224,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ConnectionProtocol = Documents.Client.Protocol.Https
             };
 
-            CosmosClientBuilder tokenClientBuilder = new CosmosClientBuilder(
-               "https://jawilleytemp.documents.azure.com:443/",
-               permission.Token)
-               .WithConnectionModeGateway();
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+            {
+                ConnectionMode = ConnectionMode.Gateway
+            };
 
-            using (CosmosClient tokenCosmosClient = tokenClientBuilder.Build())
+            using (CosmosClient tokenCosmosClient = TestCommon.CreateCosmosClient(clientOptions: cosmosClientOptions, resourceToken: permission.Token))
             {
                 Container tokenContainer = tokenCosmosClient.GetContainer(database.Id, containerId);
                 await tokenContainer.ReadItemAsync<ToDoActivity>(itemAccess.id, new PartitionKey(itemAccess.id));
