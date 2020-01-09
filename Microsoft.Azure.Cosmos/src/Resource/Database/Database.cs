@@ -577,15 +577,15 @@ namespace Microsoft.Azure.Cosmos
         /// This create the type feed iterator for containers with queryDefinition as input.
         /// <code language="c#">
         /// <![CDATA[
-        /// string queryText = "SELECT * FROM c where c.id like @testId";
-        /// QueryDefinition queryDefinition = new QueryDefinition(queryText);
-        /// queryDefinition.WithParameter("@testId", "testDatabaseId");
-        /// FeedIterator<ContainerProperties> resultSet = this.cosmosDatabase.GetContainerQueryIterator<ContainerProperties>(queryDefinition);
+        /// QueryDefinition queryDefinition = new QueryDefinition("SELECT * FROM c where c.status like @status");
+        ///     .WithParameter("@status", "start%");
+        /// FeedIterator<ContainerProperties> feedIterator = this.cosmosDatabase.GetContainerQueryIterator<ContainerProperties>(queryDefinition);
         /// while (feedIterator.HasMoreResults)
         /// {
-        ///     foreach (ContainerProperties properties in await feedIterator.ReadNextAsync())
+        ///     FeedResponse<ContainerProperties> response = await feedIterator.ReadNextAsync();
+        ///     foreach (var container in response)
         ///     {
-        ///         Console.WriteLine(properties.Id);
+        ///         Console.WriteLine(container);
         ///     }
         /// }
         /// ]]>
@@ -614,9 +614,9 @@ namespace Microsoft.Azure.Cosmos
         /// This create the stream feed iterator for containers with queryDefinition as input.
         /// <code language="c#">
         /// <![CDATA[
-        /// string queryText = "SELECT * FROM c where c.id like '%testId%'";
+        /// string queryText = "SELECT * FROM c where c.status like 'start%'";
         /// QueryDefinition queryDefinition = new QueryDefinition(queryText);
-        /// FeedIterator resultSet = this.cosmosDatabase.GetContainerQueryStreamIterator(queryDefinition);
+        /// FeedIterator feedIterator = this.cosmosDatabase.GetContainerQueryStreamIterator(queryDefinition);
         /// while (feedIterator.HasMoreResults)
         /// {
         ///     using (ResponseMessage response = await feedIterator.ReadNextAsync())
@@ -654,12 +654,15 @@ namespace Microsoft.Azure.Cosmos
         /// 1. This create the type feed iterator for containers with queryText as input,
         /// <code language="c#">
         /// <![CDATA[
-        /// string queryText = "SELECT * FROM c where c.id like '%testId%'";
-        /// FeedIterator<ContainerProperties> resultSet = this.cosmosDatabase.GetContainerQueryIterator<ContainerProperties>(queryText);
+        /// string queryText = "SELECT * FROM c where c.status like 'start%'";
+        /// FeedIterator<ContainerProperties> feedIterator = this.cosmosDatabase.GetContainerQueryIterator<ContainerProperties>(queryText);
         /// while (feedIterator.HasMoreResults)
         /// {
-        /// FeedResponse<ContainerProperties> iterator =
-        /// await feedIterator.ReadNextAsync(this.cancellationToken);
+        ///     FeedResponse<ContainerProperties> response = await feedIterator.ReadNextAsync();
+        ///     foreach (var container in response)
+        ///     {
+        ///         Console.WriteLine(container);
+        ///     }
         /// }
         /// ]]>
         /// </code>
@@ -668,11 +671,14 @@ namespace Microsoft.Azure.Cosmos
         /// 2. This create the type feed iterator for containers without queryText, retrieving all containers.
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator<ContainerProperties> resultSet = this.cosmosDatabase.GetContainerQueryIterator<ContainerProperties>();
+        /// FeedIterator<ContainerProperties> feedIterator = this.cosmosDatabase.GetContainerQueryIterator<ContainerProperties>();
         /// while (feedIterator.HasMoreResults)
         /// {
-        /// FeedResponse<ContainerProperties> iterator =
-        /// await feedIterator.ReadNextAsync(this.cancellationToken);
+        ///     FeedResponse<ContainerProperties> response = await feedIterator.ReadNextAsync();
+        ///     foreach (var container in response)
+        ///     {
+        ///         Console.WriteLine(container);
+        ///     }
         /// }
         /// ]]>
         /// </code>
@@ -700,12 +706,20 @@ namespace Microsoft.Azure.Cosmos
         /// 1. This create the stream feed iterator for containers with queryText as input.
         /// <code language="c#">
         /// <![CDATA[
-        /// string queryText = "SELECT * FROM c where c.id like '%testId%'";
-        /// FeedIterator resultSet = this.cosmosDatabase.GetContainerQueryStreamIterator(queryText);
+        /// FeedIterator feedIterator = this.Container.GetItemQueryStreamIterator(
+        ///     "SELECT * FROM c where c.status like 'start%'");
         /// while (feedIterator.HasMoreResults)
         /// {
-        /// ResponseMessage iterator =
-        /// await feedIterator.ReadNextAsync(this.cancellationToken);
+        ///     // Stream iterator returns a response with status for errors
+        ///     using(ResponseMessage response = await feedIterator.ReadNextAsync())
+        ///     {
+        ///         // Handle failure scenario. 
+        ///         if(!response.IsSuccessStatusCode)
+        ///         {
+        ///             // Log the response.Diagnostics and handle the error
+        ///             throw new Exception(response.Message);
+        ///         }
+        ///     }
         /// }
         /// ]]>
         /// </code>
@@ -714,11 +728,19 @@ namespace Microsoft.Azure.Cosmos
         /// 2. This create the stream feed iterator for containers without queryText, retrieving all container.
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator resultSet = this.cosmosDatabase.GetContainerQueryStreamIterator();
+        /// FeedIterator feedIterator = this.cosmosDatabase.GetContainerQueryStreamIterator();
         /// while (feedIterator.HasMoreResults)
         /// {
-        /// ResponseMessage iterator =
-        /// await feedIterator.ReadNextAsync(this.cancellationToken);
+        ///     // Stream iterator returns a response with status
+        ///     using(ResponseMessage response = await feedIterator.ReadNextAsync())
+        ///     {
+        ///         // Handle failure scenario. 
+        ///         if(!response.IsSuccessStatusCode)
+        ///         {
+        ///             // Log the response.Diagnostics and handle the error
+        ///             throw new Exception(response.Message);
+        ///         }
+        ///     }
         /// }
         /// ]]>
         /// </code>
@@ -746,11 +768,15 @@ namespace Microsoft.Azure.Cosmos
         /// 1. This create the type feed iterator for users with queryText as input,
         /// <code language="c#">
         /// <![CDATA[
-        /// string queryText = "SELECT * FROM c where c.id like '%testId%'";
-        /// FeedIterator<UserProperties> resultSet = this.cosmosDatabase.GetUserQueryIterator<UserProperties>(queryText);
+        /// string queryText = "SELECT * FROM c where c.status like 'start%'";
+        /// FeedIterator<UserProperties> HasMoreResults = this.cosmosDatabase.GetUserQueryIterator<UserProperties>(queryText);
         /// while (feedIterator.HasMoreResults)
         /// {
-        ///     FeedResponse<UserProperties> iterator = await feedIterator.ReadNextAsync(this.cancellationToken);
+        ///     FeedResponse<UserProperties> response = await feedIterator.ReadNextAsync();
+        ///     foreach (var user in response)
+        ///     {
+        ///         Console.WriteLine(user);
+        ///     }
         /// }
         /// ]]>
         /// </code>
@@ -759,11 +785,14 @@ namespace Microsoft.Azure.Cosmos
         /// 2. This create the type feed iterator for users without queryText, retrieving all users.
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator<UserProperties> resultSet = this.cosmosDatabase.GetUserQueryIterator<ContainerProperties>();
+        /// FeedIterator<UserProperties> feedIterator = this.cosmosDatabase.GetUserQueryIterator<ContainerProperties>();
         /// while (feedIterator.HasMoreResults)
         /// {
-        ///     FeedResponse<UserProperties> iterator =
-        ///     await feedIterator.ReadNextAsync(this.cancellationToken);
+        ///     FeedResponse<UserProperties> response = await feedIterator.ReadNextAsync();
+        ///     foreach (var user in response)
+        ///     {
+        ///         Console.WriteLine(user);
+        ///     }
         /// }
         /// ]]>
         /// </code>
@@ -785,9 +814,8 @@ namespace Microsoft.Azure.Cosmos
         /// This create the type feed iterator for users with queryDefinition as input.
         /// <code language="c#">
         /// <![CDATA[
-        /// string queryText = "SELECT * FROM c where c.id like @testId";
-        /// QueryDefinition queryDefinition = new QueryDefinition(queryText);
-        /// queryDefinition.WithParameter("@testId", "testUserId");
+        /// QueryDefinition queryDefinition = new QueryDefinition("SELECT * FROM c where c.status like @status")
+        ///     .WithParameter("@status", "start%");
         /// FeedIterator<UserProperties> resultSet = this.cosmosDatabase.GetUserQueryIterator<UserProperties>(queryDefinition);
         /// while (feedIterator.HasMoreResults)
         /// {

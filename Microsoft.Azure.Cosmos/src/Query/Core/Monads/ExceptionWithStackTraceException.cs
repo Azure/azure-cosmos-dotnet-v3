@@ -7,7 +7,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
     using System;
     using System.Diagnostics;
 
-    internal sealed class ExceptionWithStackTraceException : Exception
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1601 // Partial elements should be documented
+    public
+#else
+    internal
+#endif
+    sealed class ExceptionWithStackTraceException : Exception
     {
         private static readonly string EndOfInnerExceptionString = "--- End of inner exception stack trace ---";
         private readonly StackTrace stackTrace;
@@ -76,4 +83,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
             return this.GetType().ToString();
         }
     }
+#if INTERNAL
+#pragma warning restore SA1601 // Partial elements should be documented
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
+#endif
 }

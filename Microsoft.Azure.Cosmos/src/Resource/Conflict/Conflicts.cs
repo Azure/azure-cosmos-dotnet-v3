@@ -86,11 +86,13 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator<ConflictProperties> conflictIterator = conflicts.GetConflictQueryIterator();
-        /// while (conflictIterator.HasMoreResults)
+        /// FeedIterator<ConflictProperties> feedIterator = conflicts.GetConflictQueryIterator();
+        /// while (feedIterator.HasMoreResults)
         /// {
-        ///     foreach(ConflictProperties item in await conflictIterator.ReadNextAsync())
+        ///     FeedResponse<ConflictProperties> response = await feedIterator.ReadNextAsync();
+        ///     foreach (var conflict in response)
         ///     {
+        ///         Console.WriteLine(conflict);
         ///     }
         /// }
         /// ]]>
@@ -109,13 +111,23 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestOptions">(Optional) The options for the item query request.</param>
         /// <returns>An iterator to go through the conflicts.</returns>
         /// <example>
+        /// Example on how to fully drain the query results.
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator conflictIterator = conflicts.GetConflictQueryStreamIterator();
-        /// while (conflictIterator.HasMoreResults)
+        /// QueryDefinition queryDefinition = new QueryDefinition("select * From c where c._rid = @rid")
+        ///               .WithParameter("@rid", "TheRidValue");
+        /// FeedIterator feedIterator = this.CosmosClient.GetConflictQueryStreamIterator(
+        ///     queryDefinition);
+        /// while (feedIterator.HasMoreResults)
         /// {
-        ///     using (ResponseMessage iterator = await feedIterator.ReadNextAsync())
+        ///     // Stream iterator returns a response with status for errors
+        ///     using(ResponseMessage response = await feedIterator.ReadNextAsync())
         ///     {
+        ///         // Handle failure scenario. 
+        ///         if(!response.IsSuccessStatusCode)
+        ///         {
+        ///             // Log the response.Diagnostics and handle the error
+        ///         }
         ///     }
         /// }
         /// ]]>
@@ -137,10 +149,12 @@ namespace Microsoft.Azure.Cosmos
         /// <code language="c#">
         /// <![CDATA[
         /// FeedIterator<ConflictProperties> conflictIterator = conflicts.GetConflictQueryIterator();
-        /// while (conflictIterator.HasMoreResults)
+        /// while (feedIterator.HasMoreResults)
         /// {
-        ///     foreach(ConflictProperties item in await conflictIterator.ReadNextAsync())
+        ///     FeedResponse<ConflictProperties> response = await feedIterator.ReadNextAsync();
+        ///     foreach (var conflict in response)
         ///     {
+        ///         Console.WriteLine(conflict);
         ///     }
         /// }
         /// ]]>
@@ -159,13 +173,21 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestOptions">(Optional) The options for the item query request.</param>
         /// <returns>An iterator to go through the conflicts.</returns>
         /// <example>
+        /// Example on how to fully drain the query results.
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator conflictIterator = conflicts.GetConflictQueryStreamIterator();
-        /// while (conflictIterator.HasMoreResults)
+        /// FeedIterator feedIterator = this.CosmosClient.GetConflictQueryStreamIterator(
+        ///     "select * From c where c._rid = \"TheRidValue\"");
+        /// while (feedIterator.HasMoreResults)
         /// {
-        ///     using (ResponseMessage iterator = await feedIterator.ReadNextAsync())
+        ///     // Stream iterator returns a response with status for errors
+        ///     using(ResponseMessage response = await feedIterator.ReadNextAsync())
         ///     {
+        ///         // Handle failure scenario. 
+        ///         if(!response.IsSuccessStatusCode)
+        ///         {
+        ///             // Log the response.Diagnostics and handle the error
+        ///         }
         ///     }
         /// }
         /// ]]>

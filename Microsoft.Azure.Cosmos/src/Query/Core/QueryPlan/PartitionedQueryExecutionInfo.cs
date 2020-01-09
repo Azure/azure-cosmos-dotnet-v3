@@ -10,7 +10,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
     using Constants = Documents.Constants;
 
     // Note: We also return this to client when query execution is disallowed by Gateway
-    internal sealed class PartitionedQueryExecutionInfo
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1601 // Partial elements should be documented
+    public
+#else
+    internal
+#endif
+    sealed class PartitionedQueryExecutionInfo
     {
         public PartitionedQueryExecutionInfo()
         {
@@ -62,4 +69,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             }
         }
     }
+#if INTERNAL
+#pragma warning restore SA1601 // Partial elements should be documented
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
+#endif
 }

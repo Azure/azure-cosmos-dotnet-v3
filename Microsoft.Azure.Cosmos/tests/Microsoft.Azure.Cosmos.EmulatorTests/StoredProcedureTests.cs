@@ -474,7 +474,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ResponseMessage response = await this.scripts.ExecuteStoredProcedureStreamAsync(
                 sprocId,
                 streamPayload: streamPayload,
-                new Cosmos.PartitionKey(testPartitionId));
+                partitionKey: new Cosmos.PartitionKey(testPartitionId));
 
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
 

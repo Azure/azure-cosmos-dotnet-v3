@@ -195,7 +195,10 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return this.container.GetItemQueryStreamIterator(queryDefinition, continuationToken, requestOptions);
+            return new FeedIteratorInlineCore(this.container.GetItemQueryStreamIterator(
+                    queryDefinition,
+                    continuationToken,
+                    requestOptions));
         }
 
         public override FeedIterator<T> GetItemQueryIterator<T>(
@@ -203,14 +206,20 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return this.container.GetItemQueryIterator<T>(queryDefinition, continuationToken, requestOptions);
+            return new FeedIteratorInlineCore<T>(this.container.GetItemQueryIterator<T>(
+                queryDefinition,
+                continuationToken,
+                requestOptions));
         }
 
         public override FeedIterator GetItemQueryStreamIterator(string queryText = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return this.container.GetItemQueryStreamIterator(queryText, continuationToken, requestOptions);
+            return new FeedIteratorInlineCore(this.container.GetItemQueryStreamIterator(
+                queryText,
+                continuationToken,
+                requestOptions));
         }
 
         public override FeedIterator<T> GetItemQueryIterator<T>(
@@ -218,14 +227,20 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return this.container.GetItemQueryIterator<T>(queryText, continuationToken, requestOptions);
+            return new FeedIteratorInlineCore<T>(this.container.GetItemQueryIterator<T>(
+                queryText,
+                continuationToken,
+                requestOptions));
         }
 
         public override IOrderedQueryable<T> GetItemLinqQueryable<T>(bool allowSynchronousQueryExecution = false,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return this.container.GetItemLinqQueryable<T>(allowSynchronousQueryExecution, continuationToken, requestOptions);
+            return this.container.GetItemLinqQueryable<T>(
+                allowSynchronousQueryExecution,
+                continuationToken,
+                requestOptions);
         }
 
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
