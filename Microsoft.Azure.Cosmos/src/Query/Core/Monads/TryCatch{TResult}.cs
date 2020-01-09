@@ -8,14 +8,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
     using System.Diagnostics;
     using System.Threading.Tasks;
 
-#if INTERNAL
-#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-#pragma warning disable SA1601 // Partial elements should be documented
-    public
-#else
-    internal
-#endif
-    readonly struct TryCatch<TResult>
+    internal readonly struct TryCatch<TResult>
     {
         private readonly Either<Exception, TResult> either;
 
@@ -196,8 +189,4 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
                     stackTrace: stackTrace));
         }
     }
-#if INTERNAL
-#pragma warning restore SA1601 // Partial elements should be documented
-#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-#endif
 }

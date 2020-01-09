@@ -9,15 +9,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
     using Constants = Documents.Constants;
     using PartitionKeyInternal = Documents.Routing.PartitionKeyInternal;
 
-#if INTERNAL
-#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-#pragma warning disable SA1601 // Partial elements should be documented
-    public
-#else
-    internal
-#endif
     // Note: We also return this to client when query execution is disallowed by Gateway
-    sealed class PartitionedQueryExecutionInfoInternal
+    internal sealed class PartitionedQueryExecutionInfoInternal
     {
         [JsonProperty(Constants.Properties.QueryInfo)]
         public QueryInfo QueryInfo
@@ -33,8 +26,4 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             set;
         }
     }
-#if INTERNAL
-#pragma warning restore SA1601 // Partial elements should be documented
-#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-#endif
 }
