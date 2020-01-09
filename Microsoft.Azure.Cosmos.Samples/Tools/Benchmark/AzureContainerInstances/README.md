@@ -91,9 +91,11 @@ az container logs -g $resourceGroupName -n cosmosdbsdkperf
 ```
 
 The logs will show the information, including the initial parameters:
+
 ![Initial benchmark parameters](./aci1.png)
 
 And the results:
+
 ![Benchmark results](./aci4.png)
 
 ### Step 6 - Clean up
