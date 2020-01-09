@@ -113,7 +113,7 @@ namespace Azure.Cosmos
             JsonSerializerOptions jsonSerializerOptions)
         {
             MemoryStream memoryStream = stream as MemoryStream;
-            if (stream is MemoryStream
+            if (memoryStream != null
                 && memoryStream.TryGetBuffer(out ArraySegment<byte> buffer))
             {
                 if (buffer.Count >= CosmosTextJsonSerializer.Utf8Bom.Length
