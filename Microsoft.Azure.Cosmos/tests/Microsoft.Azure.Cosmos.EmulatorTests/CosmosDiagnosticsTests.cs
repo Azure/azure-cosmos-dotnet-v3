@@ -220,17 +220,30 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(pointStatistics["ClientRequestStats"].ToString());
             JObject clientJObject = pointStatistics["ClientRequestStats"].ToObject<JObject>();
             Assert.IsNotNull(clientJObject["RequestStartTimeUtc"].ToString()); 
-            Assert.IsNotNull(clientJObject["ResponseStatisticsList"].ToString());
-            Assert.IsNotNull(clientJObject["EndpointToAddressResolutionStatistics"].ToString());
-            Assert.IsNotNull(clientJObject["SupplementalResponseStatisticsListLast10"].ToString());
             Assert.IsNotNull(clientJObject["ContactedReplicas"].ToString());
-            Assert.IsNotNull(clientJObject["FailedReplicas"].ToString());
-            Assert.IsNotNull(clientJObject["RegionsContacted"].ToString());
             Assert.IsNotNull(clientJObject["RequestLatency"].ToString());
+
+            // Not all request have these fields. If the field exists then it should not be null
+            if (clientJObject["EndpointToAddressResolutionStatistics"] != null)
+            {
+                Assert.IsNotNull(clientJObject["EndpointToAddressResolutionStatistics"].ToString());
+            }
+
+            if (clientJObject["SupplementalResponseStatisticsListLast10"] != null)
+            {
+                Assert.IsNotNull(clientJObject["SupplementalResponseStatisticsListLast10"].ToString());
+            }
+
+            if (clientJObject["FailedReplicas"] != null)
+            {
+                Assert.IsNotNull(clientJObject["FailedReplicas"].ToString());
+            }
 
             // Session token only expected on success
             if (statusCode >= 200 && statusCode < 300)
             {
+                Assert.IsNotNull(clientJObject["ResponseStatisticsList"].ToString());   
+                Assert.IsNotNull(clientJObject["RegionsContacted"].ToString());
                 Assert.IsNotNull(clientJObject["RequestEndTimeUtc"].ToString());
                 Assert.IsNotNull(pointStatistics["ResponseSessionToken"].ToString());
             }

@@ -215,7 +215,7 @@ namespace Microsoft.Azure.Cosmos
                 stringBuilder.Append("]");
             }
 
-            if (this.SupplementalResponseStatisticsList != null)
+            if (this.SupplementalResponseStatisticsList.Any())
             {
                 stringBuilder.Append(",\"SupplementalResponseStatisticsListLast10\":[");
                 foreach (StoreResponseStatistics stat in this.SupplementalResponseStatisticsListLast10)
@@ -231,61 +231,79 @@ namespace Microsoft.Azure.Cosmos
                 stringBuilder.Append("]");
             }
 
-            stringBuilder.Append(",\"EndpointToAddressResolutionStatistics\":[");
-            foreach (KeyValuePair<string, AddressResolutionStatistics> keyValuePair in this.EndpointToAddressResolutionStatistics)
+            if (this.EndpointToAddressResolutionStatistics.Any())
             {
-                stringBuilder.Append("{\"");
-                stringBuilder.Append(keyValuePair.Key);
-                stringBuilder.Append("\":\"");
-                stringBuilder.Append(keyValuePair.Value);
-                stringBuilder.Append("\"},");
+                stringBuilder.Append(",\"EndpointToAddressResolutionStatistics\":[");
+                foreach (KeyValuePair<string, AddressResolutionStatistics> keyValuePair in this.EndpointToAddressResolutionStatistics)
+                {
+                    stringBuilder.Append("{\"");
+                    stringBuilder.Append(keyValuePair.Key);
+                    stringBuilder.Append("\":\"");
+                    stringBuilder.Append(keyValuePair.Value);
+                    stringBuilder.Append("\"},");
+                }
+
+                if (stringBuilder[stringBuilder.Length - 1] == ',')
+                {
+                    stringBuilder.Length--;
+                }
+                stringBuilder.Append("]");
             }
 
-            if (stringBuilder[stringBuilder.Length - 1] == ',')
+            if (this.ContactedReplicas.Any())
             {
-                stringBuilder.Length--;
+                stringBuilder.Append(",\"ContactedReplicas\":[");
+                foreach (Uri replica in this.ContactedReplicas)
+                {
+                    stringBuilder.Append("\"");
+                    stringBuilder.Append(replica.OriginalString);
+                    stringBuilder.Append("\",");
+                }
+
+                if (stringBuilder[stringBuilder.Length - 1] == ',')
+                {
+                    stringBuilder.Length--;
+                }
+                stringBuilder.Append("]");
             }
 
-            stringBuilder.Append("],\"ContactedReplicas\":[");
-            foreach (Uri replica in this.ContactedReplicas)
+            if (this.FailedReplicas.Any())
             {
-                stringBuilder.Append("\"");
-                stringBuilder.Append(replica.OriginalString);
-                stringBuilder.Append("\",");
+                stringBuilder.Append(",\"FailedReplicas\":[");
+                foreach (Uri replica in this.FailedReplicas)
+                {
+                    stringBuilder.Append("\"");
+                    stringBuilder.Append(replica.OriginalString);
+                    stringBuilder.Append("\",");
+                }
+
+                if (stringBuilder[stringBuilder.Length - 1] == ',')
+                {
+                    stringBuilder.Length--;
+                }
+
+                stringBuilder.Append("]");
             }
 
-            if (stringBuilder[stringBuilder.Length - 1] == ',')
+            if (this.RegionsContacted.Any())
             {
-                stringBuilder.Length--;
+                stringBuilder.Append(",\"RegionsContacted\":[");
+                foreach (Uri region in this.RegionsContacted)
+                {
+                    stringBuilder.Append("\"");
+                    stringBuilder.Append(region.OriginalString);
+                    stringBuilder.Append("\",");
+                }
+
+                if (stringBuilder[stringBuilder.Length - 1] == ',')
+                {
+                    stringBuilder.Length--;
+                }
+
+                stringBuilder.Append("]");
             }
 
-            stringBuilder.Append("],\"FailedReplicas\":[");
-            foreach (Uri replica in this.FailedReplicas)
-            {
-                stringBuilder.Append("\"");
-                stringBuilder.Append(replica.OriginalString);
-                stringBuilder.Append("\",");
-            }
-
-            if (stringBuilder[stringBuilder.Length - 1] == ',')
-            {
-                stringBuilder.Length--;
-            }
-
-            stringBuilder.Append("],\"RegionsContacted\":[");
-            foreach (Uri region in this.RegionsContacted)
-            {
-                stringBuilder.Append("\"");
-                stringBuilder.Append(region.OriginalString);
-                stringBuilder.Append("\",");
-            }
-
-            if (stringBuilder[stringBuilder.Length - 1] == ',')
-            {
-                stringBuilder.Length--;
-            }
-
-            stringBuilder.Append("],\"RequestLatency\":\"");
+            stringBuilder.Append(",\"RequestLatency\":\"");
             stringBuilder.Append(this.RequestLatency);
             stringBuilder.Append("\",\"IsCpuOverloaded\":\"");
             stringBuilder.Append(this.IsCpuOverloaded);
