@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos
 
             // V3 always assumes assemblies exists
             // Shall revisit on feedback
-            // NOTE: Native ServiceInteropWrapper.AssembliesExist has appsettings depenency which are proofed for CTL (native dll entry) scenarios.
+            // NOTE: Native ServiceInteropWrapper.AssembliesExist has appsettings dependency which are proofed for CTL (native dll entry) scenarios.
             // Revert of this depends on handling such in direct assembly
             ServiceInteropWrapper.AssembliesExist = new Lazy<bool>(() => true);
         }
