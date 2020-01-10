@@ -9,7 +9,7 @@
     <CurrentDate>$([System.DateTime]::Now.ToString(yyyyMMdd))</CurrentDate>
     <AzureSDKClientVersion>4.0.0</AzureSDKClientVersion>
     <VersionSuffix Condition=" '$(IsNightly)' == 'true' ">nightly-$(CurrentDate)</VersionSuffix>
-    <VersionSuffix Condition=" '$(IsPreview)' == 'true' ">preview2</VersionSuffix>
+    <VersionSuffix Condition=" '$(IsPreview)' == 'true' ">preview3</VersionSuffix>
     <Version Condition=" '$(VersionSuffix)' == '' ">$(AzureSDKClientVersion)</Version>
     <Version Condition=" '$(VersionSuffix)' != '' ">$(AzureSDKClientVersion)-$(VersionSuffix)</Version>
     <FileVersion>$(AzureSDKClientVersion)</FileVersion>
@@ -232,6 +232,7 @@
   
   <ItemGroup>
     <PackageReference Include="Azure.Core" Version="1.0.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="10.0.2" />
     <PackageReference Include="System.Text.Json" Version="4.7.0" />
     <PackageReference Include="StyleCop.Analyzers" Version="1.1.118" PrivateAssets="All" />
     <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="16.4.16" PrivateAssets="All" />

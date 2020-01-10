@@ -11,6 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+## <a name="4.0.0-preview3"/> [4.0.0-preview3](https://www.nuget.org/packages/Azure.Cosmos/4.0.0-preview3) - 2020-01-09
+
+### Fixed
+
+- [#1144](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1144) Newtonsoft.Json dependency needed for internal dependencies
+
+
 ## <a name="4.0.0-preview2"/> [4.0.0-preview2](https://www.nuget.org/packages/Azure.Cosmos/4.0.0-preview2) - 2020-01-07
 
 ### Added
