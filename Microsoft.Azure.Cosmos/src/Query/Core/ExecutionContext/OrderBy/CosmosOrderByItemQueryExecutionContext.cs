@@ -178,8 +178,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
             }
             else
             {
-                // FIXME
-                orderByItemProducerTreeComparer = OrderByItemProducerTreeComparer.CreateDeterministic(initParams.PartitionedQueryExecutionInfo.QueryInfo.OrderBy);
+                orderByItemProducerTreeComparer = OrderByItemProducerTreeComparer.CreateNonDeterministic(initParams.PartitionedQueryExecutionInfo.QueryInfo.OrderBy);
             }
 
             CosmosOrderByItemQueryExecutionContext context = new CosmosOrderByItemQueryExecutionContext(

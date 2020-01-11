@@ -145,7 +145,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal ExecutionEnvironment? ExecutionEnvironment { get; set; }
 
-        internal bool ReturnResultsInDeterministicOrder { get; set; }
+        internal bool? ReturnResultsInDeterministicOrder { get; set; }
 
         internal TestInjections TestSettings { get; set; }
 

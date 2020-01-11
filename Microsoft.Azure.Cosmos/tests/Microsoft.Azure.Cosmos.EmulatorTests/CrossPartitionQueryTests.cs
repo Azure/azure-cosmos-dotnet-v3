@@ -1339,29 +1339,96 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     foreach (string query in new string[] { "SELECT c.id FROM c", "SELECT c._ts, c.id FROM c ORDER BY c._ts" })
                     {
-                        foreach(bool returnResultsInDeterminsiticOrder in new bool[] { true, false})
+                        QueryRequestOptions feedOptions = new QueryRequestOptions
                         {
-                            QueryRequestOptions feedOptions = new QueryRequestOptions
+                            MaxBufferedItemCount = 7000,
+                            MaxConcurrency = maxDegreeOfParallelism,
+                            MaxItemCount = maxItemCount,
+                            ReturnResultsInDeterministicOrder = true,
+                        };
+
+                        List<JToken> queryResults = await CrossPartitionQueryTests.RunQuery<JToken>(
+                            container,
+                            query,
+                            feedOptions);
+
+                        Assert.AreEqual(
+                            documents.Count(),
+                            queryResults.Count,
+                            $"query: {query} failed with {nameof(maxDegreeOfParallelism)}: {maxDegreeOfParallelism}, {nameof(maxItemCount)}: {maxItemCount}");
+                    }
+                }
+            }
+        }
+
+        [TestMethod]
+        public async Task TestNonDeterministicQueryResults()
+        {
+            int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+            uint numberOfDocuments = 100;
+            QueryOracle.QueryOracleUtil util = new QueryOracle.QueryOracle2(seed);
+            IEnumerable<string> documents = util.GetDocuments(numberOfDocuments);
+
+            async Task Implementation(Container container, IEnumerable<Document> inputDocuments)
+            {
+                foreach (int maxDegreeOfParallelism in new int[] { 1/*, 100*/ })
+                {
+                    foreach (int maxItemCount in new int[] { 10/*, 100*/ })
+                    {
+                        foreach (bool useOrderBy in new bool[] { true/*, false*/})
+                        {
+                            string query;
+                            if (useOrderBy)
+                            {
+                                query = "SELECT c._ts, c.id FROM c ORDER BY c._ts"; 
+                            }
+                            else
+                            {
+                                query = "SELECT c.id FROM c";
+                            }
+
+                            QueryRequestOptions queryRequestOptions = new QueryRequestOptions
                             {
                                 MaxBufferedItemCount = 7000,
                                 MaxConcurrency = maxDegreeOfParallelism,
                                 MaxItemCount = maxItemCount,
-                                ReturnResultsInDeterministicOrder = returnResultsInDeterminsiticOrder,
+                                ReturnResultsInDeterministicOrder = false,
                             };
 
-                            List<JToken> queryResults = await CrossPartitionQueryTests.RunQuery<JToken>(
-                                container,
-                                query,
-                                feedOptions);
+                            async Task ValidateNonDeterministicQuery(Func<Container, string, QueryRequestOptions, Task<List<JToken>>> queryFunc, bool hasOrderBy)
+                            {
+                                List<JToken> queryResults = await queryFunc(container, query, queryRequestOptions);
+                                Assert.AreEqual(
+                                    documents.Count(),
+                                    queryResults.Count,
+                                    $"query: {query} failed with {nameof(maxDegreeOfParallelism)}: {maxDegreeOfParallelism}, {nameof(maxItemCount)}: {maxItemCount}");
+                                if (hasOrderBy)
+                                {
+                                    List<long> timestamps = new List<long>();
+                                    foreach (JToken token in queryResults)
+                                    {
+                                        JToken timestampToken = token["_ts"];
+                                        timestamps.Add(timestampToken.Value<long>());
+                                    }
 
-                            Assert.AreEqual(
-                                documents.Count(),
-                                queryResults.Count,
-                                $"query: {query} failed with {nameof(maxDegreeOfParallelism)}: {maxDegreeOfParallelism}, {nameof(maxItemCount)}: {maxItemCount}");
+                                    IEnumerable<long> sortedTimestamps = timestamps.OrderBy(x => x);
+                                    Assert.IsTrue(timestamps.SequenceEqual(sortedTimestamps), "Items were not sorted.");
+                                }
+                            }
+
+                            await ValidateNonDeterministicQuery(CrossPartitionQueryTests.QueryWithoutContinuationTokens<JToken>, useOrderBy);
+                            await ValidateNonDeterministicQuery(CrossPartitionQueryTests.QueryWithContinuationTokens<JToken>, useOrderBy);
+                            await ValidateNonDeterministicQuery(CrossPartitionQueryTests.QueryWithTryGetContinuationTokens<JToken>, useOrderBy);
                         }
                     }
                 }
             }
+
+            await this.CreateIngestQueryDelete(
+                ConnectionModes.Direct,
+                CollectionTypes.MultiPartition,
+                documents,
+                Implementation);
         }
 
         [TestMethod]
