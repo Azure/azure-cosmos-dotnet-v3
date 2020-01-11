@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
     using Microsoft.Azure.Cosmos.Query.Core.Collections;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
@@ -86,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
             int? maxConcurrency,
             int? maxItemCount,
             int? maxBufferedItemCount,
-            OrderByConsumeComparer consumeComparer,
+            OrderByItemProducerTreeComparer consumeComparer,
             TestInjections testSettings)
             : base(
                 queryContext: initPararms,
@@ -153,7 +154,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
             }
         }
 
-        public static async Task<TryCatch<CosmosOrderByItemQueryExecutionContext>> TryCreateAsync(
+        public static async Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
             CosmosQueryContext queryContext,
             CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams,
             string requestContinuationToken,
@@ -170,12 +171,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
 
             cancellationToken.ThrowIfCancellationRequested();
 
+            OrderByItemProducerTreeComparer orderByItemProducerTreeComparer;
+            if (initParams.ReturnResultsInDeterministicOrder)
+            {
+                orderByItemProducerTreeComparer = OrderByItemProducerTreeComparer.CreateDeterministic(initParams.PartitionedQueryExecutionInfo.QueryInfo.OrderBy);
+            }
+            else
+            {
+                orderByItemProducerTreeComparer = OrderByItemProducerTreeComparer.CreateNonDeterministic(initParams.PartitionedQueryExecutionInfo.QueryInfo.OrderBy);
+            }
+
             CosmosOrderByItemQueryExecutionContext context = new CosmosOrderByItemQueryExecutionContext(
                 initPararms: queryContext,
                 maxConcurrency: initParams.MaxConcurrency,
                 maxItemCount: initParams.MaxItemCount,
                 maxBufferedItemCount: initParams.MaxBufferedItemCount,
-                consumeComparer: new OrderByConsumeComparer(initParams.PartitionedQueryExecutionInfo.QueryInfo.OrderBy),
+                consumeComparer: orderByItemProducerTreeComparer,
                 testSettings: initParams.TestSettings);
 
             return (await context.TryInitializeAsync(
@@ -187,7 +198,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
                 sortOrders: initParams.PartitionedQueryExecutionInfo.QueryInfo.OrderBy,
                 orderByExpressions: initParams.PartitionedQueryExecutionInfo.QueryInfo.OrderByExpressions,
                 cancellationToken: cancellationToken))
-                .Try<CosmosOrderByItemQueryExecutionContext>(() => context);
+                .Try<IDocumentQueryExecutionComponent>(() => context);
         }
 
         /// <summary>
@@ -948,13 +959,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
             /// <summary>
             /// The order by comparer.
             /// </summary>
-            private readonly OrderByConsumeComparer orderByConsumeComparer;
+            private readonly OrderByItemProducerTreeComparer orderByConsumeComparer;
 
             /// <summary>
             /// Initializes a new instance of the OrderByEqualityComparer class.
             /// </summary>
             /// <param name="orderByConsumeComparer">The order by consume comparer.</param>
-            public OrderByEqualityComparer(OrderByConsumeComparer orderByConsumeComparer)
+            public OrderByEqualityComparer(OrderByItemProducerTreeComparer orderByConsumeComparer)
             {
                 this.orderByConsumeComparer = orderByConsumeComparer ?? throw new ArgumentNullException($"{nameof(orderByConsumeComparer)} can not be null.");
             }

@@ -438,7 +438,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         /// The code assumes that merge doesn't happen and 
         /// </Remarks>
         /// <returns>The index of the partition whose MinInclusive is equal to the suppliedContinuationTokens along with the continuation tokens.</returns>
-        public static TryCatch<InitInfo<TContinuationToken>> TryFindTargetRangeAndExtractContinuationTokens<TContinuationToken>(
+        protected static TryCatch<InitInfo<TContinuationToken>> TryFindTargetRangeAndExtractContinuationTokens<TContinuationToken>(
             List<PartitionKeyRange> partitionKeyRanges,
             IEnumerable<Tuple<TContinuationToken, Documents.Routing.Range<string>>> suppliedContinuationTokens)
         {
@@ -675,6 +675,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             /// <param name="maxConcurrency">The max concurrency</param>
             /// <param name="maxBufferedItemCount">The max buffered item count</param>
             /// <param name="maxItemCount">Max item count</param>
+            /// <param name="returnResultsInDeterministicOrder">Whether or not to return results in a deterministic order.</param>
             /// <param name="testSettings">Test settings.</param>
             public CrossPartitionInitParams(
                 SqlQuerySpec sqlQuerySpec,
@@ -685,6 +686,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 int? maxConcurrency,
                 int? maxItemCount,
                 int? maxBufferedItemCount,
+                bool returnResultsInDeterministicOrder,
                 TestInjections testSettings)
             {
                 if (string.IsNullOrWhiteSpace(collectionRid))
@@ -719,6 +721,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 this.MaxBufferedItemCount = maxBufferedItemCount;
                 this.MaxConcurrency = maxConcurrency;
                 this.MaxItemCount = maxItemCount;
+                this.ReturnResultsInDeterministicOrder = returnResultsInDeterministicOrder;
                 this.TestSettings = testSettings;
             }
 
@@ -761,6 +764,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             /// Gets the max buffered item count
             /// </summary>
             public int? MaxBufferedItemCount { get; }
+
+            public bool ReturnResultsInDeterministicOrder { get; }
 
             public TestInjections TestSettings { get; }
         }

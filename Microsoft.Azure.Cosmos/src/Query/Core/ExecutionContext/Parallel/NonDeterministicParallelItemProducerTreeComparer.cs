@@ -3,16 +3,23 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
 {
+    using System;
     using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers;
     using PartitionKeyRange = Documents.PartitionKeyRange;
 
     /// <summary>
-    /// For parallel queries we drain from left partition to right,
-    /// then by rid order within those partitions.
+    /// Implementation of <see cref="IComparer{ItemProducerTree}"/> that returns documents from the partition that has the most documents buffered first.
     /// </summary>
-    internal sealed class ParallelItemProducerTreeComparer : IComparer<ItemProducerTree>
+    internal sealed class NonDeterministicParallelItemProducerTreeComparer : IComparer<ItemProducerTree>
     {
+        public static readonly NonDeterministicParallelItemProducerTreeComparer Singleton = new NonDeterministicParallelItemProducerTreeComparer();
+
+        private NonDeterministicParallelItemProducerTreeComparer()
+        {
+            // Singleton class, so leave the constructor private.
+        }
+
         /// <summary>
         /// Compares two document producer trees in a parallel context and returns their comparison.
         /// </summary>
@@ -27,27 +34,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
             ItemProducerTree documentProducerTree1,
             ItemProducerTree documentProducerTree2)
         {
+            if (documentProducerTree1 == null)
+            {
+                throw new ArgumentNullException(nameof(documentProducerTree1));
+            }
+
+            if (documentProducerTree2 == null)
+            {
+                throw new ArgumentNullException(nameof(documentProducerTree2));
+            }
+
             if (object.ReferenceEquals(documentProducerTree1, documentProducerTree2))
             {
                 return 0;
             }
 
-            if (documentProducerTree1.HasMoreResults && !documentProducerTree2.HasMoreResults)
-            {
-                return -1;
-            }
-
-            if (!documentProducerTree1.HasMoreResults && documentProducerTree2.HasMoreResults)
-            {
-                return 1;
-            }
-
-            // Either both don't have results or both do.
-            PartitionKeyRange partitionKeyRange1 = documentProducerTree1.PartitionKeyRange;
-            PartitionKeyRange partitionKeyRange2 = documentProducerTree2.PartitionKeyRange;
-            return string.CompareOrdinal(
-                partitionKeyRange1.MinInclusive,
-                partitionKeyRange2.MinInclusive);
+            return documentProducerTree2.BufferedItemCount.CompareTo(documentProducerTree1.BufferedItemCount);
         }
     }
 }

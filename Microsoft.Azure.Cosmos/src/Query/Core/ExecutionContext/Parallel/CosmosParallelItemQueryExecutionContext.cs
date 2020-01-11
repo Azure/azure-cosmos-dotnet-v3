@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
     using Microsoft.Azure.Cosmos.Query.Core.Collections;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
@@ -29,11 +30,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
     /// </summary>
     internal sealed class CosmosParallelItemQueryExecutionContext : CosmosCrossPartitionQueryExecutionContext
     {
-        /// <summary>
-        /// The comparer used to determine which document to serve next.
-        /// </summary>
-        private static readonly IComparer<ItemProducerTree> MoveNextComparer = new ParallelItemProducerTreeComparer();
-
         /// <summary>
         /// The function to determine which partition to fetch from first.
         /// </summary>
@@ -51,19 +47,21 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
         /// <param name="maxConcurrency">The max concurrency</param>
         /// <param name="maxBufferedItemCount">The max buffered item count</param>
         /// <param name="maxItemCount">Max item count</param>
+        /// <param name="moveNextComparer">The comparer to use for the priority queue.</param>
         /// <param name="testSettings">Test settings.</param>
         private CosmosParallelItemQueryExecutionContext(
             CosmosQueryContext queryContext,
             int? maxConcurrency,
             int? maxItemCount,
             int? maxBufferedItemCount,
+            IComparer<ItemProducerTree> moveNextComparer,
             TestInjections testSettings)
             : base(
                 queryContext: queryContext,
                 maxConcurrency: maxConcurrency,
                 maxItemCount: maxItemCount,
                 maxBufferedItemCount: maxBufferedItemCount,
-                moveNextComparer: CosmosParallelItemQueryExecutionContext.MoveNextComparer,
+                moveNextComparer: moveNextComparer,
                 fetchPrioirtyFunction: CosmosParallelItemQueryExecutionContext.FetchPriorityFunction,
                 equalityComparer: CosmosParallelItemQueryExecutionContext.EqualityComparer,
                 testSettings: testSettings)
@@ -103,7 +101,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
             }
         }
 
-        public static async Task<TryCatch<CosmosParallelItemQueryExecutionContext>> TryCreateAsync(
+        /// <summary>
+        /// Tries to create an <see cref="CosmosParallelItemQueryExecutionContext"/> that.
+        /// This means that the same query when run twice will documents in a different order for the sake of performance (but will still honor the user's sort order).
+        /// </summary>
+        /// <param name="queryContext">The query context.</param>
+        /// <param name="initParams">The init params</param>
+        /// <param name="requestContinuationToken">The request continuation token.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns><see cref="TryCatch{IDocumentQueryExecutionComponent}"/></returns>
+        public static async Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
             CosmosQueryContext queryContext,
             CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams,
             string requestContinuationToken,
@@ -115,20 +122,31 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
 
             cancellationToken.ThrowIfCancellationRequested();
 
+            IComparer<ItemProducerTree> moveNextComparer;
+            if (initParams.ReturnResultsInDeterministicOrder)
+            {
+                moveNextComparer = DeterministicParallelItemProducerTreeComparer.Singleton;
+            }
+            else
+            {
+                moveNextComparer = DeterministicParallelItemProducerTreeComparer.Singleton;
+            }
+
             CosmosParallelItemQueryExecutionContext context = new CosmosParallelItemQueryExecutionContext(
                 queryContext: queryContext,
                 maxConcurrency: initParams.MaxConcurrency,
                 maxItemCount: initParams.MaxItemCount,
                 maxBufferedItemCount: initParams.MaxBufferedItemCount,
+                moveNextComparer: moveNextComparer,
                 testSettings: initParams.TestSettings);
 
-            return await context.TryInitializeAsync(
+            return (await context.TryInitializeAsync(
                 sqlQuerySpec: initParams.SqlQuerySpec,
                 collectionRid: initParams.CollectionRid,
                 partitionKeyRanges: initParams.PartitionKeyRanges,
                 initialPageSize: initParams.InitialPageSize,
                 requestContinuation: requestContinuationToken,
-                cancellationToken: cancellationToken);
+                cancellationToken: cancellationToken)).Try<IDocumentQueryExecutionComponent>(x => x);
         }
 
         public override async Task<QueryResponseCore> DrainAsync(int maxElements, CancellationToken cancellationToken)
