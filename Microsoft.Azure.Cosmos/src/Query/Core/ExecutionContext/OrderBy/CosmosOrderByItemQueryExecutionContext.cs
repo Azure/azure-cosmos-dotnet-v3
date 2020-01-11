@@ -178,7 +178,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
             }
             else
             {
-                orderByItemProducerTreeComparer = OrderByItemProducerTreeComparer.CreateNonDeterministic(initParams.PartitionedQueryExecutionInfo.QueryInfo.OrderBy);
+                // TODO (brchon): For now we are not honoring non deterministic ORDER BY queries, since there is a bug in the continuation logic.
+                // We can turn it back on once the bug is fixed.
+                // This shouldn't hurt any query results.
+                orderByItemProducerTreeComparer = OrderByItemProducerTreeComparer.CreateDeterministic(initParams.PartitionedQueryExecutionInfo.QueryInfo.OrderBy);
             }
 
             CosmosOrderByItemQueryExecutionContext context = new CosmosOrderByItemQueryExecutionContext(

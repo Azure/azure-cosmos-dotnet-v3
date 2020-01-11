@@ -1371,11 +1371,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             async Task Implementation(Container container, IEnumerable<Document> inputDocuments)
             {
-                foreach (int maxDegreeOfParallelism in new int[] { 1/*, 100*/ })
+                foreach (int maxDegreeOfParallelism in new int[] { 1, 100 })
                 {
-                    foreach (int maxItemCount in new int[] { 10/*, 100*/ })
+                    foreach (int maxItemCount in new int[] { 10, 100 })
                     {
-                        foreach (bool useOrderBy in new bool[] { true/*, false*/})
+                        foreach (bool useOrderBy in new bool[] { true, false })
                         {
                             string query;
                             if (useOrderBy)
@@ -1404,13 +1404,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                     $"query: {query} failed with {nameof(maxDegreeOfParallelism)}: {maxDegreeOfParallelism}, {nameof(maxItemCount)}: {maxItemCount}");
                                 if (hasOrderBy)
                                 {
-                                    List<long> timestamps = new List<long>();
-                                    foreach (JToken token in queryResults)
-                                    {
-                                        JToken timestampToken = token["_ts"];
-                                        timestamps.Add(timestampToken.Value<long>());
-                                    }
-
+                                    IEnumerable<long> timestamps = queryResults.Select(token => token["_ts"].Value<long>());
                                     IEnumerable<long> sortedTimestamps = timestamps.OrderBy(x => x);
                                     Assert.IsTrue(timestamps.SequenceEqual(sortedTimestamps), "Items were not sorted.");
                                 }
