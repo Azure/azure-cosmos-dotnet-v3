@@ -49,6 +49,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
                 return 0;
             }
 
+            if (documentProducerTree1.HasMoreResults && !documentProducerTree2.HasMoreResults)
+            {
+                return -1;
+            }
+
+            if (!documentProducerTree1.HasMoreResults && documentProducerTree2.HasMoreResults)
+            {
+                return 1;
+            }
+
             return documentProducerTree2.BufferedItemCount.CompareTo(documentProducerTree1.BufferedItemCount);
         }
     }

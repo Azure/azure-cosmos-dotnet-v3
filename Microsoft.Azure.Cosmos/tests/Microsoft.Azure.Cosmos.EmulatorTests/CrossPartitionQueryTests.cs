@@ -1339,22 +1339,26 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     foreach (string query in new string[] { "SELECT c.id FROM c", "SELECT c._ts, c.id FROM c ORDER BY c._ts" })
                     {
-                        QueryRequestOptions feedOptions = new QueryRequestOptions
+                        foreach(bool returnResultsInDeterminsiticOrder in new bool[] { true, false})
                         {
-                            MaxBufferedItemCount = 7000,
-                            MaxConcurrency = maxDegreeOfParallelism,
-                            MaxItemCount = maxItemCount
-                        };
+                            QueryRequestOptions feedOptions = new QueryRequestOptions
+                            {
+                                MaxBufferedItemCount = 7000,
+                                MaxConcurrency = maxDegreeOfParallelism,
+                                MaxItemCount = maxItemCount,
+                                ReturnResultsInDeterministicOrder = returnResultsInDeterminsiticOrder,
+                            };
 
-                        List<JToken> queryResults = await CrossPartitionQueryTests.RunQuery<JToken>(
-                            container,
-                            query,
-                            feedOptions);
+                            List<JToken> queryResults = await CrossPartitionQueryTests.RunQuery<JToken>(
+                                container,
+                                query,
+                                feedOptions);
 
-                        Assert.AreEqual(
-                            documents.Count(),
-                            queryResults.Count,
-                            $"query: {query} failed with {nameof(maxDegreeOfParallelism)}: {maxDegreeOfParallelism}, {nameof(maxItemCount)}: {maxItemCount}");
+                            Assert.AreEqual(
+                                documents.Count(),
+                                queryResults.Count,
+                                $"query: {query} failed with {nameof(maxDegreeOfParallelism)}: {maxDegreeOfParallelism}, {nameof(maxItemCount)}: {maxItemCount}");
+                        }
                     }
                 }
             }
