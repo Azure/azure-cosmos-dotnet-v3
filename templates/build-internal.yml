@@ -1,0 +1,28 @@
+# File: templates/build-internal.yml
+
+parameters:
+  BuildConfiguration: ''
+  Arguments: ''
+  VmImage: '' # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
+  OS: 'Windows'
+
+jobs:
+
+- job:
+  displayName: ${{ parameters.BuildConfiguration }}-${{ parameters.VmImage }} Microsoft.Azure.Cosmos.InternalFlag
+  pool:
+    vmImage: ${{ parameters.VmImage }}
+
+  steps:
+  - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
+    clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
+
+  - task: DotNetCoreCLI@2
+      displayName: Build Microsoft.Azure.Cosmos
+      inputs: 
+        command: build  
+        configuration: $(parameters.BuildConfiguration)
+        nugetConfigPath: NuGet.config
+        projects: Microsoft.Azure.Cosmos/src/Microsoft.Azure.Cosmos.csproj 
+        arguments: --configuration $(parameters.BuildConfiguration) -p:Optimize=true -p:DefineConstants="INTERNAL"
+        versioningScheme: OFF
