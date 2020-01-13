@@ -1385,12 +1385,24 @@
           "Attributes": [],
           "MethodInfo": null
         },
+        "Boolean EnableCongestionControlForBulkExecution": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
         "Boolean get_AllowBulkExecution()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Boolean get_AllowBulkExecution()"
+        },
+        "Boolean get_EnableCongestionControlForBulkExecution()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Boolean get_EnableCongestionControlForBulkExecution()"
         },
         "Boolean get_LimitToEndpoint()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -1631,6 +1643,13 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_ConsistencyLevel(System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel])"
+        },
+        "Void set_EnableCongestionControlForBulkExecution(Boolean)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_EnableCongestionControlForBulkExecution(Boolean)"
         },
         "Void set_GatewayModeMaxConnectionLimit(Int32)": {
           "Type": "Method",
@@ -2570,6 +2589,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithBulkExecution(Boolean)"
+        },
+        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithCongestionControlForBulkExecutionEnabled()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithCongestionControlForBulkExecutionEnabled()"
         },
         "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithConnectionModeDirect()": {
           "Type": "Method",
