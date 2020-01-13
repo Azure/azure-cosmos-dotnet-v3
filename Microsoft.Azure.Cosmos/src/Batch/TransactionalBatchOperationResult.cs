@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the cosmos diagnostic information for the current request to Azure Cosmos DB service
         /// </summary>
-        internal virtual CosmosDiagnostics Diagnostics { get; set; }
+        internal virtual CosmosDiagnosticsContext DiagnosticsContext { get; set; }
 
         internal static Result ReadOperationResult(Memory<byte> input, out TransactionalBatchOperationResult batchOperationResult)
         {
@@ -210,13 +210,13 @@ namespace Microsoft.Azure.Cosmos
             };
 
             // DEVNOTE: Temporary until batch has CosmosDiagnosticsCore wired through
-            CosmosDiagnosticsContext diagnosticsContext = this.Diagnostics as CosmosDiagnosticsContext;
+            CosmosDiagnosticsContext diagnosticsContext = this.DiagnosticsContext as CosmosDiagnosticsContext;
             if (diagnosticsContext == null)
             {
                 diagnosticsContext = new CosmosDiagnosticsContext();
-                if (this.Diagnostics != null)
+                if (this.DiagnosticsContext != null)
                 {
-                    diagnosticsContext.AddJsonAttribute("TransactionalBatchResponse", this.Diagnostics.ToString());
+                    diagnosticsContext.AddJsonAttribute("TransactionalBatchResponse", this.DiagnosticsContext.ToString());
                 }              
             }
              

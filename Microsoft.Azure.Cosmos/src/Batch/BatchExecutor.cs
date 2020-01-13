@@ -25,17 +25,21 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly RequestOptions batchOptions;
 
+        private readonly CosmosDiagnosticsContext diagnosticsContext;
+
         public BatchExecutor(
             ContainerCore container,
             PartitionKey partitionKey,
             IReadOnlyList<ItemBatchOperation> operations,
-            RequestOptions batchOptions)
+            RequestOptions batchOptions,
+            CosmosDiagnosticsContext diagnosticsContext)
         {
             this.container = container;
             this.clientContext = this.container.ClientContext;
             this.inputOperations = operations;
             this.partitionKey = partitionKey;
             this.batchOptions = batchOptions;
+            this.diagnosticsContext = diagnosticsContext;
         }
 
         public async Task<TransactionalBatchResponse> ExecuteAsync(CancellationToken cancellationToken)
@@ -48,11 +52,15 @@ namespace Microsoft.Azure.Cosmos
                 serverRequestPartitionKey = null;
             }
 
-            SinglePartitionKeyServerBatchRequest serverRequest = await SinglePartitionKeyServerBatchRequest.CreateAsync(
+            SinglePartitionKeyServerBatchRequest serverRequest;
+            using (this.diagnosticsContext.CreateScope("CreateBatchRequest"))
+            {
+                serverRequest = await SinglePartitionKeyServerBatchRequest.CreateAsync(
                       serverRequestPartitionKey,
                       new ArraySegment<ItemBatchOperation>(this.inputOperations.ToArray()),
                       this.clientContext.SerializerCore,
                       cancellationToken);
+            }
 
             return await this.ExecuteServerRequestAsync(serverRequest, cancellationToken);
         }
@@ -67,8 +75,11 @@ namespace Microsoft.Azure.Cosmos
             SinglePartitionKeyServerBatchRequest serverRequest,
             CancellationToken cancellationToken)
         {
+            CosmosDiagnosticsContext.CosmosDiagnosticsScope scope = this.diagnosticsContext.CreateScope("ToStreamBody");
             using (Stream serverRequestPayload = serverRequest.TransferBodyStream())
             {
+                scope.Dispose();
+
                 Debug.Assert(serverRequestPayload != null, "Server request payload expected to be non-null");
                 ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
                     this.container.LinkUri,
@@ -84,13 +95,16 @@ namespace Microsoft.Azure.Cosmos
                         requestMessage.Headers.Add(HttpConstants.HttpHeaders.IsBatchAtomic, bool.TrueString);
                         requestMessage.Headers.Add(HttpConstants.HttpHeaders.IsBatchOrdered, bool.TrueString);
                     },
-                    diagnosticsScope: null,
+                    diagnosticsScope: this.diagnosticsContext,
                     cancellationToken);
 
-                return await TransactionalBatchResponse.FromResponseMessageAsync(
-                    responseMessage,
-                    serverRequest,
-                    this.clientContext.SerializerCore);
+                using (this.diagnosticsContext.CreateScope("TransactionalBatchResponse"))
+                {
+                    return await TransactionalBatchResponse.FromResponseMessageAsync(
+                        responseMessage,
+                        serverRequest,
+                        this.clientContext.SerializerCore);
+                }
             }
         }
     }

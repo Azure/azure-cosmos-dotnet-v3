@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos
             string itemId,
             Stream streamPayload,
             Action<RequestMessage> requestEnricher,
-            CosmosDiagnosticsContext diagnosticsScope,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             if (this.IsBulkOperationSupported(resourceType, operationType))
@@ -102,6 +102,11 @@ namespace Microsoft.Azure.Cosmos
                 if (!partitionKey.HasValue)
                 {
                     throw new ArgumentOutOfRangeException(nameof(partitionKey));
+                }
+
+                if (requestEnricher != null)
+                {
+                    throw new ArgumentException($"Bulk does not support {nameof(requestEnricher)}");
                 }
 
                 return this.ProcessResourceOperationAsBulkStreamAsync(
@@ -113,7 +118,7 @@ namespace Microsoft.Azure.Cosmos
                     partitionKey: partitionKey.Value,
                     itemId: itemId,
                     streamPayload: streamPayload,
-                    requestEnricher: requestEnricher,
+                    diagnosticsContext: diagnosticsContext,
                     cancellationToken: cancellationToken);
             }
 
@@ -126,7 +131,7 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey: partitionKey,
                 streamPayload: streamPayload,
                 requestEnricher: requestEnricher,
-                diagnosticsScope: diagnosticsScope,
+                diagnosticsContext: diagnosticsContext,
                 cancellationToken: cancellationToken);
         }
 
@@ -139,7 +144,7 @@ namespace Microsoft.Azure.Cosmos
             PartitionKey? partitionKey,
             Stream streamPayload,
             Action<RequestMessage> requestEnricher,
-            CosmosDiagnosticsContext diagnosticsScope,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             return this.RequestHandler.SendAsync(
@@ -151,7 +156,7 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey: partitionKey,
                 streamPayload: streamPayload,
                 requestEnricher: requestEnricher,
-                diagnosticsContext: diagnosticsScope,
+                diagnosticsContext: diagnosticsContext,
                 cancellationToken: cancellationToken);
         }
 
@@ -209,12 +214,20 @@ namespace Microsoft.Azure.Cosmos
             PartitionKey partitionKey,
             string itemId,
             Stream streamPayload,
-            Action<RequestMessage> requestEnricher,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             ItemRequestOptions itemRequestOptions = requestOptions as ItemRequestOptions;
             TransactionalBatchItemRequestOptions batchItemRequestOptions = TransactionalBatchItemRequestOptions.FromItemRequestOptions(itemRequestOptions);
-            ItemBatchOperation itemBatchOperation = new ItemBatchOperation(operationType, /* index */ 0, partitionKey, itemId, streamPayload, batchItemRequestOptions);
+            ItemBatchOperation itemBatchOperation = new ItemBatchOperation(
+                operationType: operationType,
+                operationIndex: 0,
+                partitionKey: partitionKey,
+                id: itemId,
+                resourceStream: streamPayload,
+                requestOptions: batchItemRequestOptions,
+                diagnosticsContext: diagnosticsContext);
+
             TransactionalBatchOperationResult batchOperationResult = await cosmosContainerCore.BatchExecutor.AddAsync(itemBatchOperation, itemRequestOptions, cancellationToken);
             return batchOperationResult.ToResponseMessage();
         }

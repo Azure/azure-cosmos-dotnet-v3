@@ -28,6 +28,8 @@ namespace Microsoft.Azure.Cosmos
 
         private string userAgent;
 
+        private bool isDefaultUserAgent;
+
         private List<ICosmosDiagnosticWriter> contextList { get; }
 
         static CosmosDiagnosticsContext()
@@ -43,6 +45,7 @@ namespace Microsoft.Azure.Cosmos
             this.retryCount = null;
             this.retryBackoffTimeSpan = null;
             this.userAgent = CosmosDiagnosticsContext.DefaultUserAgentString;
+            this.isDefaultUserAgent = true;
             this.contextList = new List<ICosmosDiagnosticWriter>(10);
         }
 
@@ -64,6 +67,7 @@ namespace Microsoft.Azure.Cosmos
         internal void SetSdkUserAgent(string userAgent)
         {
             this.userAgent = userAgent ?? throw new ArgumentNullException(nameof(userAgent));
+            this.isDefaultUserAgent = false;
         }
 
         internal void AddSdkRetry(TimeSpan backOffTimeSpan)
@@ -85,6 +89,31 @@ namespace Microsoft.Azure.Cosmos
         internal void AddJsonAttribute(string key, string value)
         {
             this.contextList.Add(new CosmosDiagnosticsAttribute(key, value));
+        }
+
+        internal void Append(CosmosDiagnosticsContext newContext)
+        {
+            if (Object.ReferenceEquals(this, newContext))
+            {
+                return;
+            }
+
+            if (this.isDefaultUserAgent && !newContext.isDefaultUserAgent)
+            {
+                this.SetSdkUserAgent(newContext.userAgent);
+            }
+
+            if (newContext.retryCount.HasValue)
+            {
+                this.retryCount += newContext.retryCount;
+            }
+
+            if (newContext.retryBackoffTimeSpan.HasValue)
+            {
+                this.retryBackoffTimeSpan += newContext.retryBackoffTimeSpan;
+            }
+
+            this.contextList.Add(newContext);
         }
 
         public void WriteJsonObject(StringBuilder stringBuilder)
@@ -153,11 +182,13 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal class CosmosDiagnosticsScope : ICosmosDiagnosticWriter, IDisposable
         {
-            private string Id { get; }
+            private readonly string Id;
 
-            private Stopwatch ElapsedTimeStopWatch { get; }
+            private readonly Stopwatch ElapsedTimeStopWatch;
 
-            private TimeSpan? ElapsedTime { get; set; }
+            private TimeSpan? ElapsedTime;
+
+            private bool isDisposed;
 
             internal CosmosDiagnosticsScope(
                 string name)
@@ -165,12 +196,19 @@ namespace Microsoft.Azure.Cosmos
                 this.Id = name;
                 this.ElapsedTimeStopWatch = Stopwatch.StartNew();
                 this.ElapsedTime = null;
+                this.isDisposed = false;
             }
 
             public void Dispose()
             {
+                if (this.isDisposed)
+                {
+                    return;
+                }
+
                 this.ElapsedTimeStopWatch.Stop();
                 this.ElapsedTime = this.ElapsedTimeStopWatch.Elapsed;
+                this.isDisposed = true;
             }
 
             public void WriteJsonObject(StringBuilder stringBuilder)

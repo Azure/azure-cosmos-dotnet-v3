@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 SubStatusCode = SubStatusCodes.CompletingSplit,
                 RetryAfter = TimeSpan.FromSeconds(10),
                 RequestCharge = 4.3,
-                Diagnostics = scope
+                DiagnosticsContext = scope
             };
 
             ResponseMessage response = result.ToResponseMessage();

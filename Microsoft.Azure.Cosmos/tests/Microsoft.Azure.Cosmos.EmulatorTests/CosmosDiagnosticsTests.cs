@@ -119,6 +119,55 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task BatchOperationDiagnostic()
+        {
+            string pkValue = "DiagnosticTestPk";
+            TransactionalBatch batch = this.Container.CreateTransactionalBatch(new PartitionKey(pkValue));
+
+            List<ToDoActivity> createItems = new List<ToDoActivity>();
+            for(int i = 0; i < 50; i++)
+            {
+                ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(pk: pkValue);
+                createItems.Add(item);
+                batch.CreateItem<ToDoActivity>(item);
+            }
+
+            for (int i = 0; i < 20; i++)
+            {
+                batch.ReadItem(createItems[i].id);
+            }
+
+            TransactionalBatchResponse response = await batch.ExecuteAsync();
+            
+            Assert.IsNotNull(response);
+            CosmosDiagnosticsTests.VerifyPointDiagnostics(response.Diagnostics);
+        }
+
+        [TestMethod]
+        public async Task BulkOperationDiagnostic()
+        {
+            string pkValue = "DiagnosticBulkTestPk";
+            CosmosClient bulkClient = TestCommon.CreateCosmosClient(builder => builder.WithBulkExecution(true));
+            Container bulkContainer = bulkClient.GetContainer(this.database.Id, this.Container.Id);
+            List<Task<ItemResponse<ToDoActivity>>> createItemsTasks = new List<Task<ItemResponse<ToDoActivity>>>();
+            for (int i = 0; i < 100; i++)
+            {
+
+                ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(pk: pkValue);
+                createItemsTasks.Add(bulkContainer.CreateItemAsync<ToDoActivity>(item, new PartitionKey(item.status)));
+            }
+
+            await Task.WhenAll(createItemsTasks);
+
+            foreach (Task<ItemResponse<ToDoActivity>> createTask in createItemsTasks)
+            {
+                ItemResponse<ToDoActivity> itemResponse = await createTask;
+                Assert.IsNotNull(itemResponse);
+                CosmosDiagnosticsTests.VerifyBulkPointDiagnostics(itemResponse.Diagnostics);
+            }
+        }
+
+        [TestMethod]
         public async Task QueryOperationDiagnostic()
         {
             int totalItems = 3;
@@ -195,6 +244,28 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        public static void VerifyBulkPointDiagnostics(CosmosDiagnostics diagnostics)
+        {
+            string info = diagnostics.ToString();
+            Assert.IsNotNull(info);
+            JObject jObject = JObject.Parse(info);
+
+            Assert.IsNotNull(jObject["UserAgent"].ToString());
+            Assert.IsNotNull(jObject["Context"].ToString());
+            JArray contextList = jObject["Context"].ToObject<JArray>();
+            Assert.IsTrue(contextList.Count > 2);
+
+            JArray innerContextList = contextList.Last()["Context"].ToObject<JArray>();
+            Assert.IsTrue(innerContextList.Count > 2);
+
+            // Find the PointOperationStatistics object
+            JObject pointStatistics = GetJObjectInContextList(
+                innerContextList,
+                "PointOperationStatistics");
+
+            ValidatePointOperation(pointStatistics);
+        }
+
         public static void VerifyPointDiagnostics(CosmosDiagnostics diagnostics)
         {
             string info = diagnostics.ToString();
@@ -211,7 +282,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 contextList,
                 "PointOperationStatistics");
 
-            Assert.IsNotNull(pointStatistics, $"Context list does not contain PointOperationStatistics in {contextList.ToString()}");
+            ValidatePointOperation(pointStatistics);
+        }
+
+        private static void ValidatePointOperation(JObject pointStatistics)
+        {
+            Assert.IsNotNull(pointStatistics, $"Context list does not contain PointOperationStatistics.");
             int statusCode = pointStatistics["StatusCode"].ToObject<int>();
             Assert.IsNotNull(pointStatistics["ActivityId"].ToString());
             Assert.IsNotNull(pointStatistics["StatusCode"].ToString());
@@ -219,7 +295,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(pointStatistics["RequestUri"].ToString());
             Assert.IsNotNull(pointStatistics["ClientRequestStats"].ToString());
             JObject clientJObject = pointStatistics["ClientRequestStats"].ToObject<JObject>();
-            Assert.IsNotNull(clientJObject["RequestStartTimeUtc"].ToString()); 
+            Assert.IsNotNull(clientJObject["RequestStartTimeUtc"].ToString());
             Assert.IsNotNull(clientJObject["ContactedReplicas"].ToString());
             Assert.IsNotNull(clientJObject["RequestLatency"].ToString());
 
@@ -242,7 +318,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Session token only expected on success
             if (statusCode >= 200 && statusCode < 300)
             {
-                Assert.IsNotNull(clientJObject["ResponseStatisticsList"].ToString());   
+                Assert.IsNotNull(clientJObject["ResponseStatisticsList"].ToString());
                 Assert.IsNotNull(clientJObject["RegionsContacted"].ToString());
                 Assert.IsNotNull(clientJObject["RequestEndTimeUtc"].ToString());
                 Assert.IsNotNull(pointStatistics["ResponseSessionToken"].ToString());

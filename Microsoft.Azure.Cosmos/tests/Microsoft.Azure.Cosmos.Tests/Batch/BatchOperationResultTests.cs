@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
             ResourceStream = new MemoryStream(),
             RequestCharge = 1.5,
             RetryAfter = TimeSpan.FromMilliseconds(1234),
-            Diagnostics = MockCosmosDiagnostics.Object
+            DiagnosticsContext = MockCosmosDiagnostics.Object
         };
 
         [TestMethod]
