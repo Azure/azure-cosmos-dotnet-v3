@@ -18,11 +18,12 @@ jobs:
     clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
 
   - task: DotNetCoreCLI@2
-      displayName: Build Microsoft.Azure.Cosmos
-      inputs: 
-        command: build  
-        configuration: $(parameters.BuildConfiguration)
-        nugetConfigPath: NuGet.config
-        projects: Microsoft.Azure.Cosmos/src/Microsoft.Azure.Cosmos.csproj 
-        arguments: --configuration $(parameters.BuildConfiguration) -p:Optimize=true -p:DefineConstants="INTERNAL"
-        versioningScheme: OFF
+    displayName: Build Microsoft.Azure.Cosmos
+    inputs: 
+      command: build  
+      configuration: $(parameters.BuildConfiguration)
+      nugetConfigPath: NuGet.config
+      projects: Microsoft.Azure.Cosmos/src/Microsoft.Azure.Cosmos.csproj 
+      arguments: --configuration $(parameters.BuildConfiguration) -p:Optimize=true -p:DefineConstants="INTERNAL"
+      versioningScheme: OFF
+      
