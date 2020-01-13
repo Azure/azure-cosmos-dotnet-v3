@@ -51,11 +51,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
         /// </summary>
         private static readonly Func<ItemProducerTree, int> FetchPriorityFunction = itemProducerTree => itemProducerTree.BufferedItemCount;
 
-        private static readonly JsonSerializerSettings NoAsciiCharactersSerializerSettings = new JsonSerializerSettings()
-        {
-            StringEscapeHandling = StringEscapeHandling.EscapeNonAscii,
-        };
-
         /// <summary>
         /// Skip count used for JOIN queries.
         /// You can read up more about this in the documentation for the continuation token.
@@ -126,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
                 string continuationToken;
                 if (activeItemProducers.Any())
                 {
-                    IEnumerable<OrderByContinuationToken> orderByContinuationTokens = activeItemProducers.Select((itemProducer) =>
+                    IEnumerable<CosmosElement> orderByContinuationTokens = activeItemProducers.Select((itemProducer) =>
                     {
                         OrderByQueryResult orderByQueryResult = new OrderByQueryResult(itemProducer.Current);
                         string filter = itemProducer.Filter;
@@ -141,19 +136,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
                             this.ShouldIncrementSkipCount(itemProducer) ? this.skipCount + 1 : 0,
                             filter);
 
-                        return orderByContinuationToken;
+                        return OrderByContinuationToken.ToCosmosElement(orderByContinuationToken);
                     });
 
-                    continuationToken = JsonConvert.SerializeObject(orderByContinuationTokens, NoAsciiCharactersSerializerSettings);
-
-                    // Newtonsoft has a bug where non ascii characters aren't escaped for custom POGOs
-                    // so the workaround is to double serialize
-                    continuationToken = JsonConvert.SerializeObject(JToken.Parse(continuationToken), NoAsciiCharactersSerializerSettings);
+                    continuationToken = CosmosArray.Create(orderByContinuationTokens).ToString();
                 }
                 else
                 {
                     continuationToken = null;
                 }
+
+                // Note we are no longer escaping non ascii continuation tokens.
+                // It is the callers job to encode a continuation token before adding it to a header in their service.
 
                 return continuationToken;
             }
@@ -472,9 +466,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
         }
 
         private static TryCatch<OrderByContinuationToken[]> TryExtractContinuationTokens(
-        string requestContinuation,
-        SortOrder[] sortOrders,
-        string[] orderByExpressions)
+            string requestContinuation,
+            SortOrder[] sortOrders,
+            string[] orderByExpressions)
         {
             Debug.Assert(
                 !(orderByExpressions == null
@@ -489,34 +483,40 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
                 throw new ArgumentNullException("continuation can not be null or empty.");
             }
 
-            try
-            {
-                OrderByContinuationToken[] suppliedOrderByContinuationTokens = JsonConvert.DeserializeObject<OrderByContinuationToken[]>(
-                    requestContinuation,
-                    DefaultJsonSerializationSettings.Value);
-
-                if (suppliedOrderByContinuationTokens.Length == 0)
-                {
-                    return TryCatch<OrderByContinuationToken[]>.FromException(
-                        new MalformedContinuationTokenException($"Order by continuation token cannot be empty: {requestContinuation}."));
-                }
-
-                foreach (OrderByContinuationToken suppliedOrderByContinuationToken in suppliedOrderByContinuationTokens)
-                {
-                    if (suppliedOrderByContinuationToken.OrderByItems.Count != sortOrders.Length)
-                    {
-                        return TryCatch<OrderByContinuationToken[]>.FromException(
-                            new MalformedContinuationTokenException($"Invalid order-by items in continuation token {requestContinuation} for OrderBy~Context."));
-                    }
-                }
-
-                return TryCatch<OrderByContinuationToken[]>.FromResult(suppliedOrderByContinuationTokens);
-            }
-            catch (JsonException ex)
+            if (!CosmosArray.TryParse(requestContinuation, out CosmosArray cosmosArray))
             {
                 return TryCatch<OrderByContinuationToken[]>.FromException(
-                    new MalformedContinuationTokenException($"Invalid JSON in continuation token {requestContinuation} for OrderBy~Context: {ex.Message}"));
+                    new MalformedContinuationTokenException($"Order by continuation token must be an array: {requestContinuation}."));
             }
+
+            List<OrderByContinuationToken> orderByContinuationTokens = new List<OrderByContinuationToken>();
+            foreach (CosmosElement arrayItem in cosmosArray)
+            {
+                TryCatch<OrderByContinuationToken> tryCreateOrderByContinuationToken = OrderByContinuationToken.TryCreateFromCosmosElement(arrayItem);
+                if (!tryCreateOrderByContinuationToken.Succeeded)
+                {
+                    return TryCatch<OrderByContinuationToken[]>.FromException(tryCreateOrderByContinuationToken.Exception);
+                }
+
+                orderByContinuationTokens.Add(tryCreateOrderByContinuationToken.Result);
+            }
+
+            if (orderByContinuationTokens.Count == 0)
+            {
+                return TryCatch<OrderByContinuationToken[]>.FromException(
+                    new MalformedContinuationTokenException($"Order by continuation token cannot be empty: {requestContinuation}."));
+            }
+
+            foreach (OrderByContinuationToken suppliedOrderByContinuationToken in orderByContinuationTokens)
+            {
+                if (suppliedOrderByContinuationToken.OrderByItems.Count != sortOrders.Length)
+                {
+                    return TryCatch<OrderByContinuationToken[]>.FromException(
+                        new MalformedContinuationTokenException($"Invalid order-by items in continuation token {requestContinuation} for OrderBy~Context."));
+                }
+            }
+
+            return TryCatch<OrderByContinuationToken[]>.FromResult(orderByContinuationTokens.ToArray());
         }
 
         /// <summary>

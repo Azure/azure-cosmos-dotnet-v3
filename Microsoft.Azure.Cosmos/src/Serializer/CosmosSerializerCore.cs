@@ -6,13 +6,13 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.IO;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Documents;
+    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// This is an interface to allow a custom serializer to be used by the CosmosClient
@@ -134,7 +134,16 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentException("SqlQuerySpec to stream must use the SqlQuerySpec override");
             }
 
-            Debug.Assert(inputType.IsPublic || inputType.IsNested, $"User serializer is being used for internal type:{inputType.FullName}.");
+#if DEBUG
+            string clientAssemblyName = typeof(DatabaseProperties).Assembly.GetName().Name;
+            string directAssemblyName = typeof(Documents.PartitionKeyRange).Assembly.GetName().Name;
+            string inputAssemblyName = inputType.Assembly.GetName().Name;
+            if (string.Equals(inputAssemblyName, clientAssemblyName) ||
+                string.Equals(inputAssemblyName, directAssemblyName)) 
+            {
+                throw new ArgumentException($"User serializer is being used for internal type:{inputType.FullName}.");
+            }
+#endif
 
             return this.customSerializer;
         }

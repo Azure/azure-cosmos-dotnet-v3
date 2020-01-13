@@ -36,7 +36,10 @@ namespace Microsoft.Azure.Cosmos
            string continuationToken = null,
            QueryRequestOptions requestOptions = null)
         {
-            return this.conflicts.GetConflictQueryStreamIterator(queryText, continuationToken, requestOptions);
+            return new FeedIteratorInlineCore(this.conflicts.GetConflictQueryStreamIterator(
+                queryText,
+                continuationToken,
+                requestOptions));
         }
 
         public override FeedIterator<T> GetConflictQueryIterator<T>(
@@ -44,7 +47,10 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return this.conflicts.GetConflictQueryIterator<T>(queryText, continuationToken, requestOptions);
+            return new FeedIteratorInlineCore<T>(this.conflicts.GetConflictQueryIterator<T>(
+                queryText,
+                continuationToken,
+                requestOptions));
         }
 
         public override FeedIterator GetConflictQueryStreamIterator(
@@ -52,7 +58,10 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return this.conflicts.GetConflictQueryStreamIterator(queryDefinition, continuationToken, requestOptions);
+            return new FeedIteratorInlineCore(this.conflicts.GetConflictQueryStreamIterator(
+                queryDefinition,
+                continuationToken,
+                requestOptions));
         }
 
         public override FeedIterator<T> GetConflictQueryIterator<T>(
@@ -60,7 +69,10 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return this.conflicts.GetConflictQueryIterator<T>(queryDefinition, continuationToken, requestOptions);
+            return new FeedIteratorInlineCore<T>(this.conflicts.GetConflictQueryIterator<T>(
+                queryDefinition,
+                continuationToken,
+                requestOptions));
         }
 
         public override Task<ItemResponse<T>> ReadCurrentAsync<T>(
