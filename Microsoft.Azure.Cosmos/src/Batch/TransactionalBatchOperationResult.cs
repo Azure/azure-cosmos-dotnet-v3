@@ -208,17 +208,6 @@ namespace Microsoft.Azure.Cosmos
                 RetryAfter = this.RetryAfter,
                 RequestCharge = this.RequestCharge,
             };
-
-            // DEVNOTE: Temporary until batch has CosmosDiagnosticsCore wired through
-            CosmosDiagnosticsContext diagnosticsContext = this.DiagnosticsContext as CosmosDiagnosticsContext;
-            if (diagnosticsContext == null)
-            {
-                diagnosticsContext = new CosmosDiagnosticsContext();
-                if (this.DiagnosticsContext != null)
-                {
-                    diagnosticsContext.AddJsonAttribute("TransactionalBatchResponse", this.DiagnosticsContext.ToString());
-                }              
-            }
              
             ResponseMessage responseMessage = new ResponseMessage(
                 statusCode: this.StatusCode,
@@ -226,7 +215,7 @@ namespace Microsoft.Azure.Cosmos
                 errorMessage: null,
                 error: null,
                 headers: headers,
-                diagnostics: diagnosticsContext)
+                diagnostics: this.DiagnosticsContext)
             {
                 Content = this.ResourceStream
             };

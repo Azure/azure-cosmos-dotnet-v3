@@ -48,15 +48,14 @@ namespace Microsoft.Azure.Cosmos
             int operationIndex,
             string id = null,
             Stream resourceStream = null,
-            TransactionalBatchItemRequestOptions requestOptions = null,
-            CosmosDiagnosticsContext diagnosticsContext = null)
+            TransactionalBatchItemRequestOptions requestOptions = null)
         {
             this.OperationType = operationType;
             this.OperationIndex = operationIndex;
             this.Id = id;
             this.ResourceStream = resourceStream;
             this.RequestOptions = requestOptions;
-            this.DiagnosticsContext = diagnosticsContext;
+            this.DiagnosticsContext = null;
         }
 
         public PartitionKey? PartitionKey { get; internal set; }

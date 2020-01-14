@@ -75,11 +75,8 @@ namespace Microsoft.Azure.Cosmos
             SinglePartitionKeyServerBatchRequest serverRequest,
             CancellationToken cancellationToken)
         {
-            CosmosDiagnosticsContext.CosmosDiagnosticsScope scope = this.diagnosticsContext.CreateScope("ToStreamBody");
             using (Stream serverRequestPayload = serverRequest.TransferBodyStream())
             {
-                scope.Dispose();
-
                 Debug.Assert(serverRequestPayload != null, "Server request payload expected to be non-null");
                 ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
                     this.container.LinkUri,

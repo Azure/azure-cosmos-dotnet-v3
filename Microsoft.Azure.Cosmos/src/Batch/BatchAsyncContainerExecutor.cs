@@ -224,10 +224,8 @@ namespace Microsoft.Azure.Cosmos
             using (await limiter.UsingWaitAsync(cancellationToken))
             {
                 limiterScope.Dispose();
-                CosmosDiagnosticsContext.CosmosDiagnosticsScope toServerRequest = diagnosticsContext.CreateScope("BatchAsyncContainerExecutor.TransferBodyStream");
                 using (Stream serverRequestPayload = serverRequest.TransferBodyStream())
                 {
-                    toServerRequest.Dispose();
                     Debug.Assert(serverRequestPayload != null, "Server request payload expected to be non-null");
                     ResponseMessage responseMessage = await this.cosmosClientContext.ProcessResourceOperationStreamAsync(
                         this.cosmosContainer.LinkUri,
