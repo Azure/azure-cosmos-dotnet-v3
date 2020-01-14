@@ -23,7 +23,7 @@ jobs:
       command: build  
       configuration: $(parameters.BuildConfiguration)
       nugetConfigPath: NuGet.config
-      projects: Microsoft.Azure.Cosmos/src/Microsoft.Azure.Cosmos.csproj 
+      projects: Microsoft.Azure.Cosmos.sln 
       arguments: -p:Optimize=true -p:DefineConstants="DOCDBCLIENT COSMOSCLIENT NETSTANDARD20 INTERNAL"
       versioningScheme: OFF
       
