@@ -2,16 +2,12 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.Runtime.CompilerServices;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Extensions.Configuration;
 
     internal class Program
     {
-        //Read configuration
-        private static readonly string databaseId = "samples";
-
         // Async main requires c# 7.1 which is set in the csproj with the LangVersion attribute
         // <Main>
         public static async Task Main(string[] args)
@@ -39,7 +35,7 @@
                 //NB > Keep these values in a safe & secure location. Together they provide Administrative access to your Cosmos account
                 using (CosmosClient client = new CosmosClient(endpoint, authKey))
                 {
-                    await Program.RunDatabaseDemo(client);
+                    await Program.RunDemoAsync(client);
                 }
             }
             catch (CosmosException cre)
@@ -65,6 +61,8 @@
             // We need a Database, Two Containers, Two Users, and some permissions for this sample,
             // So let's go ahead and set these up initially
             //--------------------------------------------------------------------------------------------------
+            using (await client.GetDatabase("UserManagementDemoDb").DeleteStreamAsync()) { }
+            using (await client.GetDatabase("UserManagementDemoDb2").DeleteStreamAsync()) { }
 
             // Get, or Create, the Database
             Database db = await client.CreateDatabaseIfNotExistsAsync("UserManagementDemoDb");
@@ -87,7 +85,7 @@
             };
 
             SalesOrder order1 = await container1.CreateItemAsync<SalesOrder>(
-                salesOrder1, 
+                salesOrder1,
                 new PartitionKey(salesOrder1.AccountNumber));
 
             SalesOrder salesOrder2 = new SalesOrder()
@@ -97,7 +95,7 @@
             };
 
             SalesOrder order2 = await container1.CreateItemAsync<SalesOrder>(
-                salesOrder2, 
+                salesOrder2,
                 new PartitionKey(salesOrder2.AccountNumber));
 
             // Insert one document in to col2
@@ -108,7 +106,7 @@
             };
 
             SalesOrder order3 = await container2.CreateItemAsync<SalesOrder>(
-                salesOrder3, 
+                salesOrder3,
                 new PartitionKey(salesOrder3.AccountNumber));
 
             // Create two users
@@ -117,7 +115,7 @@
 
             // Read Permission on container 1 for user1
             PermissionProperties readPermission = new PermissionProperties("Read", PermissionMode.Read, container1);
-            Permission permissionUser1Col1 = await user1.CreatePermissionAsync(readPermission);
+            PermissionProperties permissionUser1Col1 = await user1.CreatePermissionAsync(readPermission);
 
             // All Permissions on Doc1 for user1
             PermissionProperties permissionUser1Doc1 = new PermissionProperties(
@@ -143,11 +141,11 @@
             await user2.CreatePermissionAsync(permissionUser1Col2);
 
             // All user1's permissions in a List
-            List<Permission> user1Permissions = new List<Permission>();
-            FeedIterator<Permission> feedIterator = user1.GetPermissionQueryIterator<Permission>();
+            List<PermissionProperties> user1Permissions = new List<PermissionProperties>();
+            FeedIterator<PermissionProperties> feedIterator = user1.GetPermissionQueryIterator<PermissionProperties>();
             while (feedIterator.HasMoreResults)
             {
-                FeedResponse<Permission> permissions = await feedIterator.ReadNextAsync();
+                FeedResponse<PermissionProperties> permissions = await feedIterator.ReadNextAsync();
                 user1Permissions.AddRange(permissions);
             }
 
@@ -158,83 +156,74 @@
             //----------------------------------------------------------------------------------------------------
 
             //Attempt to do admin operations when user only has Read on a collection
-            await AttemptAdminOperationsAsync(collection1.SelfLink, permissionUser1Col1);
+            await AttemptAdminOperationsAsync(
+                client.Endpoint.OriginalString,
+                db.Id,
+                container1.Id,
+                permissionUser1Col1);
 
             //Attempt a write Document with read-only Collection permission
-            await AttemptWriteWithReadPermissionAsync(collection1.SelfLink, permissionUser1Col1);
+            await AttemptWriteWithReadPermissionAsync(
+                client.Endpoint.OriginalString,
+                db.Id,
+                container1.Id,
+                permissionUser1Col1);
 
-            //Attempt to read across multiple collections
-            await AttemptReadFromTwoCollections(new List<string> { collection1.SelfLink, collection2.SelfLink }, user1Permissions);
-
-            // Uncomment to Cleanup 
-            // await client.DeleteDatabaseAsync(db.SelfLink);
-            // await client.DeleteDatabaseAsync(db2.SelfLink);
+            await db.DeleteAsync();
+            await db2.DeleteAsync();
         }
 
-        private static async Task AttemptReadFromTwoCollections(List<string> collectionLinks, List<Permission> permissions)
+        private static async Task AttemptWriteWithReadPermissionAsync(
+            string endpoint,
+            string databaseName,
+            string containerName,
+            PermissionProperties permission)
         {
-            //Now, we're going to use multiple permission tokens.
-            //In this case, a read Permission on col1 AND another read Permission for col2
-            //This means the user should be able to read from both col1 and col2, but not have 
-            //the ability to read other collections should they exist, nor any admin access.
-            //the user will also not have permission to write in either collection            
-            using (CosmosClient client = new CosmosClient(new Uri(endpointUrl), permissions))
+            using (CosmosClient client = new CosmosClient(endpoint, permission.Token))
             {
-                FeedResponse<dynamic> response;
-
-                //read collection 1 > should succeed
-                response = await client.ReadDocumentFeedAsync(collectionLinks[0]);
-
-                //read from collection 2 > should succeed
-                response = await client.ReadDocumentFeedAsync(collectionLinks[1]);
-
-                //attempt to write a doc in col 2 > should fail with Forbidden
-                try
-                {
-                    await client.UpsertDocumentAsync(collectionLinks[1], new { id = "not allowed" });
-
-                    //should never get here, because we expect the create to fail
-                    throw new ApplicationException("should never get here");
-                }
-                catch (DocumentClientException de)
-                {
-                    //expecting an Forbidden exception, anything else, rethrow
-                    if (de.StatusCode != HttpStatusCode.Forbidden) throw;
-                }
-            }
-
-            return;
-        }
-
-        private static async Task AttemptWriteWithReadPermissionAsync(string collectionLink, Permission permission)
-        {
-            using (CosmosClient client = new CosmosClient(new Uri(endpointUrl), permission.Token))
-            {
+                Container container = client.GetContainer(databaseName, containerName);
                 //attempt to write a document > should fail
                 try
                 {
-                    await client.UpsertDocumentAsync(collectionLink, new { id = "not allowed" });
+                    SalesOrder badSalesOrder = new SalesOrder()
+                    {
+                        Id = "Fail",
+                        AccountNumber = "Fail"
+                    };
+
+                    await container.UpsertItemAsync<SalesOrder>(
+                        badSalesOrder,
+                        new PartitionKey(badSalesOrder.AccountNumber));
 
                     //should never get here, because we expect the create to fail
                     throw new ApplicationException("should never get here");
                 }
-                catch (DocumentClientException de)
+                catch (CosmosException ce) when (ce.StatusCode == System.Net.HttpStatusCode.Forbidden)
                 {
                     //expecting an Forbidden exception, anything else, rethrow
-                    if (de.StatusCode != HttpStatusCode.Forbidden) throw;
+                    Console.WriteLine("Attempt to write a item failed as expected on read permission");
                 }
             }
         }
 
-        private static async Task AttemptAdminOperationsAsync(string collectionLink, Permission permission)
+        private static async Task AttemptAdminOperationsAsync(
+            string endpoint,
+            string databaseName,
+            string containerName,
+            PermissionProperties permission)
         {
-            using (CosmosClient client = new CosmosClient(new Uri(endpointUrl), permission.Token))
+            using (CosmosClient client = new CosmosClient(endpoint, permission.Token))
             {
+                Container container = client.GetContainer(databaseName, containerName);
                 //try read collection > should succeed because user1 was granted Read permission on col1
-                var docs = await client.ReadDocumentFeedAsync(collectionLink);
-                foreach (Document doc in docs)
+                FeedIterator<SalesOrder> feedIterator = container.GetItemQueryIterator<SalesOrder>();
+                while (feedIterator.HasMoreResults)
                 {
-                    Console.WriteLine(doc);
+                    FeedResponse<SalesOrder> salesOrders = await feedIterator.ReadNextAsync();
+                    foreach (SalesOrder salesOrder in salesOrders)
+                    {
+                        Console.WriteLine(salesOrder);
+                    }
                 }
 
                 //try iterate databases > should fail because the user has no Admin rights 
@@ -242,31 +231,18 @@
                 //cannot access anything outside of that collection.
                 try
                 {
-                    var databases = await client.ReadDatabaseFeedAsync();
-                    foreach (Database database in databases) { throw new ApplicationException("Should never get here"); }
+                    FeedIterator<DatabaseProperties> databaseIterator = client.GetDatabaseQueryIterator<DatabaseProperties>("select T.* from T");
+                    while (databaseIterator.HasMoreResults)
+                    {
+                        await databaseIterator.ReadNextAsync();
+                        throw new ApplicationException("Should never get here");
+                    }
                 }
-                catch (DocumentClientException de)
+                catch (CosmosException ce) when (ce.StatusCode == System.Net.HttpStatusCode.Forbidden)
                 {
-                    //expecting an Unauthorised exception, anything else, rethrow
-                    if (de.StatusCode != HttpStatusCode.Forbidden) throw;
+                    Console.WriteLine("Database query failed because user has no admin rights");
                 }
             }
-        }
-
-        public static async Task<List<Permission>> GetUserPermissionsAsync(string userLink)
-        {
-            List<Permission> listOfPermissions = new List<Permission>();
-
-            //get user resource from the user link
-            User user = await client.ReadUserAsync(userLink);
-
-            FeedResponse<Permission> permissions = await client.ReadPermissionFeedAsync(userLink);
-            foreach (var permission in permissions)
-            {
-                listOfPermissions.Add(permission);
-            }
-
-            return listOfPermissions;
         }
     }
 }
