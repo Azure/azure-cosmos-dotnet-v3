@@ -8,7 +8,7 @@ parameters:
 
 jobs:
 - job:
-  displayName: Microsoft.Azure.Cosmos.Tests ${{ parameters.BuildConfiguration }}-${{ parameters.VmImage }} 
+  displayName: Microsoft.Azure.Cosmos.Tests ${{ parameters.BuildConfiguration }} ${{ parameters.VmImage }} 
   pool:
     vmImage: ${{ parameters.VmImage }}
 
@@ -28,7 +28,7 @@ jobs:
       testRunTitle: Microsoft.Azure.Cosmos.Tests
       
 - job:
-  displayName: ${{ parameters.BuildConfiguration }} - ${{ parameters.VmImage }} PerformanceTests
+  displayName: PerformanceTests ${{ parameters.BuildConfiguration }} ${{ parameters.VmImage }} 
   pool:
     vmImage: ${{ parameters.VmImage }}
 
@@ -48,7 +48,7 @@ jobs:
       testRunTitle: Microsoft.Azure.Cosmos.PerformanceTests
 
 - job:
-  displayName: Microsoft.Azure.Cosmos.EmulatorTests ${{ parameters.BuildConfiguration }}-${{ parameters.VmImage }}
+  displayName: Microsoft.Azure.Cosmos.EmulatorTests ${{ parameters.BuildConfiguration }} ${{ parameters.VmImage }}
   timeoutInMinutes: 90
   condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'))
   pool:
