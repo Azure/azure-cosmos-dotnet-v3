@@ -9,7 +9,7 @@ parameters:
 jobs:
 
 - job:
-  displayName: Microsoft.Azure.Cosmos.InternalFlag ${{ parameters.BuildConfiguration }} ${{ parameters.VmImage }} 
+  displayName: Cosmos.InternalFlag ${{ parameters.BuildConfiguration }} ${{ parameters.VmImage }} 
   pool:
     vmImage: ${{ parameters.VmImage }}
 
@@ -18,7 +18,7 @@ jobs:
     clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
 
   - task: DotNetCoreCLI@2
-    displayName: Build Microsoft.Azure.Cosmos
+    displayName: Build Microsoft.Azure.Cosmos Internal
     inputs: 
       command: build  
       configuration: $(parameters.BuildConfiguration)
