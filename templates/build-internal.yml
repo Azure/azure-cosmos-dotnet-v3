@@ -9,7 +9,7 @@ parameters:
 jobs:
 
 - job:
-  displayName: ${{ parameters.BuildConfiguration }}-${{ parameters.VmImage }} Microsoft.Azure.Cosmos.InternalFlag
+  displayName: Microsoft.Azure.Cosmos.InternalFlag ${{ parameters.BuildConfiguration }} ${{ parameters.VmImage }} 
   pool:
     vmImage: ${{ parameters.VmImage }}
 
