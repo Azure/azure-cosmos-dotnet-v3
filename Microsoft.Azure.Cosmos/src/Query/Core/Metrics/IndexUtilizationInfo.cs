@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         public IReadOnlyList<IndexUtilizationData> PotentialIndexes { get; }
 
         /// <summary>
-        /// Initialized a new instance of the Index Utilization class.
+        /// Initializes a new instance of the Index Utilization class.
         /// </summary>
         /// <param name="utilizedIndexes">The utilized indexes list</param>
         /// <param name="potentialIndexes">The potential indexes list</param>
