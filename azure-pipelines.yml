@@ -40,5 +40,4 @@ jobs:
   parameters:
     BuildConfiguration: Release
     Arguments: $(ReleaseArguments)
-    VmImage: $(VmImage)
-  
+    VmImage: vs2017-win2016 # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
