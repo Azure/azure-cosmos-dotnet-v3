@@ -1,23 +1,15 @@
 # File: templates/build-internal.yml
 
 parameters:
-- name: BuildConfiguration
-  type: string 
-  default: ''
-- name: Arguments
-  type: string 
-  default: ''
-- name: VmImage
-  type: string 
-  default: ''
-- name: OS
-  type: string 
-  default: 'Windows'
+  BuildConfiguration: ''
+  Arguments: ''
+  VmImage: ''
+  OS: 'Windows'
 
 jobs:
 
 - job:
-  displayName: Cosmos.InternalFlag ${{ parameters.VmImage }} ${{ parameters.Arguments }}  ${{ parameters.BuildConfiguration }} 
+  displayName: InternalFlag ${{ parameters.BuildConfiguration }} 
   pool:
     vmImage: ${{ parameters.VmImage }}
 
