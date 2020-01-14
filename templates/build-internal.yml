@@ -1,15 +1,23 @@
 # File: templates/build-internal.yml
 
 parameters:
-  BuildConfiguration: ''
-  Arguments: ''
-  VmImage: '' # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
-  OS: 'Windows'
+- name: BuildConfiguration
+  type: string 
+  default: ''
+- name: Arguments
+  type: string 
+  default: ''
+- name: VmImage
+  type: string 
+  default: ''
+- name: OS
+  type: string 
+  default: 'Windows'
 
 jobs:
 
 - job:
-  displayName: Cosmos.InternalFlag ${{ parameters.BuildConfiguration }} ${{ parameters.VmImage }} 
+  displayName: Cosmos.InternalFlag ${{ parameters.VmImage }} ${{ parameters.Arguments }}  ${{ parameters.BuildConfiguration }} 
   pool:
     vmImage: ${{ parameters.VmImage }}
 
