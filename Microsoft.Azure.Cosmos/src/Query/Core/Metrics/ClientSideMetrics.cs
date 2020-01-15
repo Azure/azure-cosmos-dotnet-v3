@@ -6,19 +6,21 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using Newtonsoft.Json;
 
     /// <summary>
     /// Stores client side QueryMetrics.
     /// </summary>
-    internal sealed class ClientSideMetrics
+#if INTERNAL
+    public
+#else
+    internal
+#endif
+    sealed class ClientSideMetrics
     {
-        public static readonly ClientSideMetrics Zero = new ClientSideMetrics(
+        public static readonly ClientSideMetrics Empty = new ClientSideMetrics(
             retries: 0,
             requestCharge: 0,
             fetchExecutionRanges: new List<FetchExecutionRange>());
-
-        private static readonly IEnumerable<Tuple<string, SchedulingTimeSpan>> partitionSchedulingTimeSpans = new List<Tuple<string, SchedulingTimeSpan>>();
 
         /// <summary>
         /// Initializes a new instance of the ClientSideMetrics class.
@@ -26,7 +28,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// <param name="retries">The number of retries required to execute the query.</param>
         /// <param name="requestCharge">The request charge incurred from executing the query.</param>
         /// <param name="fetchExecutionRanges">The fetch execution ranges from executing the query.</param>
-        [JsonConstructor]
         public ClientSideMetrics(
             long retries,
             double requestCharge,
@@ -34,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         {
             this.Retries = retries;
             this.RequestCharge = requestCharge;
-            this.FetchExecutionRanges = fetchExecutionRanges ?? throw new ArgumentNullException("fetchExecutionRanges");
+            this.FetchExecutionRanges = fetchExecutionRanges ?? throw new ArgumentNullException(nameof(fetchExecutionRanges));
         }
 
         /// <summary>
@@ -52,41 +53,41 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// </summary>
         public IEnumerable<FetchExecutionRange> FetchExecutionRanges { get; }
 
-        /// <summary>
-        /// Gets the Partition Scheduling TimeSpans for this query.
-        /// </summary>
-        public IEnumerable<Tuple<string, SchedulingTimeSpan>> PartitionSchedulingTimeSpans
+        public ref struct Accumulator
         {
-            get
+            public Accumulator(long retries, double requestCharge, IEnumerable<FetchExecutionRange> fetchExecutionRanges)
             {
-                return ClientSideMetrics.partitionSchedulingTimeSpans;
-            }
-        }
-
-        /// <summary>
-        /// Creates a new ClientSideMetrics that is the sum of all elements in an IEnumerable.
-        /// </summary>
-        /// <param name="clientSideMetricsList">The IEnumerable to aggregate.</param>
-        /// <returns>A new ClientSideMetrics that is the sum of all elements in an IEnumerable.</returns>
-        public static ClientSideMetrics CreateFromIEnumerable(IEnumerable<ClientSideMetrics> clientSideMetricsList)
-        {
-            long retries = 0;
-            double requestCharge = 0;
-            IEnumerable<FetchExecutionRange> fetchExecutionRanges = new List<FetchExecutionRange>();
-
-            if (clientSideMetricsList == null)
-            {
-                throw new ArgumentNullException("clientSideQueryMetricsList");
+                this.Retries = retries;
+                this.RequestCharge = requestCharge;
+                this.FetchExecutionRanges = fetchExecutionRanges;
             }
 
-            foreach (ClientSideMetrics clientSideQueryMetrics in clientSideMetricsList)
+            public long Retries { get; }
+
+            public double RequestCharge { get; }
+
+            public IEnumerable<FetchExecutionRange> FetchExecutionRanges { get; }
+
+            public Accumulator Accumulate(ClientSideMetrics clientSideMetrics)
             {
-                retries += clientSideQueryMetrics.Retries;
-                requestCharge += clientSideQueryMetrics.RequestCharge;
-                fetchExecutionRanges = fetchExecutionRanges.Concat(clientSideQueryMetrics.FetchExecutionRanges);
+                if (clientSideMetrics == null)
+                {
+                    throw new ArgumentNullException(nameof(clientSideMetrics));
+                }
+
+                return new Accumulator(
+                    retries: this.Retries + clientSideMetrics.Retries,
+                    requestCharge: this.RequestCharge + clientSideMetrics.RequestCharge,
+                    fetchExecutionRanges: (this.FetchExecutionRanges ?? Enumerable.Empty<FetchExecutionRange>()).Concat(clientSideMetrics.FetchExecutionRanges));
             }
 
-            return new ClientSideMetrics(retries, requestCharge, fetchExecutionRanges);
+            public static ClientSideMetrics ToClientSideMetrics(Accumulator accumulator)
+            {
+                return new ClientSideMetrics(
+                    retries: accumulator.Retries,
+                    requestCharge: accumulator.RequestCharge,
+                    fetchExecutionRanges: accumulator.FetchExecutionRanges);
+            }
         }
     }
 }

@@ -8,7 +8,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     using System.Linq;
     using System.Text;
 
-    internal sealed class QueryMetricsTextWriter : QueryMetricsWriter
+    /// <summary>
+    /// Fancy <see cref="QueryMetricsWriter"/>.
+    /// </summary>
+#if INTERNAL
+    public
+#else
+    internal
+#endif
+    sealed class QueryMetricsTextWriter : QueryMetricsWriter
     {
         #region Constants
         // QueryMetrics Text
