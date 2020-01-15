@@ -5,7 +5,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
 {
     using System;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
                     {
                         max = null;
                     }
-                    
+
                     if (min != null)
                     {
                         localMinMax = min;
@@ -144,25 +144,34 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
 
         public string GetContinuationToken()
         {
-            string continuationToken;
+            IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
+            this.SerializeState(jsonWriter);
+            return Utf8StringHelpers.ToString(jsonWriter.GetResult());
+        }
+
+        public void SerializeState(IJsonWriter jsonWriter)
+        {
+            if (jsonWriter == null)
+            {
+                throw new ArgumentNullException(nameof(jsonWriter));
+            }
+
             if (this.globalMinMax == ItemComparer.MinValue)
             {
-                continuationToken = MinMaxAggregator.MinValueContinuationToken;
+                jsonWriter.WriteStringValue(MinMaxAggregator.MinValueContinuationToken);
             }
             else if (this.globalMinMax == ItemComparer.MaxValue)
             {
-                continuationToken = MinMaxAggregator.MaxValueContinuationToken;
+                jsonWriter.WriteStringValue(MinMaxAggregator.MaxValueContinuationToken);
             }
             else if (this.globalMinMax == Undefined)
             {
-                continuationToken = MinMaxAggregator.UndefinedContinuationToken;
+                jsonWriter.WriteStringValue(MinMaxAggregator.UndefinedContinuationToken);
             }
             else
             {
-                continuationToken = this.globalMinMax.ToString();
+                this.globalMinMax.WriteTo(jsonWriter);
             }
-
-            return continuationToken;
         }
 
         public static TryCatch<IAggregator> TryCreateMinAggregator(string continuationToken)

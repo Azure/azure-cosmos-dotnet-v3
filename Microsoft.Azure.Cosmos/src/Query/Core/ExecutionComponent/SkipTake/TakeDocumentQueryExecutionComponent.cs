@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
@@ -18,6 +19,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
 
     internal sealed class TakeDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase
     {
+        private const string SourceTokenName = "SourceToken";
+        private const string TakeCountName = "TakeCount";
+
         private readonly TakeEnum takeEnum;
         private int takeCount;
 
@@ -194,6 +198,28 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
             {
                 state = default;
                 return true;
+            }
+        }
+
+        public override void SerializeState(IJsonWriter jsonWriter)
+        {
+            if (jsonWriter == null)
+            {
+                throw new ArgumentNullException(nameof(jsonWriter));
+            }
+
+            if (this.IsDone)
+            {
+                jsonWriter.WriteNullValue();
+            }
+            else
+            {
+                jsonWriter.WriteObjectStart();
+                jsonWriter.WriteFieldName(SourceTokenName);
+                this.Source.SerializeState(jsonWriter);
+                jsonWriter.WriteFieldName(TakeCountName);
+                jsonWriter.WriteInt64Value(this.takeCount);
+                jsonWriter.WriteObjectEnd();
             }
         }
 

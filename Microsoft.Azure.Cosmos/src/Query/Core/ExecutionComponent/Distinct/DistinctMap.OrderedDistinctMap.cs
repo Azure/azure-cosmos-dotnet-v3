@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
 {
     using System;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
@@ -70,6 +71,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
             public override string GetContinuationToken()
             {
                 return this.lastHash.ToString();
+            }
+
+            public override void SerializeState(IJsonWriter jsonWriter)
+            {
+                if (jsonWriter == null)
+                {
+                    throw new ArgumentNullException(nameof(jsonWriter));
+                }
+
+                jsonWriter.WriteBinaryValue(UInt128.ToByteArray(this.lastHash));
             }
 
             public static TryCatch<DistinctMap> TryCreate(string continuationToken)

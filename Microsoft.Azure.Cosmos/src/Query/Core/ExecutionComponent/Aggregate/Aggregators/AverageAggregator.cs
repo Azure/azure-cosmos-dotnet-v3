@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
 {
     using System;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
@@ -52,6 +53,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
             return this.globalAverage.ToString();
         }
 
+        public void SerializeState(IJsonWriter jsonWriter)
+        {
+            if (jsonWriter == null)
+            {
+                throw new ArgumentNullException(nameof(jsonWriter));
+            }
+
+            this.globalAverage.SerializeState(jsonWriter);
+        }
+
         public static TryCatch<IAggregator> TryCreate(string continuationToken)
         {
             AverageInfo averageInfo;
@@ -74,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
         /// <summary>
         /// Struct that stores a weighted average as a sum and count so they that average across different partitions with different numbers of documents can be taken.
         /// </summary>
-        private struct AverageInfo
+        private readonly struct AverageInfo
         {
             private const string SumName = "sum";
             private const string CountName = "count";
@@ -196,6 +207,21 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
                 }
 
                 return CosmosNumber64.Create(this.Sum.Value / this.Count);
+            }
+
+            public void SerializeState(IJsonWriter jsonWriter)
+            {
+                if (jsonWriter == null)
+                {
+                    throw new ArgumentNullException(nameof(jsonWriter));
+                }
+
+                jsonWriter.WriteObjectStart();
+                jsonWriter.WriteFieldName(AverageInfo.SumName);
+                jsonWriter.WriteFloat64Value(this.Sum.Value);
+                jsonWriter.WriteFieldName(AverageInfo.CountName);
+                jsonWriter.WriteInt64Value(this.Count);
+                jsonWriter.WriteObjectEnd();
             }
 
             public override string ToString()

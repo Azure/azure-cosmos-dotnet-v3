@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
@@ -105,6 +106,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
             {
                 state = default;
                 return false;
+            }
+
+            public override void SerializeState(IJsonWriter jsonWriter)
+            {
+                throw new NotSupportedException(ContinuationTokenNotSupportedWithGroupBy);
             }
         }
     }

@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
@@ -86,6 +87,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
             /// <returns>A page of distinct results.</returns>
             public override async Task<QueryResponseCore> DrainAsync(int maxElements, CancellationToken cancellationToken)
             {
+                cancellationToken.ThrowIfCancellationRequested();
+
                 List<CosmosElement> distinctResults = new List<CosmosElement>();
                 QueryResponseCore sourceResponse = await base.DrainAsync(maxElements, cancellationToken);
 
@@ -128,32 +131,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                 }
 
                 return queryResponseCore;
-            }
-
-            public override bool TryGetContinuationToken(out string continuationToken)
-            {
-                if (this.distinctQueryType != DistinctQueryType.Ordered)
-                {
-                    continuationToken = null;
-                    return false;
-                }
-
-                if (this.IsDone)
-                {
-                    continuationToken = null;
-                    return true;
-                }
-
-                if (!this.Source.TryGetContinuationToken(out string sourceContinuationToken))
-                {
-                    continuationToken = default;
-                    return false;
-                }
-
-                continuationToken = new DistinctContinuationToken(
-                    sourceContinuationToken,
-                    this.distinctMap.GetContinuationToken()).ToString();
-                return true;
             }
         }
     }

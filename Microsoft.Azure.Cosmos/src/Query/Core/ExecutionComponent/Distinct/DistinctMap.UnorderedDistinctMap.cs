@@ -230,6 +230,24 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
             public override string GetContinuationToken()
             {
                 IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Binary);
+                this.SerializeState(jsonWriter);
+
+                ReadOnlyMemory<byte> memory = jsonWriter.GetResult();
+                if (!MemoryMarshal.TryGetArray(memory, out ArraySegment<byte> buffer))
+                {
+                    buffer = new ArraySegment<byte>(memory.ToArray());
+                }
+
+                return Convert.ToBase64String(buffer.Array, buffer.Offset, buffer.Count);
+            }
+
+            public override void SerializeState(IJsonWriter jsonWriter)
+            {
+                if (jsonWriter == null)
+                {
+                    throw new ArgumentNullException(nameof(jsonWriter));
+                }
+
                 jsonWriter.WriteObjectStart();
 
                 jsonWriter.WriteFieldName(UnorderdDistinctMap.NumbersName);
@@ -292,14 +310,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                 jsonWriter.WriteStringValue(this.simpleValues.ToString());
 
                 jsonWriter.WriteObjectEnd();
-
-                ReadOnlyMemory<byte> memory = jsonWriter.GetResult();
-                if (!MemoryMarshal.TryGetArray(memory, out ArraySegment<byte> buffer))
-                {
-                    buffer = new ArraySegment<byte>(memory.ToArray());
-                }
-
-                return Convert.ToBase64String(buffer.Array, buffer.Offset, buffer.Count);
             }
 
             /// <summary>

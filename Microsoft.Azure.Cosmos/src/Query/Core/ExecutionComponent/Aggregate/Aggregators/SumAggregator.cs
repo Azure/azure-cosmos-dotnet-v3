@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
     using System;
     using System.Globalization;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
@@ -72,6 +73,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
         public string GetContinuationToken()
         {
             return this.globalSum.ToString("G17", CultureInfo.InvariantCulture);
+        }
+
+        public void SerializeState(IJsonWriter jsonWriter)
+        {
+            if (jsonWriter == null)
+            {
+                throw new ArgumentNullException(nameof(jsonWriter));
+            }
+
+            jsonWriter.WriteFloat64Value(this.globalSum);
         }
 
         public static TryCatch<IAggregator> TryCreate(string continuationToken)

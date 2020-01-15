@@ -19,11 +19,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
     {
         private sealed class ComputeGroupByDocumentQueryExecutionComponent : GroupByDocumentQueryExecutionComponent
         {
+            private const string SourceTokenName = "SourceToken";
+            private const string GroupingTableContinuationTokenName = "GroupingTableContinuationToken";
+            private const string DoneReadingGroupingsContinuationToken = "DONE";
+            private const string UseTryGetContinuationTokenInstead = "Use TryGetContinuationTokenInstead";
+
             private static readonly IReadOnlyList<CosmosElement> EmptyResults = new List<CosmosElement>().AsReadOnly();
             private static readonly IReadOnlyDictionary<string, QueryMetrics> EmptyQueryMetrics = new Dictionary<string, QueryMetrics>();
-            private static readonly string DoneReadingGroupingsContinuationToken = "DONE";
-
-            private static readonly string UseTryGetContinuationTokenInstead = "Use TryGetContinuationTokenInstead";
 
             private ComputeGroupByDocumentQueryExecutionComponent(
                 IDocumentQueryExecutionComponent source,
@@ -151,10 +153,21 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                 }
                 else
                 {
+                    jsonWriter.WriteObjectStart();
+
+                    jsonWriter.WriteFieldName(GroupingTableContinuationTokenName);
+                    this.groupingTable.SerializeState(jsonWriter);
+                    jsonWriter.WriteFieldName(SourceTokenName);
                     if (this.Source.IsDone)
                     {
-
+                        jsonWriter.WriteStringValue(DoneReadingGroupingsContinuationToken);
                     }
+                    else
+                    {
+                        this.Source.SerializeState(jsonWriter);
+                    }
+
+                    jsonWriter.WriteObjectEnd();
                 }
             }
 

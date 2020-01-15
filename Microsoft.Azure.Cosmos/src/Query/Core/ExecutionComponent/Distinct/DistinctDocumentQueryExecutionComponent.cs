@@ -5,6 +5,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
 {
     using System;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Newtonsoft.Json;
@@ -22,6 +24,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
     /// </summary>
     internal abstract partial class DistinctDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase
     {
+        private const string SourceTokenName = "SourceToken";
+        private const string DistinctMapTokenName = "DistinctMapToken";
         /// <summary>
         /// An DistinctMap that efficiently stores the documents that we have already seen.
         /// </summary>
@@ -68,6 +72,48 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
             }
 
             return tryCreateDistinctDocumentQueryExecutionComponent;
+        }
+
+        public override bool TryGetContinuationToken(out string continuationToken)
+        {
+            if (this.IsDone)
+            {
+                continuationToken = null;
+                return true;
+            }
+
+            if (!this.Source.TryGetContinuationToken(out string sourceContinuationToken))
+            {
+                continuationToken = default;
+                return false;
+            }
+
+            continuationToken = new DistinctContinuationToken(
+                sourceContinuationToken,
+                this.distinctMap.GetContinuationToken()).ToString();
+            return true;
+        }
+
+        public override void SerializeState(IJsonWriter jsonWriter)
+        {
+            if (jsonWriter == null)
+            {
+                throw new ArgumentNullException(nameof(jsonWriter));
+            }
+
+            if (this.IsDone)
+            {
+                jsonWriter.WriteNullValue();
+            }
+            else
+            {
+                jsonWriter.WriteObjectStart();
+                jsonWriter.WriteFieldName(DistinctDocumentQueryExecutionComponent.SourceTokenName);
+                this.Source.SerializeState(jsonWriter);
+                jsonWriter.WriteFieldName(DistinctDocumentQueryExecutionComponent.DistinctMapTokenName);
+                this.distinctMap.SerializeState(jsonWriter);
+                jsonWriter.WriteObjectEnd();
+            }
         }
 
         /// <summary>

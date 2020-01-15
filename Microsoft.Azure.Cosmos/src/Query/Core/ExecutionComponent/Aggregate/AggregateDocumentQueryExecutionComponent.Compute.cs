@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggregators;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
@@ -15,6 +16,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
 
     internal abstract partial class AggregateDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase
     {
+        private const string SourceTokenName = "SourceToken";
+        private const string AggregationTokenName = "AggregationToken";
+
         private static readonly IReadOnlyList<CosmosElement> EmptyResults = new List<CosmosElement>().AsReadOnly();
 
         private sealed class ComputeAggregateDocumentQueryExecutionComponent : AggregateDocumentQueryExecutionComponent
@@ -184,6 +188,28 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
                 sourceState);
             state = aggregateContinuationToken.ToString();
             return true;
+        }
+
+        public override void SerializeState(IJsonWriter jsonWriter)
+        {
+            if (jsonWriter == null)
+            {
+                throw new ArgumentNullException(nameof(jsonWriter));
+            }
+
+            if (this.IsDone)
+            {
+                jsonWriter.WriteNullValue();
+            }
+            else
+            {
+                jsonWriter.WriteObjectStart();
+                jsonWriter.WriteFieldName(ComputeAggregateDocumentQueryExecutionComponent.SourceTokenName);
+                this.Source.SerializeState(jsonWriter);
+                jsonWriter.WriteFieldName(ComputeAggregateDocumentQueryExecutionComponent.AggregationTokenName);
+                this.singleGroupAggregator.SerializeState(jsonWriter);
+                jsonWriter.WriteObjectEnd();
+            }
         }
 
         private struct AggregateContinuationToken

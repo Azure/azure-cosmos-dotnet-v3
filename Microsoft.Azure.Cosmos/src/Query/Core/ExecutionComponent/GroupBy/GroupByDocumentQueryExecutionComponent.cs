@@ -247,6 +247,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
             public string GetContinuationToken()
             {
                 IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
+                this.SerializeState(jsonWriter);
+                string result = Utf8StringHelpers.ToString(jsonWriter.GetResult());
+                return result;
+            }
+
+            public void SerializeState(IJsonWriter jsonWriter)
+            {
+                if (jsonWriter == null)
+                {
+                    throw new ArgumentNullException(nameof(jsonWriter));
+                }
+
                 jsonWriter.WriteObjectStart();
                 foreach (KeyValuePair<UInt128, SingleGroupAggregator> kvp in this.table)
                 {
@@ -254,9 +266,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                     jsonWriter.WriteStringValue(kvp.Value.GetContinuationToken());
                 }
                 jsonWriter.WriteObjectEnd();
-
-                string result = Utf8StringHelpers.ToString(jsonWriter.GetResult());
-                return result;
             }
 
             public IEnumerator<KeyValuePair<UInt128, SingleGroupAggregator>> GetEnumerator => this.table.GetEnumerator();

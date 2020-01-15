@@ -103,26 +103,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                         diagnostics: sourceResponse.Diagnostics,
                         responseLengthBytes: sourceResponse.ResponseLengthBytes);
             }
-
-            public override bool TryGetContinuationToken(out string continuationToken)
-            {
-                if (this.IsDone)
-                {
-                    continuationToken = null;
-                    return true;
-                }
-
-                if (!this.Source.TryGetContinuationToken(out string sourceContinuationToken))
-                {
-                    continuationToken = default;
-                    return false;
-                }
-
-                continuationToken = new DistinctContinuationToken(
-                    sourceContinuationToken,
-                    this.distinctMap.GetContinuationToken()).ToString();
-                return true;
-            }
         }
     }
 }
