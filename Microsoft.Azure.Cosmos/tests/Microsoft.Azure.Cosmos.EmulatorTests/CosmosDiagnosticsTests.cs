@@ -171,7 +171,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string info = diagnostics.ToString();
             Assert.IsNotNull(info);
             JObject jObject = JObject.Parse(info);
-            Assert.IsNotNull(jObject["UserAgent"].ToString());
+            JToken summary = jObject["Summary"];
+            Assert.IsNotNull(summary["UserAgent"].ToString());
+            Assert.IsNotNull(summary["StartUtc"].ToString());
 
             JArray contextList = jObject["Context"].ToObject<JArray>();
             Assert.IsTrue(contextList.Count > 0);
@@ -190,7 +192,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(queryMetrics);
                 Assert.IsNotNull(page["IndexUtilization"].ToString());
                 Assert.IsNotNull(page["PKRangeId"].ToString());
-                JObject requestDiagnostics = page["Context"].ToObject<JObject>();
+                JArray requestDiagnostics = page["Context"].ToObject<JArray>();
                 Assert.IsNotNull(requestDiagnostics);
             }
         }
@@ -200,8 +202,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string info = diagnostics.ToString();
             Assert.IsNotNull(info);
             JObject jObject = JObject.Parse(info);
-            
-            Assert.IsNotNull(jObject["UserAgent"].ToString());
+            JToken summary = jObject["Summary"];
+            Assert.IsNotNull(summary["UserAgent"].ToString());
+            Assert.IsNotNull(summary["StartUtc"].ToString());
+            Assert.IsNotNull(summary["ElapsedTime"].ToString());
+
             Assert.IsNotNull(jObject["Context"].ToString());
             JArray contextList = jObject["Context"].ToObject<JArray>();
             Assert.IsTrue(contextList.Count > 3);

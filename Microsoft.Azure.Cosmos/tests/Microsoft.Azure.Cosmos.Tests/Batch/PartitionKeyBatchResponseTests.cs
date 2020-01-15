@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Content = responseContent,
             };
 
-            responseMessage.DiagnosticsContext.AddJsonAttribute(diagnostics);
+            responseMessage.DiagnosticsContext.AddContextWriter(diagnostics);
 
             TransactionalBatchResponse batchresponse = await TransactionalBatchResponse.FromResponseMessageAsync(
                 responseMessage,
@@ -101,6 +101,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 MockCosmosUtil.Serializer);
 
             PartitionKeyRangeBatchResponse response = new PartitionKeyRangeBatchResponse(arrayOperations.Length, batchresponse, MockCosmosUtil.Serializer);
+
             string pointDiagnosticString = diagnostics.ToString();
             pointDiagnosticString = pointDiagnosticString.Substring(1, pointDiagnosticString.Length - 2);
             string diagnosticContextString = response.DiagnosticsContext.ToString();

@@ -5,8 +5,8 @@ namespace Microsoft.Azure.Cosmos
 {
     using System.Text;
 
-    internal interface ICosmosDiagnosticWriter
+    internal abstract class CosmosDiagnosticWriter
     {
-        void WriteJsonObject(StringBuilder stringBuilder);
+        internal abstract void WriteJsonObject(StringBuilder stringBuilder);
     }
 }

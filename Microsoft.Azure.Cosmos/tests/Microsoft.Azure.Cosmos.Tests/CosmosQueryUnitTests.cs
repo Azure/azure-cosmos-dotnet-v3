@@ -338,7 +338,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         private (Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>>, QueryResponseCore) SetupBaseContextToVerifyFailureScenario()
         { 
             CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContext();
-            diagnosticsContext.AddJsonAttribute( new PointOperationStatistics(
+            diagnosticsContext.AddContextWriter( new PointOperationStatistics(
                     Guid.NewGuid().ToString(),
                     System.Net.HttpStatusCode.Unauthorized,
                     subStatusCode: SubStatusCodes.PartitionKeyMismatch,

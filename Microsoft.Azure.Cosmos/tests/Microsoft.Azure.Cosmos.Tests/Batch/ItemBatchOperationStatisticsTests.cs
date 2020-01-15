@@ -53,8 +53,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseSessionToken: null,
                 clientSideRequestStatistics: cosmosClientSideRequestStatistics2);
 
-            itemBatchOperationStatistics.AppendDiagnostics(pointOperation1);
-            itemBatchOperationStatistics.AppendDiagnostics(pointOperation2);
+            //itemBatchOperationStatistics.AppendDiagnostics(pointOperation1);
+            //itemBatchOperationStatistics.AppendDiagnostics(pointOperation2);
 
             string toString = itemBatchOperationStatistics.ToString();
 
@@ -95,8 +95,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseSessionToken: null,
                 clientSideRequestStatistics: cosmosClientSideRequestStatistics2);
 
-            itemBatchOperationStatistics.AppendDiagnostics(pointOperation1);
-            itemBatchOperationStatistics.AppendDiagnostics(pointOperation2);
+            //itemBatchOperationStatistics.AppendDiagnostics(pointOperation1);
+            //itemBatchOperationStatistics.AppendDiagnostics(pointOperation2);
             itemBatchOperationStatistics.Complete();
 
             Assert.IsTrue(itemBatchOperationStatistics.ToString().Contains("Completed at"));

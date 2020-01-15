@@ -87,7 +87,8 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 foreach (QueryPageDiagnostics queryPage in responseCore.Diagnostics)
                 {
-                    diagnostics.AddJsonAttribute(queryPage);
+                    diagnostics.Summary.Append(queryPage.DiagnosticsContext.Summary);
+                    diagnostics.AddContextWriter(queryPage);
                 }
 
                 QueryResponse queryResponse;

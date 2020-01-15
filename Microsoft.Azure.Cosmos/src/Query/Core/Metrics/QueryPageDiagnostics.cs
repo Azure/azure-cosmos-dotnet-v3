@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     using System.Text;
     using Newtonsoft.Json;
 
-    internal sealed class QueryPageDiagnostics : ICosmosDiagnosticWriter
+    internal sealed class QueryPageDiagnostics : CosmosDiagnosticWriter
     {
         public QueryPageDiagnostics(
             string partitionKeyRangeId,
@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
         internal SchedulingTimeSpan SchedulingTimeSpan { get; }
 
-        public void WriteJsonObject(StringBuilder stringBuilder)
+        internal override void WriteJsonObject(StringBuilder stringBuilder)
         {
             stringBuilder.Append("{\"PKRangeId\":\"");
             stringBuilder.Append(this.PartitionKeyRangeId);
@@ -42,11 +42,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             stringBuilder.Append(this.QueryMetricText);
             stringBuilder.Append("\",\"IndexUtilization\":\"");
             stringBuilder.Append(this.IndexUtilizationText);
-            stringBuilder.Append("\",\"Context\":");
-            this.DiagnosticsContext.WriteJsonObject(stringBuilder);
-            stringBuilder.Append(",\"SchedulingTimeSpan\":");
+            stringBuilder.Append("\",\"SchedulingTimeSpan\":");
             this.SchedulingTimeSpan.AppendJsonObjectToBuilder(stringBuilder);
-            stringBuilder.Append("}");
+            stringBuilder.Append(",\"Context\":[");
+            this.DiagnosticsContext.ContextList.WriteJsonObject(stringBuilder);
+            stringBuilder.Append("]}");
         }
     }
 }

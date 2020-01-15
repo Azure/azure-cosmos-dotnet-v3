@@ -305,7 +305,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Content = responseContent,
             };
 
-            responseMessage.DiagnosticsContext.AddJsonAttribute(new PointOperationStatistics(
+            responseMessage.DiagnosticsContext.AddContextWriter(new PointOperationStatistics(
                     activityId: Guid.NewGuid().ToString(),
                     statusCode: HttpStatusCode.Gone,
                     subStatusCode: SubStatusCodes.Unknown,
@@ -347,7 +347,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Content = responseContent,
             };
 
-            responseMessage.DiagnosticsContext.AddJsonAttribute(new PointOperationStatistics(
+            responseMessage.DiagnosticsContext.AddContextWriter(new PointOperationStatistics(
                     activityId: Guid.NewGuid().ToString(),
                     statusCode: HttpStatusCode.Gone,
                     subStatusCode: SubStatusCodes.Unknown,
@@ -388,7 +388,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Content = responseContent,
             };
 
-            responseMessage.DiagnosticsContext.AddJsonAttribute(new PointOperationStatistics(
+            responseMessage.DiagnosticsContext.AddContextWriter(new PointOperationStatistics(
                     activityId: Guid.NewGuid().ToString(),
                     statusCode: (HttpStatusCode)StatusCodes.TooManyRequests,
                     subStatusCode: SubStatusCodes.Unknown,
@@ -428,7 +428,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Content = responseContent,
             };
 
-            responseMessage.DiagnosticsContext.AddJsonAttribute(new PointOperationStatistics(
+            responseMessage.DiagnosticsContext.AddContextWriter(new PointOperationStatistics(
                      activityId: Guid.NewGuid().ToString(),
                      statusCode: HttpStatusCode.OK,
                      subStatusCode: SubStatusCodes.Unknown,

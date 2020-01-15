@@ -213,11 +213,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContext diagnosticsContext = this.Diagnostics as CosmosDiagnosticsContext;
             if (diagnosticsContext == null)
             {
-                diagnosticsContext = new CosmosDiagnosticsContext();
-                if (this.Diagnostics != null)
-                {
-                    diagnosticsContext.AddJsonAttribute("TransactionalBatchResponse", this.Diagnostics.ToString());
-                }              
+                throw new ArgumentException($"Invalid type for diagnostic: {this.Diagnostics.GetType().FullName}");              
             }
              
             ResponseMessage responseMessage = new ResponseMessage(

@@ -180,7 +180,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
 
             CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContext();
-            diagnosticsContext.AddJsonAttribute(new PointOperationStatistics(
+            diagnosticsContext.AddContextWriter(new PointOperationStatistics(
                         Guid.NewGuid().ToString(),
                         System.Net.HttpStatusCode.OK,
                         subStatusCode: SubStatusCodes.Unknown,
@@ -236,7 +236,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             await itemProducerTree.BufferMoreDocumentsAsync(cancellationTokenSource.Token);
 
             CosmosDiagnosticsContext diagnosticsContextInternalServerError = new CosmosDiagnosticsContext();
-            diagnosticsContextInternalServerError.AddJsonAttribute(new PointOperationStatistics(
+            diagnosticsContextInternalServerError.AddContextWriter(new PointOperationStatistics(
                         Guid.NewGuid().ToString(),
                         System.Net.HttpStatusCode.InternalServerError,
                         subStatusCode: SubStatusCodes.Unknown,

@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseSessionToken: null,
                 clientSideRequestStatistics: new CosmosClientSideRequestStatistics());
             CosmosDiagnosticsContext scope = new CosmosDiagnosticsContext();
-            scope.AddJsonAttribute(pointOperationStatistics);
+            scope.AddContextWriter(pointOperationStatistics);
 
             TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.OK)
             {
