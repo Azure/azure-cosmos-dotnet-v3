@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
-    internal sealed class CosmosClientSideRequestStatistics : IClientSideRequestStatistics, ICosmosDiagnosticWriter
+    internal sealed class CosmosClientSideRequestStatistics : CosmosDiagnosticWriter, IClientSideRequestStatistics 
     {
         internal const int MaxSupplementalRequestsForToString = 10;
 
@@ -190,7 +190,7 @@ namespace Microsoft.Azure.Cosmos
             return sb.ToString();
         }
 
-        public void WriteJsonObject(StringBuilder stringBuilder)
+        internal override void WriteJsonObject(StringBuilder stringBuilder)
         {
             stringBuilder.Append("{\"RequestStartTimeUtc\":\"");
             stringBuilder.Append(this.RequestStartTimeUtc);
@@ -424,7 +424,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal class AddressResolutionStatistics : ICosmosDiagnosticWriter
+        internal class AddressResolutionStatistics : CosmosDiagnosticWriter
         {
             public DateTime StartTime { get; set; }
             public DateTime EndTime { get; set; }
@@ -451,7 +451,7 @@ namespace Microsoft.Azure.Cosmos
                     .Append(this.TargetEndpoint);
             }
 
-            public void WriteJsonObject(StringBuilder stringBuilder)
+            internal override void WriteJsonObject(StringBuilder stringBuilder)
             {
                 stringBuilder.Append("{\"StartTime\":\"");
                 stringBuilder.Append(this.StartTime);

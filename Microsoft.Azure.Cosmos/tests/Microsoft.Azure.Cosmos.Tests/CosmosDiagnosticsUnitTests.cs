@@ -22,22 +22,22 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             //Test the default user agent string
             JObject jObject = JObject.Parse(diagnostics);
-            Assert.IsTrue(jObject["UserAgent"].ToString().Contains("cosmos-netstandard-sdk"), "Diagnostics should have user agent string");
+            JToken summary = jObject["Summary"];
+            Assert.IsTrue(summary["UserAgent"].ToString().Contains("cosmos-netstandard-sdk"), "Diagnostics should have user agent string");
             Assert.AreEqual("[]", jObject["Context"].ToString());
 
             // Test all the different operations on diagnostics context
-            cosmosDiagnostics.AddJsonAttribute("Test", "JsonAttributeTestValue");
-            cosmosDiagnostics.AddSdkRetry(TimeSpan.FromSeconds(42));
+            cosmosDiagnostics.Summary.AddSdkRetry(TimeSpan.FromSeconds(42));
             using (cosmosDiagnostics.CreateScope("ValidateScope"))
             {
                 Thread.Sleep(TimeSpan.FromSeconds(2));
             }
 
-            cosmosDiagnostics.SetSdkUserAgent("MyCustomUserAgentString");
+            cosmosDiagnostics.Summary.SetSdkUserAgent("MyCustomUserAgentString");
 
             string result = cosmosDiagnostics.ToString();
            
-            string regex = @"\{""StartUtc"":"".+Z"",""UserAgent"":""MyCustomUserAgentString"",""RetryCount"":1,""RetryBackOffTime"":""00:00:42"",""Context"":\[\{""Test"":""JsonAttributeTestValue""\},\{""Id"":""ValidateScope"",""ElapsedTime"":""00:00:.+""\}\]\}";
+            string regex = @"\{""Summary"":\{""StartUtc"":"".+Z"",""ElapsedTime"":""00:00:.+"",""UserAgent"":""MyCustomUserAgentString"",""RetryCount"":1,""RetryBackOffTime"":""00:00:42""\},""Context"":\[\{""Id"":""ValidateScope"",""ElapsedTime"":""00:00:.+""\}\]\}";
 
             Assert.IsTrue(Regex.IsMatch(result, regex), result);
         }

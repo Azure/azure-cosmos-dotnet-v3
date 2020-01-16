@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos
     using Newtonsoft.Json;
     using static Microsoft.Azure.Cosmos.CosmosClientSideRequestStatistics;
 
-    internal class PointOperationStatistics : CosmosDiagnostics, ICosmosDiagnosticWriter
+    internal class PointOperationStatistics : CosmosDiagnosticWriter
     {
         public string ActivityId { get; }
         public HttpStatusCode StatusCode { get; }
@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos
             return stringBuilder.ToString();
         }
 
-        public void WriteJsonObject(StringBuilder stringBuilder)
+        internal override void WriteJsonObject(StringBuilder stringBuilder)
         {
             stringBuilder.Append("{\"Id\":\"PointOperationStatistics\",\"ActivityId\":\"");
             stringBuilder.Append(this.ActivityId);

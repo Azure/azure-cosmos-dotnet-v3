@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics;
     using System.Globalization;
     using System.Text;
-    using Microsoft.Azure.Documents.Routing;
 
     /// <summary>
     /// This represents the core diagnostics object used in the SDK.
@@ -16,79 +15,53 @@ namespace Microsoft.Azure.Cosmos
     /// through the pipeline appending information as it goes into a list
     /// where it is lazily converted to a JSON string.
     /// </summary>
-    internal class CosmosDiagnosticsContext : CosmosDiagnostics, ICosmosDiagnosticWriter
+    internal sealed class CosmosDiagnosticsContext : CosmosDiagnostics
     {
-        private static readonly string DefaultUserAgentString;
+        // Summary contains the high level overview of operations
+        // like start time, retries, and other aggregated information
+        internal CosmosDiagnosticSummary Summary { get; }
 
-        private readonly DateTime StartUtc;
+        // Context list is detailed view of all the operations
+        internal CosmosDiagnosticsContextList ContextList { get; }
 
-        private long? retryCount;
-
-        private TimeSpan? retryBackoffTimeSpan;
-
-        private string userAgent;
-
-        private bool isDefaultUserAgent;
-
-        private List<ICosmosDiagnosticWriter> contextList { get; }
-
-        static CosmosDiagnosticsContext()
-        {
-            // Default user agent string does not contain client id or features.
-            UserAgentContainer userAgentContainer = new UserAgentContainer();
-            CosmosDiagnosticsContext.DefaultUserAgentString = userAgentContainer.UserAgent;
-        }
+        private bool isFirstScope = true;
 
         internal CosmosDiagnosticsContext()
         {
-            this.StartUtc = DateTime.UtcNow;
-            this.retryCount = null;
-            this.retryBackoffTimeSpan = null;
-            this.userAgent = CosmosDiagnosticsContext.DefaultUserAgentString;
-            this.isDefaultUserAgent = true;
-            this.contextList = new List<ICosmosDiagnosticWriter>(10);
+            this.Summary = new CosmosDiagnosticSummary(DateTime.UtcNow);
+            this.ContextList = new CosmosDiagnosticsContextList();
         }
 
-        internal CosmosDiagnosticsScope CreateScope(string name)
+        internal CosmosDiagnosticScope CreateScope(string name)
         {
-            CosmosDiagnosticsScope scope = new CosmosDiagnosticsScope(name);
-            this.contextList.Add(scope);
+            CosmosDiagnosticScope scope = this.isFirstScope ?
+                new CosmosDiagnosticScope(name, this.Summary.SetElapsedTime)
+                : new CosmosDiagnosticScope(name);
+
+            this.ContextList.AddWriter(scope);
+            this.isFirstScope = false;
             return scope;
         }
 
         public override string ToString()
         {
-            StringBuilder stringBuilder = new StringBuilder();        
-            this.WriteJsonObject(stringBuilder);
-
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.Append("{");
+            this.Summary.WriteJsonProperty(stringBuilder);
+            stringBuilder.Append(",\"Context\":[");
+            this.ContextList.WriteJsonObject(stringBuilder);
+            stringBuilder.Append("]}");
             return stringBuilder.ToString();
         }
 
-        internal void SetSdkUserAgent(string userAgent)
+        internal void AddSummaryWriter(CosmosDiagnosticWriter diagnosticWriter)
         {
-            this.userAgent = userAgent ?? throw new ArgumentNullException(nameof(userAgent));
-            this.isDefaultUserAgent = false;
+            this.Summary.AddWriter(diagnosticWriter);
         }
 
-        internal void AddSdkRetry(TimeSpan backOffTimeSpan)
+        internal void AddContextWriter(CosmosDiagnosticWriter diagnosticWriter)
         {
-            if (this.retryBackoffTimeSpan == null)
-            {
-                this.retryBackoffTimeSpan = TimeSpan.Zero;
-            }
-
-            this.retryBackoffTimeSpan = this.retryBackoffTimeSpan.Value.Add(backOffTimeSpan);
-            this.retryCount = this.retryCount.GetValueOrDefault(0) + 1;
-        }
-
-        internal void AddJsonAttribute(ICosmosDiagnosticWriter diagnosticWriter)
-        {
-            this.contextList.Add(diagnosticWriter);
-        }
-
-        internal void AddJsonAttribute(string key, string value)
-        {
-            this.contextList.Add(new CosmosDiagnosticsAttribute(key, value));
+            this.ContextList.AddWriter(diagnosticWriter);
         }
 
         internal void Append(CosmosDiagnosticsContext newContext)
@@ -98,135 +71,9 @@ namespace Microsoft.Azure.Cosmos
                 return;
             }
 
-            if (this.isDefaultUserAgent && !newContext.isDefaultUserAgent)
-            {
-                this.SetSdkUserAgent(newContext.userAgent);
-            }
+            this.Summary.Append(newContext.Summary);
 
-            if (newContext.retryCount.HasValue)
-            {
-                this.retryCount += newContext.retryCount;
-            }
-
-            if (newContext.retryBackoffTimeSpan.HasValue)
-            {
-                this.retryBackoffTimeSpan += newContext.retryBackoffTimeSpan;
-            }
-
-            this.contextList.Add(newContext);
-        }
-
-        public void WriteJsonObject(StringBuilder stringBuilder)
-        {
-            stringBuilder.Append("{\"StartUtc\":\"");
-            stringBuilder.Append(this.StartUtc.ToString("o", CultureInfo.InvariantCulture));
-            stringBuilder.Append("\",\"UserAgent\":\"");
-            stringBuilder.Append(this.userAgent);
-            stringBuilder.Append("\"");
-            if (this.retryCount.HasValue && this.retryCount.Value > 0)
-            {
-                stringBuilder.Append(",\"RetryCount\":");
-                stringBuilder.Append(this.retryCount.Value);
-            }
-
-            if (this.retryBackoffTimeSpan.HasValue && this.retryBackoffTimeSpan.Value > TimeSpan.Zero)
-            {
-                stringBuilder.Append(",\"RetryBackOffTime\":\"");
-                stringBuilder.Append(this.retryBackoffTimeSpan.Value);
-                stringBuilder.Append("\"");
-            }
-
-            stringBuilder.Append(",\"Context\":[");
-            foreach (ICosmosDiagnosticWriter writer in this.contextList)
-            {
-                writer.WriteJsonObject(stringBuilder);
-                stringBuilder.Append(",");
-            }
-
-            // Remove the last comma to make valid json
-            if (this.contextList.Count > 0)
-            {
-                stringBuilder.Length -= 1;
-            }
-
-            stringBuilder.Append("]}");
-        }
-
-        internal class CosmosDiagnosticsAttribute : ICosmosDiagnosticWriter
-        {
-            private readonly string key;
-            private readonly string value;
-
-            internal CosmosDiagnosticsAttribute(
-                string key,
-                string value)
-            {
-                this.key = key;
-                this.value = value;
-            }
-
-            public void WriteJsonObject(StringBuilder stringBuilder)
-            {
-                stringBuilder.Append("{\"");
-                stringBuilder.Append(this.key);
-                stringBuilder.Append("\":\"");
-                stringBuilder.Append(this.value);
-                stringBuilder.Append("\"}");
-            }
-        }
-
-        /// <summary>
-        /// This represents a single scope in the diagnostics.
-        /// A scope is a section of code that is important to track.
-        /// For example there is a scope for serialization, retry handlers, etc..
-        /// </summary>
-        internal class CosmosDiagnosticsScope : ICosmosDiagnosticWriter, IDisposable
-        {
-            private readonly string Id;
-
-            private readonly Stopwatch ElapsedTimeStopWatch;
-
-            private TimeSpan? ElapsedTime;
-
-            private bool isDisposed;
-
-            internal CosmosDiagnosticsScope(
-                string name)
-            {
-                this.Id = name;
-                this.ElapsedTimeStopWatch = Stopwatch.StartNew();
-                this.ElapsedTime = null;
-                this.isDisposed = false;
-            }
-
-            public void Dispose()
-            {
-                if (this.isDisposed)
-                {
-                    return;
-                }
-
-                this.ElapsedTimeStopWatch.Stop();
-                this.ElapsedTime = this.ElapsedTimeStopWatch.Elapsed;
-                this.isDisposed = true;
-            }
-
-            public void WriteJsonObject(StringBuilder stringBuilder)
-            {
-                stringBuilder.Append("{\"Id\":\"");
-                stringBuilder.Append(this.Id);
-                stringBuilder.Append("\",\"ElapsedTime\":\"");
-                if (this.ElapsedTime.HasValue)
-                {
-                    stringBuilder.Append(this.ElapsedTime.Value);
-                }
-                else
-                {
-                    stringBuilder.Append("NoElapsedTime");
-                }
-
-                stringBuilder.Append("\"}");
-            }
+            this.ContextList.Append(newContext.ContextList);
         }
     }
 }

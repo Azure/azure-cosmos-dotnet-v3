@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 diagnosticsContext = new CosmosDiagnosticsContext();
             }
 
-            diagnosticsContext.SetSdkUserAgent(this.client.ClientContext.UserAgent);
+            diagnosticsContext.Summary.SetSdkUserAgent(this.client.ClientContext.UserAgent);
             using (diagnosticsContext.CreateScope("RequestInvokerHandler"))
             {
                 RequestMessage request = new RequestMessage(

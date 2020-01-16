@@ -191,19 +191,13 @@ namespace Microsoft.Azure.Cosmos.Linq
                     }
                     else
                     {
-                        diagnosticsContext.AddJsonAttribute(responseDiagnosticContext);
+                        diagnosticsContext.Append(responseDiagnosticContext);
                     }
                     
                 }
                 else
                 {
-                    // If the first page is not a CosmosDiagnosticsContext then create new one
-                    if (diagnosticsContext == null)
-                    {
-                        diagnosticsContext = new CosmosDiagnosticsContext();
-                    }
-
-                    diagnosticsContext.AddJsonAttribute("QueryPage", response.Diagnostics.ToString());
+                    throw new ArgumentException($"Invalid diagnostic object {response.Diagnostics.GetType().FullName}");
                 }
 
                 result.AddRange(response);
