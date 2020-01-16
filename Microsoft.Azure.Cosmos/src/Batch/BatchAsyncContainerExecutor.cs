@@ -151,11 +151,13 @@ namespace Microsoft.Azure.Cosmos
         {
             if (itemRequestOptions.Properties != null
                             && (itemRequestOptions.Properties.TryGetValue(WFConstants.BackendHeaders.EffectivePartitionKey, out object epkObj)
-                            | itemRequestOptions.Properties.TryGetValue(WFConstants.BackendHeaders.EffectivePartitionKeyString, out object epkStrObj)))
+                            | itemRequestOptions.Properties.TryGetValue(WFConstants.BackendHeaders.EffectivePartitionKeyString, out object epkStrObj)
+                            | itemRequestOptions.Properties.TryGetValue(HttpConstants.HttpHeaders.PartitionKey, out object pkStringObj)))
             {
                 byte[] epk = epkObj as byte[];
                 string epkStr = epkStrObj as string;
-                if (epk == null || epkStr == null)
+                string pkString = pkStringObj as string;
+                if ((epk == null && pkString == null) || epkStr == null)
                 {
                     throw new InvalidOperationException(string.Format(
                         ClientResources.EpkPropertiesPairingExpected,
