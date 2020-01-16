@@ -82,6 +82,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
         private readonly CosmosQueryContext queryContext;
 
+        private readonly bool returnResultsInDeterministicOrder;
+
         protected readonly CosmosQueryClient queryClient;
 
         /// <summary>
@@ -120,6 +122,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         /// <param name="moveNextComparer">Comparer used to figure out that document producer tree to serve documents from next.</param>
         /// <param name="fetchPrioirtyFunction">The priority function to determine which partition to fetch documents from next.</param>
         /// <param name="equalityComparer">Used to determine whether we need to return the continuation token for a partition.</param>
+        /// <param name="returnResultsInDeterministicOrder">Whether or not to return results in deterministic order.</param>
         /// <param name="testSettings">Test settings.</param>
         protected CosmosCrossPartitionQueryExecutionContext(
             CosmosQueryContext queryContext,
@@ -129,6 +132,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             IComparer<ItemProducerTree> moveNextComparer,
             Func<ItemProducerTree, int> fetchPrioirtyFunction,
             IEqualityComparer<CosmosElement> equalityComparer,
+            bool returnResultsInDeterministicOrder,
             TestInjections testSettings)
         {
             if (moveNextComparer == null)
@@ -177,6 +181,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             }
 
             this.CanPrefetch = maxConcurrency.HasValue && maxConcurrency.Value != 0;
+
+            this.returnResultsInDeterministicOrder = returnResultsInDeterministicOrder;
         }
 
         /// <summary>
@@ -238,19 +244,36 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         /// </returns>
         public IEnumerable<ItemProducer> GetActiveItemProducers()
         {
-            ItemProducerTree current = this.itemProducerForest.Peek().CurrentItemProducerTree;
-            if (current.HasMoreResults && !current.IsActive)
+            if (this.returnResultsInDeterministicOrder)
             {
-                // If the current document producer tree has more results, but isn't active.
-                // then we still want to emit it, since it won't get picked up in the below for loop.
-                yield return current.Root;
-            }
-
-            foreach (ItemProducerTree itemProducerTree in this.itemProducerForest)
-            {
-                foreach (ItemProducer itemProducer in itemProducerTree.GetActiveItemProducers())
+                ItemProducerTree current = this.itemProducerForest.Peek().CurrentItemProducerTree;
+                if (current.HasMoreResults && !current.IsActive)
                 {
-                    yield return itemProducer;
+                    // If the current document producer tree has more results, but isn't active.
+                    // then we still want to emit it, since it won't get picked up in the below for loop.
+                    yield return current.Root;
+                }
+
+                foreach (ItemProducerTree itemProducerTree in this.itemProducerForest)
+                {
+                    foreach (ItemProducer itemProducer in itemProducerTree.GetActiveItemProducers())
+                    {
+                        yield return itemProducer;
+                    }
+                }
+            }
+            else
+            {
+                // Just return all item producers that have a continuation token
+                foreach (ItemProducerTree itemProducerTree in this.itemProducerForest)
+                {
+                    foreach (ItemProducerTree leaf in itemProducerTree)
+                    {
+                        if (leaf.HasMoreResults)
+                        {
+                            yield return leaf.Root;
+                        }
+                    }
                 }
             }
         }
@@ -438,7 +461,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         /// The code assumes that merge doesn't happen and 
         /// </Remarks>
         /// <returns>The index of the partition whose MinInclusive is equal to the suppliedContinuationTokens along with the continuation tokens.</returns>
-        public static TryCatch<InitInfo<TContinuationToken>> TryFindTargetRangeAndExtractContinuationTokens<TContinuationToken>(
+        protected static TryCatch<InitInfo<TContinuationToken>> TryFindTargetRangeAndExtractContinuationTokens<TContinuationToken>(
             List<PartitionKeyRange> partitionKeyRanges,
             IEnumerable<Tuple<TContinuationToken, Documents.Routing.Range<string>>> suppliedContinuationTokens)
         {
@@ -675,6 +698,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             /// <param name="maxConcurrency">The max concurrency</param>
             /// <param name="maxBufferedItemCount">The max buffered item count</param>
             /// <param name="maxItemCount">Max item count</param>
+            /// <param name="returnResultsInDeterministicOrder">Whether or not to return results in a deterministic order.</param>
             /// <param name="testSettings">Test settings.</param>
             public CrossPartitionInitParams(
                 SqlQuerySpec sqlQuerySpec,
@@ -685,6 +709,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 int? maxConcurrency,
                 int? maxItemCount,
                 int? maxBufferedItemCount,
+                bool returnResultsInDeterministicOrder,
                 TestInjections testSettings)
             {
                 if (string.IsNullOrWhiteSpace(collectionRid))
@@ -719,6 +744,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 this.MaxBufferedItemCount = maxBufferedItemCount;
                 this.MaxConcurrency = maxConcurrency;
                 this.MaxItemCount = maxItemCount;
+                this.ReturnResultsInDeterministicOrder = returnResultsInDeterministicOrder;
                 this.TestSettings = testSettings;
             }
 
@@ -761,6 +787,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             /// Gets the max buffered item count
             /// </summary>
             public int? MaxBufferedItemCount { get; }
+
+            public bool ReturnResultsInDeterministicOrder { get; }
 
             public TestInjections TestSettings { get; }
         }

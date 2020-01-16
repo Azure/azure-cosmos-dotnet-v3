@@ -153,25 +153,26 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     maxConcurrency: initParams.MaxConcurrency,
                     maxItemCount: int.MaxValue,
                     maxBufferedItemCount: initParams.MaxBufferedItemCount,
+                    returnResultsInDeterministicOrder: true,
                     testSettings: initParams.TestSettings);
             }
 
-            async Task<TryCatch<IDocumentQueryExecutionComponent>> tryCreateOrderByComponentAsync(string continuationToken)
+            Task<TryCatch<IDocumentQueryExecutionComponent>> tryCreateOrderByComponentAsync(string continuationToken)
             {
-                return (await CosmosOrderByItemQueryExecutionContext.TryCreateAsync(
+                return CosmosOrderByItemQueryExecutionContext.TryCreateAsync(
                     queryContext,
                     initParams,
                     continuationToken,
-                    cancellationToken)).Try<IDocumentQueryExecutionComponent>(component => component);
+                    cancellationToken);
             }
 
-            async Task<TryCatch<IDocumentQueryExecutionComponent>> tryCreateParallelComponentAsync(string continuationToken)
+            Task<TryCatch<IDocumentQueryExecutionComponent>> tryCreateParallelComponentAsync(string continuationToken)
             {
-                return (await CosmosParallelItemQueryExecutionContext.TryCreateAsync(
+                return CosmosParallelItemQueryExecutionContext.TryCreateAsync(
                     queryContext,
                     initParams,
                     continuationToken,
-                    cancellationToken)).Try<IDocumentQueryExecutionComponent>(component => component);
+                    cancellationToken);
             }
 
             Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreatePipelineAsync;
