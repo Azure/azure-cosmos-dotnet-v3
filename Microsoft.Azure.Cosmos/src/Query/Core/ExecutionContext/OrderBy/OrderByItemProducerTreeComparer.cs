@@ -11,8 +11,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
     /// <summary>
     /// For cross partition order by queries we serve documents from the partition
     /// that has the next document in the sort order of the query.
+    /// If there is a tie, then we break the tie by picking the leftmost partition.
     /// </summary>
-    internal abstract class OrderByItemProducerTreeComparer : IComparer<ItemProducerTree>
+    internal sealed class OrderByItemProducerTreeComparer : IComparer<ItemProducerTree>
     {
         /// <summary>
         /// The sort orders for the query (1 for each order by in the query).
@@ -24,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
         /// Initializes a new instance of the OrderByConsumeComparer class.
         /// </summary>
         /// <param name="sortOrders">The sort orders for the query.</param>
-        protected OrderByItemProducerTreeComparer(SortOrder[] sortOrders)
+        public OrderByItemProducerTreeComparer(SortOrder[] sortOrders)
         {
             if (sortOrders == null)
             {
@@ -82,7 +83,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
                 return cmp;
             }
 
-            return this.CompareAndBreakTie(producer1, producer2);
+            // If there is a tie, then break the tie by picking the one from the left most partition.
+            return string.CompareOrdinal(producer1.PartitionKeyRange.MinInclusive, producer2.PartitionKeyRange.MinInclusive);
+
         }
 
         /// <summary>
@@ -134,61 +137,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
             }
 
             return 0;
-        }
-
-        /// <summary>
-        /// Compares two <see cref="ItemProducerTree"/> that are tied in the user defined sort order and breaks the tie.
-        /// </summary>
-        /// <param name="producer1">The first producer.</param>
-        /// <param name="producer2">The second producer.</param>
-        /// <returns>
-        /// Less than zero if the document in the first document producer comes first.
-        /// Zero if the documents are equivalent.
-        /// Greater than zero if the document in the second document producer comes first.
-        /// </returns>
-        protected abstract int CompareAndBreakTie(ItemProducerTree producer1, ItemProducerTree producer2);
-
-        public static OrderByItemProducerTreeComparer CreateDeterministic(SortOrder[] sortOrders)
-        {
-            return new DeterministicOrderByItemProducerTreeComparer(sortOrders);
-        }
-
-        public static OrderByItemProducerTreeComparer CreateNonDeterministic(SortOrder[] sortOrders)
-        {
-            return new NonDeterministicOrderByItemProducerTreeComparer(sortOrders);
-        }
-
-        /// <summary>
-        /// Breaks the tie between two <see cref="ItemProducerTree"/> by picking the left most tree.
-        /// </summary>
-        private sealed class DeterministicOrderByItemProducerTreeComparer : OrderByItemProducerTreeComparer
-        {
-            public DeterministicOrderByItemProducerTreeComparer(SortOrder[] sortOrders)
-                : base(sortOrders)
-            {
-            }
-
-            protected override int CompareAndBreakTie(ItemProducerTree producer1, ItemProducerTree producer2)
-            {
-                // If there is a tie, then break the tie by picking the one from the left most partition.
-                return string.CompareOrdinal(producer1.PartitionKeyRange.MinInclusive, producer2.PartitionKeyRange.MinInclusive);
-            }
-        }
-
-        /// <summary>
-        /// Breaks the tie between two <see cref="ItemProducerTree"/> by picking the tree with the most buffered items.
-        /// </summary>
-        private sealed class NonDeterministicOrderByItemProducerTreeComparer : OrderByItemProducerTreeComparer
-        {
-            public NonDeterministicOrderByItemProducerTreeComparer(SortOrder[] sortOrders)
-                : base(sortOrders)
-            {
-            }
-
-            protected override int CompareAndBreakTie(ItemProducerTree producer1, ItemProducerTree producer2)
-            {
-                return producer2.BufferedItemCount.CompareTo(producer1.BufferedItemCount);
-            }
         }
     }
 }

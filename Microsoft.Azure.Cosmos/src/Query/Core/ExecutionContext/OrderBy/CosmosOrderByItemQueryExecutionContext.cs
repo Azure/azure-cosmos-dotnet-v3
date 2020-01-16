@@ -97,6 +97,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
                 moveNextComparer: consumeComparer,
                 fetchPrioirtyFunction: CosmosOrderByItemQueryExecutionContext.FetchPriorityFunction,
                 equalityComparer: new OrderByEqualityComparer(consumeComparer),
+                returnResultsInDeterministicOrder: true,
                 testSettings: testSettings)
         {
         }
@@ -171,19 +172,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
 
             cancellationToken.ThrowIfCancellationRequested();
 
-            OrderByItemProducerTreeComparer orderByItemProducerTreeComparer;
-            if (initParams.ReturnResultsInDeterministicOrder)
-            {
-                orderByItemProducerTreeComparer = OrderByItemProducerTreeComparer.CreateDeterministic(initParams.PartitionedQueryExecutionInfo.QueryInfo.OrderBy);
-            }
-            else
-            {
-                // TODO (brchon): For now we are not honoring non deterministic ORDER BY queries, since there is a bug in the continuation logic.
-                // We can turn it back on once the bug is fixed.
-                // This shouldn't hurt any query results.
-                orderByItemProducerTreeComparer = OrderByItemProducerTreeComparer.CreateDeterministic(initParams.PartitionedQueryExecutionInfo.QueryInfo.OrderBy);
-            }
-
+            // TODO (brchon): For now we are not honoring non deterministic ORDER BY queries, since there is a bug in the continuation logic.
+            // We can turn it back on once the bug is fixed.
+            // This shouldn't hurt any query results.
+            OrderByItemProducerTreeComparer orderByItemProducerTreeComparer = new OrderByItemProducerTreeComparer(initParams.PartitionedQueryExecutionInfo.QueryInfo.OrderBy);
             CosmosOrderByItemQueryExecutionContext context = new CosmosOrderByItemQueryExecutionContext(
                 initPararms: queryContext,
                 maxConcurrency: initParams.MaxConcurrency,

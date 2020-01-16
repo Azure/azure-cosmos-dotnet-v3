@@ -1375,12 +1375,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     foreach (int maxItemCount in new int[] { 10, 100 })
                     {
-                        foreach (bool useOrderBy in new bool[] { true, false })
+                        foreach (bool useOrderBy in new bool[] { false, true })
                         {
                             string query;
                             if (useOrderBy)
                             {
-                                query = "SELECT c._ts, c.id FROM c ORDER BY c._ts"; 
+                                query = "SELECT c._ts, c.id FROM c ORDER BY c._ts";
                             }
                             else
                             {
@@ -1398,10 +1398,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             async Task ValidateNonDeterministicQuery(Func<Container, string, QueryRequestOptions, Task<List<JToken>>> queryFunc, bool hasOrderBy)
                             {
                                 List<JToken> queryResults = await queryFunc(container, query, queryRequestOptions);
-                                Assert.AreEqual(
-                                    documents.Count(),
-                                    queryResults.Count,
-                                    $"query: {query} failed with {nameof(maxDegreeOfParallelism)}: {maxDegreeOfParallelism}, {nameof(maxItemCount)}: {maxItemCount}");
+                                HashSet<string> expectedIds = new HashSet<string>(inputDocuments.Select(document => document.Id));
+                                HashSet<string> actualIds = new HashSet<string>(queryResults.Select(queryResult => queryResult["id"].Value<string>()));
+                                Assert.IsTrue(expectedIds.SetEquals(actualIds), $"query: {query} failed with {nameof(maxDegreeOfParallelism)}: {maxDegreeOfParallelism}, {nameof(maxItemCount)}: {maxItemCount}");
+
                                 if (hasOrderBy)
                                 {
                                     IEnumerable<long> timestamps = queryResults.Select(token => token["_ts"].Value<long>());

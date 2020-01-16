@@ -40,6 +40,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
         /// </summary>
         private static readonly IEqualityComparer<CosmosElement> EqualityComparer = new ParallelEqualityComparer();
 
+        private readonly bool returnResultsInDeterministicOrder;
+
         /// <summary>
         /// Initializes a new instance of the CosmosParallelItemQueryExecutionContext class.
         /// </summary>
@@ -48,6 +50,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
         /// <param name="maxBufferedItemCount">The max buffered item count</param>
         /// <param name="maxItemCount">Max item count</param>
         /// <param name="moveNextComparer">The comparer to use for the priority queue.</param>
+        /// <param name="returnResultsInDeterministicOrder">Whether or not to return results in deterministic order.</param>
         /// <param name="testSettings">Test settings.</param>
         private CosmosParallelItemQueryExecutionContext(
             CosmosQueryContext queryContext,
@@ -55,6 +58,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
             int? maxItemCount,
             int? maxBufferedItemCount,
             IComparer<ItemProducerTree> moveNextComparer,
+            bool returnResultsInDeterministicOrder,
             TestInjections testSettings)
             : base(
                 queryContext: queryContext,
@@ -64,8 +68,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
                 moveNextComparer: moveNextComparer,
                 fetchPrioirtyFunction: CosmosParallelItemQueryExecutionContext.FetchPriorityFunction,
                 equalityComparer: CosmosParallelItemQueryExecutionContext.EqualityComparer,
+                returnResultsInDeterministicOrder: returnResultsInDeterministicOrder,
                 testSettings: testSettings)
         {
+            this.returnResultsInDeterministicOrder = returnResultsInDeterministicOrder;
         }
 
         /// <summary>
@@ -102,8 +108,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
         }
 
         /// <summary>
-        /// Tries to create an <see cref="CosmosParallelItemQueryExecutionContext"/> that.
-        /// This means that the same query when run twice will documents in a different order for the sake of performance (but will still honor the user's sort order).
+        /// Tries to create a <see cref="CosmosParallelItemQueryExecutionContext"/>.
         /// </summary>
         /// <param name="queryContext">The query context.</param>
         /// <param name="initParams">The init params</param>
@@ -129,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
             }
             else
             {
-                moveNextComparer = DeterministicParallelItemProducerTreeComparer.Singleton;
+                moveNextComparer = NonDeterministicParallelItemProducerTreeComparer.Singleton;
             }
 
             CosmosParallelItemQueryExecutionContext context = new CosmosParallelItemQueryExecutionContext(
@@ -138,6 +143,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
                 maxItemCount: initParams.MaxItemCount,
                 maxBufferedItemCount: initParams.MaxBufferedItemCount,
                 moveNextComparer: moveNextComparer,
+                returnResultsInDeterministicOrder: initParams.ReturnResultsInDeterministicOrder,
                 testSettings: initParams.TestSettings);
 
             return (await context.TryInitializeAsync(
