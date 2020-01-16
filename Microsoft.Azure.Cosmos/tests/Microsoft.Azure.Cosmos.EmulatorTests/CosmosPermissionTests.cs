@@ -316,12 +316,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //delete resource with PermissionMode.Read
             using (CosmosClient tokenCosmosClient = TestCommon.CreateCosmosClient(clientOptions: null, resourceToken: permission.Token))
             {
+                Container tokenContainer = tokenCosmosClient.GetContainer(this.cosmosDatabase.Id, containerId);
+                ItemResponse<dynamic> readPermissionItem = await tokenContainer.ReadItemAsync<dynamic>(itemId, partitionKey);
+                Assert.AreEqual(itemId, readPermissionItem.Resource.id.ToString());
+
                 try
                 {
-                    ItemResponse<dynamic> response = await tokenCosmosClient
-                    .GetDatabase(this.cosmosDatabase.Id)
-                    .GetContainer(containerId)
-                    .DeleteItemAsync<dynamic>(itemId, partitionKey);
+                    ItemResponse<dynamic> response = await tokenContainer.DeleteItemAsync<dynamic>(
+                        itemId,
+                        partitionKey);
+
                     Assert.Fail();
                 }
                 catch (CosmosException ex)
