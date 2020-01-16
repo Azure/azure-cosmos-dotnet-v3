@@ -38,8 +38,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             string activityId = "TestActivityId";
             double requestCharge = 42.42;
 
-            Mock<CosmosDiagnosticsContext> mockDiagnostics = new Mock<CosmosDiagnosticsContext>();
-            CosmosDiagnosticsContext diagnostics = mockDiagnostics.Object;
+            CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContext();
             QueryResponse queryResponse = QueryResponse.CreateFailure(
                         statusCode: HttpStatusCode.NotFound,
                         errorMessage: errorMessage,

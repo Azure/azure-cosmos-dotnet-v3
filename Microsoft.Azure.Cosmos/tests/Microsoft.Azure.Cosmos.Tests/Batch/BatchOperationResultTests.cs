@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos
     [TestClass]
     public class BatchOperationResultTests
     {
-        static readonly Mock<CosmosDiagnosticsContext> MockCosmosDiagnostics = new Mock<CosmosDiagnosticsContext>(MockBehavior.Strict);
+        static readonly CosmosDiagnosticsContext CosmosDiagnostics = new CosmosDiagnosticsContext();
         static TransactionalBatchOperationResult CreateTestResult() => new TransactionalBatchOperationResult(HttpStatusCode.Unused)
         {
             SubStatusCode = Documents.SubStatusCodes.CanNotAcquireOfferOwnerLock,
@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
             ResourceStream = new MemoryStream(),
             RequestCharge = 1.5,
             RetryAfter = TimeSpan.FromMilliseconds(1234),
-            DiagnosticsContext = MockCosmosDiagnostics.Object
+            DiagnosticsContext = CosmosDiagnostics
         };
 
         [TestMethod]
