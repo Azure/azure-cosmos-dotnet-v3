@@ -7,7 +7,9 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Globalization;
+    using System.IO;
     using System.Text;
+    using Newtonsoft.Json;
 
     /// <summary>
     /// This represents the core diagnostics object used in the SDK.
@@ -45,13 +47,21 @@ namespace Microsoft.Azure.Cosmos
 
         public override string ToString()
         {
-            StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.Append("{");
-            this.Summary.WriteJsonProperty(stringBuilder);
-            stringBuilder.Append(",\"Context\":[");
-            this.ContextList.WriteJsonObject(stringBuilder);
-            stringBuilder.Append("]}");
-            return stringBuilder.ToString();
+            StringBuilder sb = new StringBuilder();
+            StringWriter sw = new StringWriter(sb);
+
+            using (JsonWriter jsonWriter = new JsonTextWriter(sw))
+            {
+                jsonWriter.WriteStartObject();
+                this.Summary.WriteJsonProperty(jsonWriter);
+                jsonWriter.WritePropertyName("Context");
+                jsonWriter.WriteStartArray();
+                this.ContextList.WriteJsonObject(jsonWriter);
+                jsonWriter.WriteEndArray();
+                jsonWriter.WriteEndObject();
+            }
+
+            return sb.ToString();
         }
 
         internal void AddSummaryWriter(CosmosDiagnosticWriter diagnosticWriter)

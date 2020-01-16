@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System.Collections.Generic;
     using System.Text;
+    using Newtonsoft.Json;
 
     internal sealed class CosmosDiagnosticsContextList : CosmosDiagnosticWriter
     {
@@ -25,18 +26,11 @@ namespace Microsoft.Azure.Cosmos
             this.contextList.Add(newContext);
         }
 
-        internal override void WriteJsonObject(StringBuilder stringBuilder)
+        internal override void WriteJsonObject(JsonWriter jsonWriter)
         {
             foreach (CosmosDiagnosticWriter writer in this.contextList)
             {
-                writer.WriteJsonObject(stringBuilder);
-                stringBuilder.Append(",");
-            }
-
-            // Remove the last comma to make valid json
-            if (this.contextList.Count > 0)
-            {
-                stringBuilder.Length -= 1;
+                writer.WriteJsonObject(jsonWriter);
             }
         }
     }

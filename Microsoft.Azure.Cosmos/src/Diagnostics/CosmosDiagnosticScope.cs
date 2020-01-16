@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Text;
+    using Newtonsoft.Json;
 
     /// <summary>
     /// This represents a single scope in the diagnostics.
@@ -49,21 +50,23 @@ namespace Microsoft.Azure.Cosmos
             this.isDisposed = true;
         }
 
-        internal override void WriteJsonObject(StringBuilder stringBuilder)
+        internal override void WriteJsonObject(JsonWriter jsonWriter)
         {
-            stringBuilder.Append("{\"Id\":\"");
-            stringBuilder.Append(this.Id);
-            stringBuilder.Append("\",\"ElapsedTime\":\"");
+            jsonWriter.WriteStartObject();
+            jsonWriter.WritePropertyName("Id");
+            jsonWriter.WriteValue(this.Id);
+            jsonWriter.WritePropertyName("ElapsedTime");
+
             if (this.ElapsedTime.HasValue)
             {
-                stringBuilder.Append(this.ElapsedTime.Value);
+                jsonWriter.WriteValue(this.ElapsedTime.Value);
             }
             else
             {
-                stringBuilder.Append("NoElapsedTime");
+                jsonWriter.WriteValue("Timer Never Stopped.");
             }
 
-            stringBuilder.Append("\"}");
+            jsonWriter.WriteEndObject();
         }
     }
 }
