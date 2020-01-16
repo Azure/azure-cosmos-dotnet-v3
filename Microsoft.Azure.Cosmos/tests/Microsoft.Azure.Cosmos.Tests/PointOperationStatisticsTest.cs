@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.Net.Http;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using static Microsoft.Azure.Cosmos.CosmosClientSideRequestStatistics;
 

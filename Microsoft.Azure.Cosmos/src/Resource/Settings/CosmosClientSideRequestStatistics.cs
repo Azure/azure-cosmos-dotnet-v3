@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Globalization;
     using System.Text;
     using Microsoft.Azure.Documents;
+    using Newtonsoft.Json;
 
     internal sealed class CosmosClientSideRequestStatistics : IClientSideRequestStatistics
     {
@@ -82,13 +83,7 @@ namespace Microsoft.Azure.Cosmos
         public void RecordResponse(DocumentServiceRequest request, StoreResult storeResult)
         {
             DateTime responseTime = DateTime.UtcNow;
-
-            StoreResponseStatistics responseStatistics;
-            responseStatistics.RequestResponseTime = responseTime;
-            responseStatistics.StoreResult = storeResult;
-            responseStatistics.RequestOperationType = request.OperationType;
-            responseStatistics.RequestResourceType = request.ResourceType;
-
+            StoreResponseStatistics responseStatistics = new StoreResponseStatistics(responseTime, storeResult, request.ResourceType, request.OperationType);
             Uri locationEndpoint = request.RequestContext.LocationEndpointToRoute;
 
             lock (this.lockObject)
@@ -163,94 +158,95 @@ namespace Microsoft.Azure.Cosmos
             return sb.ToString();
         }
 
-        public void AppendJsonToBuilder(StringBuilder stringBuilder)
+        public void SerializeToJson(JsonWriter jsonWriter)
         {
-            if (stringBuilder == null)
+            if (jsonWriter == null)
             {
-                throw new ArgumentNullException(nameof(stringBuilder));
+                throw new ArgumentNullException(nameof(jsonWriter));
             }
 
-            //need to lock in case of concurrent operations. this should be extremely rare since ToString()
-            //should only be called at the end of request.
+            // need to lock in case of concurrent operations. this should be extremely rare since ToString()
+            // should only be called at the end of request.
             lock (this.lockObject)
             {
+                jsonWriter.WriteStartObject();
+
                 //first trace request start time, as well as total non-head/headfeed requests made.
                 string endTime = this.requestEndTimeUtc.HasValue ? this.requestEndTimeUtc.Value.ToString("o", CultureInfo.InvariantCulture) : "Not set";
                 int regionsContacted = this.RegionsContacted.Count == 0 ? 1 : this.RegionsContacted.Count;
-                stringBuilder.Append($"\"ClientSideRequestStatistics\":{{\"RequestStartTimeUtc\":\"{this.requestStartTimeUtc.ToString("o", CultureInfo.InvariantCulture)}\"");
-                stringBuilder.Append($",\"RequestEndTimeUtc\":\"{endTime}\",\"NumberRegionsAttempted\":\"{regionsContacted}\",\"RequestLatency\":\"{this.RequestLatency}\"");
 
-                stringBuilder.Append(",\"ResponseStatisticsList\":[");
-                //take all responses here - this should be limited in number and each one contains relevant information.
+                jsonWriter.WritePropertyName("RequestStartTimeUtc");
+                jsonWriter.WriteValue(this.requestStartTimeUtc.ToString("o", CultureInfo.InvariantCulture));
+
+                jsonWriter.WritePropertyName("RequestEndTimeUtc");
+                jsonWriter.WriteValue(endTime);
+
+                jsonWriter.WritePropertyName("NumberRegionsAttempted");
+                jsonWriter.WriteValue(regionsContacted);
+
+                jsonWriter.WritePropertyName("RequestLatency");
+                jsonWriter.WriteValue(this.RequestLatency);
+
+                jsonWriter.WritePropertyName("ResponseStatisticsList");
+                jsonWriter.WriteStartArray();
+
+                // take all responses here - this should be limited in number and each one contains relevant information.
                 for (int i = 0; i < this.responseStatisticsList.Count; i++)
                 {
-                    if (i > 0)
-                    {
-                        stringBuilder.Append(",");
-                    }
-
                     StoreResponseStatistics item = this.responseStatisticsList[i];
-                    item.AppendJsonToBuilder(stringBuilder);
+                    item.AppendJsonToBuilder(jsonWriter);
                 }
-                stringBuilder.Append("],\"AddressResolutionStatistics\":[");
 
-                //take all responses here - this should be limited in number and each one is important.
-                int count = 0;
+                jsonWriter.WriteEndArray();
+
+                jsonWriter.WritePropertyName("AddressResolutionStatistics");
+                jsonWriter.WriteStartArray();
+
+                // take all responses here - this should be limited in number and each one is important.
                 foreach (AddressResolutionStatistics item in this.addressResolutionStatistics.Values)
                 {
-                    if (count++ > 0)
-                    {
-                        stringBuilder.Append(",");
-                    }
-
-                    item.AppendJsonToBuilder(stringBuilder);
+                    item.AppendJsonToBuilder(jsonWriter);
                 }
 
-                stringBuilder.Append("]");
+                jsonWriter.WriteEndArray();
 
-                //only take last 10 responses from this list - this has potential of having large number of entries. 
-                //since this is for establishing consistency, we can make do with the last responses to paint a meaningful picture.
+                // only take last 10 responses from this list - this has potential of having large number of entries. 
+                // since this is for establishing consistency, we can make do with the last responses to paint a meaningful picture.
                 int supplementalResponseStatisticsListCount = this.supplementalResponseStatisticsList?.Count ?? 0;
                 int initialIndex = Math.Max(supplementalResponseStatisticsListCount - CosmosClientSideRequestStatistics.MaxSupplementalRequestsForToString, 0);
 
                 if (initialIndex != 0)
                 {
-                    stringBuilder.AppendFormat(
-                        CultureInfo.InvariantCulture,
-                        ",\"SupplementalResponseStatisticsCount\":\"  -- Displaying only the last {0} head/headfeed requests. Total head/headfeed requests: {1}\"",
-                        CosmosClientSideRequestStatistics.MaxSupplementalRequestsForToString,
-                        supplementalResponseStatisticsListCount);
+                    jsonWriter.WritePropertyName("SupplementalResponseStatisticsCount");
+                    jsonWriter.WriteValue($"  -- Displaying only the last {CosmosClientSideRequestStatistics.MaxSupplementalRequestsForToString} head/headfeed requests. Total head/headfeed requests: {supplementalResponseStatisticsListCount}");
                 }
 
-                stringBuilder.Append(",\"SupplementalResponseStatistics\":[");
+                jsonWriter.WritePropertyName("SupplementalResponseStatistics");
+                jsonWriter.WriteStartArray();
+
                 for (int i = initialIndex; i < supplementalResponseStatisticsListCount; i++)
                 {
-                    if (i != initialIndex)
-                    {
-                        stringBuilder.Append(",");
-                    }
-
-                    this.supplementalResponseStatisticsList[i].AppendJsonToBuilder(stringBuilder);
+                    this.supplementalResponseStatisticsList[i].AppendJsonToBuilder(jsonWriter);
                 }
 
-                stringBuilder.Append("]");
+                jsonWriter.WriteEndArray();
 
                 this.AppendJsonUriListToBuilder(
                     "FailedReplicas",
                     this.FailedReplicas,
-                    stringBuilder);
+                    jsonWriter);
 
                 this.AppendJsonUriListToBuilder(
                     "RegionsContacted",
                     this.RegionsContacted,
-                    stringBuilder);
+                    jsonWriter);
 
                 this.AppendJsonUriListToBuilder(
                     "ContactedReplicas",
                     this.ContactedReplicas,
-                    stringBuilder);
+                    jsonWriter);
 
-                stringBuilder.Append("}");
+                jsonWriter.WriteEndObject();
             }
         }
 
@@ -317,36 +313,38 @@ namespace Microsoft.Azure.Cosmos
         private void AppendJsonUriListToBuilder(
             string listName,
             IEnumerable<Uri> uris,
-            StringBuilder stringBuilder)
+            JsonWriter jsonWriter)
         {
-            if (stringBuilder == null)
+            if (jsonWriter == null)
             {
-                throw new ArgumentNullException(nameof(stringBuilder));
+                throw new ArgumentNullException(nameof(jsonWriter));
             }
 
-            stringBuilder.Append($",\"{listName}\":[");
-            int count = 0;
+            jsonWriter.WritePropertyName(listName);
+            jsonWriter.WriteStartArray();
+
             foreach (Uri uri in uris)
-            { 
-                if (count++ > 0)
-                {
-                    stringBuilder.Append(",");
-                }
-
-                stringBuilder.Append("\"");
-                stringBuilder.Append(uri);
-                stringBuilder.Append("\"");
+            {
+                jsonWriter.WriteValue(uri);
             }
 
-            stringBuilder.Append("]");
+            jsonWriter.WriteEndArray();
         }
 
-        internal struct StoreResponseStatistics
+        internal readonly struct StoreResponseStatistics
         {
-            public DateTime RequestResponseTime;
-            public StoreResult StoreResult;
-            public ResourceType RequestResourceType;
-            public OperationType RequestOperationType;
+            public readonly DateTime RequestResponseTime;
+            public readonly StoreResult StoreResult;
+            public readonly ResourceType RequestResourceType;
+            public readonly OperationType RequestOperationType;
+
+            public StoreResponseStatistics(DateTime requestResponseTime, StoreResult storeResult, ResourceType resourceType, OperationType operationType)
+            {
+                this.RequestResponseTime = requestResponseTime;
+                this.StoreResult = storeResult;
+                this.RequestResourceType = resourceType;
+                this.RequestOperationType = operationType;
+            }
 
             public override string ToString()
             {
@@ -355,20 +353,31 @@ namespace Microsoft.Azure.Cosmos
                 return stringBuilder.ToString();
             }
 
-            public void AppendJsonToBuilder(StringBuilder stringBuilder)
+            public void AppendJsonToBuilder(JsonWriter jsonWriter)
             {
-                if (stringBuilder == null)
+                if (jsonWriter == null)
                 {
-                    throw new ArgumentNullException(nameof(stringBuilder));
+                    throw new ArgumentNullException(nameof(jsonWriter));
                 }
 
-                stringBuilder.Append($"{{\"ResponseTime\":\"{this.RequestResponseTime.ToString("o", CultureInfo.InvariantCulture)}\"");
-                stringBuilder.Append($",\"ResourceType\":\"{this.RequestResourceType}\",\"OperationType\":\"{this.RequestOperationType}\",\"StoreResult\":\"");
+                jsonWriter.WriteStartObject();
+
+                jsonWriter.WritePropertyName("ResponseTime");
+                jsonWriter.WriteValue(this.RequestResponseTime.ToString("o", CultureInfo.InvariantCulture));
+
+                jsonWriter.WritePropertyName("ResourceType");
+                jsonWriter.WriteValue(this.RequestResourceType);
+
+                jsonWriter.WritePropertyName("OperationType");
+                jsonWriter.WriteValue(this.RequestOperationType);
+
                 if (this.StoreResult != null)
                 {
-                    this.StoreResult.AppendToBuilder(stringBuilder);
+                    jsonWriter.WritePropertyName("StoreResult");
+                    jsonWriter.WriteValue(this.StoreResult.ToString());
                 }
-                stringBuilder.Append("\"}");
+
+                jsonWriter.WriteEndObject();
             }
 
             public void AppendToBuilder(StringBuilder stringBuilder)
@@ -407,17 +416,24 @@ namespace Microsoft.Azure.Cosmos
                 return stringBuilder.ToString();
             }
 
-            public void AppendJsonToBuilder(StringBuilder stringBuilder)
+            public void AppendJsonToBuilder(JsonWriter jsonWriter)
             {
-                if (stringBuilder == null)
+                if (jsonWriter == null)
                 {
-                    throw new ArgumentNullException(nameof(stringBuilder));
+                    throw new ArgumentNullException(nameof(jsonWriter));
                 }
 
-                stringBuilder
-                    .Append($"{{\"AddressResolution\":{{\"StartTime\":\"{this.StartTime.ToString("o", CultureInfo.InvariantCulture)}\"")
-                    .Append($",\"EndTime\":\"{this.EndTime.ToString("o", CultureInfo.InvariantCulture)}\"")
-                    .Append($",\"TargetEndpoint\":\"{this.TargetEndpoint}\"}}}}");
+                jsonWriter.WriteStartObject();
+                jsonWriter.WritePropertyName("AddressResolution");
+                jsonWriter.WriteStartObject();
+                jsonWriter.WritePropertyName("StartTime");
+                jsonWriter.WriteValue(this.StartTime.ToString("o", CultureInfo.InvariantCulture));
+                jsonWriter.WritePropertyName("EndTime");
+                jsonWriter.WriteValue(this.EndTime.ToString("o", CultureInfo.InvariantCulture));
+                jsonWriter.WritePropertyName("TargetEndpoint");
+                jsonWriter.WriteValue(this.TargetEndpoint);
+                jsonWriter.WriteEndObject();
+                jsonWriter.WriteEndObject();
             }
 
             public void AppendToBuilder(StringBuilder stringBuilder)

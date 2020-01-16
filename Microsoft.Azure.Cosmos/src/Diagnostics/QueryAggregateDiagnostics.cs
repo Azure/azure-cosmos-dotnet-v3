@@ -2,54 +2,30 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Query
+namespace Microsoft.Azure.Cosmos.Diagnostics
 {
     using System;
     using System.Collections.Generic;
-    using System.Text;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
 
-    internal sealed class QueryAggregateDiagnostics : CosmosDiagnostics
+    internal sealed class QueryAggregateDiagnostics : CosmosDiagnosticsInternal
     {
-        private const string EmptyJsonArray = "[]";
-
         public QueryAggregateDiagnostics(
             IReadOnlyCollection<QueryPageDiagnostics> pages)
         {
-            if (pages == null)
-            {
-                throw new ArgumentNullException(nameof(pages));
-            }
-
-            this.Pages = pages;
+            this.Pages = pages ?? throw new ArgumentNullException(nameof(pages));
         }
 
         public IReadOnlyCollection<QueryPageDiagnostics> Pages { get; }
 
-        public override string ToString()
+        public override void Accept(CosmosDiagnosticsInternalVisitor cosmosDiagnosticsInternalVisitor)
         {
-            if (this.Pages.Count == 0)
-            {
-                return QueryAggregateDiagnostics.EmptyJsonArray;
-            }
+            cosmosDiagnosticsInternalVisitor.Visit(this);
+        }
 
-            StringBuilder stringBuilder = new StringBuilder();
-
-            // JSON array start
-            stringBuilder.Append("[");
-
-            foreach (QueryPageDiagnostics queryPage in this.Pages)
-            {
-                queryPage.AppendToBuilder(stringBuilder);
-
-                // JSON seperate objects
-                stringBuilder.Append(",");
-            }
-
-            // JSON array stop
-            stringBuilder.Length -= 1;
-            stringBuilder.Append("]");
-            return stringBuilder.ToString();
+        public override TResult Accept<TResult>(CosmosDiagnosticsInternalVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
         }
     }
 }

@@ -1,0 +1,105 @@
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
+namespace Microsoft.Azure.Cosmos.Diagnostics
+{
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Microsoft.Azure.Cosmos.Test.BaselineTest;
+    using System.Xml;
+    using System.Collections.Generic;
+    using System;
+    using Newtonsoft.Json;
+    using System.Net.Http;
+    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
+
+    [TestClass]
+    public sealed class CosmosDiagnosticsSerializerTests : BaselineTests<CosmosDiagnosticsSerializerBaselineInput, CosmosDiagnosticsSerializerBaselineOutput>
+    {
+        [TestMethod]
+        public void TestPointOperationStatistics()
+        {
+            IList<CosmosDiagnosticsSerializerBaselineInput> inputs = new List<CosmosDiagnosticsSerializerBaselineInput>()
+            {
+                new CosmosDiagnosticsSerializerBaselineInput(
+                    description: nameof(PointOperationStatistics),
+                    cosmosDiagnostics: new PointOperationStatistics(
+                    activityId: Guid.Empty.ToString(),
+                    statusCode: System.Net.HttpStatusCode.OK,
+                    subStatusCode: Documents.SubStatusCodes.WriteForbidden,
+                    requestCharge: 4,
+                    errorMessage: null,
+                    method: HttpMethod.Post,
+                    requestUri: new Uri("http://localhost.com"),
+                    requestSessionToken: nameof(PointOperationStatistics.RequestSessionToken),
+                    responseSessionToken: nameof(PointOperationStatistics.ResponseSessionToken),
+                    clientSideRequestStatistics: null))
+            };
+
+            this.ExecuteTestSuite(inputs);
+        }
+
+        [TestMethod]
+        public void TestQueryAggregateDiagnostics()
+        {
+            IList<CosmosDiagnosticsSerializerBaselineInput> inputs = new List<CosmosDiagnosticsSerializerBaselineInput>()
+            {
+                new CosmosDiagnosticsSerializerBaselineInput(
+                    description: nameof(QueryAggregateDiagnostics),
+                    cosmosDiagnostics: new QueryAggregateDiagnostics(
+                        pages: new List<QueryPageDiagnostics>()
+                        {
+                            new QueryPageDiagnostics(
+                                partitionKeyRangeId: nameof(QueryPageDiagnostics.PartitionKeyRangeId),
+                                queryMetricText: nameof(QueryPageDiagnostics.QueryMetricText),
+                                indexUtilizationText: nameof(QueryPageDiagnostics.IndexUtilizationText),
+                                requestDiagnostics: null,
+                                schedulingStopwatch: new SchedulingStopwatch())
+                        }))
+            };
+
+            this.ExecuteTestSuite(inputs);
+        }
+
+        public override CosmosDiagnosticsSerializerBaselineOutput ExecuteTest(CosmosDiagnosticsSerializerBaselineInput input)
+        {
+            return new CosmosDiagnosticsSerializerBaselineOutput(input.CosmosDiagnostics.ToString());
+        }
+    }
+
+    public sealed class CosmosDiagnosticsSerializerBaselineInput : BaselineTestInput
+    {
+        public CosmosDiagnosticsSerializerBaselineInput(string description, CosmosDiagnostics cosmosDiagnostics)
+            : base(description)
+        {
+            this.CosmosDiagnostics = cosmosDiagnostics ?? throw new ArgumentNullException(nameof(cosmosDiagnostics));
+        }
+
+        public CosmosDiagnostics CosmosDiagnostics { get; }
+
+        public override void SerializeAsXml(XmlWriter xmlWriter)
+        {
+            xmlWriter.WriteElementString(nameof(this.Description), this.Description);
+            xmlWriter.WriteStartElement(nameof(this.CosmosDiagnostics));
+            xmlWriter.WriteCData(JsonConvert.SerializeObject(this.CosmosDiagnostics, Newtonsoft.Json.Formatting.Indented));
+            xmlWriter.WriteEndElement();
+        }
+    }
+
+    public sealed class CosmosDiagnosticsSerializerBaselineOutput : BaselineTestOutput
+    {
+        public CosmosDiagnosticsSerializerBaselineOutput(string toString)
+        {
+            this.ToStringOutput = toString ?? throw new ArgumentNullException(nameof(toString));
+        }
+
+        private string ToStringOutput { get; }
+
+        public override void SerializeAsXml(XmlWriter xmlWriter)
+        {
+            xmlWriter.WriteStartElement(nameof(this.ToStringOutput));
+            xmlWriter.WriteCData(this.ToStringOutput);
+            xmlWriter.WriteEndElement();
+        }
+    }
+}

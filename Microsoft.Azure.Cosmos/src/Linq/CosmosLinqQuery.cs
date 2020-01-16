@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Linq.Expressions;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Newtonsoft.Json;
@@ -174,14 +175,14 @@ namespace Microsoft.Azure.Cosmos.Linq
         internal async Task<Response<T>> AggregateResultAsync(CancellationToken cancellationToken = default)
         {
             List<T> result = new List<T>();
-            CosmosDiagnosticsAggregate cosmosDiagnostics = new CosmosDiagnosticsAggregate();
+            List<CosmosDiagnosticsInternal> cosmosDiagnostics = new List<CosmosDiagnosticsInternal>();
             Headers headers = new Headers();
             FeedIterator<T> localFeedIterator = this.CreateFeedIterator(false);
             while (localFeedIterator.HasMoreResults)
             {
                 FeedResponse<T> response = await localFeedIterator.ReadNextAsync();
                 headers.RequestCharge += response.RequestCharge;
-                cosmosDiagnostics.Diagnostics.Add(response.Diagnostics);
+                cosmosDiagnostics.Add(response.Diagnostics as CosmosDiagnosticsInternal);
                 result.AddRange(response);
             }
 
@@ -189,7 +190,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 System.Net.HttpStatusCode.OK,
                 headers,
                 result.FirstOrDefault(),
-                cosmosDiagnostics);
+                new CosmosDiagnosticsAggregate(cosmosDiagnostics));
         }
 
         private FeedIteratorInternal CreateStreamIterator(bool isContinuationExcpected)

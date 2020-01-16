@@ -2,30 +2,50 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Query
+namespace Microsoft.Azure.Cosmos.Diagnostics
 {
+    using System;
+    using System.Collections;
     using System.Collections.Generic;
-    using System.Text;
-    using Newtonsoft.Json;
+    using System.Linq;
 
-    internal class CosmosDiagnosticsAggregate : CosmosDiagnostics
+    internal sealed class CosmosDiagnosticsAggregate : CosmosDiagnosticsInternal, IEnumerable<CosmosDiagnosticsInternal>
     {
-        public IList<CosmosDiagnostics> Diagnostics = new List<CosmosDiagnostics>();
+        private readonly IReadOnlyList<CosmosDiagnosticsInternal> diagnostics;
 
-        public override string ToString()
+        public CosmosDiagnosticsAggregate(IReadOnlyList<CosmosDiagnosticsInternal> cosmosDiagnosticsInternals)
         {
-            if (this.Diagnostics.Count == 0)
+            if (cosmosDiagnosticsInternals == null)
             {
-                return string.Empty;
+                throw new ArgumentNullException(nameof(cosmosDiagnosticsInternals));
             }
 
-            StringBuilder stringBuilder = new StringBuilder();
-            foreach (CosmosDiagnostics diagnostics in this.Diagnostics)
+            if (cosmosDiagnosticsInternals.Any(x => x == null))
             {
-                stringBuilder.Append(diagnostics.ToString());
+                throw new ArgumentException($"{nameof(cosmosDiagnosticsInternals)} must not have null arguments.");
             }
 
-            return stringBuilder.ToString();
+            this.diagnostics = cosmosDiagnosticsInternals;
+        }
+
+        public override void Accept(CosmosDiagnosticsInternalVisitor cosmosDiagnosticsInternalVistor)
+        {
+            cosmosDiagnosticsInternalVistor.Visit(this);
+        }
+
+        public override TResult Accept<TResult>(CosmosDiagnosticsInternalVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
+        }
+
+        public IEnumerator<CosmosDiagnosticsInternal> GetEnumerator()
+        {
+            return this.diagnostics.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return this.diagnostics.GetEnumerator();
         }
     }
 }

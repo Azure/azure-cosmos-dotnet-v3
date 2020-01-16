@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 {
     using System;
     using System.Text;
+    using Newtonsoft.Json;
 
     internal sealed class QueryPageDiagnostics
     {
@@ -33,32 +34,24 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
         internal SchedulingTimeSpan SchedulingTimeSpan { get; }
 
-        public void AppendToBuilder(StringBuilder stringBuilder)
+        public void AppendToBuilder(JsonWriter jsonWriter)
         {
-            string requestDiagnosticsString = string.Empty;
-            if (this.RequestDiagnostics != null)
+            if (jsonWriter == null)
             {
-                requestDiagnosticsString = this.RequestDiagnostics.ToString();
+                throw new ArgumentNullException(nameof(jsonWriter));
             }
 
-            stringBuilder.Append("{\"PartitionKeyRangeId\":\"");
-            stringBuilder.Append(this.PartitionKeyRangeId);
-            stringBuilder.Append("\",\"QueryMetricText\":\"");
-            stringBuilder.Append(this.QueryMetricText);
-            stringBuilder.Append("\",\"IndexUtilizationText\":\"");
-            stringBuilder.Append(this.IndexUtilizationText);
-            stringBuilder.Append("\",\"RequestDiagnostics\":");
-            stringBuilder.Append(requestDiagnosticsString);
-            stringBuilder.Append(",\"SchedulingTimeSpan\":");
-            this.SchedulingTimeSpan.AppendJsonToBuilder(stringBuilder);
-            stringBuilder.Append("}");
-        }
-
-        public override string ToString()
-        {
-            StringBuilder stringBuilder = new StringBuilder();
-            this.AppendToBuilder(stringBuilder);
-            return stringBuilder.ToString();
+            jsonWriter.WriteStartObject();
+            jsonWriter.WritePropertyName("PartitionKeyRangeId");
+            jsonWriter.WriteValue(this.PartitionKeyRangeId);
+            jsonWriter.WritePropertyName("QueryMetricText");
+            jsonWriter.WriteValue(this.QueryMetricText);
+            jsonWriter.WritePropertyName("IndexUtilizationText");
+            jsonWriter.WriteValue(this.IndexUtilizationText);
+            jsonWriter.WritePropertyName("RequestDiagnostics");
+            jsonWriter.WriteValue(this.RequestDiagnostics != null ? this.RequestDiagnostics.ToString() : string.Empty);
+            jsonWriter.WritePropertyName("SchedulingTimeSpan");
+            this.SchedulingTimeSpan.AppendJsonToBuilder(jsonWriter);
         }
     }
 }
