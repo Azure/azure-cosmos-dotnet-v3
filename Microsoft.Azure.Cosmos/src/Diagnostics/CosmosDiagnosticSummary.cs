@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Globalization;
     using System.Text;
+    using Newtonsoft.Json;
 
     internal sealed class CosmosDiagnosticSummary
     {
@@ -98,7 +99,7 @@ namespace Microsoft.Azure.Cosmos
                 (!this.TotalElapsedTime.HasValue ||
                     this.TotalElapsedTime < newSummary.TotalElapsedTime))
             {
-                    this.TotalElapsedTime = newSummary.TotalElapsedTime;
+                this.TotalElapsedTime = newSummary.TotalElapsedTime;
             }
 
             if (newSummary.Details != null)
@@ -114,34 +115,35 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal void WriteJsonProperty(StringBuilder stringBuilder)
+        internal void WriteJsonProperty(JsonWriter writer)
         {
-            stringBuilder.Append("\"Summary\":{\"StartUtc\":\"");
-            stringBuilder.Append(this.StartUtc.ToString("o", CultureInfo.InvariantCulture));
+            writer.WritePropertyName("Summary");
+            writer.WriteStartObject();
+            writer.WritePropertyName("StartUtc");
+            writer.WriteValue(this.StartUtc.ToString("o", CultureInfo.InvariantCulture));
+            
             if (this.TotalElapsedTime.HasValue)
             {
-                stringBuilder.Append("\",\"ElapsedTime\":\"");
-                stringBuilder.Append(this.TotalElapsedTime.Value);
+                writer.WritePropertyName("ElapsedTime");
+                writer.WriteValue(this.TotalElapsedTime.Value);
             }
 
-            stringBuilder.Append("\",\"UserAgent\":\"");
-            stringBuilder.Append(this.UserAgent);
-            stringBuilder.Append("\"");
+            writer.WritePropertyName("UserAgent");
+            writer.WriteValue(this.UserAgent);
 
             if (this.RetryCount.HasValue && this.RetryCount.Value > 0)
             {
-                stringBuilder.Append(",\"RetryCount\":");
-                stringBuilder.Append(this.RetryCount.Value);
+                writer.WritePropertyName("RetryCount");
+                writer.WriteValue(this.RetryCount.Value);
             }
 
             if (this.RetryBackoffTimeSpan.HasValue && this.RetryBackoffTimeSpan.Value > TimeSpan.Zero)
             {
-                stringBuilder.Append(",\"RetryBackOffTime\":\"");
-                stringBuilder.Append(this.RetryBackoffTimeSpan.Value);
-                stringBuilder.Append("\"");
+                writer.WritePropertyName("RetryBackOffTime");
+                writer.WriteValue(this.RetryBackoffTimeSpan.Value);
             }
 
-            stringBuilder.Append("}");
+            writer.WriteEndObject();
         }
     }
 }

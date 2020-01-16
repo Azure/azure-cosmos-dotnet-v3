@@ -34,19 +34,28 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
         internal SchedulingTimeSpan SchedulingTimeSpan { get; }
 
-        internal override void WriteJsonObject(StringBuilder stringBuilder)
+        internal override void WriteJsonObject(JsonWriter jsonWriter)
         {
-            stringBuilder.Append("{\"PKRangeId\":\"");
-            stringBuilder.Append(this.PartitionKeyRangeId);
-            stringBuilder.Append("\",\"QueryMetric\":\"");
-            stringBuilder.Append(this.QueryMetricText);
-            stringBuilder.Append("\",\"IndexUtilization\":\"");
-            stringBuilder.Append(this.IndexUtilizationText);
-            stringBuilder.Append("\",\"SchedulingTimeSpan\":");
-            this.SchedulingTimeSpan.AppendJsonObjectToBuilder(stringBuilder);
-            stringBuilder.Append(",\"Context\":[");
-            this.DiagnosticsContext.ContextList.WriteJsonObject(stringBuilder);
-            stringBuilder.Append("]}");
+            jsonWriter.WriteStartObject();
+
+            jsonWriter.WritePropertyName("PKRangeId");
+            jsonWriter.WriteValue(this.PartitionKeyRangeId);
+
+            jsonWriter.WritePropertyName("QueryMetric");
+            jsonWriter.WriteValue(this.QueryMetricText);
+
+            jsonWriter.WritePropertyName("IndexUtilization");
+            jsonWriter.WriteValue(this.IndexUtilizationText);
+
+            jsonWriter.WritePropertyName("SchedulingTimeSpan");
+            this.SchedulingTimeSpan.WriteJsonObject(jsonWriter);
+
+            jsonWriter.WritePropertyName("Context");
+            jsonWriter.WriteStartArray();
+            this.DiagnosticsContext.ContextList.WriteJsonObject(jsonWriter);
+            jsonWriter.WriteEndArray();
+
+            jsonWriter.WriteEndObject();
         }
     }
 }

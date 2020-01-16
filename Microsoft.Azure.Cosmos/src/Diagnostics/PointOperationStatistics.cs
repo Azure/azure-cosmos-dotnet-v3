@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Net;
     using System.Net.Http;
     using System.Text;
@@ -54,39 +55,55 @@ namespace Microsoft.Azure.Cosmos
         public override string ToString()
         {
             StringBuilder stringBuilder = new StringBuilder();
-            this.WriteJsonObject(stringBuilder);
+            StringWriter sw = new StringWriter(stringBuilder);
+            using (JsonWriter jsonWriter = new JsonTextWriter(sw))
+            {
+                this.WriteJsonObject(jsonWriter);
+            }
+
             return stringBuilder.ToString();
         }
 
-        internal override void WriteJsonObject(StringBuilder stringBuilder)
+        internal override void WriteJsonObject(JsonWriter jsonWriter)
         {
-            stringBuilder.Append("{\"Id\":\"PointOperationStatistics\",\"ActivityId\":\"");
-            stringBuilder.Append(this.ActivityId);
-            stringBuilder.Append("\",\"StatusCode\":\"");
-            stringBuilder.Append((int)this.StatusCode);
-            stringBuilder.Append("\",\"SubStatusCode\":\"");
-            stringBuilder.Append((int)this.SubStatusCode);
-            stringBuilder.Append("\",\"RequestCharge\":\"");
-            stringBuilder.Append(this.RequestCharge);
-            stringBuilder.Append("\",\"ErrorMessage\":");
-            stringBuilder.Append(JsonConvert.SerializeObject(this.ErrorMessage));
-            stringBuilder.Append(",\"RequestUri\":\"");
-            stringBuilder.Append(this.RequestUri);
-            stringBuilder.Append("\",\"RequestSessionToken\":\"");
-            stringBuilder.Append(this.RequestSessionToken);
-            stringBuilder.Append("\",\"ResponseSessionToken\":\"");
-            stringBuilder.Append(this.ResponseSessionToken);
-            if (this.ClientSideRequestStatistics != null)
+            jsonWriter.WriteStartObject();
+            jsonWriter.WritePropertyName("Id");
+            jsonWriter.WriteValue("PointOperationStatistics");
+
+            jsonWriter.WritePropertyName("ActivityId");
+            jsonWriter.WriteValue(this.ActivityId);
+
+            jsonWriter.WritePropertyName("StatusCode");
+            jsonWriter.WriteValue((int)this.StatusCode);
+
+            jsonWriter.WritePropertyName("SubStatusCode");
+            jsonWriter.WriteValue((int)this.SubStatusCode);
+
+            jsonWriter.WritePropertyName("RequestCharge");
+            jsonWriter.WriteValue(this.RequestCharge);
+
+            jsonWriter.WritePropertyName("RequestUri");
+            jsonWriter.WriteValue(this.RequestUri);
+
+            if (!string.IsNullOrEmpty(this.ErrorMessage))
             {
-                stringBuilder.Append("\",\"ClientRequestStats\":");
-                this.ClientSideRequestStatistics.WriteJsonObject(stringBuilder);
-            }
-            else
-            {
-                stringBuilder.Append("\"");
+                jsonWriter.WritePropertyName("ErrorMessage");
+                jsonWriter.WriteValue(this.ErrorMessage);
             }
 
-            stringBuilder.Append("}");
+            jsonWriter.WritePropertyName("RequestSessionToken");
+            jsonWriter.WriteValue(this.RequestSessionToken);
+
+            jsonWriter.WritePropertyName("ResponseSessionToken");
+            jsonWriter.WriteValue(this.ResponseSessionToken);
+
+            if (this.ClientSideRequestStatistics != null)
+            {
+                jsonWriter.WritePropertyName("ClientRequestStats");
+                this.ClientSideRequestStatistics.WriteJsonObject(jsonWriter);
+            }
+
+            jsonWriter.WriteEndObject();
         }
     }
 }

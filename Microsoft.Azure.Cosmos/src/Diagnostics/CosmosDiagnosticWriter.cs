@@ -4,9 +4,10 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System.Text;
+    using Newtonsoft.Json;
 
     internal abstract class CosmosDiagnosticWriter
     {
-        internal abstract void WriteJsonObject(StringBuilder stringBuilder);
+        internal abstract void WriteJsonObject(JsonWriter jsonWriter);
     }
 }
