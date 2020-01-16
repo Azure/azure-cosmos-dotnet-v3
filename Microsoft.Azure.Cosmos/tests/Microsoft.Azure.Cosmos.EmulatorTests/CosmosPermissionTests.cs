@@ -166,10 +166,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task ContainerPartitionResourcePermissionTest()
-        { 
-            CosmosClient cosmosClient = TestCommon.CreateCosmosClient(
-                builder => builder.WithConnectionModeGateway());
+        [DataRow(ConnectionMode.Gateway)]
+        [DataRow(ConnectionMode.Direct)]
+        public async Task ContainerPartitionResourcePermissionTest(ConnectionMode connectionMode)
+        {
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+            {
+                ConnectionMode = connectionMode
+            };
+
+            CosmosClient cosmosClient = TestCommon.CreateCosmosClient(cosmosClientOptions);
 
             Database database = await cosmosClient.CreateDatabaseIfNotExistsAsync("PermissionTest");
 
@@ -217,18 +223,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(permissionId, permission.Id);
             Assert.AreEqual(permissionProperties.PermissionMode, permission.PermissionMode);
 
-            //delete resource with PermissionMode.Read
-            CosmosClientOptions clientOptions = new CosmosClientOptions()
-            {
-                ConnectionMode = ConnectionMode.Gateway,
-                ConnectionProtocol = Documents.Client.Protocol.Https
-            };
-
-            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
-            {
-                ConnectionMode = ConnectionMode.Gateway
-            };
-
             using (CosmosClient tokenCosmosClient = TestCommon.CreateCosmosClient(clientOptions: cosmosClientOptions, resourceToken: permission.Token))
             {
                 Container tokenContainer = tokenCosmosClient.GetContainer(database.Id, containerId);
@@ -275,7 +269,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     containerCore.Id,
                     mock);
 
-                FeedIterator<ToDoActivity> feedIteratorGateway = tokenContainer.GetItemQueryIterator<ToDoActivity>(
+                FeedIterator<ToDoActivity> feedIteratorGateway = tokenGatewayQueryPlan.GetItemQueryIterator<ToDoActivity>(
                     queryText: "select * from T",
                     requestOptions: queryRequestOptions);
 

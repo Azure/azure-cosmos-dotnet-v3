@@ -74,6 +74,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             CosmosQueryClient client,
             SqlQuerySpec sqlQuerySpec,
             Uri resourceLink,
+            PartitionKey? partitionKey,
             CancellationToken cancellationToken = default)
         {
             if (client == null)
@@ -98,6 +99,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                 ResourceType.Document,
                 OperationType.QueryPlan,
                 sqlQuerySpec,
+                partitionKey,
                 QueryPlanRetriever.SupportedQueryFeaturesString,
                 cancellationToken);
         }

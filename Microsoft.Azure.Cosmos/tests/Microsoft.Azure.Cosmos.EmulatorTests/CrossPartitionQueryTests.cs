@@ -5047,10 +5047,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 return this.forceQueryPlanGatewayElseServiceInterop;
             }
 
-            internal override Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(Uri resourceUri, ResourceType resourceType, OperationType operationType, SqlQuerySpec sqlQuerySpec, string supportedQueryFeatures, CancellationToken cancellationToken)
+            internal override Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
+                Uri resourceUri,
+                ResourceType resourceType,
+                OperationType operationType,
+                SqlQuerySpec sqlQuerySpec,
+                Cosmos.PartitionKey? partitionKey,
+                string supportedQueryFeatures,
+                CancellationToken cancellationToken)
             {
                 this.QueryPlanCalls++;
-                return base.ExecuteQueryPlanRequestAsync(resourceUri, resourceType, operationType, sqlQuerySpec, supportedQueryFeatures, cancellationToken);
+                return base.ExecuteQueryPlanRequestAsync(
+                    resourceUri,
+                    resourceType,
+                    operationType,
+                    sqlQuerySpec,
+                    partitionKey,
+                    supportedQueryFeatures,
+                    cancellationToken);
             }
 
             internal override Task<QueryResponseCore> ExecuteItemQueryAsync<RequestOptionType>(
