@@ -5,6 +5,7 @@
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Extensions.Configuration;
+    using Newtonsoft.Json;
 
     internal class Program
     {
@@ -35,7 +36,26 @@
                 //NB > Keep these values in a safe & secure location. Together they provide Administrative access to your Cosmos account
                 using (CosmosClient client = new CosmosClient(endpoint, authKey))
                 {
-                    await Program.RunDemoAsync(client);
+                    Database database = null;
+                    try
+                    {
+                        using (await client.GetDatabase("UserManagementDemoDb").DeleteStreamAsync()) { }
+
+                        // Get, or Create, the Database
+                        database = await client.CreateDatabaseIfNotExistsAsync("UserManagementDemoDb");
+
+                        await Program.RunDemoAsync(
+                            client,
+                            database);
+                    }
+                    finally
+                    {
+                        if (database != null)
+                        {
+                            await database.DeleteStreamAsync();
+                        }
+                    }
+
                 }
             }
             catch (CosmosException cre)
@@ -55,26 +75,22 @@
         }
         // </Main>
 
-        private static async Task RunDemoAsync(CosmosClient client)
+        private static async Task RunDemoAsync(
+            CosmosClient client,
+            Database database)
         {
             //--------------------------------------------------------------------------------------------------
-            // We need a Database, Two Containers, Two Users, and some permissions for this sample,
+            // We need Two Containers, Two Users, and some permissions for this sample,
             // So let's go ahead and set these up initially
             //--------------------------------------------------------------------------------------------------
-            using (await client.GetDatabase("UserManagementDemoDb").DeleteStreamAsync()) { }
-            using (await client.GetDatabase("UserManagementDemoDb2").DeleteStreamAsync()) { }
 
-            // Get, or Create, the Database
-            Database db = await client.CreateDatabaseIfNotExistsAsync("UserManagementDemoDb");
-            Database db2 = await client.CreateDatabaseIfNotExistsAsync("UserManagementDemoDb2");
-
-            // Get, or Create, two separate Collections
-            Container container1 = await db.CreateContainerAsync(
-                id: "COL1",
+            // Get, or Create, two separate Containers
+            Container container1 = await database.CreateContainerAsync(
+                id: "Container1",
                 partitionKeyPath: "/AccountNumber");
 
-            Container container2 = await db.CreateContainerAsync(
-                id: "COL2",
+            Container container2 = await database.CreateContainerAsync(
+                id: "Container2",
                 partitionKeyPath: "/AccountNumber");
 
             // Insert two documents in to col1
@@ -84,7 +100,7 @@
                 AccountNumber = "partitionKey1"
             };
 
-            SalesOrder order1 = await container1.CreateItemAsync<SalesOrder>(
+            await container1.CreateItemAsync<SalesOrder>(
                 salesOrder1,
                 new PartitionKey(salesOrder1.AccountNumber));
 
@@ -94,51 +110,53 @@
                 AccountNumber = "pk2"
             };
 
-            SalesOrder order2 = await container1.CreateItemAsync<SalesOrder>(
+            await container1.CreateItemAsync<SalesOrder>(
                 salesOrder2,
                 new PartitionKey(salesOrder2.AccountNumber));
 
-            // Insert one document in to col2
+            
+
+            // Create a user
+            User user1 = await database.CreateUserAsync("Thomas Andersen");
+            
+            //Add the read permission to the user and validate the user can 
+            //read only the container it has access to
+            await ValidateReadPermissions(
+                client.Endpoint.OriginalString,
+                database.Id,
+                container1,
+                user1);
+
+
+            // Insert one item in to container 2
             SalesOrder salesOrder3 = new SalesOrder()
             {
                 Id = "doc3",
                 AccountNumber = "partitionKey"
             };
 
-            SalesOrder order3 = await container2.CreateItemAsync<SalesOrder>(
+            await container2.CreateItemAsync<SalesOrder>(
                 salesOrder3,
                 new PartitionKey(salesOrder3.AccountNumber));
 
-            // Create two users
-            User user1 = await db.CreateUserAsync("Thomas Andersen");
-            User user2 = await db.CreateUserAsync("Robin Wakefield");
+            // Create a new user
+            User user2 = await database.CreateUserAsync("Robin Wakefield");
 
-            // Read Permission on container 1 for user1
-            PermissionProperties readPermission = new PermissionProperties("Read", PermissionMode.Read, container1);
-            PermissionProperties permissionUser1Col1 = await user1.CreatePermissionAsync(readPermission);
+            //Add the all permission to the user for a single item and validate the user can 
+            //only access the single item
+            await ValidateAllPermissionsForItem(
+                client.Endpoint.OriginalString,
+                database.Id,
+                container2,
+                user2,
+                salesOrder3);
 
-            // All Permissions on Doc1 for user1
-            PermissionProperties permissionUser1Doc1 = new PermissionProperties(
-                id: "permissionUser1Doc1",
-                permissionMode: PermissionMode.All,
-                container: container1,
-                resourcePartitionKey: new PartitionKey(salesOrder1.AccountNumber),
-                itemId: salesOrder1.Id);
-            await user1.CreatePermissionAsync(permissionUser1Doc1);
-
-            // Read Permissions on col2 for user1
-            PermissionProperties permissionUser1Col2 = new PermissionProperties(
-                id: "permissionUser1Col2",
+            // Add read permission to user1 on container 2 so query has multiple results
+            PermissionProperties permissionUser1Container2 = new PermissionProperties(
+                id: "permissionUser1Container2",
                 permissionMode: PermissionMode.Read,
                 container: container2);
-            await user1.CreatePermissionAsync(permissionUser1Col2);
-
-            // All Permissions on col2 for user2
-            PermissionProperties permissionUser2Col2 = new PermissionProperties(
-               id: "permissionUser2Col2",
-               permissionMode: PermissionMode.All,
-               container: container2);
-            await user2.CreatePermissionAsync(permissionUser1Col2);
+            await user1.CreatePermissionAsync(permissionUser1Container2);
 
             // All user1's permissions in a List
             List<PermissionProperties> user1Permissions = new List<PermissionProperties>();
@@ -148,29 +166,6 @@
                 FeedResponse<PermissionProperties> permissions = await feedIterator.ReadNextAsync();
                 user1Permissions.AddRange(permissions);
             }
-
-            //--------------------------------------------------------------------------------------------------
-            // That takes care of the creating Users, Permissions on Resources, Linking user to permissions etc. 
-            // Now let's take a look at the result of User.Id = 1 having ALL permission on a single Collection
-            // but not on anything else
-            //----------------------------------------------------------------------------------------------------
-
-            //Attempt to do admin operations when user only has Read on a collection
-            await AttemptAdminOperationsAsync(
-                client.Endpoint.OriginalString,
-                db.Id,
-                container1.Id,
-                permissionUser1Col1);
-
-            //Attempt a write Document with read-only Collection permission
-            await AttemptWriteWithReadPermissionAsync(
-                client.Endpoint.OriginalString,
-                db.Id,
-                container1.Id,
-                permissionUser1Col1);
-
-            await db.DeleteAsync();
-            await db2.DeleteAsync();
         }
 
         private static async Task AttemptWriteWithReadPermissionAsync(
@@ -206,32 +201,94 @@
             }
         }
 
-        private static async Task AttemptAdminOperationsAsync(
+        private static async Task ValidateAllPermissionsForItem(
             string endpoint,
             string databaseName,
-            string containerName,
-            PermissionProperties permission)
+            Container container,
+            User user,
+            SalesOrder salesOrder)
         {
-            using (CosmosClient client = new CosmosClient(endpoint, permission.Token))
+            // All Permissions on Doc1 for user1
+            PermissionProperties allPermissionForItem = new PermissionProperties(
+                id: "permissionUserSaleOrder",
+                permissionMode: PermissionMode.All,
+                container: container,
+                resourcePartitionKey: new PartitionKey(salesOrder.AccountNumber));
+
+            PermissionProperties allItemPermission = await user.CreatePermissionAsync(allPermissionForItem);
+
+            // Create a new client with the generated token
+            using (CosmosClient permissionClient = new CosmosClient(endpoint, allItemPermission.Token))
             {
-                Container container = client.GetContainer(databaseName, containerName);
-                //try read collection > should succeed because user1 was granted Read permission on col1
-                FeedIterator<SalesOrder> feedIterator = container.GetItemQueryIterator<SalesOrder>();
+                Container permissionContainer = permissionClient.GetContainer(databaseName, container.Id);
+
+                SalesOrder readSalesOrder = await permissionContainer.ReadItemAsync<SalesOrder>(
+                    salesOrder.Id,
+                    new PartitionKey(salesOrder.AccountNumber));
+
+                // Read sales order item
+                readSalesOrder.OrderDate = DateTime.UtcNow;
+
+                // Write sales order item
+                await permissionContainer.UpsertItemAsync<SalesOrder>(
+                    readSalesOrder, 
+                    new PartitionKey(salesOrder.AccountNumber));
+
+                //try iterate items should fail because the user only has access to single partition key
+                //and therefore cannot access anything outside of that partition key value.
+                try
+                {
+                    FeedIterator<SalesOrder> itemIterator = permissionContainer.GetItemQueryIterator<SalesOrder>(
+                        "select T.* from T");
+                    while (itemIterator.HasMoreResults)
+                    {
+                        await itemIterator.ReadNextAsync();
+                        throw new ApplicationException("Should never get here");
+                    }
+                }
+                catch (CosmosException ce) when (ce.StatusCode == System.Net.HttpStatusCode.Forbidden)
+                {
+                    Console.WriteLine("Database query failed because user has no admin rights");
+                }
+            }
+        }
+
+        private static async Task ValidateReadPermissions(
+            string endpoint,
+            string databaseName,
+            Container container,
+            User user)
+        {
+            // Read Permission on container for the user
+            PermissionProperties readPermission = new PermissionProperties(
+                id: "Read",
+                permissionMode: PermissionMode.Read,
+                container: container);
+
+            PermissionProperties readContainerPermission = await user.CreatePermissionAsync(readPermission);
+
+            // Create a new client with the generated token
+            using (CosmosClient readClient = new CosmosClient(endpoint, readContainerPermission.Token))
+            {
+                Container readContainer = readClient.GetContainer(databaseName, container.Id);
+
+                //try read items should succeed because user1 was granted Read permission on container1
+                FeedIterator<SalesOrder> feedIterator = readContainer.GetItemQueryIterator<SalesOrder>();
                 while (feedIterator.HasMoreResults)
                 {
                     FeedResponse<SalesOrder> salesOrders = await feedIterator.ReadNextAsync();
                     foreach (SalesOrder salesOrder in salesOrders)
                     {
-                        Console.WriteLine(salesOrder);
+                        Console.WriteLine(JsonConvert.SerializeObject(salesOrder));
                     }
                 }
 
-                //try iterate databases > should fail because the user has no Admin rights 
-                //but only read access to a single collection and therefore
-                //cannot access anything outside of that collection.
+                //try iterate databases should fail because the user has no Admin rights 
+                //but only read access to a single container and therefore
+                //cannot access anything outside of that container.
                 try
                 {
-                    FeedIterator<DatabaseProperties> databaseIterator = client.GetDatabaseQueryIterator<DatabaseProperties>("select T.* from T");
+                    FeedIterator<DatabaseProperties> databaseIterator = readClient.GetDatabaseQueryIterator<DatabaseProperties>("select T.* from T");
                     while (databaseIterator.HasMoreResults)
                     {
                         await databaseIterator.ReadNextAsync();
