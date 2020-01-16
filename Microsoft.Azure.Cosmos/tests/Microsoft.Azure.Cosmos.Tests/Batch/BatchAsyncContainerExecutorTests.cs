@@ -74,10 +74,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<CosmosDiagnosticsContext>(),
                     It.IsAny<CancellationToken>()), Times.Exactly(2));
             Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
-            Assert.IsNotNull(result.Diagnostics);
+            Assert.IsNotNull(result.DiagnosticsContext);
 
             int diagnosticsLines = 0;
-            string diagnosticsString = result.Diagnostics.ToString();
+            string diagnosticsString = result.DiagnosticsContext.ToString();
             int index = diagnosticsString.IndexOf(Environment.NewLine);
             while(index > -1)
             {
@@ -142,10 +142,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<CosmosDiagnosticsContext>(),
                     It.IsAny<CancellationToken>()), Times.Exactly(2));
             Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
-            Assert.IsNotNull(result.Diagnostics);
+            Assert.IsNotNull(result.DiagnosticsContext);
 
             int diagnosticsLines = 0;
-            string diagnosticsString = result.Diagnostics.ToString();
+            string diagnosticsString = result.DiagnosticsContext.ToString();
             int index = diagnosticsString.IndexOf(Environment.NewLine);
             while (index > -1)
             {
@@ -210,10 +210,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<CosmosDiagnosticsContext>(),
                     It.IsAny<CancellationToken>()), Times.Exactly(2));
             Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
-            Assert.IsNotNull(result.Diagnostics);
+            Assert.IsNotNull(result.DiagnosticsContext);
 
             int diagnosticsLines = 0;
-            string diagnosticsString = result.Diagnostics.ToString();
+            string diagnosticsString = result.DiagnosticsContext.ToString();
             int index = diagnosticsString.IndexOf(Environment.NewLine);
             while (index > -1)
             {

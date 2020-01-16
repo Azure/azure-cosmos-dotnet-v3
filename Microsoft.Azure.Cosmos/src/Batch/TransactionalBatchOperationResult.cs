@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the cosmos diagnostic information for the current request to Azure Cosmos DB service
         /// </summary>
-        internal virtual CosmosDiagnostics Diagnostics { get; set; }
+        internal virtual CosmosDiagnosticsContext DiagnosticsContext { get; set; }
 
         internal static Result ReadOperationResult(Memory<byte> input, out TransactionalBatchOperationResult batchOperationResult)
         {
@@ -208,13 +208,6 @@ namespace Microsoft.Azure.Cosmos
                 RetryAfter = this.RetryAfter,
                 RequestCharge = this.RequestCharge,
             };
-
-            // DEVNOTE: Temporary until batch has CosmosDiagnosticsCore wired through
-            CosmosDiagnosticsContext diagnosticsContext = this.Diagnostics as CosmosDiagnosticsContext;
-            if (diagnosticsContext == null)
-            {
-                throw new ArgumentException($"Invalid type for diagnostic: {this.Diagnostics.GetType().FullName}");              
-            }
              
             ResponseMessage responseMessage = new ResponseMessage(
                 statusCode: this.StatusCode,
@@ -222,7 +215,7 @@ namespace Microsoft.Azure.Cosmos
                 errorMessage: null,
                 error: null,
                 headers: headers,
-                diagnostics: diagnosticsContext)
+                diagnostics: this.DiagnosticsContext)
             {
                 Content = this.ResourceStream
             };
