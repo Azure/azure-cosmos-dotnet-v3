@@ -899,6 +899,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
 
         internal static void ToQueryLiteral(CosmosElement orderByItem, StringBuilder sb)
         {
+            if (orderByItem == null)
+            {
+                sb.Append(JsonConvert.SerializeObject(orderByItem, DefaultJsonSerializationSettings.Value));
+                return;
+            }
+
             switch (orderByItem.Type)
             {
                 case CosmosElementType.Array:
