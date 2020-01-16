@@ -252,17 +252,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(info);
             JObject jObject = JObject.Parse(info);
 
-            Assert.IsNotNull(jObject["UserAgent"].ToString());
+            JToken summary = jObject["Summary"];
+            Assert.IsNotNull(summary["UserAgent"].ToString());
+            Assert.IsNotNull(summary["StartUtc"].ToString());
+
             Assert.IsNotNull(jObject["Context"].ToString());
             JArray contextList = jObject["Context"].ToObject<JArray>();
             Assert.IsTrue(contextList.Count > 2);
 
-            JArray innerContextList = contextList.Last()["Context"].ToObject<JArray>();
-            Assert.IsTrue(innerContextList.Count > 2);
-
             // Find the PointOperationStatistics object
             JObject pointStatistics = GetJObjectInContextList(
-                innerContextList,
+                contextList,
                 "PointOperationStatistics");
 
             ValidatePointOperation(pointStatistics);
