@@ -23,7 +23,11 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private ItemBatchOperation CreateItemBatchOperation(bool withContext = false)
         {
-            ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, 0, string.Empty, new MemoryStream(new byte[] { 0x41, 0x42 }, index: 0, count: 2, writable: false, publiclyVisible: true));
+            ItemBatchOperation operation = new ItemBatchOperation(
+                operationType: OperationType.Create,
+                operationIndex: 0,
+                id: string.Empty,
+                resourceStream: new MemoryStream(new byte[] { 0x41, 0x42 }, index: 0, count: 2, writable: false, publiclyVisible: true));
             if (withContext)
             {
                 operation.AttachContext(new ItemBatchOperationContext(string.Empty));
@@ -243,7 +247,13 @@ namespace Microsoft.Azure.Cosmos.Tests
             List<ItemBatchOperation> operations = new List<ItemBatchOperation>(10);
             for (int i = 0; i < 10; i++)
             {
-                ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, i, i.ToString());
+                ItemBatchOperation operation = new ItemBatchOperation(
+                    operationType: OperationType.Create,
+                    operationIndex: i,
+                    partitionKey: new Cosmos.PartitionKey(i.ToString()),
+                    id: i.ToString(),
+                    diagnosticsContext: new CosmosDiagnosticsContext());
+
                 ItemBatchOperationContext context = new ItemBatchOperationContext(string.Empty);
                 operation.AttachContext(context);
                 operations.Add(operation);
@@ -367,10 +377,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation1), It.IsAny<CancellationToken>()), Times.Once);
             retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation2), It.IsAny<CancellationToken>()), Times.Once);
             retryDelegate.Verify(a => a(It.IsAny<ItemBatchOperation>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
-            Assert.IsNotNull(operation1.DiagnosticsContext);
-            Assert.IsNotNull(operation2.DiagnosticsContext);
-            Assert.IsTrue(!string.IsNullOrEmpty(operation1.DiagnosticsContext.ToString()));
-            Assert.IsTrue(!string.IsNullOrEmpty(operation2.DiagnosticsContext.ToString()));
+            Assert.IsNull(operation1.DiagnosticsContext, "Batch operations do not have diagnostics per operation");
+            Assert.IsNull(operation2.DiagnosticsContext, "Batch operations do not have diagnostics per operation");
         }
 
         [TestMethod]

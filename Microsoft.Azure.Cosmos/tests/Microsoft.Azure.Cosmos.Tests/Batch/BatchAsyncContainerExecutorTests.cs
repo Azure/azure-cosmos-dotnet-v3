@@ -76,16 +76,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
             Assert.IsNotNull(result.DiagnosticsContext);
 
-            int diagnosticsLines = 0;
             string diagnosticsString = result.DiagnosticsContext.ToString();
-            int index = diagnosticsString.IndexOf(Environment.NewLine);
-            while(index > -1)
-            {
-                diagnosticsLines++;
-                index = diagnosticsString.IndexOf(Environment.NewLine, index + 1);
-            }
-
-            Assert.IsTrue(diagnosticsLines > 1, "Diagnostics might be missing");
+            Assert.IsTrue(diagnosticsString.Contains("PointOperationStatistics"), "Diagnostics might be missing");
         }
 
         [TestMethod]
@@ -144,16 +136,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
             Assert.IsNotNull(result.DiagnosticsContext);
 
-            int diagnosticsLines = 0;
             string diagnosticsString = result.DiagnosticsContext.ToString();
-            int index = diagnosticsString.IndexOf(Environment.NewLine);
-            while (index > -1)
-            {
-                diagnosticsLines++;
-                index = diagnosticsString.IndexOf(Environment.NewLine, index + 1);
-            }
-
-            Assert.IsTrue(diagnosticsLines > 1, "Diagnostics might be missing");
+            Assert.IsTrue(diagnosticsString.Contains("PointOperationStatistics"), "Diagnostics might be missing");
         }
 
         [TestMethod]
@@ -212,16 +196,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
             Assert.IsNotNull(result.DiagnosticsContext);
 
-            int diagnosticsLines = 0;
             string diagnosticsString = result.DiagnosticsContext.ToString();
-            int index = diagnosticsString.IndexOf(Environment.NewLine);
-            while (index > -1)
-            {
-                diagnosticsLines++;
-                index = diagnosticsString.IndexOf(Environment.NewLine, index + 1);
-            }
-
-            Assert.IsTrue(diagnosticsLines > 1, "Diagnostics might be missing");
+            Assert.IsTrue(diagnosticsString.Contains("PointOperationStatistics"), "Diagnostics might be missing");
         }
 
         [TestMethod]
@@ -446,7 +422,13 @@ namespace Microsoft.Azure.Cosmos.Tests
         private static ItemBatchOperation CreateItem(string id)
         {
             MyDocument myDocument = new MyDocument() { id = id, Status = id };
-            return new ItemBatchOperation(OperationType.Create, 0, new Cosmos.PartitionKey(id), id, MockCosmosUtil.Serializer.ToStream(myDocument));
+            return new ItemBatchOperation(
+                operationType: OperationType.Create,
+                operationIndex: 0,
+                partitionKey: new Cosmos.PartitionKey(id),
+                id: id,
+                resourceStream: MockCosmosUtil.Serializer.ToStream(myDocument),
+                diagnosticsContext: new CosmosDiagnosticsContext());
         }
 
         private class MyDocument
