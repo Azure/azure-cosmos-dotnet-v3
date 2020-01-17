@@ -75,6 +75,7 @@
         }
         // </Main>
 
+        // <RunDemoAsync>
         private static async Task RunDemoAsync(
             CosmosClient client,
             Database database)
@@ -184,40 +185,9 @@
                 user1Permissions.AddRange(permissions);
             }
         }
+        // </RunDemoAsync>
 
-        private static async Task AttemptWriteWithReadPermissionAsync(
-            string endpoint,
-            string databaseName,
-            string containerName,
-            PermissionProperties permission)
-        {
-            using (CosmosClient client = new CosmosClient(endpoint, permission.Token))
-            {
-                Container container = client.GetContainer(databaseName, containerName);
-                //attempt to write a document > should fail
-                try
-                {
-                    SalesOrder badSalesOrder = new SalesOrder()
-                    {
-                        Id = "Fail",
-                        AccountNumber = "Fail"
-                    };
-
-                    await container.UpsertItemAsync<SalesOrder>(
-                        badSalesOrder,
-                        new PartitionKey(badSalesOrder.AccountNumber));
-
-                    //should never get here, because we expect the create to fail
-                    throw new ApplicationException("should never get here");
-                }
-                catch (CosmosException ce) when (ce.StatusCode == System.Net.HttpStatusCode.Forbidden)
-                {
-                    //expecting an Forbidden exception, anything else, rethrow
-                    Console.WriteLine("Attempt to write a item failed as expected on read permission");
-                }
-            }
-        }
-
+        // <ValidateAllPermissionsForItem>
         private static async Task ValidateAllPermissionsForItem(
             string endpoint,
             string databaseName,
@@ -272,7 +242,9 @@
                 }
             }
         }
+        // </ValidateAllPermissionsForItem>
 
+        // <ValidateReadPermissions>
         private static async Task ValidateReadPermissions(
             string endpoint,
             string databaseName,
@@ -321,5 +293,6 @@
                 }
             }
         }
+        // </ValidateReadPermissions>
     }
 }
