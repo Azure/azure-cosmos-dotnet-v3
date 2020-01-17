@@ -9,6 +9,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     /// Stores information about fetch execution (for cross partition queries).
     /// </summary>
 #if INTERNAL
+#pragma warning disable SA1600
+#pragma warning disable CS1591
     public
 #else
     internal

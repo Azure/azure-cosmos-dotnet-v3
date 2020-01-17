@@ -12,6 +12,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     /// This metric represents a moving average for a set of queries whose metrics have been aggregated together.
     /// </summary>
 #if INTERNAL
+#pragma warning disable SA1600
+#pragma warning disable CS1591
     public
 #else
     internal

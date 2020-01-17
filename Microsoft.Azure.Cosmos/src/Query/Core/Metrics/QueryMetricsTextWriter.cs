@@ -12,6 +12,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     /// Fancy <see cref="QueryMetricsWriter"/>.
     /// </summary>
 #if INTERNAL
+#pragma warning disable SA1600
+#pragma warning disable CS1591
     public
 #else
     internal

@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
     using Microsoft.Azure.Cosmos.Query.Core.Collections;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
@@ -30,11 +31,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
     internal sealed class CosmosParallelItemQueryExecutionContext : CosmosCrossPartitionQueryExecutionContext
     {
         /// <summary>
-        /// The comparer used to determine which document to serve next.
-        /// </summary>
-        private static readonly IComparer<ItemProducerTree> MoveNextComparer = new ParallelItemProducerTreeComparer();
-
-        /// <summary>
         /// The function to determine which partition to fetch from first.
         /// </summary>
         private static readonly Func<ItemProducerTree, int> FetchPriorityFunction = documentProducerTree => int.Parse(documentProducerTree.PartitionKeyRange.Id);
@@ -44,6 +40,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
         /// </summary>
         private static readonly IEqualityComparer<CosmosElement> EqualityComparer = new ParallelEqualityComparer();
 
+        private readonly bool returnResultsInDeterministicOrder;
+
         /// <summary>
         /// Initializes a new instance of the CosmosParallelItemQueryExecutionContext class.
         /// </summary>
@@ -51,23 +49,29 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
         /// <param name="maxConcurrency">The max concurrency</param>
         /// <param name="maxBufferedItemCount">The max buffered item count</param>
         /// <param name="maxItemCount">Max item count</param>
+        /// <param name="moveNextComparer">The comparer to use for the priority queue.</param>
+        /// <param name="returnResultsInDeterministicOrder">Whether or not to return results in deterministic order.</param>
         /// <param name="testSettings">Test settings.</param>
         private CosmosParallelItemQueryExecutionContext(
             CosmosQueryContext queryContext,
             int? maxConcurrency,
             int? maxItemCount,
             int? maxBufferedItemCount,
+            IComparer<ItemProducerTree> moveNextComparer,
+            bool returnResultsInDeterministicOrder,
             TestInjections testSettings)
             : base(
                 queryContext: queryContext,
                 maxConcurrency: maxConcurrency,
                 maxItemCount: maxItemCount,
                 maxBufferedItemCount: maxBufferedItemCount,
-                moveNextComparer: CosmosParallelItemQueryExecutionContext.MoveNextComparer,
+                moveNextComparer: moveNextComparer,
                 fetchPrioirtyFunction: CosmosParallelItemQueryExecutionContext.FetchPriorityFunction,
                 equalityComparer: CosmosParallelItemQueryExecutionContext.EqualityComparer,
+                returnResultsInDeterministicOrder: returnResultsInDeterministicOrder,
                 testSettings: testSettings)
         {
+            this.returnResultsInDeterministicOrder = returnResultsInDeterministicOrder;
         }
 
         /// <summary>
@@ -103,7 +107,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
             }
         }
 
-        public static async Task<TryCatch<CosmosParallelItemQueryExecutionContext>> TryCreateAsync(
+        /// <summary>
+        /// Tries to create a <see cref="CosmosParallelItemQueryExecutionContext"/>.
+        /// </summary>
+        /// <param name="queryContext">The query context.</param>
+        /// <param name="initParams">The init params</param>
+        /// <param name="requestContinuationToken">The request continuation token.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns><see cref="TryCatch{IDocumentQueryExecutionComponent}"/></returns>
+        public static async Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
             CosmosQueryContext queryContext,
             CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams,
             string requestContinuationToken,
@@ -115,20 +127,32 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
 
             cancellationToken.ThrowIfCancellationRequested();
 
+            IComparer<ItemProducerTree> moveNextComparer;
+            if (initParams.ReturnResultsInDeterministicOrder)
+            {
+                moveNextComparer = DeterministicParallelItemProducerTreeComparer.Singleton;
+            }
+            else
+            {
+                moveNextComparer = NonDeterministicParallelItemProducerTreeComparer.Singleton;
+            }
+
             CosmosParallelItemQueryExecutionContext context = new CosmosParallelItemQueryExecutionContext(
                 queryContext: queryContext,
                 maxConcurrency: initParams.MaxConcurrency,
                 maxItemCount: initParams.MaxItemCount,
                 maxBufferedItemCount: initParams.MaxBufferedItemCount,
+                moveNextComparer: moveNextComparer,
+                returnResultsInDeterministicOrder: initParams.ReturnResultsInDeterministicOrder,
                 testSettings: initParams.TestSettings);
 
-            return await context.TryInitializeAsync(
+            return (await context.TryInitializeAsync(
                 sqlQuerySpec: initParams.SqlQuerySpec,
                 collectionRid: initParams.CollectionRid,
                 partitionKeyRanges: initParams.PartitionKeyRanges,
                 initialPageSize: initParams.InitialPageSize,
                 requestContinuation: requestContinuationToken,
-                cancellationToken: cancellationToken);
+                cancellationToken: cancellationToken)).Try<IDocumentQueryExecutionComponent>(x => x);
         }
 
         public override async Task<QueryResponseCore> DrainAsync(int maxElements, CancellationToken cancellationToken)

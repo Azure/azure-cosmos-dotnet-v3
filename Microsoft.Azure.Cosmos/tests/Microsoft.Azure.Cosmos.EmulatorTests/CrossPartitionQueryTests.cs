@@ -1343,7 +1343,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         {
                             MaxBufferedItemCount = 7000,
                             MaxConcurrency = maxDegreeOfParallelism,
-                            MaxItemCount = maxItemCount
+                            MaxItemCount = maxItemCount,
+                            ReturnResultsInDeterministicOrder = true,
                         };
 
                         List<JToken> queryResults = await CrossPartitionQueryTests.RunQuery<JToken>(
@@ -1358,6 +1359,70 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
                 }
             }
+        }
+
+        [TestMethod]
+        public async Task TestNonDeterministicQueryResults()
+        {
+            int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+            uint numberOfDocuments = 100;
+            QueryOracle.QueryOracleUtil util = new QueryOracle.QueryOracle2(seed);
+            IEnumerable<string> documents = util.GetDocuments(numberOfDocuments);
+
+            async Task Implementation(Container container, IEnumerable<Document> inputDocuments)
+            {
+                foreach (int maxDegreeOfParallelism in new int[] { 1, 100 })
+                {
+                    foreach (int maxItemCount in new int[] { 10, 100 })
+                    {
+                        foreach (bool useOrderBy in new bool[] { false, true })
+                        {
+                            string query;
+                            if (useOrderBy)
+                            {
+                                query = "SELECT c._ts, c.id FROM c ORDER BY c._ts";
+                            }
+                            else
+                            {
+                                query = "SELECT c.id FROM c";
+                            }
+
+                            QueryRequestOptions queryRequestOptions = new QueryRequestOptions
+                            {
+                                MaxBufferedItemCount = 7000,
+                                MaxConcurrency = maxDegreeOfParallelism,
+                                MaxItemCount = maxItemCount,
+                                ReturnResultsInDeterministicOrder = false,
+                            };
+
+                            async Task ValidateNonDeterministicQuery(Func<Container, string, QueryRequestOptions, Task<List<JToken>>> queryFunc, bool hasOrderBy)
+                            {
+                                List<JToken> queryResults = await queryFunc(container, query, queryRequestOptions);
+                                HashSet<string> expectedIds = new HashSet<string>(inputDocuments.Select(document => document.Id));
+                                HashSet<string> actualIds = new HashSet<string>(queryResults.Select(queryResult => queryResult["id"].Value<string>()));
+                                Assert.IsTrue(expectedIds.SetEquals(actualIds), $"query: {query} failed with {nameof(maxDegreeOfParallelism)}: {maxDegreeOfParallelism}, {nameof(maxItemCount)}: {maxItemCount}");
+
+                                if (hasOrderBy)
+                                {
+                                    IEnumerable<long> timestamps = queryResults.Select(token => token["_ts"].Value<long>());
+                                    IEnumerable<long> sortedTimestamps = timestamps.OrderBy(x => x);
+                                    Assert.IsTrue(timestamps.SequenceEqual(sortedTimestamps), "Items were not sorted.");
+                                }
+                            }
+
+                            await ValidateNonDeterministicQuery(CrossPartitionQueryTests.QueryWithoutContinuationTokens<JToken>, useOrderBy);
+                            await ValidateNonDeterministicQuery(CrossPartitionQueryTests.QueryWithContinuationTokens<JToken>, useOrderBy);
+                            await ValidateNonDeterministicQuery(CrossPartitionQueryTests.QueryWithTryGetContinuationTokens<JToken>, useOrderBy);
+                        }
+                    }
+                }
+            }
+
+            await this.CreateIngestQueryDelete(
+                ConnectionModes.Direct,
+                CollectionTypes.MultiPartition,
+                documents,
+                Implementation);
         }
 
         [TestMethod]
@@ -5022,7 +5087,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// <summary>
         /// A helper that forces the SDK to use the gateway or the service interop for the query plan
         /// </summary>
-        private class MockCosmosQueryClient : CosmosQueryClientCore
+        internal class MockCosmosQueryClient : CosmosQueryClientCore
         {
             /// <summary>
             /// True it will use the gateway query plan.
@@ -5047,10 +5112,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 return this.forceQueryPlanGatewayElseServiceInterop;
             }
 
-            internal override Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(Uri resourceUri, ResourceType resourceType, OperationType operationType, SqlQuerySpec sqlQuerySpec, string supportedQueryFeatures, CancellationToken cancellationToken)
+            internal override Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
+                Uri resourceUri,
+                ResourceType resourceType,
+                OperationType operationType,
+                SqlQuerySpec sqlQuerySpec,
+                Cosmos.PartitionKey? partitionKey,
+                string supportedQueryFeatures,
+                CancellationToken cancellationToken)
             {
                 this.QueryPlanCalls++;
-                return base.ExecuteQueryPlanRequestAsync(resourceUri, resourceType, operationType, sqlQuerySpec, supportedQueryFeatures, cancellationToken);
+                return base.ExecuteQueryPlanRequestAsync(
+                    resourceUri,
+                    resourceType,
+                    operationType,
+                    sqlQuerySpec,
+                    partitionKey,
+                    supportedQueryFeatures,
+                    cancellationToken);
             }
 
             internal override Task<QueryResponseCore> ExecuteItemQueryAsync<RequestOptionType>(

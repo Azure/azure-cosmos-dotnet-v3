@@ -8,9 +8,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     using System.Diagnostics;
 
     /// <summary>
-    /// Accumlator that acts as a builder of FetchExecutionRanges
+    /// Accumulator that acts as a builder of FetchExecutionRanges
     /// </summary>
 #if INTERNAL
+#pragma warning disable SA1600
+#pragma warning disable CS1591
     public
 #else
     internal

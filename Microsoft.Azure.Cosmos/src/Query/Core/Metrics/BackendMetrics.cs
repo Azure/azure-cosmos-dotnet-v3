@@ -10,6 +10,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     /// Metrics received for queries from the backend.
     /// </summary>
 #if INTERNAL
+#pragma warning disable SA1600
+#pragma warning disable CS1591
     public
 #else
     internal
