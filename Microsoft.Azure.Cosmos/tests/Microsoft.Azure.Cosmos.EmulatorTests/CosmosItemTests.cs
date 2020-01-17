@@ -70,13 +70,28 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task NegativeCreateDropItemTest()
+        public async Task NegativeCreateDropItemStreamTest()
         {
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
             ResponseMessage response = await this.Container.CreateItemStreamAsync(streamPayload: TestCommon.SerializerCore.ToStream(testItem), partitionKey: new Cosmos.PartitionKey("BadKey"));
             Assert.IsNotNull(response);
             Assert.IsNull(response.Content);
             Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
+        }
+
+        [TestMethod]
+        public async Task NegativeCreateDropItemTest()
+        {
+            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+            try
+            {
+                await this.Container.CreateItemAsync(testItem, partitionKey: new Cosmos.PartitionKey("BadKey"));
+            }
+            catch(CosmosException ce) when(ce.StatusCode == HttpStatusCode.BadRequest)
+            {
+                string message = ce.ToString();
+                Assert.IsNotNull(message);
+            }
         }
 
         [TestMethod]
