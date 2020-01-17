@@ -650,6 +650,54 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return resultsFromTryGetContinuationToken;
         }
 
+        private static async Task<List<T>> QueryWithSerializeState<T>(
+            Container container,
+            string query,
+            QueryRequestOptions queryRequestOptions = null)
+        {
+            if (queryRequestOptions == null)
+            {
+                queryRequestOptions = new QueryRequestOptions();
+            }
+
+            List<T> resultsFromSerializeState = new List<T>();
+            ReadOnlyMemory<byte> continuationToken;
+            do
+            {
+                QueryRequestOptions computeRequestOptions = queryRequestOptions.Clone();
+                computeRequestOptions.ExecutionEnvironment = Cosmos.Query.Core.ExecutionContext.ExecutionEnvironment.Compute;
+
+                FeedIteratorInternal<T> itemQuery = (FeedIteratorInternal<T>)container.GetItemQueryIterator<T>(
+                   queryText: query,
+                   requestOptions: computeRequestOptions,
+                   continuationToken: continuationToken);
+                try
+                {
+                    FeedResponse<T> cosmosQueryResponse = await itemQuery.ReadNextAsync();
+                    if (queryRequestOptions.MaxItemCount.HasValue)
+                    {
+                        Assert.IsTrue(
+                            cosmosQueryResponse.Count <= queryRequestOptions.MaxItemCount.Value,
+                            "Max Item Count is not being honored");
+                    }
+
+                    resultsFromSerializeState.AddRange(cosmosQueryResponse);
+                    Json.IJsonWriter jsonWriter = Json.JsonWriter.Create(Json.JsonSerializationFormat.Binary);
+                    itemQuery.SerializeState(jsonWriter);
+                    continuationToken = jsonWriter.GetResult();
+                }
+                catch (CosmosException cosmosException) when (cosmosException.StatusCode == (HttpStatusCode)429)
+                {
+                    itemQuery = (FeedIteratorInternal<T>)container.GetItemQueryIterator<T>(
+                            queryText: query,
+                            requestOptions: queryRequestOptions,
+                            continuationToken: continuationToken);
+                }
+            } while (!continuationToken.IsEmpty);
+
+            return resultsFromSerializeState;
+        }
+
         private static async Task<List<T>> QueryWithContinuationTokens<T>(
             Container container,
             string query,

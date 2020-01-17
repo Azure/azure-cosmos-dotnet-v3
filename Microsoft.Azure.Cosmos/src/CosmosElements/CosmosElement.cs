@@ -37,6 +37,30 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public abstract void WriteTo(IJsonWriter jsonWriter);
 
+        public static bool TryCreateFromBuffer<TCosmosElement>(ReadOnlyMemory<byte> buffer, out TCosmosElement cosmosElement)
+            where TCosmosElement : CosmosElement
+        {
+            CosmosElement unTypedCosmosElement;
+            try
+            {
+                unTypedCosmosElement = CreateFromBuffer(buffer);
+            }
+            catch (JsonParseException)
+            {
+                cosmosElement = default;
+                return false;
+            }
+
+            if (!(unTypedCosmosElement is TCosmosElement typedCosmosElement))
+            {
+                cosmosElement = default;
+                return false;
+            }
+
+            cosmosElement = typedCosmosElement;
+            return true;
+        }
+
         public static CosmosElement CreateFromBuffer(ReadOnlyMemory<byte> buffer)
         {
             IJsonNavigator jsonNavigator = JsonNavigator.Create(buffer);
@@ -129,9 +153,10 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             string serializedCosmosElement,
             out CosmosElement cosmosElement)
         {
-            if (serializedCosmosElement == null)
+            if (string.IsNullOrWhiteSpace(serializedCosmosElement))
             {
-                throw new ArgumentNullException(nameof(serializedCosmosElement));
+                cosmosElement = default;
+                return false;
             }
 
             try

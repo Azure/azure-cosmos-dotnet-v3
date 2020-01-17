@@ -137,7 +137,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
         public static async Task<TryCatch<CosmosParallelItemQueryExecutionContext>> TryCreateAsync(
             CosmosQueryContext queryContext,
             CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams,
-            string requestContinuationToken,
+            RequestContinuationToken requestContinuationToken,
             CancellationToken cancellationToken)
         {
             Debug.Assert(
@@ -226,7 +226,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
             string collectionRid,
             List<PartitionKeyRange> partitionKeyRanges,
             int initialPageSize,
-            string requestContinuation,
+            RequestContinuationToken requestContinuation,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -270,9 +270,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
         /// <returns>The subset of partition to actually target and continuation tokens.</returns>
         private static TryCatch<ParallelInitInfo> TryGetInitializationInfoFromContinuationToken(
             List<PartitionKeyRange> partitionKeyRanges,
-            string continuationToken)
+            RequestContinuationToken continuationToken)
         {
-            if (continuationToken == null)
+            if (continuationToken.IsNull)
             {
                 return TryCatch<ParallelInitInfo>.FromResult(
                     new ParallelInitInfo(
@@ -281,7 +281,26 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
             }
             else
             {
-                if (!TryParseContinuationToken(continuationToken, out CompositeContinuationToken[] tokens))
+                CosmosElement cosmosElement;
+                switch (continuationToken)
+                {
+                    case StringRequestContinuationToken stringRequestContinuationToken:
+                        if (!CosmosElement.TryParse(stringRequestContinuationToken.Value, out cosmosElement))
+                        {
+                            return TryCatch<ParallelInitInfo>.FromException(
+                                new MalformedContinuationTokenException($"Order by continuation token is malformed: {stringRequestContinuationToken.Value}."));
+                        }
+                        break;
+
+                    case CosmosElementRequestContinuationToken cosmosElementRequestContinuation:
+                        cosmosElement = cosmosElementRequestContinuation.Value;
+                        break;
+
+                    default:
+                        throw new ArgumentException($"Unknown {nameof(RequestContinuationToken)} type: {continuationToken.GetType()}.");
+                }
+
+                if (!TryParseContinuationToken(cosmosElement, out List<CompositeContinuationToken> tokens))
                 {
                     return TryCatch<ParallelInitInfo>.FromException(
                         new MalformedContinuationTokenException($"Invalid format for continuation token {continuationToken} for {nameof(CosmosParallelItemQueryExecutionContext)}"));
@@ -308,39 +327,50 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
             }
         }
 
-        private static bool TryParseContinuationToken(string continuationToken, out CompositeContinuationToken[] tokens)
+        private static bool TryParseContinuationToken(CosmosElement continuationToken, out List<CompositeContinuationToken> tokens)
         {
             if (continuationToken == null)
             {
                 throw new ArgumentNullException(nameof(continuationToken));
             }
 
-            try
+            if (!(continuationToken is CosmosArray cosmosArray))
             {
-                tokens = JsonConvert.DeserializeObject<CompositeContinuationToken[]>(continuationToken, DefaultJsonSerializationSettings.Value);
+                tokens = default;
+                return false;
+            }
 
-                if (tokens.Length == 0)
+            List<CompositeContinuationToken> compositeContinuationTokens = new List<CompositeContinuationToken>();
+            foreach (CosmosElement item in cosmosArray)
+            {
+                TryCatch<CompositeContinuationToken> tryCreateCompositeContinuationToken = CompositeContinuationToken.TryCreateFromCosmosElement(item);
+                if (!tryCreateCompositeContinuationToken.Succeeded)
                 {
                     tokens = default;
                     return false;
                 }
 
-                foreach (CompositeContinuationToken token in tokens)
-                {
-                    if ((token.Range == null) || token.Range.IsEmpty)
-                    {
-                        tokens = default;
-                        return false;
-                    }
-                }
-
-                return true;
+                compositeContinuationTokens.Add(tryCreateCompositeContinuationToken.Result);
             }
-            catch (JsonException)
+
+            tokens = compositeContinuationTokens;
+
+            if (tokens.Count == 0)
             {
                 tokens = default;
                 return false;
             }
+
+            foreach (CompositeContinuationToken token in tokens)
+            {
+                if ((token.Range == null) || token.Range.IsEmpty)
+                {
+                    tokens = default;
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private readonly struct ParallelInitInfo

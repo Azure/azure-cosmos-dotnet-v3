@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
 
     /// <summary>
@@ -31,5 +32,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         public abstract Task<QueryResponseCore> ExecuteNextAsync(CancellationToken cancellationToken);
 
         public abstract bool TryGetContinuationToken(out string continuationToken);
+
+        public abstract void SerializeState(IJsonWriter jsonWriter);
     }
 }

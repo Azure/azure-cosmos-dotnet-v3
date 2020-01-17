@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
 
     internal sealed class CosmosQueryExecutionContextWithNameCacheStaleRetry : CosmosQueryExecutionContext
@@ -62,6 +63,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         public override bool TryGetContinuationToken(out string continuationToken)
         {
             return this.currentCosmosQueryExecutionContext.TryGetContinuationToken(out continuationToken);
+        }
+
+        public override void SerializeState(IJsonWriter jsonWriter)
+        {
+            if (jsonWriter == null)
+            {
+                throw new ArgumentNullException(nameof(jsonWriter));
+            }
+
+            this.currentCosmosQueryExecutionContext.SerializeState(jsonWriter);
         }
     }
 }

@@ -141,6 +141,8 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         public string SessionToken { get; set; }
 
+        internal ReadOnlyMemory<byte> BinaryContinuationToken { get; set; }
+
         internal CosmosSerializationFormatOptions CosmosSerializationFormatOptions { get; set; }
 
         internal ExecutionEnvironment? ExecutionEnvironment { get; set; }
@@ -220,6 +222,7 @@ namespace Microsoft.Azure.Cosmos
                 CosmosSerializationFormatOptions = this.CosmosSerializationFormatOptions,
                 Properties = this.Properties,
                 IsEffectivePartitionKeyRouting = this.IsEffectivePartitionKeyRouting,
+                BinaryContinuationToken = this.BinaryContinuationToken,
             };
 
             return queryRequestOptions;

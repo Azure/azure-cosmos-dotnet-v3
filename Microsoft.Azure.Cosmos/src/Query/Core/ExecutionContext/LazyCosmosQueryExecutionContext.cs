@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
 
@@ -91,6 +92,27 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             }
 
             return tryCreateCosmosQueryExecutionContext.Result.TryGetContinuationToken(out state);
+        }
+
+        public override void SerializeState(IJsonWriter jsonWriter)
+        {
+            if (jsonWriter == null)
+            {
+                throw new ArgumentNullException(nameof(jsonWriter));
+            }
+
+            if (!this.lazyTryCreateCosmosQueryExecutionContext.ValueInitialized)
+            {
+                throw new InvalidOperationException();
+            }
+
+            TryCatch<CosmosQueryExecutionContext> tryCreateCosmosQueryExecutionContext = this.lazyTryCreateCosmosQueryExecutionContext.Result;
+            if (!tryCreateCosmosQueryExecutionContext.Succeeded)
+            {
+                throw tryCreateCosmosQueryExecutionContext.Exception;
+            }
+
+            tryCreateCosmosQueryExecutionContext.Result.SerializeState(jsonWriter);
         }
     }
 }

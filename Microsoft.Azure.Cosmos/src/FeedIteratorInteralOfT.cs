@@ -4,6 +4,8 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using Microsoft.Azure.Cosmos.Json;
+
     /// <summary>
     /// Internal API for FeedIterator<typeparamref name="T"/> for inheritance and mocking purposes.
     /// </summary>
@@ -12,5 +14,6 @@ namespace Microsoft.Azure.Cosmos
 #pragma warning restore SA1649
     {
         public abstract bool TryGetContinuationToken(out string continuationToken);
+        public abstract void SerializeState(IJsonWriter jsonWriter);
     }
 }

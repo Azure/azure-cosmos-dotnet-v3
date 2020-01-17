@@ -6,6 +6,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
 {
     using System;
     using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
     internal ref struct CompositeContinuationTokenRefStruct
     {
