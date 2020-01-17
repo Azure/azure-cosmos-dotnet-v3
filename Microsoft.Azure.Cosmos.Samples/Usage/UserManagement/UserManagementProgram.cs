@@ -7,7 +7,7 @@
     using Microsoft.Extensions.Configuration;
     using Newtonsoft.Json;
 
-    internal class Program
+    internal class UserManagementProgram
     {
         // Async main requires c# 7.1 which is set in the csproj with the LangVersion attribute
         // <Main>
@@ -44,7 +44,7 @@
                         // Get, or Create, the Database
                         database = await client.CreateDatabaseIfNotExistsAsync("UserManagementDemoDb");
 
-                        await Program.RunDemoAsync(
+                        await UserManagementProgram.RunDemoAsync(
                             client,
                             database);
                     }
@@ -114,11 +114,16 @@
                 salesOrder2,
                 new PartitionKey(salesOrder2.AccountNumber));
 
-            
-
             // Create a user
             User user1 = await database.CreateUserAsync("Thomas Andersen");
-            
+
+            // Get an existing user and permission.
+            // This is a client side reference and does no verification against Cosmos DB.
+            user1 = database.GetUser("Thomas Andersen");
+
+            // Verify the user exists
+            UserProperties userProperties = await user1.ReadAsync();
+
             //Add the read permission to the user and validate the user can 
             //read only the container it has access to
             await ValidateReadPermissions(
@@ -126,7 +131,6 @@
                 database.Id,
                 container1,
                 user1);
-
 
             // Insert one item in to container 2
             SalesOrder salesOrder3 = new SalesOrder()
@@ -152,11 +156,24 @@
                 salesOrder3);
 
             // Add read permission to user1 on container 2 so query has multiple results
-            PermissionProperties permissionUser1Container2 = new PermissionProperties(
-                id: "permissionUser1Container2",
-                permissionMode: PermissionMode.Read,
-                container: container2);
-            await user1.CreatePermissionAsync(permissionUser1Container2);
+            PermissionResponse permissionUser1Container2Response = await user1.CreatePermissionAsync(
+                new PermissionProperties(
+                    id: "permissionUser1Container2",
+                    permissionMode: PermissionMode.Read,
+                    container: container2));
+
+            Permission permissionUser1Container2 = permissionUser1Container2Response;
+            PermissionProperties user1Container2Properties = permissionUser1Container2Response;
+
+            Console.WriteLine();
+            Console.WriteLine($"Created {permissionUser1Container2.Id} with resource URI: {user1Container2Properties.ResourceUri}");
+
+            // Get an existing permission and token
+            permissionUser1Container2 = user1.GetPermission("permissionUser1Container2");
+
+            // Get an existing permission properties
+            user1Container2Properties = await permissionUser1Container2.ReadAsync();
+            Console.WriteLine($"Read existing {permissionUser1Container2.Id} with resource URI: {user1Container2Properties.ResourceUri}");
 
             // All user1's permissions in a List
             List<PermissionProperties> user1Permissions = new List<PermissionProperties>();
@@ -225,6 +242,8 @@
                 SalesOrder readSalesOrder = await permissionContainer.ReadItemAsync<SalesOrder>(
                     salesOrder.Id,
                     new PartitionKey(salesOrder.AccountNumber));
+                Console.WriteLine();
+                Console.WriteLine("Read item will all permission succeeded.");
 
                 // Read sales order item
                 readSalesOrder.OrderDate = DateTime.UtcNow;
@@ -233,13 +252,14 @@
                 await permissionContainer.UpsertItemAsync<SalesOrder>(
                     readSalesOrder, 
                     new PartitionKey(salesOrder.AccountNumber));
+                Console.WriteLine("Upsert item will all permission succeeded.");
 
                 //try iterate items should fail because the user only has access to single partition key
                 //and therefore cannot access anything outside of that partition key value.
                 try
                 {
                     FeedIterator<SalesOrder> itemIterator = permissionContainer.GetItemQueryIterator<SalesOrder>(
-                        "select T.* from T");
+                        "select * from T");
                     while (itemIterator.HasMoreResults)
                     {
                         await itemIterator.ReadNextAsync();
@@ -248,7 +268,7 @@
                 }
                 catch (CosmosException ce) when (ce.StatusCode == System.Net.HttpStatusCode.Forbidden)
                 {
-                    Console.WriteLine("Database query failed because user has no admin rights");
+                    Console.WriteLine("Item query failed because user has access to only 1 partition");
                 }
             }
         }
