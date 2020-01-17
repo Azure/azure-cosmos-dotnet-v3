@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 Documents = DocumentServiceLeaseContainerCosmosTests.allLeases
             };
 
-            ResponseMessage mockFeedResponse = new ResponseMessage()
+            ResponseMessage mockFeedResponse = new ResponseMessage(System.Net.HttpStatusCode.OK)
             {
                 Content = new CosmosJsonDotNetSerializer().ToStream(cosmosFeedResponse)
             };
