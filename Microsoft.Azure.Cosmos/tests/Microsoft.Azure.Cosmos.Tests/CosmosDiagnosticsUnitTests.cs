@@ -41,5 +41,34 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Assert.IsTrue(Regex.IsMatch(result, regex), result);
         }
+
+        [TestMethod]
+        public void ValidateDiagnosticsAppendContext()
+        {
+            CosmosDiagnosticsContext cosmosDiagnostics = new CosmosDiagnosticsContext();
+
+            // Test all the different operations on diagnostics context
+            cosmosDiagnostics.Summary.AddSdkRetry(TimeSpan.FromSeconds(42));
+            using (cosmosDiagnostics.CreateScope("ValidateScope"))
+            {
+                Thread.Sleep(TimeSpan.FromSeconds(2));
+            }
+
+            cosmosDiagnostics.Summary.SetSdkUserAgent("MyCustomUserAgentString");
+
+            CosmosDiagnosticsContext cosmosDiagnostics2 = new CosmosDiagnosticsContext();
+
+            using (cosmosDiagnostics.CreateScope("CosmosDiagnostics2Scope"))
+            {
+                Thread.Sleep(TimeSpan.FromMilliseconds(100));
+            }
+
+            cosmosDiagnostics2.Append(cosmosDiagnostics);
+
+            string diagnostics = cosmosDiagnostics2.ToString();
+            Assert.IsTrue(diagnostics.Contains("MyCustomUserAgentString"));
+            Assert.IsTrue(diagnostics.Contains("ValidateScope"));
+            Assert.IsTrue(diagnostics.Contains("CosmosDiagnostics2Scope"));
+        }
     }
 }

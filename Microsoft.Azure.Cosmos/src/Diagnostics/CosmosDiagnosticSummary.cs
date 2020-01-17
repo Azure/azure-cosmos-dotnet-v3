@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos
 
         private string UserAgent = CosmosDiagnosticSummary.DefaultUserAgentString;
 
-        private bool IsDefaultUserAgent = false;
+        private bool IsDefaultUserAgent = true;
 
         private List<CosmosDiagnosticWriter> Details = null;
 
