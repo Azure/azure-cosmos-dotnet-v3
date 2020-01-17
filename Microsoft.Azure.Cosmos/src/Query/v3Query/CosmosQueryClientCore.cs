@@ -169,6 +169,7 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             OperationType operationType,
             SqlQuerySpec sqlQuerySpec,
+            PartitionKey? partitionKey,
             string supportedQueryFeatures,
             CancellationToken cancellationToken)
         {
@@ -178,7 +179,7 @@ namespace Microsoft.Azure.Cosmos
                 resourceType: resourceType,
                 operationType: operationType,
                 requestOptions: null,
-                partitionKey: null,
+                partitionKey: partitionKey,
                 cosmosContainerCore: this.cosmosContainerCore,
                 streamPayload: this.clientContext.SerializerCore.ToStreamSqlQuerySpec(sqlQuerySpec, resourceType),
                 requestEnricher: (requestMessage) =>

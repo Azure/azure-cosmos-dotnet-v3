@@ -123,6 +123,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                         cosmosQueryContext.QueryClient,
                         inputParameters.SqlQuerySpec,
                         cosmosQueryContext.ResourceLink,
+                        inputParameters.PartitionKey,
                         cancellationToken);
                 }
                 else
