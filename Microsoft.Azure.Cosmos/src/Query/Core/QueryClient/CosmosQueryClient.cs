@@ -61,6 +61,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             Documents.ResourceType resourceType,
             Documents.OperationType operationType,
             SqlQuerySpec sqlQuerySpec,
+            PartitionKey? partitionKey,
             string supportedQueryFeatures,
             CancellationToken cancellationToken);
 

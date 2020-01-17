@@ -111,6 +111,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal static Result WriteOperation(ref RowWriter writer, TypeArgument typeArg, ItemBatchOperation operation)
         {
+            bool pkWritten = false;
             Result r = writer.WriteInt32("operationType", (int)operation.OperationType);
             if (r != Result.Success)
             {
@@ -130,6 +131,8 @@ namespace Microsoft.Azure.Cosmos
                 {
                     return r;
                 }
+
+                pkWritten = true;
             }
 
             if (operation.Id != null)
@@ -201,6 +204,21 @@ namespace Microsoft.Azure.Cosmos
                         if (epk != null)
                         {
                             r = writer.WriteBinary("effectivePartitionKey", epk);
+                            if (r != Result.Success)
+                            {
+                                return r;
+                            }
+                        }
+                    }
+
+                    if (!pkWritten && options.Properties.TryGetValue(
+                            HttpConstants.HttpHeaders.PartitionKey,
+                            out object pkStrObj))
+                    {
+                        string pkString = pkStrObj as string;
+                        if (pkString != null)
+                        {
+                            r = writer.WriteString("partitionKey", pkString);
                             if (r != Result.Success)
                             {
                                 return r;

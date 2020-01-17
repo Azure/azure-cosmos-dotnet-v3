@@ -75,7 +75,10 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return this.user.GetPermissionQueryIterator<T>(queryText, continuationToken, requestOptions);
+            return new FeedIteratorInlineCore<T>(this.user.GetPermissionQueryIterator<T>(
+                queryText,
+                continuationToken,
+                requestOptions));
         }
 
         public override FeedIterator<T> GetPermissionQueryIterator<T>(
@@ -83,7 +86,10 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return this.user.GetPermissionQueryIterator<T>(queryDefinition, continuationToken, requestOptions);
+            return new FeedIteratorInlineCore<T>(this.user.GetPermissionQueryIterator<T>(
+                queryDefinition,
+                continuationToken,
+                requestOptions));
         }
 
         public static implicit operator UserCore(UserInlineCore userInlineCore) => userInlineCore.user;

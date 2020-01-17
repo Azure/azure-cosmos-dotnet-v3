@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos
             this.ResourceUri = ((ContainerInlineCore)container).ClientContext.CreateLink(
                     parentLink: ((ContainerInlineCore)container).LinkUri.OriginalString,
                     uriPathSegment: Paths.DocumentsPathSegment,
-                    id: id).OriginalString;
+                    id: itemId).OriginalString;
             this.InternalResourcePartitionKey = resourcePartitionKey.InternalKey;
         }
 

@@ -80,6 +80,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                         // EPK string without corresponding byte representation
                         { WFConstants.BackendHeaders.EffectivePartitionKeyString, "epk" }
                     }
+                },
+                new TransactionalBatchItemRequestOptions()
+                {
+                    Properties = new Dictionary<string, object>
+                    {
+                        // Partition key without EPK string
+                        { HttpConstants.HttpHeaders.PartitionKey, "epk" }
+                    }
                 }
             };
 

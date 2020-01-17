@@ -156,6 +156,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ComparableTask
                 comparableTask.StartAsync(this.CancellationToken)
                     .ContinueWith((antecendent) =>
                     {
+                        // Observing the exception.
+                        Exception exception = antecendent.Exception;
+                        Extensions.TraceException(exception);
                         this.canRunTaskSemaphoreSlim.Release();
                     },
                     TaskScheduler.Current),
