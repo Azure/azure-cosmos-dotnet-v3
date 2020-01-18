@@ -22,6 +22,16 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         {
         }
 
+        public override void Accept(ICosmosElementVisitor cosmosElementVisitor)
+        {
+            if (cosmosElementVisitor == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosElementVisitor));
+            }
+
+            cosmosElementVisitor.Visit(this);
+        }
+
         public static CosmosNull Create()
         {
             return CosmosNull.Singleton;

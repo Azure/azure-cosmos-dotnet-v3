@@ -1,9 +1,10 @@
 ﻿// ------------------------------------------------------------
 //  Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
-
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
+    using System;
+
 #if INTERNAL
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 #pragma warning disable SA1600 // Elements should be documented
@@ -21,19 +22,23 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public CosmosNumberType NumberType { get; }
 
-        public abstract bool IsInteger
-        {
-            get;
-        }
+        public abstract bool IsInteger { get; }
 
-        public abstract bool IsFloatingPoint
-        {
-            get;
-        }
+        public abstract bool IsFloatingPoint { get; }
 
         public abstract double? AsFloatingPoint();
 
         public abstract long? AsInteger();
+
+        public override void Accept(ICosmosElementVisitor cosmosElementVisitor)
+        {
+            if (cosmosElementVisitor == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosElementVisitor));
+            }
+
+            cosmosElementVisitor.Visit(this);
+        }
     }
 #if INTERNAL
 #pragma warning restore SA1600 // Elements should be documented

@@ -3,6 +3,7 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
+    using System;
     using System.Collections;
     using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Json;
@@ -22,14 +23,18 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         {
         }
 
-        public abstract int Count
-        {
-            get;
-        }
+        public abstract int Count { get; }
 
-        public abstract CosmosElement this[int index]
+        public abstract CosmosElement this[int index] { get; }
+
+        public override void Accept(ICosmosElementVisitor cosmosElementVisitor)
         {
-            get;
+            if (cosmosElementVisitor == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosElementVisitor));
+            }
+
+            cosmosElementVisitor.Visit(this);
         }
 
         public static CosmosArray Create(

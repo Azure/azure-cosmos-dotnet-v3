@@ -3,6 +3,7 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
+    using System;
     using Microsoft.Azure.Cosmos.Json;
 
 #if INTERNAL
@@ -20,9 +21,16 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         {
         }
 
-        public abstract string Value
+        public abstract string Value { get; }
+
+        public override void Accept(ICosmosElementVisitor cosmosElementVisitor)
         {
-            get;
+            if (cosmosElementVisitor == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosElementVisitor));
+            }
+
+            cosmosElementVisitor.Visit(this);
         }
 
         public static CosmosString Create(

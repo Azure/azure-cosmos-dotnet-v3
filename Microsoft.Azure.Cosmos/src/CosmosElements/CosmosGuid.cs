@@ -21,9 +21,16 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         {
         }
 
-        public abstract Guid Value
+        public abstract Guid Value { get; }
+
+        public override void Accept(ICosmosElementVisitor cosmosElementVisitor)
         {
-            get;
+            if (cosmosElementVisitor == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosElementVisitor));
+            }
+
+            cosmosElementVisitor.Visit(this);
         }
 
         public static CosmosGuid Create(

@@ -37,6 +37,8 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public abstract void WriteTo(IJsonWriter jsonWriter);
 
+        public abstract void Accept(ICosmosElementVisitor cosmosElementVisitor);
+
         public static CosmosElement CreateFromBuffer(ReadOnlyMemory<byte> buffer)
         {
             IJsonNavigator jsonNavigator = JsonNavigator.Create(buffer);
