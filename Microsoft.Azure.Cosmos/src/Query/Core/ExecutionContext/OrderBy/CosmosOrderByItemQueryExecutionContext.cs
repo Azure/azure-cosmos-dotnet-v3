@@ -19,9 +19,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
-    using Microsoft.Azure.Documents.Routing;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
     using PartitionKeyRange = Documents.PartitionKeyRange;
     using ResourceId = Documents.ResourceId;
 
@@ -804,7 +801,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
                 SortOrder sortOrder = sortOrders.First();
                 CosmosElement orderByItem = orderByItems.First();
                 StringBuilder sb = new StringBuilder();
-                CosmosOrderByItemQueryExecutionContext.ToQueryLiteral(orderByItem, sb);
+                CosmosElementToQueryLiteral cosmosElementToQueryLiteral = new CosmosElementToQueryLiteral(sb);
+                orderByItem.Accept(cosmosElementToQueryLiteral);
                 string orderByItemToString = sb.ToString();
                 left.Append($"{expression} {(sortOrder == SortOrder.Descending ? "<" : ">")} {orderByItemToString}");
                 target.Append($"{expression} {(sortOrder == SortOrder.Descending ? "<=" : ">=")} {orderByItemToString}");
@@ -880,7 +878,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
 
                         // Append SortOrder
                         StringBuilder sb = new StringBuilder();
-                        CosmosOrderByItemQueryExecutionContext.ToQueryLiteral(orderByItem, sb);
+                        CosmosElementToQueryLiteral cosmosElementToQueryLiteral = new CosmosElementToQueryLiteral(sb);
+                        orderByItem.Accept(cosmosElementToQueryLiteral);
                         string orderByItemToString = sb.ToString();
                         CosmosOrderByItemQueryExecutionContext.AppendToBuilders(builders, " ");
                         CosmosOrderByItemQueryExecutionContext.AppendToBuilders(builders, orderByItemToString);
@@ -901,105 +900,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
             }
 
             return new Tuple<string, string, string>(left.ToString(), target.ToString(), right.ToString());
-        }
-
-        internal static void ToQueryLiteral(CosmosElement orderByItem, StringBuilder sb)
-        {
-            if (orderByItem == null)
-            {
-                sb.Append(JsonConvert.SerializeObject(orderByItem, DefaultJsonSerializationSettings.Value));
-                return;
-            }
-
-            switch (orderByItem.Type)
-            {
-                case CosmosElementType.Array:
-                {
-                    sb.Append("[");
-                    CosmosArray array = (CosmosArray)orderByItem;
-                    string separator = string.Empty;
-                    foreach (CosmosElement element in array)
-                    {
-                        sb.Append(separator);
-                        separator = ",";
-
-                        CosmosOrderByItemQueryExecutionContext.ToQueryLiteral(element, sb);
-                    }
-
-                    sb.Append("]");
-                    break;
-                }
-
-                case CosmosElementType.Number:
-                {
-                    CosmosNumber numberElement = (CosmosNumber)orderByItem;
-                    switch (numberElement.NumberType)
-                    {
-                        case CosmosNumberType.Int8:
-                            sb.AppendFormat("C_Int8({0})", numberElement.AsInteger());
-                            break;
-                        case CosmosNumberType.Int16:
-                            sb.AppendFormat("C_Int16({0})", numberElement.AsInteger());
-                            break;
-                        case CosmosNumberType.Int32:
-                            sb.AppendFormat("C_Int32({0})", numberElement.AsInteger());
-                            break;
-                        case CosmosNumberType.Int64:
-                            sb.AppendFormat("C_Int64({0})", numberElement.AsInteger());
-                            break;
-                        case CosmosNumberType.UInt32:
-                            sb.AppendFormat("C_UInt32({0})", numberElement.AsInteger());
-                            break;
-                        case CosmosNumberType.Float32:
-                            sb.AppendFormat("C_Float32({0:G7})", numberElement.AsFloatingPoint());
-                            break;
-                        case CosmosNumberType.Float64:
-                            sb.AppendFormat("C_Float64({0:R})", numberElement.AsFloatingPoint());
-                            break;
-                        case CosmosNumberType.Number64:
-                        default:
-                            sb.Append(JsonConvert.SerializeObject(orderByItem, DefaultJsonSerializationSettings.Value));
-                            break;
-                    }
-
-                    break;
-                }
-
-                case CosmosElementType.Object:
-                {
-                    sb.Append("{");
-                    CosmosObject objectElement = (CosmosObject)orderByItem;
-                    string separator = string.Empty;
-                    foreach (KeyValuePair<string, CosmosElement> elementKvp in objectElement)
-                    {
-                        sb.Append(separator);
-                        separator = ",";
-
-                        sb.Append(JsonConvert.ToString(elementKvp.Key));
-                        sb.Append(":");
-                        CosmosOrderByItemQueryExecutionContext.ToQueryLiteral(elementKvp.Value, sb);
-                    }
-
-                    sb.Append("}");
-                    break;
-                }
-
-                case CosmosElementType.Guid:
-                    CosmosGuid guidItem = (CosmosGuid)orderByItem;
-                    sb.AppendFormat("C_Guid(\"{0}\")", guidItem.Value);
-                    break;
-                case CosmosElementType.Binary:
-                    CosmosBinary cosmosBinary = (CosmosBinary)orderByItem;
-                    string hexString = PartitionKeyInternal.HexConvert.ToHex(cosmosBinary.Value.ToArray(), 0, (int)cosmosBinary.Value.Length);
-                    sb.AppendFormat("C_Binary(\"0x{0}\")", hexString);
-                    break;
-                case CosmosElementType.Null:
-                case CosmosElementType.String:
-                case CosmosElementType.Boolean:
-                default:
-                    sb.Append(JsonConvert.SerializeObject(orderByItem, DefaultJsonSerializationSettings.Value));
-                    break;
-            }
         }
 
         private readonly struct OrderByInitInfo
