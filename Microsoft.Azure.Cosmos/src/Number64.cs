@@ -33,6 +33,11 @@ namespace Microsoft.Azure.Cosmos
         public static readonly Number64 MinValue = new Number64(double.MinValue);
 
         /// <summary>
+        /// Size of the Number64 when compared as a DoubleEx
+        /// </summary>
+        public static readonly int SizeOf = sizeof(double) + sizeof(ushort);
+
+        /// <summary>
         /// The double if the value is a double.
         /// </summary>
         private readonly double? doubleValue;
@@ -116,15 +121,18 @@ namespace Microsoft.Azure.Cosmos
             return toString;
         }
 
-        public byte[] ToByteArray()
+        public void CopyTo(Span<byte> buffer)
         {
+            if (buffer.Length < Number64.SizeOf)
+            {
+                throw new ArgumentException($"{nameof(buffer)} is too short.");
+            }
+
             DoubleEx doubleEx = Number64.ToDoubleEx(this);
-            byte[] bytes = new byte[sizeof(double) + sizeof(ushort)];
-            Span<double> doubleBuffer = MemoryMarshal.Cast<byte, double>(bytes);
+            Span<double> doubleBuffer = MemoryMarshal.Cast<byte, double>(buffer);
             doubleBuffer[0] = doubleEx.DoubleValue;
-            Span<ushort> ushortBuffer = MemoryMarshal.Cast<byte, ushort>(bytes.AsSpan().Slice(sizeof(double)));
+            Span<ushort> ushortBuffer = MemoryMarshal.Cast<byte, ushort>(buffer.Slice(sizeof(double)));
             ushortBuffer[0] = doubleEx.ExtraBits;
-            return bytes;
         }
 
         #region Static Operators
