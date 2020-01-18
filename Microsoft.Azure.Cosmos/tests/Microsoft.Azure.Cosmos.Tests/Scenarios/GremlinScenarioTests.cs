@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Scenarios
     using System.Linq;
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.Azure.Documents;

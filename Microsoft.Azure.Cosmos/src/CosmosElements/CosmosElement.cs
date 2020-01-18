@@ -23,10 +23,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             this.Type = cosmosItemType;
         }
 
-        public CosmosElementType Type
-        {
-            get;
-        }
+        public CosmosElementType Type { get; }
 
         public override string ToString()
         {
