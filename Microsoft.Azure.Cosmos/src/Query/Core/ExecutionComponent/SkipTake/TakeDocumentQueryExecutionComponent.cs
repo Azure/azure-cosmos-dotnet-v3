@@ -12,12 +12,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Newtonsoft.Json;
 
-    internal sealed class TakeDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase
+    internal abstract partial class TakeDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase
     {
         private const string SourceTokenName = "SourceToken";
         private const string TakeCountName = "TakeCount";
@@ -25,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
         private readonly TakeEnum takeEnum;
         private int takeCount;
 
-        private TakeDocumentQueryExecutionComponent(
+        protected TakeDocumentQueryExecutionComponent(
             IDocumentQueryExecutionComponent source,
             int takeCount,
             TakeEnum takeEnum)
@@ -36,9 +38,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
         }
 
         public static async Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateLimitDocumentQueryExecutionComponentAsync(
+            ExecutionEnvironment executionEnvironment,
             int limitCount,
-            string continuationToken,
-            Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync)
+            RequestContinuationToken continuationToken,
+            Func<RequestContinuationToken, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync)
         {
             if (tryCreateSourceAsync == null)
             {
@@ -46,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
             }
 
             LimitContinuationToken limitContinuationToken;
-            if (continuationToken != null)
+            if (continuationToken.IsNull)
             {
                 if (!LimitContinuationToken.TryParse(continuationToken, out limitContinuationToken))
                 {

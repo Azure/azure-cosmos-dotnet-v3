@@ -8,6 +8,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
@@ -31,8 +33,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
             }
 
             public static async Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
-                string requestContinuation,
-                Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync,
+                RequestContinuationToken requestContinuation,
+                Func<RequestContinuationToken, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync,
                 DistinctQueryType distinctQueryType)
             {
                 DistinctContinuationToken distinctContinuationToken;
@@ -102,6 +104,89 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                         requestCharge: sourceResponse.RequestCharge,
                         diagnostics: sourceResponse.Diagnostics,
                         responseLengthBytes: sourceResponse.ResponseLengthBytes);
+            }
+
+            public override bool TryGetContinuationToken(out string continuationToken)
+            {
+                if (this.IsDone)
+                {
+                    continuationToken = null;
+                    return true;
+                }
+
+                if (!this.Source.TryGetContinuationToken(out string sourceContinuationToken))
+                {
+                    continuationToken = default;
+                    return false;
+                }
+
+                IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
+                this.SerializeState(jsonWriter);
+                continuationToken = Utf8StringHelpers.ToString(jsonWriter.GetResult());
+                return true;
+            }
+
+            public override void SerializeState(IJsonWriter jsonWriter)
+            {
+                if (jsonWriter == null)
+                {
+                    throw new ArgumentNullException(nameof(jsonWriter));
+                }
+
+                if (!this.IsDone)
+                {
+                    jsonWriter.WriteObjectStart();
+                    jsonWriter.WriteFieldName(DistinctDocumentQueryExecutionComponent.SourceTokenName);
+                    this.Source.SerializeState(jsonWriter);
+                    jsonWriter.WriteFieldName(DistinctDocumentQueryExecutionComponent.DistinctMapTokenName);
+                    this.distinctMap.SerializeState(jsonWriter);
+                    jsonWriter.WriteObjectEnd();
+                }
+            }
+
+            private readonly struct DistinctContinuationToken
+            {
+                public DistinctContinuationToken(CosmosElement sourceToken, CosmosElement distinctMapToken)
+                {
+                    this.SourceToken = sourceToken;
+                    this.DistinctMapToken = distinctMapToken;
+                }
+
+                public CosmosElement SourceToken { get; }
+
+                public CosmosElement DistinctMapToken { get; }
+
+                public static bool TryParse(
+                    CosmosElement requestContinuationToken,
+                    out DistinctContinuationToken distinctContinuationToken)
+                {
+                    if (requestContinuationToken == null)
+                    {
+                        distinctContinuationToken = default;
+                        return false;
+                    }
+
+                    if (!(requestContinuationToken is CosmosObject rawObject))
+                    {
+                        distinctContinuationToken = default;
+                        return false;
+                    }
+
+                    if (!rawObject.TryGetValue(SourceTokenName, out CosmosElement sourceToken))
+                    {
+                        distinctContinuationToken = default;
+                        return false;
+                    }
+
+                    if (!rawObject.TryGetValue(DistinctMapTokenName, out CosmosElement distinctMapToken))
+                    {
+                        distinctContinuationToken = default;
+                        return false;
+                    }
+
+                    distinctContinuationToken = new DistinctContinuationToken(sourceToken: sourceToken, distinctMapToken: distinctMapToken);
+                    return true;
+                }
             }
         }
     }

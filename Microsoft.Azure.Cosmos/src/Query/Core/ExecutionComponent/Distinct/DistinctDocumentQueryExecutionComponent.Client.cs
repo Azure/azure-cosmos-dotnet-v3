@@ -9,9 +9,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
+    using Newtonsoft.Json;
 
     internal abstract partial class DistinctDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase
     {
@@ -40,17 +42,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
             }
 
             public static async Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
-                string requestContinuation,
-                Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync,
+                RequestContinuationToken requestContinuation,
+                Func<RequestContinuationToken, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync,
                 DistinctQueryType distinctQueryType)
             {
+                if (!(requestContinuation is StringRequestContinuationToken stringRequestContinuationToken))
+                {
+                    throw new ArgumentException($"Unknown {nameof(RequestContinuationToken)} type: {requestContinuation.GetType()}");
+                }
+
                 DistinctContinuationToken distinctContinuationToken;
                 if (requestContinuation != null)
                 {
-                    if (!DistinctContinuationToken.TryParse(requestContinuation, out distinctContinuationToken))
+                    if (!DistinctContinuationToken.TryParse(stringRequestContinuationToken, out distinctContinuationToken))
                     {
                         return TryCatch<IDocumentQueryExecutionComponent>.FromException(
-                            new MalformedContinuationTokenException($"Invalid {nameof(DistinctContinuationToken)}: {requestContinuation}"));
+                            new MalformedContinuationTokenException($"Invalid {nameof(DistinctContinuationToken)}: {stringRequestContinuationToken}"));
                     }
                 }
                 else
@@ -66,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                     return TryCatch<IDocumentQueryExecutionComponent>.FromException(tryCreateDistinctMap.Exception);
                 }
 
-                TryCatch<IDocumentQueryExecutionComponent> tryCreateSource = await tryCreateSourceAsync(distinctContinuationToken.SourceToken);
+                TryCatch<IDocumentQueryExecutionComponent> tryCreateSource = await tryCreateSourceAsync(RequestContinuationToken.Create(distinctContinuationToken.SourceToken));
                 if (!tryCreateSource.Succeeded)
                 {
                     return TryCatch<IDocumentQueryExecutionComponent>.FromException(tryCreateSource.Exception);
@@ -131,6 +138,74 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                 }
 
                 return queryResponseCore;
+            }
+
+            public override void SerializeState(IJsonWriter jsonWriter)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override bool TryGetContinuationToken(out string state)
+            {
+                throw new NotImplementedException();
+            }
+
+            /// <summary>
+            /// Continuation token for distinct queries.
+            /// </summary>
+            private sealed class DistinctContinuationToken
+            {
+                public DistinctContinuationToken(string sourceToken, string distinctMapToken)
+                {
+                    this.SourceToken = sourceToken;
+                    this.DistinctMapToken = distinctMapToken;
+                }
+
+                public string SourceToken { get; }
+
+                public string DistinctMapToken { get; }
+
+                /// <summary>
+                /// Tries to parse a DistinctContinuationToken from a string.
+                /// </summary>
+                /// <param name="stringRequestContinuationToken">The value to parse.</param>
+                /// <param name="distinctContinuationToken">The output DistinctContinuationToken.</param>
+                /// <returns>True if we successfully parsed the DistinctContinuationToken, else false.</returns>
+                public static bool TryParse(
+                    StringRequestContinuationToken stringRequestContinuationToken,
+                    out DistinctContinuationToken distinctContinuationToken)
+                {
+                    if (stringRequestContinuationToken == null)
+                    {
+                        throw new ArgumentNullException(nameof(stringRequestContinuationToken));
+                    }
+
+                    if (stringRequestContinuationToken.IsNull)
+                    {
+                        distinctContinuationToken = default;
+                        return false;
+                    }
+
+                    try
+                    {
+                        distinctContinuationToken = JsonConvert.DeserializeObject<DistinctContinuationToken>(stringRequestContinuationToken.Value);
+                        return true;
+                    }
+                    catch (JsonException)
+                    {
+                        distinctContinuationToken = default;
+                        return false;
+                    }
+                }
+
+                /// <summary>
+                /// Gets the serialized form of DistinctContinuationToken
+                /// </summary>
+                /// <returns>The serialized form of DistinctContinuationToken</returns>
+                public override string ToString()
+                {
+                    return JsonConvert.SerializeObject(this);
+                }
             }
         }
     }

@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggregators;
@@ -60,8 +61,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
 
         public static async Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
             ExecutionEnvironment executionEnvironment,
-            string continuationToken,
-            Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync,
+            RequestContinuationToken continuationToken,
+            Func<RequestContinuationToken, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync,
             IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
             IReadOnlyList<string> orderedAliases,
             bool hasSelectValue)
@@ -274,24 +275,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                 IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
                 IReadOnlyList<string> orderedAliases,
                 bool hasSelectValue,
-                string groupingTableContinuationToken)
+                CosmosElement continuationToken)
             {
                 GroupingTable groupingTable = new GroupingTable(
                     groupByAliasToAggregateType,
                     orderedAliases,
                     hasSelectValue);
 
-                if (groupingTableContinuationToken != null)
+                if (continuationToken != null)
                 {
-                    if (!CosmosElement.TryParse(
-                        groupingTableContinuationToken,
-                        out CosmosObject parsedGroupingTableContinuations))
+                    if (!(continuationToken is CosmosObject groupingTableContinuationToken))
                     {
                         return TryCatch<GroupingTable>.FromException(
                             new MalformedContinuationTokenException($"Invalid GroupingTableContinuationToken"));
                     }
 
-                    foreach (KeyValuePair<string, CosmosElement> kvp in parsedGroupingTableContinuations)
+                    foreach (KeyValuePair<string, CosmosElement> kvp in groupingTableContinuationToken)
                     {
                         string key = kvp.Key;
                         CosmosElement value = kvp.Value;
@@ -313,7 +312,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                             groupByAliasToAggregateType,
                             orderedAliases,
                             hasSelectValue,
-                            singleGroupAggregatorContinuationToken.Value);
+                            RequestContinuationToken.Create(singleGroupAggregatorContinuationToken.Value));
 
                         if (tryCreateSingleGroupAggregator.Succeeded)
                         {
