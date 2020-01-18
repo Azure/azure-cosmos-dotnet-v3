@@ -306,6 +306,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
                 throw new NotImplementedException();
             }
 
+            public override TResult Accept<TInput, TResult>(ICosmosElementVisitor<TInput, TResult> cosmosElementVisitor, TInput input)
+            {
+                throw new NotImplementedException();
+            }
+
             public override void WriteTo(IJsonWriter jsonWriter)
             {
                 throw new NotImplementedException();
@@ -330,6 +335,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
             }
 
             public override TResult Accept<TResult>(ICosmosElementVisitor<TResult> cosmosElementVisitor)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override TResult Accept<TInput, TResult>(ICosmosElementVisitor<TInput, TResult> cosmosElementVisitor, TInput input)
             {
                 throw new NotImplementedException();
             }
