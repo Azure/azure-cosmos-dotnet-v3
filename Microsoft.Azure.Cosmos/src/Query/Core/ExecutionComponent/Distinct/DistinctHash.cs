@@ -288,10 +288,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
             {
                 UInt128 hash = CosmosNumberHasher.GetHash(CosmosNumberHasher.Number64HashSeed, seed);
                 Number64 value = cosmosNumber64.GetValue();
-
-                // Number64.GetHashCode() will return the same value for 1 and 1.0
-                // so this function will return the same hash for 1 and 1.0 overall.
-                return CosmosNumberHasher.GetHash(value.GetHashCode(), hash);
+                return CosmosNumberHasher.GetHash(value.ToByteArray(), hash);
             }
 
             public UInt128 Visit(CosmosUInt32 cosmosUInt32, UInt128 seed)
