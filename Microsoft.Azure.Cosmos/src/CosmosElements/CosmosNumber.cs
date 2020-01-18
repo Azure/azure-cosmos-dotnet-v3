@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
     using System;
+    using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
 
 #if INTERNAL
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
@@ -29,6 +30,8 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         public abstract double? AsFloatingPoint();
 
         public abstract long? AsInteger();
+
+        public abstract void Accept(ICosmosNumberVisitor cosmosNumberVisitor);
 
         public override void Accept(ICosmosElementVisitor cosmosElementVisitor)
         {
