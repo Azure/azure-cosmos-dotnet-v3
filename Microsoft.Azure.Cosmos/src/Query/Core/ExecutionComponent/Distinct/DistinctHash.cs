@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
     using System.Collections.Generic;
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Query.Core;
 
     internal static class DistinctHash
@@ -43,8 +44,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
             private static readonly UInt128 FalseHashSeed = UInt128.Create(0xc1be517fe893b40c, 0xe9fc8a4c531cd0dd);
 
             private static readonly UInt128 TrueHashSeed = UInt128.Create(0xf86d4abf9a412e74, 0x788488365c8a985d);
-
-            private static readonly UInt128 NumberHashSeed = UInt128.Create(0x2400e8b894ce9c2a, 0x790be1eabd7b9481);
 
             private static readonly UInt128 StringHashSeed = UInt128.Create(0x61f53f0a44204cfb, 0x09481be8ef4b56dd);
 
@@ -118,20 +117,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
 
             public UInt128 Visit(CosmosNumber cosmosNumber, UInt128 seed)
             {
-                // TODO: hash differently based on the type.
-                UInt128 hash = CosmosElementHasher.GetHash(CosmosElementHasher.NumberHashSeed, seed);
-                double number;
-                if (cosmosNumber.IsFloatingPoint)
-                {
-                    number = cosmosNumber.AsFloatingPoint().Value;
-                }
-                else
-                {
-                    number = cosmosNumber.AsInteger().Value;
-                }
-
-                hash = CosmosElementHasher.GetHash((UInt128)BitConverter.DoubleToInt64Bits(number), hash);
-                return hash;
+                return cosmosNumber.Accept(CosmosNumberHasher.Singleton, seed);
             }
 
             public UInt128 Visit(CosmosObject cosmosObject, UInt128 seed)
@@ -203,6 +189,122 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
             private static UInt128 GetHash(UInt128 value, UInt128 seed)
             {
                 return CosmosElementHasher.GetHash(UInt128.ToByteArray(value), seed);
+            }
+
+            private static UInt128 GetHash(byte[] bytes, UInt128 seed)
+            {
+                // TODO: Have MurmurHash3 work on Span<T> instead.
+                Microsoft.Azure.Documents.UInt128 hash128 = Microsoft.Azure.Documents.Routing.MurmurHash3.Hash128(
+                    bytes,
+                    bytes.Length,
+                    Microsoft.Azure.Documents.UInt128.Create(seed.GetLow(), seed.GetHigh()));
+                return UInt128.Create(hash128.GetLow(), hash128.GetHigh());
+            }
+        }
+
+        private sealed class CosmosNumberHasher : ICosmosNumberVisitor<UInt128, UInt128>
+        {
+            public static readonly CosmosNumberHasher Singleton = new CosmosNumberHasher();
+
+            private static readonly UInt128 Number64HashSeed = UInt128.Create(0x2400e8b894ce9c2a, 0x790be1eabd7b9481);
+            private static readonly UInt128 Float32HashSeed = UInt128.Create(0x881c51c28fb61016, 0x1decd039cd24bd4b);
+            private static readonly UInt128 Float64HashSeed = UInt128.Create(0x62fb48cc659963a0, 0xe9e690779309c403);
+            private static readonly UInt128 Int8HashSeed = UInt128.Create(0x0007978411626daa, 0x89933677a85444b7);
+            private static readonly UInt128 Int16HashSeed = UInt128.Create(0xe7a19001d3211c09, 0x33e0ba9fb8bc7940);
+            private static readonly UInt128 Int32HashSeed = UInt128.Create(0x0320dc908e0d3e71, 0xf575de218f09ffa5);
+            private static readonly UInt128 Int64HashSeed = UInt128.Create(0xed93baf7fdc76638, 0x0d5733c37e079869);
+            private static readonly UInt128 UInt32HashSeed = UInt128.Create(0x78c441a2d2e9bb6e, 0xac88cb880ccda71d);
+
+            private CosmosNumberHasher()
+            {
+                // Private constructor, since this class is a singleton.
+            }
+
+            public UInt128 Visit(CosmosFloat32 cosmosFloat32, UInt128 seed)
+            {
+                UInt128 hash = CosmosNumberHasher.GetHash(CosmosNumberHasher.Float32HashSeed, seed);
+                float value = cosmosFloat32.GetValue();
+
+                // Normalize 0.0f and -0.0f value
+                // https://stackoverflow.com/questions/3139538/is-minus-zero-0-equivalent-to-zero-0-in-c-sharp
+                if (value == 0.0f)
+                {
+                    value = 0;
+                }
+
+                hash = CosmosNumberHasher.GetHash((UInt128)BitConverter.DoubleToInt64Bits(value), hash);
+                return hash;
+            }
+
+            public UInt128 Visit(CosmosFloat64 cosmosFloat64, UInt128 seed)
+            {
+                UInt128 hash = CosmosNumberHasher.GetHash(CosmosNumberHasher.Float64HashSeed, seed);
+                double value = cosmosFloat64.GetValue();
+
+                // Normalize 0.0 and -0.0 value
+                // https://stackoverflow.com/questions/3139538/is-minus-zero-0-equivalent-to-zero-0-in-c-sharp
+                if (value == 0.0)
+                {
+                    value = 0;
+                }
+
+                hash = CosmosNumberHasher.GetHash((UInt128)BitConverter.DoubleToInt64Bits(value), hash);
+                return hash;
+            }
+
+            public UInt128 Visit(CosmosInt16 cosmosInt16, UInt128 seed)
+            {
+                UInt128 hash = CosmosNumberHasher.GetHash(CosmosNumberHasher.Int16HashSeed, seed);
+                short value = cosmosInt16.GetValue();
+                hash = CosmosNumberHasher.GetHash(value, hash);
+                return hash;
+            }
+
+            public UInt128 Visit(CosmosInt32 cosmosInt32, UInt128 seed)
+            {
+                UInt128 hash = CosmosNumberHasher.GetHash(CosmosNumberHasher.Int32HashSeed, seed);
+                int value = cosmosInt32.GetValue();
+                hash = CosmosNumberHasher.GetHash(value, hash);
+                return hash;
+            }
+
+            public UInt128 Visit(CosmosInt64 cosmosInt64, UInt128 seed)
+            {
+                UInt128 hash = CosmosNumberHasher.GetHash(CosmosNumberHasher.Int64HashSeed, seed);
+                long value = cosmosInt64.GetValue();
+                hash = CosmosNumberHasher.GetHash(value, hash);
+                return hash;
+            }
+
+            public UInt128 Visit(CosmosInt8 cosmosInt8, UInt128 seed)
+            {
+                UInt128 hash = CosmosNumberHasher.GetHash(CosmosNumberHasher.Int8HashSeed, seed);
+                sbyte value = cosmosInt8.GetValue();
+                hash = CosmosNumberHasher.GetHash(value, hash);
+                return hash;
+            }
+
+            public UInt128 Visit(CosmosNumber64 cosmosNumber64, UInt128 seed)
+            {
+                UInt128 hash = CosmosNumberHasher.GetHash(CosmosNumberHasher.Number64HashSeed, seed);
+                Number64 value = cosmosNumber64.GetValue();
+
+                // Number64.GetHashCode() will return the same value for 1 and 1.0
+                // so this function will return the same hash for 1 and 1.0 overall.
+                return CosmosNumberHasher.GetHash(value.GetHashCode(), hash);
+            }
+
+            public UInt128 Visit(CosmosUInt32 cosmosUInt32, UInt128 seed)
+            {
+                UInt128 hash = CosmosNumberHasher.GetHash(CosmosNumberHasher.UInt32HashSeed, seed);
+                uint value = cosmosUInt32.GetValue();
+                hash = CosmosNumberHasher.GetHash(value, hash);
+                return hash;
+            }
+
+            private static UInt128 GetHash(UInt128 value, UInt128 seed)
+            {
+                return CosmosNumberHasher.GetHash(UInt128.ToByteArray(value), seed);
             }
 
             private static UInt128 GetHash(byte[] bytes, UInt128 seed)
