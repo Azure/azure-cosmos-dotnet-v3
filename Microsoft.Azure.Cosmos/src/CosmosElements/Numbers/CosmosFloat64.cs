@@ -57,6 +57,16 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
             cosmosNumberVisitor.Visit(this);
         }
 
+        public override TOutput Accept<TInput, TOutput>(ICosmosNumberVisitor<TInput, TOutput> cosmosNumberVisitor, TInput input)
+        {
+            if (cosmosNumberVisitor == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosNumberVisitor));
+            }
+
+            return cosmosNumberVisitor.Visit(this, input);
+        }
+
         public override void WriteTo(IJsonWriter jsonWriter)
         {
             if (jsonWriter == null)

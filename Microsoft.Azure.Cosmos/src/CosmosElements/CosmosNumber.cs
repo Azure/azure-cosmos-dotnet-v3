@@ -33,6 +33,8 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public abstract void Accept(ICosmosNumberVisitor cosmosNumberVisitor);
 
+        public abstract TOutput Accept<TInput, TOutput>(ICosmosNumberVisitor<TInput, TOutput> cosmosNumberVisitor, TInput input);
+
         public override void Accept(ICosmosElementVisitor cosmosElementVisitor)
         {
             if (cosmosElementVisitor == null)
