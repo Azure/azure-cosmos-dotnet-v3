@@ -4,7 +4,14 @@
 
 namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 {
-    internal interface ICosmosNumberVisitor<TInput, TOutput>
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+    public
+#else
+    internal
+#endif
+    interface ICosmosNumberVisitor<TInput, TOutput>
     {
         TOutput Visit(CosmosFloat32 cosmosFloat32, TInput input);
         TOutput Visit(CosmosFloat64 cosmosFloat64, TInput input);

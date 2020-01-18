@@ -4,7 +4,14 @@
 
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
-    internal interface ICosmosElementVisitor<TResult>
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+    public
+#else
+    internal
+#endif
+    interface ICosmosElementVisitor<TResult>
     {
         TResult Visit(CosmosArray cosmosArray);
         TResult Visit(CosmosBinary cosmosBinary);
