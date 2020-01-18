@@ -296,6 +296,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
             {
             }
 
+            public override void Accept(ICosmosElementVisitor cosmosElementVisitor)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override TResult Accept<TResult>(ICosmosElementVisitor<TResult> cosmosElementVisitor)
+            {
+                throw new NotImplementedException();
+            }
+
             public override void WriteTo(IJsonWriter jsonWriter)
             {
                 throw new NotImplementedException();
@@ -312,6 +322,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
             private MaxValueItem()
                 : base(default)
             {
+            }
+
+            public override void Accept(ICosmosElementVisitor cosmosElementVisitor)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override TResult Accept<TResult>(ICosmosElementVisitor<TResult> cosmosElementVisitor)
+            {
+                throw new NotImplementedException();
             }
 
             public override void WriteTo(IJsonWriter jsonWriter)

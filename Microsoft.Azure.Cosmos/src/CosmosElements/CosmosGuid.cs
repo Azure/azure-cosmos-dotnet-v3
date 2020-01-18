@@ -33,6 +33,16 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             cosmosElementVisitor.Visit(this);
         }
 
+        public override TResult Accept<TResult>(ICosmosElementVisitor<TResult> cosmosElementVisitor)
+        {
+            if (cosmosElementVisitor == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosElementVisitor));
+            }
+
+            return cosmosElementVisitor.Visit(this);
+        }
+
         public static CosmosGuid Create(
             IJsonNavigator jsonNavigator,
             IJsonNavigatorNode jsonNavigatorNode)

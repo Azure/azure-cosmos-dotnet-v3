@@ -36,6 +36,16 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             cosmosElementVisitor.Visit(this);
         }
 
+        public override TResult Accept<TResult>(ICosmosElementVisitor<TResult> cosmosElementVisitor)
+        {
+            if (cosmosElementVisitor == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosElementVisitor));
+            }
+
+            return cosmosElementVisitor.Visit(this);
+        }
+
         public static CosmosBoolean Create(bool boolean)
         {
             return boolean ? CosmosBoolean.True : CosmosBoolean.False;

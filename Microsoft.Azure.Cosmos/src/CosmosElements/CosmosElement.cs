@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 {
     using System;
     using System.Text;
+    using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Json;
 
     [Newtonsoft.Json.JsonConverter(typeof(CosmosElementJsonConverter))]
@@ -38,6 +39,8 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         public abstract void WriteTo(IJsonWriter jsonWriter);
 
         public abstract void Accept(ICosmosElementVisitor cosmosElementVisitor);
+
+        public abstract TResult Accept<TResult>(ICosmosElementVisitor<TResult> cosmosElementVisitor);
 
         public static CosmosElement CreateFromBuffer(ReadOnlyMemory<byte> buffer)
         {
