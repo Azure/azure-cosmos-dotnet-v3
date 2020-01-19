@@ -20,51 +20,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         {
         }
 
-        public override bool IsFloatingPoint
-        {
-            get
-            {
-                return this.GetValue().IsDouble;
-            }
-        }
-
-        public override bool IsInteger
-        {
-            get
-            {
-                return this.GetValue().IsInteger;
-            }
-        }
-
-        public override double? AsFloatingPoint()
-        {
-            double? value;
-            if (this.IsFloatingPoint)
-            {
-                value = Number64.ToDouble(this.GetValue());
-            }
-            else
-            {
-                value = null;
-            }
-
-            return value;
-        }
-
-        public override long? AsInteger()
-        {
-            long? value;
-            if (this.IsInteger)
-            {
-                value = Number64.ToLong(this.GetValue());
-            }
-            else
-            {
-                value = null;
-            }
-
-            return value;
-        }
+        public override Number64 Value => this.GetValue();
 
         public static CosmosNumber64 Create(
             IJsonNavigator jsonNavigator,

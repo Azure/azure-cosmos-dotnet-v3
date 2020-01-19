@@ -125,16 +125,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                 case CosmosElementType.Number:
                     // TODO: we need to differentiate between the different number types.
                     CosmosNumber cosmosNumber = cosmosElement as CosmosNumber;
-                    double number;
-                    if (cosmosNumber.IsFloatingPoint)
-                    {
-                        number = cosmosNumber.AsFloatingPoint().Value;
-                    }
-                    else
-                    {
-                        number = cosmosNumber.AsInteger().Value;
-                    }
-
+                    double number = Number64.ToDouble(cosmosNumber.Value);
                     hash = DistinctHash.GetNumberHash(number, seed);
                     break;
 

@@ -21,19 +21,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public CosmosNumberType NumberType { get; }
 
-        public abstract bool IsInteger
-        {
-            get;
-        }
-
-        public abstract bool IsFloatingPoint
-        {
-            get;
-        }
-
-        public abstract double? AsFloatingPoint();
-
-        public abstract long? AsInteger();
+        public abstract Number64 Value { get; }
     }
 #if INTERNAL
 #pragma warning restore SA1600 // Elements should be documented
