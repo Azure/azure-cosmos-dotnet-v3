@@ -120,7 +120,7 @@ namespace Microsoft.Azure.Cosmos
             return true;
         }
 
-        public virtual async Task DispatchAsync(BatchPartitionMetric partitionMetric, CancellationToken cancellationToken = default(CancellationToken))
+        public virtual async Task DispatchAsync(BatchPartitionMetric partitionMetric = default, CancellationToken cancellationToken = default(CancellationToken))
         {
             this.interlockIncrementCheck.EnterLockCheck();
 
@@ -155,12 +155,14 @@ namespace Microsoft.Azure.Cosmos
                 try
                 {
                     Stopwatch stopwatch = Stopwatch.StartNew();
-                    long startMilliseconds = stopwatch.ElapsedMilliseconds;
+
                     PartitionKeyRangeBatchExecutionResult result = await this.executor(serverRequest, cancellationToken);
 
                     int numThrottle = result.ServerResponse.Any(r => r.StatusCode == (System.Net.HttpStatusCode)StatusCodes.TooManyRequests) ? 1 : 0;
-                    long milliSecondsElapsed = stopwatch.ElapsedMilliseconds - startMilliseconds;
-                    partitionMetric.add(numberOfDocumentsOperatedOn: result.ServerResponse.Count, timeTaken: milliSecondsElapsed, numberOfThrottles: numThrottle);
+                    partitionMetric.Add(
+                        numberOfDocumentsOperatedOn: result.ServerResponse.Count,
+                        timeTakenInMilliseconds: stopwatch.ElapsedMilliseconds,
+                        numberOfThrottles: numThrottle);
 
                     using (PartitionKeyRangeBatchResponse batchResponse = new PartitionKeyRangeBatchResponse(serverRequest.Operations.Count, result.ServerResponse, this.serializerCore))
                     {

@@ -33,6 +33,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly int congestionIncreaseFactor = 1;
         private readonly int congestionControllerDelayInSeconds = 1;
         private readonly int congestionDecreaseFactor = 5;
+        private readonly int maxDegreeOfConcurrency;
 
         private volatile BatchAsyncBatcher currentBatcher;
         private TimerPool timerPool;
@@ -42,9 +43,9 @@ namespace Microsoft.Azure.Cosmos
         private PooledTimer congestionControlTimer;
         private Task congestionControlTask;
         private SemaphoreSlim limiter;
-        private int degreeOfConcurrency = 1;
-        private int maxDegreeOfConcurrency = 50;
-        private long waitTime = 1000;
+
+        private int congestionDegreeOfConcurrency = 1;
+        private long congestionWaitTime = 1000;
         private BatchPartitionMetric oldPartitionMetric;
         private BatchPartitionMetric partitionMetric;
 
@@ -107,7 +108,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (enableCongestionControl)
             {
-                this.CongestionControlTimer();
+                this.StartCongestionControlTimer();
             }
         }
 
@@ -156,7 +157,7 @@ namespace Microsoft.Azure.Cosmos
             }, this.cancellationTokenSource.Token);
         }
 
-        private void CongestionControlTimer()
+        private void StartCongestionControlTimer()
         {
             this.congestionControlTimer = this.timerPool.GetPooledTimer(this.congestionControllerDelayInSeconds);
             this.congestionControlTask = this.congestionControlTimer.StartTimerAsync().ContinueWith(async (task) =>
@@ -208,18 +209,18 @@ namespace Microsoft.Azure.Cosmos
         {
             while (!this.cancellationTokenSource.Token.IsCancellationRequested)
             {
-                long elapsedTime = this.partitionMetric.TimeTaken - this.oldPartitionMetric.TimeTaken;
+                long elapsedTimeInMilliseconds = this.partitionMetric.TimeTakenInMilliseconds - this.oldPartitionMetric.TimeTakenInMilliseconds;
 
-                if (elapsedTime >= this.waitTime)
+                if (elapsedTimeInMilliseconds >= this.congestionWaitTime)
                 {
                     long diffThrottle = this.partitionMetric.NumberOfThrottles - this.oldPartitionMetric.NumberOfThrottles;
                     long changeDocCount = this.partitionMetric.NumberOfDocumentsOperatedOn - this.oldPartitionMetric.NumberOfDocumentsOperatedOn;
-                    this.oldPartitionMetric.add(changeDocCount, elapsedTime, diffThrottle);
+                    this.oldPartitionMetric.Add(changeDocCount, elapsedTimeInMilliseconds, diffThrottle);
 
                     if (diffThrottle > 0)
                     {
                         // Decrease should not lead to degreeOfConcurrency 0 as this will just block the thread here and no one would release it.
-                        int decreaseCount = Math.Min(this.congestionDecreaseFactor, this.degreeOfConcurrency / 2);
+                        int decreaseCount = Math.Min(this.congestionDecreaseFactor, this.congestionDegreeOfConcurrency / 2);
 
                         // We got a throttle so we need to back off on the degree of concurrency.
                         for (int i = 0; i < decreaseCount; i++)
@@ -227,19 +228,19 @@ namespace Microsoft.Azure.Cosmos
                             await this.limiter.WaitAsync(this.cancellationTokenSource.Token);
                         }
 
-                        this.degreeOfConcurrency -= decreaseCount;
+                        this.congestionDegreeOfConcurrency -= decreaseCount;
 
                         // In case of throttling increase the wait time, so as to converge max degreeOfConcurrency
-                        this.waitTime += 1000;
+                        this.congestionWaitTime += 1000;
                     }
 
                     if (changeDocCount > 0 && diffThrottle == 0)
                     {
-                        if (this.degreeOfConcurrency + this.congestionIncreaseFactor <= this.maxDegreeOfConcurrency)
+                        if (this.congestionDegreeOfConcurrency + this.congestionIncreaseFactor <= this.maxDegreeOfConcurrency)
                         {
                             // We aren't getting throttles, so we should bump up the degree of concurrency.
                             this.limiter.Release(this.congestionIncreaseFactor);
-                            this.degreeOfConcurrency += this.congestionIncreaseFactor;
+                            this.congestionDegreeOfConcurrency += this.congestionIncreaseFactor;
                         }
                     }
                 }
@@ -249,7 +250,7 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            this.CongestionControlTimer();
+            this.StartCongestionControlTimer();
         }
     }
 }

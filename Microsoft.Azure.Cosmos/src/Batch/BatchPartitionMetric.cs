@@ -17,9 +17,9 @@ namespace Microsoft.Azure.Cosmos
         /// Initializes a new instance of the OperationMetrics class (instance constructor).
         /// </summary>
         /// <param name="numberOfDocumentsOperatedOn">Number of documents operated on.</param>
-        /// <param name="timeTaken">Amount of time taken to insert the documents.</param>
+        /// <param name="timeTakenInMilliseconds">Amount of time taken to insert the documents.</param>
         /// <param name="numberOfThrottles">The number of throttles encountered to insert the documents.</param>
-        public BatchPartitionMetric(long numberOfDocumentsOperatedOn, long timeTaken, long numberOfThrottles)
+        public BatchPartitionMetric(long numberOfDocumentsOperatedOn, long timeTakenInMilliseconds, long numberOfThrottles)
         {
             if (numberOfDocumentsOperatedOn < 0)
             {
@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.NumberOfDocumentsOperatedOn = numberOfDocumentsOperatedOn;
-            this.TimeTaken = timeTaken;
+            this.TimeTakenInMilliseconds = timeTakenInMilliseconds;
             this.NumberOfThrottles = numberOfThrottles;
         }
 
@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the time taken to operate on the documents.
         /// </summary>
-        public long TimeTaken
+        public long TimeTakenInMilliseconds
         {
             get; private set;
         }
@@ -60,10 +60,10 @@ namespace Microsoft.Azure.Cosmos
             get; private set;
         }
 
-        public void add(long numberOfDocumentsOperatedOn, long timeTaken, long numberOfThrottles)
+        public void Add(long numberOfDocumentsOperatedOn, long timeTakenInMilliseconds, long numberOfThrottles)
         {
             this.NumberOfDocumentsOperatedOn += numberOfDocumentsOperatedOn;
-            this.TimeTaken += timeTaken;
+            this.TimeTakenInMilliseconds += timeTakenInMilliseconds;
             this.NumberOfThrottles += numberOfThrottles;
         }
     }
