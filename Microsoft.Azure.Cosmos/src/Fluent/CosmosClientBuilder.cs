@@ -383,7 +383,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Allows Parallelization of requests in bulk execution mode. This can lead to some level of throttling to maintain the highest degree of parallelism.
+        /// Allows Parallelization of requests in bulk execution mode. This can lead to some level of rate limiting to maintain the highest degree of parallelism.
         /// Useful in collections with RU >= 300K for consuming full RU.
         /// </summary>
         /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>

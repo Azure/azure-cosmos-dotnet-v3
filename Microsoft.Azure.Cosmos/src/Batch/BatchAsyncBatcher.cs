@@ -6,9 +6,12 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Maintains a batch of operations and dispatches it as a unit of work.
@@ -117,7 +120,7 @@ namespace Microsoft.Azure.Cosmos
             return true;
         }
 
-        public virtual async Task DispatchAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public virtual async Task DispatchAsync(BatchPartitionMetric partitionMetric, CancellationToken cancellationToken = default(CancellationToken))
         {
             this.interlockIncrementCheck.EnterLockCheck();
 
@@ -151,7 +154,14 @@ namespace Microsoft.Azure.Cosmos
 
                 try
                 {
+                    Stopwatch stopwatch = Stopwatch.StartNew();
+                    long startMilliseconds = stopwatch.ElapsedMilliseconds;
                     PartitionKeyRangeBatchExecutionResult result = await this.executor(serverRequest, cancellationToken);
+
+                    int numThrottle = result.ServerResponse.Any(r => r.StatusCode == (System.Net.HttpStatusCode)StatusCodes.TooManyRequests) ? 1 : 0;
+                    long milliSecondsElapsed = stopwatch.ElapsedMilliseconds - startMilliseconds;
+                    partitionMetric.add(numberOfDocumentsOperatedOn: result.ServerResponse.Count, timeTaken: milliSecondsElapsed, numberOfThrottles: numThrottle);
+
                     using (PartitionKeyRangeBatchResponse batchResponse = new PartitionKeyRangeBatchResponse(serverRequest.Operations.Count, result.ServerResponse, this.serializerCore))
                     {
                         foreach (ItemBatchOperation itemBatchOperation in batchResponse.Operations)

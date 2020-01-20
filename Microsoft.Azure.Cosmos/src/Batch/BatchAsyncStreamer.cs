@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -28,16 +29,33 @@ namespace Microsoft.Azure.Cosmos
         private readonly int dispatchTimerInSeconds;
         private readonly CosmosSerializerCore serializerCore;
         private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+
+        private readonly int congestionIncreaseFactor = 1;
+        private readonly int congestionControllerDelayInSeconds = 1;
+        private readonly int congestionDecreaseFactor = 5;
+
         private volatile BatchAsyncBatcher currentBatcher;
         private TimerPool timerPool;
         private PooledTimer currentTimer;
         private Task timerTask;
+
+        private PooledTimer congestionControlTimer;
+        private Task congestionControlTask;
+        private SemaphoreSlim limiter;
+        private int degreeOfConcurrency = 1;
+        private int maxDegreeOfConcurrency = 50;
+        private long waitTime = 1000;
+        private BatchPartitionMetric oldPartitionMetric;
+        private BatchPartitionMetric partitionMetric;
 
         public BatchAsyncStreamer(
             int maxBatchOperationCount,
             int maxBatchByteSize,
             int dispatchTimerInSeconds,
             TimerPool timerPool,
+            SemaphoreSlim limiter,
+            bool enableCongestionControl,
+            int maxDegreeOfConcurrency,
             CosmosSerializerCore serializerCore,
             BatchAsyncBatcherExecuteDelegate executor,
             BatchAsyncBatcherRetryDelegate retrier)
@@ -80,8 +98,17 @@ namespace Microsoft.Azure.Cosmos
             this.timerPool = timerPool;
             this.serializerCore = serializerCore;
             this.currentBatcher = this.CreateBatchAsyncBatcher();
-
             this.ResetTimer();
+
+            this.limiter = limiter;
+            this.oldPartitionMetric = new BatchPartitionMetric();
+            this.partitionMetric = new BatchPartitionMetric();
+            this.maxDegreeOfConcurrency = maxDegreeOfConcurrency;
+
+            if (enableCongestionControl)
+            {
+                this.CongestionControlTimer();
+            }
         }
 
         public void Add(ItemBatchOperation operation)
@@ -99,7 +126,7 @@ namespace Microsoft.Azure.Cosmos
             if (toDispatch != null)
             {
                 // Discarded for Fire & Forget
-                _ = toDispatch.DispatchAsync(this.cancellationTokenSource.Token);
+                _ = toDispatch.DispatchAsync(this.partitionMetric, this.cancellationTokenSource.Token);
             }
         }
 
@@ -107,9 +134,17 @@ namespace Microsoft.Azure.Cosmos
         {
             this.cancellationTokenSource.Cancel();
             this.cancellationTokenSource.Dispose();
+
             this.currentTimer.CancelTimer();
             this.currentTimer = null;
             this.timerTask = null;
+
+            if (this.congestionControlTimer != null)
+            {
+                this.congestionControlTimer.CancelTimer();
+                this.congestionControlTimer = null;
+                this.congestionControlTask = null;
+            }
         }
 
         private void ResetTimer()
@@ -118,6 +153,15 @@ namespace Microsoft.Azure.Cosmos
             this.timerTask = this.currentTimer.StartTimerAsync().ContinueWith((task) =>
             {
                 this.DispatchTimer();
+            }, this.cancellationTokenSource.Token);
+        }
+
+        private void CongestionControlTimer()
+        {
+            this.congestionControlTimer = this.timerPool.GetPooledTimer(this.congestionControllerDelayInSeconds);
+            this.congestionControlTask = this.congestionControlTimer.StartTimerAsync().ContinueWith(async (task) =>
+            {
+                await this.RunCongestionControlAsync();
             }, this.cancellationTokenSource.Token);
         }
 
@@ -137,7 +181,7 @@ namespace Microsoft.Azure.Cosmos
             if (toDispatch != null)
             {
                 // Discarded for Fire & Forget
-                _ = toDispatch.DispatchAsync(this.cancellationTokenSource.Token);
+                _ = toDispatch.DispatchAsync(this.partitionMetric, this.cancellationTokenSource.Token);
             }
 
             this.ResetTimer();
@@ -158,6 +202,54 @@ namespace Microsoft.Azure.Cosmos
         private BatchAsyncBatcher CreateBatchAsyncBatcher()
         {
             return new BatchAsyncBatcher(this.maxBatchOperationCount, this.maxBatchByteSize, this.serializerCore, this.executor, this.retrier);
+        }
+
+        private async Task RunCongestionControlAsync()
+        {
+            while (!this.cancellationTokenSource.Token.IsCancellationRequested)
+            {
+                long elapsedTime = this.partitionMetric.TimeTaken - this.oldPartitionMetric.TimeTaken;
+
+                if (elapsedTime >= this.waitTime)
+                {
+                    long diffThrottle = this.partitionMetric.NumberOfThrottles - this.oldPartitionMetric.NumberOfThrottles;
+                    long changeDocCount = this.partitionMetric.NumberOfDocumentsOperatedOn - this.oldPartitionMetric.NumberOfDocumentsOperatedOn;
+                    this.oldPartitionMetric.add(changeDocCount, elapsedTime, diffThrottle);
+
+                    if (diffThrottle > 0)
+                    {
+                        // Decrease should not lead to degreeOfConcurrency 0 as this will just block the thread here and no one would release it.
+                        int decreaseCount = Math.Min(this.congestionDecreaseFactor, this.degreeOfConcurrency / 2);
+
+                        // We got a throttle so we need to back off on the degree of concurrency.
+                        for (int i = 0; i < decreaseCount; i++)
+                        {
+                            await this.limiter.WaitAsync(this.cancellationTokenSource.Token);
+                        }
+
+                        this.degreeOfConcurrency -= decreaseCount;
+
+                        // In case of throttling increase the wait time, so as to converge max degreeOfConcurrency
+                        this.waitTime += 1000;
+                    }
+
+                    if (changeDocCount > 0 && diffThrottle == 0)
+                    {
+                        if (this.degreeOfConcurrency + this.congestionIncreaseFactor <= this.maxDegreeOfConcurrency)
+                        {
+                            // We aren't getting throttles, so we should bump up the degree of concurrency.
+                            this.limiter.Release(this.congestionIncreaseFactor);
+                            this.degreeOfConcurrency += this.congestionIncreaseFactor;
+                        }
+                    }
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            this.CongestionControlTimer();
         }
     }
 }
