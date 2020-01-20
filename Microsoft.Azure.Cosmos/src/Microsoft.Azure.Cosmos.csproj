@@ -102,7 +102,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\C2\Product\SDK\.net\Microsoft.Azure.Cosmos.Direct\src\Microsoft.Azure.Cosmos.Direct.csproj" />
+    <Reference Include="Microsoft.Azure.Cosmos.Direct, Version=3.3.2.0, Culture=neutral, PublicKeyToken=69c3241e6f0468ca">
+      <HintPath>..\..\..\..\share\ae_for_aip\Microsoft.Azure.Cosmos.Direct\Microsoft.Azure.Cosmos.Direct.dll</HintPath>
+      <SpecificVersion>true</SpecificVersion>
+    </Reference>
   </ItemGroup>
 
   <PropertyGroup Condition=" '$(ProjectRef)' != 'True' ">

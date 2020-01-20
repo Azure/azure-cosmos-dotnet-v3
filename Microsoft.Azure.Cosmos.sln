@@ -11,8 +11,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.Cosmos.Emul
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.Cosmos.Performance.Tests", "Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Performance.Tests\Microsoft.Azure.Cosmos.Performance.Tests.csproj", "{0392A590-68EF-4283-94D8-33F350BEC9BF}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.Cosmos.Direct", "..\C2\Product\SDK\.net\Microsoft.Azure.Cosmos.Direct\src\Microsoft.Azure.Cosmos.Direct.csproj", "{8758A6A7-0880-4705-B1D7-037C2B3A9E99}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Cover|Any CPU = Cover|Any CPU
@@ -95,24 +93,6 @@ Global
 		{0392A590-68EF-4283-94D8-33F350BEC9BF}.Release|x64.ActiveCfg = Release|Any CPU
 		{0392A590-68EF-4283-94D8-33F350BEC9BF}.Release|x64.Build.0 = Release|Any CPU
 		{0392A590-68EF-4283-94D8-33F350BEC9BF}.Release|x86.ActiveCfg = Release|Any CPU
-		{8758A6A7-0880-4705-B1D7-037C2B3A9E99}.Cover|Any CPU.ActiveCfg = Debug|Any CPU
-		{8758A6A7-0880-4705-B1D7-037C2B3A9E99}.Cover|Any CPU.Build.0 = Debug|Any CPU
-		{8758A6A7-0880-4705-B1D7-037C2B3A9E99}.Cover|x64.ActiveCfg = Release|x64
-		{8758A6A7-0880-4705-B1D7-037C2B3A9E99}.Cover|x64.Build.0 = Release|x64
-		{8758A6A7-0880-4705-B1D7-037C2B3A9E99}.Cover|x86.ActiveCfg = Release|x86
-		{8758A6A7-0880-4705-B1D7-037C2B3A9E99}.Cover|x86.Build.0 = Release|x86
-		{8758A6A7-0880-4705-B1D7-037C2B3A9E99}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{8758A6A7-0880-4705-B1D7-037C2B3A9E99}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{8758A6A7-0880-4705-B1D7-037C2B3A9E99}.Debug|x64.ActiveCfg = Debug|x64
-		{8758A6A7-0880-4705-B1D7-037C2B3A9E99}.Debug|x64.Build.0 = Debug|x64
-		{8758A6A7-0880-4705-B1D7-037C2B3A9E99}.Debug|x86.ActiveCfg = Debug|x86
-		{8758A6A7-0880-4705-B1D7-037C2B3A9E99}.Debug|x86.Build.0 = Debug|x86
-		{8758A6A7-0880-4705-B1D7-037C2B3A9E99}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{8758A6A7-0880-4705-B1D7-037C2B3A9E99}.Release|Any CPU.Build.0 = Release|Any CPU
-		{8758A6A7-0880-4705-B1D7-037C2B3A9E99}.Release|x64.ActiveCfg = Release|x64
-		{8758A6A7-0880-4705-B1D7-037C2B3A9E99}.Release|x64.Build.0 = Release|x64
-		{8758A6A7-0880-4705-B1D7-037C2B3A9E99}.Release|x86.ActiveCfg = Release|x86
-		{8758A6A7-0880-4705-B1D7-037C2B3A9E99}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
