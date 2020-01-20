@@ -54,15 +54,6 @@ namespace Microsoft.Azure.Cosmos
                 this.dataEncryptionKey.RewrapAsync(newWrapMetadata, requestOptions, cancellationToken));
         }
 
-        /// <inheritdoc/>
-        public override Task<DataEncryptionKeyResponse> DeleteAsync(
-            RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
-        {
-            return TaskHelper.RunInlineIfNeededAsync(() =>
-                this.dataEncryptionKey.DeleteAsync(requestOptions, cancellationToken));
-        }
-
         public static implicit operator DataEncryptionKeyCore(DataEncryptionKeyInlineCore dekInlineCore) => dekInlineCore.dataEncryptionKey;
     }
 }

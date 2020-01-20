@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 isExpectedDeksCompleteSetForRequest: true,
                 isResultOrderExpected: false);
 
-            //// Test getting specific subset of keys
+            // Test getting specific subset of keys
             await this.IterateDekFeedAsync(
                 new List<string> { contosoV2 },
                 isExpectedDeksCompleteSetForRequest: false,
@@ -112,11 +112,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // Ensure only required results are returned (ascending)
             await this.IterateDekFeedAsync(
-                new List<string> { contosoV1 },
+                  new List<string> { contosoV1, contosoV2 },
+                  isExpectedDeksCompleteSetForRequest: true,
+                  isResultOrderExpected: true,
+                  startId: "Contoso_v000",
+                  endId: "Contoso_v999",
+                  isDescending: false);
+
+            // Test startId inclusive and endId inclusive (ascending)
+            await this.IterateDekFeedAsync(
+                new List<string> { contosoV1, contosoV2 },
                 isExpectedDeksCompleteSetForRequest: true,
                 isResultOrderExpected: true,
-                startId: "Contoso_v000",
-                endId: "Contoso_v001",
+                startId: "Contoso_v001",
+                endId: "Contoso_v002",
                 isDescending: false);
 
             // Ensure only required results are returned (descending)
@@ -128,14 +137,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 endId: "Contoso_v999",
                 isDescending: true);
 
+            // Test startId inclusive and endId inclusive (descending)
+            await this.IterateDekFeedAsync(
+                new List<string> { contosoV2, contosoV1 },
+                isExpectedDeksCompleteSetForRequest: true,
+                isResultOrderExpected: true,
+                startId: "Contoso_v001",
+                endId: "Contoso_v002",
+                isDescending: true);
+
             // Test pagination
             await this.IterateDekFeedAsync(
                 new List<string> { contosoV1, contosoV2, fabrikamV1, fabrikamV2 },
                 isExpectedDeksCompleteSetForRequest: true,
                 isResultOrderExpected: false,
                 itemCountInPage: 3);
-
-            // todo: test whether boundaries are inclusive/exclusive.
         }
 
         private async Task IterateDekFeedAsync(
@@ -168,7 +184,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 FeedResponse<DataEncryptionKeyProperties> page = await dekIterator.ReadNextAsync();
                 if (itemCountInPage.HasValue)
                 {
-                    Assert.AreEqual(itemCountInPage.Value, page.Count);
+                    // last page
+                    if (remainingItemCount < itemCountInPage.Value)
+                    {
+                        Assert.AreEqual(remainingItemCount, page.Count);
+                    }
+                    else
+                    {
+                        Assert.AreEqual(itemCountInPage.Value, page.Count);
+                    }
                 }
                 else
                 {

@@ -97,22 +97,6 @@ namespace Microsoft.Azure.Cosmos
             return response;
         }
 
-        /// <inheritdoc/>
-        public override async Task<DataEncryptionKeyResponse> DeleteAsync(
-            RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
-        {
-            Task<ResponseMessage> responseMessage = this.ProcessStreamAsync(
-                streamPayload: null,
-                operationType: OperationType.Delete,
-                requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
-
-            DataEncryptionKeyResponse response = await this.ClientContext.ResponseFactory.CreateDataEncryptionKeyResponseAsync(this, responseMessage);
-            await this.ClientContext.DekCache.RemoveAsync(this.LinkUri);
-            return response;
-        }
-
         internal static Uri CreateLinkUri(CosmosClientContext clientContext, DatabaseCore database, string keyId)
         {
             return clientContext.CreateLink(

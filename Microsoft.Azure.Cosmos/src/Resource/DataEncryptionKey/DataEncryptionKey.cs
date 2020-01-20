@@ -113,41 +113,5 @@ namespace Microsoft.Azure.Cosmos
             EncryptionKeyWrapMetadata newWrapMetadata,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
-
-        /// <summary>
-        /// Deletes a data encryption key from the Azure Cosmos DB service as an asynchronous operation.
-        /// Note: If a data encryption key is deleted, then any data encrypted using the key will no longer be decryptable.
-        /// </summary>
-        /// <param name="requestOptions">(Optional) The options for the user request.</param>
-        /// <param name="cancellationToken">(Optional) Token representing request cancellation.</param>
-        /// <returns>An awaitable response which will contain information about the status of the issued request.</returns>
-        /// <exception cref="CosmosException">
-        /// This exception can encapsulate many different types of errors.
-        /// To determine the specific error always look at the StatusCode property.
-        /// Some common codes you may get when deleting a data encryption key are:
-        /// <list type="table">
-        ///     <listheader>
-        ///         <term>StatusCode</term>
-        ///         <description>Reason for exception</description>
-        ///     </listheader>
-        ///     <item>
-        ///         <term>404</term>
-        ///         <description>
-        ///         NotFound - This means the resource or parent resource you tried to delete did not exist.
-        ///         </description>
-        ///     </item>
-        /// </list>
-        /// </exception>
-        /// <example>
-        /// <code language="c#">
-        /// <![CDATA[
-        /// DataEncryptionKey key = this.database.GetDataEncryptionKey("keyId");
-        /// await key.DeleteAsync();
-        /// ]]>
-        /// </code>
-        /// </example>
-        public abstract Task<DataEncryptionKeyResponse> DeleteAsync(
-            RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
     }
 }
