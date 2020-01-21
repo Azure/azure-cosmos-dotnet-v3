@@ -103,12 +103,12 @@ namespace Microsoft.Azure.Cosmos.Tests
             this.TestProperty<AccountProperties>(
                 serializerCore,
                 id,
-                $@"{{""id"":""{id}"",""_etag"":null,""_rid"":null,""writableLocations"":[],""readableLocations"":[],""userConsistencyPolicy"":null,""addresses"":null,""userReplicationPolicy"":null,""systemReplicationPolicy"":null,""readPolicy"":null,""queryEngineConfiguration"":null,""enableMultipleWriteLocations"":false}}");
+                $@"{{""id"":""{id}"",""writableLocations"":[],""readableLocations"":[],""userConsistencyPolicy"":null,""addresses"":null,""userReplicationPolicy"":null,""systemReplicationPolicy"":null,""readPolicy"":null,""queryEngineConfiguration"":null,""enableMultipleWriteLocations"":false}}");
 
             this.TestProperty<DatabaseProperties>(
                 serializerCore,
                 id,
-                $@"{{""id"":""{id}"",""_etag"":null,""_ts"":1576767176,""_rid"":null}}");
+                $@"{{""id"":""{id}""}}");
 
             this.TestProperty<ContainerProperties>(
                 serializerCore,
@@ -118,22 +118,22 @@ namespace Microsoft.Azure.Cosmos.Tests
             this.TestProperty<StoredProcedureProperties>(
                 serializerCore,
                 id,
-                $@"{{""body"":""bodyCantBeNull"",""id"":""{id}"",""_etag"":null,""_ts"":1576767176,""_rid"":null}}");
+                $@"{{""body"":""bodyCantBeNull"",""id"":""{id}""}}");
 
             this.TestProperty<TriggerProperties>(
                 serializerCore,
                 id,
-                $@"{{""body"":null,""triggerType"":""Pre"",""triggerOperation"":""All"",""id"":""{id}"",""_etag"":null}}");
+                $@"{{""body"":null,""triggerType"":""Pre"",""triggerOperation"":""All"",""id"":""{id}""}}");
 
             this.TestProperty<UserDefinedFunctionProperties>(
                 serializerCore,
                 id,
-                $@"{{""body"":null,""id"":""{id}"",""_etag"":null}}");
+                $@"{{""body"":null,""id"":""{id}""}}");
 
             this.TestProperty<UserProperties>(
                 serializerCore,
                 id,
-                $@"{{""id"":""{id}"",""_etag"":null,""_ts"":1576767176,""_rid"":null,""_permissions"":null}}");
+                $@"{{""id"":""{id}"",""_permissions"":null}}");
 
             this.TestProperty<PermissionProperties>(
                 serializerCore,
@@ -146,7 +146,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 $@"{{""id"":""{id}"",""operationType"":""Invalid"",""resourceType"":null,""resourceId"":null,""content"":null,""conflict_lsn"":0}}");
 
             // Throughput doesn't have an id.
-            string defaultThroughputJson = @"{""_etag"":null,""_ts"":1576767176,""Throughput"":null,""_rid"":null,""offerResourceId"":null}";
+            string defaultThroughputJson = @"{""Throughput"":null}";
             ThroughputProperties property = JsonConvert.DeserializeObject<ThroughputProperties>(defaultThroughputJson);
             Assert.IsNull(property.Throughput);
             string propertyJson = JsonConvert.SerializeObject(property);
