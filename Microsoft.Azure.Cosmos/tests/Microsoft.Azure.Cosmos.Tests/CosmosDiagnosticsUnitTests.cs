@@ -28,18 +28,30 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             // Test all the different operations on diagnostics context
             cosmosDiagnostics.Summary.AddSdkRetry(TimeSpan.FromSeconds(42));
-            using (cosmosDiagnostics.CreateScope("ValidateScope"))
+            using (cosmosDiagnostics.CreateOverallScope("OverallScope"))
             {
-                Thread.Sleep(TimeSpan.FromSeconds(2));
+                Thread.Sleep(TimeSpan.FromSeconds(1));
+                using (cosmosDiagnostics.CreateScope("ValidateScope"))
+                {
+                    Thread.Sleep(TimeSpan.FromSeconds(1));
+                }
             }
 
             cosmosDiagnostics.Summary.SetSdkUserAgent("MyCustomUserAgentString");
 
             string result = cosmosDiagnostics.ToString();
-           
-            string regex = @"\{""Summary"":\{""StartUtc"":"".+Z"",""ElapsedTime"":""00:00:.+"",""UserAgent"":""MyCustomUserAgentString"",""RetryCount"":1,""RetryBackOffTime"":""00:00:42""\},""Context"":\[\{""Id"":""ValidateScope"",""ElapsedTime"":""00:00:.+""\}\]\}";
+
+            string regex = @"\{""Summary"":\{""StartUtc"":"".+Z"",""ElapsedTime"":""00:00:.+"",""UserAgent"":""MyCustomUserAgentString"",""RetryCount"":1,""RetryBackOffTime"":""00:00:42""\},""Context"":\[\{""Id"":""OverallScope"",""ElapsedTime"":""00:00:.+""\},\{""Id"":""ValidateScope"",""ElapsedTime"":""00:00:.+""\}\]\}";
 
             Assert.IsTrue(Regex.IsMatch(result, regex), result);
+
+            JToken jToken = JToken.Parse(result);
+            TimeSpan total = jToken["Summary"]["ElapsedTime"].ToObject<TimeSpan>();
+            Assert.IsTrue(total > TimeSpan.FromSeconds(2));
+            TimeSpan overalScope = jToken["Context"][0]["ElapsedTime"].ToObject<TimeSpan>();
+            Assert.IsTrue(total == overalScope);
+            TimeSpan innerScope = jToken["Context"][1]["ElapsedTime"].ToObject<TimeSpan>();
+            Assert.IsTrue(innerScope > TimeSpan.FromSeconds(1));
         }
 
         [TestMethod]
