@@ -20,6 +20,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     public class BatchAsyncBatcherTests
     {
         private static Exception expectedException = new Exception();
+        private static BatchPartitionMetric metric = new BatchPartitionMetric();
 
         private ItemBatchOperation CreateItemBatchOperation(bool withContext = false) {
             ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, 0, string.Empty, new MemoryStream(new byte[] { 0x41, 0x42 }, index: 0, count: 2, writable: false, publiclyVisible: true));
@@ -249,7 +250,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             operation2.AttachContext(context2);
             batchAsyncBatcher.TryAdd(operation1);
             batchAsyncBatcher.TryAdd(operation2);
-            await batchAsyncBatcher.DispatchAsync();
+            await batchAsyncBatcher.DispatchAsync(metric);
 
             Assert.AreEqual(TaskStatus.Faulted, context1.OperationTask.Status);
             Assert.AreEqual(TaskStatus.Faulted, context2.OperationTask.Status);
@@ -271,7 +272,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.IsTrue(batchAsyncBatcher.TryAdd(operation));
             }
 
-            await batchAsyncBatcher.DispatchAsync();
+            await batchAsyncBatcher.DispatchAsync(metric);
 
             for (int i = 0; i < 10; i++)
             {
@@ -300,8 +301,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 operations.Add(operation);
                 Assert.IsTrue(batchAsyncBatcher.TryAdd(operation));
             }
-
-            await batchAsyncBatcher.DispatchAsync();
+            await batchAsyncBatcher.DispatchAsync(metric);
 
             // Responses 1 and 10 should be missing
             for (int i = 0; i < 10; i++)
@@ -328,7 +328,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 }
             }
 
-            await secondAsyncBatcher.DispatchAsync();
+            await secondAsyncBatcher.DispatchAsync(metric);
             // All tasks should be completed
             for (int i = 0; i < 10; i++)
             {
@@ -361,7 +361,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ItemBatchOperation operation = this.CreateItemBatchOperation();
             operation.AttachContext(new ItemBatchOperationContext(string.Empty));
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation));
-            await batchAsyncBatcher.DispatchAsync();
+            await batchAsyncBatcher.DispatchAsync(metric);
             Assert.IsFalse(batchAsyncBatcher.TryAdd(this.CreateItemBatchOperation()));
         }
 
@@ -384,7 +384,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(2, 1000, MockCosmosUtil.Serializer, this.ExecutorWithSplit, retryDelegate.Object);
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation1));
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation2));
-            await batchAsyncBatcher.DispatchAsync();
+            await batchAsyncBatcher.DispatchAsync(metric);
             retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation1), It.IsAny<CancellationToken>()), Times.Once);
             retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation2), It.IsAny<CancellationToken>()), Times.Once);
             retryDelegate.Verify(a => a(It.IsAny<ItemBatchOperation>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
@@ -408,7 +408,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             BatchAsyncBatcherThatOverflows batchAsyncBatcher = new BatchAsyncBatcherThatOverflows(2, 1000, MockCosmosUtil.Serializer, executeDelegate.Object, retryDelegate.Object);
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation1));
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation2));
-            await batchAsyncBatcher.DispatchAsync();
+            await batchAsyncBatcher.DispatchAsync(metric);
             retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation1), It.IsAny<CancellationToken>()), Times.Never);
             retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation2), It.IsAny<CancellationToken>()), Times.Once);
             retryDelegate.Verify(a => a(It.IsAny<ItemBatchOperation>(), It.IsAny<CancellationToken>()), Times.Once);
