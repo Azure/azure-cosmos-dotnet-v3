@@ -44,25 +44,28 @@ namespace Microsoft.Azure.Cosmos
 
         public async Task<TransactionalBatchResponse> ExecuteAsync(CancellationToken cancellationToken)
         {
-            BatchExecUtils.EnsureValid(this.inputOperations, this.batchOptions);
-
-            PartitionKey? serverRequestPartitionKey = this.partitionKey;
-            if (this.batchOptions != null && this.batchOptions.IsEffectivePartitionKeyRouting)
+            using (this.diagnosticsContext.CreateOverallScope("BatchExecuteAsync"))
             {
-                serverRequestPartitionKey = null;
-            }
+                BatchExecUtils.EnsureValid(this.inputOperations, this.batchOptions);
 
-            SinglePartitionKeyServerBatchRequest serverRequest;
-            using (this.diagnosticsContext.CreateScope("CreateBatchRequest"))
-            {
-                serverRequest = await SinglePartitionKeyServerBatchRequest.CreateAsync(
-                      serverRequestPartitionKey,
-                      new ArraySegment<ItemBatchOperation>(this.inputOperations.ToArray()),
-                      this.clientContext.SerializerCore,
-                      cancellationToken);
-            }
+                PartitionKey? serverRequestPartitionKey = this.partitionKey;
+                if (this.batchOptions != null && this.batchOptions.IsEffectivePartitionKeyRouting)
+                {
+                    serverRequestPartitionKey = null;
+                }
 
-            return await this.ExecuteServerRequestAsync(serverRequest, cancellationToken);
+                SinglePartitionKeyServerBatchRequest serverRequest;
+                using (this.diagnosticsContext.CreateScope("CreateBatchRequest"))
+                {
+                    serverRequest = await SinglePartitionKeyServerBatchRequest.CreateAsync(
+                          serverRequestPartitionKey,
+                          new ArraySegment<ItemBatchOperation>(this.inputOperations.ToArray()),
+                          this.clientContext.SerializerCore,
+                          cancellationToken);
+                }
+
+                return await this.ExecuteServerRequestAsync(serverRequest, cancellationToken);
+            }
         }
 
         /// <summary>

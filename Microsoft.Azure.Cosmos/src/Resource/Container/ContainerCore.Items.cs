@@ -525,7 +525,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContext();
-            using (diagnosticsContext.CreateScope("ItemStream"))
+            using (diagnosticsContext.CreateOverallScope("ItemStream"))
             {
                 Stream itemStream;
                 using (diagnosticsContext.CreateScope("ItemSerialize"))

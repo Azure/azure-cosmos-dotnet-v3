@@ -26,8 +26,6 @@ namespace Microsoft.Azure.Cosmos
 
         private bool IsDefaultUserAgent = true;
 
-        private List<CosmosDiagnosticWriter> Details = null;
-
         static CosmosDiagnosticSummary()
         {
             // Default user agent string does not contain client id or features.
@@ -56,16 +54,6 @@ namespace Microsoft.Azure.Cosmos
 
             this.RetryBackoffTimeSpan = this.RetryBackoffTimeSpan.Value.Add(backOffTimeSpan);
             this.RetryCount = this.RetryCount.GetValueOrDefault(0) + 1;
-        }
-
-        internal void AddWriter(CosmosDiagnosticWriter writer)
-        {
-            if (this.Details == null)
-            {
-                this.Details = new List<CosmosDiagnosticWriter>();
-            }
-
-            this.Details.Add(writer);
         }
 
         internal void SetElapsedTime(TimeSpan totalElapsedTime)
@@ -100,18 +88,6 @@ namespace Microsoft.Azure.Cosmos
                     this.TotalElapsedTime < newSummary.TotalElapsedTime))
             {
                 this.TotalElapsedTime = newSummary.TotalElapsedTime;
-            }
-
-            if (newSummary.Details != null)
-            {
-                if (this.Details == null)
-                {
-                    this.Details = newSummary.Details;
-                }
-                else
-                {
-                    this.Details.AddRange(newSummary.Details);
-                }
             }
         }
 

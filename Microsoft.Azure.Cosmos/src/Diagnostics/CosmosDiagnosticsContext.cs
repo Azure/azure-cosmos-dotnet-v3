@@ -4,9 +4,6 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Globalization;
     using System.IO;
     using System.Text;
     using Newtonsoft.Json;
@@ -26,7 +23,7 @@ namespace Microsoft.Azure.Cosmos
         // Context list is detailed view of all the operations
         internal CosmosDiagnosticsContextList ContextList { get; }
 
-        private bool isFirstScope = true;
+        private bool isOverallScopeSet = false;
 
         internal CosmosDiagnosticsContext()
         {
@@ -34,14 +31,29 @@ namespace Microsoft.Azure.Cosmos
             this.ContextList = new CosmosDiagnosticsContextList();
         }
 
-        internal CosmosDiagnosticScope CreateScope(string name)
+        internal CosmosDiagnosticScope CreateOverallScope(string name)
         {
-            CosmosDiagnosticScope scope = this.isFirstScope ?
-                new CosmosDiagnosticScope(name, this.Summary.SetElapsedTime)
-                : new CosmosDiagnosticScope(name);
+            CosmosDiagnosticScope scope;
+            // If overall is already set then let the original set the elapsed time.
+            if (this.isOverallScopeSet)
+            {
+                scope = new CosmosDiagnosticScope(name);
+            }
+            else
+            {
+                scope = new CosmosDiagnosticScope(name, this.Summary.SetElapsedTime);
+                this.isOverallScopeSet = true;
+            }
 
             this.ContextList.AddWriter(scope);
-            this.isFirstScope = false;
+            return scope;
+        }
+
+        internal CosmosDiagnosticScope CreateScope(string name)
+        {
+            CosmosDiagnosticScope scope = new CosmosDiagnosticScope(name);
+
+            this.ContextList.AddWriter(scope);
             return scope;
         }
 
@@ -62,11 +74,6 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return sb.ToString();
-        }
-
-        internal void AddSummaryWriter(CosmosDiagnosticWriter diagnosticWriter)
-        {
-            this.Summary.AddWriter(diagnosticWriter);
         }
 
         internal void AddContextWriter(CosmosDiagnosticWriter diagnosticWriter)
