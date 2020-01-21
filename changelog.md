@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Fixed
+
+## <a name="3.6.0"/> [3.6.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.6.0) - 2020-01-23
+
+### Added
+
 - [#1097](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1097) Add GeospatialConfig to ContainerProperties, BoundingBoxProperties to SpatialPath
 - [#1061](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1061) Add Stream payload to ExecuteStoredProcedureStreamAsync
 - [#1062](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1062) Add additional diagnostic information including the ability to track time through the different SDK layers
@@ -217,6 +223,7 @@ Any requests to Azure Cosmos DB using a retired SDK are rejected by the service.
 
 | Version | Release Date | Retirement Date |
 | --- | --- | --- |
+| [3.6.0](#3.6.0) |January 23, 2020 |--- |
 | [3.5.1](#3.5.1) |December 11, 2019 |--- |
 | [3.5.0](#3.5.0) |December 03, 2019 |--- |
 | [3.4.1](#3.4.1) |November 06, 2019 |--- |
