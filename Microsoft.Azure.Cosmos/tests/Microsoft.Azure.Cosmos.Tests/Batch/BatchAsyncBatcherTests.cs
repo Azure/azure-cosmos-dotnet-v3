@@ -21,8 +21,13 @@ namespace Microsoft.Azure.Cosmos.Tests
     {
         private static Exception expectedException = new Exception();
 
-        private ItemBatchOperation CreateItemBatchOperation(bool withContext = false) {
-            ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, 0, string.Empty, new MemoryStream(new byte[] { 0x41, 0x42 }, index: 0, count: 2, writable: false, publiclyVisible: true));
+        private ItemBatchOperation CreateItemBatchOperation(bool withContext = false)
+        {
+            ItemBatchOperation operation = new ItemBatchOperation(
+                operationType: OperationType.Create,
+                operationIndex: 0,
+                id: string.Empty,
+                resourceStream: new MemoryStream(new byte[] { 0x41, 0x42 }, index: 0, count: 2, writable: false, publiclyVisible: true));
             if (withContext)
             {
                 operation.AttachContext(new ItemBatchOperationContext(string.Empty));
@@ -60,18 +65,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 TransactionalBatchResponse batchresponse = await TransactionalBatchResponse.FromResponseMessageAsync(
                     new ResponseMessage(HttpStatusCode.OK)
                     {
-                        Content = responseContent,
-                        Diagnostics = new PointOperationStatistics(
-                            activityId: Guid.NewGuid().ToString(),
-                            statusCode: HttpStatusCode.OK,
-                            subStatusCode: SubStatusCodes.Unknown,
-                            requestCharge: 0,
-                            errorMessage: string.Empty,
-                            method: HttpMethod.Get,
-                            requestUri: new Uri("http://localhost"),
-                            requestSessionToken: null,
-                            responseSessionToken: null,
-                            clientSideRequestStatistics: new CosmosClientSideRequestStatistics())
+                        Content = responseContent
                     },
                     batchRequest,
                     MockCosmosUtil.Serializer);
@@ -107,18 +101,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                 ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.Gone)
                 {
-                    Content = responseContent,
-                    Diagnostics = new PointOperationStatistics(
-                        activityId: Guid.NewGuid().ToString(),
-                        statusCode: HttpStatusCode.Gone,
-                        subStatusCode: SubStatusCodes.NameCacheIsStale,
-                        requestCharge: 0,
-                        errorMessage: string.Empty,
-                        method: HttpMethod.Get,
-                        requestUri: new Uri("http://localhost"),
-                        requestSessionToken: null,
-                        responseSessionToken: null,
-                        clientSideRequestStatistics: new CosmosClientSideRequestStatistics())
+                    Content = responseContent
                 };
                 responseMessage.Headers.SubStatusCode = SubStatusCodes.PartitionKeyRangeGone;
 
@@ -264,7 +247,13 @@ namespace Microsoft.Azure.Cosmos.Tests
             List<ItemBatchOperation> operations = new List<ItemBatchOperation>(10);
             for (int i = 0; i < 10; i++)
             {
-                ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, i, i.ToString());
+                ItemBatchOperation operation = new ItemBatchOperation(
+                    operationType: OperationType.Create,
+                    operationIndex: i,
+                    partitionKey: new Cosmos.PartitionKey(i.ToString()),
+                    id: i.ToString(),
+                    diagnosticsContext: new CosmosDiagnosticsContext());
+
                 ItemBatchOperationContext context = new ItemBatchOperationContext(string.Empty);
                 operation.AttachContext(context);
                 operations.Add(operation);
@@ -280,9 +269,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                 TransactionalBatchOperationResult result = await operation.Context.OperationTask;
                 Assert.AreEqual(i.ToString(), result.ETag);
 
-                Assert.IsNotNull(operation.Context.Diagnostics);
-                Assert.AreEqual(operation.Context.Diagnostics.ToString(), result.Diagnostics.ToString());
-                Assert.IsFalse(string.IsNullOrEmpty(operation.Context.Diagnostics.ToString()));
+                Assert.IsNotNull(operation.DiagnosticsContext);
+                Assert.AreEqual(operation.DiagnosticsContext.ToString(), result.DiagnosticsContext.ToString());
+                Assert.IsFalse(string.IsNullOrEmpty(operation.DiagnosticsContext.ToString()));
             }
         }
 
@@ -308,7 +297,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 ItemBatchOperation operation = operations[i];
                 // Some tasks should not be resolved
-                if(i == 0 || i == 9)
+                if (i == 0 || i == 9)
                 {
                     Assert.IsTrue(operation.Context.OperationTask.Status == TaskStatus.WaitingForActivation);
                 }
@@ -388,10 +377,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation1), It.IsAny<CancellationToken>()), Times.Once);
             retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation2), It.IsAny<CancellationToken>()), Times.Once);
             retryDelegate.Verify(a => a(It.IsAny<ItemBatchOperation>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
-            Assert.IsNotNull(operation1.Context.Diagnostics);
-            Assert.IsNotNull(operation2.Context.Diagnostics);
-            Assert.IsTrue(!string.IsNullOrEmpty(operation1.Context.Diagnostics.ToString()));
-            Assert.IsTrue(!string.IsNullOrEmpty(operation2.Context.Diagnostics.ToString()));
+            Assert.IsNull(operation1.DiagnosticsContext, "Batch operations do not have diagnostics per operation");
+            Assert.IsNull(operation2.DiagnosticsContext, "Batch operations do not have diagnostics per operation");
         }
 
         [TestMethod]

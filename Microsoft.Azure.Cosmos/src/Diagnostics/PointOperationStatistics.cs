@@ -6,24 +6,20 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Net;
     using System.Net.Http;
     using System.Text;
     using System.Web;
+    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using static Microsoft.Azure.Cosmos.CosmosClientSideRequestStatistics;
 
-    internal class PointOperationStatistics : CosmosDiagnostics
+    internal class PointOperationStatistics : CosmosDiagnosticWriter
     {
-        private static JsonSerializerSettings SerializerSettings = new JsonSerializerSettings()
-        {
-            NullValueHandling = NullValueHandling.Ignore,
-            Formatting = Formatting.None
-        };
-
         public string ActivityId { get; }
         public HttpStatusCode StatusCode { get; }
-        public Documents.SubStatusCodes SubStatusCode { get; }
+        public SubStatusCodes SubStatusCode { get; }
         public double RequestCharge { get; }
         public string ErrorMessage { get; }
         public HttpMethod Method { get; }
@@ -35,7 +31,7 @@ namespace Microsoft.Azure.Cosmos
         internal PointOperationStatistics(
             string activityId,
             HttpStatusCode statusCode,
-            Documents.SubStatusCodes subStatusCode,
+            SubStatusCodes subStatusCode,
             double requestCharge,
             string errorMessage,
             HttpMethod method,
@@ -59,39 +55,55 @@ namespace Microsoft.Azure.Cosmos
         public override string ToString()
         {
             StringBuilder stringBuilder = new StringBuilder();
-            this.AppendJsonToBuilder(stringBuilder);
+            StringWriter sw = new StringWriter(stringBuilder);
+            using (JsonWriter jsonWriter = new JsonTextWriter(sw))
+            {
+                this.WriteJsonObject(jsonWriter);
+            }
+
             return stringBuilder.ToString();
         }
 
-        public void AppendJsonToBuilder(StringBuilder stringBuilder)
+        internal override void WriteJsonObject(JsonWriter jsonWriter)
         {
-            if (stringBuilder == null)
+            jsonWriter.WriteStartObject();
+            jsonWriter.WritePropertyName("Id");
+            jsonWriter.WriteValue("PointOperationStatistics");
+
+            jsonWriter.WritePropertyName("ActivityId");
+            jsonWriter.WriteValue(this.ActivityId);
+
+            jsonWriter.WritePropertyName("StatusCode");
+            jsonWriter.WriteValue((int)this.StatusCode);
+
+            jsonWriter.WritePropertyName("SubStatusCode");
+            jsonWriter.WriteValue((int)this.SubStatusCode);
+
+            jsonWriter.WritePropertyName("RequestCharge");
+            jsonWriter.WriteValue(this.RequestCharge);
+
+            jsonWriter.WritePropertyName("RequestUri");
+            jsonWriter.WriteValue(this.RequestUri);
+
+            if (!string.IsNullOrEmpty(this.ErrorMessage))
             {
-                throw new ArgumentNullException(nameof(stringBuilder));
+                jsonWriter.WritePropertyName("ErrorMessage");
+                jsonWriter.WriteValue(this.ErrorMessage);
             }
 
-            string errorMessage = string.Empty;
-            if (this.ErrorMessage != null)
-            {
-                errorMessage = HttpUtility.JavaScriptStringEncode(this.ErrorMessage);
-            }
+            jsonWriter.WritePropertyName("RequestSessionToken");
+            jsonWriter.WriteValue(this.RequestSessionToken);
 
-            stringBuilder.Append($"{{\"ActivityId\":\"{this.ActivityId}\"");
-            stringBuilder.Append($",\"StatusCode\":\"{(int)this.StatusCode}\"");
-            stringBuilder.Append($",\"SubStatusCode\":\"{this.SubStatusCode.ToString()}\"");
-            stringBuilder.Append($",\"RequestCharge\":\"{this.RequestCharge}\"");
-            stringBuilder.Append($",\"ErrorMessage\":\"{errorMessage}\"");
-            stringBuilder.Append($",\"Method\":\"{this.Method?.ToString() ?? "null"}\"");
-            stringBuilder.Append($",\"RequestUri\":\"{this.RequestUri?.ToString() ?? "null"}\"");
-            stringBuilder.Append($",\"RequestSessionToken\":\"{this.RequestSessionToken}\"");
-            stringBuilder.Append($",\"ResponseSessionToken\":\"{this.ResponseSessionToken}\"");
+            jsonWriter.WritePropertyName("ResponseSessionToken");
+            jsonWriter.WriteValue(this.ResponseSessionToken);
+
             if (this.ClientSideRequestStatistics != null)
             {
-                stringBuilder.Append(",");
-                this.ClientSideRequestStatistics.AppendJsonToBuilder(stringBuilder);
+                jsonWriter.WritePropertyName("ClientRequestStats");
+                this.ClientSideRequestStatistics.WriteJsonObject(jsonWriter);
             }
 
-            stringBuilder.Append("}");
+            jsonWriter.WriteEndObject();
         }
     }
 }

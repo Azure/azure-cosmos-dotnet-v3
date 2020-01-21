@@ -72,6 +72,20 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void ToResponseMessage_MapsProperties()
         {
+            PointOperationStatistics pointOperationStatistics = new PointOperationStatistics(
+                activityId: Guid.NewGuid().ToString(),
+                statusCode: HttpStatusCode.OK,
+                subStatusCode: SubStatusCodes.Unknown,
+                requestCharge: 0,
+                errorMessage: string.Empty,
+                method: HttpMethod.Get,
+                requestUri: new Uri("http://localhost"),
+                requestSessionToken: null,
+                responseSessionToken: null,
+                clientSideRequestStatistics: new CosmosClientSideRequestStatistics());
+            CosmosDiagnosticsContext scope = new CosmosDiagnosticsContext();
+            scope.AddContextWriter(pointOperationStatistics);
+
             TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.OK)
             {
                 ResourceStream = new MemoryStream(new byte[] { 0x41, 0x42 }, index: 0, count: 2, writable: false, publiclyVisible: true),
@@ -79,17 +93,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 SubStatusCode = SubStatusCodes.CompletingSplit,
                 RetryAfter = TimeSpan.FromSeconds(10),
                 RequestCharge = 4.3,
-                Diagnostics = new PointOperationStatistics(
-                    activityId: Guid.NewGuid().ToString(),
-                    statusCode: HttpStatusCode.OK,
-                    subStatusCode: SubStatusCodes.Unknown,
-                    requestCharge: 0,
-                    errorMessage: string.Empty,
-                    method: HttpMethod.Get,
-                    requestUri: new Uri("http://localhost"),
-                    requestSessionToken: null,
-                    responseSessionToken: null,
-                    clientSideRequestStatistics: new CosmosClientSideRequestStatistics())
+                DiagnosticsContext = scope
             };
 
             ResponseMessage response = result.ToResponseMessage();
@@ -99,7 +103,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(result.RetryAfter, response.Headers.RetryAfter);
             Assert.AreEqual(result.StatusCode, response.StatusCode);
             Assert.AreEqual(result.RequestCharge, response.Headers.RequestCharge);
-            Assert.AreEqual(result.Diagnostics, response.Diagnostics);
+            string diagnostics = response.Diagnostics.ToString();
+            Assert.IsNotNull(diagnostics);
+            Assert.IsTrue(diagnostics.Contains(pointOperationStatistics.ActivityId));
         }
 
         private async Task<bool> ConstainsSplitIsTrueInternal(HttpStatusCode statusCode, SubStatusCodes subStatusCode)
