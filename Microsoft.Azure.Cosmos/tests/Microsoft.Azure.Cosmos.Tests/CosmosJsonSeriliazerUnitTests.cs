@@ -95,7 +95,10 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             string defaultThroughputJson = @"{""Throughput"":null}";
             ThroughputProperties property = JsonConvert.DeserializeObject<ThroughputProperties>(defaultThroughputJson);
             Assert.IsNull(property.Throughput);
-            string propertyJson = JsonConvert.SerializeObject(property);
+            string propertyJson = JsonConvert.SerializeObject(property, new JsonSerializerSettings()
+            {
+                Formatting = Formatting.None
+            });
             Assert.AreEqual(defaultThroughputJson, propertyJson);
         }
 
