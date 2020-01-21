@@ -10,6 +10,25 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Cosmos Result set iterator that keeps track of the continuation token when retrieving results form a query.
     /// </summary>
+    /// <example>
+    /// Example on how to fully drain the query results.
+    /// <code language="c#">
+    /// <![CDATA[
+    /// QueryDefinition queryDefinition = new QueryDefinition("select c.id From c where c.status = @status")
+    ///               .WithParameter("@status", "Failure");
+    /// FeedIterator<MyItem> feedIterator = this.Container.GetItemQueryIterator<MyItem>(
+    ///     queryDefinition);
+    /// while (feedIterator.HasMoreResults)
+    /// {
+    ///     FeedResponse<MyItem> response = await feedIterator.ReadNextAsync();
+    ///     foreach (var item in response)
+    ///     {
+    ///         Console.WriteLine(item);
+    ///     }
+    /// }
+    /// ]]>
+    /// </code>
+    /// </example>
 #pragma warning disable SA1649 // SA1649FileNameMustMatchTypeName
     public abstract class FeedIterator<T>
 #pragma warning restore SA1649
@@ -17,6 +36,25 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Tells if there is more results that need to be retrieved from the service
         /// </summary>
+        /// <example>
+        /// Example on how to fully drain the query results.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// QueryDefinition queryDefinition = new QueryDefinition("select c.id From c where c.status = @status")
+        ///               .WithParameter("@status", "Failure");
+        /// FeedIterator<MyItem> feedIterator = this.Container.GetItemQueryIterator<MyItem>(
+        ///     queryDefinition);
+        /// while (feedIterator.HasMoreResults)
+        /// {
+        ///     FeedResponse<MyItem> response = await feedIterator.ReadNextAsync();
+        ///     foreach (var item in response)
+        ///     {
+        ///         Console.WriteLine(item);
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
         public abstract bool HasMoreResults { get; }
 
         /// <summary>
@@ -24,6 +62,25 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A query response from cosmos service</returns>
+        /// <example>
+        /// Example on how to fully drain the query results.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// QueryDefinition queryDefinition = new QueryDefinition("select c.id From c where c.status = @status")
+        ///               .WithParameter("@status", "Failure");
+        /// FeedIterator<MyItem> feedIterator = this.Container.GetItemQueryIterator<MyItem>(
+        ///     queryDefinition);
+        /// while (feedIterator.HasMoreResults)
+        /// {
+        ///     FeedResponse<MyItem> response = await feedIterator.ReadNextAsync();
+        ///     foreach (var item in response)
+        ///     {
+        ///         Console.WriteLine(item);
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
         public abstract Task<FeedResponse<T>> ReadNextAsync(CancellationToken cancellationToken = default);
     }
 }

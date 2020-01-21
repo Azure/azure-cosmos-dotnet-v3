@@ -6,7 +6,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     using System;
     using System.Text;
 
-    internal sealed class QueryMetricsDelimitedStringWriter : QueryMetricsWriter
+    /// <summary>
+    /// <see cref="QueryMetricsWriter"/> for delimited text.
+    /// </summary>
+#if INTERNAL
+#pragma warning disable SA1600
+#pragma warning disable CS1591
+    public
+#else
+    internal
+#endif
+    sealed class QueryMetricsDelimitedStringWriter : QueryMetricsWriter
     {
         #region Constants
         // QueryMetrics

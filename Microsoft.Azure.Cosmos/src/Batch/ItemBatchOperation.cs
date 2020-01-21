@@ -106,6 +106,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal static Result WriteOperation(ref RowWriter writer, TypeArgument typeArg, ItemBatchOperation operation)
         {
+            bool pkWritten = false;
             Result r = writer.WriteInt32("operationType", (int)operation.OperationType);
             if (r != Result.Success)
             {
@@ -125,6 +126,8 @@ namespace Microsoft.Azure.Cosmos
                 {
                     return r;
                 }
+
+                pkWritten = true;
             }
 
             if (operation.Id != null)
@@ -196,6 +199,21 @@ namespace Microsoft.Azure.Cosmos
                         if (epk != null)
                         {
                             r = writer.WriteBinary("effectivePartitionKey", epk);
+                            if (r != Result.Success)
+                            {
+                                return r;
+                            }
+                        }
+                    }
+
+                    if (!pkWritten && options.Properties.TryGetValue(
+                            HttpConstants.HttpHeaders.PartitionKey,
+                            out object pkStrObj))
+                    {
+                        string pkString = pkStrObj as string;
+                        if (pkString != null)
+                        {
+                            r = writer.WriteString("partitionKey", pkString);
                             if (r != Result.Success)
                             {
                                 return r;
@@ -287,9 +305,9 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Materializes the operation's resource into a Memory{byte} wrapping a byte array.
         /// </summary>
-        /// <param name="serializer">Serializer to serialize user provided objects to JSON.</param>
+        /// <param name="serializerCore">Serializer to serialize user provided objects to JSON.</param>
         /// <param name="cancellationToken"><see cref="CancellationToken"/> for cancellation.</param>
-        internal virtual async Task MaterializeResourceAsync(CosmosSerializer serializer, CancellationToken cancellationToken)
+        internal virtual async Task MaterializeResourceAsync(CosmosSerializerCore serializerCore, CancellationToken cancellationToken)
         {
             if (this.body.IsEmpty && this.ResourceStream != null)
             {
@@ -361,14 +379,14 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Materializes the operation's resource into a Memory{byte} wrapping a byte array.
         /// </summary>
-        /// <param name="serializer">Serializer to serialize user provided objects to JSON.</param>
+        /// <param name="serializerCore">Serializer to serialize user provided objects to JSON.</param>
         /// <param name="cancellationToken"><see cref="CancellationToken"/> for cancellation.</param>
-        internal override Task MaterializeResourceAsync(CosmosSerializer serializer, CancellationToken cancellationToken)
+        internal override Task MaterializeResourceAsync(CosmosSerializerCore serializerCore, CancellationToken cancellationToken)
         {
             if (this.body.IsEmpty && this.Resource != null)
             {
-                this.ResourceStream = serializer.ToStream(this.Resource);
-                return base.MaterializeResourceAsync(serializer, cancellationToken);
+                this.ResourceStream = serializerCore.ToStream(this.Resource);
+                return base.MaterializeResourceAsync(serializerCore, cancellationToken);
             }
 
             return Task.FromResult(true);

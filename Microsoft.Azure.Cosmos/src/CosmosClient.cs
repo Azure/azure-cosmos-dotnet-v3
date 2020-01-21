@@ -104,6 +104,8 @@ namespace Microsoft.Azure.Cosmos
 
             // V3 always assumes assemblies exists
             // Shall revisit on feedback
+            // NOTE: Native ServiceInteropWrapper.AssembliesExist has appsettings dependency which are proofed for CTL (native dll entry) scenarios.
+            // Revert of this depends on handling such in direct assembly
             ServiceInteropWrapper.AssembliesExist = new Lazy<bool>(() => true);
         }
 
@@ -383,11 +385,11 @@ namespace Microsoft.Azure.Cosmos
             }
 
             DatabaseProperties databaseProperties = this.PrepareDatabaseProperties(id);
-            return this.CreateDatabaseAsync(
+            return TaskHelper.RunInlineIfNeededAsync(() => this.CreateDatabaseAsync(
                 databaseProperties: databaseProperties,
                 throughput: throughput,
                 requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
+                cancellationToken: cancellationToken));
         }
 
         /// <summary>
@@ -421,7 +423,7 @@ namespace Microsoft.Azure.Cosmos
         /// </list>
         /// </returns>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
-        public virtual async Task<DatabaseResponse> CreateDatabaseIfNotExistsAsync(
+        public virtual Task<DatabaseResponse> CreateDatabaseIfNotExistsAsync(
             string id,
             int? throughput = null,
             RequestOptions requestOptions = null,
@@ -432,24 +434,27 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(id));
             }
 
-            // Doing a Read before Create will give us better latency for existing databases
-            DatabaseProperties databaseProperties = this.PrepareDatabaseProperties(id);
-            Database database = this.GetDatabase(id);
-            ResponseMessage response = await database.ReadStreamAsync(requestOptions: requestOptions, cancellationToken: cancellationToken);
-            if (response.StatusCode != HttpStatusCode.NotFound)
+            return TaskHelper.RunInlineIfNeededAsync(async () =>
             {
-                return await this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(database, Task.FromResult(response));
-            }
+                // Doing a Read before Create will give us better latency for existing databases
+                DatabaseProperties databaseProperties = this.PrepareDatabaseProperties(id);
+                Database database = this.GetDatabase(id);
+                ResponseMessage response = await database.ReadStreamAsync(requestOptions: requestOptions, cancellationToken: cancellationToken);
+                if (response.StatusCode != HttpStatusCode.NotFound)
+                {
+                    return await this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(database, Task.FromResult(response));
+                }
 
-            response = await this.CreateDatabaseStreamAsync(databaseProperties, throughput, requestOptions, cancellationToken);
-            if (response.StatusCode != HttpStatusCode.Conflict)
-            {
-                return await this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(this.GetDatabase(databaseProperties.Id), Task.FromResult(response));
-            }
+                response = await this.CreateDatabaseStreamAsync(databaseProperties, throughput, requestOptions, cancellationToken);
+                if (response.StatusCode != HttpStatusCode.Conflict)
+                {
+                    return await this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(this.GetDatabase(databaseProperties.Id), Task.FromResult(response));
+                }
 
-            // This second Read is to handle the race condition when 2 or more threads have Read the database and only one succeeds with Create
-            // so for the remaining ones we should do a Read instead of throwing Conflict exception
-            return await database.ReadAsync(cancellationToken: cancellationToken);
+                // This second Read is to handle the race condition when 2 or more threads have Read the database and only one succeeds with Create
+                // so for the remaining ones we should do a Read instead of throwing Conflict exception
+                return await database.ReadAsync(cancellationToken: cancellationToken);
+            });
         }
 
         /// <summary>
@@ -466,22 +471,34 @@ namespace Microsoft.Azure.Cosmos
         /// <see cref="Database.ReadAsync(RequestOptions, CancellationToken)" /> is recommended for single database look-up.
         /// </para>
         /// </remarks>
+        /// <example>
+        /// This create the type feed iterator for database with queryText as input,
+        /// <code language="c#">
+        /// <![CDATA[
+        /// QueryDefinition queryDefinition = new QueryDefinition("SELECT * FROM c where c.status like @status")
+        ///     .WithParameter("@status", "start%");
+        /// FeedIterator<DatabaseProperties> feedIterator = this.users.GetDatabaseQueryIterator<DatabaseProperties>(queryDefinition);
+        /// while (feedIterator.HasMoreResults)
+        /// {
+        ///     FeedResponse<DatabaseProperties> response = await feedIterator.ReadNextAsync();
+        ///     foreach (var database in response)
+        ///     {
+        ///         Console.WriteLine(database);
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
         public virtual FeedIterator<T> GetDatabaseQueryIterator<T>(
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            if (!(this.GetDatabaseQueryStreamIterator(
-                queryDefinition,
-                continuationToken,
-                requestOptions) is FeedIteratorInternal databaseStreamIterator))
-            {
-                throw new InvalidOperationException($"Expected a FeedIteratorInternal.");
-            }
-
-            return new FeedIteratorCore<T>(
-                databaseStreamIterator,
-                this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>);
+            return new FeedIteratorInlineCore<T>(
+                this.GetDatabaseQueryIteratorHelper<T>(
+                    queryDefinition,
+                    continuationToken,
+                    requestOptions));
         }
 
         /// <summary>
@@ -498,18 +515,39 @@ namespace Microsoft.Azure.Cosmos
         /// <see cref="Database.ReadStreamAsync(RequestOptions, CancellationToken)" /> is recommended for single database look-up.
         /// </para>
         /// </remarks>
+        /// <example>
+        /// Example on how to fully drain the query results.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// QueryDefinition queryDefinition = new QueryDefinition("select * From c where c._rid = @rid")
+        ///               .WithParameter("@rid", "TheRidValue");
+        /// FeedIterator feedIterator = this.CosmosClient.GetDatabaseQueryStreamIterator(
+        ///     queryDefinition);
+        /// while (feedIterator.HasMoreResults)
+        /// {
+        ///     // Stream iterator returns a response with status for errors
+        ///     using(ResponseMessage response = await feedIterator.ReadNextAsync())
+        ///     {
+        ///         // Handle failure scenario. 
+        ///         if(!response.IsSuccessStatusCode)
+        ///         {
+        ///             // Log the response.Diagnostics and handle the error
+        ///         }
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
         public virtual FeedIterator GetDatabaseQueryStreamIterator(
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return new FeedIteratorCore(
-               this.ClientContext,
-               this.DatabaseRootUri,
-               ResourceType.Database,
-               queryDefinition,
-               continuationToken,
-               requestOptions);
+            return new FeedIteratorInlineCore(
+                this.GetDatabaseQueryStreamIteratorHelper(
+                    queryDefinition,
+                    continuationToken,
+                    requestOptions));
         }
 
         /// <summary>
@@ -526,6 +564,23 @@ namespace Microsoft.Azure.Cosmos
         /// <see cref="Database.ReadAsync(RequestOptions, CancellationToken)" /> is recommended for single database look-up.
         /// </para>
         /// </remarks>
+        /// <example>
+        /// This create the type feed iterator for database with queryText as input,
+        /// <code language="c#">
+        /// <![CDATA[
+        /// string queryText = "SELECT * FROM c where c.status like 'start%'";
+        /// FeedIterator<DatabaseProperties> feedIterator = this.users.GetDatabaseQueryIterator<DatabaseProperties>(queryText);
+        /// while (feedIterator.HasMoreResults)
+        /// {
+        ///     FeedResponse<DatabaseProperties> response = await feedIterator.ReadNextAsync();
+        ///     foreach (var database in response)
+        ///     {
+        ///         Console.WriteLine(database);
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
         public virtual FeedIterator<T> GetDatabaseQueryIterator<T>(
             string queryText = null,
             string continuationToken = null,
@@ -537,10 +592,11 @@ namespace Microsoft.Azure.Cosmos
                 queryDefinition = new QueryDefinition(queryText);
             }
 
-            return this.GetDatabaseQueryIterator<T>(
-                queryDefinition,
-                continuationToken,
-                requestOptions);
+            return new FeedIteratorInlineCore<T>(
+                this.GetDatabaseQueryIteratorHelper<T>(
+                    queryDefinition,
+                    continuationToken,
+                    requestOptions));
         }
 
         /// <summary>
@@ -557,6 +613,27 @@ namespace Microsoft.Azure.Cosmos
         /// <see cref="Database.ReadStreamAsync(RequestOptions, CancellationToken)" /> is recommended for single database look-up.
         /// </para>
         /// </remarks>
+        /// <example>
+        /// Example on how to fully drain the query results.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// FeedIterator feedIterator = this.CosmosClient.GetDatabaseQueryStreamIterator(
+        ///     ("select * From c where c._rid = 'TheRidValue'");
+        /// while (feedIterator.HasMoreResults)
+        /// {
+        ///     // Stream iterator returns a response with status for errors
+        ///     using(ResponseMessage response = await feedIterator.ReadNextAsync())
+        ///     {
+        ///         // Handle failure scenario. 
+        ///         if(!response.IsSuccessStatusCode)
+        ///         {
+        ///             // Log the response.Diagnostics and handle the error
+        ///         }
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
         public virtual FeedIterator GetDatabaseQueryStreamIterator(
             string queryText = null,
             string continuationToken = null,
@@ -568,10 +645,11 @@ namespace Microsoft.Azure.Cosmos
                 queryDefinition = new QueryDefinition(queryText);
             }
 
-            return this.GetDatabaseQueryStreamIterator(
-                queryDefinition,
-                continuationToken,
-                requestOptions);
+            return new FeedIteratorInlineCore(
+                this.GetDatabaseQueryStreamIterator(
+                    queryDefinition,
+                    continuationToken,
+                    requestOptions));
         }
 
         /// <summary>
@@ -603,9 +681,13 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.ClientContext.ValidateResource(databaseProperties.Id);
-            Stream streamPayload = this.ClientContext.PropertiesSerializer.ToStream<DatabaseProperties>(databaseProperties);
+            Stream streamPayload = this.ClientContext.SerializerCore.ToStream<DatabaseProperties>(databaseProperties);
 
-            return this.CreateDatabaseStreamInternalAsync(streamPayload, throughput, requestOptions, cancellationToken);
+            return TaskHelper.RunInlineIfNeededAsync(() => this.CreateDatabaseStreamInternalAsync(
+                streamPayload,
+                throughput,
+                requestOptions,
+                cancellationToken));
         }
 
         /// <summary>
@@ -631,21 +713,16 @@ namespace Microsoft.Azure.Cosmos
 
             this.RequestHandler = clientPipelineBuilder.Build();
 
-            CosmosSerializer userSerializer = this.ClientOptions.GetCosmosSerializerWithWrapperOrDefault();
-            this.ResponseFactory = new CosmosResponseFactory(
-                defaultJsonSerializer: this.ClientOptions.PropertiesSerializer,
-                userJsonSerializer: userSerializer);
+            CosmosSerializerCore serializerCore = CosmosSerializerCore.Create(
+                this.ClientOptions.Serializer,
+                this.ClientOptions.SerializerOptions);
 
-            CosmosSerializer sqlQuerySpecSerializer = CosmosSqlQuerySpecJsonConverter.CreateSqlQuerySpecSerializer(
-                cosmosSerializer: userSerializer,
-                propertiesSerializer: this.ClientOptions.PropertiesSerializer);
+            this.ResponseFactory = new CosmosResponseFactory(serializerCore);
 
             this.ClientContext = new ClientContextCore(
                 client: this,
                 clientOptions: this.ClientOptions,
-                userJsonSerializer: userSerializer,
-                defaultJsonSerializer: this.ClientOptions.PropertiesSerializer,
-                sqlQuerySpecSerializer: sqlQuerySpecSerializer,
+                serializerCore: serializerCore,
                 cosmosResponseFactory: this.ResponseFactory,
                 requestHandler: this.RequestHandler,
                 documentClient: this.DocumentClient);
@@ -684,7 +761,7 @@ namespace Microsoft.Azure.Cosmos
                     CancellationToken cancellationToken = default(CancellationToken))
         {
             Task<ResponseMessage> response = this.CreateDatabaseStreamInternalAsync(
-                streamPayload: this.ClientContext.PropertiesSerializer.ToStream<DatabaseProperties>(databaseProperties),
+                streamPayload: this.ClientContext.SerializerCore.ToStream<DatabaseProperties>(databaseProperties),
                 throughput: throughput,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
@@ -710,32 +787,6 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        private Task<FeedResponse<DatabaseProperties>> DatabaseFeedRequestExecutorAsync(
-            int? maxItemCount,
-            string continuationToken,
-            RequestOptions options,
-            object state,
-            CancellationToken cancellationToken)
-        {
-            Debug.Assert(state == null);
-
-            return this.ClientContext.ProcessResourceOperationAsync<FeedResponse<DatabaseProperties>>(
-                resourceUri: this.DatabaseRootUri,
-                resourceType: ResourceType.Database,
-                operationType: OperationType.ReadFeed,
-                requestOptions: options,
-                cosmosContainerCore: null,
-                partitionKey: null,
-                streamPayload: null,
-                requestEnricher: request =>
-                {
-                    QueryRequestOptions.FillContinuationToken(request, continuationToken);
-                    QueryRequestOptions.FillMaxItemCount(request, maxItemCount);
-                },
-                responseCreator: response => this.ClientContext.ResponseFactory.CreateQueryFeedResponse<DatabaseProperties>(response),
-                cancellationToken: cancellationToken);
-        }
-
         private HttpClientHandler CreateHttpClientHandler(CosmosClientOptions clientOptions)
         {
             if (clientOptions == null || (clientOptions.WebProxy == null))
@@ -747,6 +798,40 @@ namespace Microsoft.Azure.Cosmos
             httpClientHandler.Proxy = clientOptions.WebProxy;
 
             return httpClientHandler;
+        }
+
+        private FeedIteratorInternal<T> GetDatabaseQueryIteratorHelper<T>(
+           QueryDefinition queryDefinition,
+           string continuationToken = null,
+           QueryRequestOptions requestOptions = null)
+        {
+            if (!(this.GetDatabaseQueryStreamIteratorHelper(
+                queryDefinition,
+                continuationToken,
+                requestOptions) is FeedIteratorInternal databaseStreamIterator))
+            {
+                throw new InvalidOperationException($"Expected a FeedIteratorInternal.");
+            }
+
+            return new FeedIteratorCore<T>(
+                    databaseStreamIterator,
+                    (response) => this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>(
+                        responseMessage: response,
+                        resourceType: ResourceType.Database));
+        }
+
+        private FeedIteratorInternal GetDatabaseQueryStreamIteratorHelper(
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null)
+        {
+            return new FeedIteratorCore(
+               this.ClientContext,
+               this.DatabaseRootUri,
+               ResourceType.Database,
+               queryDefinition,
+               continuationToken,
+               requestOptions);
         }
 
         /// <summary>

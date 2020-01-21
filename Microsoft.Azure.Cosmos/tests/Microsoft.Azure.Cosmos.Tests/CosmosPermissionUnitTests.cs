@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos.Tests
 {
-    using Microsoft.Azure.Cosmos.Client.Core.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System.Net;
     using System.Threading.Tasks;

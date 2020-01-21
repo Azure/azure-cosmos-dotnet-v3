@@ -1,0 +1,40 @@
+name: 'cosmosdbsdkperf'
+apiVersion: '2018-10-01'
+properties:
+  containers:
+  - name: cosmosdbsdkperfi
+    properties:
+      image: 'mcr.microsoft.com/dotnet/core/sdk:3.1'
+      command:
+      - '/bin/bash'
+      - '-c'
+      - 'chmod +x /mounts/sdk/azure-cosmos-dotnet-v3/Microsoft.Azure.Cosmos.Samples/Tools/Benchmark/AzureContainerInstances/run.sh;cd /mounts/sdk/azure-cosmos-dotnet-v3/Microsoft.Azure.Cosmos.Samples/Tools/Benchmark/AzureContainerInstances/;./run.sh'
+      environmentVariables:  # Customize your connection information and the provisioned throughput
+      - name: ENDPOINT
+        value: '<your-account-endpoint>'
+      - name: KEY
+        value: '<your-account-key>'
+      - name: THROUGHPUT
+        value: 100000
+      - name: DOCUMENTS
+        value: 200000
+      - name: PARALLELISM
+        value: -1
+      - name: CLEANUPFINISH
+        value: false
+      resources:
+        requests: # Customize memory and CPU
+          memoryInGB: 8 
+          cpu: 4
+        limits:  # Customize memory and CPU
+          memoryInGB: 8
+          cpu: 4
+      volumeMounts: 
+      - name: 'cosmosdbsdk'
+        mountPath: '/mounts/sdk'
+  restartPolicy: Never
+  osType: Linux
+  volumes: 
+  - name: 'cosmosdbsdk'
+    gitRepo:
+      repository: 'https://github.com/Azure/azure-cosmos-dotnet-v3'

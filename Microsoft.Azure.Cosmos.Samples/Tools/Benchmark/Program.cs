@@ -66,6 +66,7 @@
 
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
+                ApplicationName = "cosmosdbdotnetbenchmark",
                 RequestTimeout = new TimeSpan(1, 0, 0),
                 MaxRetryAttemptsOnRateLimitedRequests = 10,
                 MaxRetryWaitTimeOnRateLimitedRequests = TimeSpan.FromSeconds(60),

@@ -126,9 +126,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             return segments[1];
         }
 
-        private static string GetFirstItemLSN(Collection<JObject> items)
+        private static string GetFirstItemLSN(IEnumerable<JObject> items)
         {
-            JObject item = RemainingWorkEstimatorCore.GetFirstItem(items);
+            JObject item = items.FirstOrDefault();
             if (item == null)
             {
                 return null;
@@ -168,14 +168,16 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             return parsed;
         }
 
-        private static Collection<JObject> GetItemsFromResponse(ResponseMessage response)
+        private static IEnumerable<JObject> GetItemsFromResponse(ResponseMessage response)
         {
             if (response.Content == null)
             {
                 return new Collection<JObject>();
             }
 
-            return CosmosContainerExtensions.DefaultJsonSerializer.FromStream<CosmosFeedResponseUtil<JObject>>(response.Content).Data;
+            return CosmosContainerExtensions.DefaultJsonSerializer.FromFeedResponseStream<JObject>(
+                response.Content,
+                ResourceType.Document);
         }
 
         private async Task<long> GetRemainingWorkAsync(DocumentServiceLease existingLease, CancellationToken cancellationToken)
@@ -196,8 +198,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
                 }
 
                 long parsedLSNFromSessionToken = RemainingWorkEstimatorCore.TryConvertToNumber(ExtractLsnFromSessionToken(response.Headers[HttpConstants.HttpHeaders.SessionToken]));
-                Collection<JObject> items = RemainingWorkEstimatorCore.GetItemsFromResponse(response);
-                long lastQueryLSN = items.Count > 0
+                IEnumerable<JObject> items = RemainingWorkEstimatorCore.GetItemsFromResponse(response);
+                long lastQueryLSN = items.Any()
                     ? RemainingWorkEstimatorCore.TryConvertToNumber(RemainingWorkEstimatorCore.GetFirstItemLSN(items)) - 1
                     : parsedLSNFromSessionToken;
                 if (lastQueryLSN < 0)

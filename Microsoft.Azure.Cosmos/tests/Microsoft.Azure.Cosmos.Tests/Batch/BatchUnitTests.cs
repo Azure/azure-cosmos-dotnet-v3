@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Client.Core.Tests;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -80,6 +79,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                     {
                         // EPK string without corresponding byte representation
                         { WFConstants.BackendHeaders.EffectivePartitionKeyString, "epk" }
+                    }
+                },
+                new TransactionalBatchItemRequestOptions()
+                {
+                    Properties = new Dictionary<string, object>
+                    {
+                        // Partition key without EPK string
+                        { HttpConstants.HttpHeaders.PartitionKey, "epk" }
                     }
                 }
             };
