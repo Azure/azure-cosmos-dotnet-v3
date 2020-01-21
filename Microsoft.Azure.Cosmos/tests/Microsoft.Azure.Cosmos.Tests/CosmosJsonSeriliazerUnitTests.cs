@@ -103,7 +103,10 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
         {
             dynamic property = JsonConvert.DeserializeObject<T>(defaultJson);
             Assert.AreEqual(id, property.Id);
-            string propertyJson = JsonConvert.SerializeObject(property);
+            string propertyJson = JsonConvert.SerializeObject(property, new JsonSerializerSettings() {
+                Formatting = Formatting.None
+            });
+
             Assert.AreEqual(defaultJson, propertyJson);
             // System properties should be ignored if null
             Assert.IsFalse(propertyJson.Contains("_etag"));
