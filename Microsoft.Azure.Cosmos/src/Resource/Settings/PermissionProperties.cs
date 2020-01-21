@@ -173,7 +173,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>ResourceToken generation and reading does not apply.</remarks>
         [JsonConverter(typeof(UnixDateTimeConverter))]
         [JsonProperty(PropertyName = Constants.Properties.LastModified, NullValueHandling = NullValueHandling.Ignore)]
-        public DateTime LastModified { get; private set; }
+        public DateTime? LastModified { get; private set; }
 
         /// <summary>
         /// Gets the self-link associated with the resource from the Azure Cosmos DB service.
