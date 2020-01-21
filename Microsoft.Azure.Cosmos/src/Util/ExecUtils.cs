@@ -156,7 +156,9 @@ namespace Microsoft.Azure.Cosmos
                 cosmosContainerCore,
                 partitionKey,
                 streamPayload,
-                requestEnricher);
+                requestEnricher,
+                null,
+                cancellationToken);
 
             return responseCreator(response);
         }

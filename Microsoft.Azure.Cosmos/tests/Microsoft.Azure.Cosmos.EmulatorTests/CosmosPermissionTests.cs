@@ -342,11 +342,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //delete resource with PermissionMode.All
             using (CosmosClient tokenCosmosClient = TestCommon.CreateCosmosClient(clientOptions: null, resourceToken: permission.Token))
             {
-                ItemResponse<dynamic> response = await tokenCosmosClient
+                FeedIterator<dynamic> feed = tokenCosmosClient
                     .GetDatabase(this.cosmosDatabase.Id)
                     .GetContainer(containerId)
-                    .DeleteItemAsync<dynamic>(itemId, partitionKey);
-                Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
+                    .GetItemQueryIterator<dynamic>(new QueryDefinition("select * from t"));
+
+                while (feed.HasMoreResults)
+                {
+                    FeedResponse<dynamic> response = await feed.ReadNextAsync();
+                    Assert.IsNotNull(response);
+                }
             }
         }
 

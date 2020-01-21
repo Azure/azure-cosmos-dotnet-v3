@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             CosmosClientSideRequestStatistics cosmosClientSideRequestStatistics = documentServiceResponse.RequestStats as CosmosClientSideRequestStatistics;
-            responseMessage.Diagnostics = new PointOperationStatistics(
+            PointOperationStatistics pointOperationStatistics = new PointOperationStatistics(
                 activityId: responseMessage.Headers.ActivityId,
                 statusCode: documentServiceResponse.StatusCode,
                 subStatusCode: documentServiceResponse.SubStatusCode,
@@ -49,6 +49,7 @@ namespace Microsoft.Azure.Cosmos
                 responseSessionToken: responseMessage.Headers.Session,
                 clientSideRequestStatistics: cosmosClientSideRequestStatistics);
 
+            requestMessage.DiagnosticsContext.AddContextWriter(pointOperationStatistics);
             return responseMessage;
         }
 
@@ -85,10 +86,10 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            responseMessage.Diagnostics = new PointOperationStatistics(
+            PointOperationStatistics pointOperationStatistics = new PointOperationStatistics(
                 activityId: responseMessage.Headers.ActivityId,
                 statusCode: documentClientException.StatusCode.Value,
-                subStatusCode: SubStatusCodes.Unknown,
+                subStatusCode: (int)SubStatusCodes.Unknown,
                 requestCharge: responseMessage.Headers.RequestCharge,
                 errorMessage: responseMessage.ErrorMessage,
                 method: requestMessage?.Method,
@@ -97,6 +98,7 @@ namespace Microsoft.Azure.Cosmos
                 responseSessionToken: responseMessage.Headers.Session,
                 clientSideRequestStatistics: documentClientException.RequestStatistics as CosmosClientSideRequestStatistics);
 
+            responseMessage.DiagnosticsContext.AddContextWriter(pointOperationStatistics);
             if (requestMessage != null)
             {
                 requestMessage.Properties.Remove(nameof(DocumentClientException));

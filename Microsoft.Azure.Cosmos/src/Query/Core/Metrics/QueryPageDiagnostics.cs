@@ -6,20 +6,21 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 {
     using System;
     using System.Text;
+    using Newtonsoft.Json;
 
-    internal sealed class QueryPageDiagnostics
+    internal sealed class QueryPageDiagnostics : CosmosDiagnosticWriter
     {
         public QueryPageDiagnostics(
             string partitionKeyRangeId,
             string queryMetricText,
             string indexUtilizationText,
-            CosmosDiagnostics requestDiagnostics,
+            CosmosDiagnosticsContext diagnosticsContext,
             SchedulingStopwatch schedulingStopwatch)
         {
             this.PartitionKeyRangeId = partitionKeyRangeId ?? throw new ArgumentNullException(nameof(partitionKeyRangeId));
             this.QueryMetricText = queryMetricText ?? string.Empty;
             this.IndexUtilizationText = indexUtilizationText ?? string.Empty;
-            this.RequestDiagnostics = requestDiagnostics;
+            this.DiagnosticsContext = diagnosticsContext;
             this.SchedulingTimeSpan = schedulingStopwatch.Elapsed;
         }
 
@@ -29,36 +30,32 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
         internal string IndexUtilizationText { get; }
 
-        internal CosmosDiagnostics RequestDiagnostics { get; }
+        internal CosmosDiagnosticsContext DiagnosticsContext { get; }
 
         internal SchedulingTimeSpan SchedulingTimeSpan { get; }
 
-        public void AppendToBuilder(StringBuilder stringBuilder)
+        internal override void WriteJsonObject(JsonWriter jsonWriter)
         {
-            string requestDiagnosticsString = string.Empty;
-            if (this.RequestDiagnostics != null)
-            {
-                requestDiagnosticsString = this.RequestDiagnostics.ToString();
-            }
+            jsonWriter.WriteStartObject();
 
-            stringBuilder.Append("{\"PartitionKeyRangeId\":\"");
-            stringBuilder.Append(this.PartitionKeyRangeId);
-            stringBuilder.Append("\",\"QueryMetricText\":\"");
-            stringBuilder.Append(this.QueryMetricText);
-            stringBuilder.Append("\",\"IndexUtilizationText\":\"");
-            stringBuilder.Append(this.IndexUtilizationText);
-            stringBuilder.Append("\",\"RequestDiagnostics\":");
-            stringBuilder.Append(requestDiagnosticsString);
-            stringBuilder.Append(",\"SchedulingTimeSpan\":");
-            this.SchedulingTimeSpan.AppendJsonToBuilder(stringBuilder);
-            stringBuilder.Append("}");
-        }
+            jsonWriter.WritePropertyName("PKRangeId");
+            jsonWriter.WriteValue(this.PartitionKeyRangeId);
 
-        public override string ToString()
-        {
-            StringBuilder stringBuilder = new StringBuilder();
-            this.AppendToBuilder(stringBuilder);
-            return stringBuilder.ToString();
+            jsonWriter.WritePropertyName("QueryMetric");
+            jsonWriter.WriteValue(this.QueryMetricText);
+
+            jsonWriter.WritePropertyName("IndexUtilization");
+            jsonWriter.WriteValue(this.IndexUtilizationText);
+
+            jsonWriter.WritePropertyName("SchedulingTimeSpan");
+            this.SchedulingTimeSpan.WriteJsonObject(jsonWriter);
+
+            jsonWriter.WritePropertyName("Context");
+            jsonWriter.WriteStartArray();
+            this.DiagnosticsContext.ContextList.WriteJsonObject(jsonWriter);
+            jsonWriter.WriteEndArray();
+
+            jsonWriter.WriteEndObject();
         }
     }
 }

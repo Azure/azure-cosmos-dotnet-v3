@@ -33,18 +33,20 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="subStatusCode">Provides further details about why the batch was not processed.</param>
         /// <param name="errorMessage">The reason for failure.</param>
         /// <param name="operations">Operations that were to be executed.</param>
+        /// <param name="diagnosticsContext">Diagnostics for the operation</param>
         internal TransactionalBatchResponse(
             HttpStatusCode statusCode,
             SubStatusCodes subStatusCode,
             string errorMessage,
-            IReadOnlyList<ItemBatchOperation> operations)
+            IReadOnlyList<ItemBatchOperation> operations,
+            CosmosDiagnosticsContext diagnosticsContext)
             : this(statusCode,
                   subStatusCode,
                   errorMessage,
                   requestCharge: 0,
                   retryAfter: null,
                   activityId: Guid.Empty.ToString(),
-                  cosmosDiagnostics: null,
+                  diagnosticsContext: diagnosticsContext,
                   operations: operations,
                   serializer: null)
         {
@@ -65,7 +67,7 @@ namespace Microsoft.Azure.Cosmos
             double requestCharge,
             TimeSpan? retryAfter,
             string activityId,
-            CosmosDiagnostics cosmosDiagnostics,
+            CosmosDiagnosticsContext diagnosticsContext,
             IReadOnlyList<ItemBatchOperation> operations,
             CosmosSerializerCore serializer)
         {
@@ -77,7 +79,8 @@ namespace Microsoft.Azure.Cosmos
             this.RequestCharge = requestCharge;
             this.RetryAfter = retryAfter;
             this.ActivityId = activityId;
-            this.Diagnostics = cosmosDiagnostics;
+            this.Diagnostics = diagnosticsContext;
+            this.DiagnosticsContext = diagnosticsContext ?? throw new ArgumentNullException(nameof(diagnosticsContext));
         }
 
         /// <summary>
@@ -131,6 +134,8 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the cosmos diagnostic information for the current request to Azure Cosmos DB service
         /// </summary>
         public virtual CosmosDiagnostics Diagnostics { get; }
+
+        internal virtual CosmosDiagnosticsContext DiagnosticsContext { get; }
 
         internal virtual SubStatusCodes SubStatusCode { get; }
 
@@ -248,7 +253,7 @@ namespace Microsoft.Azure.Cosmos
                                 responseMessage.Headers.RequestCharge,
                                 responseMessage.Headers.RetryAfter,
                                 responseMessage.Headers.ActivityId,
-                                responseMessage.Diagnostics,
+                                responseMessage.DiagnosticsContext,
                                 serverRequest.Operations,
                                 serializer);
                         }
@@ -264,7 +269,7 @@ namespace Microsoft.Azure.Cosmos
                         responseMessage.Headers.RequestCharge,
                         responseMessage.Headers.RetryAfter,
                         responseMessage.Headers.ActivityId,
-                        responseMessage.Diagnostics,
+                        responseMessage.DiagnosticsContext,
                         serverRequest.Operations,
                         serializer);
                 }
@@ -282,7 +287,7 @@ namespace Microsoft.Azure.Cosmos
                             responseMessage.Headers.RequestCharge,
                             responseMessage.Headers.RetryAfter,
                             responseMessage.Headers.ActivityId,
-                            responseMessage.Diagnostics,
+                            responseMessage.DiagnosticsContext,
                             serverRequest.Operations,
                             serializer);
                     }
@@ -378,7 +383,7 @@ namespace Microsoft.Azure.Cosmos
                 responseMessage.Headers.RequestCharge,
                 responseMessage.Headers.RetryAfter,
                 responseMessage.Headers.ActivityId,
-                responseMessage.Diagnostics,
+                responseMessage.DiagnosticsContext,
                 serverRequest.Operations,
                 serializer);
 
