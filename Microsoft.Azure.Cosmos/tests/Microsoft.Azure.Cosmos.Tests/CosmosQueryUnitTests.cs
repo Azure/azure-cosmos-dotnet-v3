@@ -325,11 +325,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                 func)).Result);
 
             components.Add((await TakeDocumentQueryExecutionComponent.TryCreateLimitDocumentQueryExecutionComponentAsync(
+                ExecutionEnvironment.Client,
                 5,
                 null,
                 func)).Result);
 
             components.Add((await TakeDocumentQueryExecutionComponent.TryCreateTopDocumentQueryExecutionComponentAsync(
+                ExecutionEnvironment.Client,
                 5,
                 null,
                 func)).Result);

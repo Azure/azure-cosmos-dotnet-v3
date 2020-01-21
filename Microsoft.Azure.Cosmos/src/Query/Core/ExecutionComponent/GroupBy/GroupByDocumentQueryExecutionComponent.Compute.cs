@@ -175,26 +175,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                 }
             }
 
-            public override bool TryGetContinuationToken(out string continuationToken)
-            {
-                if (this.IsDone)
-                {
-                    continuationToken = null;
-                    return true;
-                }
-
-                if (!this.Source.TryGetContinuationToken(out string sourceContinuationToken))
-                {
-                    continuationToken = default;
-                    return false;
-                }
-
-                IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
-                this.SerializeState(jsonWriter);
-                continuationToken = Utf8StringHelpers.ToString(jsonWriter.GetResult());
-                return true;
-            }
-
             private readonly struct GroupByContinuationToken
             {
                 public GroupByContinuationToken(

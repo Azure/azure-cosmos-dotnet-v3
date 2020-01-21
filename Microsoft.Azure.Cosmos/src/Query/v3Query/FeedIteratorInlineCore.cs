@@ -7,11 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
-    using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
-    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using Microsoft.Azure.Cosmos.Json;
 
     internal class FeedIteratorInlineCore : FeedIteratorInternal
     {
@@ -41,6 +37,11 @@ namespace Microsoft.Azure.Cosmos
         public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
             return TaskHelper.RunInlineIfNeededAsync(() => this.feedIteratorInternal.ReadNextAsync(cancellationToken));
+        }
+
+        public override void SerializeState(IJsonWriter jsonWriter)
+        {
+            this.feedIteratorInternal.SerializeState(jsonWriter);
         }
 
         public override bool TryGetContinuationToken(out string continuationToken)
@@ -82,6 +83,11 @@ namespace Microsoft.Azure.Cosmos
         public override bool TryGetContinuationToken(out string continuationToken)
         {
             return this.feedIteratorInternal.TryGetContinuationToken(out continuationToken);
+        }
+
+        public override void SerializeState(IJsonWriter jsonWriter)
+        {
+            this.feedIteratorInternal.SerializeState(jsonWriter);
         }
     }
 }

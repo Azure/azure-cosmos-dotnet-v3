@@ -165,26 +165,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
             return response;
         }
 
-        public override bool TryGetContinuationToken(out string state)
-        {
-            if (this.IsDone)
-            {
-                state = null;
-                return true;
-            }
-
-            if (!this.Source.TryGetContinuationToken(out string sourceState))
-            {
-                state = null;
-                return false;
-            }
-
-            IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
-            this.SerializeState(jsonWriter);
-            state = Utf8StringHelpers.ToString(jsonWriter.GetResult()); 
-            return true;
-        }
-
         public override void SerializeState(IJsonWriter jsonWriter)
         {
             if (jsonWriter == null)

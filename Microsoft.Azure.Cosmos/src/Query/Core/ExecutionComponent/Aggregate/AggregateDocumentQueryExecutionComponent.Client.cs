@@ -115,13 +115,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
                     diagnostics: diagnosticsPages,
                     responseLengthBytes: responseLengthBytes);
             }
-
-            public override bool TryGetContinuationToken(out string state)
-            {
-                // Since we block until we get the final result the continuation token is always null.
-                state = null;
-                return true;
-            }
         }
     }
 }

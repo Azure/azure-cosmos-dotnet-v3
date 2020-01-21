@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 CosmosParallelItemQueryExecutionContext executionContext = (await CosmosParallelItemQueryExecutionContext.TryCreateAsync(
                     context,
                     initParams,
-                    fullConitnuationToken,
+                    RequestContinuationToken.Create(fullConitnuationToken),
                     this.cancellationToken)).Result;
 
                 // Read all the pages from both splits
@@ -173,7 +173,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 CosmosParallelItemQueryExecutionContext executionContext = (await CosmosParallelItemQueryExecutionContext.TryCreateAsync(
                     context,
                     initParams,
-                    fullConitnuationToken,
+                    RequestContinuationToken.Create(fullConitnuationToken),
                     this.cancellationToken)).Result;
 
                 // Read all the pages from both splits
@@ -301,7 +301,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 CosmosOrderByItemQueryExecutionContext executionContext = (await CosmosOrderByItemQueryExecutionContext.TryCreateAsync(
                     context,
                     initParams,
-                    fullConitnuationToken,
+                    RequestContinuationToken.Create(fullConitnuationToken),
                     this.cancellationToken)).Result;
 
                 // For order by it will drain all the pages till it gets a value.
@@ -424,7 +424,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 TryCatch<CosmosOrderByItemQueryExecutionContext> tryCreate = await CosmosOrderByItemQueryExecutionContext.TryCreateAsync(
                     context,
                     initParams,
-                    fullConitnuationToken,
+                    RequestContinuationToken.Create(fullConitnuationToken),
                     this.cancellationToken);
 
                 if (tryCreate.Succeeded)
@@ -513,19 +513,21 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             TryCatch<IDocumentQueryExecutionComponent> tryCreateWhenInvalidContinuationToken = await DistinctDocumentQueryExecutionComponent.TryCreateAsync(
                 ExecutionEnvironment.Client,
-                "This is not a valid continuation token",
+                RequestContinuationToken.Create("This is not a valid continuation token"),
                 CreateSource,
                 DistinctQueryType.Unordered);
 
             Assert.IsFalse(tryCreateWhenInvalidContinuationToken.Succeeded);
         }
 
-        private static Task<TryCatch<IDocumentQueryExecutionComponent>> FailToCreateSource(string continuationToken)
+        // ADD MORE TESTS HERE
+
+        private static Task<TryCatch<IDocumentQueryExecutionComponent>> FailToCreateSource(RequestContinuationToken continuationToken)
         {
             return Task.FromResult(TryCatch<IDocumentQueryExecutionComponent>.FromException(new Exception()));
         }
 
-        private static Task<TryCatch<IDocumentQueryExecutionComponent>> CreateSource(string continuationToken)
+        private static Task<TryCatch<IDocumentQueryExecutionComponent>> CreateSource(RequestContinuationToken continuationToken)
         {
             return Task.FromResult(TryCatch<IDocumentQueryExecutionComponent>.FromResult(new Mock<IDocumentQueryExecutionComponent>().Object));
         }

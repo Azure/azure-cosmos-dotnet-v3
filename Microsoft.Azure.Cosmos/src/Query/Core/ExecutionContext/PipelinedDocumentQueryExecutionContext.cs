@@ -258,6 +258,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 tryCreatePipelineAsync = async (continuationToken) =>
                 {
                     return await TakeDocumentQueryExecutionComponent.TryCreateLimitDocumentQueryExecutionComponentAsync(
+                        executionEnvironment,
                         queryInfo.Limit.Value,
                         continuationToken,
                         tryCreateSourceAsync);
@@ -270,6 +271,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 tryCreatePipelineAsync = async (continuationToken) =>
                 {
                     return await TakeDocumentQueryExecutionComponent.TryCreateTopDocumentQueryExecutionComponentAsync(
+                        executionEnvironment,
                         queryInfo.Top.Value,
                         continuationToken,
                         tryCreateSourceAsync);

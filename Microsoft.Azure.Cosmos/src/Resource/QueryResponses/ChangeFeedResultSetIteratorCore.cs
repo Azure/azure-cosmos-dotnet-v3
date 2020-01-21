@@ -6,8 +6,10 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Net;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Routing;
@@ -169,6 +171,11 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey: null,
                 streamPayload: null,
                 cancellationToken: cancellationToken);
+        }
+
+        public override void SerializeState(IJsonWriter jsonWriter)
+        {
+            throw new NotImplementedException();
         }
     }
 }

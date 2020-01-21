@@ -68,11 +68,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                 throw new NotImplementedException();
             }
 
-            public override bool TryGetContinuationToken(out string state)
-            {
-                throw new NotImplementedException();
-            }
-
             /// <summary>
             /// A OffsetContinuationToken is a composition of a source continuation token and how many items to skip from that source.
             /// </summary>

@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
     /// <summary>
@@ -28,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
         /// <returns>The appropriate IDistinctMap.</returns>
         public static TryCatch<DistinctMap> TryCreate(
             DistinctQueryType distinctQueryType,
-            string distinctMapContinuationToken)
+            RequestContinuationToken distinctMapContinuationToken)
         {
             TryCatch<DistinctMap> tryCreateDistinctMap;
             switch (distinctQueryType)

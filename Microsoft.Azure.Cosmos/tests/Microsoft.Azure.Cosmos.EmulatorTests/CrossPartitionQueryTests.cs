@@ -661,16 +661,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             List<T> resultsFromSerializeState = new List<T>();
-            ReadOnlyMemory<byte> continuationToken;
+            ReadOnlyMemory<byte> continuationToken = default(ReadOnlyMemory<byte>);
             do
             {
                 QueryRequestOptions computeRequestOptions = queryRequestOptions.Clone();
                 computeRequestOptions.ExecutionEnvironment = Cosmos.Query.Core.ExecutionContext.ExecutionEnvironment.Compute;
+                computeRequestOptions.BinaryContinuationToken = continuationToken;
 
                 FeedIteratorInternal<T> itemQuery = (FeedIteratorInternal<T>)container.GetItemQueryIterator<T>(
                    queryText: query,
-                   requestOptions: computeRequestOptions,
-                   continuationToken: continuationToken);
+                   requestOptions: computeRequestOptions);
                 try
                 {
                     FeedResponse<T> cosmosQueryResponse = await itemQuery.ReadNextAsync();
@@ -690,8 +690,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     itemQuery = (FeedIteratorInternal<T>)container.GetItemQueryIterator<T>(
                             queryText: query,
-                            requestOptions: queryRequestOptions,
-                            continuationToken: continuationToken);
+                            requestOptions: queryRequestOptions);
                 }
             } while (!continuationToken.IsEmpty);
 

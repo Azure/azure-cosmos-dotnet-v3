@@ -4,8 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System.Threading;
-    using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Json;
 
     /// <summary>
     /// Internal feed iterator API for casting and mocking purposes.
@@ -13,5 +12,6 @@ namespace Microsoft.Azure.Cosmos
     internal abstract class FeedIteratorInternal : FeedIterator
     {
         public abstract bool TryGetContinuationToken(out string continuationToken);
+        public abstract void SerializeState(IJsonWriter jsonWriter);
     }
 }

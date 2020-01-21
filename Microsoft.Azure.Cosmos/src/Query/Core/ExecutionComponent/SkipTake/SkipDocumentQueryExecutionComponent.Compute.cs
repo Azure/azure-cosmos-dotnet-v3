@@ -69,11 +69,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                     offsetContinuationToken.Offset));
             }
 
-            public override bool TryGetContinuationToken(out string state)
-            {
-                throw new NotImplementedException();
-            }
-
             public override void SerializeState(IJsonWriter jsonWriter)
             {
                 if (jsonWriter == null)

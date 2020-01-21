@@ -67,7 +67,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
             this.Source.Stop();
         }
 
-        public abstract bool TryGetContinuationToken(out string state);
+        public bool TryGetContinuationToken(out string continuationToken)
+        {
+            IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
+            this.SerializeState(jsonWriter);
+            continuationToken = Utf8StringHelpers.ToString(jsonWriter.GetResult());
+            return false;
+        }
 
         public abstract void SerializeState(IJsonWriter jsonWriter);
     }

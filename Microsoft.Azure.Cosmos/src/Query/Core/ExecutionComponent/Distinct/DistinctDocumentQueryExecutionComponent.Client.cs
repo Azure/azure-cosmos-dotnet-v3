@@ -46,9 +46,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                 Func<RequestContinuationToken, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync,
                 DistinctQueryType distinctQueryType)
             {
+                if (requestContinuation == null)
+                {
+                    throw new ArgumentNullException(nameof(requestContinuation));
+                }
+
                 if (!(requestContinuation is StringRequestContinuationToken stringRequestContinuationToken))
                 {
                     throw new ArgumentException($"Unknown {nameof(RequestContinuationToken)} type: {requestContinuation.GetType()}");
+                }
+
+                if (tryCreateSourceAsync == null)
+                {
+                    throw new ArgumentNullException(nameof(tryCreateSourceAsync));
                 }
 
                 DistinctContinuationToken distinctContinuationToken;
@@ -67,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
 
                 TryCatch<DistinctMap> tryCreateDistinctMap = DistinctMap.TryCreate(
                     distinctQueryType,
-                    distinctContinuationToken.DistinctMapToken);
+                    RequestContinuationToken.Create(distinctContinuationToken.DistinctMapToken));
                 if (!tryCreateDistinctMap.Succeeded)
                 {
                     return TryCatch<IDocumentQueryExecutionComponent>.FromException(tryCreateDistinctMap.Exception);
@@ -141,11 +151,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
             }
 
             public override void SerializeState(IJsonWriter jsonWriter)
-            {
-                throw new NotImplementedException();
-            }
-
-            public override bool TryGetContinuationToken(out string state)
             {
                 throw new NotImplementedException();
             }

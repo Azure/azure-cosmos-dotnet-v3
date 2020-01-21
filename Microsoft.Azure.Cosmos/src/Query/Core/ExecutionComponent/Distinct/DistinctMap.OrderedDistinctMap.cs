@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
@@ -83,17 +84,47 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                 jsonWriter.WriteBinaryValue(UInt128.ToByteArray(this.lastHash));
             }
 
-            public static TryCatch<DistinctMap> TryCreate(string continuationToken)
+            public static TryCatch<DistinctMap> TryCreate(RequestContinuationToken requestContinuationToken)
             {
-                UInt128 lastHash;
-                if (continuationToken != null)
+                if (requestContinuationToken == null)
                 {
-                    if (!UInt128.TryParse(continuationToken, out lastHash))
+                    throw new ArgumentNullException(nameof(requestContinuationToken));
+                }
+
+                UInt128 lastHash;
+                if (!requestContinuationToken.IsNull)
+                {
+                    switch (requestContinuationToken)
                     {
-                        return TryCatch<DistinctMap>.FromException(
-                            new MalformedContinuationTokenException(
-                                $"Malformed {nameof(OrderedDistinctMap)} continuation token: {continuationToken}."));
+                        case StringRequestContinuationToken stringRequestContinuationToken:
+                            if (!UInt128.TryParse(stringRequestContinuationToken.Value, out lastHash))
+                            {
+                                return TryCatch<DistinctMap>.FromException(
+                                    new MalformedContinuationTokenException(
+                                        $"Malformed {nameof(OrderedDistinctMap)} continuation token: {stringRequestContinuationToken.Value}."));
+                            }
+                            break;
+
+                        case CosmosElementRequestContinuationToken cosmosElementRequestContinuationToken:
+                            if (!(cosmosElementRequestContinuationToken.Value is CosmosBinary cosmosBinary))
+                            {
+                                return TryCatch<DistinctMap>.FromException(
+                                    new MalformedContinuationTokenException(
+                                        $"Malformed {nameof(OrderedDistinctMap)} continuation token: {cosmosElementRequestContinuationToken.Value}."));
+                            }
+
+                            if (!UInt128.TryParse(cosmosBinary.Value.Span, out lastHash))
+                            {
+                                return TryCatch<DistinctMap>.FromException(
+                                    new MalformedContinuationTokenException(
+                                        $"Malformed {nameof(OrderedDistinctMap)} continuation token: {cosmosElementRequestContinuationToken.Value}."));
+                            }
+                            break;
+
+                        default:
+                            throw new ArgumentOutOfRangeException($"Unknown {nameof(RequestContinuationToken)} type. {requestContinuationToken.GetType()}.");
                     }
+
                 }
                 else
                 {

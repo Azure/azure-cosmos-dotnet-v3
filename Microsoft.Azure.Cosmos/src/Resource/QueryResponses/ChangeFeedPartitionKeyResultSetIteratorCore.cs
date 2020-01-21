@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Json;
 
     /// <summary>
     /// Cosmos Change Feed Iterator for a particular Partition Key Range
@@ -73,6 +74,11 @@ namespace Microsoft.Azure.Cosmos
                     response.Headers.ContinuationToken = this.continuationToken;
                     return response;
                 }, cancellationToken);
+        }
+
+        public override void SerializeState(IJsonWriter jsonWriter)
+        {
+            throw new NotImplementedException();
         }
 
         public override bool TryGetContinuationToken(out string continuationToken)

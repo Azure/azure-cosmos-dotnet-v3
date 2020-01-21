@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                     groupByAliasToAggregateType,
                     orderedAliases,
                     hasSelectValue,
-                    groupingTableContinuationToken: null);
+                    continuationToken: null);
 
                 if (!tryCreateGroupingTable.Succeeded)
                 {
@@ -101,12 +101,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                    responseLengthBytes: responseLengthBytes);
 
                 return response;
-            }
-
-            public override bool TryGetContinuationToken(out string state)
-            {
-                state = default;
-                return false;
             }
 
             public override void SerializeState(IJsonWriter jsonWriter)

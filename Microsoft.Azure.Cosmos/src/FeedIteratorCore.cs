@@ -7,9 +7,10 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.IO;
     using System.Net;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Documents;
     using static Microsoft.Azure.Documents.RuntimeConstants;
@@ -114,6 +115,11 @@ namespace Microsoft.Azure.Cosmos
             // the enumeration is done for now.
             return continuationToken != null && statusCode != HttpStatusCode.NotModified;
         }
+
+        public override void SerializeState(IJsonWriter jsonWriter)
+        {
+            jsonWriter.WriteJsonFragment(Encoding.UTF8.GetBytes(this.continuationToken));
+        }
     }
 
     /// <summary>
@@ -151,6 +157,11 @@ namespace Microsoft.Azure.Cosmos
         public override bool TryGetContinuationToken(out string continuationToken)
         {
             return this.feedIterator.TryGetContinuationToken(out continuationToken);
+        }
+
+        public override void SerializeState(IJsonWriter jsonWriter)
+        {
+            this.feedIterator.SerializeState(jsonWriter);
         }
     }
 }

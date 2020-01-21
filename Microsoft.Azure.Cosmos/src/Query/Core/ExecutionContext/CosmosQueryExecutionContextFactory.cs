@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
@@ -63,12 +64,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             CancellationToken cancellationToken)
         {
             // Try to parse the continuation token.
-            string continuationToken = inputParameters.InitialUserContinuationToken;
+            RequestContinuationToken continuationToken = inputParameters.InitialUserContinuationToken;
             PartitionedQueryExecutionInfo queryPlanFromContinuationToken = inputParameters.PartitionedQueryExecutionInfo;
-            if (continuationToken != null)
+            if (!continuationToken.IsNull)
             {
+                if (!continuationToken.TryConvertToCosmosElement(out CosmosElement cosmosElement))
+                {
+                    return TryCatch<CosmosQueryExecutionContext>.FromException(
+                        new MalformedContinuationTokenException(
+                            $"Malformed {nameof(PipelineContinuationToken)}."));
+                }
+
                 if (!PipelineContinuationToken.TryParse(
-                    continuationToken,
+                    cosmosElement.ToString(),
                     out PipelineContinuationToken pipelineContinuationToken))
                 {
                     return TryCatch<CosmosQueryExecutionContext>.FromException(
@@ -94,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                             $"{nameof(PipelineContinuationToken)}: '{continuationToken}' is no longer supported."));
                 }
 
-                continuationToken = latestVersionPipelineContinuationToken.SourceContinuationToken;
+                continuationToken = RequestContinuationToken.Create(latestVersionPipelineContinuationToken.SourceContinuationToken);
                 if (latestVersionPipelineContinuationToken.QueryPlan != null)
                 {
                     queryPlanFromContinuationToken = latestVersionPipelineContinuationToken.QueryPlan;
@@ -342,7 +350,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
             public InputParameters(
                 SqlQuerySpec sqlQuerySpec,
-                string initialUserContinuationToken,
+                RequestContinuationToken initialUserContinuationToken,
                 int? maxConcurrency,
                 int? maxItemCount,
                 int? maxBufferedItemCount,
@@ -386,7 +394,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             }
 
             public SqlQuerySpec SqlQuerySpec { get; }
-            public string InitialUserContinuationToken { get; }
+            public RequestContinuationToken InitialUserContinuationToken { get; }
             public int MaxConcurrency { get; }
             public int MaxItemCount { get; }
             public int MaxBufferedItemCount { get; }

@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
@@ -98,11 +99,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
             private const string SimpleValuesName = "SimpleValues";
 
             /// <summary>
-            /// Buffer that gets reused to convert a .net string (utf-16) to a (utf-8) byte array.
-            /// </summary>
-            private readonly byte[] utf8Buffer;
-
-            /// <summary>
             /// HashSet for all numbers seen.
             /// This takes less space than a 24 byte hash and has full fidelity.
             /// </summary>
@@ -159,7 +155,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                 HashSet<UInt128> objects,
                 SimpleValues simpleValues)
             {
-                this.utf8Buffer = new byte[UnorderdDistinctMap.UInt128Length];
                 this.numbers = numbers ?? throw new ArgumentNullException(nameof(numbers));
                 this.stringsLength4 = stringsLength4 ?? throw new ArgumentNullException(nameof(stringsLength4));
                 this.stringsLength8 = stringsLength8 ?? throw new ArgumentNullException(nameof(stringsLength8));
@@ -351,27 +346,25 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                 // If you can fit the string with full fidelity in 16 bytes, then you might as well just hash the string itself.
                 if (utf8Length <= UnorderdDistinctMap.UInt128Length)
                 {
-                    // Zero out the array since you want all trailing bytes to be 0 for the conversions that happen next.
-                    Array.Clear(this.utf8Buffer, 0, this.utf8Buffer.Length);
-                    Encoding.UTF8.GetBytes(value, 0, value.Length, this.utf8Buffer, 0);
-
+                    Span<byte> utf8Buffer = stackalloc byte[UInt128Length];
+                    Encoding.UTF8.GetBytes(value, utf8Buffer); 
                     if (utf8Length == 0)
                     {
                         added = this.AddSimpleValue(SimpleValues.EmptyString);
                     }
                     else if (utf8Length <= UnorderdDistinctMap.UIntLength)
                     {
-                        uint uintValue = BitConverter.ToUInt32(this.utf8Buffer, 0);
+                        uint uintValue = MemoryMarshal.Read<uint>(utf8Buffer);
                         added = this.stringsLength4.Add(uintValue);
                     }
                     else if (utf8Length <= UnorderdDistinctMap.ULongLength)
                     {
-                        ulong uLongValue = BitConverter.ToUInt64(this.utf8Buffer, 0);
+                        ulong uLongValue = MemoryMarshal.Read<ulong>(utf8Buffer);
                         added = this.stringsLength8.Add(uLongValue);
                     }
                     else
                     {
-                        UInt128 uInt128Value = UInt128.FromByteArray(this.utf8Buffer);
+                        UInt128 uInt128Value = UInt128.FromByteArray(utf8Buffer);
                         added = this.stringsLength16.Add(uInt128Value);
                     }
                 }
@@ -380,7 +373,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                     // Else the string is too large and we will just store the hash.
                     UInt128 uint128Value = DistinctHash.GetHash(CosmosString.Create(value));
                     added = this.stringsLength16Plus.Add(uint128Value);
-
                 }
 
                 return added;
@@ -408,8 +400,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                 return this.objects.Add(hash);
             }
 
-            public static TryCatch<DistinctMap> TryCreate(string continuationToken)
+            public static TryCatch<DistinctMap> TryCreate(RequestContinuationToken continuationToken)
             {
+                if (continuationToken == null)
+                {
+                    throw new ArgumentNullException(nameof(continuationToken));
+                }
+
                 HashSet<Number64> numbers = new HashSet<Number64>();
                 HashSet<uint> stringsLength4 = new HashSet<uint>();
                 HashSet<ulong> stringsLength8 = new HashSet<ulong>();
@@ -419,10 +416,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                 HashSet<UInt128> objects = new HashSet<UInt128>();
                 SimpleValues simpleValues = SimpleValues.None;
 
-                if (continuationToken != null)
+                if (!continuationToken.IsNull)
                 {
-                    byte[] binaryBuffer = Convert.FromBase64String(continuationToken);
-                    CosmosElement cosmosElement = CosmosElement.CreateFromBuffer(binaryBuffer);
+                    if (!(continuationToken is CosmosElementRequestContinuationToken cosmosElementRequestContinuation))
+                    {
+                        throw new ArgumentException($"Unknown {nameof(RequestContinuationToken)} type: {continuationToken.GetType()}");
+                    }
+
+                    CosmosElement cosmosElement = cosmosElementRequestContinuation.Value;
                     if (!(cosmosElement is CosmosObject hashDictionary))
                     {
                         return TryCatch<DistinctMap>.FromException(

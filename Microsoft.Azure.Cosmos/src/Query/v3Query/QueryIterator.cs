@@ -7,9 +7,11 @@ namespace Microsoft.Azure.Cosmos.Query
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
-    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
 
@@ -55,9 +57,31 @@ namespace Microsoft.Azure.Cosmos.Query
                 allowNonValueAggregateQuery: allowNonValueAggregateQuery,
                 correlatedActivityId: Guid.NewGuid());
 
+            RequestContinuationToken requestContinuationToken;
+            if (queryRequestOptions.ExecutionEnvironment.HasValue)
+            {
+                switch (queryRequestOptions.ExecutionEnvironment.Value)
+                {
+                    case ExecutionEnvironment.Client:
+                        requestContinuationToken = RequestContinuationToken.Create(continuationToken);
+                        break;
+
+                    case ExecutionEnvironment.Compute:
+                        requestContinuationToken = RequestContinuationToken.Create(CosmosElement.CreateFromBuffer(queryRequestOptions.BinaryContinuationToken));
+                        break;
+
+                    default:
+                        throw new ArgumentOutOfRangeException($"Unknown {nameof(ExecutionEnvironment)}: {queryRequestOptions.ExecutionEnvironment.Value}.");
+                }
+            }
+            else
+            {
+                requestContinuationToken = RequestContinuationToken.Create(continuationToken);
+            }
+
             CosmosQueryExecutionContextFactory.InputParameters inputParameters = new CosmosQueryExecutionContextFactory.InputParameters(
                 sqlQuerySpec: sqlQuerySpec,
-                initialUserContinuationToken: continuationToken,
+                initialUserContinuationToken: requestContinuationToken,
                 maxConcurrency: queryRequestOptions.MaxConcurrency,
                 maxItemCount: queryRequestOptions.MaxItemCount,
                 maxBufferedItemCount: queryRequestOptions.MaxBufferedItemCount,
@@ -127,6 +151,11 @@ namespace Microsoft.Azure.Cosmos.Query
         public override bool TryGetContinuationToken(out string continuationToken)
         {
             return this.cosmosQueryExecutionContext.TryGetContinuationToken(out continuationToken);
+        }
+
+        public override void SerializeState(IJsonWriter jsonWriter)
+        {
+            this.cosmosQueryExecutionContext.SerializeState(jsonWriter);
         }
     }
 }
