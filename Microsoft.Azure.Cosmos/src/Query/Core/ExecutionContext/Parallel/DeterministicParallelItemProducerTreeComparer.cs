@@ -8,11 +8,20 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
     using PartitionKeyRange = Documents.PartitionKeyRange;
 
     /// <summary>
-    /// For parallel queries we drain from left partition to right,
-    /// then by rid order within those partitions.
+    /// Implementation of <see cref="IComparer{ItemProducerTree}"/> that returns documents from the left partition first.
+    /// The documents within a partition are already sorted in _rid order.
     /// </summary>
-    internal sealed class ParallelItemProducerTreeComparer : IComparer<ItemProducerTree>
+    /// <remarks>This comparer gaurentees that the query returns results in a deterministic order meaning that running the same query twice returns results in the same order. This also ensures that continuation token returned to the user is as small as possible, since we finish draining a partition before moving onto another partition. The only draw back is that all partitions can not be drained until all their partitions to the left are fully drained, which reduces the parallelism.
+    /// </remarks>
+    internal sealed class DeterministicParallelItemProducerTreeComparer : IComparer<ItemProducerTree>
     {
+        public static readonly DeterministicParallelItemProducerTreeComparer Singleton = new DeterministicParallelItemProducerTreeComparer();
+
+        private DeterministicParallelItemProducerTreeComparer()
+        {
+            // Singleton class, so leave the constructor private.
+        }
+
         /// <summary>
         /// Compares two document producer trees in a parallel context and returns their comparison.
         /// </summary>

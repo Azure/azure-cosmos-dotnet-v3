@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly int maxOperationCount;
 
-        private readonly CosmosSerializer serializer;
+        private readonly CosmosSerializerCore serializerCore;
 
         private ArraySegment<ItemBatchOperation> operations;
 
@@ -40,12 +40,12 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="maxBodyLength">Maximum length allowed for the request body.</param>
         /// <param name="maxOperationCount">Maximum number of operations allowed in the request.</param>
-        /// <param name="serializer">Serializer to serialize user provided objects to JSON.</param>
-        protected ServerBatchRequest(int maxBodyLength, int maxOperationCount, CosmosSerializer serializer)
+        /// <param name="serializerCore">Serializer to serialize user provided objects to JSON.</param>
+        protected ServerBatchRequest(int maxBodyLength, int maxOperationCount, CosmosSerializerCore serializerCore)
         {
             this.maxBodyLength = maxBodyLength;
             this.maxOperationCount = maxOperationCount;
-            this.serializer = serializer;
+            this.serializerCore = serializerCore;
         }
 
         public IReadOnlyList<ItemBatchOperation> Operations => this.operations;
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos
                     break;
                 }
 
-                await operation.MaterializeResourceAsync(this.serializer, cancellationToken);
+                await operation.MaterializeResourceAsync(this.serializerCore, cancellationToken);
                 materializedCount++;
 
                 previousOperationIndex = operation.OperationIndex;

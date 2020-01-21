@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Client.Core.Tests
+namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using System.Collections.Generic;
@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
 
     internal class MockCosmosUtil
     {
-        public static readonly CosmosSerializer Serializer = new CosmosJsonDotNetSerializer();
+        public static readonly CosmosSerializerCore Serializer = new CosmosSerializerCore();
 
         public static CosmosClient CreateMockCosmosClient(
             Action<CosmosClientBuilder> customizeClientBuilder = null,

@@ -65,6 +65,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 properties: queryRequestOptions.Properties,
                 partitionedQueryExecutionInfo: partitionedQueryExecutionInfo,
                 executionEnvironment: queryRequestOptions.ExecutionEnvironment,
+                returnResultsInDeterministicOrder: queryRequestOptions.ReturnResultsInDeterministicOrder,
                 testInjections: queryRequestOptions.TestSettings);
 
             return new QueryIterator(

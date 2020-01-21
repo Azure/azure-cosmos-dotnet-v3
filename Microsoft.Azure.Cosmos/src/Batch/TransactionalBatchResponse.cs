@@ -67,13 +67,13 @@ namespace Microsoft.Azure.Cosmos
             string activityId,
             CosmosDiagnostics cosmosDiagnostics,
             IReadOnlyList<ItemBatchOperation> operations,
-            CosmosSerializer serializer)
+            CosmosSerializerCore serializer)
         {
             this.StatusCode = statusCode;
             this.SubStatusCode = subStatusCode;
             this.ErrorMessage = errorMessage;
             this.Operations = operations;
-            this.Serializer = serializer;
+            this.SerializerCore = serializer;
             this.RequestCharge = requestCharge;
             this.RetryAfter = retryAfter;
             this.ActivityId = activityId;
@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal virtual SubStatusCodes SubStatusCode { get; }
 
-        internal virtual CosmosSerializer Serializer { get; }
+        internal virtual CosmosSerializerCore SerializerCore { get; }
 
         internal IReadOnlyList<ItemBatchOperation> Operations { get; set; }
 
@@ -164,7 +164,7 @@ namespace Microsoft.Azure.Cosmos
             T resource = default(T);
             if (result.ResourceStream != null)
             {
-                resource = this.Serializer.FromStream<T>(result.ResourceStream);
+                resource = this.SerializerCore.FromStream<T>(result.ResourceStream);
             }
 
             return new TransactionalBatchOperationResult<T>(result, resource);
@@ -211,7 +211,7 @@ namespace Microsoft.Azure.Cosmos
         internal static async Task<TransactionalBatchResponse> FromResponseMessageAsync(
             ResponseMessage responseMessage,
             ServerBatchRequest serverRequest,
-            CosmosSerializer serializer,
+            CosmosSerializerCore serializer,
             bool shouldPromoteOperationStatus = true)
         {
             using (responseMessage)
@@ -325,7 +325,7 @@ namespace Microsoft.Azure.Cosmos
             Stream content,
             ResponseMessage responseMessage,
             ServerBatchRequest serverRequest,
-            CosmosSerializer serializer,
+            CosmosSerializerCore serializer,
             bool shouldPromoteOperationStatus)
         {
             List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();

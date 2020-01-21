@@ -150,8 +150,15 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <code language="c#">
         /// <![CDATA[
         /// Scripts scripts = this.container.Scripts;
-        /// string queryText = "SELECT * FROM s where s.id like '%testId%'";
-        /// FeedIterator<StoredProcedureProperties> iter = this.scripts.GetStoredProcedureQueryIterator<StoredProcedureProperties>(queryText);
+        /// FeedIterator<StoredProcedureProperties> feedIterator = this.scripts.GetStoredProcedureQueryIterator<StoredProcedureProperties>(
+        ///     "SELECT * FROM u where u.id like '%testId%'");
+        /// while (feedIterator.HasMoreResults)
+        /// {
+        ///     foreach (var properties in await feedIterator.ReadNextAsync())
+        ///     {
+        ///         Console.WriteLine(properties.Id);
+        ///     }
+        /// }
         /// ]]>
         /// </code>
         /// </example>
@@ -174,7 +181,21 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <![CDATA[
         /// Scripts scripts = this.container.Scripts;
         /// string queryText = "SELECT * FROM s where s.id like '%testId%'";
-        /// FeedIterator iter = this.scripts.GetStoredProcedureQueryStreamIterator(queryText);
+        /// FeedIterator feedIterator = this.scripts.GetStoredProcedureQueryStreamIterator(queryText);
+        /// while (feedIterator.HasMoreResults)
+        /// {
+        ///     // Stream iterator returns a response with status for errors
+        ///     using(ResponseMessage response = await feedIterator.ReadNextAsync())
+        ///     {
+        ///         // Handle failure scenario. 
+        ///         if(!response.IsSuccessStatusCode)
+        ///         {
+        ///             // Log the response.Diagnostics and handle the error
+        ///         }
+        ///
+        ///         // Process the response.Content Stream
+        ///     }
+        /// }
         /// ]]>
         /// </code>
         /// </example>
@@ -563,10 +584,16 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <code language="c#">
         /// <![CDATA[
         /// Scripts scripts = this.container.Scripts;
-        /// string queryText = "SELECT * FROM t where t.id like @testId";
-        /// QueryDefinition queryDefinition = new QueryDefinition(queryText);
-        /// queryDefinition.WithParameter("@testId", "testTriggerId");
-        /// FeedIterator<TriggerProperties> iter = this.scripts.GetTriggerQueryIterator<TriggerProperties>(queryDefinition);
+        /// QueryDefinition queryDefinition = new QueryDefinition("SELECT * FROM t where t.id like @testId")
+        ///     .WithParameter("@testId", "testTriggerId");
+        /// FeedIterator<TriggerProperties> feedIterator = this.scripts.GetTriggerQueryIterator<TriggerProperties>(queryDefinition);
+        /// while (feedIterator.HasMoreResults)
+        /// {
+        ///     foreach (var properties in await feedIterator.ReadNextAsync())
+        ///     {
+        ///         Console.WriteLine(properties.Id);
+        ///     }
+        /// }
         /// ]]>
         /// </code>
         /// </example>
@@ -587,11 +614,24 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// This create the stream feed iterator for Trigger with queryDefinition as input.
         /// <code language="c#">
         /// <![CDATA[
-        /// Scripts scripts = this.container.Scripts;
-        /// string queryText = "SELECT * FROM t where t.id like @testId";
-        /// QueryDefinition queryDefinition = new QueryDefinition(queryText);
-        /// queryDefinition.WithParameter("@testId", "testTriggerId");
-        /// FeedIterator iter = this.scripts.GetTriggerQueryStreamIterator(queryDefinition);
+        /// Scripts scripts = this.container.Scripts;\
+        /// QueryDefinition queryDefinition = new QueryDefinition("SELECT * FROM t where t.id like @testId")
+        ///  .WithParameter("@testId", "testTriggerId");
+        /// FeedIterator feedIterator = this.scripts.GetTriggerQueryStreamIterator(queryDefinition);
+        /// while (feedIterator.HasMoreResults)
+        /// {
+        ///     // Stream iterator returns a response with status for errors
+        ///     using(ResponseMessage response = await feedIterator.ReadNextAsync())
+        ///     {
+        ///         // Handle failure scenario. 
+        ///         if(!response.IsSuccessStatusCode)
+        ///         {
+        ///             // Log the response.Diagnostics and handle the error
+        ///         }
+        ///
+        ///         // Process the response.Content Stream
+        ///     }
+        /// }
         /// ]]>
         /// </code>
         /// </example>
@@ -613,8 +653,15 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <code language="c#">
         /// <![CDATA[
         /// Scripts scripts = this.container.Scripts;
-        /// string queryText = "SELECT * FROM t where t.id like '%testId%'";
-        /// FeedIterator<TriggerProperties> iter = this.scripts.GetTriggerQueryIterator<TriggerProperties>(queryText);
+        /// FeedIterator<TriggerProperties> feedIterator = this.scripts.GetTriggerQueryIterator<TriggerProperties>(
+        ///     "SELECT * FROM t where t.id like '%testId%'");
+        /// while (feedIterator.HasMoreResults)
+        /// {
+        ///     foreach (var properties in await feedIterator.ReadNextAsync())
+        ///     {
+        ///         Console.WriteLine(properties.Id);
+        ///     }
+        /// }
         /// ]]>
         /// </code>
         /// </example>
@@ -818,10 +865,16 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <code language="c#">
         /// <![CDATA[
         /// Scripts scripts = this.container.Scripts;
-        /// string queryText = "SELECT * FROM u where u.id like @testId";
-        /// QueryDefinition queryDefinition = new QueryDefinition(queryText);
-        /// queryDefinition.WithParameter("@testId", "testUDFId");
-        /// FeedIterator<UserDefinedFunctionProperties> iter = this.scripts.GetUserDefinedFunctionQueryIterator<UserDefinedFunctionProperties>(queryDefinition);
+        /// QueryDefinition queryDefinition = new QueryDefinition("SELECT * FROM u where u.id like @testId")
+        ///     .WithParameter("@testId", "testUDFId");
+        /// FeedIterator<UserDefinedFunctionProperties> feedIterator = this.scripts.GetUserDefinedFunctionQueryIterator<UserDefinedFunctionProperties>(queryDefinition);
+        /// while (feedIterator.HasMoreResults)
+        /// {
+        ///     foreach (var properties in await feedIterator.ReadNextAsync())
+        ///     {
+        ///         Console.WriteLine(properties.Id);
+        ///     }
+        /// }
         /// ]]>
         /// </code>
         /// </example>
@@ -843,10 +896,23 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <code language="c#">
         /// <![CDATA[
         /// Scripts scripts = this.container.Scripts;
-        /// string queryText = "SELECT * FROM u where u.id like @testId";
-        /// QueryDefinition queryDefinition = new QueryDefinition(queryText);
-        /// queryDefinition.WithParameter("@testId", "testUdfId");
-        /// FeedIterator iter = this.scripts.GetUserDefinedFunctionQueryStreamIterator(queryDefinition);
+        /// QueryDefinition queryDefinition = new QueryDefinition("SELECT * FROM u where u.id like @testId")
+        ///   .WithParameter("@testId", "testUdfId");
+        /// FeedIterator feedIterator = this.scripts.GetUserDefinedFunctionQueryStreamIterator(queryDefinition);
+        /// while (feedIterator.HasMoreResults)
+        /// {
+        ///     // Stream iterator returns a response with status for errors
+        ///     using(ResponseMessage response = await feedIterator.ReadNextAsync())
+        ///     {
+        ///         // Handle failure scenario. 
+        ///         if(!response.IsSuccessStatusCode)
+        ///         {
+        ///             // Log the response.Diagnostics and handle the error
+        ///         }
+        ///
+        ///         // Process the response.Content Stream
+        ///     }
+        /// }
         /// ]]>
         /// </code>
         /// </example>
@@ -868,8 +934,15 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <code language="c#">
         /// <![CDATA[
         /// Scripts scripts = this.container.Scripts;
-        /// QueryDefinition queryDefinition = new QueryDefinition("SELECT * FROM u where u.id like '%testId%'");
-        /// FeedIterator<UserDefinedFunctionProperties> iter = this.scripts.GetUserDefinedFunctionQueryIterator<UserDefinedFunctionProperties>(queryDefinition);
+        /// FeedIterator<UserDefinedFunctionProperties> feedIterator = this.scripts.GetUserDefinedFunctionQueryIterator<UserDefinedFunctionProperties>(
+        ///     "SELECT * FROM u where u.id like '%testId%'");
+        /// while (feedIterator.HasMoreResults)
+        /// {
+        ///     foreach (var properties in await feedIterator.ReadNextAsync())
+        ///     {
+        ///         Console.WriteLine(properties.Id);
+        ///     }
+        /// }
         /// ]]>
         /// </code>
         /// </example>
@@ -891,8 +964,22 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <code language="c#">
         /// <![CDATA[
         /// Scripts scripts = this.container.Scripts;
-        /// QueryDefinition queryDefinition = new QueryDefinition("SELECT * FROM u where u.id like '%testId%'");
-        /// FeedIterator iter = this.scripts.GetUserDefinedFunctionQueryStreamIterator(queryDefinition);
+        /// FeedIterator feedIterator = this.scripts.GetUserDefinedFunctionQueryStreamIterator(
+        ///     "SELECT * FROM u where u.id like '%testId%'");
+        /// while (feedIterator.HasMoreResults)
+        /// {
+        ///     // Stream iterator returns a response with status for errors
+        ///     using(ResponseMessage response = await feedIterator.ReadNextAsync())
+        ///     {
+        ///         // Handle failure scenario. 
+        ///         if(!response.IsSuccessStatusCode)
+        ///         {
+        ///             // Log the response.Diagnostics and handle the error
+        ///         }
+        ///
+        ///         // Process the response.Content Stream
+        ///     }
+        /// }
         /// ]]>
         /// </code>
         /// </example>

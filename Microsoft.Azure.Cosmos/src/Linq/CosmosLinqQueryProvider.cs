@@ -108,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             return cosmosLINQQuery.ToList().FirstOrDefault();
         }
 
-        public async Task<Response<TResult>> ExecuteAggregateAsync<TResult>(
+        public Task<Response<TResult>> ExecuteAggregateAsync<TResult>(
             Expression expression,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 expression,
                 this.allowSynchronousQueryExecution,
                 this.serializationOptions);
-            return await cosmosLINQQuery.AggregateResultAsync();
+            return TaskHelper.RunInlineIfNeededAsync(() => cosmosLINQQuery.AggregateResultAsync());
         }
     }
 }
