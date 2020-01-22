@@ -630,12 +630,20 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 private static GuidNode ParseGuidNode(IJsonReader jsonTextReader)
                 {
-                    return GuidNode.Create(jsonTextReader.GetBufferedRawJsonToken());
+                    GuidNode node = GuidNode.Create(jsonTextReader.GetBufferedRawJsonToken());
+
+                    // advance the reader forward.
+                    jsonTextReader.Read();
+                    return node;
                 }
 
                 private static BinaryNode ParseBinaryNode(IJsonReader jsonTextReader)
                 {
-                    return BinaryNode.Create(jsonTextReader.GetBufferedRawJsonToken());
+                    BinaryNode node = BinaryNode.Create(jsonTextReader.GetBufferedRawJsonToken());
+
+                    // advance the reader forward.
+                    jsonTextReader.Read();
+                    return node;
                 }
 
                 /// <summary>

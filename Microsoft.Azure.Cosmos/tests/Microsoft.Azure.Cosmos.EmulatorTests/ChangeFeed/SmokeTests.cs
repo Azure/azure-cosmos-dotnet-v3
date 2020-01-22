@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core;
@@ -60,6 +61,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             await processor.StopAsync();
             // Verify that we maintain order
             CollectionAssert.AreEqual(expectedIds.ToList(), receivedIds);
+        }
+
+        [TestMethod]
+        public async Task NotExistentLeaseContainer()
+        {
+            Container notFoundContainer = this.cosmosClient.GetContainer(this.database.Id, "NonExistent");
+            ChangeFeedProcessor processor = this.Container
+                .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<TestClass> docs, CancellationToken token) =>
+                {
+                    return Task.CompletedTask;
+                })
+                .WithInstanceName("random")
+                .WithLeaseContainer(notFoundContainer).Build();
+
+            CosmosException exception = await Assert.ThrowsExceptionAsync<CosmosException>(() => processor.StartAsync());
+            Assert.AreEqual(HttpStatusCode.NotFound, exception.StatusCode);
         }
 
         [TestMethod]
@@ -212,7 +229,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             public override T FromStream<T>(Stream stream)
             {
                 // Only let changes serialization pass through
-                if (typeof(T) == typeof(CosmosFeedResponseUtil<TestClass>))
+                if (typeof(T) == typeof(TestClass))
                 {
                     return this.cosmosSerializer.FromStream<T>(stream);
                 }

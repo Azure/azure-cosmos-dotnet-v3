@@ -108,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     lastContinuationToken = responseMessage.Headers.ContinuationToken;
 
-                    Collection<ToDoActivity> items = TestCommon.Serializer.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
+                    Collection<ToDoActivity> items = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
                     foreach (ToDoActivity toDoActivity in items)
                     {
                         if (itemIds.Contains(toDoActivity.id))
@@ -384,7 +384,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     action.WithConnectionModeGateway();
                 }
             };
-            CosmosClient camelCaseCosmosClient = TestCommon.CreateCosmosClient(builder);
+            CosmosClient camelCaseCosmosClient = TestCommon.CreateCosmosClient(builder, false);
             Cosmos.Database database = camelCaseCosmosClient.GetDatabase(this.database.Id);
             Container containerFromCamelCaseClient = database.GetContainer(this.Container.Id);
             IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(container: containerFromCamelCaseClient, pkCount: 2, perPKItemCount: 1, randomPartitionKey: true);
@@ -742,7 +742,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             Assert.AreEqual<T>(expectedValue, response.Resource);
             Assert.IsTrue(response.RequestCharge > 0);
-            CosmosDiagnosticsTests.VerifyQueryDiagnostics(response.Diagnostics);
+            CosmosDiagnosticsTests.VerifyQueryDiagnostics(response.Diagnostics, false);
         }
     }
 }

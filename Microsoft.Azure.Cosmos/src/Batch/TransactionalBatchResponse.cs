@@ -33,18 +33,20 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="subStatusCode">Provides further details about why the batch was not processed.</param>
         /// <param name="errorMessage">The reason for failure.</param>
         /// <param name="operations">Operations that were to be executed.</param>
+        /// <param name="diagnosticsContext">Diagnostics for the operation</param>
         internal TransactionalBatchResponse(
             HttpStatusCode statusCode,
             SubStatusCodes subStatusCode,
             string errorMessage,
-            IReadOnlyList<ItemBatchOperation> operations)
+            IReadOnlyList<ItemBatchOperation> operations,
+            CosmosDiagnosticsContext diagnosticsContext)
             : this(statusCode,
                   subStatusCode,
                   errorMessage,
                   requestCharge: 0,
                   retryAfter: null,
                   activityId: Guid.Empty.ToString(),
-                  cosmosDiagnostics: null,
+                  diagnosticsContext: diagnosticsContext,
                   operations: operations,
                   serializer: null)
         {
@@ -65,19 +67,20 @@ namespace Microsoft.Azure.Cosmos
             double requestCharge,
             TimeSpan? retryAfter,
             string activityId,
-            CosmosDiagnostics cosmosDiagnostics,
+            CosmosDiagnosticsContext diagnosticsContext,
             IReadOnlyList<ItemBatchOperation> operations,
-            CosmosSerializer serializer)
+            CosmosSerializerCore serializer)
         {
             this.StatusCode = statusCode;
             this.SubStatusCode = subStatusCode;
             this.ErrorMessage = errorMessage;
             this.Operations = operations;
-            this.Serializer = serializer;
+            this.SerializerCore = serializer;
             this.RequestCharge = requestCharge;
             this.RetryAfter = retryAfter;
             this.ActivityId = activityId;
-            this.Diagnostics = cosmosDiagnostics;
+            this.Diagnostics = diagnosticsContext;
+            this.DiagnosticsContext = diagnosticsContext ?? throw new ArgumentNullException(nameof(diagnosticsContext));
         }
 
         /// <summary>
@@ -132,9 +135,11 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public virtual CosmosDiagnostics Diagnostics { get; }
 
+        internal virtual CosmosDiagnosticsContext DiagnosticsContext { get; }
+
         internal virtual SubStatusCodes SubStatusCode { get; }
 
-        internal virtual CosmosSerializer Serializer { get; }
+        internal virtual CosmosSerializerCore SerializerCore { get; }
 
         internal IReadOnlyList<ItemBatchOperation> Operations { get; set; }
 
@@ -164,7 +169,7 @@ namespace Microsoft.Azure.Cosmos
             T resource = default(T);
             if (result.ResourceStream != null)
             {
-                resource = this.Serializer.FromStream<T>(result.ResourceStream);
+                resource = this.SerializerCore.FromStream<T>(result.ResourceStream);
             }
 
             return new TransactionalBatchOperationResult<T>(result, resource);
@@ -211,7 +216,8 @@ namespace Microsoft.Azure.Cosmos
         internal static async Task<TransactionalBatchResponse> FromResponseMessageAsync(
             ResponseMessage responseMessage,
             ServerBatchRequest serverRequest,
-            CosmosSerializer serializer)
+            CosmosSerializerCore serializer,
+            bool shouldPromoteOperationStatus = true)
         {
             using (responseMessage)
             {
@@ -230,7 +236,13 @@ namespace Microsoft.Azure.Cosmos
                     if (content.ReadByte() == (int)HybridRowVersion.V1)
                     {
                         content.Position = 0;
-                        response = await TransactionalBatchResponse.PopulateFromContentAsync(content, responseMessage, serverRequest, serializer);
+                        response = await TransactionalBatchResponse.PopulateFromContentAsync(
+                            content,
+                            responseMessage,
+                            serverRequest,
+                            serializer,
+                            shouldPromoteOperationStatus);
+
                         if (response == null)
                         {
                             // Convert any payload read failures as InternalServerError
@@ -241,13 +253,14 @@ namespace Microsoft.Azure.Cosmos
                                 responseMessage.Headers.RequestCharge,
                                 responseMessage.Headers.RetryAfter,
                                 responseMessage.Headers.ActivityId,
-                                responseMessage.Diagnostics,
+                                responseMessage.DiagnosticsContext,
                                 serverRequest.Operations,
                                 serializer);
                         }
                     }
                 }
-                else
+
+                if (response == null)
                 {
                     response = new TransactionalBatchResponse(
                         responseMessage.StatusCode,
@@ -256,7 +269,7 @@ namespace Microsoft.Azure.Cosmos
                         responseMessage.Headers.RequestCharge,
                         responseMessage.Headers.RetryAfter,
                         responseMessage.Headers.ActivityId,
-                        responseMessage.Diagnostics,
+                        responseMessage.DiagnosticsContext,
                         serverRequest.Operations,
                         serializer);
                 }
@@ -274,7 +287,7 @@ namespace Microsoft.Azure.Cosmos
                             responseMessage.Headers.RequestCharge,
                             responseMessage.Headers.RetryAfter,
                             responseMessage.Headers.ActivityId,
-                            responseMessage.Diagnostics,
+                            responseMessage.DiagnosticsContext,
                             serverRequest.Operations,
                             serializer);
                     }
@@ -317,7 +330,8 @@ namespace Microsoft.Azure.Cosmos
             Stream content,
             ResponseMessage responseMessage,
             ServerBatchRequest serverRequest,
-            CosmosSerializer serializer)
+            CosmosSerializerCore serializer,
+            bool shouldPromoteOperationStatus)
         {
             List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
 
@@ -348,7 +362,8 @@ namespace Microsoft.Azure.Cosmos
 
             // Promote the operation error status as the Batch response error status if we have a MultiStatus response
             // to provide users with status codes they are used to.
-            if ((int)responseMessage.StatusCode == (int)StatusCodes.MultiStatus)
+            if ((int)responseMessage.StatusCode == (int)StatusCodes.MultiStatus
+                && shouldPromoteOperationStatus)
             {
                 foreach (TransactionalBatchOperationResult result in results)
                 {
@@ -368,7 +383,7 @@ namespace Microsoft.Azure.Cosmos
                 responseMessage.Headers.RequestCharge,
                 responseMessage.Headers.RetryAfter,
                 responseMessage.Headers.ActivityId,
-                responseMessage.Diagnostics,
+                responseMessage.DiagnosticsContext,
                 serverRequest.Operations,
                 serializer);
 

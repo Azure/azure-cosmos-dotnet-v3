@@ -8,9 +8,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     using System.Diagnostics;
 
     /// <summary>
-    /// Accumlator that acts as a builder of FetchExecutionRanges
+    /// Accumulator that acts as a builder of FetchExecutionRanges
     /// </summary>
-    internal sealed class FetchExecutionRangeAccumulator
+#if INTERNAL
+#pragma warning disable SA1600
+#pragma warning disable CS1591
+    public
+#else
+    internal
+#endif
+    sealed class FetchExecutionRangeAccumulator
     {
         private readonly DateTime constructionTime;
         private readonly Stopwatch stopwatch;

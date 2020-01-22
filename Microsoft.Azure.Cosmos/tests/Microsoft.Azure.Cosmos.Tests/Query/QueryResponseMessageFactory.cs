@@ -18,7 +18,6 @@ namespace Microsoft.Azure.Cosmos.Tests
 
     internal static class QueryResponseMessageFactory
     {
-        private static readonly CosmosSerializer cosmosSerializer = new CosmosJsonDotNetSerializer();
         public const int SPLIT = -1;
 
         public static (QueryResponseCore queryResponse, IList<ToDoItem> items) Create(
@@ -34,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
 
             IList<ToDoItem> items = ToDoItem.CreateItems(itemCount, itemIdPrefix);
-            MemoryStream memoryStream = (MemoryStream)cosmosSerializer.ToStream<IList<ToDoItem>>(items);
+            MemoryStream memoryStream = (MemoryStream)MockCosmosUtil.Serializer.ToStream<IList<ToDoItem>>(items);
             long responseLengthBytes = memoryStream.Length;
 
             IJsonNavigator jsonNavigator = JsonNavigator.Create(memoryStream.ToArray());
@@ -43,12 +42,8 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             double requestCharge = 42;
             string activityId = Guid.NewGuid().ToString();
-            IReadOnlyCollection<QueryPageDiagnostics> diagnostics = new List<QueryPageDiagnostics>()
-            {
-                new QueryPageDiagnostics("0",
-                "SomeQueryMetricText",
-                "SomeIndexUtilText",
-                new PointOperationStatistics(
+            CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContext();
+            diagnosticsContext.AddContextWriter(new PointOperationStatistics(
                     activityId: Guid.NewGuid().ToString(),
                     statusCode: HttpStatusCode.OK,
                     subStatusCode: SubStatusCodes.Unknown,
@@ -58,7 +53,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                     requestUri: new Uri("http://localhost.com"),
                     requestSessionToken: null,
                     responseSessionToken: null,
-                    clientSideRequestStatistics: null),
+                    clientSideRequestStatistics: null));
+            IReadOnlyCollection<QueryPageDiagnostics> diagnostics = new List<QueryPageDiagnostics>()
+            {
+                new QueryPageDiagnostics("0",
+                "SomeQueryMetricText",
+                "SomeIndexUtilText",
+                diagnosticsContext,
                 new SchedulingStopwatch())
             };
 
@@ -92,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
             else
             {
-                memoryStream = (MemoryStream)cosmosSerializer.ToStream<IList<ToDoItem>>(items);
+                memoryStream = (MemoryStream)MockCosmosUtil.Serializer.ToStream<IList<ToDoItem>>(items);
             }
 
             long responseLengthBytes = memoryStream.Length;
@@ -100,12 +101,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             IJsonNavigator jsonNavigator = JsonNavigator.Create(memoryStream.ToArray());
             IJsonNavigatorNode jsonNavigatorNode = jsonNavigator.GetRootNode();
             CosmosArray cosmosArray = CosmosArray.Create(jsonNavigator, jsonNavigatorNode);
-            IReadOnlyCollection<QueryPageDiagnostics> diagnostics = new List<QueryPageDiagnostics>()
-            {
-                new QueryPageDiagnostics("0",
-                "SomeQueryMetricText",
-                "SomeIndexUtilText",
-                new PointOperationStatistics(
+            CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContext();
+            diagnosticsContext.AddContextWriter(new PointOperationStatistics(
                     activityId: Guid.NewGuid().ToString(),
                     statusCode: HttpStatusCode.OK,
                     subStatusCode: SubStatusCodes.Unknown,
@@ -115,7 +112,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                     requestUri: new Uri("http://localhost.com"),
                     requestSessionToken: null,
                     responseSessionToken: null,
-                    clientSideRequestStatistics: null),
+                    clientSideRequestStatistics: null));
+            IReadOnlyCollection<QueryPageDiagnostics> diagnostics = new List<QueryPageDiagnostics>()
+            {
+                new QueryPageDiagnostics("0",
+                "SomeQueryMetricText",
+                "SomeIndexUtilText",
+                diagnosticsContext,
                 new SchedulingStopwatch())
             };
 
@@ -134,7 +137,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public static QueryResponse<TItem> CreateQueryResponse<TItem>(
             QueryResponse queryResponse)
         {
-            return QueryResponse<TItem>.CreateResponse<TItem>(queryResponse, cosmosSerializer);
+            return QueryResponse<TItem>.CreateResponse<TItem>(queryResponse, MockCosmosUtil.Serializer);
         }
 
         public static QueryResponseCore CreateFailureResponse(
@@ -142,12 +145,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             SubStatusCodes subStatusCodes,
             string errorMessage)
         {
-            IReadOnlyCollection<QueryPageDiagnostics> diagnostics = new List<QueryPageDiagnostics>()
-            {
-                new QueryPageDiagnostics("0",
-                "SomeQueryMetricText",
-                "SomeIndexUtilText",
-                new PointOperationStatistics(
+            CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContext();
+            diagnosticsContext.AddContextWriter(new PointOperationStatistics(
                     Guid.NewGuid().ToString(),
                     System.Net.HttpStatusCode.Gone,
                     subStatusCode: SubStatusCodes.PartitionKeyRangeGone,
@@ -157,7 +156,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                     requestUri: new Uri("http://localhost.com"),
                     requestSessionToken: null,
                     responseSessionToken: null,
-                    clientSideRequestStatistics: null),
+                    clientSideRequestStatistics: null));
+            IReadOnlyCollection<QueryPageDiagnostics> diagnostics = new List<QueryPageDiagnostics>()
+            {
+                new QueryPageDiagnostics("0",
+                "SomeQueryMetricText",
+                "SomeIndexUtilText",
+                diagnosticsContext,
                 new SchedulingStopwatch())
             };
 
@@ -198,7 +203,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 orderByItems = new OrderbyItems[] { new OrderbyItems(item.id) }
             }).ToArray();
 
-            return (MemoryStream)cosmosSerializer.ToStream<OrderByReturnStructure[]>(payload);
+            return (MemoryStream)MockCosmosUtil.Serializer.ToStream<OrderByReturnStructure[]>(payload);
         }
 
         private class OrderByReturnStructure

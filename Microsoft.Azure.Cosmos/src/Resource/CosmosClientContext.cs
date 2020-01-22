@@ -27,17 +27,15 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract DocumentClient DocumentClient { get; }
 
-        internal abstract CosmosSerializer CosmosSerializer { get; }
-
-        internal abstract CosmosSerializer PropertiesSerializer { get; }
-
-        internal abstract CosmosSerializer SqlQuerySpecSerializer { get; }
+        internal abstract CosmosSerializerCore SerializerCore { get; }
 
         internal abstract CosmosResponseFactory ResponseFactory { get; }
 
         internal abstract RequestInvokerHandler RequestHandler { get; }
 
         internal abstract CosmosClientOptions ClientOptions { get; }
+
+        internal abstract string UserAgent { get; }
 
         /// <summary>
         /// Generates the URI link for the resource
@@ -71,6 +69,7 @@ namespace Microsoft.Azure.Cosmos
             string itemId,
             Stream streamPayload,
             Action<RequestMessage> requestEnricher,
+            CosmosDiagnosticsContext diagnosticsScope,
             CancellationToken cancellationToken);
 
         /// <summary>
@@ -86,6 +85,7 @@ namespace Microsoft.Azure.Cosmos
             PartitionKey? partitionKey,
             Stream streamPayload,
             Action<RequestMessage> requestEnricher,
+            CosmosDiagnosticsContext diagnosticsScope,
             CancellationToken cancellationToken);
 
         /// <summary>
@@ -102,6 +102,7 @@ namespace Microsoft.Azure.Cosmos
            Stream streamPayload,
            Action<RequestMessage> requestEnricher,
            Func<ResponseMessage, T> responseCreator,
+           CosmosDiagnosticsContext diagnosticsScope,
            CancellationToken cancellationToken);
     }
 }

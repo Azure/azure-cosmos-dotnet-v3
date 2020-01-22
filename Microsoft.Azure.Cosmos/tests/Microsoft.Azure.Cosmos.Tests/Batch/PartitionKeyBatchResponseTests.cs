@@ -39,15 +39,15 @@ namespace Microsoft.Azure.Cosmos.Tests
             SinglePartitionKeyServerBatchRequest batchRequest = await SinglePartitionKeyServerBatchRequest.CreateAsync(
                 partitionKey: null,
                 operations: new ArraySegment<ItemBatchOperation>(arrayOperations),
-                serializer: new CosmosJsonDotNetSerializer(),
+                serializerCore: MockCosmosUtil.Serializer,
             cancellationToken: default(CancellationToken));
 
             TransactionalBatchResponse batchresponse = await TransactionalBatchResponse.FromResponseMessageAsync(
                 new ResponseMessage(HttpStatusCode.OK) { Content = responseContent },
                 batchRequest,
-                new CosmosJsonDotNetSerializer());
+                MockCosmosUtil.Serializer);
 
-            PartitionKeyRangeBatchResponse response = new PartitionKeyRangeBatchResponse(arrayOperations.Length, batchresponse, new CosmosJsonDotNetSerializer());
+            PartitionKeyRangeBatchResponse response = new PartitionKeyRangeBatchResponse(arrayOperations.Length, batchresponse, MockCosmosUtil.Serializer);
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
         }
 
@@ -73,10 +73,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             SinglePartitionKeyServerBatchRequest batchRequest = await SinglePartitionKeyServerBatchRequest.CreateAsync(
                 partitionKey: null,
                 operations: new ArraySegment<ItemBatchOperation>(arrayOperations),
-                serializer: new CosmosJsonDotNetSerializer(),
+                serializerCore: MockCosmosUtil.Serializer,
             cancellationToken: default(CancellationToken));
 
-            CosmosDiagnostics diagnostics = new PointOperationStatistics(
+            PointOperationStatistics diagnostics = new PointOperationStatistics(
                 activityId: Guid.NewGuid().ToString(),
                 statusCode: HttpStatusCode.OK,
                 subStatusCode: SubStatusCodes.Unknown,
@@ -88,13 +88,24 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseSessionToken: null,
                 clientSideRequestStatistics: new CosmosClientSideRequestStatistics());
 
-            TransactionalBatchResponse batchresponse = await TransactionalBatchResponse.FromResponseMessageAsync(
-                new ResponseMessage(HttpStatusCode.OK) { Content = responseContent, Diagnostics = diagnostics },
-                batchRequest,
-                new CosmosJsonDotNetSerializer());
+            ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.OK)
+            {
+                Content = responseContent,
+            };
 
-            PartitionKeyRangeBatchResponse response = new PartitionKeyRangeBatchResponse(arrayOperations.Length, batchresponse, new CosmosJsonDotNetSerializer());
-            Assert.AreEqual(diagnostics, response.Diagnostics);
+            responseMessage.DiagnosticsContext.AddContextWriter(diagnostics);
+
+            TransactionalBatchResponse batchresponse = await TransactionalBatchResponse.FromResponseMessageAsync(
+                responseMessage,
+                batchRequest,
+                MockCosmosUtil.Serializer);
+
+            PartitionKeyRangeBatchResponse response = new PartitionKeyRangeBatchResponse(arrayOperations.Length, batchresponse, MockCosmosUtil.Serializer);
+
+            string pointDiagnosticString = diagnostics.ToString();
+            pointDiagnosticString = pointDiagnosticString.Substring(1, pointDiagnosticString.Length - 2);
+            string diagnosticContextString = response.DiagnosticsContext.ToString();
+            Assert.IsTrue(diagnosticContextString.Contains(pointDiagnosticString));
         }
     }
 }

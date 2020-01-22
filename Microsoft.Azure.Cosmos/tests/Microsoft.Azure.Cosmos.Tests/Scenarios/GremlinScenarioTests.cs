@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Scenarios
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -647,11 +648,11 @@ namespace Microsoft.Azure.Cosmos.Scenarios
                     sourceHeaders: null,
                     resourceType: ResourceType.Document,
                     containerRid: GremlinScenarioTests.CreateRandomString(10)),
-                diagnostics: null);
+                diagnostics: new CosmosDiagnosticsContext());
             QueryResponse<CosmosElement> cosmosElementQueryResponse =
                 QueryResponse<CosmosElement>.CreateResponse<CosmosElement>(
                     queryResponse,
-                    new CosmosJsonSerializerWrapper(new CosmosJsonDotNetSerializer()));
+                    MockCosmosUtil.Serializer);
 
             // Assert that we are directly returned the lazy CosmosElements that we created earlier
             List<CosmosElement> responseCosmosElements = new List<CosmosElement>(cosmosElementQueryResponse.Resource);
@@ -729,11 +730,11 @@ namespace Microsoft.Azure.Cosmos.Scenarios
                     sourceHeaders: null,
                     resourceType: ResourceType.Document,
                     containerRid: GremlinScenarioTests.CreateRandomString(10)),
-                diagnostics: null);
+                diagnostics: new CosmosDiagnosticsContext());
             QueryResponse<dynamic> cosmosElementQueryResponse =
                 QueryResponse<dynamic>.CreateResponse<dynamic>(
                     queryResponse,
-                    new CosmosJsonSerializerWrapper(new CosmosJsonDotNetSerializer()));
+                    MockCosmosUtil.Serializer);
 
             // Assert that other objects (anything besides the lazy CosmosElements that we created earlier) are deserialized
             // from the backing CosmosElement contents rather than being directly returned as CosmosElements

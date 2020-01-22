@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net.Http;
     using System.Net.Http.Headers;
     using System.Security;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
@@ -85,9 +86,12 @@ namespace Microsoft.Azure.Cosmos
         private const string TcpPartitionCount = "CosmosDbTcpPartitionCount";
         private const string MaxChannelsPerHostConfig = "CosmosDbMaxTcpChannelsPerHost";
         private const string RntbdPortReuseMode = "CosmosDbTcpPortReusePolicy";
+        private const string RntbdPortPoolReuseThreshold = "CosmosDbTcpPortReuseThreshold";
+        private const string RntbdPortPoolBindAttempts = "CosmosDbTcpPortReuseBindAttempts";
         private const string RntbdReceiveHangDetectionTimeConfig = "CosmosDbTcpReceiveHangDetectionTimeSeconds";
         private const string RntbdSendHangDetectionTimeConfig = "CosmosDbTcpSendHangDetectionTimeSeconds";
         private const string EnableCpuMonitorConfig = "CosmosDbEnableCpuMonitor";
+        private const string EnableAuthFailureTracesConfig = "enableAuthFailureTraces";
 
         ////The MAC signature found in the HTTP request is not the same as the computed signature.Server used following string to sign
         ////The input authorization token can't serve the request. Please check that the expected payload is built as per the protocol, and check the key being used. Server used the following payload to sign
@@ -98,9 +102,12 @@ namespace Microsoft.Azure.Cosmos
         private const int DefaultRntbdPartitionCount = 1;
         private const int DefaultMaxRntbdChannelsPerHost = ushort.MaxValue;
         private const PortReuseMode DefaultRntbdPortReuseMode = PortReuseMode.ReuseUnicastPort;
+        private const int DefaultRntbdPortPoolReuseThreshold = 256;
+        private const int DefaultRntbdPortPoolBindAttempts = 5;
         private const int DefaultRntbdReceiveHangDetectionTimeSeconds = 65;
         private const int DefaultRntbdSendHangDetectionTimeSeconds = 10;
         private const bool DefaultEnableCpuMonitor = true;
+        private const bool EnableAuthFailureTraces = false;
 
         private readonly IDictionary<string, List<PartitionKeyAndResourceTokenPair>> resourceTokens;
         private RetryPolicy retryPolicy;
@@ -114,9 +121,12 @@ namespace Microsoft.Azure.Cosmos
         private int rntbdPartitionCount = DefaultRntbdPartitionCount;
         private int maxRntbdChannels = DefaultMaxRntbdChannelsPerHost;
         private PortReuseMode rntbdPortReuseMode = DefaultRntbdPortReuseMode;
+        private int rntbdPortPoolReuseThreshold = DefaultRntbdPortPoolReuseThreshold;
+        private int rntbdPortPoolBindAttempts = DefaultRntbdPortPoolBindAttempts;
         private int rntbdReceiveHangDetectionTimeSeconds = DefaultRntbdReceiveHangDetectionTimeSeconds;
         private int rntbdSendHangDetectionTimeSeconds = DefaultRntbdSendHangDetectionTimeSeconds;
         private bool enableCpuMonitor = DefaultEnableCpuMonitor;
+        private bool enableAuthFailureTraces = EnableAuthFailureTraces;
 
         //Auth
         private IComputeHash authKeyHashFunction;
@@ -437,8 +447,8 @@ namespace Microsoft.Azure.Cosmos
                 serviceEndpoint: serviceEndpoint,
                 connectionPolicy: connectionPolicy,
                 desiredConsistencyLevel: desiredConsistencyLevel,
-                handler: handler,
-                sessionContainer: sessionContainer,
+                handler: handler, 
+                sessionContainer: sessionContainer, 
                 enableCpuMonitor: enableCpuMonitor,
                 storeClientFactory: storeClientFactory);
         }
@@ -686,6 +696,7 @@ namespace Microsoft.Azure.Cosmos
         {
             // do nothing 
             this.ServiceEndpoint = serviceEndpoint;
+            this.ConnectionPolicy = new ConnectionPolicy();
         }
 
         internal virtual async Task<ClientCollectionCache> GetCollectionCacheAsync()
@@ -798,7 +809,7 @@ namespace Microsoft.Azure.Cosmos
 
             DefaultTrace.InitEventListener();
 
-#if !(NETSTANDARD15 || NETSTANDARD16) 
+#if !(NETSTANDARD15 || NETSTANDARD16)
 #if NETSTANDARD20
             // GetEntryAssembly returns null when loaded from native netstandard2.0
             if (System.Reflection.Assembly.GetEntryAssembly() != null)
@@ -909,6 +920,26 @@ namespace Microsoft.Azure.Cosmos
                     }
                 }
 
+                string rntbdPortPoolReuseThresholdOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.RntbdPortPoolReuseThreshold];
+                if (!string.IsNullOrEmpty(rntbdPortPoolReuseThresholdOverrideString))
+                {
+                    int rntbdPortPoolReuseThreshold = DocumentClient.DefaultRntbdPortPoolReuseThreshold;
+                    if (int.TryParse(rntbdPortPoolReuseThresholdOverrideString, out rntbdPortPoolReuseThreshold))
+                    {
+                        this.rntbdPortPoolReuseThreshold = rntbdPortPoolReuseThreshold;
+                    }
+                }
+
+                string rntbdPortPoolBindAttemptsOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.RntbdPortPoolBindAttempts];
+                if (!string.IsNullOrEmpty(rntbdPortPoolBindAttemptsOverrideString))
+                {
+                    int rntbdPortPoolBindAttempts = DocumentClient.DefaultRntbdPortPoolBindAttempts;
+                    if (int.TryParse(rntbdPortPoolBindAttemptsOverrideString, out rntbdPortPoolBindAttempts))
+                    {
+                        this.rntbdPortPoolBindAttempts = rntbdPortPoolBindAttempts;
+                    }
+                }
+
                 string rntbdReceiveHangDetectionTimeSecondsString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.RntbdReceiveHangDetectionTimeConfig];
                 if (!string.IsNullOrEmpty(rntbdReceiveHangDetectionTimeSecondsString))
                 {
@@ -945,9 +976,19 @@ namespace Microsoft.Azure.Cosmos
                         }
                     }
                 }
+
+                string enableAuthFailureTracesString = System.Configuration.ConfigurationManager.AppSettings[EnableAuthFailureTracesConfig];
+                if (!string.IsNullOrEmpty(enableAuthFailureTracesString))
+                {
+                    bool enableAuthFailureTracesFlag = false;
+                    if (bool.TryParse(enableAuthFailureTracesString, out enableAuthFailureTracesFlag))
+                    {
+                        this.enableAuthFailureTraces = enableAuthFailureTracesFlag;
+                    }
+                }
 #if NETSTANDARD20
             }
-#endif            
+#endif   
 #endif
 
             // ConnectionPolicy always overrides appconfig
@@ -1483,10 +1524,29 @@ namespace Microsoft.Azure.Cosmos
                     && dce.Message != null
                     && dce.StatusCode.HasValue
                     && dce.StatusCode.Value == HttpStatusCode.Unauthorized
-                    && dce.Message.Contains(DocumentClient.MacSignatureString)
-                    && !dce.Message.Contains(payload))
+                    && dce.Message.Contains(DocumentClient.MacSignatureString))
                 {
-                    DefaultTrace.TraceError("Un-expected authorization payload mis-match. Actual {0} service expected {1}", payload, dce.Message);
+                    // The following code is added such that we get trace data on unexpected 401/HMAC errors and it is
+                    //   disabled by default. The trace will be trigger only when "enableAuthFailureTraces" named configuration 
+                    //   is set to true (currently true for CTL runs).
+                    //   For production we will work directly with specific customers in order to enable this configuration.
+                    string normalizedPayload = DocumentClient.NormalizeAuthorizationPayload(payload);
+                    if (this.enableAuthFailureTraces)
+                    {
+                        string tokenFirst5 = HttpUtility.UrlDecode(authorization).Split('&')[2].Split('=')[1].Substring(0, 5);
+                        ulong authHash = 0;
+                        if (this.authKeyHashFunction?.Key != null)
+                        {
+                            byte[] bytes = Encoding.UTF8.GetBytes(this.authKeyHashFunction?.Key?.ToString());
+                            authHash = MurmurHash3.Hash64(bytes, bytes.Length);
+                        }
+                        DefaultTrace.TraceError("Un-expected authorization payload mis-match. Actual payload={0}, token={1}..., hash={2:X}..., error={3}",
+                            normalizedPayload, tokenFirst5, authHash, dce.Message);
+                    }
+                    else
+                    {
+                        DefaultTrace.TraceError("Un-expected authorization payload mis-match. Actual {0} service expected {1}", normalizedPayload, dce.Message);
+                    }
                 }
 
                 throw;
@@ -1510,6 +1570,29 @@ namespace Microsoft.Azure.Cosmos
                 IStoreModel storeProxy = this.GetStoreProxy(request);
                 return await storeProxy.ProcessMessageAsync(request, cancellationToken);
             }
+        }
+
+        private static string NormalizeAuthorizationPayload(string input)
+        {
+            const int expansionBuffer = 12;
+            StringBuilder builder = new StringBuilder(input.Length + expansionBuffer);
+            for (int i = 0; i < input.Length; i++)
+            {
+                switch (input[i])
+                {
+                    case '\n':
+                        builder.Append("\\n");
+                        break;
+                    case '/':
+                        builder.Append("\\/");
+                        break;
+                    default:
+                        builder.Append(input[i]);
+                        break;
+                }
+            }
+
+            return builder.ToString();
         }
 
         private void ThrowIfDisposed()
@@ -2549,6 +2632,91 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        /// <summary>
+        /// Creates a snapshot resource as an asychronous operation in the Azure Cosmos DB service.
+        /// </summary>
+        /// <param name="snapshot">The specification for the <see cref="Snapshot"/> to create.</param>
+        /// <param name="options">(Optional) The <see cref="Documents.Client.RequestOptions"/> for the request.</param>
+        /// <returns>The <see cref="Snapshot"/> that was created within a task object representing the service response for the asynchronous operation.</returns>
+        /// <exception cref="ArgumentNullException">If <paramref name="snapshot"/> is not set.</exception>
+        /// <exception cref="System.AggregateException">Represents a consolidation of failures that occured during async processing. Look within InnerExceptions to find the actual exception(s).</exception>
+        /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Database are:
+        /// <list type="table">
+        ///     <listheader>
+        ///         <term>StatusCode</term><description>Reason for exception</description>
+        ///     </listheader>
+        ///     <item>
+        ///         <term>400</term><description>BadRequest - This means something was wrong with the snapshot object supplied. It is likely that the resource link specified for the Snapshot was invalid.</description>
+        ///     </item>
+        ///     <item>
+        ///         <term>409</term>
+        ///         <description>
+        ///         Conflict - This means a <see cref="Snapshot"/> with an id matching the id field of <paramref name="snapshot"/> already existed,
+        ///         or there is already a pending snapshot for the specified resource link.
+        ///         </description>
+        ///     </item>
+        /// </list>
+        /// </exception>
+        /// <example>
+        /// The example below creates a new <see cref="Snapshot"/> with an Id property of 'MySnapshot'. The ResourceLink indicates that
+        /// the snapshot should be created for the collection named "myContainer" in the database "myDatabase".
+        /// This code snippet is intended to be used from within an asynchronous method as it uses the await keyword
+        /// <code language="c#">
+        /// <![CDATA[
+        /// using (IDocumentClient client = new DocumentClient(new Uri("service endpoint"), "auth key"))
+        /// {
+        ///     Snapshot snapshot = await client.CreateSnapshotAsync(new Snapshot { Id = "MySnapshot", ResourceLink = ResourceLink = "dbs/myDatabase/colls/myContainer" });
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <example>
+        /// If you would like to construct a <see cref="Snapshot"/> from within a synchronous method then you need to use the following code
+        /// <code language="c#">
+        /// <![CDATA[
+        /// using (IDocumentClient client = new DocumentClient(new Uri("service endpoint"), "auth key"))
+        /// {
+        ///     Snapshot snapshot = client.CreateSnapshotAsync(new Snapshot { Id = "MySnapshot", ResourceLink = ResourceLink = "dbs/myDatabase/colls/myContainer" });.Result;
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <seealso cref="Microsoft.Azure.Documents.Snapshot"/>
+        /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
+        /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
+        /// <seealso cref="System.Threading.Tasks.Task"/>
+        internal Task<ResourceResponse<Snapshot>> CreateSnapshotAsync(Snapshot snapshot, Documents.Client.RequestOptions options = null)
+        {
+            IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
+            return TaskHelper.InlineIfPossible(() => this.CreateSnapshotPrivateAsync(snapshot, options, retryPolicyInstance), retryPolicyInstance);
+        }
+
+        private async Task<ResourceResponse<Snapshot>> CreateSnapshotPrivateAsync(Snapshot snapshot, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        {
+            await this.EnsureValidClientAsync();
+
+            if (snapshot == null)
+            {
+                throw new ArgumentNullException("snapshot");
+            }
+
+            this.ValidateResource(snapshot);
+
+            INameValueCollection headers = this.GetRequestHeaders(options);
+
+            using (DocumentServiceRequest request = DocumentServiceRequest.Create(
+                OperationType.Create,
+                Paths.Snapshots_Root,
+                snapshot,
+                ResourceType.Snapshot,
+                AuthorizationTokenType.PrimaryMasterKey,
+                headers,
+                SerializationFormattingPolicy.None))
+            {
+                return new ResourceResponse<Snapshot>(await this.CreateAsync(request, retryPolicyInstance));
+            }
+        }
+
         #endregion
 
         #region Delete Impl
@@ -2954,6 +3122,64 @@ namespace Microsoft.Azure.Cosmos
                 return new ResourceResponse<Conflict>(await this.DeleteAsync(request, retryPolicyInstance));
             }
         }
+
+        /// <summary>
+        /// Delete a <see cref="Microsoft.Azure.Documents.Snapshot"/> from the Azure Cosmos DB service as an asynchronous operation.
+        /// </summary>
+        /// <param name="snapshotLink">The link of the <see cref="Microsoft.Azure.Documents.Snapshot"/> to delete. E.g. snapshots/snapshot_rid/ </param>
+        /// <param name="options">(Optional) The request options for the request.</param>
+        /// <returns>A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/> which will contain information about the request issued.</returns>
+        /// <exception cref="ArgumentNullException">If <paramref name="snapshotLink"/> is not set.</exception>
+        /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
+        /// <list type="table">
+        ///     <listheader>
+        ///         <term>StatusCode</term><description>Reason for exception</description>
+        ///     </listheader>
+        ///     <item>
+        ///         <term>404</term><description>NotFound - This means the resource you tried to delete did not exist.</description>
+        ///     </item>
+        /// </list>
+        /// </exception>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// //Delete a snapshot using its selfLink property
+        /// //To get the snapshot you would have to query for the Snapshot, using CreateSnapshotQuery(),  and then refer to its .SelfLink property
+        /// await client.DeleteSnapshotAsync(snapshotLink);
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <seealso cref="Microsoft.Azure.Documents.Snapshot"/>
+        /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
+        /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
+        /// <seealso cref="System.Threading.Tasks.Task"/>
+        internal Task<ResourceResponse<Snapshot>> DeleteSnapshotAsync(string snapshotLink, Documents.Client.RequestOptions options = null)
+        {
+            IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
+            return TaskHelper.InlineIfPossible(() => this.DeleteSnapshotPrivateAsync(snapshotLink, options, retryPolicyInstance), retryPolicyInstance);
+        }
+
+        private async Task<ResourceResponse<Snapshot>> DeleteSnapshotPrivateAsync(string snapshotLink, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        {
+            await this.EnsureValidClientAsync();
+
+            if (string.IsNullOrEmpty(snapshotLink))
+            {
+                throw new ArgumentNullException("snapshotLink");
+            }
+
+            INameValueCollection headers = this.GetRequestHeaders(options);
+            using (DocumentServiceRequest request = DocumentServiceRequest.Create(
+                OperationType.Delete,
+                ResourceType.Snapshot,
+                snapshotLink,
+                AuthorizationTokenType.PrimaryMasterKey,
+                headers))
+            {
+                return new ResourceResponse<Snapshot>(await this.DeleteAsync(request, retryPolicyInstance));
+            }
+        }
+
         #endregion
 
         #region Replace Impl
@@ -3163,10 +3389,10 @@ namespace Microsoft.Azure.Cosmos
                 ResourceType.Document,
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers,
-                SerializationFormattingPolicy.None))
+                SerializationFormattingPolicy.None,
+                this.GetSerializerSettingsForRequest(options)))
             {
                 await this.AddPartitionKeyInformationAsync(request, document, options);
-                request.SerializerSettings = this.GetSerializerSettingsForRequest(options);
                 return new ResourceResponse<Document>(await this.UpdateAsync(request, retryPolicyInstance, cancellationToken));
             }
         }
@@ -4409,6 +4635,82 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        /// <summary>
+        /// Reads a <see cref="Microsoft.Azure.Documents.Snapshot"/> from the Azure Cosmos DB service as an asynchronous operation.
+        /// </summary>
+        /// <param name="snapshotLink">The link of the Snapshot resource to be read.</param>
+        /// <param name="options">(Optional) The request options for the request.</param>
+        /// <returns>
+        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/> which wraps a <see cref="Microsoft.Azure.Documents.Snapshot"/> containing the read resource record.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">If <paramref name="snapshotLink"/> is not set.</exception>
+        /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when reading a Snapshot are:
+        /// <list type="table">
+        ///     <listheader>
+        ///         <term>StatusCode</term><description>Reason for exception</description>
+        ///     </listheader>
+        ///     <item>
+        ///         <term>404</term><description>NotFound - This means the resource you tried to read did not exist.</description>
+        ///     </item>
+        ///     <item>
+        ///         <term>429</term><description>TooManyRequests - This means you have exceeded the number of request units per second. Consult the DocumentClientException.RetryAfter value to see how long you should wait before retrying this operation.</description>
+        ///     </item>
+        /// </list>
+        /// </exception>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// //Reads a Snapshot resource where
+        /// // - snapshot_id is the ID property of the Snapshot resource you wish to read.
+        /// var snapshotLink = "/snapshots/snapshot_id";
+        /// Snapshot snapshot= await client.ReadSnapshotAsync(snapshotLink);
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <remarks>
+        /// <para>
+        /// Doing a read of a resource is the most efficient way to get a resource from the Azure Cosmos DB service. If you know the resource's ID, do a read instead of a query by ID.
+        /// </para>
+        /// <para>
+        /// The example shown uses ID-based links, where the link is composed of the ID properties used when the resources were created.
+        /// You can still use the <see cref="Microsoft.Azure.Documents.Resource.SelfLink"/> property of the Snapshot if you prefer. A self-link is a URI for a resource that is made up of Resource Identifiers  (or the _rid properties).
+        /// ID-based links and SelfLink will both work.
+        /// The format for <paramref name="snapshotLink"/> is always "/snapshots/{snapshot identifier}" only
+        /// the values within the {} change depending on which method you wish to use to address the resource.
+        /// </para>
+        /// </remarks>
+        /// <seealso cref="Microsoft.Azure.Documents.Snapshot"/>
+        /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
+        /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
+        /// <seealso cref="System.Threading.Tasks.Task"/>
+        /// <seealso cref="System.Uri"/>
+        internal Task<ResourceResponse<Snapshot>> ReadSnapshotAsync(string snapshotLink, Documents.Client.RequestOptions options = null)
+        {
+            IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
+            return TaskHelper.InlineIfPossible(() => this.ReadSnapshotPrivateAsync(snapshotLink, options, retryPolicyInstance), retryPolicyInstance);
+        }
+
+        private async Task<ResourceResponse<Snapshot>> ReadSnapshotPrivateAsync(string snapshotLink, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        {
+            await this.EnsureValidClientAsync();
+
+            if (string.IsNullOrEmpty(snapshotLink))
+            {
+                throw new ArgumentNullException("snapshotLink");
+            }
+
+            INameValueCollection headers = this.GetRequestHeaders(options);
+            using (DocumentServiceRequest request = DocumentServiceRequest.Create(
+                OperationType.Read,
+                ResourceType.Snapshot,
+                snapshotLink,
+                AuthorizationTokenType.PrimaryMasterKey,
+                headers))
+            {
+                return new ResourceResponse<Snapshot>(await this.ReadAsync(request, retryPolicyInstance));
+            }
+        }
+
         #endregion
 
         #region ReadFeed Impl
@@ -5146,6 +5448,64 @@ namespace Microsoft.Azure.Cosmos
             return await this.CreateUserDefinedTypeFeedReader(userDefinedTypesLink, options).ExecuteNextAsync();
         }
 
+        /// <summary>
+        /// Reads the feed (sequence) of <see cref="Microsoft.Azure.Documents.Snapshot"/> for a database account from the Azure Cosmos DB service as an asynchronous operation.
+        /// </summary>
+        /// <param name="options">(Optional) The request options for the request.</param>
+        /// <returns>
+        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.DocumentFeedResponse{T}"/> which wraps a set of <see cref="Microsoft.Azure.Documents.Snapshot"/> containing the read resource record.
+        /// </returns>
+        /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
+        /// <list type="table">
+        ///     <listheader>
+        ///         <term>StatusCode</term><description>Reason for exception</description>
+        ///     </listheader>
+        ///     <item>
+        ///         <term>429</term><description>TooManyRequests - This means you have exceeded the number of request units per second. Consult the DocumentClientException.RetryAfter value to see how long you should wait before retrying this operation.</description>
+        ///     </item>
+        /// </list>
+        /// </exception>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// int count = 0;
+        /// string continuation = string.Empty;
+        /// do
+        /// {
+        ///     // Read the feed 10 items at a time until there are no more items to read
+        ///     DocumentFeedResponse<Snapshot> response = await client.ReadSnapshotFeedAsync(new FeedOptions
+        ///                                                                 {
+        ///                                                                     MaxItemCount = 10,
+        ///                                                                     RequestContinuation = continuation
+        ///                                                                 });
+        ///
+        ///     // Append the item count
+        ///     count += response.Count;
+        ///
+        ///     // Get the continuation so that we know when to stop.
+        ///      continuation = response.ResponseContinuation;
+        /// } while (!string.IsNullOrEmpty(continuation));
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <seealso cref="Microsoft.Azure.Documents.Snapshot"/>
+        /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
+        /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
+        /// <seealso cref="System.Threading.Tasks.Task"/>
+        internal Task<DocumentFeedResponse<Snapshot>> ReadSnapshotFeedAsync(FeedOptions options = null)
+        {
+            IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
+            return TaskHelper.InlineIfPossible(
+                () => this.ReadSnapshotFeedPrivateAsync(options, retryPolicyInstance), retryPolicyInstance);
+        }
+
+        private async Task<DocumentFeedResponse<Snapshot>> ReadSnapshotFeedPrivateAsync(FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        {
+            await this.EnsureValidClientAsync();
+
+            return await this.CreateSnapshotFeedReader(options).ExecuteNextAsync();
+        }
+
         #endregion
 
         #region Stored procs
@@ -5552,10 +5912,10 @@ namespace Microsoft.Azure.Cosmos
                 ResourceType.Document,
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers,
-                SerializationFormattingPolicy.None))
+                SerializationFormattingPolicy.None,
+                this.GetSerializerSettingsForRequest(options)))
             {
                 await this.AddPartitionKeyInformationAsync(request, typedDocument, options);
-                request.SerializerSettings = this.GetSerializerSettingsForRequest(options);
 
                 return new ResourceResponse<Document>(await this.UpsertAsync(request, retryPolicyInstance, cancellationToken));
             }
@@ -6344,7 +6704,8 @@ namespace Microsoft.Azure.Cosmos
 
             if (resourceType == ResourceType.Offer ||
                 (resourceType.IsScript() && operationType != OperationType.ExecuteJavaScript) ||
-                resourceType == ResourceType.PartitionKeyRange)
+                resourceType == ResourceType.PartitionKeyRange ||
+                resourceType == ResourceType.Snapshot)
             {
                 return this.GatewayStoreModel;
             }
@@ -6461,11 +6822,13 @@ namespace Microsoft.Azure.Cosmos
                     this.maxRntbdChannels,
                     this.rntbdPartitionCount,
                     this.maxRequestsPerRntbdChannel,
+                    (Documents.PortReuseMode)this.rntbdPortReuseMode,
+                    this.rntbdPortPoolReuseThreshold,
+                    this.rntbdPortPoolBindAttempts,
                     receiveHangDetectionTimeSeconds: this.rntbdReceiveHangDetectionTimeSeconds,
                     sendHangDetectionTimeSeconds: this.rntbdSendHangDetectionTimeSeconds,
                     enableCpuMonitor: this.enableCpuMonitor,
-                    retryWithConfiguration: this.ConnectionPolicy.RetryOptions?.GetRetryWithConfiguration(),
-                    rntbdPortReuseMode: (Documents.PortReuseMode)this.rntbdPortReuseMode);
+                    retryWithConfiguration: this.ConnectionPolicy.RetryOptions?.GetRetryWithConfiguration());
 
                 if (this.transportClientHandlerFactory != null)
                 {
@@ -6756,10 +7119,25 @@ namespace Microsoft.Azure.Cosmos
                 headers.Set(HttpConstants.HttpHeaders.OfferThroughput, options.OfferThroughput.Value.ToString(CultureInfo.InvariantCulture));
             }
 
+            if (options.OfferEnableRUPerMinuteThroughput)
+            {
+                headers.Set(HttpConstants.HttpHeaders.OfferIsRUPerMinuteThroughputEnabled, bool.TrueString);
+            }
+
             if (options.InsertSystemPartitionKey)
             {
                 headers.Set(HttpConstants.HttpHeaders.InsertSystemPartitionKey, bool.TrueString);
             }
+
+            //if (options.OfferAutopilotTier.HasValue)
+            //{
+            //    headers.Set(HttpConstants.HttpHeaders.OfferAutopilotTier, options.OfferAutopilotTier.ToString());
+            //}
+
+            //if (options.OfferAutopilotAutoUpgrade.HasValue)
+            //{
+            //    headers.Set(HttpConstants.HttpHeaders.OfferAutopilotAutoUpgrade, options.OfferAutopilotAutoUpgrade.ToString());
+            //}
 
             if (options.EnableScriptLogging)
             {
@@ -6779,6 +7157,11 @@ namespace Microsoft.Azure.Cosmos
             if (options.PopulatePartitionKeyRangeStatistics)
             {
                 headers.Set(HttpConstants.HttpHeaders.PopulatePartitionStatistics, bool.TrueString);
+            }
+
+            if (options.DisableRUPerMinuteUsage)
+            {
+                headers.Set(HttpConstants.HttpHeaders.DisableRUPerMinuteUsage, bool.TrueString);
             }
 
             if (options.RemoteStorageType.HasValue)
@@ -6811,6 +7194,11 @@ namespace Microsoft.Azure.Cosmos
                 headers.Set(HttpConstants.HttpHeaders.IsReadOnlyScript, bool.TrueString);
             }
 
+            if (options.IncludeSnapshotDirectories)
+            {
+                headers.Set(HttpConstants.HttpHeaders.IncludeSnapshotDirectories, bool.TrueString);
+            }
+
             if (options.ExcludeSystemProperties.HasValue)
             {
                 headers.Set(WFConstants.BackendHeaders.ExcludeSystemProperties, options.ExcludeSystemProperties.Value.ToString());
@@ -6821,19 +7209,11 @@ namespace Microsoft.Azure.Cosmos
                 headers.Set(HttpConstants.HttpHeaders.MergeStaticId, options.MergeStaticId);
             }
 
-            return headers;
-        }
-
-        private string GetAttachmentId(string mediaId)
-        {
-            string attachmentId = null;
-            byte storageIndex = 0;
-            if (!MediaIdHelper.TryParseMediaId(mediaId, out attachmentId, out storageIndex))
+            if (options.PreserveFullContent)
             {
-                throw new ArgumentException(ClientResources.MediaLinkInvalid);
+                headers.Set(HttpConstants.HttpHeaders.PreserveFullContent, bool.TrueString);
             }
-
-            return attachmentId;
+            return headers;
         }
 
         private class ResetSessionTokenRetryPolicyFactory : IRetryPolicyFactory

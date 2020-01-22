@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
     /// <summary>
     /// Benchmark for Item related operations.
     /// </summary>
+    [MemoryDiagnoser]
     public class ItemBenchmark
     {
         private readonly CosmosClient clientForTests;
@@ -52,6 +53,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                     ms,
                     new Cosmos.PartitionKey(Constants.ValidOperationId)))
                 {
+                    string diagnostics = response.Diagnostics.ToString();
                     if ((int)response.StatusCode > 300 || response.Content == null)
                     {
                         throw new Exception();
@@ -67,12 +69,15 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         [Benchmark]
         public async Task UpsertItem()
         {
-            ResponseMessage response = await this.container.UpsertItemStreamAsync(
+            using (ResponseMessage response = await this.container.UpsertItemStreamAsync(
                 new MemoryStream(this.payloadBytes),
-                new Cosmos.PartitionKey(Constants.ValidOperationId));
-            if ((int)response.StatusCode > 300 || response.Content == null)
+                new Cosmos.PartitionKey(Constants.ValidOperationId)))
             {
-                throw new Exception();
+                string diagnostics = response.Diagnostics.ToString();
+                if ((int)response.StatusCode > 300 || response.Content == null)
+                {
+                    throw new Exception();
+                }
             }
         }
 
@@ -83,13 +88,16 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         [Benchmark]
         public async Task UpsertItemStream()
         {
-            
-            ResponseMessage response = await this.container.UpsertItemStreamAsync(
+
+            using (ResponseMessage response = await this.container.UpsertItemStreamAsync(
                     new MemoryStream(this.payloadBytes),
-                    new Cosmos.PartitionKey(Constants.ValidOperationId));
-            if ((int)response.StatusCode > 300 || response.Content.Length == 0)
+                    new Cosmos.PartitionKey(Constants.ValidOperationId)))
             {
-                throw new Exception();
+                string diagnostics = response.Diagnostics.ToString();
+                if ((int)response.StatusCode > 300 || response.Content.Length == 0)
+                {
+                    throw new Exception();
+                }
             }
         }
 
@@ -100,12 +108,15 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         [Benchmark]
         public async Task ReadItemNotExists()
         {
-            ResponseMessage response = await this.container.ReadItemStreamAsync(
+            using (ResponseMessage response = await this.container.ReadItemStreamAsync(
                 Constants.NotFoundOperationId,
-                new Cosmos.PartitionKey(Constants.ValidOperationId));
-            if (response.StatusCode != System.Net.HttpStatusCode.NotFound)
+                new Cosmos.PartitionKey(Constants.ValidOperationId)))
             {
-                throw new Exception();
+                string diagnostics = response.Diagnostics.ToString();
+                if (response.StatusCode != System.Net.HttpStatusCode.NotFound)
+                {
+                    throw new Exception();
+                }
             }
         }
 
@@ -116,12 +127,15 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         [Benchmark]
         public async Task ReadItemStream()
         {
-            ResponseMessage response = await this.container.ReadItemStreamAsync(
+            using (ResponseMessage response = await this.container.ReadItemStreamAsync(
                 Constants.ValidOperationId,
-                new Cosmos.PartitionKey(Constants.ValidOperationId));
-            if (response.StatusCode == System.Net.HttpStatusCode.NotFound || response.Content == null)
+                new Cosmos.PartitionKey(Constants.ValidOperationId)))
             {
-                throw new Exception();
+                string diagnostics = response.Diagnostics.ToString();
+                if (response.StatusCode == System.Net.HttpStatusCode.NotFound || response.Content == null)
+                {
+                    throw new Exception();
+                }
             }
         }
 
@@ -132,13 +146,16 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         [Benchmark]
         public async Task UpdateItem()
         {
-            ResponseMessage response = await this.container.ReplaceItemStreamAsync(
+            using (ResponseMessage response = await this.container.ReplaceItemStreamAsync(
                 new MemoryStream(this.payloadBytes),
-                Constants.ValidOperationId, 
-                new Cosmos.PartitionKey(Constants.ValidOperationId));
-            if (response.StatusCode == System.Net.HttpStatusCode.NotFound || response.Content == null)
+                Constants.ValidOperationId,
+                new Cosmos.PartitionKey(Constants.ValidOperationId)))
             {
-                throw new Exception();
+                string diagnostics = response.Diagnostics.ToString();
+                if (response.StatusCode == System.Net.HttpStatusCode.NotFound || response.Content == null)
+                {
+                    throw new Exception();
+                }
             }
         }
 
@@ -149,12 +166,15 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         [Benchmark]
         public async Task DeleteItem()
         {
-            ResponseMessage response = await this.container.DeleteItemStreamAsync(
+            using (ResponseMessage response = await this.container.DeleteItemStreamAsync(
                 Constants.ValidOperationId,
-                new Cosmos.PartitionKey(Constants.ValidOperationId));
-            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                new Cosmos.PartitionKey(Constants.ValidOperationId)))
             {
-                throw new Exception();
+                string diagnostics = response.Diagnostics.ToString();
+                if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    throw new Exception();
+                }
             }
         }
 
@@ -165,12 +185,15 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         [Benchmark]
         public async Task DeleteItemNotExists()
         {
-            ResponseMessage response = await this.container.DeleteItemStreamAsync(
+            using (ResponseMessage response = await this.container.DeleteItemStreamAsync(
                 Constants.NotFoundOperationId,
-                new Cosmos.PartitionKey(Constants.ValidOperationId));
-            if (response.StatusCode != System.Net.HttpStatusCode.NotFound)
+                new Cosmos.PartitionKey(Constants.ValidOperationId)))
             {
-                throw new Exception();
+                string diagnostics = response.Diagnostics.ToString();
+                if (response.StatusCode != System.Net.HttpStatusCode.NotFound)
+                {
+                    throw new Exception();
+                }
             }
         }
     }

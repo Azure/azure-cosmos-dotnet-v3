@@ -5,12 +5,20 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using Newtonsoft.Json;
 
     /// <summary>
     /// Query index utilization metrics in the Azure Cosmos database service.
     /// </summary>
-    internal sealed class IndexUtilizationInfo
+#if INTERNAL
+#pragma warning disable SA1600
+#pragma warning disable CS1591
+    public
+#else
+    internal
+#endif
+    sealed class IndexUtilizationInfo
     {
         public static readonly IndexUtilizationInfo Empty = new IndexUtilizationInfo(
             utilizedIndexes: new List<IndexUtilizationData>(),
@@ -20,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         public IReadOnlyList<IndexUtilizationData> PotentialIndexes { get; }
 
         /// <summary>
-        /// Iniialized a new instance of the Index Utilization class.
+        /// Initializes a new instance of the Index Utilization class.
         /// </summary>
         /// <param name="utilizedIndexes">The utilized indexes list</param>
         /// <param name="potentialIndexes">The potential indexes list</param>
@@ -61,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// <summary>
         /// Creates a new IndexUtilizationInfo from the backend delimited string.
         /// </summary>
-        /// <param name="delimitedString">The backend delimted string to desrialize from.</param>
+        /// <param name="delimitedString">The backend delimited string to deserialize from.</param>
         /// <param name="result">The parsed index utilization info</param>
         /// <returns>A new IndexUtilizationInfo from the backend delimited string.</returns>
         internal static bool TryCreateFromDelimitedString(string delimitedString, out IndexUtilizationInfo result)
@@ -89,32 +97,42 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             }
         }
 
-        /// <summary>
-        /// Creates a new IndexUtilizationInfo that is the sum of all elements in an IEnumerable.
-        /// </summary>
-        /// <param name="indexUtilizationInfoList">The IEnumerable to aggregate.</param>
-        /// <returns>A new QueryPreparationTimes that is the sum of all elements in an IEnumerable.</returns>
-        internal static IndexUtilizationInfo CreateFromIEnumerable(IEnumerable<IndexUtilizationInfo> indexUtilizationInfoList)
+        public static IndexUtilizationInfo CreateFromString(string delimitedString)
         {
-            if (indexUtilizationInfoList == null)
+            if (!TryCreateFromDelimitedString(delimitedString, out IndexUtilizationInfo indexUtilizationInfo))
             {
-                throw new ArgumentNullException(nameof(indexUtilizationInfoList));
+                throw new FormatException();
             }
 
-            List<IndexUtilizationData> utilizedIndexesCopy = new List<IndexUtilizationData>();
-            List<IndexUtilizationData> potentialIndexesCopy = new List<IndexUtilizationData>();
-            foreach (IndexUtilizationInfo indexUtilizationInfo in indexUtilizationInfoList)
-            {
-                if (indexUtilizationInfo == null)
-                {
-                    throw new ArgumentException(nameof(indexUtilizationInfoList) + " can not have a null element");
-                }
+            return indexUtilizationInfo;
+        }
 
-                utilizedIndexesCopy.AddRange(indexUtilizationInfo.UtilizedIndexes);
-                potentialIndexesCopy.AddRange(indexUtilizationInfo.PotentialIndexes);
+        public ref struct Accumulator
+        {
+            public Accumulator(
+                IEnumerable<IndexUtilizationData> utilizedIndexes,
+                IEnumerable<IndexUtilizationData> potentialIndexes)
+            {
+                this.UtilizedIndexes = utilizedIndexes;
+                this.PotentialIndexes = potentialIndexes;
             }
 
-            return new IndexUtilizationInfo(utilizedIndexesCopy, potentialIndexesCopy);
+            public IEnumerable<IndexUtilizationData> UtilizedIndexes { get; }
+            public IEnumerable<IndexUtilizationData> PotentialIndexes { get; }
+
+            public Accumulator Accumulate(IndexUtilizationInfo indexUtilizationInfo)
+            {
+                return new Accumulator(
+                    utilizedIndexes: (this.UtilizedIndexes ?? Enumerable.Empty<IndexUtilizationData>()).Concat(indexUtilizationInfo.UtilizedIndexes),
+                    potentialIndexes: (this.PotentialIndexes ?? Enumerable.Empty<IndexUtilizationData>()).Concat(indexUtilizationInfo.PotentialIndexes));
+            }
+
+            public static IndexUtilizationInfo ToIndexUtilizationInfo(Accumulator accumulator)
+            {
+                return new IndexUtilizationInfo(
+                    utilizedIndexes: accumulator.UtilizedIndexes.ToList(),
+                    potentialIndexes: accumulator.PotentialIndexes.ToList());
+            }
         }
     }
 }

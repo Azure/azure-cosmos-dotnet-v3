@@ -148,7 +148,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             if (itemProducerTreeComparer == null)
             {
-                itemProducerTreeComparer = new ParallelItemProducerTreeComparer();
+                itemProducerTreeComparer = DeterministicParallelItemProducerTreeComparer.Singleton;
             }
 
             if (mockQueryContext == null)

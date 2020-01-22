@@ -36,9 +36,9 @@ Copyright (C) 2019 CosmosBenchmark
 
   --partitionkeypath     Container partition key path
 
-  -p                     Degree of parallism
+  --pl                   Degree of parallism
 
-  --itemtemplatefile     Item tempplate
+  --itemtemplatefile     Item template
 
   --minthreadpoolsize    Min thread pool size
 
@@ -46,3 +46,7 @@ Copyright (C) 2019 CosmosBenchmark
 
   --version              Display version information.
 ```
+
+## Running on Azure
+
+If you quickly get results, you can use our [guide to leverage Azure Container Instances](./AzureContainerInstances/README.md) to execute the benchmarks in any number of Azure regions with very little setup required.

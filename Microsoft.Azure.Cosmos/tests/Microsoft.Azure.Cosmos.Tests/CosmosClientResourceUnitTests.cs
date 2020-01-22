@@ -26,12 +26,11 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             CosmosClientContext context = new ClientContextCore(
                 client: mockClient.Object,
                 clientOptions: new CosmosClientOptions(),
-                userJsonSerializer: null,
-                defaultJsonSerializer: null,
-                sqlQuerySpecSerializer: null,
+                serializerCore: null,
                 cosmosResponseFactory: null,
                 requestHandler: null,
-                documentClient: null);
+                documentClient: null,
+                userAgent: null);
 
             DatabaseCore db = new DatabaseCore(context, databaseId);
             Assert.AreEqual(db.LinkUri.OriginalString, "dbs/" + databaseId);
@@ -130,12 +129,11 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             CosmosClientContext context = new ClientContextCore(
                 client: mockClient.Object,
                 clientOptions: new CosmosClientOptions(),
-                userJsonSerializer: null,
-                defaultJsonSerializer: null,
-                sqlQuerySpecSerializer: null,
+                serializerCore: null,
                 cosmosResponseFactory: null,
                 requestHandler: null,
-                documentClient: null);
+                documentClient: null,
+                userAgent: null);
 
             DatabaseCore db = new DatabaseCore(context, databaseId);
             ContainerCore container = new ContainerCore(context, db, crId);
@@ -154,12 +152,11 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             CosmosClientContext context = new ClientContextCore(
                 client: mockClient.Object,
                 clientOptions: new CosmosClientOptions() { AllowBulkExecution = true },
-                userJsonSerializer: null,
-                defaultJsonSerializer: null,
-                sqlQuerySpecSerializer: null,
+                serializerCore: null,
                 cosmosResponseFactory: null,
                 requestHandler: null,
-                documentClient: null);
+                documentClient: null,
+                userAgent: null);
 
             DatabaseCore db = new DatabaseCore(context, databaseId);
             ContainerCore container = new ContainerCore(context, db, crId);

@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             return this.ProcessStoredProcedureOperationAsync(
                 linkUri: this.container.LinkUri,
                 operationType: OperationType.Create,
-                streamPayload: this.clientContext.PropertiesSerializer.ToStream(storedProcedureProperties),
+                streamPayload: this.clientContext.SerializerCore.ToStream(storedProcedureProperties),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
@@ -99,7 +99,9 @@ namespace Microsoft.Azure.Cosmos.Scripts
 
             return new FeedIteratorCore<T>(
                 databaseStreamIterator,
-                this.clientContext.ResponseFactory.CreateQueryFeedResponseWithPropertySerializer<T>);
+                (response) => this.clientContext.ResponseFactory.CreateQueryFeedResponse<T>(
+                    responseMessage: response,
+                    resourceType: ResourceType.StoredProcedure));
         }
 
         public override Task<StoredProcedureResponse> ReadStoredProcedureAsync(
@@ -128,7 +130,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             return this.ProcessStoredProcedureOperationAsync(
                 id: storedProcedureProperties.Id,
                 operationType: OperationType.Replace,
-                streamPayload: this.clientContext.PropertiesSerializer.ToStream(storedProcedureProperties),
+                streamPayload: this.clientContext.SerializerCore.ToStream(storedProcedureProperties),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
@@ -175,19 +177,34 @@ namespace Microsoft.Azure.Cosmos.Scripts
             StoredProcedureRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
+            Stream streamPayload = null;
+            if (parameters != null)
+            {
+                streamPayload = this.clientContext.SerializerCore.ToStream<dynamic[]>(parameters);
+            }
+            
+            return this.ExecuteStoredProcedureStreamAsync(
+                storedProcedureId: storedProcedureId,
+                partitionKey: partitionKey,
+                streamPayload: streamPayload,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+        }
+        
+        public override Task<ResponseMessage> ExecuteStoredProcedureStreamAsync(
+            string storedProcedureId,
+            Stream streamPayload,
+            Cosmos.PartitionKey partitionKey,
+            StoredProcedureRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
             if (string.IsNullOrEmpty(storedProcedureId))
             {
                 throw new ArgumentNullException(nameof(storedProcedureId));
             }
 
             ContainerCore.ValidatePartitionKey(partitionKey, requestOptions);
-
-            Stream streamPayload = null;
-            if (parameters != null)
-            {
-                streamPayload = this.clientContext.CosmosSerializer.ToStream<dynamic[]>(parameters);
-            }
-
+            
             Uri linkUri = this.clientContext.CreateLink(
                 parentLink: this.container.LinkUri.OriginalString,
                 uriPathSegment: Paths.StoredProceduresPathSegment,
@@ -226,7 +243,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             return this.ProcessTriggerOperationAsync(
                 linkUri: this.container.LinkUri,
                 operationType: OperationType.Create,
-                streamPayload: this.clientContext.PropertiesSerializer.ToStream(triggerProperties),
+                streamPayload: this.clientContext.SerializerCore.ToStream(triggerProperties),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
@@ -294,7 +311,9 @@ namespace Microsoft.Azure.Cosmos.Scripts
 
             return new FeedIteratorCore<T>(
                 databaseStreamIterator,
-                this.clientContext.ResponseFactory.CreateQueryFeedResponseWithPropertySerializer<T>);
+                (response) => this.clientContext.ResponseFactory.CreateQueryFeedResponse<T>(
+                    responseMessage: response,
+                    resourceType: ResourceType.Trigger));
         }
 
         public override Task<TriggerResponse> ReadTriggerAsync(
@@ -338,7 +357,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             return this.ProcessTriggerOperationAsync(
                 id: triggerProperties.Id,
                 operationType: OperationType.Replace,
-                streamPayload: this.clientContext.PropertiesSerializer.ToStream(triggerProperties),
+                streamPayload: this.clientContext.SerializerCore.ToStream(triggerProperties),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
@@ -384,7 +403,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             return this.ProcessUserDefinedFunctionOperationAsync(
                 linkUri: this.container.LinkUri,
                 operationType: OperationType.Create,
-                streamPayload: this.clientContext.PropertiesSerializer.ToStream(userDefinedFunctionProperties),
+                streamPayload: this.clientContext.SerializerCore.ToStream(userDefinedFunctionProperties),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
@@ -452,7 +471,9 @@ namespace Microsoft.Azure.Cosmos.Scripts
 
             return new FeedIteratorCore<T>(
                 databaseStreamIterator,
-                this.clientContext.ResponseFactory.CreateQueryFeedResponseWithPropertySerializer<T>);
+                (response) => this.clientContext.ResponseFactory.CreateQueryFeedResponse<T>(
+                    responseMessage: response,
+                    resourceType: ResourceType.UserDefinedFunction));
         }
 
         public override Task<UserDefinedFunctionResponse> ReadUserDefinedFunctionAsync(
@@ -496,7 +517,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             return this.ProcessUserDefinedFunctionOperationAsync(
                 id: userDefinedFunctionProperties.Id,
                 operationType: OperationType.Replace,
-                streamPayload: this.clientContext.PropertiesSerializer.ToStream(userDefinedFunctionProperties),
+                streamPayload: this.clientContext.SerializerCore.ToStream(userDefinedFunctionProperties),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
@@ -615,6 +636,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 partitionKey: partitionKey,
                 streamPayload: streamPayload,
                 requestEnricher: null,
+                diagnosticsScope: null,
                 cancellationToken: cancellationToken);
         }
 

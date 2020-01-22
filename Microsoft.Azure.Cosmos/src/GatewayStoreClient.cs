@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Net.Http;
     using System.Net.Http.Headers;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
@@ -79,22 +80,33 @@ namespace Microsoft.Azure.Cosmos
         {
             using (responseMessage)
             {
+                IClientSideRequestStatistics requestStatistics = request?.RequestContext?.ClientRequestStatistics;
                 if ((int)responseMessage.StatusCode < 400)
                 {
                     INameValueCollection headers = GatewayStoreClient.ExtractResponseHeaders(responseMessage);
                     Stream contentStream = await GatewayStoreClient.BufferContentIfAvailableAsync(responseMessage);
-                    return new DocumentServiceResponse(contentStream, headers, responseMessage.StatusCode, serializerSettings);
+                    return new DocumentServiceResponse(
+                        body: contentStream,
+                        headers: headers,
+                        statusCode: responseMessage.StatusCode,
+                        clientSideRequestStatistics: requestStatistics,
+                        serializerSettings: serializerSettings);
                 }
                 else if (request != null
                     && request.IsValidStatusCodeForExceptionlessRetry((int)responseMessage.StatusCode))
                 {
                     INameValueCollection headers = GatewayStoreClient.ExtractResponseHeaders(responseMessage);
                     Stream contentStream = await GatewayStoreClient.BufferContentIfAvailableAsync(responseMessage);
-                    return new DocumentServiceResponse(contentStream, headers, responseMessage.StatusCode, serializerSettings);
+                    return new DocumentServiceResponse(
+                        body: contentStream,
+                        headers: headers,
+                        statusCode: responseMessage.StatusCode,
+                        clientSideRequestStatistics: requestStatistics,
+                        serializerSettings: serializerSettings);
                 }
                 else
                 {
-                    throw await GatewayStoreClient.CreateDocumentClientExceptionAsync(responseMessage);
+                    throw await GatewayStoreClient.CreateDocumentClientExceptionAsync(responseMessage, requestStatistics);
                 }
             }
         }
@@ -145,7 +157,9 @@ namespace Microsoft.Azure.Cosmos
             return headers;
         }
 
-        internal static async Task<DocumentClientException> CreateDocumentClientExceptionAsync(HttpResponseMessage responseMessage)
+        internal static async Task<DocumentClientException> CreateDocumentClientExceptionAsync(
+            HttpResponseMessage responseMessage,
+            IClientSideRequestStatistics requestStatistics)
         {
             // ensure there is no local ActivityId, since in Gateway mode ActivityId
             // should always come from message headers
@@ -173,21 +187,41 @@ namespace Microsoft.Azure.Cosmos
                     responseMessage.StatusCode)
                 {
                     StatusDescription = responseMessage.ReasonPhrase,
-                    ResourceAddress = resourceIdOrFullName
+                    ResourceAddress = resourceIdOrFullName,
+                    RequestStatistics = requestStatistics
                 };
             }
             else
             {
+                StringBuilder context = new StringBuilder();
+                context.AppendLine(await responseMessage.Content.ReadAsStringAsync());
+
+                HttpRequestMessage requestMessage = responseMessage.RequestMessage;
+                if (requestMessage != null)
+                {
+                    context.AppendLine($"RequestUri: {requestMessage.RequestUri.ToString()};");
+                    context.AppendLine($"RequestMethod: {requestMessage.Method.Method};");
+
+                    if (requestMessage.Headers != null)
+                    {
+                        foreach (KeyValuePair<string, IEnumerable<string>> header in requestMessage.Headers)
+                        {
+                            context.AppendLine($"Header: {header.Key} Length: {string.Join(",", header.Value).Length};");
+                        }
+                    }
+                }
+
                 String message = await responseMessage.Content.ReadAsStringAsync();
                 return new DocumentClientException(
-                    message: message,
+                    message: context.ToString(),
                     innerException: null,
                     responseHeaders: responseMessage.Headers,
                     statusCode: responseMessage.StatusCode,
                     requestUri: responseMessage.RequestMessage.RequestUri)
                 {
                     StatusDescription = responseMessage.ReasonPhrase,
-                    ResourceAddress = resourceIdOrFullName
+                    ResourceAddress = resourceIdOrFullName,
+                    RequestStatistics = requestStatistics
                 };
             }
         }

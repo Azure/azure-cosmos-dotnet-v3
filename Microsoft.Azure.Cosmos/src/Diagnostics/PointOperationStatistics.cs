@@ -6,52 +6,32 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Net;
     using System.Net.Http;
     using System.Text;
+    using System.Web;
+    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using static Microsoft.Azure.Cosmos.CosmosClientSideRequestStatistics;
 
-    internal class PointOperationStatistics : CosmosDiagnostics
+    internal class PointOperationStatistics : CosmosDiagnosticWriter
     {
-        private static JsonSerializerSettings SerializerSettings = new JsonSerializerSettings()
-        {
-            NullValueHandling = NullValueHandling.Ignore,
-            Formatting = Formatting.None
-        };
-
         public string ActivityId { get; }
         public HttpStatusCode StatusCode { get; }
-        public Documents.SubStatusCodes SubStatusCode { get; }
+        public SubStatusCodes SubStatusCode { get; }
         public double RequestCharge { get; }
         public string ErrorMessage { get; }
         public HttpMethod Method { get; }
         public Uri RequestUri { get; }
         public string RequestSessionToken { get; }
         public string ResponseSessionToken { get; }
-
-        public DateTime requestStartTimeUtc { get; private set; }
-
-        public DateTime? requestEndTimeUtc { get; private set; }
-
-        public List<StoreResponseStatistics> responseStatisticsList { get; private set; }
-
-        public List<StoreResponseStatistics> supplementalResponseStatisticsList { get; private set; }
-
-        public Dictionary<string, AddressResolutionStatistics> addressResolutionStatistics { get; private set; }
-
-        public List<Uri> contactedReplicas { get; set; }
-
-        public HashSet<Uri> failedReplicas { get; private set; }
-
-        public HashSet<Uri> regionsContacted { get; private set; }
-
-        public TimeSpan requestLatency { get; private set; }
+        public CosmosClientSideRequestStatistics ClientSideRequestStatistics { get; }
 
         internal PointOperationStatistics(
             string activityId,
             HttpStatusCode statusCode,
-            Documents.SubStatusCodes subStatusCode,
+            SubStatusCodes subStatusCode,
             double requestCharge,
             string errorMessage,
             HttpMethod method,
@@ -69,32 +49,61 @@ namespace Microsoft.Azure.Cosmos
             this.RequestUri = requestUri;
             this.RequestSessionToken = requestSessionToken;
             this.ResponseSessionToken = responseSessionToken;
-            if (clientSideRequestStatistics != null)
-            {
-                this.requestStartTimeUtc = clientSideRequestStatistics.requestStartTime;
-                this.requestEndTimeUtc = clientSideRequestStatistics.requestEndTime;
-                this.responseStatisticsList = clientSideRequestStatistics.responseStatisticsList;
-                this.supplementalResponseStatisticsList = clientSideRequestStatistics.supplementalResponseStatisticsList;
-                this.addressResolutionStatistics = clientSideRequestStatistics.addressResolutionStatistics;
-                this.contactedReplicas = clientSideRequestStatistics.ContactedReplicas;
-                this.failedReplicas = clientSideRequestStatistics.FailedReplicas;
-                this.regionsContacted = clientSideRequestStatistics.RegionsContacted;
-                this.requestLatency = clientSideRequestStatistics.RequestLatency;
-            }
+            this.ClientSideRequestStatistics = clientSideRequestStatistics;
         }
 
         public override string ToString()
         {
-            if (this.supplementalResponseStatisticsList != null)
+            StringBuilder stringBuilder = new StringBuilder();
+            StringWriter sw = new StringWriter(stringBuilder);
+            using (JsonWriter jsonWriter = new JsonTextWriter(sw))
             {
-                int supplementalResponseStatisticsListCount = this.supplementalResponseStatisticsList.Count;
-                int countToRemove = Math.Max(supplementalResponseStatisticsListCount - CosmosClientSideRequestStatistics.MaxSupplementalRequestsForToString, 0);
-                if (countToRemove > 0)
-                {
-                    this.supplementalResponseStatisticsList.RemoveRange(0, countToRemove);
-                }
+                this.WriteJsonObject(jsonWriter);
             }
-            return JsonConvert.SerializeObject(this, PointOperationStatistics.SerializerSettings);
+
+            return stringBuilder.ToString();
+        }
+
+        internal override void WriteJsonObject(JsonWriter jsonWriter)
+        {
+            jsonWriter.WriteStartObject();
+            jsonWriter.WritePropertyName("Id");
+            jsonWriter.WriteValue("PointOperationStatistics");
+
+            jsonWriter.WritePropertyName("ActivityId");
+            jsonWriter.WriteValue(this.ActivityId);
+
+            jsonWriter.WritePropertyName("StatusCode");
+            jsonWriter.WriteValue((int)this.StatusCode);
+
+            jsonWriter.WritePropertyName("SubStatusCode");
+            jsonWriter.WriteValue((int)this.SubStatusCode);
+
+            jsonWriter.WritePropertyName("RequestCharge");
+            jsonWriter.WriteValue(this.RequestCharge);
+
+            jsonWriter.WritePropertyName("RequestUri");
+            jsonWriter.WriteValue(this.RequestUri);
+
+            if (!string.IsNullOrEmpty(this.ErrorMessage))
+            {
+                jsonWriter.WritePropertyName("ErrorMessage");
+                jsonWriter.WriteValue(this.ErrorMessage);
+            }
+
+            jsonWriter.WritePropertyName("RequestSessionToken");
+            jsonWriter.WriteValue(this.RequestSessionToken);
+
+            jsonWriter.WritePropertyName("ResponseSessionToken");
+            jsonWriter.WriteValue(this.ResponseSessionToken);
+
+            if (this.ClientSideRequestStatistics != null)
+            {
+                jsonWriter.WritePropertyName("ClientRequestStats");
+                this.ClientSideRequestStatistics.WriteJsonObject(jsonWriter);
+            }
+
+            jsonWriter.WriteEndObject();
         }
     }
 }

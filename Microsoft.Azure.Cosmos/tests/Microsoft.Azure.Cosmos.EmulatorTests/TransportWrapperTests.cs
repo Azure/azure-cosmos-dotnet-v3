@@ -30,6 +30,51 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             payload1 = await container.ReadItemAsync<TestPayload>(id1, new Cosmos.PartitionKey(id1));
         }
 
+        [TestMethod]
+        public async Task TransportExceptionValidationTest()
+        {
+            CosmosClient cosmosClient = TestCommon.CreateCosmosClient(
+                builder =>
+                {
+                    builder.WithTransportClientHandlerFactory(transportClient => new TransportClientWrapper(
+                        transportClient,
+                        TransportWrapperTests.ThrowTransportExceptionOnItemOperation));
+                });
+
+            Cosmos.Database database = await cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            Container container = await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/id");
+
+            try
+            {
+                TestPayload payload1 = await container.CreateItemAsync<TestPayload>(new TestPayload { id = "bad" }, new Cosmos.PartitionKey("bad"));
+                Assert.Fail("Create item should fail with TransportException");
+            }
+            catch (CosmosException ce)
+            {
+                this.ValidateTransportException(ce);
+            }
+
+            try
+            {
+                FeedIterator<TestPayload> feedIterator = container.GetItemQueryIterator<TestPayload>("select * from T where T.Random = 19827 ");
+                await feedIterator.ReadNextAsync();
+                Assert.Fail("Create item should fail with TransportException");
+            }
+            catch (CosmosException ce)
+            {
+                this.ValidateTransportException(ce);
+            }
+        }
+
+        private void ValidateTransportException(CosmosException cosmosException)
+        {
+            string message = cosmosException.ToString();
+            Assert.IsTrue(message.Contains("TransportException: A client transport error occurred: The connection failed"), "StoreResult Exception is missing");
+            string diagnostics = cosmosException.Diagnostics.ToString();
+            Assert.IsNotNull(diagnostics);
+            Assert.IsTrue(diagnostics.Contains("TransportException: A client transport error occurred: The connection failed"));
+        }
+
         private static void Interceptor(
             Uri physicalAddress,
             ResourceOperation resourceOperation,
@@ -54,6 +99,49 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        private static void ThrowTransportExceptionOnItemOperation(
+                Uri physicalAddress,
+                ResourceOperation resourceOperation,
+                DocumentServiceRequest request)
+        {
+            if (request.ResourceType == ResourceType.Document)
+            {
+                TransportException transportException = new TransportException(
+                    errorCode: TransportErrorCode.ConnectionBroken,
+                    innerException: null,
+                    activityId: Guid.NewGuid(),
+                    requestUri: physicalAddress,
+                    sourceDescription: "SourceDescription",
+                    userPayload: true,
+                    payloadSent: false);
+
+                DocumentClientException documentClientException = new DocumentClientException(
+                    message: "Exception",
+                    innerException: transportException,
+                    statusCode: System.Net.HttpStatusCode.Gone);
+                CosmosClientSideRequestStatistics requestStatistics = (CosmosClientSideRequestStatistics)request.RequestContext.ClientRequestStatistics;
+                requestStatistics.RecordResponse(request, new StoreResult(
+                    storeResponse: null,
+                    exception: documentClientException,
+                    partitionKeyRangeId: "PkRange",
+                    lsn: 42,
+                    quorumAckedLsn: 4242,
+                    requestCharge: 9000.42,
+                    currentReplicaSetSize: 3,
+                    currentWriteQuorum: 4,
+                    isValid: true,
+                    storePhysicalAddress: physicalAddress,
+                    globalCommittedLSN: 2,
+                    numberOfReadRegions: 1,
+                    itemLSN: 5,
+                    sessionToken: null,
+                    usingLocalLSN: true));
+
+                throw Documents.Rntbd.TransportExceptions.GetServiceUnavailableException(physicalAddress, Guid.NewGuid(),
+                    transportException);
+            }
+        }
+
         private class TestPayload
         {
             public string id { get; set; }
@@ -75,14 +163,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 this.interceptor = interceptor;
             }
 
-            internal override Task<StoreResponse> InvokeStoreAsync(
+            internal override async Task<StoreResponse> InvokeStoreAsync(
                 Uri physicalAddress,
                 ResourceOperation resourceOperation,
                 DocumentServiceRequest request)
             {
-                interceptor(physicalAddress, resourceOperation, request);
+                this.interceptor(physicalAddress, resourceOperation, request);
 
-                return this.baseClient.InvokeStoreAsync(physicalAddress, resourceOperation, request);
+                StoreResponse response = await this.baseClient.InvokeStoreAsync(physicalAddress, resourceOperation, request);
+                return response;
             }
         }
     }

@@ -11,7 +11,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     /// <summary>
     /// Query runtime execution times in the Azure Cosmos DB service.
     /// </summary>
-    internal sealed class TextTable
+#if INTERNAL
+#pragma warning disable SA1600
+#pragma warning disable CS1591
+    public
+#else
+    internal
+#endif
+    sealed class TextTable
     {
         private const char CellLeftTop = '┌';
         private const char CellRightTop = '┐';
@@ -105,7 +112,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             return lineFormatStringBuilder.ToString();
         }
 
-        internal struct Column
+#if INTERNAL
+        public
+#else
+        internal
+#endif
+       struct Column
         {
             public readonly string ColumnName;
             public readonly int ColumnWidth;
