@@ -297,7 +297,7 @@
 
                 for (long j = 0; j < Math.Min((long)itemCount, maxStoredItemsPossible); j++)
                 {
-                    MemoryStream value = CreateNextDocItem(out PartitionKey partitionKeyValue);
+                    MemoryStream value = this.CreateNextDocItem(out PartitionKey partitionKeyValue);
                     documentsToImportInBatch.Enqueue(new KeyValuePair<PartitionKey, MemoryStream>(partitionKeyValue, value));
                 }
             }

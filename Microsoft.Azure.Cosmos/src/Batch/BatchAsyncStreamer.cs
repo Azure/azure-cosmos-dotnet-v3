@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos
         private SemaphoreSlim limiter;
 
         private int congestionDegreeOfConcurrency = 1;
-        private long congestionWaitTime = 1000;
+        private long congestionWaitTimeInMilliseconds = 1000;
         private BatchPartitionMetric oldPartitionMetric;
         private BatchPartitionMetric partitionMetric;
 
@@ -211,7 +211,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 long elapsedTimeInMilliseconds = this.partitionMetric.TimeTakenInMilliseconds - this.oldPartitionMetric.TimeTakenInMilliseconds;
 
-                if (elapsedTimeInMilliseconds >= this.congestionWaitTime)
+                if (elapsedTimeInMilliseconds >= this.congestionWaitTimeInMilliseconds)
                 {
                     long diffThrottle = this.partitionMetric.NumberOfThrottles - this.oldPartitionMetric.NumberOfThrottles;
                     long changeDocCount = this.partitionMetric.NumberOfDocumentsOperatedOn - this.oldPartitionMetric.NumberOfDocumentsOperatedOn;
@@ -231,7 +231,7 @@ namespace Microsoft.Azure.Cosmos
                         this.congestionDegreeOfConcurrency -= decreaseCount;
 
                         // In case of throttling increase the wait time, so as to converge max degreeOfConcurrency
-                        this.congestionWaitTime += 1000;
+                        this.congestionWaitTimeInMilliseconds += 1000;
                     }
 
                     if (changeDocCount > 0 && diffThrottle == 0)

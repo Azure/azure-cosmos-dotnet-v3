@@ -26,6 +26,11 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentException("numberOfDocumentsOperatedOn must be non negative");
             }
 
+            if (timeTakenInMilliseconds < 0)
+            {
+                throw new ArgumentException("timeTakenInMilliseconds must be non negative");
+            }
+
             if (numberOfThrottles < 0)
             {
                 throw new ArgumentException("numberOfThrottles must be non negative");
@@ -62,6 +67,21 @@ namespace Microsoft.Azure.Cosmos
 
         public void Add(long numberOfDocumentsOperatedOn, long timeTakenInMilliseconds, long numberOfThrottles)
         {
+            if (numberOfDocumentsOperatedOn < 0)
+            {
+                throw new ArgumentException("numberOfDocumentsOperatedOn must be non negative");
+            }
+
+            if (timeTakenInMilliseconds < 0)
+            {
+                throw new ArgumentException("timeTakenInMilliseconds must be non negative");
+            }
+
+            if (numberOfThrottles < 0)
+            {
+                throw new ArgumentException("numberOfThrottles must be non negative");
+            }
+
             this.NumberOfDocumentsOperatedOn += numberOfDocumentsOperatedOn;
             this.TimeTakenInMilliseconds += timeTakenInMilliseconds;
             this.NumberOfThrottles += numberOfThrottles;
