@@ -212,8 +212,23 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
 
                 return JsonBinaryEncoding.GetStringValue(
-                    this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition).Span,
+                    this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition),
                     this.jsonStringDictionary);
+            }
+
+            public override bool TryGetBufferedUtf8StringValue(out ReadOnlyMemory<byte> bufferedUtf8StringValue)
+            {
+                if (!(
+                    (this.JsonObjectState.CurrentTokenType == JsonTokenType.String) ||
+                    (this.JsonObjectState.CurrentTokenType == JsonTokenType.FieldName)))
+                {
+                    throw new JsonInvalidTokenException();
+                }
+
+                return JsonBinaryEncoding.TryGetBufferedUtf8StringValue(
+                    this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition),
+                    this.jsonStringDictionary,
+                    out bufferedUtf8StringValue);
             }
 
             /// <summary>

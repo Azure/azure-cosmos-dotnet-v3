@@ -106,13 +106,15 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            public override bool TryGetBufferedStringValue(
+            public override bool TryGetBufferedUtf8StringValue(
                 IJsonNavigatorNode stringNode,
-                out ReadOnlyMemory<byte> bufferedStringValue)
+                out ReadOnlyMemory<byte> bufferedUtf8StringValue)
             {
-                //TODO (brchon): implement this when optimizing code.
-                bufferedStringValue = null;
-                return false;
+                ReadOnlyMemory<byte> buffer = JsonBinaryNavigator.GetNodeOfType(
+                    JsonNodeType.String,
+                    stringNode);
+
+                return JsonBinaryEncoding.TryGetBufferedUtf8StringValue(buffer, this.jsonStringDictionary, out bufferedUtf8StringValue);
             }
 
             /// <inheritdoc />
@@ -121,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 ReadOnlyMemory<byte> buffer = JsonBinaryNavigator.GetNodeOfType(
                     JsonNodeType.String,
                     stringNode);
-                return JsonBinaryEncoding.GetStringValue(buffer.Span, this.jsonStringDictionary);
+                return JsonBinaryEncoding.GetStringValue(buffer, this.jsonStringDictionary);
             }
 
             /// <inheritdoc />

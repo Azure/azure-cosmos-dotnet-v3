@@ -96,11 +96,22 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            public override bool TryGetBufferedStringValue(
-                IJsonNavigatorNode stringNode,
+            public override bool TryGetBufferedUtf8StringValue(
+                IJsonNavigatorNode navigatorNode,
                 out ReadOnlyMemory<byte> bufferedStringValue)
             {
-                bufferedStringValue = null;
+                if (navigatorNode == null)
+                {
+                    throw new ArgumentNullException(nameof(navigatorNode));
+                }
+
+                if (!(navigatorNode is StringNodeBase stringNode))
+                {
+                    throw new ArgumentException($"{nameof(navigatorNode)} must actually be a number node.");
+                }
+
+                // For text we materialize the strings into UTF-16, so we can't get the buffered UTF-8 string.
+                bufferedStringValue = default;
                 return false;
             }
 

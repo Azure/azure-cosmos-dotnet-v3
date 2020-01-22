@@ -313,6 +313,14 @@ namespace Microsoft.Azure.Cosmos.Json
                 return JsonTextParser.GetStringValue(stringToken);
             }
 
+            public override bool TryGetBufferedUtf8StringValue(out ReadOnlyMemory<byte> bufferedUtf8StringValue)
+            {
+                bufferedUtf8StringValue = this.jsonTextBuffer.GetBufferedRawJsonToken(
+                    this.token.Start,
+                    this.token.End);
+                return true;
+            }
+
             public override sbyte GetInt8Value()
             {
                 ReadOnlySpan<byte> numberToken = this.jsonTextBuffer.GetBufferedRawJsonToken(

@@ -89,6 +89,8 @@ namespace Microsoft.Azure.Cosmos.Json
             "_id",
         };
 
+        private static readonly ReadOnlyMemory<byte>[] Utf8SystemStrings = SystemStrings.Select(x => (ReadOnlyMemory<byte>)Encoding.UTF8.GetBytes(x)).ToArray();
+
         /// <summary>
         /// Dictionary of system string to it's index.
         /// </summary>
@@ -439,7 +441,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <param name="jsonStringDictionary">The JSON string dictionary.</param>
         /// <returns>A string value from the binary reader.</returns>
         public static string GetStringValue(
-            ReadOnlySpan<byte> stringToken,
+            ReadOnlyMemory<byte> stringToken,
             JsonStringDictionary jsonStringDictionary)
         {
             if (!JsonBinaryEncoding.TryGetStringValue(stringToken, jsonStringDictionary, out string result))
@@ -458,8 +460,8 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <param name="result">The result.</param>
         /// <returns>Whether we got the string.</returns>
         public static bool TryGetStringValue(
-            ReadOnlySpan<byte> stringToken,
-            JsonStringDictionary jsonStringDictionary,
+            ReadOnlyMemory<byte> stringToken,
+            IReadOnlyJsonStringDictionary jsonStringDictionary,
             out string result)
         {
             result = null;
@@ -468,17 +470,43 @@ namespace Microsoft.Azure.Cosmos.Json
                 return false;
             }
 
-            if (JsonBinaryEncoding.TryGetEncodedStringValue(stringToken, jsonStringDictionary, out result))
+            if (JsonBinaryEncoding.TryGetEncodedStringValue(stringToken.Span, jsonStringDictionary, out result))
             {
                 return true;
             }
 
-            if (JsonBinaryEncoding.TryGetUtf8String(stringToken, out result))
+            if (JsonBinaryEncoding.TryGetLengthPrefixedUtf8StringValue(stringToken, out result))
             {
                 return true;
             }
 
             return false;
+        }
+
+        public static bool TryGetBufferedUtf8StringValue(
+            ReadOnlyMemory<byte> stringToken,
+            IReadOnlyJsonStringDictionary jsonStringDictionary,
+            out ReadOnlyMemory<byte> bufferedUtf8StringValue)
+        {
+            if (stringToken.IsEmpty)
+            {
+                bufferedUtf8StringValue = default;
+                return false;
+            }
+
+            if (JsonBinaryEncoding.TryGetBufferedLengthPrefixedUtf8String(stringToken, out bufferedUtf8StringValue))
+            {
+                return true;
+            }
+            else if (JsonBinaryEncoding.TryGetBufferedEncodedUtf8StringValue(stringToken, jsonStringDictionary, out bufferedUtf8StringValue))
+            {
+                return true;
+            }
+            else
+            {
+                bufferedUtf8StringValue = default;
+                return false;
+            }
         }
 
         /// <summary>
@@ -490,7 +518,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <returns>Encoded String Value</returns>
         private static bool TryGetEncodedStringValue(
             ReadOnlySpan<byte> stringToken,
-            JsonStringDictionary jsonStringDictionary,
+            IReadOnlyJsonStringDictionary jsonStringDictionary,
             out string encodedStringValue)
         {
             encodedStringValue = default(string);
@@ -510,6 +538,26 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             return found;
+        }
+
+        private static bool TryGetBufferedEncodedUtf8StringValue(
+            ReadOnlyMemory<byte> stringToken,
+            IReadOnlyJsonStringDictionary jsonStringDictionary,
+            out ReadOnlyMemory<byte> encodedUtf8StringValue)
+        {
+            if (JsonBinaryEncoding.TryGetEncodedUtf8SystemStringValue(stringToken, out encodedUtf8StringValue))
+            {
+                return true;
+            }
+            else if (JsonBinaryEncoding.TryGetEncodedUtf8UserStringValue(stringToken.Span, jsonStringDictionary, out encodedUtf8StringValue))
+            {
+                return true;
+            }
+            else
+            {
+                encodedUtf8StringValue = default;
+                return false;
+            }
         }
 
         /// <summary>
@@ -539,8 +587,33 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             int systemStringId = stringToken[0] - JsonBinaryEncoding.TypeMarker.SystemString1ByteLengthMin;
-            encodedSystemString = GetSystemStringById(systemStringId);
-            return true;
+            return JsonBinaryEncoding.TryGetSystemStringById(systemStringId, out encodedSystemString);
+        }
+
+        private static bool TryGetEncodedUtf8SystemStringValue(
+            ReadOnlyMemory<byte> stringToken,
+            out ReadOnlyMemory<byte> encodedSystemString)
+        {
+            if (stringToken.IsEmpty)
+            {
+                encodedSystemString = default;
+                return false;
+            }
+
+            if (!JsonBinaryEncoding.TypeMarker.IsOneByteEncodedSystemString(stringToken.Span[0]))
+            {
+                encodedSystemString = default;
+                return false;
+            }
+
+            if (stringToken.Length < 1)
+            {
+                encodedSystemString = default;
+                return false;
+            }
+
+            int systemStringId = stringToken.Span[0] - JsonBinaryEncoding.TypeMarker.SystemString1ByteLengthMin;
+            return JsonBinaryEncoding.TryGetUtf8SystemStringById(systemStringId, out encodedSystemString);
         }
 
         /// <summary>
@@ -552,29 +625,80 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <returns>Whether or not the Encoded User String Value was found</returns>
         private static bool TryGetEncodedUserStringValue(
             ReadOnlySpan<byte> stringToken,
-            JsonStringDictionary jsonStringDictionary,
+            IReadOnlyJsonStringDictionary jsonStringDictionary,
             out string encodedUserStringValue)
         {
-            encodedUserStringValue = default(string);
-            if ((jsonStringDictionary == null) || stringToken.IsEmpty)
+            if (jsonStringDictionary == null)
             {
+                encodedUserStringValue = default;
                 return false;
             }
 
-            int userStringId;
-            if (JsonBinaryEncoding.TypeMarker.IsOneByteEncodedUserString(stringToken[0]))
+            if (!JsonBinaryEncoding.TryGetUserStringId(stringToken, out int userStringId))
+            {
+                encodedUserStringValue = default;
+                return false;
+            }
+
+            return jsonStringDictionary.TryGetStringAtIndex(userStringId, out encodedUserStringValue);
+        }
+
+        private static bool TryGetEncodedUtf8UserStringValue(
+            ReadOnlySpan<byte> stringToken,
+            IReadOnlyJsonStringDictionary jsonStringDictionary,
+            out ReadOnlyMemory<byte> encodedUserStringValue)
+        {
+            if (jsonStringDictionary == null)
+            {
+                encodedUserStringValue = default;
+                return false;
+            }
+
+            if (!JsonBinaryEncoding.TryGetUserStringId(stringToken, out int userStringId))
+            {
+                encodedUserStringValue = default;
+                return false;
+            }
+
+            if (!jsonStringDictionary.TryGetUtf8StringAtIndex(userStringId, out encodedUserStringValue))
+            {
+                encodedUserStringValue = default;
+                return false;
+            }
+
+            return true;
+        }
+
+        private static bool TryGetUserStringId(ReadOnlySpan<byte> stringToken, out int userStringId)
+        {
+            if (stringToken.IsEmpty)
+            {
+                userStringId = default;
+                return false;
+            }
+
+            byte typeMarker = stringToken[0];
+            if (!JsonBinaryEncoding.TypeMarker.IsUserString(typeMarker))
+            {
+                userStringId = default;
+                return false;
+            }
+
+            if (JsonBinaryEncoding.TypeMarker.IsOneByteEncodedUserString(typeMarker))
             {
                 if (stringToken.Length < 1)
                 {
+                    userStringId = default;
                     return false;
                 }
 
                 userStringId = stringToken[0] - JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMin;
             }
-            else if (JsonBinaryEncoding.TypeMarker.IsTwoByteEncodedUserString(stringToken[0]))
+            else //// JsonBinaryEncoding.TypeMarker.IsTwoByteEncodedUserString(typeMarker)
             {
                 if (stringToken.Length < 2)
                 {
+                    userStringId = default;
                     return false;
                 }
 
@@ -583,32 +707,49 @@ namespace Microsoft.Azure.Cosmos.Json
                     + stringToken[1]
                     + ((stringToken[0] - JsonBinaryEncoding.TypeMarker.UserString2ByteLengthMin) * 0xFF);
             }
-            else
-            {
-                return false;
-            }
 
-            return jsonStringDictionary.TryGetStringAtIndex(userStringId, out encodedUserStringValue);
+            return true;
         }
 
-        private static bool TryGetUtf8String(
-            ReadOnlySpan<byte> stringToken,
-            out string utf8StringValue)
+        private static bool TryGetLengthPrefixedUtf8StringValue(
+            ReadOnlyMemory<byte> stringToken,
+            out string utf8String)
         {
-            utf8StringValue = null;
             if (stringToken.IsEmpty)
             {
+                utf8String = default;
                 return false;
             }
 
-            byte typeMarker = stringToken[0];
+            if (!JsonBinaryEncoding.TryGetBufferedLengthPrefixedUtf8String(stringToken, out ReadOnlyMemory<byte> bufferedUtf8String))
+            {
+                utf8String = default;
+                return false;
+            }
 
-            // trim off the type marker
-            stringToken = stringToken.Slice(1);
+            utf8String = Encoding.UTF8.GetString(bufferedUtf8String.Span);
+            return true;
+        }
 
+        private static bool TryGetBufferedLengthPrefixedUtf8String(
+            ReadOnlyMemory<byte> stringToken,
+            out ReadOnlyMemory<byte> utf8String)
+        {
+            if (stringToken.IsEmpty)
+            {
+                utf8String = default;
+                return false;
+            }
+
+            ReadOnlySpan<byte> stringTokenSpan = stringToken.Span;
+            byte typeMarker = stringToken.Span[0];
+            stringTokenSpan = stringTokenSpan.Slice(start: 1);
+
+            int start;
             long length;
             if (JsonBinaryEncoding.TypeMarker.IsEncodedLengthString(typeMarker))
             {
+                start = JsonBinaryEncoding.TypeMarkerLength;
                 length = JsonBinaryEncoding.GetStringLengths(typeMarker);
             }
             else
@@ -616,60 +757,51 @@ namespace Microsoft.Azure.Cosmos.Json
                 switch (typeMarker)
                 {
                     case JsonBinaryEncoding.TypeMarker.String1ByteLength:
-                        if (stringToken.Length < JsonBinaryEncoding.OneByteLength)
+                        if (stringTokenSpan.Length < JsonBinaryEncoding.OneByteLength)
                         {
+                            utf8String = default;
                             return false;
                         }
 
-                        length = MemoryMarshal.Read<byte>(stringToken);
-                        stringToken = stringToken.Slice(JsonBinaryEncoding.OneByteLength);
+                        start = JsonBinaryEncoding.TypeMarkerLength + JsonBinaryEncoding.OneByteLength;
+                        length = MemoryMarshal.Read<byte>(stringTokenSpan);
                         break;
 
                     case JsonBinaryEncoding.TypeMarker.String2ByteLength:
-                        if (stringToken.Length < JsonBinaryEncoding.TwoByteLength)
+                        if (stringTokenSpan.Length < JsonBinaryEncoding.TwoByteLength)
                         {
+                            utf8String = default;
                             return false;
                         }
 
-                        length = MemoryMarshal.Read<ushort>(stringToken);
-                        stringToken = stringToken.Slice(JsonBinaryEncoding.TwoByteLength);
+                        start = JsonBinaryEncoding.TypeMarkerLength + JsonBinaryEncoding.TwoByteLength;
+                        length = MemoryMarshal.Read<ushort>(stringTokenSpan);
                         break;
 
                     case JsonBinaryEncoding.TypeMarker.String4ByteLength:
-                        if (stringToken.Length < JsonBinaryEncoding.FourByteLength)
+                        if (stringTokenSpan.Length < JsonBinaryEncoding.FourByteLength)
                         {
+                            utf8String = default;
                             return false;
                         }
 
-                        length = MemoryMarshal.Read<uint>(stringToken);
-                        stringToken = stringToken.Slice(JsonBinaryEncoding.FourByteLength);
+                        start = JsonBinaryEncoding.TypeMarkerLength + JsonBinaryEncoding.TwoByteLength;
+                        length = MemoryMarshal.Read<uint>(stringTokenSpan);
                         break;
 
                     default:
+                        utf8String = default;
                         return false;
                 }
-            }
 
-            if ((length > int.MaxValue) || length < 0)
-            {
-                return false;
-            }
-
-            if (length == 0)
-            {
-                utf8StringValue = string.Empty;
-            }
-            else
-            {
-                unsafe
+                if ((start + length) > stringToken.Length)
                 {
-                    fixed (byte* spanPointer = stringToken)
-                    {
-                        utf8StringValue = Encoding.UTF8.GetString(spanPointer, (int)length);
-                    }
+                    utf8String = default;
+                    return false;
                 }
             }
 
+            utf8String = stringToken.Slice(start: start, length: (int)length);
             return true;
         }
 
@@ -786,14 +918,28 @@ namespace Microsoft.Azure.Cosmos.Json
             return JsonBinaryEncoding.FirstValueOffsets.Offsets[typeMarker];
         }
 
-        /// <summary>
-        /// Gets a system string by ID.
-        /// </summary>
-        /// <param name="id">The SystemStringId.</param>
-        /// <returns>The system string for the id.</returns>
-        public static string GetSystemStringById(int id)
+        public static bool TryGetSystemStringById(int id, out string systemString)
         {
-            return JsonBinaryEncoding.SystemStrings[id];
+            if (id >= JsonBinaryEncoding.SystemStrings.Length)
+            {
+                systemString = default;
+                return false;
+            }
+
+            systemString = JsonBinaryEncoding.SystemStrings[id];
+            return true;
+        }
+
+        public static bool TryGetUtf8SystemStringById(int id, out ReadOnlyMemory<byte> utf8SystemString)
+        {
+            if (id >= JsonBinaryEncoding.Utf8SystemStrings.Length)
+            {
+                utf8SystemString = default;
+                return false;
+            }
+
+            utf8SystemString = JsonBinaryEncoding.Utf8SystemStrings[id];
+            return true;
         }
 
         /// <summary>

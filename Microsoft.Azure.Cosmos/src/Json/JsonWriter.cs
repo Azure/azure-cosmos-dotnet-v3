@@ -370,7 +370,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     case JsonNodeType.String:
                     case JsonNodeType.FieldName:
                         bool fieldName = jsonNodeType == JsonNodeType.FieldName;
-                        if (jsonNavigator.TryGetBufferedStringValue(
+                        if (jsonNavigator.TryGetBufferedUtf8StringValue(
                             jsonNavigatorNode,
                             out ReadOnlyMemory<byte> bufferedStringValue))
                         {
