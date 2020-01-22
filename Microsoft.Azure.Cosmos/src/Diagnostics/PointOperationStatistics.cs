@@ -7,20 +7,15 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
     using System;
     using System.Net;
     using System.Net.Http;
+    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
     internal sealed class PointOperationStatistics : CosmosDiagnosticsInternal
     {
-        private static readonly JsonSerializerSettings SerializerSettings = new JsonSerializerSettings()
-        {
-            NullValueHandling = NullValueHandling.Ignore,
-            Formatting = Formatting.None
-        };
-
-        internal PointOperationStatistics(
+        public PointOperationStatistics(
             string activityId,
             HttpStatusCode statusCode,
-            Documents.SubStatusCodes subStatusCode,
+            SubStatusCodes subStatusCode,
             double requestCharge,
             string errorMessage,
             HttpMethod method,

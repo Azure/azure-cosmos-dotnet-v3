@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 serializerCore: MockCosmosUtil.Serializer,
             cancellationToken: default(CancellationToken));
 
-            CosmosDiagnostics diagnostics = new PointOperationStatistics(
+            PointOperationStatistics diagnostics = new PointOperationStatistics(
                 activityId: Guid.NewGuid().ToString(),
                 statusCode: HttpStatusCode.OK,
                 subStatusCode: SubStatusCodes.Unknown,
@@ -89,13 +89,24 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseSessionToken: null,
                 clientSideRequestStatistics: new CosmosClientSideRequestStatistics());
 
+            ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.OK)
+            {
+                Content = responseContent,
+            };
+
+            responseMessage.DiagnosticsContext.AddContextWriter(diagnostics);
+
             TransactionalBatchResponse batchresponse = await TransactionalBatchResponse.FromResponseMessageAsync(
-                new ResponseMessage(HttpStatusCode.OK) { Content = responseContent, Diagnostics = diagnostics },
+                responseMessage,
                 batchRequest,
                 MockCosmosUtil.Serializer);
 
             PartitionKeyRangeBatchResponse response = new PartitionKeyRangeBatchResponse(arrayOperations.Length, batchresponse, MockCosmosUtil.Serializer);
-            Assert.AreEqual(diagnostics, response.Diagnostics);
+
+            string pointDiagnosticString = diagnostics.ToString();
+            pointDiagnosticString = pointDiagnosticString.Substring(1, pointDiagnosticString.Length - 2);
+            string diagnosticContextString = response.DiagnosticsContext.ToString();
+            Assert.IsTrue(diagnosticContextString.Contains(pointDiagnosticString));
         }
     }
 }

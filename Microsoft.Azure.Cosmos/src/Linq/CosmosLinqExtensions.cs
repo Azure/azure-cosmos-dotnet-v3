@@ -739,11 +739,11 @@ namespace Microsoft.Azure.Cosmos.Linq
         private static Task<Response<T>> ResponseHelperAsync<T>(T value)
         {
             return Task.FromResult<Response<T>>(
-                new ItemResponse<T>(
-                    System.Net.HttpStatusCode.OK,
-                    new Headers(),
-                    value,
-                    new CosmosDiagnosticsAggregate(new List<CosmosDiagnosticsInternal>())));
+                       new ItemResponse<T>(
+                           System.Net.HttpStatusCode.OK,
+                           new Headers(),
+                           value,
+                           new CosmosDiagnosticsContext()));
         }
 
         private static MethodInfo GetMethodInfoOf<T1, T2>(Func<T1, T2> func)

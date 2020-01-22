@@ -209,7 +209,7 @@ namespace Microsoft.Azure.Cosmos
                  errorMessage: this.Message,
                  statusCode: this.StatusCode,
                  error: this.Error,
-                 diagnostics: this.Diagnostics);
+                 diagnostics: request.DiagnosticsContext);
         }
     }
 }

@@ -95,7 +95,7 @@
           ],
           "MethodInfo": null
         },
-        "System.String ETag[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"_etag\")]": {
+        "System.String ETag[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"_etag\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -2082,7 +2082,7 @@
           ],
           "MethodInfo": "System.Nullable`1[System.DateTime] get_LastModified()"
         },
-        "System.Nullable`1[System.DateTime] LastModified[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Documents.UnixDateTimeConverter))]-[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"_ts\")]": {
+        "System.Nullable`1[System.DateTime] LastModified[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Documents.UnixDateTimeConverter))]-[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"_ts\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonConverterAttribute",
@@ -2090,7 +2090,7 @@
           ],
           "MethodInfo": null
         },
-        "System.String ETag[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"_etag\")]": {
+        "System.String ETag[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"_etag\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -4510,9 +4510,11 @@
           "Attributes": [],
           "MethodInfo": null
         },
-        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] SendAsync(Microsoft.Azure.Cosmos.RequestMessage, System.Threading.CancellationToken)": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] SendAsync(Microsoft.Azure.Cosmos.RequestMessage, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.RequestHandler+<SendAsync>d__4))]": {
           "Type": "Method",
-          "Attributes": [],
+          "Attributes": [
+            "AsyncStateMachineAttribute"
+          ],
           "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] SendAsync(Microsoft.Azure.Cosmos.RequestMessage, System.Threading.CancellationToken)"
         },
         "Void set_InnerHandler(Microsoft.Azure.Cosmos.RequestHandler)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -5158,11 +5160,9 @@
           "Attributes": [],
           "MethodInfo": null
         },
-        "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()": {
           "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()"
         },
         "Microsoft.Azure.Cosmos.Headers get_Headers()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -5516,7 +5516,7 @@
           ],
           "MethodInfo": "System.Nullable`1[System.DateTime] get_LastModified()"
         },
-        "System.Nullable`1[System.DateTime] LastModified[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Documents.UnixDateTimeConverter))]-[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"_ts\")]": {
+        "System.Nullable`1[System.DateTime] LastModified[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Documents.UnixDateTimeConverter))]-[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"_ts\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonConverterAttribute",
@@ -5531,7 +5531,7 @@
           ],
           "MethodInfo": null
         },
-        "System.String ETag[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"_etag\")]": {
+        "System.String ETag[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"_etag\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -5838,7 +5838,7 @@
           ],
           "MethodInfo": null
         },
-        "System.String ETag[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"_etag\")]": {
+        "System.String ETag[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"_etag\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -6043,7 +6043,7 @@
           ],
           "MethodInfo": null
         },
-        "System.String ETag[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"_etag\")]": {
+        "System.String ETag[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"_etag\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -7327,14 +7327,14 @@
     "ThroughputProperties": {
       "Subclasses": {},
       "Members": {
-        "System.DateTime get_LastModified()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "System.Nullable`1[System.DateTime] get_LastModified()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "System.DateTime get_LastModified()"
+          "MethodInfo": "System.Nullable`1[System.DateTime] get_LastModified()"
         },
-        "System.DateTime LastModified[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Documents.UnixDateTimeConverter))]-[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"_ts\")]": {
+        "System.Nullable`1[System.DateTime] LastModified[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Documents.UnixDateTimeConverter))]-[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"_ts\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonConverterAttribute",
@@ -7352,7 +7352,7 @@
           "Attributes": [],
           "MethodInfo": null
         },
-        "System.String ETag[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"_etag\")]": {
+        "System.String ETag[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"_etag\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -7932,7 +7932,7 @@
           ],
           "MethodInfo": "System.Nullable`1[System.DateTime] get_LastModified()"
         },
-        "System.Nullable`1[System.DateTime] LastModified[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Documents.UnixDateTimeConverter))]-[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"_ts\")]": {
+        "System.Nullable`1[System.DateTime] LastModified[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Documents.UnixDateTimeConverter))]-[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"_ts\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonConverterAttribute",
@@ -7940,7 +7940,7 @@
           ],
           "MethodInfo": null
         },
-        "System.String ETag[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"_etag\")]": {
+        "System.String ETag[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"_etag\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"

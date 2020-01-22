@@ -43,12 +43,8 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             double requestCharge = 42;
             string activityId = Guid.NewGuid().ToString();
-            IReadOnlyCollection<QueryPageDiagnostics> diagnostics = new List<QueryPageDiagnostics>()
-            {
-                new QueryPageDiagnostics("0",
-                "SomeQueryMetricText",
-                "SomeIndexUtilText",
-                new PointOperationStatistics(
+            CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContext();
+            diagnosticsContext.AddContextWriter(new PointOperationStatistics(
                     activityId: Guid.NewGuid().ToString(),
                     statusCode: HttpStatusCode.OK,
                     subStatusCode: SubStatusCodes.Unknown,
@@ -58,7 +54,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                     requestUri: new Uri("http://localhost.com"),
                     requestSessionToken: null,
                     responseSessionToken: null,
-                    clientSideRequestStatistics: null),
+                    clientSideRequestStatistics: null));
+            IReadOnlyCollection<QueryPageDiagnostics> diagnostics = new List<QueryPageDiagnostics>()
+            {
+                new QueryPageDiagnostics("0",
+                "SomeQueryMetricText",
+                "SomeIndexUtilText",
+                diagnosticsContext,
                 new SchedulingStopwatch())
             };
 
@@ -100,12 +102,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             IJsonNavigator jsonNavigator = JsonNavigator.Create(memoryStream.ToArray());
             IJsonNavigatorNode jsonNavigatorNode = jsonNavigator.GetRootNode();
             CosmosArray cosmosArray = CosmosArray.Create(jsonNavigator, jsonNavigatorNode);
-            IReadOnlyCollection<QueryPageDiagnostics> diagnostics = new List<QueryPageDiagnostics>()
-            {
-                new QueryPageDiagnostics("0",
-                "SomeQueryMetricText",
-                "SomeIndexUtilText",
-                new PointOperationStatistics(
+            CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContext();
+            diagnosticsContext.AddContextWriter(new PointOperationStatistics(
                     activityId: Guid.NewGuid().ToString(),
                     statusCode: HttpStatusCode.OK,
                     subStatusCode: SubStatusCodes.Unknown,
@@ -115,7 +113,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                     requestUri: new Uri("http://localhost.com"),
                     requestSessionToken: null,
                     responseSessionToken: null,
-                    clientSideRequestStatistics: null),
+                    clientSideRequestStatistics: null));
+            IReadOnlyCollection<QueryPageDiagnostics> diagnostics = new List<QueryPageDiagnostics>()
+            {
+                new QueryPageDiagnostics("0",
+                "SomeQueryMetricText",
+                "SomeIndexUtilText",
+                diagnosticsContext,
                 new SchedulingStopwatch())
             };
 
@@ -142,12 +146,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             SubStatusCodes subStatusCodes,
             string errorMessage)
         {
-            IReadOnlyCollection<QueryPageDiagnostics> diagnostics = new List<QueryPageDiagnostics>()
-            {
-                new QueryPageDiagnostics("0",
-                "SomeQueryMetricText",
-                "SomeIndexUtilText",
-                new PointOperationStatistics(
+            CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContext();
+            diagnosticsContext.AddContextWriter(new PointOperationStatistics(
                     Guid.NewGuid().ToString(),
                     System.Net.HttpStatusCode.Gone,
                     subStatusCode: SubStatusCodes.PartitionKeyRangeGone,
@@ -157,7 +157,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                     requestUri: new Uri("http://localhost.com"),
                     requestSessionToken: null,
                     responseSessionToken: null,
-                    clientSideRequestStatistics: null),
+                    clientSideRequestStatistics: null));
+            IReadOnlyCollection<QueryPageDiagnostics> diagnostics = new List<QueryPageDiagnostics>()
+            {
+                new QueryPageDiagnostics("0",
+                "SomeQueryMetricText",
+                "SomeIndexUtilText",
+                diagnosticsContext,
                 new SchedulingStopwatch())
             };
 

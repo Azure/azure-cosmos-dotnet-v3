@@ -175,14 +175,32 @@ namespace Microsoft.Azure.Cosmos.Linq
         internal async Task<Response<T>> AggregateResultAsync(CancellationToken cancellationToken = default)
         {
             List<T> result = new List<T>();
-            List<CosmosDiagnosticsInternal> cosmosDiagnostics = new List<CosmosDiagnosticsInternal>();
+            CosmosDiagnosticsContext diagnosticsContext = null;
             Headers headers = new Headers();
             FeedIterator<T> localFeedIterator = this.CreateFeedIterator(false);
             while (localFeedIterator.HasMoreResults)
             {
                 FeedResponse<T> response = await localFeedIterator.ReadNextAsync();
                 headers.RequestCharge += response.RequestCharge;
-                cosmosDiagnostics.Add(response.Diagnostics as CosmosDiagnosticsInternal);
+
+                // If the first page has a diagnostic context use that. Else create a new one and add the diagnostic to it.
+                if (response.Diagnostics is CosmosDiagnosticsContext responseDiagnosticContext)
+                {
+                    if (diagnosticsContext == null)
+                    {
+                        diagnosticsContext = responseDiagnosticContext;
+                    }
+                    else
+                    {
+                        diagnosticsContext.Append(responseDiagnosticContext);
+                    }
+                    
+                }
+                else
+                {
+                    throw new ArgumentException($"Invalid diagnostic object {response.Diagnostics.GetType().FullName}");
+                }
+
                 result.AddRange(response);
             }
 
@@ -190,7 +208,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 System.Net.HttpStatusCode.OK,
                 headers,
                 result.FirstOrDefault(),
-                new CosmosDiagnosticsAggregate(cosmosDiagnostics));
+                diagnosticsContext);
         }
 
         private FeedIteratorInternal CreateStreamIterator(bool isContinuationExcpected)

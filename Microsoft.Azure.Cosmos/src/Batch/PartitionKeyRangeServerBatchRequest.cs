@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="ensureContinuousOperationIndexes">Whether to stop adding operations to the request once there is non-continuity in the operation indexes.</param>
         /// <param name="serializerCore">Serializer to serialize user provided objects to JSON.</param>
         /// <param name="cancellationToken"><see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>A newly created instance of <see cref="PartitionKeyRangeServerBatchRequest"/>.</returns>
+        /// <returns>A newly created instance of <see cref="PartitionKeyRangeServerBatchRequest"/> and the overflow ItemBatchOperation not being processed.</returns>
         public static async Task<Tuple<PartitionKeyRangeServerBatchRequest, ArraySegment<ItemBatchOperation>>> CreateAsync(
             string partitionKeyRangeId,
             ArraySegment<ItemBatchOperation> operations,
