@@ -3,6 +3,7 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
+    using System;
     using Microsoft.Azure.Cosmos.Json;
 
 #if INTERNAL
@@ -20,10 +21,9 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         {
         }
 
-        public abstract string Value
-        {
-            get;
-        }
+        public abstract string Value { get; }
+
+        public abstract bool TryGetBufferedUtf8Value(out ReadOnlyMemory<byte> bufferedUtf8Value);
 
         public static CosmosString Create(
             IJsonNavigator jsonNavigator,
