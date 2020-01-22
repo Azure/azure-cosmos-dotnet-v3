@@ -170,6 +170,7 @@ namespace Microsoft.Azure.Cosmos
                 responseCreator: response => response,
                 partitionKey: null,
                 streamPayload: null,
+                diagnosticsScope: null,
                 cancellationToken: cancellationToken);
         }
 

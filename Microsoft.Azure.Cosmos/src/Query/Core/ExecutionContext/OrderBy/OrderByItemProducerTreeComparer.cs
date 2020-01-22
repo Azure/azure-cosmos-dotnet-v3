@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
     /// that has the next document in the sort order of the query.
     /// If there is a tie, then we break the tie by picking the leftmost partition.
     /// </summary>
-    internal sealed class OrderByConsumeComparer : IComparer<ItemProducerTree>
+    internal sealed class OrderByItemProducerTreeComparer : IComparer<ItemProducerTree>
     {
         /// <summary>
         /// The sort orders for the query (1 for each order by in the query).
@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
         /// Initializes a new instance of the OrderByConsumeComparer class.
         /// </summary>
         /// <param name="sortOrders">The sort orders for the query.</param>
-        public OrderByConsumeComparer(SortOrder[] sortOrders)
+        public OrderByItemProducerTreeComparer(SortOrder[] sortOrders)
         {
             if (sortOrders == null)
             {

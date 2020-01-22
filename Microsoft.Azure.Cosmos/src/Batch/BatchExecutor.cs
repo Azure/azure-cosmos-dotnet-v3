@@ -25,36 +25,47 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly RequestOptions batchOptions;
 
+        private readonly CosmosDiagnosticsContext diagnosticsContext;
+
         public BatchExecutor(
             ContainerCore container,
             PartitionKey partitionKey,
             IReadOnlyList<ItemBatchOperation> operations,
-            RequestOptions batchOptions)
+            RequestOptions batchOptions,
+            CosmosDiagnosticsContext diagnosticsContext)
         {
             this.container = container;
             this.clientContext = this.container.ClientContext;
             this.inputOperations = operations;
             this.partitionKey = partitionKey;
             this.batchOptions = batchOptions;
+            this.diagnosticsContext = diagnosticsContext;
         }
 
         public async Task<TransactionalBatchResponse> ExecuteAsync(CancellationToken cancellationToken)
         {
-            BatchExecUtils.EnsureValid(this.inputOperations, this.batchOptions);
-
-            PartitionKey? serverRequestPartitionKey = this.partitionKey;
-            if (this.batchOptions != null && this.batchOptions.IsEffectivePartitionKeyRouting)
+            using (this.diagnosticsContext.CreateOverallScope("BatchExecuteAsync"))
             {
-                serverRequestPartitionKey = null;
+                BatchExecUtils.EnsureValid(this.inputOperations, this.batchOptions);
+
+                PartitionKey? serverRequestPartitionKey = this.partitionKey;
+                if (this.batchOptions != null && this.batchOptions.IsEffectivePartitionKeyRouting)
+                {
+                    serverRequestPartitionKey = null;
+                }
+
+                SinglePartitionKeyServerBatchRequest serverRequest;
+                using (this.diagnosticsContext.CreateScope("CreateBatchRequest"))
+                {
+                    serverRequest = await SinglePartitionKeyServerBatchRequest.CreateAsync(
+                          serverRequestPartitionKey,
+                          new ArraySegment<ItemBatchOperation>(this.inputOperations.ToArray()),
+                          this.clientContext.SerializerCore,
+                          cancellationToken);
+                }
+
+                return await this.ExecuteServerRequestAsync(serverRequest, cancellationToken);
             }
-
-            SinglePartitionKeyServerBatchRequest serverRequest = await SinglePartitionKeyServerBatchRequest.CreateAsync(
-                      serverRequestPartitionKey,
-                      new ArraySegment<ItemBatchOperation>(this.inputOperations.ToArray()),
-                      this.clientContext.SerializerCore,
-                      cancellationToken);
-
-            return await this.ExecuteServerRequestAsync(serverRequest, cancellationToken);
         }
 
         /// <summary>
@@ -84,12 +95,16 @@ namespace Microsoft.Azure.Cosmos
                         requestMessage.Headers.Add(HttpConstants.HttpHeaders.IsBatchAtomic, bool.TrueString);
                         requestMessage.Headers.Add(HttpConstants.HttpHeaders.IsBatchOrdered, bool.TrueString);
                     },
+                    diagnosticsScope: this.diagnosticsContext,
                     cancellationToken);
 
-                return await TransactionalBatchResponse.FromResponseMessageAsync(
-                    responseMessage,
-                    serverRequest,
-                    this.clientContext.SerializerCore);
+                using (this.diagnosticsContext.CreateScope("TransactionalBatchResponse"))
+                {
+                    return await TransactionalBatchResponse.FromResponseMessageAsync(
+                        responseMessage,
+                        serverRequest,
+                        this.clientContext.SerializerCore);
+                }
             }
         }
     }

@@ -10,6 +10,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     /// Query index utilization data (sub-structure of the Index Utilization metrics) in the Azure Cosmos database service.
     /// </summary>
 #if INTERNAL
+#pragma warning disable SA1600
+#pragma warning disable CS1591
     public
 #else
     internal

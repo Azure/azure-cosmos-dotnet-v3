@@ -12,6 +12,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     /// Query index utilization metrics in the Azure Cosmos database service.
     /// </summary>
 #if INTERNAL
+#pragma warning disable SA1600
+#pragma warning disable CS1591
     public
 #else
     internal
@@ -26,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         public IReadOnlyList<IndexUtilizationData> PotentialIndexes { get; }
 
         /// <summary>
-        /// Iniialized a new instance of the Index Utilization class.
+        /// Initializes a new instance of the Index Utilization class.
         /// </summary>
         /// <param name="utilizedIndexes">The utilized indexes list</param>
         /// <param name="potentialIndexes">The potential indexes list</param>
@@ -67,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// <summary>
         /// Creates a new IndexUtilizationInfo from the backend delimited string.
         /// </summary>
-        /// <param name="delimitedString">The backend delimted string to desrialize from.</param>
+        /// <param name="delimitedString">The backend delimited string to deserialize from.</param>
         /// <param name="result">The parsed index utilization info</param>
         /// <returns>A new IndexUtilizationInfo from the backend delimited string.</returns>
         internal static bool TryCreateFromDelimitedString(string delimitedString, out IndexUtilizationInfo result)

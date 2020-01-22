@@ -84,9 +84,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                     maxConcurrency: null,
                     maxItemCount: maxPageSize,
                     maxBufferedItemCount: null,
+                    returnResultsInDeterministicOrder: true,
                     testSettings: new TestInjections(simulate429s: false, simulateEmptyPages: false));
 
-                CosmosParallelItemQueryExecutionContext executionContext = (await CosmosParallelItemQueryExecutionContext.TryCreateAsync(
+                IDocumentQueryExecutionComponent executionContext = (await CosmosParallelItemQueryExecutionContext.TryCreateAsync(
                     context,
                     initParams,
                     RequestContinuationToken.Create(fullConitnuationToken),
@@ -115,7 +116,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 CollectionAssert.AreEqual(exepected, actual, new ToDoItemComparer());
             }
         }
-
 
         [TestMethod]
         [DataRow(true)]
@@ -168,9 +168,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                     maxConcurrency: null,
                     maxItemCount: maxPageSize,
                     maxBufferedItemCount: null,
+                    returnResultsInDeterministicOrder: true,
                     testSettings: new TestInjections(simulate429s: false, simulateEmptyPages: false));
 
-                CosmosParallelItemQueryExecutionContext executionContext = (await CosmosParallelItemQueryExecutionContext.TryCreateAsync(
+                IDocumentQueryExecutionComponent executionContext = (await CosmosParallelItemQueryExecutionContext.TryCreateAsync(
                     context,
                     initParams,
                     RequestContinuationToken.Create(fullConitnuationToken),
@@ -296,9 +297,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                     maxConcurrency: null,
                     maxItemCount: maxPageSize,
                     maxBufferedItemCount: null,
+                    returnResultsInDeterministicOrder: true,
                     testSettings: new TestInjections(simulate429s: false, simulateEmptyPages: false));
 
-                CosmosOrderByItemQueryExecutionContext executionContext = (await CosmosOrderByItemQueryExecutionContext.TryCreateAsync(
+                IDocumentQueryExecutionComponent executionContext = (await CosmosOrderByItemQueryExecutionContext.TryCreateAsync(
                     context,
                     initParams,
                     RequestContinuationToken.Create(fullConitnuationToken),
@@ -419,9 +421,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                     maxConcurrency: null,
                     maxItemCount: maxPageSize,
                     maxBufferedItemCount: null,
+                    returnResultsInDeterministicOrder: true,
                     testSettings: new TestInjections(simulate429s: false, simulateEmptyPages: false));
 
-                TryCatch<CosmosOrderByItemQueryExecutionContext> tryCreate = await CosmosOrderByItemQueryExecutionContext.TryCreateAsync(
+                TryCatch<IDocumentQueryExecutionComponent> tryCreate = await CosmosOrderByItemQueryExecutionContext.TryCreateAsync(
                     context,
                     initParams,
                     RequestContinuationToken.Create(fullConitnuationToken),
@@ -429,7 +432,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                 if (tryCreate.Succeeded)
                 {
-                    CosmosOrderByItemQueryExecutionContext executionContext = tryCreate.Result;
+                    IDocumentQueryExecutionComponent executionContext = tryCreate.Result;
 
                     Assert.IsTrue(!executionContext.IsDone);
 

@@ -125,7 +125,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 serializerCore: MockCosmosUtil.Serializer,
                 cosmosResponseFactory: responseFactory,
                 requestHandler: client.RequestHandler,
-                documentClient: new MockDocumentClient());
+                documentClient: new MockDocumentClient(),
+                userAgent: null);
         }
     }
 }

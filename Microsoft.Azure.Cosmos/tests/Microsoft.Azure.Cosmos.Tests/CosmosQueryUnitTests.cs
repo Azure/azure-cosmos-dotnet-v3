@@ -39,8 +39,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             string activityId = "TestActivityId";
             double requestCharge = 42.42;
 
-            Mock<CosmosDiagnostics> mockDiagnostics = new Mock<CosmosDiagnostics>();
-            CosmosDiagnostics diagnostics = mockDiagnostics.Object;
+            CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContext();
             QueryResponse queryResponse = QueryResponse.CreateFailure(
                         statusCode: HttpStatusCode.NotFound,
                         errorMessage: errorMessage,
@@ -91,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                             RequestCharge = responseCore.RequestCharge,
                             ActivityId = responseCore.ActivityId
                         },
-                        diagnostics: null);
+                        diagnostics: new CosmosDiagnosticsContext());
 
             using (Stream stream = queryResponse.Content)
             {
@@ -129,7 +128,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                             RequestCharge = responseCore.RequestCharge,
                             ActivityId = responseCore.ActivityId
                         },
-                        diagnostics: null);
+                        diagnostics: new CosmosDiagnosticsContext());
 
             QueryResponse<ToDoItem> itemQueryResponse = QueryResponseMessageFactory.CreateQueryResponse<ToDoItem>(queryResponse);
             List<ToDoItem> resultItems = new List<ToDoItem>(itemQueryResponse.Resource);
@@ -170,7 +169,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                             RequestCharge = responseCore.RequestCharge,
                             ActivityId = responseCore.ActivityId
                         },
-                        diagnostics: null);
+                        diagnostics: new CosmosDiagnosticsContext());
 
             QueryResponse<CosmosElement> itemQueryResponse = QueryResponseMessageFactory.CreateQueryResponse<CosmosElement>(queryResponse);
             List<CosmosElement> resultItems = new List<CosmosElement>(itemQueryResponse.Resource);
@@ -264,6 +263,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 properties: queryRequestOptions?.Properties,
                 partitionedQueryExecutionInfo: null,
                 executionEnvironment: queryRequestOptions?.ExecutionEnvironment,
+                returnResultsInDeterministicOrder: true,
                 testInjections: queryRequestOptions?.TestSettings);
 
             CosmosQueryContext cosmosQueryContext = new CosmosQueryContextCore(
@@ -341,13 +341,8 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private (Func<RequestContinuationToken, Task<TryCatch<IDocumentQueryExecutionComponent>>>, QueryResponseCore) SetupBaseContextToVerifyFailureScenario()
         {
-            IReadOnlyCollection<QueryPageDiagnostics> diagnostics = new List<QueryPageDiagnostics>()
-            {
-                new QueryPageDiagnostics(
-                    "0",
-                    "SomeQueryMetricText",
-                    "SomeIndexUtilText",
-                new PointOperationStatistics(
+            CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContext();
+            diagnosticsContext.AddContextWriter(new PointOperationStatistics(
                     Guid.NewGuid().ToString(),
                     System.Net.HttpStatusCode.Unauthorized,
                     subStatusCode: SubStatusCodes.PartitionKeyMismatch,
@@ -357,7 +352,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                     requestUri: new Uri("http://localhost.com"),
                     requestSessionToken: null,
                     responseSessionToken: null,
-                    clientSideRequestStatistics: null),
+                    clientSideRequestStatistics: null));
+            IReadOnlyCollection<QueryPageDiagnostics> diagnostics = new List<QueryPageDiagnostics>()
+            {
+                new QueryPageDiagnostics(
+                    "0",
+                    "SomeQueryMetricText",
+                    "SomeIndexUtilText",
+                diagnosticsContext,
                 new SchedulingStopwatch())
             };
 
