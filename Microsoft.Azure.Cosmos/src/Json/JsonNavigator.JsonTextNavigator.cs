@@ -366,13 +366,11 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new ArgumentNullException("propertyName");
                 }
 
-                ObjectNode objectNode = objectNavigatorNode as ObjectNode;
-                if (objectNode == null)
+                if (!(objectNavigatorNode is ObjectNode objectNode))
                 {
                     throw new ArgumentException("objectNavigatorNode must actually be an array node");
                 }
 
-                objectProperty = default;
                 IReadOnlyList<ObjectProperty> properties = ((ObjectNode)objectNode).Properties;
                 foreach (ObjectProperty property in properties)
                 {
@@ -383,6 +381,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     }
                 }
 
+                objectProperty = default;
                 return false;
             }
 
