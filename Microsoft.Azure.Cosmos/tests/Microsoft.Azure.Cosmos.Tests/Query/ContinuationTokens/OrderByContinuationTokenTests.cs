@@ -96,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.Query
             sb.Clear();
             element.Accept(new CosmosElementToQueryLiteral(sb));
             Assert.AreEqual(
-                @"{""item"":1.0}",
+                @"{""item"":1}",
                 sb.ToString());
 
             element = CosmosObject.Create(

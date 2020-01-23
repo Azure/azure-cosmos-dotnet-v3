@@ -58,7 +58,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                         Token = initialContinuationToken
                     };
 
-                    fullConitnuationToken = JsonConvert.SerializeObject(new CompositeContinuationToken[] { compositeContinuation });
+                    fullConitnuationToken = CosmosArray.Create(
+                        new List<CosmosElement>()
+                        {
+                            CompositeContinuationToken.ToCosmosElement(compositeContinuation)
+                        }).ToString();
                 }
 
                 Mock<CosmosQueryClient> mockQueryClient = new Mock<CosmosQueryClient>();
@@ -142,7 +146,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                         Token = initialContinuationToken
                     };
 
-                    fullConitnuationToken = JsonConvert.SerializeObject(new CompositeContinuationToken[] { compositeContinuation });
+                    fullConitnuationToken = CosmosArray.Create(
+                        new List<CosmosElement>()
+                        {
+                            CompositeContinuationToken.ToCosmosElement(compositeContinuation)
+                        }).ToString();
                 }
 
                 Mock<CosmosQueryClient> mockQueryClient = new Mock<CosmosQueryClient>();
@@ -258,7 +266,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                         skipCount: 0,
                         filter: null);
 
-                    fullConitnuationToken = JsonConvert.SerializeObject(new OrderByContinuationToken[] { orderByContinuationToken });
+                    fullConitnuationToken = CosmosArray.Create(
+                        new List<CosmosElement>()
+                        {
+                            OrderByContinuationToken.ToCosmosElement(orderByContinuationToken)
+                        }).ToString();
                 }
 
 
@@ -351,7 +363,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             foreach (MockPartitionResponse[] mockResponse in mockResponsesScenario)
             {
                 string initialContinuationToken = null;
-                string fullConitnuationToken = null;
+                string fullContinuationToken = null;
                 if (createInitialContinuationToken)
                 {
                     ToDoItem itemToRepresentPreviousQuery = ToDoItem.CreateItems(
@@ -382,9 +394,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                         skipCount: 0,
                         filter: null);
 
-                    fullConitnuationToken = JsonConvert.SerializeObject(new OrderByContinuationToken[] { orderByContinuationToken });
+                    fullContinuationToken = CosmosArray.Create(
+                        new List<CosmosElement>()
+                        {
+                            OrderByContinuationToken.ToCosmosElement(orderByContinuationToken)
+                        }).ToString();
                 }
-
 
                 IList<ToDoItem> allItems = MockQueryFactory.GenerateAndMockResponse(
                     mockQueryClient,
@@ -427,7 +442,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 TryCatch<IDocumentQueryExecutionComponent> tryCreate = await CosmosOrderByItemQueryExecutionContext.TryCreateAsync(
                     context,
                     initParams,
-                    fullConitnuationToken,
+                    fullContinuationToken,
                     this.cancellationToken);
 
                 if (tryCreate.Succeeded)
