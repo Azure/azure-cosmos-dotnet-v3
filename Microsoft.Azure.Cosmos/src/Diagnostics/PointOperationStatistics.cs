@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
     using System.Net;
     using System.Net.Http;
     using Microsoft.Azure.Documents;
-    using Newtonsoft.Json;
 
     internal sealed class PointOperationStatistics : CosmosDiagnosticsInternal
     {

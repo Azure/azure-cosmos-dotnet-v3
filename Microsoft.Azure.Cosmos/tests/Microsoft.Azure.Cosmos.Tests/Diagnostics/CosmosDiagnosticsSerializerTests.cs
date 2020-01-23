@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
     using System;
     using Newtonsoft.Json;
     using System.Net.Http;
-    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
 
     [TestClass]
     public sealed class CosmosDiagnosticsSerializerTests : BaselineTests<CosmosDiagnosticsSerializerBaselineInput, CosmosDiagnosticsSerializerBaselineOutput>
@@ -34,28 +33,6 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
                     requestSessionToken: nameof(PointOperationStatistics.RequestSessionToken),
                     responseSessionToken: nameof(PointOperationStatistics.ResponseSessionToken),
                     clientSideRequestStatistics: null))
-            };
-
-            this.ExecuteTestSuite(inputs);
-        }
-
-        [TestMethod]
-        public void TestQueryAggregateDiagnostics()
-        {
-            IList<CosmosDiagnosticsSerializerBaselineInput> inputs = new List<CosmosDiagnosticsSerializerBaselineInput>()
-            {
-                new CosmosDiagnosticsSerializerBaselineInput(
-                    description: nameof(QueryAggregateDiagnostics),
-                    cosmosDiagnostics: new QueryAggregateDiagnostics(
-                        pages: new List<QueryPageDiagnostics>()
-                        {
-                            new QueryPageDiagnostics(
-                                partitionKeyRangeId: nameof(QueryPageDiagnostics.PartitionKeyRangeId),
-                                queryMetricText: nameof(QueryPageDiagnostics.QueryMetricText),
-                                indexUtilizationText: nameof(QueryPageDiagnostics.IndexUtilizationText),
-                                requestDiagnostics: null,
-                                schedulingStopwatch: new SchedulingStopwatch())
-                        }))
             };
 
             this.ExecuteTestSuite(inputs);

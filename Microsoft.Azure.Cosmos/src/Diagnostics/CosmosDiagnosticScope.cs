@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos.Diagnostics
 {
     using System;
     using System.Collections.Generic;
@@ -15,26 +15,32 @@ namespace Microsoft.Azure.Cosmos
     /// A scope is a section of code that is important to track.
     /// For example there is a scope for serialization, retry handlers, etc..
     /// </summary>
-    internal sealed class CosmosDiagnosticScope : CosmosDiagnosticWriter, IDisposable
+    internal sealed class CosmosDiagnosticScope : CosmosDiagnosticsInternal, IDisposable
     {
-        private readonly string Id;
-
         private readonly Stopwatch ElapsedTimeStopWatch;
-
         private readonly Action<TimeSpan> ElapsedTimeCallback;
-
-        internal TimeSpan? ElapsedTime { get; private set; }
-
         private bool isDisposed = false;
-        
-        internal CosmosDiagnosticScope(
+
+        public CosmosDiagnosticScope(
             string name,
             Action<TimeSpan> elapsedTimeCallback = null)
         {
             this.Id = name;
             this.ElapsedTimeStopWatch = Stopwatch.StartNew();
-            this.ElapsedTime = null;
             this.ElapsedTimeCallback = elapsedTimeCallback;
+        }
+
+        public string Id { get; }
+
+        public bool TryGetElapsedTime(out TimeSpan elapsedTime)
+        {
+            if (!this.isDisposed)
+            {
+                return false;
+            }
+
+            elapsedTime = this.ElapsedTimeStopWatch.Elapsed;
+            return true;
         }
 
         public void Dispose()
@@ -45,28 +51,18 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.ElapsedTimeStopWatch.Stop();
-            this.ElapsedTime = this.ElapsedTimeStopWatch.Elapsed;
-            this.ElapsedTimeCallback?.Invoke(this.ElapsedTime.Value);
+            this.ElapsedTimeCallback?.Invoke(this.ElapsedTimeStopWatch.Elapsed);
             this.isDisposed = true;
         }
 
-        internal override void WriteJsonObject(JsonWriter jsonWriter)
+        public override void Accept(CosmosDiagnosticsInternalVisitor cosmosDiagnosticsInternalVisitor)
         {
-            jsonWriter.WriteStartObject();
-            jsonWriter.WritePropertyName("Id");
-            jsonWriter.WriteValue(this.Id);
-            jsonWriter.WritePropertyName("ElapsedTime");
+            cosmosDiagnosticsInternalVisitor.Visit(this);
+        }
 
-            if (this.ElapsedTime.HasValue)
-            {
-                jsonWriter.WriteValue(this.ElapsedTime.Value);
-            }
-            else
-            {
-                jsonWriter.WriteValue("Timer Never Stopped.");
-            }
-
-            jsonWriter.WriteEndObject();
+        public override TResult Accept<TResult>(CosmosDiagnosticsInternalVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
         }
     }
 }

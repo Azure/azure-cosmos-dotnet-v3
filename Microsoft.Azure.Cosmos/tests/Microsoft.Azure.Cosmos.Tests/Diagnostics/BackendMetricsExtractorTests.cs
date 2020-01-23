@@ -27,25 +27,22 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             responseSessionToken: null,
             clientSideRequestStatistics: new CosmosClientSideRequestStatistics());
 
+        private static readonly CosmosDiagnosticsContext MockCosmosDiagnosticsContext = new CosmosDiagnosticsContext();
+
         private static readonly QueryPageDiagnostics MockQueryPageDiagnostics = new QueryPageDiagnostics(
             partitionKeyRangeId: nameof(QueryPageDiagnostics.PartitionKeyRangeId),
             queryMetricText: BackendMetricsTests.MockBackendMetrics.ToString(),
             indexUtilizationText: nameof(QueryPageDiagnostics.IndexUtilizationText),
-            requestDiagnostics: default(CosmosDiagnostics),
+            diagnosticsContext: default(CosmosDiagnosticsContext),
             schedulingStopwatch: new SchedulingStopwatch());
 
-        private static readonly QueryAggregateDiagnostics MockQueryAggregateDiagnostics = new QueryAggregateDiagnostics(
-            new List<QueryPageDiagnostics>()
+        private static readonly CosmosDiagnosticScope MockCosmosDiagnosticScope = new CosmosDiagnosticScope(name: "asdf");
+
+        private static readonly CosmosDiagnosticsContextList MockCosmosDiagnosticsContextList = new CosmosDiagnosticsContextList(
+            new List<CosmosDiagnosticsInternal>()
             {
                 MockQueryPageDiagnostics,
-                MockQueryPageDiagnostics
-            });
-
-        private static readonly CosmosDiagnosticsAggregate MockCosmosDiagnosticsAggregate = new CosmosDiagnosticsAggregate(
-            cosmosDiagnosticsInternals: new List<CosmosDiagnosticsInternal>()
-            {
-                MockQueryAggregateDiagnostics,
-                MockQueryAggregateDiagnostics
+                MockCosmosDiagnosticsContext
             });
 
         [TestMethod]
@@ -56,19 +53,33 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
         }
 
         [TestMethod]
-        public void TestQueryAggregateDiagnostics()
+        public void TestCosmosDiagnosticContext()
         {
-            (bool extracted, BackendMetrics extractedBackendMetrics) = MockQueryAggregateDiagnostics.Accept(BackendMetricsExtractor.Singleton);
+            (bool extracted, BackendMetrics extractedBackendMetrics) = MockCosmosDiagnosticsContext.Accept(BackendMetricsExtractor.Singleton);
             Assert.IsTrue(extracted);
-            Assert.AreEqual(BackendMetricsTests.MockBackendMetrics.TotalTime * 2, extractedBackendMetrics.TotalTime);
         }
 
         [TestMethod]
-        public void TestCosmosDiagnosticsAggregate()
+        public void TestCosmosDiagnosticScope()
         {
-            (bool extracted, BackendMetrics extractedBackendMetrics) = MockCosmosDiagnosticsAggregate.Accept(BackendMetricsExtractor.Singleton);
+            (bool extracted, BackendMetrics extractedBackendMetrics) = MockCosmosDiagnosticScope.Accept(BackendMetricsExtractor.Singleton);
+            Assert.IsFalse(extracted);
+        }
+
+        [TestMethod]
+        public void TestCosmosDiagnosticsContextList()
+        {
+            (bool extracted, BackendMetrics extractedBackendMetrics) = MockCosmosDiagnosticsContextList.Accept(BackendMetricsExtractor.Singleton);
             Assert.IsTrue(extracted);
-            Assert.AreEqual(BackendMetricsTests.MockBackendMetrics.TotalTime * 4, extractedBackendMetrics.TotalTime);
+            Assert.AreEqual(BackendMetricsTests.MockBackendMetrics.IndexLookupTime, extractedBackendMetrics.IndexLookupTime);
+        }
+
+        [TestMethod]
+        public void TestQueryPageDiagnostics()
+        {
+            (bool extracted, BackendMetrics extractedBackendMetrics) = MockQueryPageDiagnostics.Accept(BackendMetricsExtractor.Singleton);
+            Assert.IsTrue(extracted);
+            Assert.AreEqual(BackendMetricsTests.MockBackendMetrics.IndexLookupTime, extractedBackendMetrics.IndexLookupTime);
         }
 
         [TestMethod]
@@ -79,28 +90,9 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
                 partitionKeyRangeId: nameof(QueryPageDiagnostics.PartitionKeyRangeId),
                 queryMetricText: malformedString,
                 indexUtilizationText: nameof(QueryPageDiagnostics.IndexUtilizationText),
-                requestDiagnostics: default(CosmosDiagnostics),
+                diagnosticsContext: default(CosmosDiagnosticsContext),
                 schedulingStopwatch: new SchedulingStopwatch());
-            QueryAggregateDiagnostics queryAggregateDiagnostics = new QueryAggregateDiagnostics(
-                new List<QueryPageDiagnostics>()
-                {
-                    queryPageDiagnostics
-                });
-
-            (bool extracted, BackendMetrics extractedBackendMetrics) = queryAggregateDiagnostics.Accept(BackendMetricsExtractor.Singleton);
-            Assert.IsFalse(extracted);
-        }
-
-        [TestMethod]
-        public void TestWithUnexpectedNestedType()
-        {
-            CosmosDiagnosticsAggregate cosmosDiagnosticsAggregate = new CosmosDiagnosticsAggregate(
-                new List<CosmosDiagnosticsInternal>()
-                {
-                    MockPointOperationStatistics
-                });
-
-            (bool extracted, BackendMetrics extractedBackendMetrics) = cosmosDiagnosticsAggregate.Accept(BackendMetricsExtractor.Singleton);
+            (bool extracted, BackendMetrics extractedBackendMetrics) = queryPageDiagnostics.Accept(BackendMetricsExtractor.Singleton);
             Assert.IsFalse(extracted);
         }
     }

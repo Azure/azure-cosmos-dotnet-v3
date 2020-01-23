@@ -18,42 +18,44 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             // Private default constructor.
         }
 
-        public override (bool, BackendMetrics) Visit(CosmosDiagnosticsAggregate cosmosDiagnosticsAggregate)
-        {
-            BackendMetrics.Accumulator accumulator = default;
-            foreach (CosmosDiagnosticsInternal singleCosmosDiagnostic in cosmosDiagnosticsAggregate)
-            {
-                (bool extracted, BackendMetrics extractedBackendMetrics) = singleCosmosDiagnostic.Accept(this);
-                if (!extracted)
-                {
-                    return (false, default);
-                }
-
-                accumulator = accumulator.Accumulate(extractedBackendMetrics);
-            }
-
-            return (true, BackendMetrics.Accumulator.ToBackendMetrics(accumulator));
-        }
-
         public override (bool, BackendMetrics) Visit(PointOperationStatistics pointOperationStatistics)
         {
             return (false, default);
         }
 
-        public override (bool, BackendMetrics) Visit(QueryAggregateDiagnostics queryAggregateDiagnostics)
+        public override (bool, BackendMetrics) Visit(CosmosDiagnosticsContext cosmosDiagnosticsContext)
+        {
+            return cosmosDiagnosticsContext.ContextList.Accept(this);
+        }
+
+        public override (bool, BackendMetrics) Visit(CosmosDiagnosticScope cosmosDiagnosticScope)
+        {
+            return (false, default);
+        }
+
+        public override (bool, BackendMetrics) Visit(CosmosDiagnosticsContextList cosmosDiagnosticsContextList)
         {
             BackendMetrics.Accumulator accumulator = default;
-            foreach (QueryPageDiagnostics queryPageDiagnostics in queryAggregateDiagnostics.Pages)
+            foreach (CosmosDiagnosticsInternal cosmosDiagnostics in cosmosDiagnosticsContextList)
             {
-                if (!BackendMetrics.TryParseFromDelimitedString(queryPageDiagnostics.QueryMetricText, out BackendMetrics parsedBackendMetrics))
+                (bool gotBackendMetric, BackendMetrics backendMetrics) = cosmosDiagnostics.Accept(this);
+                if (gotBackendMetric)
                 {
-                    return (false, default);
+                    accumulator = accumulator.Accumulate(backendMetrics);
                 }
-
-                accumulator = accumulator.Accumulate(parsedBackendMetrics);
             }
 
             return (true, BackendMetrics.Accumulator.ToBackendMetrics(accumulator));
+        }
+
+        public override (bool, BackendMetrics) Visit(QueryPageDiagnostics queryPageDiagnostics)
+        {
+            if (!BackendMetrics.TryParseFromDelimitedString(queryPageDiagnostics.QueryMetricText, out BackendMetrics backendMetrics))
+            {
+                return (false, default);
+            }
+
+            return (true, backendMetrics);
         }
     }
 }

@@ -91,7 +91,6 @@ namespace Microsoft.Azure.Cosmos
 
         internal void WriteJsonProperty(JsonWriter writer)
         {
-            writer.WritePropertyName("Summary");
             writer.WriteStartObject();
             writer.WritePropertyName("StartUtc");
             writer.WriteValue(this.StartUtc.ToString("o", CultureInfo.InvariantCulture));

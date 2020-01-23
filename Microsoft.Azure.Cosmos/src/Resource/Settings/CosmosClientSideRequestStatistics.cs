@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
-    internal sealed class CosmosClientSideRequestStatistics : CosmosDiagnosticWriter, IClientSideRequestStatistics 
+    internal sealed class CosmosClientSideRequestStatistics : IClientSideRequestStatistics
     {
         internal const int MaxSupplementalRequestsForToString = 10;
 
@@ -138,13 +138,7 @@ namespace Microsoft.Azure.Cosmos
         public string RecordAddressResolutionStart(Uri targetEndpoint)
         {
             string identifier = Guid.NewGuid().ToString();
-            AddressResolutionStatistics resolutionStats = new AddressResolutionStatistics
-            {
-                StartTime = DateTime.UtcNow,
-                EndTime = DateTime.MaxValue,
-                TargetEndpoint = targetEndpoint == null ? "<NULL>" : targetEndpoint.ToString()
-            };
-
+            AddressResolutionStatistics resolutionStats = new AddressResolutionStatistics(startTime: DateTime.UtcNow, endTime: DateTime.MaxValue, targetEndpoint: targetEndpoint == null ? "<NULL>" : targetEndpoint.ToString());
             lock (this.lockObject)
             {
                 this.EndpointToAddressResolutionStatistics.Add(identifier, resolutionStats);
@@ -189,7 +183,7 @@ namespace Microsoft.Azure.Cosmos
             return stringBuilder.ToString();
         }
 
-        internal override void WriteJsonObject(JsonWriter jsonWriter)
+        internal void WriteJsonObject(JsonWriter jsonWriter)
         {
             if (jsonWriter == null)
             {
@@ -403,54 +397,20 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal class AddressResolutionStatistics : CosmosDiagnosticWriter
+        internal sealed class AddressResolutionStatistics
         {
-            public DateTime StartTime { get; set; }
+            public AddressResolutionStatistics(DateTime startTime, DateTime endTime, string targetEndpoint)
+            {
+                this.StartTime = startTime;
+                this.EndTime = endTime;
+                this.TargetEndpoint = targetEndpoint;
+            }
+
+            public DateTime StartTime { get; }
             public DateTime EndTime { get; set; }
-            public string TargetEndpoint { get; set; }
+            public string TargetEndpoint { get; }
 
-            public override string ToString()
-            {
-                StringBuilder stringBuilder = new StringBuilder();
-                this.AppendToBuilder(stringBuilder);
-                return stringBuilder.ToString();
-            }
-
-            public void AppendJsonToBuilder(JsonWriter jsonWriter)
-            {
-                if (jsonWriter == null)
-                {
-                    throw new ArgumentNullException(nameof(jsonWriter));
-                }
-
-                jsonWriter.WriteStartObject();
-                jsonWriter.WritePropertyName("AddressResolution");
-                jsonWriter.WriteStartObject();
-                jsonWriter.WritePropertyName("StartTime");
-                jsonWriter.WriteValue(this.StartTime.ToString("o", CultureInfo.InvariantCulture));
-                jsonWriter.WritePropertyName("EndTime");
-                jsonWriter.WriteValue(this.EndTime.ToString("o", CultureInfo.InvariantCulture));
-                jsonWriter.WritePropertyName("TargetEndpoint");
-                jsonWriter.WriteValue(this.TargetEndpoint);
-                jsonWriter.WriteEndObject();
-                jsonWriter.WriteEndObject();
-            }
-
-            public void AppendToBuilder(StringBuilder stringBuilder)
-            {
-                if (stringBuilder == null)
-                {
-                    throw new ArgumentNullException(nameof(stringBuilder));
-                }
-
-                stringBuilder
-                    .Append($"AddressResolution - StartTime: {this.StartTime.ToString("o", CultureInfo.InvariantCulture)}, ")
-                    .Append($"EndTime: {this.EndTime.ToString("o", CultureInfo.InvariantCulture)}, ")
-                    .Append("TargetEndpoint: ")
-                    .Append(this.TargetEndpoint);
-            }
-
-            internal override void WriteJsonObject(JsonWriter jsonWriter)
+            public void WriteJsonObject(JsonWriter jsonWriter)
             {
                 jsonWriter.WriteStartObject();
 

@@ -61,26 +61,7 @@ namespace Microsoft.Azure.Cosmos
             return scope;
         }
 
-        public override string ToString()
-        {
-            StringBuilder sb = new StringBuilder();
-            StringWriter sw = new StringWriter(sb);
-
-            using (JsonWriter jsonWriter = new JsonTextWriter(sw))
-            {
-                jsonWriter.WriteStartObject();
-                this.Summary.WriteJsonProperty(jsonWriter);
-                jsonWriter.WritePropertyName("Context");
-                jsonWriter.WriteStartArray();
-                this.ContextList.WriteJsonObject(jsonWriter);
-                jsonWriter.WriteEndArray();
-                jsonWriter.WriteEndObject();
-            }
-
-            return sb.ToString();
-        }
-
-        internal void AddContextWriter(CosmosDiagnosticWriter diagnosticWriter)
+        internal void AddContextWriter(CosmosDiagnosticsInternal diagnosticWriter)
         {
             this.ContextList.AddWriter(diagnosticWriter);
         }
