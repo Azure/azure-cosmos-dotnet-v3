@@ -33,7 +33,12 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
         public void Append(CosmosDiagnosticsContextList newContext)
         {
-            this.contextList.Add(newContext);
+            if (newContext == null)
+            {
+                throw new ArgumentNullException(nameof(newContext));
+            }
+
+            this.contextList.AddRange(newContext);
         }
 
         public override void Accept(CosmosDiagnosticsInternalVisitor cosmosDiagnosticsInternalVisitor)

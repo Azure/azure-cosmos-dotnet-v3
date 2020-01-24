@@ -14,20 +14,11 @@
   "RequestUri": "http://localhost.com",
   "RequestSessionToken": "RequestSessionToken",
   "ResponseSessionToken": "ResponseSessionToken",
-  "ClientSideRequestStatistics": {
-    "responseStatisticsList": [],
-    "supplementalResponseStatisticsList": [],
-    "addressResolutionStatistics": {},
-    "ContactedReplicas": [],
-    "FailedReplicas": [],
-    "RegionsContacted": [],
-    "RequestLatency": "10675199.02:48:05.4775807",
-    "IsCpuOverloaded": false
-  }
+  "ClientSideRequestStatistics": null
 }]]></CosmosDiagnostics>
     </Input>
     <Output>
-      <ToStringOutput><![CDATA[{"ActivityId":"00000000-0000-0000-0000-000000000000","StatusCode":200,"SubStatusCode":3,"RequestCharge":4.0,"ErrorMessage":"","Method":"POST","RequestUri":"http://localhost.com/","RequestSessionToken":"RequestSessionToken","ResponseSessionToken":"ResponseSessionToken","ClientSideRequestStatistics":{"RequestStartTimeUtc":"2020-01-16T01:49:37.6008984Z","RequestEndTimeUtc":"Not set","NumberRegionsAttempted":1,"RequestLatency":"10675199.02:48:05.4775807","ResponseStatisticsList":[],"AddressResolutionStatistics":[],"SupplementalResponseStatistics":[],"FailedReplicas":[],"RegionsContacted":[],"ContactedReplicas":[]}}]]></ToStringOutput>
+      <ToStringOutput><![CDATA[{"Id":"PointOperationStatistics","ActivityId":"00000000-0000-0000-0000-000000000000","StatusCode":200,"SubStatusCode":3,"RequestCharge":4.0,"RequestUri":"http://localhost.com","RequestSessionToken":"RequestSessionToken","ResponseSessionToken":"ResponseSessionToken"}]]></ToStringOutput>
     </Output>
   </Result>
 </Results>

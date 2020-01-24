@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             queryPageDiagnostics.SchedulingTimeSpan.WriteJsonObject(this.jsonWriter);
 
             this.jsonWriter.WritePropertyName("Context");
-            queryPageDiagnostics.DiagnosticsContext.Accept(this);
+            queryPageDiagnostics.DiagnosticsContext.ContextList.Accept(this);
 
             this.jsonWriter.WriteEndObject();
         }
