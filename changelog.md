@@ -9,14 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Fixed
+
+## <a name="3.6.0"/> [3.6.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.6.0) - 2020-01-23
+
+### Added
+
 - [#1097](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1097) Add GeospatialConfig to ContainerProperties, BoundingBoxProperties to SpatialPath
 - [#1061](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1061) Add Stream payload to ExecuteStoredProcedureStreamAsync
+- [#1062](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1062) Add additional diagnostic information including the ability to track time through the different SDK layers
 - [#1107](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1107) Add Source Link support
 - [#1121](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1121) StandByFeedIterator breath-first read strategy
 
 ### Fixed
 
 - [#1105](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1105) Custom serializer no longer calls SDK owned types that would cause serialization exceptions
+- [#1112](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1112) Fixed SDK properties like DatabaseProperties to have same JSON attributes
 - [#1116](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1116) Fixed a deadlock on scenarios with SynchronizationContext while executing async query operations
 - [#1143](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1143) Fixed permission resource link and authorization issue when doing a query with resource token for a specific partition key
 - [#1150](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1150) Fixed NullReferenceException when using a non-existent Lease Container.
@@ -215,6 +223,7 @@ Any requests to Azure Cosmos DB using a retired SDK are rejected by the service.
 
 | Version | Release Date | Retirement Date |
 | --- | --- | --- |
+| [3.6.0](#3.6.0) |January 23, 2020 |--- |
 | [3.5.1](#3.5.1) |December 11, 2019 |--- |
 | [3.5.0](#3.5.0) |December 03, 2019 |--- |
 | [3.4.1](#3.4.1) |November 06, 2019 |--- |

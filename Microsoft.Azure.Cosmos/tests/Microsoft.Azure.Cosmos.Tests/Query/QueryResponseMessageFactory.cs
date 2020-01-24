@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Net;
     using System.Net.Http;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
@@ -42,22 +43,24 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             double requestCharge = 42;
             string activityId = Guid.NewGuid().ToString();
+            CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContext();
+            diagnosticsContext.AddDiagnosticsInternal(new PointOperationStatistics(
+                activityId: Guid.NewGuid().ToString(),
+                statusCode: HttpStatusCode.OK,
+                subStatusCode: SubStatusCodes.Unknown,
+                requestCharge: requestCharge,
+                errorMessage: null,
+                method: HttpMethod.Post,
+                requestUri: new Uri("http://localhost.com"),
+                requestSessionToken: null,
+                responseSessionToken: null,
+                clientSideRequestStatistics: null));
             IReadOnlyCollection<QueryPageDiagnostics> diagnostics = new List<QueryPageDiagnostics>()
             {
                 new QueryPageDiagnostics("0",
                 "SomeQueryMetricText",
                 "SomeIndexUtilText",
-                new PointOperationStatistics(
-                    activityId: Guid.NewGuid().ToString(),
-                    statusCode: HttpStatusCode.OK,
-                    subStatusCode: SubStatusCodes.Unknown,
-                    requestCharge: requestCharge,
-                    errorMessage: null,
-                    method: HttpMethod.Post,
-                    requestUri: new Uri("http://localhost.com"),
-                    requestSessionToken: null,
-                    responseSessionToken: null,
-                    clientSideRequestStatistics: null),
+                diagnosticsContext,
                 new SchedulingStopwatch())
             };
 
@@ -99,22 +102,24 @@ namespace Microsoft.Azure.Cosmos.Tests
             IJsonNavigator jsonNavigator = JsonNavigator.Create(memoryStream.ToArray());
             IJsonNavigatorNode jsonNavigatorNode = jsonNavigator.GetRootNode();
             CosmosArray cosmosArray = CosmosArray.Create(jsonNavigator, jsonNavigatorNode);
+            CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContext();
+            diagnosticsContext.AddDiagnosticsInternal(new PointOperationStatistics(
+                activityId: Guid.NewGuid().ToString(),
+                statusCode: HttpStatusCode.OK,
+                subStatusCode: SubStatusCodes.Unknown,
+                requestCharge: 4,
+                errorMessage: null,
+                method: HttpMethod.Post,
+                requestUri: new Uri("http://localhost.com"),
+                requestSessionToken: null,
+                responseSessionToken: null,
+                clientSideRequestStatistics: null));
             IReadOnlyCollection<QueryPageDiagnostics> diagnostics = new List<QueryPageDiagnostics>()
             {
                 new QueryPageDiagnostics("0",
                 "SomeQueryMetricText",
                 "SomeIndexUtilText",
-                new PointOperationStatistics(
-                    activityId: Guid.NewGuid().ToString(),
-                    statusCode: HttpStatusCode.OK,
-                    subStatusCode: SubStatusCodes.Unknown,
-                    requestCharge: 4,
-                    errorMessage: null,
-                    method: HttpMethod.Post,
-                    requestUri: new Uri("http://localhost.com"),
-                    requestSessionToken: null,
-                    responseSessionToken: null,
-                    clientSideRequestStatistics: null),
+                diagnosticsContext,
                 new SchedulingStopwatch())
             };
 
@@ -141,22 +146,24 @@ namespace Microsoft.Azure.Cosmos.Tests
             SubStatusCodes subStatusCodes,
             string errorMessage)
         {
+            CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContext();
+            diagnosticsContext.AddDiagnosticsInternal(new PointOperationStatistics(
+                Guid.NewGuid().ToString(),
+                System.Net.HttpStatusCode.Gone,
+                subStatusCode: SubStatusCodes.PartitionKeyRangeGone,
+                requestCharge: 10.4,
+                errorMessage: null,
+                method: HttpMethod.Post,
+                requestUri: new Uri("http://localhost.com"),
+                requestSessionToken: null,
+                responseSessionToken: null,
+                clientSideRequestStatistics: null));
             IReadOnlyCollection<QueryPageDiagnostics> diagnostics = new List<QueryPageDiagnostics>()
             {
                 new QueryPageDiagnostics("0",
                 "SomeQueryMetricText",
                 "SomeIndexUtilText",
-                new PointOperationStatistics(
-                    Guid.NewGuid().ToString(),
-                    System.Net.HttpStatusCode.Gone,
-                    subStatusCode: SubStatusCodes.PartitionKeyRangeGone,
-                    requestCharge: 10.4,
-                    errorMessage: null,
-                    method: HttpMethod.Post,
-                    requestUri: new Uri("http://localhost.com"),
-                    requestSessionToken: null,
-                    responseSessionToken: null,
-                    clientSideRequestStatistics: null),
+                diagnosticsContext,
                 new SchedulingStopwatch())
             };
 

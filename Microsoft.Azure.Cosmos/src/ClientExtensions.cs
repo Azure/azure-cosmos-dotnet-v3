@@ -54,7 +54,9 @@ namespace Microsoft.Azure.Cosmos
             }
             else
             {
-                throw await GatewayStoreClient.CreateDocumentClientExceptionAsync(responseMessage);
+                throw await GatewayStoreClient.CreateDocumentClientExceptionAsync(
+                    responseMessage: responseMessage,
+                    requestStatistics: null);
             }
         }
     }

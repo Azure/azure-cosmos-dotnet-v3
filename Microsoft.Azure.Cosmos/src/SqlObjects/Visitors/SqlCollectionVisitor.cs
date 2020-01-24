@@ -21,12 +21,12 @@ namespace Microsoft.Azure.Cosmos.Sql
         public abstract TResult Visit(SqlSubqueryCollection collection);
     }
 
-    internal abstract class SqlCollectionVisitor<TInput, TOuput>
+    internal abstract class SqlCollectionVisitor<TArg, TOuput>
     {
-        public abstract TOuput Visit(SqlInputPathCollection collection, TInput input);
+        public abstract TOuput Visit(SqlInputPathCollection collection, TArg input);
 
-        public abstract TOuput Visit(SqlLiteralArrayCollection collection, TInput input);
+        public abstract TOuput Visit(SqlLiteralArrayCollection collection, TArg input);
 
-        public abstract TOuput Visit(SqlSubqueryCollection collection, TInput input);
+        public abstract TOuput Visit(SqlSubqueryCollection collection, TArg input);
     }
 }

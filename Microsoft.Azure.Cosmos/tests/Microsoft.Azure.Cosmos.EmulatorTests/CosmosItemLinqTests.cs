@@ -742,7 +742,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             Assert.AreEqual<T>(expectedValue, response.Resource);
             Assert.IsTrue(response.RequestCharge > 0);
-            CosmosDiagnosticsTests.VerifyQueryDiagnostics(response.Diagnostics);
+            CosmosDiagnosticsTests.VerifyQueryDiagnostics(response.Diagnostics, false);
         }
     }
 }

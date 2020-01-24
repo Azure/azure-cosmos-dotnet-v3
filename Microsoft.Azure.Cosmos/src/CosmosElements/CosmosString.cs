@@ -25,6 +25,36 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public abstract bool TryGetBufferedUtf8Value(out ReadOnlyMemory<byte> bufferedUtf8Value);
 
+        public override void Accept(ICosmosElementVisitor cosmosElementVisitor)
+        {
+            if (cosmosElementVisitor == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosElementVisitor));
+            }
+
+            cosmosElementVisitor.Visit(this);
+        }
+
+        public override TResult Accept<TResult>(ICosmosElementVisitor<TResult> cosmosElementVisitor)
+        {
+            if (cosmosElementVisitor == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosElementVisitor));
+            }
+
+            return cosmosElementVisitor.Visit(this);
+        }
+
+        public override TResult Accept<TArg, TResult>(ICosmosElementVisitor<TArg, TResult> cosmosElementVisitor, TArg input)
+        {
+            if (cosmosElementVisitor == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosElementVisitor));
+            }
+
+            return cosmosElementVisitor.Visit(this, input);
+        }
+
         public static CosmosString Create(
             IJsonNavigator jsonNavigator,
             IJsonNavigatorNode jsonNavigatorNode)

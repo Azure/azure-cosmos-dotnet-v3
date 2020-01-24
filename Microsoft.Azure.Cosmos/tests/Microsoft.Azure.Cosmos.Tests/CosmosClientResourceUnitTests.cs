@@ -29,7 +29,8 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
                 serializerCore: null,
                 cosmosResponseFactory: null,
                 requestHandler: null,
-                documentClient: null);
+                documentClient: null,
+                userAgent: null);
 
             DatabaseCore db = new DatabaseCore(context, databaseId);
             Assert.AreEqual(db.LinkUri.OriginalString, "dbs/" + databaseId);
@@ -131,7 +132,8 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
                 serializerCore: null,
                 cosmosResponseFactory: null,
                 requestHandler: null,
-                documentClient: null);
+                documentClient: null,
+                userAgent: null);
 
             DatabaseCore db = new DatabaseCore(context, databaseId);
             ContainerCore container = new ContainerCore(context, db, crId);
@@ -153,7 +155,8 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
                 serializerCore: null,
                 cosmosResponseFactory: null,
                 requestHandler: null,
-                documentClient: null);
+                documentClient: null,
+                userAgent: null);
 
             DatabaseCore db = new DatabaseCore(context, databaseId);
             ContainerCore container = new ContainerCore(context, db, crId);

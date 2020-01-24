@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <remarks>
         /// ETags are used for concurrency checking when updating resources. 
         /// </remarks>
-        [JsonProperty(PropertyName = Constants.Properties.ETag)]
+        [JsonProperty(PropertyName = Constants.Properties.ETag, NullValueHandling = NullValueHandling.Ignore)]
         public string ETag { get; private set; }
 
         /// <summary>
@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </summary>
         /// <value>The last modified timestamp associated with the resource.</value>
         [JsonConverter(typeof(UnixDateTimeConverter))]
-        [JsonProperty(PropertyName = Constants.Properties.LastModified)]
+        [JsonProperty(PropertyName = Constants.Properties.LastModified, NullValueHandling = NullValueHandling.Ignore)]
         public DateTime? LastModified { get; private set; }
 
         /// <summary>
@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// resource whether that is a database, a collection or a document.
         /// These resource ids are used when building up SelfLinks, a static addressable Uri for each resource within a database account.
         /// </remarks>
-        [JsonProperty(PropertyName = Constants.Properties.RId)]
+        [JsonProperty(PropertyName = Constants.Properties.RId, NullValueHandling = NullValueHandling.Ignore)]
         internal string ResourceId { get; private set; }
     }
 }
