@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Collections.Generic;
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
@@ -61,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.Query
             StringBuilder sb = new StringBuilder();
             CosmosElement element = CosmosObject.Create(
                 new Dictionary<string, CosmosElement>() {{"item", CosmosString.Create("asdf")}});
-            CosmosOrderByItemQueryExecutionContext.ToQueryLiteral(element, sb);
+            element.Accept(new CosmosElementToQueryLiteral(sb));
             Assert.AreEqual(
                 @"{""item"":""asdf""}",
                 sb.ToString());
@@ -69,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.Query
             element = CosmosObject.Create(
                 new Dictionary<string, CosmosElement>() { { "item", CosmosBoolean.Create(true) } });
             sb.Clear();
-            CosmosOrderByItemQueryExecutionContext.ToQueryLiteral(element, sb);
+            element.Accept(new CosmosElementToQueryLiteral(sb));
             Assert.AreEqual(
                 @"{""item"":true}",
                 sb.ToString());
@@ -77,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Query
             element = CosmosObject.Create(
                 new Dictionary<string, CosmosElement>() { { "item", CosmosBoolean.Create(false) } });
             sb.Clear();
-            CosmosOrderByItemQueryExecutionContext.ToQueryLiteral(element, sb);
+            element.Accept(new CosmosElementToQueryLiteral(sb));
             Assert.AreEqual(
                 @"{""item"":false}",
                 sb.ToString());
@@ -85,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.Query
             element = CosmosObject.Create(
                 new Dictionary<string, CosmosElement>() { { "item", CosmosNull.Create() } });
             sb.Clear();
-            CosmosOrderByItemQueryExecutionContext.ToQueryLiteral(element, sb);
+            element.Accept(new CosmosElementToQueryLiteral(sb));
             Assert.AreEqual(
                 @"{""item"":null}",
                 sb.ToString());
@@ -93,15 +94,15 @@ namespace Microsoft.Azure.Cosmos.Query
             element = CosmosObject.Create(
                 new Dictionary<string, CosmosElement>() { { "item", CosmosNumber64.Create(1.0) } });
             sb.Clear();
-            CosmosOrderByItemQueryExecutionContext.ToQueryLiteral(element, sb);
+            element.Accept(new CosmosElementToQueryLiteral(sb));
             Assert.AreEqual(
-                @"{""item"":1.0}",
+                @"{""item"":1}",
                 sb.ToString());
 
             element = CosmosObject.Create(
                 new Dictionary<string, CosmosElement>() { { "item", CosmosNumber64.Create(1L) } });
             sb.Clear();
-            CosmosOrderByItemQueryExecutionContext.ToQueryLiteral(element, sb);
+            element.Accept(new CosmosElementToQueryLiteral(sb));
             Assert.AreEqual(
                 @"{""item"":1}",
                 sb.ToString());
@@ -118,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     { "item8", CosmosFloat64.Create(10.2) },
                 });
             sb.Clear();
-            CosmosOrderByItemQueryExecutionContext.ToQueryLiteral(element, sb);
+            element.Accept(new CosmosElementToQueryLiteral(sb));
             Assert.AreEqual(
                 @"{""item"":C_Int8(3),""item2"":C_Int16(4),""item3"":C_Int32(5),""item5"":C_UInt32(7),""item6"":C_Int64(8)," +
                        @"""item7"":C_Float32(9.1),""item8"":C_Float64(10.2)}",
@@ -134,7 +135,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     { "item2", CosmosBinary.Create(new ReadOnlyMemory<byte>(randomBytes)) },
                 });
             sb.Clear();
-            CosmosOrderByItemQueryExecutionContext.ToQueryLiteral(element, sb);
+            element.Accept(new CosmosElementToQueryLiteral(sb));
             Assert.AreEqual(
                 $@"{{""item"":C_Guid(""{guid.ToString()}""),""item2"":C_Binary(""0x{hexString}"")}}",
                 sb.ToString());
@@ -163,7 +164,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     }) },
                 });
             sb.Clear();
-            CosmosOrderByItemQueryExecutionContext.ToQueryLiteral(element, sb);
+            element.Accept(new CosmosElementToQueryLiteral(sb));
             Assert.AreEqual(
                 $@"{{""item"":C_Guid(""{guid.ToString()}""),""item2"":[],""item3"":{{}},""item4"":[{{""a"":C_Int8(3),""b"":""adf""}},C_Int16(25)]}}",
                 sb.ToString());

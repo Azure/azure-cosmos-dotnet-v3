@@ -43,23 +43,23 @@ namespace Microsoft.Azure.Cosmos.Sql
         public abstract TResult Visit(SqlUnaryScalarExpression scalarExpression);
     }
 
-    internal abstract class SqlScalarExpressionVisitor<TInput, TOutput>
+    internal abstract class SqlScalarExpressionVisitor<TArg, TOutput>
     {
-        public abstract TOutput Visit(SqlArrayCreateScalarExpression scalarExpression, TInput input);
-        public abstract TOutput Visit(SqlArrayScalarExpression scalarExpression, TInput input);
-        public abstract TOutput Visit(SqlBetweenScalarExpression scalarExpression, TInput input);
-        public abstract TOutput Visit(SqlBinaryScalarExpression scalarExpression, TInput input);
-        public abstract TOutput Visit(SqlCoalesceScalarExpression scalarExpression, TInput input);
-        public abstract TOutput Visit(SqlConditionalScalarExpression scalarExpression, TInput input);
-        public abstract TOutput Visit(SqlExistsScalarExpression scalarExpression, TInput input);
-        public abstract TOutput Visit(SqlFunctionCallScalarExpression scalarExpression, TInput input);
-        public abstract TOutput Visit(SqlInScalarExpression scalarExpression, TInput input);
-        public abstract TOutput Visit(SqlLiteralScalarExpression scalarExpression, TInput input);
-        public abstract TOutput Visit(SqlMemberIndexerScalarExpression scalarExpression, TInput input);
-        public abstract TOutput Visit(SqlObjectCreateScalarExpression scalarExpression, TInput input);
-        public abstract TOutput Visit(SqlParameterRefScalarExpression scalarExpression, TInput input);
-        public abstract TOutput Visit(SqlPropertyRefScalarExpression scalarExpression, TInput input);
-        public abstract TOutput Visit(SqlSubqueryScalarExpression scalarExpression, TInput input);
-        public abstract TOutput Visit(SqlUnaryScalarExpression scalarExpression, TInput input);
+        public abstract TOutput Visit(SqlArrayCreateScalarExpression scalarExpression, TArg input);
+        public abstract TOutput Visit(SqlArrayScalarExpression scalarExpression, TArg input);
+        public abstract TOutput Visit(SqlBetweenScalarExpression scalarExpression, TArg input);
+        public abstract TOutput Visit(SqlBinaryScalarExpression scalarExpression, TArg input);
+        public abstract TOutput Visit(SqlCoalesceScalarExpression scalarExpression, TArg input);
+        public abstract TOutput Visit(SqlConditionalScalarExpression scalarExpression, TArg input);
+        public abstract TOutput Visit(SqlExistsScalarExpression scalarExpression, TArg input);
+        public abstract TOutput Visit(SqlFunctionCallScalarExpression scalarExpression, TArg input);
+        public abstract TOutput Visit(SqlInScalarExpression scalarExpression, TArg input);
+        public abstract TOutput Visit(SqlLiteralScalarExpression scalarExpression, TArg input);
+        public abstract TOutput Visit(SqlMemberIndexerScalarExpression scalarExpression, TArg input);
+        public abstract TOutput Visit(SqlObjectCreateScalarExpression scalarExpression, TArg input);
+        public abstract TOutput Visit(SqlParameterRefScalarExpression scalarExpression, TArg input);
+        public abstract TOutput Visit(SqlPropertyRefScalarExpression scalarExpression, TArg input);
+        public abstract TOutput Visit(SqlSubqueryScalarExpression scalarExpression, TArg input);
+        public abstract TOutput Visit(SqlUnaryScalarExpression scalarExpression, TArg input);
     }
 }

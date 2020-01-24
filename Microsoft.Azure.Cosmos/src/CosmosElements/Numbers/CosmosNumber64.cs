@@ -1,8 +1,9 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.CosmosElements
+namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 {
+    using System;
     using Microsoft.Azure.Cosmos.Json;
 
 #if INTERNAL
@@ -64,6 +65,26 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             }
 
             return value;
+        }
+
+        public override void Accept(ICosmosNumberVisitor cosmosNumberVisitor)
+        {
+            if (cosmosNumberVisitor == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosNumberVisitor));
+            }
+
+            cosmosNumberVisitor.Visit(this);
+        }
+
+        public override TOutput Accept<TArg, TOutput>(ICosmosNumberVisitor<TArg, TOutput> cosmosNumberVisitor, TArg input)
+        {
+            if (cosmosNumberVisitor == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosNumberVisitor));
+            }
+
+            return cosmosNumberVisitor.Visit(this, input);
         }
 
         public static CosmosNumber64 Create(
