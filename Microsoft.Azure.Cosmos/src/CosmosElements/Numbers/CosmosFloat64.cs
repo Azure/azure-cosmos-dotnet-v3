@@ -1,7 +1,7 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.CosmosElements
+namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 {
     using System;
     using Microsoft.Azure.Cosmos.Json;
@@ -23,6 +23,28 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public override Number64 Value => this.GetValue();
 
+        public abstract double GetValue();
+
+        public override void Accept(ICosmosNumberVisitor cosmosNumberVisitor)
+        {
+            if (cosmosNumberVisitor == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosNumberVisitor));
+            }
+
+            cosmosNumberVisitor.Visit(this);
+        }
+
+        public override TOutput Accept<TArg, TOutput>(ICosmosNumberVisitor<TArg, TOutput> cosmosNumberVisitor, TArg input)
+        {
+            if (cosmosNumberVisitor == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosNumberVisitor));
+            }
+
+            return cosmosNumberVisitor.Visit(this, input);
+        }
+
         public override void WriteTo(IJsonWriter jsonWriter)
         {
             if (jsonWriter == null)
@@ -32,8 +54,6 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
             jsonWriter.WriteFloat64Value(this.GetValue());
         }
-
-        public abstract double GetValue();
 
         public static CosmosFloat64 Create(
             IJsonNavigator jsonNavigator,

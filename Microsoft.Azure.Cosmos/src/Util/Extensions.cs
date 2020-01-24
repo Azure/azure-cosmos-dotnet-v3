@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Documents;
 
     internal static class Extensions
@@ -37,7 +38,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             CosmosClientSideRequestStatistics cosmosClientSideRequestStatistics = documentServiceResponse.RequestStats as CosmosClientSideRequestStatistics;
-            responseMessage.Diagnostics = new PointOperationStatistics(
+            PointOperationStatistics pointOperationStatistics = new PointOperationStatistics(
                 activityId: responseMessage.Headers.ActivityId,
                 statusCode: documentServiceResponse.StatusCode,
                 subStatusCode: documentServiceResponse.SubStatusCode,
@@ -49,6 +50,7 @@ namespace Microsoft.Azure.Cosmos
                 responseSessionToken: responseMessage.Headers.Session,
                 clientSideRequestStatistics: cosmosClientSideRequestStatistics);
 
+            requestMessage.DiagnosticsContext.AddDiagnosticsInternal(pointOperationStatistics);
             return responseMessage;
         }
 
@@ -85,10 +87,10 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            responseMessage.Diagnostics = new PointOperationStatistics(
+            PointOperationStatistics pointOperationStatistics = new PointOperationStatistics(
                 activityId: responseMessage.Headers.ActivityId,
                 statusCode: documentClientException.StatusCode.Value,
-                subStatusCode: SubStatusCodes.Unknown,
+                subStatusCode: (int)SubStatusCodes.Unknown,
                 requestCharge: responseMessage.Headers.RequestCharge,
                 errorMessage: responseMessage.ErrorMessage,
                 method: requestMessage?.Method,
@@ -97,6 +99,7 @@ namespace Microsoft.Azure.Cosmos
                 responseSessionToken: responseMessage.Headers.Session,
                 clientSideRequestStatistics: documentClientException.RequestStatistics as CosmosClientSideRequestStatistics);
 
+            responseMessage.DiagnosticsContext.AddDiagnosticsInternal(pointOperationStatistics);
             if (requestMessage != null)
             {
                 requestMessage.Properties.Remove(nameof(DocumentClientException));

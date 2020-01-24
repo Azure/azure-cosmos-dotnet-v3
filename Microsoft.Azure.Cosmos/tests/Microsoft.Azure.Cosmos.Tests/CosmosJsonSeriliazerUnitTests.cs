@@ -52,6 +52,73 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
         }
 
         [TestMethod]
+        public void ValidatePropertySerialization()
+        {
+            string id = "testId";
+            this.TestProperty<AccountProperties>(
+                id,
+                $@"{{""id"":""{id}"",""writableLocations"":[],""readableLocations"":[],""userConsistencyPolicy"":null,""addresses"":null,""userReplicationPolicy"":null,""systemReplicationPolicy"":null,""readPolicy"":null,""queryEngineConfiguration"":null,""enableMultipleWriteLocations"":false}}");
+
+            this.TestProperty<DatabaseProperties>(
+                id,
+                $@"{{""id"":""{id}""}}");
+
+            this.TestProperty<ContainerProperties>(
+                id,
+                $@"{{""id"":""{id}"",""partitionKey"":{{""paths"":[],""kind"":""Hash""}}}}");
+
+            this.TestProperty<StoredProcedureProperties>(
+                id,
+                $@"{{""body"":""bodyCantBeNull"",""id"":""testId""}}");
+
+            this.TestProperty<TriggerProperties>(
+                id,
+                $@"{{""body"":null,""triggerType"":""Pre"",""triggerOperation"":""All"",""id"":""{id}""}}");
+
+            this.TestProperty<UserDefinedFunctionProperties>(
+                id,
+                $@"{{""body"":null,""id"":""{id}""}}");
+
+            this.TestProperty<UserProperties>
+                (id,
+                $@"{{""id"":""{id}"",""_permissions"":null}}");
+
+            this.TestProperty<PermissionProperties>(
+                id,
+                $@"{{""id"":""{id}"",""resource"":null,""permissionMode"":0}}");
+
+            this.TestProperty<ConflictProperties>(
+               id,
+               $@"{{""id"":""{id}"",""operationType"":""Invalid"",""resourceType"":null,""resourceId"":null,""content"":null,""conflict_lsn"":0}}");
+
+            // Throughput doesn't have an id.
+            string defaultThroughputJson = @"{""Throughput"":null}";
+            ThroughputProperties property = JsonConvert.DeserializeObject<ThroughputProperties>(defaultThroughputJson);
+            Assert.IsNull(property.Throughput);
+            string propertyJson = JsonConvert.SerializeObject(property, new JsonSerializerSettings()
+            {
+                Formatting = Formatting.None
+            });
+            Assert.AreEqual(defaultThroughputJson, propertyJson);
+        }
+
+        private void TestProperty<T>(string id, string defaultJson)
+        {
+            dynamic property = JsonConvert.DeserializeObject<T>(defaultJson);
+            Assert.AreEqual(id, property.Id);
+            string propertyJson = JsonConvert.SerializeObject(property, new JsonSerializerSettings() {
+                Formatting = Formatting.None
+            });
+
+            Assert.AreEqual(defaultJson, propertyJson);
+            // System properties should be ignored if null
+            Assert.IsFalse(propertyJson.Contains("_etag"));
+            Assert.IsFalse(propertyJson.Contains("_rid"));
+            Assert.IsFalse(propertyJson.Contains("_ts"));
+            Assert.IsFalse(propertyJson.Contains("_self"));
+        }
+
+        [TestMethod]
         public void ValidateJson()
         {
             CosmosJsonDotNetSerializer cosmosDefaultJsonSerializer = new CosmosJsonDotNetSerializer();

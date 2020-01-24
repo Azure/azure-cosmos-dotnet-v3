@@ -725,7 +725,8 @@ namespace Microsoft.Azure.Cosmos
                 serializerCore: serializerCore,
                 cosmosResponseFactory: this.ResponseFactory,
                 requestHandler: this.RequestHandler,
-                documentClient: this.DocumentClient);
+                documentClient: this.DocumentClient,
+                userAgent: this.DocumentClient.ConnectionPolicy.UserAgentContainer.UserAgent);
         }
 
         internal virtual async Task<ConsistencyLevel> GetAccountConsistencyLevelAsync()
@@ -784,6 +785,7 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey: null,
                 streamPayload: streamPayload,
                 requestEnricher: (httpRequestMessage) => httpRequestMessage.AddThroughputHeader(throughput),
+                diagnosticsScope: null,
                 cancellationToken: cancellationToken);
         }
 

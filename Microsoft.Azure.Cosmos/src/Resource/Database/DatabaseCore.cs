@@ -531,6 +531,7 @@ namespace Microsoft.Azure.Cosmos
                streamPayload: streamPayload,
                requestOptions: requestOptions,
                requestEnricher: (httpRequestMessage) => httpRequestMessage.AddThroughputHeader(throughput),
+               diagnosticsScope: null,
                cancellationToken: cancellationToken);
         }
 
@@ -548,6 +549,7 @@ namespace Microsoft.Azure.Cosmos
                streamPayload: streamPayload,
                requestOptions: requestOptions,
                requestEnricher: null,
+               diagnosticsScope: null,
                cancellationToken: cancellationToken);
         }
 
@@ -565,6 +567,7 @@ namespace Microsoft.Azure.Cosmos
                streamPayload: streamPayload,
                requestOptions: requestOptions,
                requestEnricher: null,
+               diagnosticsScope: null,
                cancellationToken: cancellationToken);
         }
 
@@ -617,6 +620,7 @@ namespace Microsoft.Azure.Cosmos
               streamPayload: streamPayload,
               requestOptions: requestOptions,
               requestEnricher: null,
+              diagnosticsScope: null,
               cancellationToken: cancellationToken);
         }
     }

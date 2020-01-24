@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
     public class PermissionProperties
     {
         /// <summary>
-        /// Initialize a new instance of the <see cref="PermissionProperties"/> with permssion to <see cref="Container"/>.
+        /// Initialize a new instance of the <see cref="PermissionProperties"/> with permission to <see cref="Container"/>.
         /// </summary>
         /// <param name="id">The permission id.</param>
         /// <param name="permissionMode">The <see cref="PermissionMode"/>.</param>
@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Initialize a new instance of the <see cref="PermissionProperties"/> with permssion to cosnmos item.
+        /// Initialize a new instance of the <see cref="PermissionProperties"/> with permission to Cosmos item.
         /// </summary>
         /// <param name="id">The permission id.</param>
         /// <param name="permissionMode">The <see cref="PermissionMode"/>.</param>

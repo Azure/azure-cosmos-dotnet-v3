@@ -1,0 +1,24 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description>PointOperationStatistics</Description>
+      <CosmosDiagnostics><![CDATA[{
+  "ActivityId": "00000000-0000-0000-0000-000000000000",
+  "StatusCode": 200,
+  "SubStatusCode": 3,
+  "RequestCharge": 4.0,
+  "ErrorMessage": null,
+  "Method": {
+    "Method": "POST"
+  },
+  "RequestUri": "http://localhost.com",
+  "RequestSessionToken": "RequestSessionToken",
+  "ResponseSessionToken": "ResponseSessionToken",
+  "ClientSideRequestStatistics": null
+}]]></CosmosDiagnostics>
+    </Input>
+    <Output>
+      <ToStringOutput><![CDATA[{"Id":"PointOperationStatistics","ActivityId":"00000000-0000-0000-0000-000000000000","StatusCode":200,"SubStatusCode":3,"RequestCharge":4.0,"RequestUri":"http://localhost.com","RequestSessionToken":"RequestSessionToken","ResponseSessionToken":"ResponseSessionToken"}]]></ToStringOutput>
+    </Output>
+  </Result>
+</Results>

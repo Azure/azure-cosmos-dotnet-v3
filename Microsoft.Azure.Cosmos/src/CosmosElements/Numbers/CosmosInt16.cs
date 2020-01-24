@@ -1,7 +1,7 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.CosmosElements
+namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 {
     using System;
     using Microsoft.Azure.Cosmos.Json;
@@ -25,16 +25,24 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public abstract short GetValue();
 
-        public static CosmosInt16 Create(
-            IJsonNavigator jsonNavigator,
-            IJsonNavigatorNode jsonNavigatorNode)
+        public override void Accept(ICosmosNumberVisitor cosmosNumberVisitor)
         {
-            return new LazyCosmosInt16(jsonNavigator, jsonNavigatorNode);
+            if (cosmosNumberVisitor == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosNumberVisitor));
+            }
+
+            cosmosNumberVisitor.Visit(this);
         }
 
-        public static CosmosInt16 Create(short number)
+        public override TOutput Accept<TArg, TOutput>(ICosmosNumberVisitor<TArg, TOutput> cosmosNumberVisitor, TArg input)
         {
-            return new EagerCosmosInt16(number);
+            if (cosmosNumberVisitor == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosNumberVisitor));
+            }
+
+            return cosmosNumberVisitor.Visit(this, input);
         }
 
         public override void WriteTo(IJsonWriter jsonWriter)
@@ -45,6 +53,18 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             }
 
             jsonWriter.WriteInt16Value(this.GetValue());
+        }
+
+        public static CosmosInt16 Create(
+            IJsonNavigator jsonNavigator,
+            IJsonNavigatorNode jsonNavigatorNode)
+        {
+            return new LazyCosmosInt16(jsonNavigator, jsonNavigatorNode);
+        }
+
+        public static CosmosInt16 Create(short number)
+        {
+            return new EagerCosmosInt16(number);
         }
     }
 #if INTERNAL
