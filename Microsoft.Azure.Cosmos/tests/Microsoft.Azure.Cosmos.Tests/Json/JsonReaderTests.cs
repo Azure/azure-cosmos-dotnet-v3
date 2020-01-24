@@ -669,7 +669,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             for (int i = 0; i < OneByteCount + 1; i++)
             {
                 string userEncodedString = "a" + i.ToString();
-                Assert.IsTrue(jsonStringDictionary.TryAddString(userEncodedString, out int index));
+                Assert.IsTrue(jsonStringDictionary.TryAddString(Encoding.UTF8.GetBytes(userEncodedString).AsSpan(), out int index));
                 Assert.AreEqual(i, index);
             }
 
@@ -1448,8 +1448,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             this.VerifyReader(input, expectedTokens);
             this.VerifyReader(binaryInput, expectedTokens);
             JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(capacity: 100);
-            Assert.IsTrue(jsonStringDictionary.TryAddString("GlossDiv", out int index1));
-            Assert.IsTrue(jsonStringDictionary.TryAddString("title", out int index2));
+            Assert.IsTrue(jsonStringDictionary.TryAddString(Encoding.UTF8.GetBytes("GlossDiv").AsSpan(), out int index1));
+            Assert.IsTrue(jsonStringDictionary.TryAddString(Encoding.UTF8.GetBytes("title").AsSpan(), out int index2));
             this.VerifyReader(binaryInputWithEncoding, expectedTokens, jsonStringDictionary);
         }
 

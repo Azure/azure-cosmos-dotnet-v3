@@ -92,13 +92,6 @@ namespace Microsoft.Azure.Cosmos.Json
         private static readonly ReadOnlyMemory<byte>[] Utf8SystemStrings = SystemStrings.Select(x => (ReadOnlyMemory<byte>)Encoding.UTF8.GetBytes(x)).ToArray();
 
         /// <summary>
-        /// Dictionary of system string to it's index.
-        /// </summary>
-        private static readonly Dictionary<string, int> SystemStringToId = SystemStrings
-            .Select((value, index) => new { value, index })
-            .ToDictionary(pair => pair.value, pair => pair.index);
-
-        /// <summary>
         /// Gets the number value from the binary reader.
         /// </summary>
         /// <param name="numberToken">The buffer to read the number from.</param>
@@ -785,7 +778,7 @@ namespace Microsoft.Azure.Cosmos.Json
                             return false;
                         }
 
-                        start = JsonBinaryEncoding.TypeMarkerLength + JsonBinaryEncoding.TwoByteLength;
+                        start = JsonBinaryEncoding.TypeMarkerLength + JsonBinaryEncoding.FourByteLength;
                         length = MemoryMarshal.Read<uint>(stringTokenSpan);
                         break;
 
@@ -815,55 +808,42 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <summary>
         /// Try Get Encoded String Type Marker
         /// </summary>
-        /// <param name="value">the value</param>
+        /// <param name="utf8String">the value</param>
         /// <param name="jsonStringDictionary">The JSON string dictionary.</param>
         /// <param name="multiByteTypeMarker">The encoded string type marker if found.</param>
         /// <returns>Whether or not the type marker was found.</returns>
         public static bool TryGetEncodedStringTypeMarker(
-            string value,
+            ReadOnlySpan<byte> utf8String,
             JsonStringDictionary jsonStringDictionary,
             out MultiByteTypeMarker multiByteTypeMarker)
         {
-            multiByteTypeMarker = default(MultiByteTypeMarker);
-            if (value == null)
+            if (JsonBinaryEncoding.TryGetEncodedSystemStringTypeMarker(utf8String, out multiByteTypeMarker))
             {
-                return false;
+                return true;
             }
-
-            bool found;
-            if (TryGetEncodedSystemStringTypeMarker(value, out multiByteTypeMarker))
+            else if (JsonBinaryEncoding.TryGetEncodedUserStringTypeMarker(utf8String, jsonStringDictionary, out multiByteTypeMarker))
             {
-                found = true;
-            }
-            else if (TryGetEncodedUserStringTypeMarker(value, jsonStringDictionary, out multiByteTypeMarker))
-            {
-                found = true;
+                return true;
             }
             else
             {
-                found = false;
+                multiByteTypeMarker = default;
+                return false;
             }
-
-            return found;
         }
 
         /// <summary>
         /// Try Get Encoded System String Type Marker
         /// </summary>
-        /// <param name="value">The value.</param>
+        /// <param name="utf8String">The value.</param>
         /// <param name="multiByteTypeMarker">The multi byte type marker if found.</param>
         /// <returns>Whether or not the Encoded System String Type Marker was found.</returns>
-        public static bool TryGetEncodedSystemStringTypeMarker(
-            string value,
+        private static bool TryGetEncodedSystemStringTypeMarker(
+            ReadOnlySpan<byte> utf8String,
             out MultiByteTypeMarker multiByteTypeMarker)
         {
             multiByteTypeMarker = default(MultiByteTypeMarker);
-            if (value == null)
-            {
-                return false;
-            }
-
-            if (TryGetSystemStringId(value, out int systemStringId))
+            if (JsonBinaryEncoding.TryGetSystemStringId(utf8String, out int systemStringId))
             {
                 multiByteTypeMarker = new MultiByteTypeMarker(
                     length: 1,
@@ -945,60 +925,75 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <summary>
         /// Gets the SystemStringId for a particular system string.
         /// </summary>
-        /// <param name="systemString">The system string to get the enum id for.</param>
+        /// <param name="utf8String">The system string to get the enum id for.</param>
         /// <param name="systemStringId">The id of the system string if found.</param>
         /// <returns>The SystemStringId for a particular system string.</returns>
-        public static bool TryGetSystemStringId(string systemString, out int systemStringId)
+        public static bool TryGetSystemStringId(ReadOnlySpan<byte> utf8String, out int systemStringId)
         {
-            return JsonBinaryEncoding.SystemStringToId.TryGetValue(systemString, out systemStringId);
+            for (int i = 0; i < JsonBinaryEncoding.Utf8SystemStrings.Length; i++)
+            {
+                ReadOnlySpan<byte> utf8SystemString = JsonBinaryEncoding.Utf8SystemStrings[i].Span;
+                if (utf8SystemString.SequenceEqual(utf8String))
+                {
+                    systemStringId = i;
+                    return true;
+                }
+            }
+
+            systemStringId = default;
+            return false;
         }
 
         /// <summary>
         /// Try Get Encoded User String Type Marker
         /// </summary>
-        /// <param name="value">The value.</param>
+        /// <param name="utf8String">The value.</param>
         /// <param name="jsonStringDictionary">The optional json string dictionary.</param>
         /// <param name="multiByteTypeMarker">The multi byte type marker if found.</param>
         /// <returns>Whether or not the Encoded User String Type Marker was found.</returns>
         private static bool TryGetEncodedUserStringTypeMarker(
-            string value,
+            ReadOnlySpan<byte> utf8String,
             JsonStringDictionary jsonStringDictionary,
             out MultiByteTypeMarker multiByteTypeMarker)
         {
-            multiByteTypeMarker = default(MultiByteTypeMarker);
-            if (value == null)
+            if (jsonStringDictionary == null)
             {
+                multiByteTypeMarker = default;
                 return false;
             }
 
             const int MinStringLength = 2;
             const int MaxStringLength = 128;
-            if (jsonStringDictionary != null && (value.Length >= MinStringLength) && (value.Length <= MaxStringLength))
+            if ((utf8String.Length <= MinStringLength) || (utf8String.Length >= MaxStringLength))
             {
-                const byte OneByteCount = TypeMarker.UserString1ByteLengthMax - TypeMarker.UserString1ByteLengthMin;
-                if (jsonStringDictionary.TryAddString(value, out int index))
-                {
-                    // Convert the index to a multibyte type marker
-                    if (index < OneByteCount)
-                    {
-                        multiByteTypeMarker = new MultiByteTypeMarker(
-                            length: 1,
-                            one: (byte)(TypeMarker.UserString1ByteLengthMin + index));
-                    }
-                    else
-                    {
-                        int twoByteOffset = index - OneByteCount;
-                        multiByteTypeMarker = new MultiByteTypeMarker(
-                            length: 2,
-                            one: (byte)((twoByteOffset / 0xFF) + TypeMarker.UserString2ByteLengthMin),
-                            two: (byte)(twoByteOffset % 0xFF));
-                    }
-
-                    return true;
-                }
+                multiByteTypeMarker = default;
+                return false;
             }
 
-            return false;
+            const byte OneByteCount = TypeMarker.UserString1ByteLengthMax - TypeMarker.UserString1ByteLengthMin;
+            if (!jsonStringDictionary.TryAddString(utf8String, out int index))
+            {
+                multiByteTypeMarker = default;
+                return false;
+            }
+
+            // Convert the index to a multibyte type marker
+            if (index < OneByteCount)
+            {
+                multiByteTypeMarker = new MultiByteTypeMarker(
+                    length: 1,
+                    one: (byte)(TypeMarker.UserString1ByteLengthMin + index));
+            }
+            else
+            {
+                int twoByteOffset = index - OneByteCount;
+                multiByteTypeMarker = new MultiByteTypeMarker(
+                    length: 2,
+                    one: (byte)((twoByteOffset / 0xFF) + TypeMarker.UserString2ByteLengthMin),
+                    two: (byte)(twoByteOffset % 0xFF));
+            }
+
+            return true;
         }
 
         private static bool TryGetFixedWidthValue<T>(

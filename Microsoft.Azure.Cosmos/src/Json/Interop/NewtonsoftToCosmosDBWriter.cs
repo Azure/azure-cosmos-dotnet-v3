@@ -161,5 +161,15 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
 
             return new NewtonsoftToCosmosDBWriter(writer, () => throw new NotSupportedException());
         }
+
+        public override void WriteFieldName(ReadOnlySpan<byte> utf8FieldName)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void WriteStringValue(ReadOnlySpan<byte> utf8StringValue)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

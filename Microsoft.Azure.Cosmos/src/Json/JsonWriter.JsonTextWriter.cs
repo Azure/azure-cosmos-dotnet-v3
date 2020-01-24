@@ -31,6 +31,8 @@ namespace Microsoft.Azure.Cosmos.Json
         /// </summary>
         private sealed class JsonTextWriter : JsonWriter
         {
+            private const int MaxStackAlloc = 4 * 1024;
+
             private const byte ValueSeperatorToken = (byte)':';
             private const byte MemberSeperatorToken = (byte)',';
             private const byte ObjectStartToken = (byte)'{';
@@ -166,7 +168,16 @@ namespace Microsoft.Azure.Cosmos.Json
             /// Writes a field name to the the internal buffer.
             /// </summary>
             /// <param name="fieldName">The name of the field to write.</param>
-            public override void WriteFieldName(string fieldName)
+            public override unsafe void WriteFieldName(string fieldName)
+            {
+                int utf8Length = Encoding.UTF8.GetByteCount(fieldName);
+                Span<byte> utf8FieldName = utf8Length < JsonTextWriter.MaxStackAlloc ? stackalloc byte[utf8Length] : new byte[utf8Length];
+                Encoding.UTF8.GetBytes(fieldName, utf8FieldName);
+
+                this.WriteFieldName(utf8FieldName);
+            }
+
+            public override void WriteFieldName(ReadOnlySpan<byte> utf8FieldName)
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.FieldName);
                 this.PrefixMemberSeparator();
@@ -175,7 +186,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.firstValue = true;
 
                 this.jsonTextMemoryWriter.Write(PropertyStartToken);
-                this.WriteEscapedString(fieldName);
+                this.WriteEscapedString(utf8FieldName);
                 this.jsonTextMemoryWriter.Write(PropertyEndToken);
 
                 this.jsonTextMemoryWriter.Write(ValueSeperatorToken);
@@ -187,11 +198,20 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <param name="value">The value of the string to write.</param>
             public override void WriteStringValue(string value)
             {
+                int utf8Length = Encoding.UTF8.GetByteCount(value);
+                Span<byte> utf8String = utf8Length < JsonTextWriter.MaxStackAlloc ? stackalloc byte[JsonTextWriter.MaxStackAlloc] : new byte[JsonTextWriter.MaxStackAlloc];
+                Encoding.UTF8.GetBytes(value, utf8String);
+
+                this.WriteFieldName(utf8String);
+            }
+
+            public override void WriteStringValue(ReadOnlySpan<byte> utf8StringValue)
+            {
                 this.JsonObjectState.RegisterToken(JsonTokenType.String);
                 this.PrefixMemberSeparator();
 
                 this.jsonTextMemoryWriter.Write(StringStartToken);
-                this.WriteEscapedString(value);
+                this.WriteEscapedString(utf8StringValue);
                 this.jsonTextMemoryWriter.Write(StringEndToken);
             }
 
@@ -395,108 +415,128 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.firstValue = false;
             }
 
-            private bool RequiresEscapeSequence(char value)
-            {
-                switch (value)
-                {
-                    case '\\':
-                    case '"':
-                    case '/':
-                    case '\b':
-                    case '\f':
-                    case '\n':
-                    case '\r':
-                    case '\t':
-                        return true;
-                    default:
-                        return value < ' ';
-                }
-            }
-
-            private void WriteEscapedString(string value)
+            private void WriteEscapedString(ReadOnlySpan<byte> value)
             {
                 // Escape the string if needed
-                string escapedString;
-                if (!value.Any(character => JsonTextWriter.CharacterNeedsEscaping(character)))
+                ReadOnlySpan<byte> escapedString;
+                if (!JsonTextWriter.Utf8StringNeedsEscaping(value))
                 {
                     // No escaping needed;
                     escapedString = value;
                 }
                 else
                 {
-                    StringBuilder stringBuilder = new StringBuilder();
                     int readOffset = 0;
                     while (readOffset != value.Length)
                     {
-                        if (!this.RequiresEscapeSequence(value[readOffset]))
+                        if (!JsonTextWriter.RequiresEscapeSequence(value[readOffset]))
                         {
                             // Just write the character as is
-                            stringBuilder.Append(value[readOffset++]);
+                            this.jsonTextMemoryWriter.Write(value[readOffset++]);
                         }
                         else
                         {
-                            char characterToEscape = value[readOffset++];
-                            char escapeSequence = default;
+                            byte characterToEscape = value[readOffset++];
+                            byte escapeSequence;
                             switch (characterToEscape)
                             {
-                                case '\\':
-                                    escapeSequence = '\\';
+                                case (byte)'\\':
+                                    escapeSequence = (byte)'\\';
                                     break;
-                                case '"':
-                                    escapeSequence = '"';
+
+                                case (byte)'"':
+                                    escapeSequence = (byte)'"';
                                     break;
-                                case '/':
-                                    escapeSequence = '/';
+
+                                case (byte)'/':
+                                    escapeSequence = (byte)'/';
                                     break;
-                                case '\b':
-                                    escapeSequence = 'b';
+
+                                case (byte)'\b':
+                                    escapeSequence = (byte)'b';
                                     break;
-                                case '\f':
-                                    escapeSequence = 'f';
+
+                                case (byte)'\f':
+                                    escapeSequence = (byte)'f';
                                     break;
-                                case '\n':
-                                    escapeSequence = 'n';
+
+                                case (byte)'\n':
+                                    escapeSequence = (byte)'n';
                                     break;
-                                case '\r':
-                                    escapeSequence = 'r';
+
+                                case (byte)'\r':
+                                    escapeSequence = (byte)'r';
                                     break;
-                                case '\t':
-                                    escapeSequence = 't';
+
+                                case (byte)'\t':
+                                    escapeSequence = (byte)'t';
+                                    break;
+
+                                default:
+                                    escapeSequence = 0;
                                     break;
                             }
 
-                            if (escapeSequence >= ' ')
+                            if ((byte)escapeSequence >= ' ')
                             {
                                 // We got a special character
-                                stringBuilder.Append('\\');
-                                stringBuilder.Append(escapeSequence);
+                                this.jsonTextMemoryWriter.Write((byte)'\\');
+                                this.jsonTextMemoryWriter.Write(escapeSequence);
                             }
                             else
                             {
                                 // We got a control character (U+0000 through U+001F).
-                                stringBuilder.AppendFormat(
-                                    CultureInfo.InvariantCulture,
-                                    "\\u{0:X4}",
-                                    (int)characterToEscape);
+                                this.jsonTextMemoryWriter.Write((byte)'\\');
+                                this.jsonTextMemoryWriter.Write((byte)'u');
+                                if (escapeSequence > 16)
+                                {
+                                    this.jsonTextMemoryWriter.Write((byte)'1');
+                                }
+                                else
+                                {
+                                    this.jsonTextMemoryWriter.Write((byte)'0');
+                                }
+
+                                byte lastHex = (byte)(escapeSequence % 16);
+                                if (lastHex < 10)
+                                {
+                                    this.jsonTextMemoryWriter.Write((byte)'0' + lastHex);
+                                }
+                                else
+                                {
+                                    this.jsonTextMemoryWriter.Write((byte)'A' + (lastHex - 10));
+                                }
                             }
                         }
                     }
-
-                    escapedString = stringBuilder.ToString();
                 }
-
-                // Convert to UTF8
-                byte[] utf8String = Encoding.UTF8.GetBytes(escapedString);
-                this.jsonTextMemoryWriter.Write(utf8String);
             }
 
-            private static bool CharacterNeedsEscaping(char c)
+            private static bool RequiresEscapeSequence(byte value)
             {
-                const char DoubleQuote = '"';
-                const char ReverseSolidus = '\\';
-                const char Space = ' ';
+                switch (value)
+                {
+                    case (byte)'\\':
+                    case (byte)'"':
+                    case (byte)'/':
+                    case (byte)'\b':
+                    case (byte)'\f':
+                    case (byte)'\n':
+                    case (byte)'\r':
+                    case (byte)'\t':
+                        return true;
+                    default:
+                        return value < ' ';
+                }
+            }
 
-                return (c == DoubleQuote) || (c == ReverseSolidus) || (c < Space);
+            private static bool Utf8StringNeedsEscaping(ReadOnlySpan<byte> value)
+            {
+                const byte DoubleQuote = (byte)'"';
+                const byte ReverseSolidus = (byte)'\\';
+                const byte Space = (byte)' ';
+
+                return (value.IndexOf(DoubleQuote) != -1) || (value.IndexOf(ReverseSolidus) != -1) || (value.IndexOf(Space) != -1);
             }
 
             private sealed class JsonTextMemoryWriter : JsonMemoryWriter

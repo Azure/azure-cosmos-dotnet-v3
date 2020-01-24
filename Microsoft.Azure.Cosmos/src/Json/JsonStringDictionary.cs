@@ -17,9 +17,9 @@ namespace Microsoft.Azure.Cosmos.Json
 #endif
     sealed class JsonStringDictionary : IReadOnlyJsonStringDictionary
     {
+        private const int MaxStackAllocSize = 4 * 1024;
         private readonly string[] stringDictionary;
         private readonly ReadOnlyMemory<byte>[] utf8StringDictionary;
-        private readonly Dictionary<string, int> stringToIndex;
         private int size;
 
         public JsonStringDictionary(int capacity)
@@ -31,16 +31,28 @@ namespace Microsoft.Azure.Cosmos.Json
 
             this.stringDictionary = new string[capacity];
             this.utf8StringDictionary = new ReadOnlyMemory<byte>[capacity];
-            this.stringToIndex = new Dictionary<string, int>();
         }
 
         public bool TryAddString(string value, out int index)
         {
-            if (this.stringToIndex.TryGetValue(value, out index))
+            int utf8Length = Encoding.UTF8.GetByteCount(value);
+            Span<byte> utfString = utf8Length < JsonStringDictionary.MaxStackAllocSize ? stackalloc byte[utf8Length] : new byte[utf8Length];
+            Encoding.UTF8.GetBytes(value, utfString);
+
+            return this.TryAddString(utfString, out index);
+        }
+
+        public bool TryAddString(ReadOnlySpan<byte> value, out int index)
+        {
+            // If the string already exists, then just return that index.
+            for (int i = 0; i < this.utf8StringDictionary.Length; i++)
             {
-                // If the string already exists just leave.
-                index = default;
-                return true;
+                ReadOnlySpan<byte> utf8String = this.utf8StringDictionary[i].Span;
+                if (utf8String.SequenceEqual(value))
+                {
+                    index = i;
+                    return true;
+                }
             }
 
             if (this.size == this.stringDictionary.Length)
@@ -50,10 +62,9 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             index = this.size;
-            this.stringDictionary[this.size] = value;
-            this.utf8StringDictionary[this.size] = Encoding.UTF8.GetBytes(this.stringDictionary[this.size]);
+            this.stringDictionary[this.size] = Encoding.UTF8.GetString(value);
+            this.utf8StringDictionary[this.size] = value.ToArray();
             this.size++;
-            this.stringToIndex[value] = index;
 
             return true;
         }
@@ -93,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.Json
             for (int i = 0; i < userStrings.Count; i++)
             {
                 string userString = userStrings[i];
-                if (!jsonStringDictionary.TryAddString(userString, out int index))
+                if (!jsonStringDictionary.TryAddString(Encoding.UTF8.GetBytes(userString).AsSpan(), out int index))
                 {
                     throw new ArgumentException($"Failed to add {userString} to {nameof(JsonStringDictionary)}.");
                 }

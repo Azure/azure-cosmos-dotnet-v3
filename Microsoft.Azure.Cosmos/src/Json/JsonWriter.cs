@@ -94,8 +94,13 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <inheritdoc />
         public abstract void WriteFieldName(string fieldName);
 
+        public abstract void WriteFieldName(ReadOnlySpan<byte> utf8FieldName);
+
         /// <inheritdoc />
         public abstract void WriteStringValue(string value);
+
+        /// <inheritdoc />
+        public abstract void WriteStringValue(ReadOnlySpan<byte> utf8StringValue);
 
         /// <inheritdoc />
         public abstract void WriteNumberValue(Number64 value);
@@ -376,11 +381,11 @@ namespace Microsoft.Azure.Cosmos.Json
                         {
                             if (fieldName)
                             {
-                                this.WriteRawJsonToken(JsonTokenType.FieldName, bufferedStringValue.Span);
+                                this.WriteFieldName(bufferedStringValue.Span);
                             }
                             else
                             {
-                                this.WriteRawJsonToken(JsonTokenType.String, bufferedStringValue.Span);
+                                this.WriteStringValue(bufferedStringValue.Span);
                             }
                         }
                         else

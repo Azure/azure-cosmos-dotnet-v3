@@ -27,6 +27,8 @@ namespace Microsoft.Azure.Cosmos.Json
         /// </summary>
         private sealed class JsonBinaryWriter : JsonWriter
         {
+            private const int MaxStackAllocSize = 4 * 1024;
+
             /// <summary>
             /// Writer used to write fully materialized context to the internal stream.
             /// </summary>
@@ -146,7 +148,16 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <param name="fieldName">The name of the field to write.</param>
             public override void WriteFieldName(string fieldName)
             {
-                this.WriteFieldNameOrString(true, fieldName);
+                int utf8Length = Encoding.UTF8.GetByteCount(fieldName);
+                Span<byte> utf8FieldName = utf8Length < JsonBinaryWriter.MaxStackAllocSize ? stackalloc byte[utf8Length] : new byte[utf8Length];
+                Encoding.UTF8.GetBytes(fieldName, utf8FieldName);
+
+                this.WriteFieldNameOrString(true, utf8FieldName);
+            }
+
+            public override void WriteFieldName(ReadOnlySpan<byte> utf8FieldName)
+            {
+                this.WriteFieldNameOrString(true, utf8FieldName);
             }
 
             /// <summary>
@@ -155,7 +166,16 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <param name="value">The value of the string to write.</param>
             public override void WriteStringValue(string value)
             {
-                this.WriteFieldNameOrString(false, value);
+                int utf8Length = Encoding.UTF8.GetByteCount(value);
+                Span<byte> utf8String = utf8Length < JsonBinaryWriter.MaxStackAllocSize ? stackalloc byte[utf8Length] : new byte[utf8Length];
+                Encoding.UTF8.GetBytes(value, utf8String);
+
+                this.WriteFieldNameOrString(false, utf8String);
+            }
+
+            public override void WriteStringValue(ReadOnlySpan<byte> utf8String)
+            {
+                this.WriteFieldNameOrString(false, utf8String);
             }
 
             /// <summary>
@@ -524,13 +544,13 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.bufferedContexts.Peek().Count++;
             }
 
-            private void WriteFieldNameOrString(bool isFieldName, string value)
+            private void WriteFieldNameOrString(bool isFieldName, ReadOnlySpan<byte> utf8String)
             {
                 // String dictionary encoding is currently performed only for field names. 
                 // This would be changed later, so that the writer can control which strings need to be encoded.
                 this.JsonObjectState.RegisterToken(isFieldName ? JsonTokenType.FieldName : JsonTokenType.String);
                 if (JsonBinaryEncoding.TryGetEncodedStringTypeMarker(
-                    value,
+                    utf8String,
                     this.JsonObjectState.CurrentTokenType == JsonTokenType.FieldName ? this.jsonStringDictionary : null,
                     out JsonBinaryEncoding.MultiByteTypeMarker multiByteTypeMarker))
                 {
@@ -551,8 +571,6 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
                 else
                 {
-                    byte[] utf8String = Encoding.UTF8.GetBytes(value);
-
                     // See if the string length can be encoded into a single type marker
                     byte typeMarker = JsonBinaryEncoding.TypeMarker.GetEncodedStringLengthTypeMarker(utf8String.Length);
                     if (JsonBinaryEncoding.TypeMarker.IsValid(typeMarker))

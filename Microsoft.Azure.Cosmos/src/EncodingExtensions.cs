@@ -21,5 +21,16 @@ namespace Microsoft.Azure.Cosmos
                 return encoding.GetString(bytes, src.Length);
             }
         }
+
+        public static unsafe int GetBytes(this Encoding encoding, string src, Span<byte> dest)
+        {
+            fixed (char* charPointer = src)
+            {
+                fixed (byte* spanPointer = dest)
+                {
+                    return Encoding.UTF8.GetBytes(chars: charPointer, charCount: src.Length, bytes: spanPointer, byteCount: dest.Length);
+                }
+            }
+        }
     }
 }
