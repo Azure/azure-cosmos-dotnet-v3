@@ -1,37 +1,64 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos.Diagnostics
 {
+    using System;
+    using System.Collections;
     using System.Collections.Generic;
-    using System.Text;
-    using Newtonsoft.Json;
 
-    internal sealed class CosmosDiagnosticsContextList : CosmosDiagnosticWriter
+    internal sealed class CosmosDiagnosticsContextList : CosmosDiagnosticsInternal, IEnumerable<CosmosDiagnosticsInternal>
     {
-        private List<CosmosDiagnosticWriter> contextList { get; }
+        private List<CosmosDiagnosticsInternal> contextList { get; }
 
-        internal CosmosDiagnosticsContextList()
+        public CosmosDiagnosticsContextList(List<CosmosDiagnosticsInternal> contextList)
         {
-            this.contextList = new List<CosmosDiagnosticWriter>();
+            this.contextList = contextList ?? throw new ArgumentNullException(nameof(contextList));
         }
 
-        internal void AddWriter(CosmosDiagnosticWriter diagnosticWriter)
+        public CosmosDiagnosticsContextList()
+            : this(new List<CosmosDiagnosticsInternal>())
         {
-            this.contextList.Add(diagnosticWriter);
         }
 
-        internal void Append(CosmosDiagnosticsContextList newContext)
+        public void AddDiagnostics(CosmosDiagnosticsInternal cosmosDiagnosticsInternal)
         {
-            this.contextList.Add(newContext);
-        }
-
-        internal override void WriteJsonObject(JsonWriter jsonWriter)
-        {
-            foreach (CosmosDiagnosticWriter writer in this.contextList)
+            if (cosmosDiagnosticsInternal == null)
             {
-                writer.WriteJsonObject(jsonWriter);
+                throw new ArgumentNullException(nameof(cosmosDiagnosticsInternal));
             }
+
+            this.contextList.Add(cosmosDiagnosticsInternal);
+        }
+
+        public void Append(CosmosDiagnosticsContextList newContext)
+        {
+            if (newContext == null)
+            {
+                throw new ArgumentNullException(nameof(newContext));
+            }
+
+            this.contextList.AddRange(newContext);
+        }
+
+        public override void Accept(CosmosDiagnosticsInternalVisitor cosmosDiagnosticsInternalVisitor)
+        {
+            cosmosDiagnosticsInternalVisitor.Visit(this);
+        }
+
+        public override TResult Accept<TResult>(CosmosDiagnosticsInternalVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
+        }
+
+        public IEnumerator<CosmosDiagnosticsInternal> GetEnumerator()
+        {
+            return this.contextList.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return this.contextList.GetEnumerator();
         }
     }
 }

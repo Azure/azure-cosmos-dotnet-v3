@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Documents;
 
     internal static class Extensions
@@ -49,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
                 responseSessionToken: responseMessage.Headers.Session,
                 clientSideRequestStatistics: cosmosClientSideRequestStatistics);
 
-            requestMessage.DiagnosticsContext.AddContextWriter(pointOperationStatistics);
+            requestMessage.DiagnosticsContext.AddDiagnosticsInternal(pointOperationStatistics);
             return responseMessage;
         }
 
@@ -98,7 +99,7 @@ namespace Microsoft.Azure.Cosmos
                 responseSessionToken: responseMessage.Headers.Session,
                 clientSideRequestStatistics: documentClientException.RequestStatistics as CosmosClientSideRequestStatistics);
 
-            responseMessage.DiagnosticsContext.AddContextWriter(pointOperationStatistics);
+            responseMessage.DiagnosticsContext.AddDiagnosticsInternal(pointOperationStatistics);
             if (requestMessage != null)
             {
                 requestMessage.Properties.Remove(nameof(DocumentClientException));

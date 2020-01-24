@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -84,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseSessionToken: null,
                 clientSideRequestStatistics: new CosmosClientSideRequestStatistics());
             CosmosDiagnosticsContext scope = new CosmosDiagnosticsContext();
-            scope.AddContextWriter(pointOperationStatistics);
+            scope.AddDiagnosticsInternal(pointOperationStatistics);
 
             TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.OK)
             {

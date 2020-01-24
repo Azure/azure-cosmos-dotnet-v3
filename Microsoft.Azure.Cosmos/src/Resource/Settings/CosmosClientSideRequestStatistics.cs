@@ -9,16 +9,15 @@ namespace Microsoft.Azure.Cosmos
     using System.Globalization;
     using System.IO;
     using System.Linq;
-    using System.Runtime.CompilerServices;
     using System.Text;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
-    internal sealed class CosmosClientSideRequestStatistics : CosmosDiagnosticWriter, IClientSideRequestStatistics 
+    internal sealed class CosmosClientSideRequestStatistics : IClientSideRequestStatistics
     {
         internal const int MaxSupplementalRequestsForToString = 10;
 
-        private object lockObject = new object();
+        private readonly object lockObject = new object();
 
         public CosmosClientSideRequestStatistics()
         {
@@ -110,13 +109,7 @@ namespace Microsoft.Azure.Cosmos
         public void RecordResponse(DocumentServiceRequest request, StoreResult storeResult)
         {
             DateTime responseTime = DateTime.UtcNow;
-
-            StoreResponseStatistics responseStatistics;
-            responseStatistics.RequestResponseTime = responseTime;
-            responseStatistics.StoreResult = storeResult;
-            responseStatistics.RequestOperationType = request.OperationType;
-            responseStatistics.RequestResourceType = request.ResourceType;
-
+            StoreResponseStatistics responseStatistics = new StoreResponseStatistics(responseTime, storeResult, request.ResourceType, request.OperationType);
             Uri locationEndpoint = request.RequestContext.LocationEndpointToRoute;
 
             lock (this.lockObject)
@@ -145,13 +138,7 @@ namespace Microsoft.Azure.Cosmos
         public string RecordAddressResolutionStart(Uri targetEndpoint)
         {
             string identifier = Guid.NewGuid().ToString();
-            AddressResolutionStatistics resolutionStats = new AddressResolutionStatistics
-            {
-                StartTime = DateTime.UtcNow,
-                EndTime = DateTime.MaxValue,
-                TargetEndpoint = targetEndpoint == null ? "<NULL>" : targetEndpoint.ToString()
-            };
-
+            AddressResolutionStatistics resolutionStats = new AddressResolutionStatistics(startTime: DateTime.UtcNow, endTime: DateTime.MaxValue, targetEndpoint: targetEndpoint == null ? "<NULL>" : targetEndpoint.ToString());
             lock (this.lockObject)
             {
                 this.EndpointToAddressResolutionStatistics.Add(identifier, resolutionStats);
@@ -196,7 +183,7 @@ namespace Microsoft.Azure.Cosmos
             return stringBuilder.ToString();
         }
 
-        internal override void WriteJsonObject(JsonWriter jsonWriter)
+        internal void WriteJsonObject(JsonWriter jsonWriter)
         {
             if (jsonWriter == null)
             {
@@ -313,76 +300,56 @@ namespace Microsoft.Azure.Cosmos
 
         public void AppendToBuilder(StringBuilder stringBuilder)
         {
-            if (stringBuilder == null)
-            {
-                throw new ArgumentNullException(nameof(stringBuilder));
-            }
-
-            //need to lock in case of concurrent operations. this should be extremely rare since ToString()
-            //should only be called at the end of request.
-            lock (this.lockObject)
-            {
-                stringBuilder.AppendLine();
-
-                //first trace request start time, as well as total non-head/headfeed requests made.
-                string endTime = this.RequestEndTimeUtc.HasValue ? this.RequestEndTimeUtc.Value.ToString("o", CultureInfo.InvariantCulture) : "Not set";
-                stringBuilder.AppendFormat(
-                   CultureInfo.InvariantCulture,
-                   "RequestStartTime: {0}, RequestEndTime: {1},  Number of regions attempted:{2}",
-                   this.RequestStartTimeUtc.ToString("o", CultureInfo.InvariantCulture),
-                   endTime,
-                   this.RegionsContacted.Count == 0 ? 1 : this.RegionsContacted.Count);
-                stringBuilder.AppendLine();
-
-                //take all responses here - this should be limited in number and each one contains relevant information.
-                foreach (StoreResponseStatistics item in this.ResponseStatisticsList)
-                {
-                    item.AppendToBuilder(stringBuilder);
-                    stringBuilder.AppendLine();
-                }
-
-                //take all responses here - this should be limited in number and each one is important.
-                foreach (AddressResolutionStatistics item in this.EndpointToAddressResolutionStatistics.Values)
-                {
-                    item.AppendToBuilder(stringBuilder);
-                    stringBuilder.AppendLine();
-                }
-
-                //only take last 10 responses from this list - this has potential of having large number of entries. 
-                //since this is for establishing consistency, we can make do with the last responses to paint a meaningful picture.
-                int supplementalResponseStatisticsListCount = this.SupplementalResponseStatisticsList.Count;
-                int initialIndex = Math.Max(supplementalResponseStatisticsListCount - CosmosClientSideRequestStatistics.MaxSupplementalRequestsForToString, 0);
-
-                if (initialIndex != 0)
-                {
-                    stringBuilder.AppendFormat(
-                        CultureInfo.InvariantCulture,
-                        "  -- Displaying only the last {0} head/headfeed requests. Total head/headfeed requests: {1}",
-                        CosmosClientSideRequestStatistics.MaxSupplementalRequestsForToString,
-                        supplementalResponseStatisticsListCount);
-                    stringBuilder.AppendLine();
-                }
-
-                for (int i = initialIndex; i < supplementalResponseStatisticsListCount; i++)
-                {
-                    this.SupplementalResponseStatisticsList[i].AppendToBuilder(stringBuilder);
-                    stringBuilder.AppendLine();
-                }
-            }
+            throw new NotImplementedException();
         }
 
-        internal struct StoreResponseStatistics
+        internal readonly struct StoreResponseStatistics
         {
-            public DateTime RequestResponseTime;
-            public ResourceType RequestResourceType;
-            public OperationType RequestOperationType;
-            public StoreResult StoreResult;
+            public readonly DateTime RequestResponseTime;
+            public readonly StoreResult StoreResult;
+            public readonly ResourceType RequestResourceType;
+            public readonly OperationType RequestOperationType;
+
+            public StoreResponseStatistics(DateTime requestResponseTime, StoreResult storeResult, ResourceType resourceType, OperationType operationType)
+            {
+                this.RequestResponseTime = requestResponseTime;
+                this.StoreResult = storeResult;
+                this.RequestResourceType = resourceType;
+                this.RequestOperationType = operationType;
+            }
 
             public override string ToString()
             {
                 StringBuilder stringBuilder = new StringBuilder();
                 this.AppendToBuilder(stringBuilder);
                 return stringBuilder.ToString();
+            }
+
+            public void AppendJsonToBuilder(JsonWriter jsonWriter)
+            {
+                if (jsonWriter == null)
+                {
+                    throw new ArgumentNullException(nameof(jsonWriter));
+                }
+
+                jsonWriter.WriteStartObject();
+
+                jsonWriter.WritePropertyName("ResponseTime");
+                jsonWriter.WriteValue(this.RequestResponseTime.ToString("o", CultureInfo.InvariantCulture));
+
+                jsonWriter.WritePropertyName("ResourceType");
+                jsonWriter.WriteValue(this.RequestResourceType);
+
+                jsonWriter.WritePropertyName("OperationType");
+                jsonWriter.WriteValue(this.RequestOperationType);
+
+                if (this.StoreResult != null)
+                {
+                    jsonWriter.WritePropertyName("StoreResult");
+                    jsonWriter.WriteValue(this.StoreResult.ToString());
+                }
+
+                jsonWriter.WriteEndObject();
             }
 
             public void AppendToBuilder(StringBuilder stringBuilder)
@@ -430,34 +397,20 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal class AddressResolutionStatistics : CosmosDiagnosticWriter
+        internal sealed class AddressResolutionStatistics
         {
-            public DateTime StartTime { get; set; }
+            public AddressResolutionStatistics(DateTime startTime, DateTime endTime, string targetEndpoint)
+            {
+                this.StartTime = startTime;
+                this.EndTime = endTime;
+                this.TargetEndpoint = targetEndpoint;
+            }
+
+            public DateTime StartTime { get; }
             public DateTime EndTime { get; set; }
-            public string TargetEndpoint { get; set; }
+            public string TargetEndpoint { get; }
 
-            public override string ToString()
-            {
-                StringBuilder stringBuilder = new StringBuilder();
-                this.AppendToBuilder(stringBuilder);
-                return stringBuilder.ToString();
-            }
-
-            public void AppendToBuilder(StringBuilder stringBuilder)
-            {
-                if (stringBuilder == null)
-                {
-                    throw new ArgumentNullException(nameof(stringBuilder));
-                }
-
-                stringBuilder
-                    .Append($"AddressResolution - StartTime: {this.StartTime.ToString("o", CultureInfo.InvariantCulture)}, ")
-                    .Append($"EndTime: {this.EndTime.ToString("o", CultureInfo.InvariantCulture)}, ")
-                    .Append("TargetEndpoint: ")
-                    .Append(this.TargetEndpoint);
-            }
-
-            internal override void WriteJsonObject(JsonWriter jsonWriter)
+            public void WriteJsonObject(JsonWriter jsonWriter)
             {
                 jsonWriter.WriteStartObject();
 

@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
@@ -89,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 foreach (QueryPageDiagnostics queryPage in responseCore.Diagnostics)
                 {
                     diagnostics.Summary.Append(queryPage.DiagnosticsContext.Summary);
-                    diagnostics.AddContextWriter(queryPage);
+                    diagnostics.AddDiagnosticsInternal(queryPage);
                 }
 
                 QueryResponse queryResponse;

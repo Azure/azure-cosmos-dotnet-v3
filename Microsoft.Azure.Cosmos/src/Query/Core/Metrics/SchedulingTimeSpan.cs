@@ -143,15 +143,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
             jsonWriter.WriteStartObject();
             jsonWriter.WritePropertyName("TurnaroundTimeInMs");
-            jsonWriter.WriteValue(this.TurnaroundTime.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            jsonWriter.WriteValue(this.TurnaroundTime.TotalMilliseconds);
             jsonWriter.WritePropertyName("ResponseTimeInMs");
-            jsonWriter.WriteValue(this.ResponseTime.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            jsonWriter.WriteValue(this.ResponseTime.TotalMilliseconds);
             jsonWriter.WritePropertyName("RunTimeInMs");
-            jsonWriter.WriteValue(this.RunTime.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
-            jsonWriter.WritePropertyName("WaitTimeInMs");
-            jsonWriter.WriteValue(this.WaitTime.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+            jsonWriter.WriteValue(this.RunTime.TotalMilliseconds);
+            jsonWriter.WritePropertyName("WaitTime");
+            jsonWriter.WriteValue(this.WaitTime.TotalMilliseconds);
             jsonWriter.WritePropertyName("NumberOfPreemptions");
-            jsonWriter.WriteValue(this.NumPreemptions.ToString(CultureInfo.InvariantCulture));
+            jsonWriter.WriteValue(this.NumPreemptions);
             jsonWriter.WriteEndObject();
         }
 

@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
 
