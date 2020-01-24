@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                     // due to the way the seed works.
                     // But we add the index just incase that property does not hold in the future.
                     UInt128 arrayItemSeed = CosmosElementHasher.ArrayIndexHashSeed + index;
-                    hash = arrayItem.Accept(this, arrayItemSeed);
+                    hash = CosmosElementHasher.GetHash(hash, arrayItem.Accept(this, arrayItemSeed));
                 }
 
                 return hash;
