@@ -5,11 +5,12 @@
 namespace Microsoft.Azure.Cosmos.Diagnostics
 {
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
+    using static Microsoft.Azure.Cosmos.Diagnostics.BackendMetricsExtractor;
 
     /// <summary>
     /// Extracts the aggregated <see cref="BackendMetrics"/> from a <see cref="CosmosDiagnostics"/>.
     /// </summary>
-    internal sealed class BackendMetricsExtractor : CosmosDiagnosticsInternalVisitor<(bool, BackendMetrics)>
+    internal sealed class BackendMetricsExtractor : CosmosDiagnosticsInternalVisitor<(ParseFailureReason, BackendMetrics)>
     {
         public static readonly BackendMetricsExtractor Singleton = new BackendMetricsExtractor();
 
@@ -18,44 +19,71 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             // Private default constructor.
         }
 
-        public override (bool, BackendMetrics) Visit(PointOperationStatistics pointOperationStatistics)
+        public override (ParseFailureReason, BackendMetrics) Visit(PointOperationStatistics pointOperationStatistics)
         {
-            return (false, default);
+            return (ParseFailureReason.MetricsNotFound, default);
         }
 
-        public override (bool, BackendMetrics) Visit(CosmosDiagnosticsContext cosmosDiagnosticsContext)
+        public override (ParseFailureReason, BackendMetrics) Visit(CosmosDiagnosticsContext cosmosDiagnosticsContext)
         {
             return cosmosDiagnosticsContext.ContextList.Accept(this);
         }
 
-        public override (bool, BackendMetrics) Visit(CosmosDiagnosticScope cosmosDiagnosticScope)
+        public override (ParseFailureReason, BackendMetrics) Visit(CosmosDiagnosticScope cosmosDiagnosticScope)
         {
-            return (false, default);
+            return (ParseFailureReason.MetricsNotFound, default);
         }
 
-        public override (bool, BackendMetrics) Visit(CosmosDiagnosticsContextList cosmosDiagnosticsContextList)
+        public override (ParseFailureReason, BackendMetrics) Visit(CosmosDiagnosticsContextList cosmosDiagnosticsContextList)
         {
             BackendMetrics.Accumulator accumulator = default;
+            bool metricsFound = false;
             foreach (CosmosDiagnosticsInternal cosmosDiagnostics in cosmosDiagnosticsContextList)
             {
-                (bool gotBackendMetric, BackendMetrics backendMetrics) = cosmosDiagnostics.Accept(this);
-                if (gotBackendMetric)
+                (ParseFailureReason parseFailureReason, BackendMetrics backendMetrics) = cosmosDiagnostics.Accept(this);
+                switch (parseFailureReason)
                 {
-                    accumulator = accumulator.Accumulate(backendMetrics);
+                    case ParseFailureReason.None:
+                        metricsFound = true;
+                        accumulator = accumulator.Accumulate(backendMetrics);
+                        break;
+
+                    case ParseFailureReason.MalformedString:
+                        return (parseFailureReason, default);
+
+                    default:
+                        break;
                 }
             }
 
-            return (true, BackendMetrics.Accumulator.ToBackendMetrics(accumulator));
+            (ParseFailureReason parseFailureReason, BackendMetrics backendMetrics) failureReasonAndMetrics;
+            if (metricsFound)
+            {
+                failureReasonAndMetrics = (ParseFailureReason.None, BackendMetrics.Accumulator.ToBackendMetrics(accumulator));
+            }
+            else
+            {
+                failureReasonAndMetrics = (ParseFailureReason.MetricsNotFound, default);
+            }
+
+            return failureReasonAndMetrics;
         }
 
-        public override (bool, BackendMetrics) Visit(QueryPageDiagnostics queryPageDiagnostics)
+        public override (ParseFailureReason, BackendMetrics) Visit(QueryPageDiagnostics queryPageDiagnostics)
         {
             if (!BackendMetrics.TryParseFromDelimitedString(queryPageDiagnostics.QueryMetricText, out BackendMetrics backendMetrics))
             {
-                return (false, default);
+                return (ParseFailureReason.MalformedString, default);
             }
 
-            return (true, backendMetrics);
+            return (ParseFailureReason.None, backendMetrics);
+        }
+
+        public enum ParseFailureReason
+        {
+            None,
+            MetricsNotFound,
+            MalformedString
         }
     }
 }

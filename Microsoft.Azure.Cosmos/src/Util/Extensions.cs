@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
                 responseSessionToken: responseMessage.Headers.Session,
                 clientSideRequestStatistics: cosmosClientSideRequestStatistics);
 
-            requestMessage.DiagnosticsContext.AddContextWriter(pointOperationStatistics);
+            requestMessage.DiagnosticsContext.AddDiagnosticsInternal(pointOperationStatistics);
             return responseMessage;
         }
 
@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos
                 responseSessionToken: responseMessage.Headers.Session,
                 clientSideRequestStatistics: documentClientException.RequestStatistics as CosmosClientSideRequestStatistics);
 
-            responseMessage.DiagnosticsContext.AddContextWriter(pointOperationStatistics);
+            responseMessage.DiagnosticsContext.AddDiagnosticsInternal(pointOperationStatistics);
             if (requestMessage != null)
             {
                 requestMessage.Properties.Remove(nameof(DocumentClientException));

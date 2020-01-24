@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Content = responseContent,
             };
 
-            responseMessage.DiagnosticsContext.AddContextWriter(diagnostics);
+            responseMessage.DiagnosticsContext.AddDiagnosticsInternal(diagnostics);
 
             TransactionalBatchResponse batchresponse = await TransactionalBatchResponse.FromResponseMessageAsync(
                 responseMessage,

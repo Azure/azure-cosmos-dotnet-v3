@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 foreach (QueryPageDiagnostics queryPage in responseCore.Diagnostics)
                 {
                     diagnostics.Summary.Append(queryPage.DiagnosticsContext.Summary);
-                    diagnostics.AddContextWriter(queryPage);
+                    diagnostics.AddDiagnosticsInternal(queryPage);
                 }
 
                 QueryResponse queryResponse;

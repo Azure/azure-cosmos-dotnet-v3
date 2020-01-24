@@ -21,9 +21,14 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
         {
         }
 
-        public void AddWriter(CosmosDiagnosticsInternal diagnosticWriter)
+        public void AddDiagnostics(CosmosDiagnosticsInternal cosmosDiagnosticsInternal)
         {
-            this.contextList.Add(diagnosticWriter);
+            if (cosmosDiagnosticsInternal == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosDiagnosticsInternal));
+            }
+
+            this.contextList.Add(cosmosDiagnosticsInternal);
         }
 
         public void Append(CosmosDiagnosticsContextList newContext)

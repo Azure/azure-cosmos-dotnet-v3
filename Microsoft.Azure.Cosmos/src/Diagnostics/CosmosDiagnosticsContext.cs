@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos
                 this.isOverallScopeSet = true;
             }
 
-            this.ContextList.AddWriter(scope);
+            this.ContextList.AddDiagnostics(scope);
             return scope;
         }
 
@@ -57,13 +57,18 @@ namespace Microsoft.Azure.Cosmos
         {
             CosmosDiagnosticScope scope = new CosmosDiagnosticScope(name);
 
-            this.ContextList.AddWriter(scope);
+            this.ContextList.AddDiagnostics(scope);
             return scope;
         }
 
-        internal void AddContextWriter(CosmosDiagnosticsInternal diagnosticWriter)
+        internal void AddDiagnosticsInternal(CosmosDiagnosticsInternal diagnosticsInternal)
         {
-            this.ContextList.AddWriter(diagnosticWriter);
+            if (diagnosticsInternal == null)
+            {
+                throw new ArgumentNullException(nameof(diagnosticsInternal));
+            }
+
+            this.ContextList.AddDiagnostics(diagnosticsInternal);
         }
 
         internal void Append(CosmosDiagnosticsContext newContext)
