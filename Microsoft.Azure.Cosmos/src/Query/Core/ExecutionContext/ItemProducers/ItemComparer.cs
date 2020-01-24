@@ -306,7 +306,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
                 throw new NotImplementedException();
             }
 
-            public override TResult Accept<TInput, TResult>(ICosmosElementVisitor<TInput, TResult> cosmosElementVisitor, TInput input)
+            public override TResult Accept<TArg, TResult>(ICosmosElementVisitor<TArg, TResult> cosmosElementVisitor, TArg input)
             {
                 throw new NotImplementedException();
             }
@@ -339,7 +339,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
                 throw new NotImplementedException();
             }
 
-            public override TResult Accept<TInput, TResult>(ICosmosElementVisitor<TInput, TResult> cosmosElementVisitor, TInput input)
+            public override TResult Accept<TArg, TResult>(ICosmosElementVisitor<TArg, TResult> cosmosElementVisitor, TArg input)
             {
                 throw new NotImplementedException();
             }

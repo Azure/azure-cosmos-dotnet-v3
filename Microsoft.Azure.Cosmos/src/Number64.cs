@@ -23,6 +23,11 @@ namespace Microsoft.Azure.Cosmos
     struct Number64 : IComparable<Number64>, IEquatable<Number64>
     {
         /// <summary>
+        /// Size of the Number64 when compared as a DoubleEx
+        /// </summary>
+        public const int SizeOf = sizeof(double) + sizeof(ushort);
+
+        /// <summary>
         /// Maximum Number64.
         /// </summary>
         public static readonly Number64 MaxValue = new Number64(double.MaxValue);
@@ -31,11 +36,6 @@ namespace Microsoft.Azure.Cosmos
         /// Maximum Number64.
         /// </summary>
         public static readonly Number64 MinValue = new Number64(double.MinValue);
-
-        /// <summary>
-        /// Size of the Number64 when compared as a DoubleEx
-        /// </summary>
-        public static readonly int SizeOf = sizeof(double) + sizeof(ushort);
 
         /// <summary>
         /// The double if the value is a double.

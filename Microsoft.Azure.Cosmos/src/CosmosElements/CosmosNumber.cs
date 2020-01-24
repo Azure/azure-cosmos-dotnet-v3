@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public abstract void Accept(ICosmosNumberVisitor cosmosNumberVisitor);
 
-        public abstract TOutput Accept<TInput, TOutput>(ICosmosNumberVisitor<TInput, TOutput> cosmosNumberVisitor, TInput input);
+        public abstract TOutput Accept<TArg, TOutput>(ICosmosNumberVisitor<TArg, TOutput> cosmosNumberVisitor, TArg input);
 
         public override void Accept(ICosmosElementVisitor cosmosElementVisitor)
         {
@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return cosmosElementVisitor.Visit(this);
         }
 
-        public override TResult Accept<TInput, TResult>(ICosmosElementVisitor<TInput, TResult> cosmosElementVisitor, TInput input)
+        public override TResult Accept<TArg, TResult>(ICosmosElementVisitor<TArg, TResult> cosmosElementVisitor, TArg input)
         {
             if (cosmosElementVisitor == null)
             {

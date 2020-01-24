@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public abstract TResult Accept<TResult>(ICosmosElementVisitor<TResult> cosmosElementVisitor);
 
-        public abstract TResult Accept<TInput, TResult>(ICosmosElementVisitor<TInput, TResult> cosmosElementVisitor, TInput input);
+        public abstract TResult Accept<TArg, TResult>(ICosmosElementVisitor<TArg, TResult> cosmosElementVisitor, TArg input);
 
         public static CosmosElement CreateFromBuffer(ReadOnlyMemory<byte> buffer)
         {

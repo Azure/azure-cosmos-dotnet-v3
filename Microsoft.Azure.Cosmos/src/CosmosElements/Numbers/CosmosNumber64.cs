@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
             cosmosNumberVisitor.Visit(this);
         }
 
-        public override TOutput Accept<TInput, TOutput>(ICosmosNumberVisitor<TInput, TOutput> cosmosNumberVisitor, TInput input)
+        public override TOutput Accept<TArg, TOutput>(ICosmosNumberVisitor<TArg, TOutput> cosmosNumberVisitor, TArg input)
         {
             if (cosmosNumberVisitor == null)
             {
