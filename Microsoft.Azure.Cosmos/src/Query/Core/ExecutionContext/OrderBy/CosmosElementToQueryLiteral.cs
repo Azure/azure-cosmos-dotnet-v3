@@ -6,10 +6,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
 {
     using System;
     using System.Collections.Generic;
-    using System.Runtime.InteropServices;
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
+    using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
 
     internal sealed class CosmosElementToQueryLiteral : ICosmosElementVisitor
@@ -43,7 +43,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
 
         public void Visit(CosmosBinary cosmosBinary)
         {
-            this.stringBuilder.AppendFormat("C_Binary(\"0x{0}\")", HexStringBuilder.ByteArrayToHexViaLookup32Unsafe(cosmosBinary.Value.Span));
+            this.stringBuilder.AppendFormat(
+                "C_Binary(\"0x{0}\")",
+                PartitionKeyInternal.HexConvert.ToHex(cosmosBinary.Value.ToArray(), start: 0, length: (int)cosmosBinary.Value.Length));
         }
 
         public void Visit(CosmosBoolean cosmosBoolean)
@@ -136,52 +138,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
             public void Visit(CosmosUInt32 cosmosUInt32)
             {
                 this.stringBuilder.AppendFormat("C_UInt32({0})", cosmosUInt32.GetValue());
-            }
-        }
-
-        /// <summary>
-        /// Stole this from stackoverflow:
-        /// https://stackoverflow.com/questions/311165/how-do-you-convert-a-byte-array-to-a-hexadecimal-string-and-vice-versa
-        /// https://stackoverflow.com/questions/311165/how-do-you-convert-a-byte-array-to-a-hexadecimal-string-and-vice-versa/24343727#24343727
-        /// </summary>
-        private unsafe static class HexStringBuilder
-        {
-            private const int MaxStackAllocLength = 4096;
-
-            private static readonly uint[] lookup32Unsafe = CreateLookup32Unsafe();
-            private static readonly uint* lookup32UnsafeP = (uint*)GCHandle.Alloc(lookup32Unsafe, GCHandleType.Pinned).AddrOfPinnedObject();
-
-            private static uint[] CreateLookup32Unsafe()
-            {
-                uint[] result = new uint[256];
-                for (int i = 0; i < 256; i++)
-                {
-                    string s = i.ToString("X2");
-                    if (BitConverter.IsLittleEndian)
-                        result[i] = ((uint)s[0]) + ((uint)s[1] << 16);
-                    else
-                        result[i] = ((uint)s[1]) + ((uint)s[0] << 16);
-                }
-
-                return result;
-            }
-
-            public static string ByteArrayToHexViaLookup32Unsafe(ReadOnlySpan<byte> bytes)
-            {
-                uint* lookupP = lookup32UnsafeP;
-                int lengthRequired = bytes.Length * 2;
-                Span<char> result = lengthRequired < MaxStackAllocLength ? stackalloc char[lengthRequired] : new char[lengthRequired];
-                fixed (byte* bytesP = bytes)
-                fixed (char* resultP = result)
-                {
-                    uint* resultP2 = (uint*)resultP;
-                    for (int i = 0; i < bytes.Length; i++)
-                    {
-                        resultP2[i] = lookupP[bytesP[i]];
-                    }
-
-                    return new string(resultP, startIndex: 0, length: result.Length);
-                }
             }
         }
     }
