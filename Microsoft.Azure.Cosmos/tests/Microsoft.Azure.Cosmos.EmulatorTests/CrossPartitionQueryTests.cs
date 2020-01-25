@@ -4684,7 +4684,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 container,
                 query,
                 queryRequestOptions,
-                QueryDrainingMode.ContinuationToken | QueryDrainingMode.HoldState | QueryDrainingMode.TryGetContinuationTokens);
+                QueryDrainingMode.ContinuationToken | QueryDrainingMode.HoldState | QueryDrainingMode.TryGetContinuationTokens | QueryDrainingMode.SerializeState);
         }
 
         [Flags]
@@ -4694,6 +4694,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             HoldState = 1,
             ContinuationToken = 2,
             TryGetContinuationTokens = 4,
+            SerializeState = 8,
         }
 
         private static async Task<List<T>> RunQueryCombinations<T>(
@@ -4737,6 +4738,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     queryRequestOptions);
 
                 queryExecutionResults[QueryDrainingMode.TryGetContinuationTokens] = queryResultsWithTryGetContinuationToken;
+            }
+
+            if (queryDrainingMode.HasFlag(QueryDrainingMode.SerializeState))
+            {
+                List<T> queryResultsWithSerializeState = await QueryWithSerializeState<T>(
+                    container,
+                    query,
+                    queryRequestOptions);
+
+                queryExecutionResults[QueryDrainingMode.SerializeState] = queryResultsWithSerializeState;
             }
 
             foreach (QueryDrainingMode queryDrainingMode1 in queryExecutionResults.Keys)
