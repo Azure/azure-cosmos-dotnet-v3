@@ -43,14 +43,10 @@ namespace Microsoft.Azure.Cosmos.Json
             this.SkipValidation = skipValidation;
         }
 
-        /// <summary>
-        /// Gets the SerializationFormat of the JsonWriter.
-        /// </summary>
+        /// <inheritdoc />
         public abstract JsonSerializationFormat SerializationFormat { get; }
 
-        /// <summary>
-        /// Gets the current length of the internal buffer.
-        /// </summary>
+        /// <inheritdoc />
         public abstract long CurrentLength { get; }
 
         /// <summary>
@@ -94,6 +90,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <inheritdoc />
         public abstract void WriteFieldName(string fieldName);
 
+        /// <inheritdoc />
         public abstract void WriteFieldName(ReadOnlySpan<byte> utf8FieldName);
 
         /// <inheritdoc />

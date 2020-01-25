@@ -7,9 +7,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.Buffers;
     using System.Buffers.Text;
     using System.Globalization;
-    using System.Linq;
     using System.Text;
-    using Microsoft.Azure.Cosmos.Query.Core;
 
     /// <summary>
     /// Partial class for the JsonWriter that has a private JsonTextWriter below.
@@ -96,9 +94,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.jsonTextMemoryWriter = new JsonTextMemoryWriter();
             }
 
-            /// <summary>
-            /// Gets the SerializationFormat of the JsonWriter.
-            /// </summary>
+            /// <inheritdoc />
             public override JsonSerializationFormat SerializationFormat
             {
                 get
@@ -107,9 +103,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
             }
 
-            /// <summary>
-            /// Gets the current length of the internal buffer.
-            /// </summary>
+            /// <inheritdoc />
             public override long CurrentLength
             {
                 get
@@ -118,9 +112,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
             }
 
-            /// <summary>
-            /// Writes the object start symbol to internal buffer.
-            /// </summary>
+            /// <inheritdoc />
             public override void WriteObjectStart()
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.BeginObject);
@@ -129,9 +121,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.firstValue = true;
             }
 
-            /// <summary>
-            /// Writes the object end symbol to the internal buffer.
-            /// </summary>
+            /// <inheritdoc />
             public override void WriteObjectEnd()
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.EndObject);
@@ -141,9 +131,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.firstValue = false;
             }
 
-            /// <summary>
-            /// Writes the array start symbol to the internal buffer.
-            /// </summary>
+            /// <inheritdoc />
             public override void WriteArrayStart()
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.BeginArray);
@@ -152,9 +140,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.firstValue = true;
             }
 
-            /// <summary>
-            /// Writes the array end symbol to the internal buffer.
-            /// </summary>
+            /// <inheritdoc />
             public override void WriteArrayEnd()
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.EndArray);
@@ -164,10 +150,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.firstValue = false;
             }
 
-            /// <summary>
-            /// Writes a field name to the the internal buffer.
-            /// </summary>
-            /// <param name="fieldName">The name of the field to write.</param>
+            /// <inheritdoc />
             public override unsafe void WriteFieldName(string fieldName)
             {
                 int utf8Length = Encoding.UTF8.GetByteCount(fieldName);
@@ -177,6 +160,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.WriteFieldName(utf8FieldName);
             }
 
+            /// <inheritdoc />
             public override void WriteFieldName(ReadOnlySpan<byte> utf8FieldName)
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.FieldName);
@@ -192,10 +176,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.jsonTextMemoryWriter.Write(ValueSeperatorToken);
             }
 
-            /// <summary>
-            /// Writes a string to the internal buffer.
-            /// </summary>
-            /// <param name="value">The value of the string to write.</param>
+            /// <inheritdoc />
             public override void WriteStringValue(string value)
             {
                 int utf8Length = Encoding.UTF8.GetByteCount(value);
@@ -205,6 +186,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.WriteStringValue(utf8String);
             }
 
+            /// <inheritdoc />
             public override void WriteStringValue(ReadOnlySpan<byte> utf8StringValue)
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.String);
@@ -215,10 +197,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.jsonTextMemoryWriter.Write(StringEndToken);
             }
 
-            /// <summary>
-            /// Writes a number to the internal buffer.
-            /// </summary>
-            /// <param name="value">The value of the number to write.</param>
+            /// <inheritdoc />
             public override void WriteNumberValue(Number64 value)
             {
                 if (value.IsInteger)
@@ -231,10 +210,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
             }
 
-            /// <summary>
-            /// Writes a boolean to the internal buffer.
-            /// </summary>
-            /// <param name="value">The value of the boolean to write.</param>
+            /// <inheritdoc />
             public override void WriteBoolValue(bool value)
             {
                 this.JsonObjectState.RegisterToken(value ? JsonTokenType.True : JsonTokenType.False);
@@ -250,9 +226,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
             }
 
-            /// <summary>
-            /// Writes a null to the internal buffer.
-            /// </summary>
+            /// <inheritdoc />
             public override void WriteNullValue()
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.Null);
@@ -260,6 +234,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.jsonTextMemoryWriter.Write(NullString.Span);
             }
 
+            /// <inheritdoc />
             public override void WriteInt8Value(sbyte value)
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.Int8);
@@ -268,6 +243,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.jsonTextMemoryWriter.Write(value);
             }
 
+            /// <inheritdoc />
             public override void WriteInt16Value(short value)
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.Int16);
@@ -276,6 +252,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.jsonTextMemoryWriter.Write(value);
             }
 
+            /// <inheritdoc />
             public override void WriteInt32Value(int value)
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.Int32);
@@ -284,6 +261,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.jsonTextMemoryWriter.Write(value);
             }
 
+            /// <inheritdoc />
             public override void WriteInt64Value(long value)
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.Int64);
@@ -293,6 +271,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.jsonTextMemoryWriter.Write(value);
             }
 
+            /// <inheritdoc />
             public override void WriteFloat32Value(float value)
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.Float32);
@@ -301,6 +280,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.jsonTextMemoryWriter.Write(value);
             }
 
+            /// <inheritdoc />
             public override void WriteFloat64Value(double value)
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.Float64);
@@ -309,6 +289,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.jsonTextMemoryWriter.Write(value);
             }
 
+            /// <inheritdoc />
             public override void WriteUInt32Value(uint value)
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.UInt32);
@@ -318,6 +299,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.jsonTextMemoryWriter.Write(value);
             }
 
+            /// <inheritdoc />
             public override void WriteGuidValue(Guid value)
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.Guid);
@@ -326,6 +308,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.jsonTextMemoryWriter.Write(value);
             }
 
+            /// <inheritdoc />
             public override void WriteBinaryValue(ReadOnlySpan<byte> value)
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.Binary);
@@ -334,10 +317,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.jsonTextMemoryWriter.WriteBinaryAsBase64(value);
             }
 
-            /// <summary>
-            /// Gets the result of the JsonWriter.
-            /// </summary>
-            /// <returns>The result of the JsonWriter as an array of bytes.</returns>
+            /// <inheritdoc />
             public override ReadOnlyMemory<byte> GetResult()
             {
                 return this.jsonTextMemoryWriter.Buffer.Slice(
@@ -345,11 +325,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     this.jsonTextMemoryWriter.Position);
             }
 
-            /// <summary>
-            /// Writes a raw json token to the internal buffer.
-            /// </summary>
-            /// <param name="jsonTokenType">The JsonTokenType of the rawJsonToken</param>
-            /// <param name="rawJsonToken">The raw json token.</param>
+            /// <inheritdoc />
             protected override void WriteRawJsonToken(
                 JsonTokenType jsonTokenType,
                 ReadOnlySpan<byte> rawJsonToken)
@@ -359,10 +335,6 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.jsonTextMemoryWriter.Write(rawJsonToken);
             }
 
-            /// <summary>
-            /// Writes an integer to the internal buffer.
-            /// </summary>
-            /// <param name="value">The value of the integer to write.</param>
             private void WriteIntegerInternal(long value)
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.Number);
@@ -370,10 +342,6 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.jsonTextMemoryWriter.Write(value);
             }
 
-            /// <summary>
-            /// Writes an integer to the internal buffer.
-            /// </summary>
-            /// <param name="value">The value of the integer to write.</param>
             private void WriteDoubleInternal(double value)
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.Number);
@@ -402,9 +370,6 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
             }
 
-            /// <summary>
-            /// Will insert a member separator token if one is needed.
-            /// </summary>
             private void PrefixMemberSeparator()
             {
                 if (!this.firstValue)

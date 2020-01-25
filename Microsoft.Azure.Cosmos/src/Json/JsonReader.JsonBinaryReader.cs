@@ -77,9 +77,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.jsonStringDictionary = jsonStringDictionary;
             }
 
-            /// <summary>
-            /// Gets the <see cref="JsonSerializationFormat"/> for the JsonReader
-            /// </summary>
+            /// <inheritdoc />
             public override JsonSerializationFormat SerializationFormat
             {
                 get
@@ -88,10 +86,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
             }
 
-            /// <summary>
-            /// Advances the JsonReader by one token.
-            /// </summary>
-            /// <returns><code>true</code> if the JsonReader successfully advanced to the next token; <code>false</code> if the JsonReader has passed the end of the JSON.</returns>
+            /// <inheritdoc />
             public override bool Read()
             {
                 JsonTokenType jsonTokenType;
@@ -183,10 +178,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 return true;
             }
 
-            /// <summary>
-            /// Gets the next JSON token from the JsonReader as a double.
-            /// </summary>
-            /// <returns>The next JSON token from the JsonReader as a double.</returns>
+            /// <inheritdoc />
             public override Number64 GetNumberValue()
             {
                 if (this.JsonObjectState.CurrentTokenType != JsonTokenType.Number)
@@ -198,10 +190,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition).Span);
             }
 
-            /// <summary>
-            /// Gets the next JSON token from the JsonReader as a string.
-            /// </summary>
-            /// <returns>The next JSON token from the JsonReader as a string.</returns>
+            /// <inheritdoc />
             public override string GetStringValue()
             {
                 if (!(
@@ -216,6 +205,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     this.jsonStringDictionary);
             }
 
+            /// <inheritdoc />
             public override bool TryGetBufferedUtf8StringValue(out ReadOnlyMemory<byte> bufferedUtf8StringValue)
             {
                 if (!(
@@ -231,10 +221,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     out bufferedUtf8StringValue);
             }
 
-            /// <summary>
-            /// Gets next JSON token from the JsonReader as a raw series of bytes that is buffered.
-            /// </summary>
-            /// <returns>The next JSON token from the JsonReader as a raw series of bytes that is buffered.</returns>
+            /// <inheritdoc />
             public override ReadOnlyMemory<byte> GetBufferedRawJsonToken()
             {
                 if (!JsonBinaryEncoding.TryGetValueLength(
@@ -247,6 +234,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 return this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition, this.currentTokenPosition + length);
             }
 
+            /// <inheritdoc />
             public override sbyte GetInt8Value()
             {
                 if (this.JsonObjectState.CurrentTokenType != JsonTokenType.Int8)
@@ -258,6 +246,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition).Span);
             }
 
+            /// <inheritdoc />
             public override short GetInt16Value()
             {
                 if (this.JsonObjectState.CurrentTokenType != JsonTokenType.Int16)
@@ -269,6 +258,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition).Span);
             }
 
+            /// <inheritdoc />
             public override int GetInt32Value()
             {
                 if (this.JsonObjectState.CurrentTokenType != JsonTokenType.Int32)
@@ -280,6 +270,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition).Span);
             }
 
+            /// <inheritdoc />
             public override long GetInt64Value()
             {
                 if (this.JsonObjectState.CurrentTokenType != JsonTokenType.Int64)
@@ -291,6 +282,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition).Span);
             }
 
+            /// <inheritdoc />
             public override uint GetUInt32Value()
             {
                 if (this.JsonObjectState.CurrentTokenType != JsonTokenType.UInt32)
@@ -302,6 +294,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition).Span);
             }
 
+            /// <inheritdoc />
             public override float GetFloat32Value()
             {
                 if (this.JsonObjectState.CurrentTokenType != JsonTokenType.Float32)
@@ -313,6 +306,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition).Span);
             }
 
+            /// <inheritdoc />
             public override double GetFloat64Value()
             {
                 if (this.JsonObjectState.CurrentTokenType != JsonTokenType.Float64)
@@ -324,6 +318,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition).Span);
             }
 
+            /// <inheritdoc />
             public override Guid GetGuidValue()
             {
                 if (this.JsonObjectState.CurrentTokenType != JsonTokenType.Guid)
@@ -335,6 +330,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition).Span);
             }
 
+            /// <inheritdoc />
             public override ReadOnlyMemory<byte> GetBinaryValue()
             {
                 if (this.JsonObjectState.CurrentTokenType != JsonTokenType.Binary)
