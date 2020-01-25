@@ -17,10 +17,10 @@ namespace Microsoft.Azure.Cosmos.Sql
         public abstract TResult Visit(SqlSelectValueSpec selectSpec);
     }
 
-    internal abstract class SqlSelectSpecVisitor<TInput, TOutput>
+    internal abstract class SqlSelectSpecVisitor<TArg, TOutput>
     {
-        public abstract TOutput Visit(SqlSelectListSpec selectSpec, TInput input);
-        public abstract TOutput Visit(SqlSelectStarSpec selectSpec, TInput input);
-        public abstract TOutput Visit(SqlSelectValueSpec selectSpec, TInput input);
+        public abstract TOutput Visit(SqlSelectListSpec selectSpec, TArg input);
+        public abstract TOutput Visit(SqlSelectStarSpec selectSpec, TArg input);
+        public abstract TOutput Visit(SqlSelectValueSpec selectSpec, TArg input);
     }
 }

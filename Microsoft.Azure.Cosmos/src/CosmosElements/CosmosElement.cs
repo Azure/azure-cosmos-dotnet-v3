@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 {
     using System;
     using System.Text;
+    using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Json;
 
     [Newtonsoft.Json.JsonConverter(typeof(CosmosElementJsonConverter))]
@@ -22,10 +23,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             this.Type = cosmosItemType;
         }
 
-        public CosmosElementType Type
-        {
-            get;
-        }
+        public CosmosElementType Type { get; }
 
         public override string ToString()
         {
@@ -60,6 +58,12 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             cosmosElement = typedCosmosElement;
             return true;
         }
+
+        public abstract void Accept(ICosmosElementVisitor cosmosElementVisitor);
+
+        public abstract TResult Accept<TResult>(ICosmosElementVisitor<TResult> cosmosElementVisitor);
+
+        public abstract TResult Accept<TArg, TResult>(ICosmosElementVisitor<TArg, TResult> cosmosElementVisitor, TArg input);
 
         public static CosmosElement CreateFromBuffer(ReadOnlyMemory<byte> buffer)
         {

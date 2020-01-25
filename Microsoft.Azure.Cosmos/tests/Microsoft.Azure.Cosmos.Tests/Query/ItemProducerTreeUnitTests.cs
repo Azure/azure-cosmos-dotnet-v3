@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers;
@@ -180,24 +181,24 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
 
             CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContext();
-            diagnosticsContext.AddContextWriter(new PointOperationStatistics(
-                        Guid.NewGuid().ToString(),
-                        System.Net.HttpStatusCode.OK,
-                        subStatusCode: SubStatusCodes.Unknown,
-                        requestCharge: 42,
-                        errorMessage: null,
-                        method: HttpMethod.Post,
-                        requestUri: new Uri("http://localhost.com"),
-                        requestSessionToken: null,
-                        responseSessionToken: null,
-                        clientSideRequestStatistics: null));
+            diagnosticsContext.AddDiagnosticsInternal(new PointOperationStatistics(
+                Guid.NewGuid().ToString(),
+                System.Net.HttpStatusCode.OK,
+                subStatusCode: SubStatusCodes.Unknown,
+                requestCharge: 42,
+                errorMessage: null,
+                method: HttpMethod.Post,
+                requestUri: new Uri("http://localhost.com"),
+                requestSessionToken: null,
+                responseSessionToken: null,
+                clientSideRequestStatistics: null));
 
             QueryPageDiagnostics diagnostics = new QueryPageDiagnostics(
-                   partitionKeyRangeId: "0",
-                   queryMetricText: "SomeRandomQueryMetricText",
-                   indexUtilizationText: null,
-                   diagnosticsContext: diagnosticsContext,
-                   schedulingStopwatch: new SchedulingStopwatch());
+                partitionKeyRangeId: "0",
+                queryMetricText: "SomeRandomQueryMetricText",
+                indexUtilizationText: null,
+                diagnosticsContext: diagnosticsContext,
+                schedulingStopwatch: new SchedulingStopwatch());
             IReadOnlyCollection<QueryPageDiagnostics> pageDiagnostics = new List<QueryPageDiagnostics>() { diagnostics };
 
             mockQueryContext.Setup(x => x.ContainerResourceId).Returns("MockCollectionRid");
@@ -236,24 +237,24 @@ namespace Microsoft.Azure.Cosmos.Tests
             await itemProducerTree.BufferMoreDocumentsAsync(cancellationTokenSource.Token);
 
             CosmosDiagnosticsContext diagnosticsContextInternalServerError = new CosmosDiagnosticsContext();
-            diagnosticsContextInternalServerError.AddContextWriter(new PointOperationStatistics(
-                        Guid.NewGuid().ToString(),
-                        System.Net.HttpStatusCode.InternalServerError,
-                        subStatusCode: SubStatusCodes.Unknown,
-                        requestCharge: 10.2,
-                        errorMessage: "Error message",
-                        method: HttpMethod.Post,
-                        requestUri: new Uri("http://localhost.com"),
-                        requestSessionToken: null,
-                        responseSessionToken: null,
-                        clientSideRequestStatistics: null));
+            diagnosticsContextInternalServerError.AddDiagnosticsInternal(new PointOperationStatistics(
+                Guid.NewGuid().ToString(),
+                System.Net.HttpStatusCode.InternalServerError,
+                subStatusCode: SubStatusCodes.Unknown,
+                requestCharge: 10.2,
+                errorMessage: "Error message",
+                method: HttpMethod.Post,
+                requestUri: new Uri("http://localhost.com"),
+                requestSessionToken: null,
+                responseSessionToken: null,
+                clientSideRequestStatistics: null));
 
             diagnostics = new QueryPageDiagnostics(
-                   partitionKeyRangeId: "0",
-                   queryMetricText: null,
-                   indexUtilizationText: null,
-                   diagnosticsContext: diagnosticsContextInternalServerError,
-                   schedulingStopwatch: new SchedulingStopwatch());
+                partitionKeyRangeId: "0",
+                queryMetricText: null,
+                indexUtilizationText: null,
+                diagnosticsContext: diagnosticsContextInternalServerError,
+                schedulingStopwatch: new SchedulingStopwatch());
             pageDiagnostics = new List<QueryPageDiagnostics>() { diagnostics };
 
             // Buffer a failure
