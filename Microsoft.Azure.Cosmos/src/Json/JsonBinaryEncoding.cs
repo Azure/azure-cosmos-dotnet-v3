@@ -964,7 +964,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
             const int MinStringLength = 2;
             const int MaxStringLength = 128;
-            if ((utf8String.Length <= MinStringLength) || (utf8String.Length >= MaxStringLength))
+            if ((utf8String.Length < MinStringLength) || (utf8String.Length > MaxStringLength))
             {
                 multiByteTypeMarker = default;
                 return false;

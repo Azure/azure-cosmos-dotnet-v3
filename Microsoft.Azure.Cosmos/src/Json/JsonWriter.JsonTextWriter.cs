@@ -199,10 +199,10 @@ namespace Microsoft.Azure.Cosmos.Json
             public override void WriteStringValue(string value)
             {
                 int utf8Length = Encoding.UTF8.GetByteCount(value);
-                Span<byte> utf8String = utf8Length < JsonTextWriter.MaxStackAlloc ? stackalloc byte[JsonTextWriter.MaxStackAlloc] : new byte[JsonTextWriter.MaxStackAlloc];
+                Span<byte> utf8String = utf8Length < JsonTextWriter.MaxStackAlloc ? stackalloc byte[utf8Length] : new byte[utf8Length];
                 Encoding.UTF8.GetBytes(value, utf8String);
 
-                this.WriteFieldName(utf8String);
+                this.WriteStringValue(utf8String);
             }
 
             public override void WriteStringValue(ReadOnlySpan<byte> utf8StringValue)
@@ -418,95 +418,82 @@ namespace Microsoft.Azure.Cosmos.Json
             private void WriteEscapedString(ReadOnlySpan<byte> value)
             {
                 // Escape the string if needed
-                ReadOnlySpan<byte> escapedString;
                 if (!JsonTextWriter.Utf8StringNeedsEscaping(value))
                 {
                     // No escaping needed;
-                    escapedString = value;
+                    this.jsonTextMemoryWriter.Write(value);
+                    return;
                 }
-                else
+                while (!value.IsEmpty)
                 {
-                    int readOffset = 0;
-                    while (readOffset != value.Length)
+                    if (!JsonTextWriter.RequiresEscapeSequence(value[0]))
                     {
-                        if (!JsonTextWriter.RequiresEscapeSequence(value[readOffset]))
+                        // Just write the character as is
+                        this.jsonTextMemoryWriter.Write(value[0]);
+                        value = value.Slice(start: 1);
+                    }
+                    else
+                    {
+                        Span<char> charsToEscape = stackalloc char[1];
+                        Encoding.UTF8.GetChars(src: value, dest: charsToEscape);
+                        char characterToEscape = charsToEscape[0];
+                        value = value.Slice(start: Encoding.UTF8.GetByteCount(charsToEscape));
+
+                        byte escapeSequence;
+                        switch (characterToEscape)
                         {
-                            // Just write the character as is
-                            this.jsonTextMemoryWriter.Write(value[readOffset++]);
+                            case '\\':
+                                escapeSequence = (byte)'\\';
+                                break;
+
+                            case '"':
+                                escapeSequence = (byte)'"';
+                                break;
+
+                            case '/':
+                                escapeSequence = (byte)'/';
+                                break;
+
+                            case '\b':
+                                escapeSequence = (byte)'b';
+                                break;
+
+                            case '\f':
+                                escapeSequence = (byte)'f';
+                                break;
+
+                            case '\n':
+                                escapeSequence = (byte)'n';
+                                break;
+
+                            case '\r':
+                                escapeSequence = (byte)'r';
+                                break;
+
+                            case '\t':
+                                escapeSequence = (byte)'t';
+                                break;
+
+                            default:
+                                escapeSequence = (byte)0;
+                                break;
+                        }
+
+                        if ((byte)escapeSequence >= ' ')
+                        {
+                            // We got a special character
+                            this.jsonTextMemoryWriter.Write((byte)'\\');
+                            this.jsonTextMemoryWriter.Write(escapeSequence);
                         }
                         else
                         {
-                            byte characterToEscape = value[readOffset++];
-                            byte escapeSequence;
-                            switch (characterToEscape)
-                            {
-                                case (byte)'\\':
-                                    escapeSequence = (byte)'\\';
-                                    break;
-
-                                case (byte)'"':
-                                    escapeSequence = (byte)'"';
-                                    break;
-
-                                case (byte)'/':
-                                    escapeSequence = (byte)'/';
-                                    break;
-
-                                case (byte)'\b':
-                                    escapeSequence = (byte)'b';
-                                    break;
-
-                                case (byte)'\f':
-                                    escapeSequence = (byte)'f';
-                                    break;
-
-                                case (byte)'\n':
-                                    escapeSequence = (byte)'n';
-                                    break;
-
-                                case (byte)'\r':
-                                    escapeSequence = (byte)'r';
-                                    break;
-
-                                case (byte)'\t':
-                                    escapeSequence = (byte)'t';
-                                    break;
-
-                                default:
-                                    escapeSequence = 0;
-                                    break;
-                            }
-
-                            if ((byte)escapeSequence >= ' ')
-                            {
-                                // We got a special character
-                                this.jsonTextMemoryWriter.Write((byte)'\\');
-                                this.jsonTextMemoryWriter.Write(escapeSequence);
-                            }
-                            else
-                            {
-                                // We got a control character (U+0000 through U+001F).
-                                this.jsonTextMemoryWriter.Write((byte)'\\');
-                                this.jsonTextMemoryWriter.Write((byte)'u');
-                                if (escapeSequence > 16)
-                                {
-                                    this.jsonTextMemoryWriter.Write((byte)'1');
-                                }
-                                else
-                                {
-                                    this.jsonTextMemoryWriter.Write((byte)'0');
-                                }
-
-                                byte lastHex = (byte)(escapeSequence % 16);
-                                if (lastHex < 10)
-                                {
-                                    this.jsonTextMemoryWriter.Write((byte)'0' + lastHex);
-                                }
-                                else
-                                {
-                                    this.jsonTextMemoryWriter.Write((byte)'A' + (lastHex - 10));
-                                }
-                            }
+                            // We got a control character (U+0000 through U+001F).
+                            this.jsonTextMemoryWriter.Write((byte)'\\');
+                            this.jsonTextMemoryWriter.Write((byte)'u');
+                            this.jsonTextMemoryWriter.Write(GetHexDigit((characterToEscape >> 12) & 0xF));
+                            this.jsonTextMemoryWriter.Write(GetHexDigit((characterToEscape >> 8) & 0xF));
+                            this.jsonTextMemoryWriter.Write(GetHexDigit((characterToEscape >> 4) & 0xF));
+                            this.jsonTextMemoryWriter.Write(GetHexDigit((characterToEscape >> 0) & 0xF));
                         }
                     }
                 }
@@ -530,13 +517,36 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
             }
 
-            private static bool Utf8StringNeedsEscaping(ReadOnlySpan<byte> value)
+            private static bool Utf8StringNeedsEscaping(ReadOnlySpan<byte> span)
             {
                 const byte DoubleQuote = (byte)'"';
                 const byte ReverseSolidus = (byte)'\\';
                 const byte Space = (byte)' ';
 
-                return (value.IndexOf(DoubleQuote) != -1) || (value.IndexOf(ReverseSolidus) != -1) || (value.IndexOf(Space) != -1);
+                if (SpanContains(span, DoubleQuote) || SpanContains(span, ReverseSolidus))
+                {
+                    return true;
+                }
+
+                for (byte i = 0; i < Space; i++)
+                {
+                    if (SpanContains(span, i))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
+            private static bool SpanContains(ReadOnlySpan<byte> span, byte value)
+            {
+                return span.IndexOf(value) != -1;
+            }
+
+            private static byte GetHexDigit(int value)
+            {
+                return (byte)((value < 10) ? '0' + value : 'A' + value - 10);
             }
 
             private sealed class JsonTextMemoryWriter : JsonMemoryWriter
