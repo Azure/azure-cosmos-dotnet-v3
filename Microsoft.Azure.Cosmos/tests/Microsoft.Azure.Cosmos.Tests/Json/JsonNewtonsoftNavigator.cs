@@ -211,7 +211,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 
         public bool TryGetBufferedUtf8StringValue(IJsonNavigatorNode stringNode, out ReadOnlyMemory<byte> bufferedUtf8StringValue)
         {
-            throw new NotImplementedException();
+            bufferedUtf8StringValue = null;
+            return false;
         }
     }
 }

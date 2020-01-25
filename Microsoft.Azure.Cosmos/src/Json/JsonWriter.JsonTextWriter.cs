@@ -437,8 +437,9 @@ namespace Microsoft.Azure.Cosmos.Json
                         Span<char> charsToEscape = stackalloc char[1];
                         Encoding.UTF8.GetChars(src: value, dest: charsToEscape);
                         char characterToEscape = charsToEscape[0];
-                        value = value.Slice(start: Encoding.UTF8.GetByteCount(charsToEscape));
 
+                        value = value.Slice(start: Encoding.UTF8.GetByteCount(charsToEscape));
+                        
                         byte escapeSequence;
                         switch (characterToEscape)
                         {

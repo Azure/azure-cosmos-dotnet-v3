@@ -164,12 +164,12 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
 
         public override void WriteFieldName(ReadOnlySpan<byte> utf8FieldName)
         {
-            throw new NotImplementedException();
+            this.WriteFieldName(Encoding.UTF8.GetString(utf8FieldName));
         }
 
         public override void WriteStringValue(ReadOnlySpan<byte> utf8StringValue)
         {
-            throw new NotImplementedException();
+            this.WriteStringValue(Encoding.UTF8.GetString(utf8StringValue));
         }
     }
 }
