@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Json
         public bool TryAddString(ReadOnlySpan<byte> value, out int index)
         {
             // If the string already exists, then just return that index.
-            for (int i = 0; i < this.utf8StringDictionary.Length; i++)
+            for (int i = 0; i < this.size; i++)
             {
                 ReadOnlySpan<byte> utf8String = this.utf8StringDictionary[i].Span;
                 if (utf8String.SequenceEqual(value))
