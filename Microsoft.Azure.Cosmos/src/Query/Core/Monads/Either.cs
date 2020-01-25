@@ -6,14 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
 {
     using System;
 
-#if INTERNAL
-#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-#pragma warning disable SA1601 // Partial elements should be documented
-    public
-#else
-    internal
-#endif
-    readonly struct Either<TLeft, TRight>
+    internal readonly struct Either<TLeft, TRight>
     {
         private readonly TLeft left;
         private readonly TRight right;
@@ -163,8 +156,4 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
                 isLeft: false);
         }
     }
-#if INTERNAL
-#pragma warning restore SA1601 // Partial elements should be documented
-#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-#endif
 }
