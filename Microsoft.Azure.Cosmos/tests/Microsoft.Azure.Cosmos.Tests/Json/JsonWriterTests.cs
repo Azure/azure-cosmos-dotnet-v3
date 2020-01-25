@@ -1654,26 +1654,30 @@
             {
                 foreach (CultureInfo cultureInfo in cultureInfoList)
                 {
-                    System.Threading.Thread.CurrentThread.CurrentCulture = cultureInfo;
-
-                    // Create through serializtion api
-                    IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
-                    byte[] expectedOutput;
-                    if (expectedString != null)
+                    foreach (bool writeAsUtf8String in new bool[] { false, true })
                     {
-                        expectedOutput = Encoding.UTF8.GetBytes(expectedString);
-                    }
-                    else
-                    {
-                        expectedOutput = null;
-                    }
+                        System.Threading.Thread.CurrentThread.CurrentCulture = cultureInfo;
 
-                    this.VerifyWriter(
-                        jsonWriter,
-                        tokensToWrite,
-                        expectedOutput,
-                        JsonSerializationFormat.Text,
-                        expectedException);
+                        // Create through serializtion api
+                        IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
+                        byte[] expectedOutput;
+                        if (expectedString != null)
+                        {
+                            expectedOutput = Encoding.UTF8.GetBytes(expectedString);
+                        }
+                        else
+                        {
+                            expectedOutput = null;
+                        }
+
+                        this.VerifyWriter(
+                            jsonWriter,
+                            tokensToWrite,
+                            expectedOutput,
+                            JsonSerializationFormat.Text,
+                            writeAsUtf8String,
+                            expectedException);
+                    }
                 }
             }
             finally
@@ -1684,17 +1688,29 @@
 
         private void VerifyWriter(JsonToken[] tokensToWrite, byte[] binaryOutput, Exception expectedException = null)
         {
-            IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Binary);
-            this.VerifyWriter(jsonWriter, tokensToWrite, binaryOutput, JsonSerializationFormat.Binary, expectedException);
+            foreach (bool writeAsUtf8String in new bool[] { false, true })
+            {
+                IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Binary);
+                this.VerifyWriter(jsonWriter, tokensToWrite, binaryOutput, JsonSerializationFormat.Binary, writeAsUtf8String, expectedException);
+            }
         }
 
         private void VerifyWriter(JsonToken[] tokensToWrite, byte[] binaryOutput, JsonStringDictionary jsonStringDictionary, Exception expectedException = null)
         {
-            IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Binary, jsonStringDictionary);
-            this.VerifyWriter(jsonWriter, tokensToWrite, binaryOutput, JsonSerializationFormat.Binary, expectedException);
+            foreach (bool writeAsUtf8String in new bool[] { false, true })
+            {
+                IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Binary, jsonStringDictionary);
+                this.VerifyWriter(jsonWriter, tokensToWrite, binaryOutput, JsonSerializationFormat.Binary, writeAsUtf8String, expectedException);
+            }
         }
 
-        private void VerifyWriter(IJsonWriter jsonWriter, JsonToken[] tokensToWrite, byte[] expectedOutput, JsonSerializationFormat jsonSerializationFormat, Exception expectedException = null)
+        private void VerifyWriter(
+            IJsonWriter jsonWriter,
+            JsonToken[] tokensToWrite,
+            byte[] expectedOutput,
+            JsonSerializationFormat jsonSerializationFormat,
+            bool writeAsUtf8String,
+            Exception expectedException = null)
         {
             Assert.AreEqual(jsonSerializationFormat == JsonSerializationFormat.Text ? 0 : 1, jsonWriter.CurrentLength);
             Assert.AreEqual(jsonWriter.SerializationFormat, jsonSerializationFormat);
@@ -1723,7 +1739,14 @@
 
                         case JsonTokenType.String:
                             string stringValue = (token as JsonStringToken).Value;
-                            jsonWriter.WriteStringValue(stringValue);
+                            if (writeAsUtf8String)
+                            {
+                                jsonWriter.WriteStringValue(Encoding.UTF8.GetBytes(stringValue));
+                            }
+                            else
+                            {
+                                jsonWriter.WriteStringValue(stringValue);
+                            }
                             break;
 
                         case JsonTokenType.Number:
@@ -1745,7 +1768,14 @@
 
                         case JsonTokenType.FieldName:
                             string fieldNameValue = (token as JsonFieldNameToken).Value;
-                            jsonWriter.WriteFieldName(fieldNameValue);
+                            if (writeAsUtf8String)
+                            {
+                                jsonWriter.WriteFieldName(Encoding.UTF8.GetBytes(fieldNameValue));
+                            }
+                            else
+                            {
+                                jsonWriter.WriteFieldName(fieldNameValue);
+                            }
                             break;
 
                         case JsonTokenType.Int8:
