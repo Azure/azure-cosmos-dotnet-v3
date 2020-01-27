@@ -368,24 +368,29 @@
             Console.WriteLine("\n1.6 - Upserting a item");
 
             SalesOrder upsertOrder = GetSalesOrderSample("SalesOrder3");
+            
+            //creates the initial SalesOrder document. 
+            //notice the response.StatusCode returned indicates a Create operation was performed
             ItemResponse<SalesOrder> response = await container.UpsertItemAsync(
                 partitionKey: new PartitionKey(upsertOrder.AccountNumber),
                 item: upsertOrder);
-
+            
             SalesOrder upserted = response.Resource;
             Console.WriteLine($"Request charge of upsert operation: {response.RequestCharge}");
             Console.WriteLine($"StatusCode of this operation: { response.StatusCode}");
             Console.WriteLine($"Id of upserted item: {upserted.Id}");
-            Console.WriteLine($"AccountNumber of upserted item: {upserted.AccountNumber}");
-
-            upserted.AccountNumber = "updated account number";
+            Console.WriteLine($"Shipped Date of upserted item: {upserted.ShippedDate}");
+            
+            //update any field (other than the id, and the partitionKey, as these cannot be changed
+            //notice the response.StatusCode from the Upsert operation now indicates that an Update was performed
+            upserted.ShippedDate = DateTime.UtcNow;
             response = await container.UpsertItemAsync(partitionKey: new PartitionKey(upserted.AccountNumber), item: upserted);
             upserted = response.Resource;
 
             Console.WriteLine($"Request charge of upsert operation: {response.RequestCharge}");
             Console.WriteLine($"StatusCode of this operation: { response.StatusCode}");
             Console.WriteLine($"Id of upserted item: {upserted.Id}");
-            Console.WriteLine($"AccountNumber of upserted item: {upserted.AccountNumber}");
+            Console.WriteLine($"ShippedDate of upserted item: {upserted.ShippedDate}");
 
             // For better performance upsert a SalesOrder object from a stream. 
             SalesOrder salesOrderV4 = GetSalesOrderSample("SalesOrder4");

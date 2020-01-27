@@ -11,6 +11,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     /// Tokenizer for <see cref="BackendMetrics"/>
     /// </summary>
 #if INTERNAL
+#pragma warning disable SA1600
+#pragma warning disable CS1591
+#pragma warning disable SA1602 // Enumeration items should be documented
     public
 #else
     internal

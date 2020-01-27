@@ -89,6 +89,7 @@ namespace Microsoft.Azure.Cosmos
                        request.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
                    }
                },
+               diagnosticsScope: null,
                cancellationToken: cancellationToken);
 
             this.continuationToken = response.Headers.ContinuationToken;

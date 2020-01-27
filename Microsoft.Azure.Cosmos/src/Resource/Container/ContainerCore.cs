@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Scripts;
@@ -58,7 +57,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal virtual CosmosClientContext ClientContext { get; }
 
-        internal virtual BatchAsyncContainerExecutor BatchExecutor { get; } 
+        internal virtual BatchAsyncContainerExecutor BatchExecutor { get; }
 
         public override Conflicts Conflicts { get; }
 
@@ -105,14 +104,14 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this, response);
         }
 
-        public async override Task<int?> ReadThroughputAsync(
+        public override async Task<int?> ReadThroughputAsync(
             CancellationToken cancellationToken = default(CancellationToken))
         {
             ThroughputResponse response = await this.ReadThroughputIfExistsAsync(null, cancellationToken);
             return response.Resource?.Throughput;
         }
 
-        public async override Task<ThroughputResponse> ReadThroughputAsync(
+        public override async Task<ThroughputResponse> ReadThroughputAsync(
             RequestOptions requestOptions,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -130,7 +129,7 @@ namespace Microsoft.Azure.Cosmos
             return await cosmosOffers.ReadThroughputIfExistsAsync(rid, requestOptions, cancellationToken);
         }
 
-        public async override Task<ThroughputResponse> ReplaceThroughputAsync(
+        public override async Task<ThroughputResponse> ReplaceThroughputAsync(
             int throughput,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -344,6 +343,7 @@ namespace Microsoft.Azure.Cosmos
               streamPayload: streamPayload,
               requestOptions: requestOptions,
               requestEnricher: null,
+              diagnosticsScope: null,
               cancellationToken: cancellationToken);
         }
     }

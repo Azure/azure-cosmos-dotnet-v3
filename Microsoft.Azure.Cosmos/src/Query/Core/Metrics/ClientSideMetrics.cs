@@ -11,6 +11,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     /// Stores client side QueryMetrics.
     /// </summary>
 #if INTERNAL
+#pragma warning disable SA1600
+#pragma warning disable CS1591
     public
 #else
     internal

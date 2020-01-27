@@ -29,35 +29,38 @@ namespace Microsoft.Azure.Cosmos.Handlers
             RequestMessage request,
             CancellationToken cancellationToken)
         {
-            try
+            using (request.DiagnosticsContext.CreateScope("TransportHandler"))
             {
-                using (new ActivityScope(Guid.NewGuid()))
+                try
                 {
-                    DocumentServiceResponse response = await this.ProcessMessageAsync(request, cancellationToken);
-                    return response.ToCosmosResponseMessage(request);
+                    using (new ActivityScope(Guid.NewGuid()))
+                    {
+                        DocumentServiceResponse response = await this.ProcessMessageAsync(request, cancellationToken);
+                        return response.ToCosmosResponseMessage(request);
+                    }
                 }
-            }
-            //catch DocumentClientException and exceptions that inherit it. Other exception types happen before a backend request
-            catch (DocumentClientException ex)
-            {
-                return ex.ToCosmosResponseMessage(request);
-            }
-            catch (CosmosException ce)
-            {
-                return ce.ToCosmosResponseMessage(request);
-            }
-            catch (AggregateException ex)
-            {
-                // TODO: because the SDK underneath this path uses ContinueWith or task.Result we need to catch AggregateExceptions here
-                // in order to ensure that underlying DocumentClientExceptions get propagated up correctly. Once all ContinueWith and .Result 
-                // is removed this catch can be safely removed.
-                ResponseMessage errorMessage = AggregateExceptionConverter(ex, request);
-                if (errorMessage != null)
+                //catch DocumentClientException and exceptions that inherit it. Other exception types happen before a backend request
+                catch (DocumentClientException ex)
                 {
-                    return errorMessage;
+                    return ex.ToCosmosResponseMessage(request);
                 }
+                catch (CosmosException ce)
+                {
+                    return ce.ToCosmosResponseMessage(request);
+                }
+                catch (AggregateException ex)
+                {
+                    // TODO: because the SDK underneath this path uses ContinueWith or task.Result we need to catch AggregateExceptions here
+                    // in order to ensure that underlying DocumentClientExceptions get propagated up correctly. Once all ContinueWith and .Result 
+                    // is removed this catch can be safely removed.
+                    ResponseMessage errorMessage = AggregateExceptionConverter(ex, request);
+                    if (errorMessage != null)
+                    {
+                        return errorMessage;
+                    }
 
-                throw;
+                    throw;
+                }
             }
         }
 

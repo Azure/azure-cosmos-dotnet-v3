@@ -288,7 +288,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                 serializerCore: null,
                 cosmosResponseFactory: null,
                 requestHandler: null,
-                documentClient: new MockDocumentClient());
+                documentClient: new MockDocumentClient(),
+                userAgent: null);
         }
     }
 }
