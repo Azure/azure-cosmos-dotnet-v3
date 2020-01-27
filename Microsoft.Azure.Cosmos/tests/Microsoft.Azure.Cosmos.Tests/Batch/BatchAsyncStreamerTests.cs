@@ -153,7 +153,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             await Task.Delay(2000);
 
-            Assert.AreEqual(newLimiter.CurrentCount, 2);
+            Assert.IsTrue(newLimiter.CurrentCount >= 2);
         }
 
         [TestMethod]
