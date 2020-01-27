@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     {
         private const int DispatchTimerInSeconds = 5;
         private const int MaxBatchByteSize = 100000;
+        private const int defaultMaxDegreeOfConcurrency = 10;
         private static Exception expectedException = new Exception();
         private ItemBatchOperation ItemBatchOperation = new ItemBatchOperation(OperationType.Create, 0, "0");
         private TimerPool TimerPool = new TimerPool(1);
@@ -48,6 +49,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     operations: new ArraySegment<ItemBatchOperation>(arrayOperations),
                     serializerCore: MockCosmosUtil.Serializer,
                 cancellationToken: cancellationToken);
+
+                await Task.Delay(10);
 
                 TransactionalBatchResponse batchresponse = await TransactionalBatchResponse.FromResponseMessageAsync(
                     new ResponseMessage(HttpStatusCode.OK) { Content = responseContent },
@@ -126,6 +129,35 @@ namespace Microsoft.Azure.Cosmos.Tests
             TransactionalBatchOperationResult result = await context.OperationTask;
 
             Assert.AreEqual(this.ItemBatchOperation.Id, result.ETag);
+        }
+
+        [TestMethod]
+        public async Task ValidatesCongestionControlAsync()
+        {
+            SemaphoreSlim newLimiter = new SemaphoreSlim(1, defaultMaxDegreeOfConcurrency);
+            BatchAsyncStreamer batchAsyncStreamer = new BatchAsyncStreamer(2, MaxBatchByteSize, 1, this.TimerPool, newLimiter, true, defaultMaxDegreeOfConcurrency, MockCosmosUtil.Serializer, this.Executor, this.Retrier);
+
+            Assert.AreEqual(newLimiter.CurrentCount, 1);
+
+            List<Task<TransactionalBatchOperationResult>> contexts = new List<Task<TransactionalBatchOperationResult>>(100);
+            for (int i = 0; i < 200; i++)
+            {
+                ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, i, i.ToString());
+                ItemBatchOperationContext context = AttachContext(operation);
+                batchAsyncStreamer.Add(operation);
+                contexts.Add(context.OperationTask);
+            }
+
+            // 100 batch request should sum up to 1000 ms barrier with wait time of 10ms in executor
+            await Task.WhenAll(contexts);
+
+            // Only one time change is expected as within 1 seconds all the request will get executed parallely.
+            Assert.AreEqual(newLimiter.CurrentCount, 2);
+
+            await Task.Delay(2000);
+
+            // No change when adding extra delays. Without requests time summing up to 1000 ms, there should be no change in handle count.
+            Assert.AreEqual(newLimiter.CurrentCount, 2);
         }
 
         [TestMethod]
