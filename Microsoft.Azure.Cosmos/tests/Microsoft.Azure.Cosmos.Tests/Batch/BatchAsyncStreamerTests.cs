@@ -151,12 +151,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             // 100 batch request should sum up to 1000 ms barrier with wait time of 10ms in executor
             await Task.WhenAll(contexts);
 
-            // Only one time change is expected as within 1 seconds all the request will get executed parallely.
-            Assert.AreEqual(newLimiter.CurrentCount, 2);
-
             await Task.Delay(2000);
 
-            // No change when adding extra delays. Without requests time summing up to 1000 ms, there should be no change in handle count.
             Assert.AreEqual(newLimiter.CurrentCount, 2);
         }
 
