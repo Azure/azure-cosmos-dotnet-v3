@@ -5,15 +5,13 @@ namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
     using System.Collections.Generic;
-    using System.IO;
-    using System.Linq;
     using System.Runtime.InteropServices;
     using System.Text;
 
     /// <summary>
     /// Static class with utility functions and constants for JSON binary encoding.
     /// </summary>
-    internal static class JsonBinaryEncoding
+    internal static partial class JsonBinaryEncoding
     {
         /// <summary>
         /// A type marker is a single byte.
@@ -49,47 +47,6 @@ namespace Microsoft.Azure.Cosmos.Json
         /// Some type markers are followed by 4 bytes for the length and then optionally 4 bytes for the count (both are uint32).
         /// </summary>
         public const int FourByteCount = 4;
-
-        /// <summary>
-        /// List is system strings
-        /// </summary>
-        private static readonly string[] SystemStrings = new string[]
-        {
-            "$s",
-            "$t",
-            "$v",
-            "_attachments",
-            "_etag",
-            "_rid",
-            "_self",
-            "_ts",
-            "attachments/",
-            "coordinates",
-            "geometry",
-            "GeometryCollection",
-            "id",
-            "inE",
-            "inV",
-            "label",
-            "LineString",
-            "link",
-            "MultiLineString",
-            "MultiPoint",
-            "MultiPolygon",
-            "name",
-            "outE",
-            "outV",
-            "Point",
-            "Polygon",
-            "properties",
-            "type",
-            "value",
-            "Feature",
-            "FeatureCollection",
-            "_id",
-        };
-
-        private static readonly ReadOnlyMemory<byte>[] Utf8SystemStrings = SystemStrings.Select(x => (ReadOnlyMemory<byte>)Encoding.UTF8.GetBytes(x)).ToArray();
 
         /// <summary>
         /// Gets the number value from the binary reader.
@@ -491,15 +448,14 @@ namespace Microsoft.Azure.Cosmos.Json
             {
                 return true;
             }
-            else if (JsonBinaryEncoding.TryGetBufferedEncodedUtf8StringValue(stringToken, jsonStringDictionary, out bufferedUtf8StringValue))
+
+            if (JsonBinaryEncoding.TryGetBufferedEncodedUtf8StringValue(stringToken, jsonStringDictionary, out bufferedUtf8StringValue))
             {
                 return true;
             }
-            else
-            {
-                bufferedUtf8StringValue = default;
-                return false;
-            }
+
+            bufferedUtf8StringValue = default;
+            return false;
         }
 
         /// <summary>
@@ -514,23 +470,18 @@ namespace Microsoft.Azure.Cosmos.Json
             IReadOnlyJsonStringDictionary jsonStringDictionary,
             out string encodedStringValue)
         {
-            encodedStringValue = default(string);
-
-            bool found;
             if (JsonBinaryEncoding.TryGetEncodedSystemStringValue(stringToken, out encodedStringValue))
             {
-                found = true;
-            }
-            else if (JsonBinaryEncoding.TryGetEncodedUserStringValue(stringToken, jsonStringDictionary, out encodedStringValue))
-            {
-                found = true;
-            }
-            else
-            {
-                found = false;
+                return true;
             }
 
-            return found;
+            if (JsonBinaryEncoding.TryGetEncodedUserStringValue(stringToken, jsonStringDictionary, out encodedStringValue))
+            {
+                return true;
+            }
+
+            encodedStringValue = default;
+            return false;
         }
 
         private static bool TryGetBufferedEncodedUtf8StringValue(
@@ -542,15 +493,14 @@ namespace Microsoft.Azure.Cosmos.Json
             {
                 return true;
             }
-            else if (JsonBinaryEncoding.TryGetEncodedUtf8UserStringValue(stringToken.Span, jsonStringDictionary, out encodedUtf8StringValue))
+
+            if (JsonBinaryEncoding.TryGetEncodedUtf8UserStringValue(stringToken.Span, jsonStringDictionary, out encodedUtf8StringValue))
             {
                 return true;
             }
-            else
-            {
-                encodedUtf8StringValue = default;
-                return false;
-            }
+
+            encodedUtf8StringValue = default;
+            return false;
         }
 
         /// <summary>
@@ -821,15 +771,14 @@ namespace Microsoft.Azure.Cosmos.Json
             {
                 return true;
             }
-            else if (JsonBinaryEncoding.TryGetEncodedUserStringTypeMarker(utf8String, jsonStringDictionary, out multiByteTypeMarker))
+
+            if (JsonBinaryEncoding.TryGetEncodedUserStringTypeMarker(utf8String, jsonStringDictionary, out multiByteTypeMarker))
             {
                 return true;
             }
-            else
-            {
-                multiByteTypeMarker = default;
-                return false;
-            }
+
+            multiByteTypeMarker = default;
+            return false;
         }
 
         /// <summary>
@@ -896,52 +845,6 @@ namespace Microsoft.Azure.Cosmos.Json
         public static int GetFirstValueOffset(byte typeMarker)
         {
             return JsonBinaryEncoding.FirstValueOffsets.Offsets[typeMarker];
-        }
-
-        public static bool TryGetSystemStringById(int id, out string systemString)
-        {
-            if (id >= JsonBinaryEncoding.SystemStrings.Length)
-            {
-                systemString = default;
-                return false;
-            }
-
-            systemString = JsonBinaryEncoding.SystemStrings[id];
-            return true;
-        }
-
-        public static bool TryGetUtf8SystemStringById(int id, out ReadOnlyMemory<byte> utf8SystemString)
-        {
-            if (id >= JsonBinaryEncoding.Utf8SystemStrings.Length)
-            {
-                utf8SystemString = default;
-                return false;
-            }
-
-            utf8SystemString = JsonBinaryEncoding.Utf8SystemStrings[id];
-            return true;
-        }
-
-        /// <summary>
-        /// Gets the SystemStringId for a particular system string.
-        /// </summary>
-        /// <param name="utf8String">The system string to get the enum id for.</param>
-        /// <param name="systemStringId">The id of the system string if found.</param>
-        /// <returns>The SystemStringId for a particular system string.</returns>
-        public static bool TryGetSystemStringId(ReadOnlySpan<byte> utf8String, out int systemStringId)
-        {
-            for (int i = 0; i < JsonBinaryEncoding.Utf8SystemStrings.Length; i++)
-            {
-                ReadOnlySpan<byte> utf8SystemString = JsonBinaryEncoding.Utf8SystemStrings[i].Span;
-                if (utf8SystemString.SequenceEqual(utf8String))
-                {
-                    systemStringId = i;
-                    return true;
-                }
-            }
-
-            systemStringId = default;
-            return false;
         }
 
         /// <summary>

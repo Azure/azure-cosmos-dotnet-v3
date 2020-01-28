@@ -305,6 +305,12 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <inheritdoc />
             public override bool TryGetBufferedUtf8StringValue(out ReadOnlyMemory<byte> bufferedUtf8StringValue)
             {
+                if (this.token.JsonTextTokenType.HasFlag(JsonTextTokenType.EscapedFlag))
+                {
+                    bufferedUtf8StringValue = default;
+                    return false;
+                }
+
                 bufferedUtf8StringValue = this.jsonTextBuffer.GetBufferedRawJsonToken(
                     this.token.Start,
                     this.token.End);
@@ -442,7 +448,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 {
                     throw new JsonInvalidTokenException();
                 }
-                
+
                 this.RegisterToken();
             }
 

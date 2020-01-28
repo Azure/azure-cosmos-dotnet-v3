@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using System;
     using System.Collections.Generic;
     using System.Text;
+    using Microsoft.Azure.Cosmos.Core.Collections;
 
 #if INTERNAL
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
@@ -18,8 +19,11 @@ namespace Microsoft.Azure.Cosmos.Json
     sealed class JsonStringDictionary : IReadOnlyJsonStringDictionary
     {
         private const int MaxStackAllocSize = 4 * 1024;
-        private readonly string[] stringDictionary;
-        private readonly ReadOnlyMemory<byte>[] utf8StringDictionary;
+
+        private readonly ReadOnlyMemory<byte>[] utf8Strings;
+        private readonly string[] utf16Strings;
+        private readonly Trie<byte, int> utf8StringToIndex;
+
         private int size;
 
         public JsonStringDictionary(int capacity)
@@ -29,8 +33,9 @@ namespace Microsoft.Azure.Cosmos.Json
                 throw new ArgumentOutOfRangeException($"{nameof(capacity)} must be a non negative integer.");
             }
 
-            this.stringDictionary = new string[capacity];
-            this.utf8StringDictionary = new ReadOnlyMemory<byte>[capacity];
+            this.utf8Strings = new ReadOnlyMemory<byte>[capacity];
+            this.utf16Strings = new string[capacity];
+            this.utf8StringToIndex = new Trie<byte, int>(capacity);
         }
 
         public bool TryAddString(string value, out int index)
@@ -45,25 +50,22 @@ namespace Microsoft.Azure.Cosmos.Json
         public bool TryAddString(ReadOnlySpan<byte> value, out int index)
         {
             // If the string already exists, then just return that index.
-            for (int i = 0; i < this.size; i++)
+            if (this.utf8StringToIndex.TryGetValue(value, out index))
             {
-                ReadOnlySpan<byte> utf8String = this.utf8StringDictionary[i].Span;
-                if (utf8String.SequenceEqual(value))
-                {
-                    index = i;
-                    return true;
-                }
+                return true;
             }
 
-            if (this.size == this.stringDictionary.Length)
+            // If we are at capacity just return false.
+            if (this.size == this.utf8Strings.Length)
             {
                 index = default;
                 return false;
             }
 
             index = this.size;
-            this.stringDictionary[this.size] = Encoding.UTF8.GetString(value);
-            this.utf8StringDictionary[this.size] = value.ToArray();
+            this.utf8Strings[this.size] = value.ToArray();
+            this.utf16Strings[this.size] = Encoding.UTF8.GetString(value);
+            this.utf8StringToIndex.AddOrUpdate(value, index);
             this.size++;
 
             return true;
@@ -77,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 return false;
             }
 
-            value = this.stringDictionary[index];
+            value = this.utf16Strings[index];
             return true;
         }
 
@@ -89,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 return false;
             }
 
-            value = this.utf8StringDictionary[index];
+            value = this.utf8Strings[index];
             return true;
         }
 

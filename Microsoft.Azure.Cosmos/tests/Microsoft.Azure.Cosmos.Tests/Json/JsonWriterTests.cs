@@ -400,13 +400,8 @@
         [Owner("brchon")]
         public void SystemStringTest()
         {
-            Type jsonBinaryEncodingType = typeof(JsonBinaryEncoding);
-            FieldInfo systemStringsFieldInfo = jsonBinaryEncodingType.GetField("SystemStrings", BindingFlags.NonPublic | BindingFlags.Static);
-            string[] systemStrings = (string[])systemStringsFieldInfo.GetValue(null);
-            Assert.IsNotNull(systemStrings, "Failed to get system strings using reflection");
-
             int systemStringId = 0;
-            foreach (string systemString in systemStrings)
+            while (JsonBinaryEncoding.TryGetSystemStringById(systemStringId, out string systemString))
             {
                 string expectedString = "\"" + systemString + "\"";
                 // remove formatting on the json and also replace "/" with "\/" since newtonsoft is dumb.
