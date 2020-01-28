@@ -331,8 +331,6 @@ namespace Microsoft.Azure.Cosmos.Json
                 throw new ArgumentNullException($"{nameof(jsonNavigatorNode)} can not be null");
             }
 
-            bool sameFormat = jsonNavigator.SerializationFormat == this.SerializationFormat;
-
             JsonNodeType jsonNodeType = jsonNavigator.GetNodeType(jsonNavigatorNode);
 
             // See if we can write the node without looking at it's value
@@ -348,6 +346,8 @@ namespace Microsoft.Azure.Cosmos.Json
                     this.WriteBoolValue(true);
                     return;
             }
+
+            bool sameFormat = jsonNavigator.SerializationFormat == this.SerializationFormat;
 
             // If the navigator has the same format as this writer then we try to retrieve the node raw JSON
             if (sameFormat && jsonNavigator.TryGetBufferedRawJson(jsonNavigatorNode, out ReadOnlyMemory<byte> bufferedRawJson))

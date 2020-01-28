@@ -478,7 +478,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new ArgumentException($"{nameof(jsonNode)} must be a {nameof(BinaryNavigatorNode)}");
                 }
 
-                if (this.jsonStringDictionary != null)
+                if ((this.jsonStringDictionary != null) && JsonBinaryNavigator.IsStringOrNested(binaryNavigatorNode))
                 {
                     // Force a rewrite for dictionary encoding.
                     bufferedRawJson = default;
@@ -494,6 +494,20 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 bufferedRawJson = buffer;
                 return true;
+            }
+
+            private static bool IsStringOrNested(BinaryNavigatorNode binaryNavigatorNode)
+            {
+                switch (binaryNavigatorNode.JsonNodeType)
+                {
+                    case JsonNodeType.String:
+                    case JsonNodeType.FieldName:
+                    case JsonNodeType.Array:
+                    case JsonNodeType.Object:
+                        return true; 
+                    default:
+                        return false;
+                }
             }
 
             private static int GetValueCount(ReadOnlySpan<byte> node)

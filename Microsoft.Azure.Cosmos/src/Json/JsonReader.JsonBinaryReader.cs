@@ -231,15 +231,37 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new InvalidOperationException();
                 }
 
-                if (this.jsonStringDictionary != null)
+                ReadOnlyMemory<byte> candidate = this.jsonBinaryBuffer.GetBufferedRawJsonToken(
+                    this.currentTokenPosition,
+                    this.currentTokenPosition + length);
+
+                JsonTokenType type = GetJsonTokenType(candidate.Span[0]);
+
+                if ((this.jsonStringDictionary != null) && JsonBinaryReader.IsStringOrNested(type))
                 {
                     // If there is dictionary encoding, then we need to force a rewrite.
                     bufferedRawJsonToken = default;
                     return false;
                 }
 
-                bufferedRawJsonToken = this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition, this.currentTokenPosition + length);
+                bufferedRawJsonToken = candidate;
                 return true;
+            }
+
+            private static bool IsStringOrNested(JsonTokenType type)
+            {
+                switch (type)
+                {
+                    case JsonTokenType.BeginArray:
+                    case JsonTokenType.EndArray:
+                    case JsonTokenType.BeginObject:
+                    case JsonTokenType.EndObject:
+                    case JsonTokenType.String:
+                    case JsonTokenType.FieldName:
+                        return true;
+                    default:
+                        return false;
+                }
             }
 
             /// <inheritdoc />
