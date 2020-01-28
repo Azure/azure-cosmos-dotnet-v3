@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Diagnostics
 {
     using System.IO;
+    using System.Text;
 
     /// <summary>
     /// Extends <see cref="CosmosDiagnostics"/> to expose internal APIs.
@@ -17,9 +18,11 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
         public override string ToString()
         {
-            StringWriter stringWriter = new StringWriter();
-            this.WriteTo(stringWriter);
-            return stringWriter.ToString();
+            using (StringWriter stringWriter = new StringWriter())
+            {
+                this.WriteTo(stringWriter);
+                return stringWriter.ToString();
+            }
         }
 
         public void WriteTo(TextWriter textWriter)

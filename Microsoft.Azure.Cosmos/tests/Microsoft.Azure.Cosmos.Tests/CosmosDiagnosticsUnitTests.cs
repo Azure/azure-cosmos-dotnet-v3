@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void ValidateDiagnosticsContext()
         {
-            CosmosDiagnosticsContext cosmosDiagnostics = new CosmosDiagnosticsContext();
+            CosmosDiagnosticsContext cosmosDiagnostics = CosmosDiagnosticsContext.Create();
             string diagnostics = cosmosDiagnostics.ToString();
 
             //Test the default user agent string
@@ -27,7 +27,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual("[]", jObject["Context"].ToString());
 
             // Test all the different operations on diagnostics context
-            cosmosDiagnostics.Summary.AddSdkRetry(TimeSpan.FromSeconds(42));
             using (cosmosDiagnostics.CreateOverallScope("OverallScope"))
             {
                 Thread.Sleep(TimeSpan.FromSeconds(1));
@@ -37,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 }
             }
 
-            cosmosDiagnostics.Summary.SetSdkUserAgent("MyCustomUserAgentString");
+            cosmosDiagnostics.SetSdkUserAgent("MyCustomUserAgentString");
 
             string result = cosmosDiagnostics.ToString();
 
@@ -57,25 +56,24 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void ValidateDiagnosticsAppendContext()
         {
-            CosmosDiagnosticsContext cosmosDiagnostics = new CosmosDiagnosticsContext();
+            CosmosDiagnosticsContext cosmosDiagnostics = CosmosDiagnosticsContext.Create();
 
             // Test all the different operations on diagnostics context
-            cosmosDiagnostics.Summary.AddSdkRetry(TimeSpan.FromSeconds(42));
             using (cosmosDiagnostics.CreateScope("ValidateScope"))
             {
                 Thread.Sleep(TimeSpan.FromSeconds(2));
             }
 
-            cosmosDiagnostics.Summary.SetSdkUserAgent("MyCustomUserAgentString");
+            cosmosDiagnostics.SetSdkUserAgent("MyCustomUserAgentString");
 
-            CosmosDiagnosticsContext cosmosDiagnostics2 = new CosmosDiagnosticsContext();
+            CosmosDiagnosticsContext cosmosDiagnostics2 = CosmosDiagnosticsContext.Create();
 
             using (cosmosDiagnostics.CreateScope("CosmosDiagnostics2Scope"))
             {
                 Thread.Sleep(TimeSpan.FromMilliseconds(100));
             }
 
-            cosmosDiagnostics2.Append(cosmosDiagnostics);
+            cosmosDiagnostics2.AddDiagnosticsInternal(cosmosDiagnostics);
 
             string diagnostics = cosmosDiagnostics2.ToString();
             Assert.IsTrue(diagnostics.Contains("MyCustomUserAgentString"));

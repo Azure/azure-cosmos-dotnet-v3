@@ -111,8 +111,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 {
                     await Task.Delay(result.BackoffTime, cancellationToken);
                 }
-
-                diagnosticsContext.Summary.AddSdkRetry(backoffTime);
             }
         }
     }
