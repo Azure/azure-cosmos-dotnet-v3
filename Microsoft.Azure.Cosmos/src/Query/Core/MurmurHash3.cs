@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
     using System;
     using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
+    using System.Text;
 
     /// <summary>
     /// MurmurHash3 for x64 (Little Endian).
@@ -29,7 +30,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                 throw new ArgumentNullException(nameof(value));
             }
 
-            return MurmurHash3.Hash128(MemoryMarshal.AsBytes(value.AsSpan()), seed);
+            int size = Encoding.UTF8.GetMaxByteCount(value.Length);
+            Span<byte> span = size <= 256 ? stackalloc byte[size] : new byte[size];
+            int len = Encoding.UTF8.GetBytes(value, span);
+            return MurmurHash3.Hash128(span.Slice(0, len), seed);
         }
 
         /// <summary>MurmurHash3 128-bit implementation.</summary>
