@@ -29,14 +29,18 @@ namespace Microsoft.Azure.Cosmos
             this.Value = value;
         }
 
-        internal EncryptionKeyWrapMetadata(EncryptionKeyWrapMetadata source)
+        public EncryptionKeyWrapMetadata(EncryptionKeyWrapMetadata source)
         {
             this.Type = source.Type;
+            this.Algorithm = source.Algorithm;
             this.Value = source.Value;
         }
 
         [JsonProperty(PropertyName = "type", NullValueHandling = NullValueHandling.Ignore)]
         internal string Type { get; set; }
+
+        [JsonProperty(PropertyName = "algo", NullValueHandling = NullValueHandling.Ignore)]
+        internal string Algorithm { get; set; }
 
         /// <summary>
         /// Serialized form of metadata.
