@@ -165,12 +165,14 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
 
         public override bool TryGetBufferedUtf8StringValue(out ReadOnlyMemory<byte> bufferedUtf8StringValue)
         {
-            throw new NotImplementedException();
+            bufferedUtf8StringValue = default;
+            return false;
         }
 
         public override bool TryGetBufferedRawJsonToken(out ReadOnlyMemory<byte> bufferedRawJsonToken)
         {
-            throw new NotImplementedException();
+            bufferedRawJsonToken = default;
+            return false;
         }
     }
 }

@@ -146,9 +146,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 throw new ArgumentNullException("jsonReader can not be null");
             }
 
-            // For now we don't optimize for text, since the reader could be UTF-8 and the writer could be UTF-16.
-            // We need to add more enums for the different serialization formats.
-            bool sameFormat = jsonReader.SerializationFormat == this.SerializationFormat && (this.SerializationFormat == JsonSerializationFormat.Binary || this.SerializationFormat == JsonSerializationFormat.HybridRow);
+            bool sameFormat = jsonReader.SerializationFormat == this.SerializationFormat;
 
             JsonTokenType jsonTokenType = jsonReader.CurrentTokenType;
             switch (jsonTokenType)
