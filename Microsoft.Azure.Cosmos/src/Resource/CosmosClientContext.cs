@@ -35,6 +35,8 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract CosmosClientOptions ClientOptions { get; }
 
+        internal abstract string UserAgent { get; }
+
         /// <summary>
         /// Generates the URI link for the resource
         /// </summary>
@@ -67,6 +69,7 @@ namespace Microsoft.Azure.Cosmos
             string itemId,
             Stream streamPayload,
             Action<RequestMessage> requestEnricher,
+            CosmosDiagnosticsContext diagnosticsScope,
             CancellationToken cancellationToken);
 
         /// <summary>
@@ -82,6 +85,7 @@ namespace Microsoft.Azure.Cosmos
             PartitionKey? partitionKey,
             Stream streamPayload,
             Action<RequestMessage> requestEnricher,
+            CosmosDiagnosticsContext diagnosticsScope,
             CancellationToken cancellationToken);
 
         /// <summary>
@@ -98,6 +102,7 @@ namespace Microsoft.Azure.Cosmos
            Stream streamPayload,
            Action<RequestMessage> requestEnricher,
            Func<ResponseMessage, T> responseCreator,
+           CosmosDiagnosticsContext diagnosticsScope,
            CancellationToken cancellationToken);
     }
 }

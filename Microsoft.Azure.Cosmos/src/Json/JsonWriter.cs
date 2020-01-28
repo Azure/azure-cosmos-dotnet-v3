@@ -43,14 +43,10 @@ namespace Microsoft.Azure.Cosmos.Json
             this.SkipValidation = skipValidation;
         }
 
-        /// <summary>
-        /// Gets the SerializationFormat of the JsonWriter.
-        /// </summary>
+        /// <inheritdoc />
         public abstract JsonSerializationFormat SerializationFormat { get; }
 
-        /// <summary>
-        /// Gets the current length of the internal buffer.
-        /// </summary>
+        /// <inheritdoc />
         public abstract long CurrentLength { get; }
 
         /// <summary>
@@ -95,7 +91,13 @@ namespace Microsoft.Azure.Cosmos.Json
         public abstract void WriteFieldName(string fieldName);
 
         /// <inheritdoc />
+        public abstract void WriteFieldName(ReadOnlySpan<byte> utf8FieldName);
+
+        /// <inheritdoc />
         public abstract void WriteStringValue(string value);
+
+        /// <inheritdoc />
+        public abstract void WriteStringValue(ReadOnlySpan<byte> utf8StringValue);
 
         /// <inheritdoc />
         public abstract void WriteNumberValue(Number64 value);
@@ -370,17 +372,17 @@ namespace Microsoft.Azure.Cosmos.Json
                     case JsonNodeType.String:
                     case JsonNodeType.FieldName:
                         bool fieldName = jsonNodeType == JsonNodeType.FieldName;
-                        if (jsonNavigator.TryGetBufferedStringValue(
+                        if (jsonNavigator.TryGetBufferedUtf8StringValue(
                             jsonNavigatorNode,
                             out ReadOnlyMemory<byte> bufferedStringValue))
                         {
                             if (fieldName)
                             {
-                                this.WriteRawJsonToken(JsonTokenType.FieldName, bufferedStringValue.Span);
+                                this.WriteFieldName(bufferedStringValue.Span);
                             }
                             else
                             {
-                                this.WriteRawJsonToken(JsonTokenType.String, bufferedStringValue.Span);
+                                this.WriteStringValue(bufferedStringValue.Span);
                             }
                         }
                         else

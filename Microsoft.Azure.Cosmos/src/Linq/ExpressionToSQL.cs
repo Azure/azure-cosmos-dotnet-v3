@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Linq.Expressions;
     using System.Reflection;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Spatial;
     using Microsoft.Azure.Cosmos.Sql;
     using Microsoft.Azure.Documents;
@@ -564,7 +565,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                             serializedValue = JsonConvert.SerializeObject(value);
                         }
 
-                        return ConvertCosmosElementToSqlScalarExpression(CosmosElement.Parse(serializedValue));
+                        return CosmosElement.Parse(serializedValue).Accept(CosmosElementToSqlScalarExpressionVisitor.Singleton);
                     }
                 }
             }
@@ -709,10 +710,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 return SqlArrayCreateScalarExpression.Create(arrayItems);
             }
 
-            return ConvertCosmosElementToSqlScalarExpression(
-                CosmosElement.Parse(
-                    JsonConvert.SerializeObject(
-                        inputExpression.Value)));
+            return CosmosElement.Parse(JsonConvert.SerializeObject(inputExpression.Value)).Accept(CosmosElementToSqlScalarExpressionVisitor.Singleton);
         }
 
         private static SqlScalarExpression VisitConditional(ConditionalExpression inputExpression, TranslationContext context)
@@ -1940,55 +1938,77 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         #endregion LINQ Specific Visitors
 
-        private static SqlScalarExpression ConvertCosmosElementToSqlScalarExpression(CosmosElement element)
+        private sealed class CosmosElementToSqlScalarExpressionVisitor : ICosmosElementVisitor<SqlScalarExpression>
         {
-            SqlScalarExpression sqlScalarExpression;
-            if (element is CosmosObject cosmosObject)
+            public static readonly CosmosElementToSqlScalarExpressionVisitor Singleton = new CosmosElementToSqlScalarExpressionVisitor();
+
+            private CosmosElementToSqlScalarExpressionVisitor()
+            {
+                // Private constructor, since this class is a singleton.
+            }
+
+            public SqlScalarExpression Visit(CosmosArray cosmosArray)
+            {
+                List<SqlScalarExpression> items = new List<SqlScalarExpression>();
+                foreach (CosmosElement item in cosmosArray)
+                {
+                    items.Add(item.Accept(this));
+                }
+
+                return SqlArrayCreateScalarExpression.Create(items);
+            }
+
+            public SqlScalarExpression Visit(CosmosBinary cosmosBinary)
+            {
+                // Can not convert binary to scalar expression without knowing the API type.
+                throw new NotImplementedException();
+            }
+
+            public SqlScalarExpression Visit(CosmosBoolean cosmosBoolean)
+            {
+                return SqlLiteralScalarExpression.Create(SqlBooleanLiteral.Create(cosmosBoolean.Value));
+            }
+
+            public SqlScalarExpression Visit(CosmosGuid cosmosGuid)
+            {
+                // Can not convert guid to scalar expression without knowing the API type.
+                throw new NotImplementedException();
+            }
+
+            public SqlScalarExpression Visit(CosmosNull cosmosNull)
+            {
+                return SqlLiteralScalarExpression.Create(SqlNullLiteral.Create());
+            }
+
+            public SqlScalarExpression Visit(CosmosNumber cosmosNumber)
+            {
+                if (!(cosmosNumber is CosmosNumber64 cosmosNumber64))
+                {
+                    throw new ArgumentException($"Unknown {nameof(CosmosNumber)} type: {cosmosNumber.GetType()}.");
+                }
+
+                return SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(cosmosNumber64.GetValue()));
+            }
+
+            public SqlScalarExpression Visit(CosmosObject cosmosObject)
             {
                 List<SqlObjectProperty> properties = new List<SqlObjectProperty>();
                 foreach (KeyValuePair<string, CosmosElement> prop in cosmosObject)
                 {
                     SqlPropertyName name = SqlPropertyName.Create(prop.Key);
                     CosmosElement value = prop.Value;
-                    SqlScalarExpression expression = ConvertCosmosElementToSqlScalarExpression(value);
+                    SqlScalarExpression expression = value.Accept(this);
                     SqlObjectProperty property = SqlObjectProperty.Create(name, expression);
                     properties.Add(property);
                 }
 
-                sqlScalarExpression = SqlObjectCreateScalarExpression.Create(properties);
-            }
-            else if (element is CosmosArray cosmosArray)
-            {
-                List<SqlScalarExpression> items = new List<SqlScalarExpression>();
-                foreach (CosmosElement item in cosmosArray)
-                {
-                    items.Add(ConvertCosmosElementToSqlScalarExpression(item));
-                }
-
-                sqlScalarExpression = SqlArrayCreateScalarExpression.Create(items);
-            }
-            else if (element is CosmosNumber64 cosmosNumber)
-            {
-                sqlScalarExpression = SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(cosmosNumber.GetValue()));
-            }
-            else if (element is CosmosBoolean cosmosBoolean)
-            {
-                sqlScalarExpression = SqlLiteralScalarExpression.Create(SqlBooleanLiteral.Create(cosmosBoolean.Value));
-            }
-            else if (element is CosmosString cosmosString)
-            {
-                sqlScalarExpression = SqlLiteralScalarExpression.Create(SqlStringLiteral.Create(cosmosString.Value));
-            }
-            else if (element is CosmosNull)
-            {
-                sqlScalarExpression = SqlLiteralScalarExpression.Create(SqlNullLiteral.Create());
-            }
-            else
-            {
-                throw new ArgumentException($"Unknown {nameof(CosmosElementType)}: {element.Type}");
+                return SqlObjectCreateScalarExpression.Create(properties);
             }
 
-            return sqlScalarExpression;
+            public SqlScalarExpression Visit(CosmosString cosmosString)
+            {
+                return SqlLiteralScalarExpression.Create(SqlStringLiteral.Create(cosmosString.Value));
+            }
         }
     }
 }

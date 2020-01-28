@@ -120,7 +120,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                         mockServiceConfigReader.Object,
                         mockAuthorizationTokenProvider.Object,
                         Protocol.Tcp,
-                        this.GetMockTransportClient(addressInformation)));
+                        this.GetMockTransportClient(addressInformation),
+                        enableRequestDiagnostics: true));
         }
 
         private Mock<IAddressResolver> GetMockAddressCache(AddressInformation[] addressInformation)

@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosQueryResponseMessageHeaders responseHeaders,
             HttpStatusCode statusCode,
             RequestMessage requestMessage,
-            CosmosDiagnostics diagnostics,
+            CosmosDiagnosticsContext diagnostics,
             string errorMessage,
             Error error,
             Lazy<MemoryStream> memoryStream,
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos
             int count,
             long responseLengthBytes,
             CosmosQueryResponseMessageHeaders responseHeaders,
-            CosmosDiagnostics diagnostics,
+            CosmosDiagnosticsContext diagnostics,
             CosmosSerializationFormatOptions serializationOptions)
         {
             if (count < 0)
@@ -128,7 +128,7 @@ namespace Microsoft.Azure.Cosmos
             RequestMessage requestMessage,
             string errorMessage,
             Error error,
-            CosmosDiagnostics diagnostics)
+            CosmosDiagnosticsContext diagnostics)
         {
             QueryResponse cosmosQueryResponse = new QueryResponse(
                     result: new List<CosmosElement>(),

@@ -80,22 +80,33 @@ namespace Microsoft.Azure.Cosmos
         {
             using (responseMessage)
             {
+                IClientSideRequestStatistics requestStatistics = request?.RequestContext?.ClientRequestStatistics;
                 if ((int)responseMessage.StatusCode < 400)
                 {
                     INameValueCollection headers = GatewayStoreClient.ExtractResponseHeaders(responseMessage);
                     Stream contentStream = await GatewayStoreClient.BufferContentIfAvailableAsync(responseMessage);
-                    return new DocumentServiceResponse(contentStream, headers, responseMessage.StatusCode, serializerSettings);
+                    return new DocumentServiceResponse(
+                        body: contentStream,
+                        headers: headers,
+                        statusCode: responseMessage.StatusCode,
+                        clientSideRequestStatistics: requestStatistics,
+                        serializerSettings: serializerSettings);
                 }
                 else if (request != null
                     && request.IsValidStatusCodeForExceptionlessRetry((int)responseMessage.StatusCode))
                 {
                     INameValueCollection headers = GatewayStoreClient.ExtractResponseHeaders(responseMessage);
                     Stream contentStream = await GatewayStoreClient.BufferContentIfAvailableAsync(responseMessage);
-                    return new DocumentServiceResponse(contentStream, headers, responseMessage.StatusCode, serializerSettings);
+                    return new DocumentServiceResponse(
+                        body: contentStream,
+                        headers: headers,
+                        statusCode: responseMessage.StatusCode,
+                        clientSideRequestStatistics: requestStatistics,
+                        serializerSettings: serializerSettings);
                 }
                 else
                 {
-                    throw await GatewayStoreClient.CreateDocumentClientExceptionAsync(responseMessage);
+                    throw await GatewayStoreClient.CreateDocumentClientExceptionAsync(responseMessage, requestStatistics);
                 }
             }
         }
@@ -146,7 +157,9 @@ namespace Microsoft.Azure.Cosmos
             return headers;
         }
 
-        internal static async Task<DocumentClientException> CreateDocumentClientExceptionAsync(HttpResponseMessage responseMessage)
+        internal static async Task<DocumentClientException> CreateDocumentClientExceptionAsync(
+            HttpResponseMessage responseMessage,
+            IClientSideRequestStatistics requestStatistics)
         {
             // ensure there is no local ActivityId, since in Gateway mode ActivityId
             // should always come from message headers
@@ -174,7 +187,8 @@ namespace Microsoft.Azure.Cosmos
                     responseMessage.StatusCode)
                 {
                     StatusDescription = responseMessage.ReasonPhrase,
-                    ResourceAddress = resourceIdOrFullName
+                    ResourceAddress = resourceIdOrFullName,
+                    RequestStatistics = requestStatistics
                 };
             }
             else
@@ -206,7 +220,8 @@ namespace Microsoft.Azure.Cosmos
                     requestUri: responseMessage.RequestMessage.RequestUri)
                 {
                     StatusDescription = responseMessage.ReasonPhrase,
-                    ResourceAddress = resourceIdOrFullName
+                    ResourceAddress = resourceIdOrFullName,
+                    RequestStatistics = requestStatistics
                 };
             }
         }

@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Linq.Expressions;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Newtonsoft.Json;
@@ -174,14 +175,32 @@ namespace Microsoft.Azure.Cosmos.Linq
         internal async Task<Response<T>> AggregateResultAsync(CancellationToken cancellationToken = default)
         {
             List<T> result = new List<T>();
-            CosmosDiagnosticsAggregate cosmosDiagnostics = new CosmosDiagnosticsAggregate();
+            CosmosDiagnosticsContext diagnosticsContext = null;
             Headers headers = new Headers();
             FeedIterator<T> localFeedIterator = this.CreateFeedIterator(false);
             while (localFeedIterator.HasMoreResults)
             {
                 FeedResponse<T> response = await localFeedIterator.ReadNextAsync();
                 headers.RequestCharge += response.RequestCharge;
-                cosmosDiagnostics.Diagnostics.Add(response.Diagnostics);
+
+                // If the first page has a diagnostic context use that. Else create a new one and add the diagnostic to it.
+                if (response.Diagnostics is CosmosDiagnosticsContext responseDiagnosticContext)
+                {
+                    if (diagnosticsContext == null)
+                    {
+                        diagnosticsContext = responseDiagnosticContext;
+                    }
+                    else
+                    {
+                        diagnosticsContext.Append(responseDiagnosticContext);
+                    }
+                    
+                }
+                else
+                {
+                    throw new ArgumentException($"Invalid diagnostic object {response.Diagnostics.GetType().FullName}");
+                }
+
                 result.AddRange(response);
             }
 
@@ -189,7 +208,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 System.Net.HttpStatusCode.OK,
                 headers,
                 result.FirstOrDefault(),
-                cosmosDiagnostics);
+                diagnosticsContext);
         }
 
         private FeedIteratorInternal CreateStreamIterator(bool isContinuationExcpected)

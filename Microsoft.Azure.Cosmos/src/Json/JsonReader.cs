@@ -37,14 +37,10 @@ namespace Microsoft.Azure.Cosmos.Json
             this.SkipValidation = skipValidation;
         }
 
-        /// <summary>
-        /// Gets the <see cref="JsonSerializationFormat"/> for the JsonReader
-        /// </summary>
+        /// <inheritdoc />
         public abstract JsonSerializationFormat SerializationFormat { get; }
 
-        /// <summary>
-        /// Gets the current level of nesting of the JSON that the JsonReader is reading.
-        /// </summary>
+        /// <inheritdoc />
         public int CurrentDepth
         {
             get
@@ -53,9 +49,7 @@ namespace Microsoft.Azure.Cosmos.Json
             }
         }
 
-        /// <summary>
-        /// Gets the <see cref="JsonTokenType"/> of the current token that the JsonReader is about to read.
-        /// </summary>
+        /// <inheritdoc />
         public JsonTokenType CurrentTokenType
         {
             get
@@ -93,6 +87,9 @@ namespace Microsoft.Azure.Cosmos.Json
 
         /// <inheritdoc />
         public abstract string GetStringValue();
+
+        /// <inheritdoc />
+        public abstract bool TryGetBufferedUtf8StringValue(out ReadOnlyMemory<byte> bufferedUtf8StringValue);
 
         /// <inheritdoc />
         public abstract ReadOnlyMemory<byte> GetBufferedRawJsonToken();

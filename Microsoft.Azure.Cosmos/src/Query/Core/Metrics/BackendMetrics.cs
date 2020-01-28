@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 {
     using System;
+    using System.Collections.Generic;
 
     /// <summary>
     /// Metrics received for queries from the backend.
@@ -122,6 +123,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// Gets the VMExecution Time.
         /// </summary>
         public TimeSpan VMExecutionTime { get; }
+
+        public override string ToString()
+        {
+            return $"totalExecutionTimeInMs={this.TotalTime.TotalMilliseconds};queryCompileTimeInMs={this.QueryPreparationTimes.QueryCompilationTime.TotalMilliseconds};queryLogicalPlanBuildTimeInMs={this.QueryPreparationTimes.LogicalPlanBuildTime.TotalMilliseconds};queryPhysicalPlanBuildTimeInMs={this.QueryPreparationTimes.PhysicalPlanBuildTime.TotalMilliseconds};queryOptimizationTimeInMs={this.QueryPreparationTimes.QueryOptimizationTime.TotalMilliseconds};indexLookupTimeInMs={this.IndexLookupTime.TotalMilliseconds};documentLoadTimeInMs={this.DocumentLoadTime.TotalMilliseconds};systemFunctionExecuteTimeInMs={this.RuntimeExecutionTimes.SystemFunctionExecutionTime.TotalMilliseconds};userFunctionExecuteTimeInMs={this.RuntimeExecutionTimes.UserDefinedFunctionExecutionTime.TotalMilliseconds};retrievedDocumentCount={this.RetrievedDocumentCount};retrievedDocumentSize={this.RetrievedDocumentSize};outputDocumentCount={this.OutputDocumentCount};outputDocumentSize={this.OutputDocumentSize};writeOutputTimeInMs={this.DocumentWriteTime.TotalMilliseconds};indexUtilizationRatio={this.IndexHitRatio}";
+        }
+
+        public static BackendMetrics CreateFromIEnumerable(IEnumerable<BackendMetrics> backendMetricsEnumerable)
+        {
+            BackendMetrics.Accumulator accumulator = default;
+            foreach (BackendMetrics backendMetrics in backendMetricsEnumerable)
+            {
+                accumulator = accumulator.Accumulate(backendMetrics);
+            }
+
+            return BackendMetrics.Accumulator.ToBackendMetrics(accumulator);
+        }
 
         public static bool TryParseFromDelimitedString(string delimitedString, out BackendMetrics backendMetrics)
         {

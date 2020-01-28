@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
     using System.Runtime.InteropServices;
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
@@ -199,17 +200,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
 
                     case CosmosElementType.Number:
                         CosmosNumber cosmosNumber = cosmosElement as CosmosNumber;
-                        double number;
-                        if (cosmosNumber.IsFloatingPoint)
-                        {
-                            number = cosmosNumber.AsFloatingPoint().Value;
-                        }
-                        else
-                        {
-                            number = cosmosNumber.AsInteger().Value;
-                        }
-
-                        added = this.AddNumberValue(number);
+                        added = this.AddNumberValue(cosmosNumber.Value);
                         break;
 
                     case CosmosElementType.Object:
@@ -307,7 +298,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
             /// </summary>
             /// <param name="value">The value to add.</param>
             /// <returns>Whether or not the value was successfully added.</returns>
-            private bool AddNumberValue(double value)
+            private bool AddNumberValue(Number64 value)
             {
                 return this.numbers.Add(value);
             }

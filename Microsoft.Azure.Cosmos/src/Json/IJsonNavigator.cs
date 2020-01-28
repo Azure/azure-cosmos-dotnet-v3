@@ -46,9 +46,9 @@ namespace Microsoft.Azure.Cosmos.Json
         /// Tries to get the buffered string value from a node.
         /// </summary>
         /// <param name="stringNode">The node to get the buffered string from.</param>
-        /// <param name="bufferedStringValue">The buffered string value if possible</param>
+        /// <param name="bufferedUtf8StringValue">The buffered string value if possible</param>
         /// <returns><code>true</code> if the JsonNavigator successfully got the buffered string value; <code>false</code> if the JsonNavigator failed to get the buffered string value.</returns>
-        bool TryGetBufferedStringValue(IJsonNavigatorNode stringNode, out ReadOnlyMemory<byte> bufferedStringValue);
+        bool TryGetBufferedUtf8StringValue(IJsonNavigatorNode stringNode, out ReadOnlyMemory<byte> bufferedUtf8StringValue);
 
         /// <summary>
         /// Gets a string value from a node.

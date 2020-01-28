@@ -696,6 +696,7 @@ namespace Microsoft.Azure.Cosmos
         {
             // do nothing 
             this.ServiceEndpoint = serviceEndpoint;
+            this.ConnectionPolicy = new ConnectionPolicy();
         }
 
         internal virtual async Task<ClientCollectionCache> GetCollectionCacheAsync()

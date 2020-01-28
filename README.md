@@ -14,7 +14,7 @@ Container container = await database.CreateContainerIfNotExistsAsync(
 
 // Create an item
 dynamic testItem = new { id = "MyTestItemId", partitionKeyPath = "MyTestPkValue", details = "it's working", status = "done" };
-ItemResponse<dynamic> response = await container.CreateItemAsync(testItem);
+ItemResponse<dynamic> createResponse = await container.CreateItemAsync(testItem);
 
 // Query for an item
 FeedIterator<dynamic> feedIterator = await container.GetItemQueryIterator<dynamic>(

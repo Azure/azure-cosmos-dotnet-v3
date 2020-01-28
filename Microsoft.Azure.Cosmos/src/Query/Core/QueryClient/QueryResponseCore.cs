@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
     using System.Collections.Generic;
     using System.Net;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using SubStatusCodes = Documents.SubStatusCodes;
 

@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     using System.Globalization;
     using System.Linq;
     using System.Text;
+    using Newtonsoft.Json;
 
     /// <summary>
     /// This struct is the TimeSpan equivalent to Stopwatch for SchedulingStopwatch.cs.
@@ -133,24 +134,25 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// <summary>
         /// Appends a JSON version of this SchedulingMetricsResult
         /// </summary>
-        public void AppendJsonToBuilder(StringBuilder stringBuilder)
+        public void WriteJsonObject(JsonWriter jsonWriter)
         {
-            if (stringBuilder == null)
+            if (jsonWriter == null)
             {
-                throw new ArgumentNullException(nameof(stringBuilder));
+                throw new ArgumentNullException(nameof(jsonWriter));
             }
 
-            stringBuilder.Append("{\"TurnaroundTimeInMs\":\"");
-            stringBuilder.Append(this.TurnaroundTime.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
-            stringBuilder.Append("\",\"ResponseTimeInMs\":\"");
-            stringBuilder.Append(this.ResponseTime.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
-            stringBuilder.Append("\",\"RunTimeInMs\":\"");
-            stringBuilder.Append(this.RunTime.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
-            stringBuilder.Append("\",\"WaitTimeInMs\":\"");
-            stringBuilder.Append(this.WaitTime.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
-            stringBuilder.Append("\",\"NumberOfPreemptions\":\"");
-            stringBuilder.Append(this.NumPreemptions.ToString(CultureInfo.InvariantCulture));
-            stringBuilder.Append("\"}");
+            jsonWriter.WriteStartObject();
+            jsonWriter.WritePropertyName("TurnaroundTimeInMs");
+            jsonWriter.WriteValue(this.TurnaroundTime.TotalMilliseconds);
+            jsonWriter.WritePropertyName("ResponseTimeInMs");
+            jsonWriter.WriteValue(this.ResponseTime.TotalMilliseconds);
+            jsonWriter.WritePropertyName("RunTimeInMs");
+            jsonWriter.WriteValue(this.RunTime.TotalMilliseconds);
+            jsonWriter.WritePropertyName("WaitTime");
+            jsonWriter.WriteValue(this.WaitTime.TotalMilliseconds);
+            jsonWriter.WritePropertyName("NumberOfPreemptions");
+            jsonWriter.WriteValue(this.NumPreemptions);
+            jsonWriter.WriteEndObject();
         }
 
         /// <summary>
