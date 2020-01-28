@@ -186,10 +186,9 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 default:
                     {
-                        if (sameFormat)
+                        if (sameFormat && jsonReader.TryGetBufferedRawJsonToken(out ReadOnlyMemory<byte> bufferedRawJsonToken))
                         {
-                            ReadOnlySpan<byte> bufferedRawJson = jsonReader.GetBufferedRawJsonToken().Span;
-                            this.WriteRawJsonToken(jsonTokenType, bufferedRawJson);
+                            this.WriteRawJsonToken(jsonTokenType, bufferedRawJsonToken.Span);
                         }
                         else
                         {

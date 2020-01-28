@@ -478,6 +478,13 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new ArgumentException($"{nameof(jsonNode)} must be a {nameof(BinaryNavigatorNode)}");
                 }
 
+                if (this.jsonStringDictionary != null)
+                {
+                    // Force a rewrite for dictionary encoding.
+                    bufferedRawJson = default;
+                    return false;
+                }
+
                 ReadOnlyMemory<byte> buffer = binaryNavigatorNode.Buffer;
 
                 if (buffer.Length == 0)

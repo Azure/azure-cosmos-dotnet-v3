@@ -222,7 +222,7 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            public override ReadOnlyMemory<byte> GetBufferedRawJsonToken()
+            public override bool TryGetBufferedRawJsonToken(out ReadOnlyMemory<byte> bufferedRawJsonToken)
             {
                 if (!JsonBinaryEncoding.TryGetValueLength(
                     this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition).Span,
@@ -231,7 +231,15 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new InvalidOperationException();
                 }
 
-                return this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition, this.currentTokenPosition + length);
+                if (this.jsonStringDictionary != null)
+                {
+                    // If there is dictionary encoding, then we need to force a rewrite.
+                    bufferedRawJsonToken = default;
+                    return false;
+                }
+
+                bufferedRawJsonToken = this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition, this.currentTokenPosition + length);
+                return true;
             }
 
             /// <inheritdoc />
