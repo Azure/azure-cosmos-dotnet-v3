@@ -9,10 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Diagnostics;
 
     /// <summary>
-    /// This represents the core diagnostics object used in the SDK.
-    /// This object gets created on the initial request and passed down
-    /// through the pipeline appending information as it goes into a list
-    /// where it is lazily converted to a JSON string.
+    /// This represents the diagnostics interface used in the SDK.
     /// </summary>
     internal abstract class CosmosDiagnosticsContext : CosmosDiagnosticsInternal, IEnumerable<CosmosDiagnosticsInternal>
     {

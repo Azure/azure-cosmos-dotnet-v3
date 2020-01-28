@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
 
         private bool IsDefaultUserAgent = true;
 
-        private bool isOverallScopeSet;
+        private bool isOverallScopeSet = false;
 
         static CosmosDiagnosticsContextCore()
         {
