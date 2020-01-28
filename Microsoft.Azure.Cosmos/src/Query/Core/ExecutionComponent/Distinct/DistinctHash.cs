@@ -181,7 +181,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
             public UInt128 Visit(CosmosString cosmosString, UInt128 seed)
             {
                 UInt128 hash = MurmurHash3.Hash128(CosmosElementHasher.StringHashSeed, seed);
-                return MurmurHash3.Hash128(cosmosString.Value, hash);
+                if (cosmosString.TryGetBufferedUtf8Value(out ReadOnlyMemory<byte> bufferedUtf8Value))
+                {
+                    hash = MurmurHash3.Hash128(bufferedUtf8Value.Span, hash);
+                }
+                else
+                {
+                    hash = MurmurHash3.Hash128(cosmosString.Value, hash);
+                }
+
+                return hash;
             }
         }
 
