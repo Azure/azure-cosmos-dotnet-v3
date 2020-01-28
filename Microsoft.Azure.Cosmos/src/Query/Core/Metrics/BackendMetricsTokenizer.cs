@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 {
     using System;
     using System.Text;
+    using Microsoft.Azure.Cosmos.Core.Collections;
 
     /// <summary>
     /// Tokenizer for <see cref="BackendMetrics"/>
@@ -20,6 +21,29 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 #endif
     static class BackendMetricsTokenizer
     {
+        private static readonly Trie<byte, TokenType> PropertyNameTokens;
+
+        static BackendMetricsTokenizer()
+        {
+            BackendMetricsTokenizer.PropertyNameTokens = new Trie<byte, TokenType>(initialCapacity: 32);
+            BackendMetricsTokenizer.PropertyNameTokens.AddOrUpdate(TokenBuffers.DocumentLoadTimeInMs.Span, TokenType.DocumentLoadTimeInMs);
+            BackendMetricsTokenizer.PropertyNameTokens.AddOrUpdate(TokenBuffers.DocumentWriteTimeInMs.Span, TokenType.DocumentWriteTimeInMs);
+            BackendMetricsTokenizer.PropertyNameTokens.AddOrUpdate(TokenBuffers.IndexHitRatio.Span, TokenType.IndexHitRatio);
+            BackendMetricsTokenizer.PropertyNameTokens.AddOrUpdate(TokenBuffers.IndexLookupTimeInMs.Span, TokenType.IndexLookupTimeInMs);
+            BackendMetricsTokenizer.PropertyNameTokens.AddOrUpdate(TokenBuffers.LogicalPlanBuildTimeInMs.Span, TokenType.LogicalPlanBuildTimeInMs);
+            BackendMetricsTokenizer.PropertyNameTokens.AddOrUpdate(TokenBuffers.OutputDocumentCount.Span, TokenType.OutputDocumentCount);
+            BackendMetricsTokenizer.PropertyNameTokens.AddOrUpdate(TokenBuffers.OutputDocumentSize.Span, TokenType.OutputDocumentSize);
+            BackendMetricsTokenizer.PropertyNameTokens.AddOrUpdate(TokenBuffers.PhysicalPlanBuildTimeInMs.Span, TokenType.PhysicalPlanBuildTimeInMs);
+            BackendMetricsTokenizer.PropertyNameTokens.AddOrUpdate(TokenBuffers.QueryCompileTimeInMs.Span, TokenType.QueryCompileTimeInMs);
+            BackendMetricsTokenizer.PropertyNameTokens.AddOrUpdate(TokenBuffers.QueryOptimizationTimeInMs.Span, TokenType.QueryOptimizationTimeInMs);
+            BackendMetricsTokenizer.PropertyNameTokens.AddOrUpdate(TokenBuffers.RetrievedDocumentCount.Span, TokenType.RetrievedDocumentCount);
+            BackendMetricsTokenizer.PropertyNameTokens.AddOrUpdate(TokenBuffers.RetrievedDocumentSize.Span, TokenType.RetrievedDocumentSize);
+            BackendMetricsTokenizer.PropertyNameTokens.AddOrUpdate(TokenBuffers.SystemFunctionExecuteTimeInMs.Span, TokenType.SystemFunctionExecuteTimeInMs);
+            BackendMetricsTokenizer.PropertyNameTokens.AddOrUpdate(TokenBuffers.TotalQueryExecutionTimeInMs.Span, TokenType.TotalQueryExecutionTimeInMs);
+            BackendMetricsTokenizer.PropertyNameTokens.AddOrUpdate(TokenBuffers.UserDefinedFunctionExecutionTimeInMs.Span, TokenType.UserDefinedFunctionExecutionTimeInMs);
+            BackendMetricsTokenizer.PropertyNameTokens.AddOrUpdate(TokenBuffers.VMExecutionTimeInMs.Span, TokenType.VMExecutionTimeInMs);
+        }
+
         public enum TokenType
         {
             Unknown,
@@ -81,73 +105,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             {
                 token = TokenType.NumberValue;
             }
-            else if (corpus.StartsWith(TokenBuffers.DocumentLoadTimeInMs.Span))
-            {
-                token = TokenType.DocumentLoadTimeInMs;
-            }
-            else if (corpus.StartsWith(TokenBuffers.DocumentWriteTimeInMs.Span))
-            {
-                token = TokenType.DocumentWriteTimeInMs;
-            }
-            else if (corpus.StartsWith(TokenBuffers.IndexHitRatio.Span))
-            {
-                token = TokenType.IndexHitRatio;
-            }
-            else if (corpus.StartsWith(TokenBuffers.IndexLookupTimeInMs.Span))
-            {
-                token = TokenType.IndexLookupTimeInMs;
-            }
-            else if (corpus.StartsWith(TokenBuffers.LogicalPlanBuildTimeInMs.Span))
-            {
-                token = TokenType.LogicalPlanBuildTimeInMs;
-            }
-            else if (corpus.StartsWith(TokenBuffers.OutputDocumentCount.Span))
-            {
-                token = TokenType.OutputDocumentCount;
-            }
-            else if (corpus.StartsWith(TokenBuffers.OutputDocumentSize.Span))
-            {
-                token = TokenType.OutputDocumentSize;
-            }
-            else if (corpus.StartsWith(TokenBuffers.PhysicalPlanBuildTimeInMs.Span))
-            {
-                token = TokenType.PhysicalPlanBuildTimeInMs;
-            }
-            else if (corpus.StartsWith(TokenBuffers.QueryCompileTimeInMs.Span))
-            {
-                token = TokenType.QueryCompileTimeInMs;
-            }
-            else if (corpus.StartsWith(TokenBuffers.QueryOptimizationTimeInMs.Span))
-            {
-                token = TokenType.QueryOptimizationTimeInMs;
-            }
-            else if (corpus.StartsWith(TokenBuffers.RetrievedDocumentCount.Span))
-            {
-                token = TokenType.RetrievedDocumentCount;
-            }
-            else if (corpus.StartsWith(TokenBuffers.RetrievedDocumentSize.Span))
-            {
-                token = TokenType.RetrievedDocumentSize;
-            }
-            else if (corpus.StartsWith(TokenBuffers.SystemFunctionExecuteTimeInMs.Span))
-            {
-                token = TokenType.SystemFunctionExecuteTimeInMs;
-            }
-            else if (corpus.StartsWith(TokenBuffers.TotalQueryExecutionTimeInMs.Span))
-            {
-                token = TokenType.TotalQueryExecutionTimeInMs;
-            }
-            else if (corpus.StartsWith(TokenBuffers.UserDefinedFunctionExecutionTimeInMs.Span))
-            {
-                token = TokenType.UserDefinedFunctionExecutionTimeInMs;
-            }
-            else if (corpus.StartsWith(TokenBuffers.VMExecutionTimeInMs.Span))
-            {
-                token = TokenType.VMExecutionTimeInMs;
-            }
             else
             {
-                token = TokenType.Unknown;
+                // Check to see if it's a property name token
+                int index = corpus.IndexOf((byte)'=');
+                if (index == -1)
+                {
+                    return TokenType.Unknown;
+                }
+
+                if (!BackendMetricsTokenizer.PropertyNameTokens.TryGetValue(corpus.Slice(start: 0, length: index), out token))
+                {
+                    return TokenType.Unknown;
+                }
             }
 
             return token;
