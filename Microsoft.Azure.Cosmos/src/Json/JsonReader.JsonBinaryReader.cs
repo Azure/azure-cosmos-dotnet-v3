@@ -235,9 +235,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     this.currentTokenPosition,
                     this.currentTokenPosition + length);
 
-                JsonTokenType type = GetJsonTokenType(candidate.Span[0]);
-
-                if ((this.jsonStringDictionary != null) && JsonBinaryReader.IsStringOrNested(type))
+                if ((this.jsonStringDictionary != null) && JsonBinaryReader.IsStringOrNested(this.CurrentTokenType))
                 {
                     // If there is dictionary encoding, then we need to force a rewrite.
                     bufferedRawJsonToken = default;
@@ -253,9 +251,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 switch (type)
                 {
                     case JsonTokenType.BeginArray:
-                    case JsonTokenType.EndArray:
                     case JsonTokenType.BeginObject:
-                    case JsonTokenType.EndObject:
                     case JsonTokenType.String:
                     case JsonTokenType.FieldName:
                         return true;
