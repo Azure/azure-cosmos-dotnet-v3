@@ -135,7 +135,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                         return false;
                     }
 
-                    takeContinuationToken = new TakeContinuationToken(takeCount.AsInteger().Value, sourceToken);
+                    takeContinuationToken = new TakeContinuationToken(Number64.ToLong(takeCount.Value), sourceToken);
                     return true;
                 }
             }

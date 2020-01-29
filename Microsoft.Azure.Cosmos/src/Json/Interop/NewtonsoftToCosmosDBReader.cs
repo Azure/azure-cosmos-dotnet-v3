@@ -167,5 +167,10 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
 
             return new NewtonsoftToCosmosDBReader(reader);
         }
+
+        public override bool TryGetBufferedUtf8StringValue(out ReadOnlyMemory<byte> bufferedUtf8StringValue)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

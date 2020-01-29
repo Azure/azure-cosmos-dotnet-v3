@@ -23,6 +23,8 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public abstract string Value { get; }
 
+        public abstract bool TryGetBufferedUtf8Value(out ReadOnlyMemory<byte> bufferedUtf8Value);
+
         public override void Accept(ICosmosElementVisitor cosmosElementVisitor)
         {
             if (cosmosElementVisitor == null)

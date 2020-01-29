@@ -23,13 +23,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public CosmosNumberType NumberType { get; }
 
-        public abstract bool IsInteger { get; }
-
-        public abstract bool IsFloatingPoint { get; }
-
-        public abstract double? AsFloatingPoint();
-
-        public abstract long? AsInteger();
+        public abstract Number64 Value { get; }
 
         public abstract void Accept(ICosmosNumberVisitor cosmosNumberVisitor);
 

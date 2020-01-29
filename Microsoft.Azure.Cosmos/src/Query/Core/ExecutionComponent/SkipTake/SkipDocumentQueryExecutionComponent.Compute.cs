@@ -146,7 +146,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                         return (false, default);
                     }
 
-                    return (true, new OffsetContinuationToken(offset.AsInteger().Value, sourceToken));
+                    return (true, new OffsetContinuationToken(Number64.ToLong(offset.Value), sourceToken));
                 }
             }
         }
