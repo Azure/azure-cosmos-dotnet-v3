@@ -208,7 +208,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                         this.groupByAliasToAggregateType,
                         this.orderedAliases,
                         this.hasSelectValue,
-                        continuationToken: null).Result;
+                        continuationToken: StringRequestContinuationToken.Null).Result;
                     this.table[groupByKeysHash] = singleGroupAggregator;
                 }
 

@@ -2272,7 +2272,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.CreateIngestQueryDelete(
                 ConnectionModes.Direct,
-                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
+                /*CollectionTypes.SinglePartition |*/ CollectionTypes.MultiPartition,
                 documents,
                 this.TestNonValueAggregates);
         }
@@ -2733,7 +2733,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         MaxConcurrency = 10,
                         MaxItemCount = 100,
                     },
-                    QueryDrainingMode.TryGetContinuationTokens | QueryDrainingMode.HoldState);
+                    QueryDrainingMode.TryGetContinuationTokens | QueryDrainingMode.HoldState | QueryDrainingMode.SerializeState);
                 documentsFromWithoutDistinct = documentsFromWithoutDistinct
                     .Where(document => documentsSeen.Add(document, out UInt128 hash))
                     .ToList();
@@ -2749,7 +2749,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             MaxConcurrency = 10,
                             MaxItemCount = pageSize
                         },
-                        QueryDrainingMode.TryGetContinuationTokens | QueryDrainingMode.HoldState);
+                        QueryDrainingMode.TryGetContinuationTokens | QueryDrainingMode.HoldState | QueryDrainingMode.SerializeState);
 
                     Assert.IsTrue(
                         documentsFromWithDistinct.SequenceEqual(documentsFromWithoutDistinct, JsonTokenEqualityComparer.Value),

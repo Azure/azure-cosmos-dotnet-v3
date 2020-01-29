@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                 }
 
                 OffsetContinuationToken offsetContinuationToken;
-                if (continuationToken != null)
+                if (!continuationToken.IsNull)
                 {
                     (bool parsed, OffsetContinuationToken parsedToken) = OffsetContinuationToken.TryParse(cosmosElementRequestContinuationToken.Value);
                     if (!parsed)

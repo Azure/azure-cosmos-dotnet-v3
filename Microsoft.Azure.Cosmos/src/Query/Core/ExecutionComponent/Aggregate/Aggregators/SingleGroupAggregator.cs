@@ -192,8 +192,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
                 IReadOnlyList<string> orderedAliases,
                 RequestContinuationToken continuationToken)
             {
+                if (aggregateAliasToAggregateType == null)
+                {
+                    throw new ArgumentNullException(nameof(aggregateAliasToAggregateType));
+                }
+
+                if (orderedAliases == null)
+                {
+                    throw new ArgumentNullException(nameof(orderedAliases));
+                }
+
+                if (continuationToken == null)
+                {
+                    throw new ArgumentNullException(nameof(continuationToken));
+                }
+
                 CosmosObject aliasToContinuationToken;
-                if (continuationToken != null)
+                if (!continuationToken.IsNull)
                 {
                     if (!continuationToken.TryConvertToCosmosElement(out aliasToContinuationToken))
                     {

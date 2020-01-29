@@ -8,6 +8,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
 
     internal sealed class StringRequestContinuationToken : RequestContinuationToken
     {
+        public static readonly StringRequestContinuationToken Null = new StringRequestContinuationToken(continuationToken: null);
+
         public StringRequestContinuationToken(string continuationToken)
         {
             this.Value = continuationToken;

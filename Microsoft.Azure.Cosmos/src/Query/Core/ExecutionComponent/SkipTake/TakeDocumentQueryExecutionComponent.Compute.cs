@@ -92,13 +92,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                 this.takeCount -= takedDocuments.Count;
 
                 return QueryResponseCore.CreateSuccess(
-                        result: takedDocuments,
-                        continuationToken: null,
-                        disallowContinuationTokenMessage: DocumentQueryExecutionComponentBase.UseSerializeStateInstead,
-                        activityId: sourcePage.ActivityId,
-                        requestCharge: sourcePage.RequestCharge,
-                        diagnostics: sourcePage.Diagnostics,
-                        responseLengthBytes: sourcePage.ResponseLengthBytes);
+                    result: takedDocuments,
+                    continuationToken: null,
+                    disallowContinuationTokenMessage: DocumentQueryExecutionComponentBase.UseSerializeStateInstead,
+                    activityId: sourcePage.ActivityId,
+                    requestCharge: sourcePage.RequestCharge,
+                    diagnostics: sourcePage.Diagnostics,
+                    responseLengthBytes: sourcePage.ResponseLengthBytes);
             }
 
             public override void SerializeState(IJsonWriter jsonWriter)

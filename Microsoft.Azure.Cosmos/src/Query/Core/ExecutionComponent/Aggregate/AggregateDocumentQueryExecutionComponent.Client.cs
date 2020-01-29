@@ -41,11 +41,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
                 }
 
                 TryCatch<SingleGroupAggregator> tryCreateSingleGroupAggregator = SingleGroupAggregator.TryCreate(
-                            aggregates,
-                            aliasToAggregateType,
-                            orderedAliases,
-                            hasSelectValue,
-                            continuationToken: null);
+                    aggregates,
+                    aliasToAggregateType,
+                    orderedAliases,
+                    hasSelectValue,
+                    continuationToken: StringRequestContinuationToken.Null);
 
                 if (!tryCreateSingleGroupAggregator.Succeeded)
                 {
