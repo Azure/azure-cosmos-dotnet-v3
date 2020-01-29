@@ -67,39 +67,5 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                 return this.Source.IsDone;
             }
         }
-
-        public override async Task<QueryResponseCore> DrainAsync(int maxElements, CancellationToken token)
-        {
-            token.ThrowIfCancellationRequested();
-            QueryResponseCore sourcePage = await base.DrainAsync(maxElements, token);
-            if (!sourcePage.IsSuccess)
-            {
-                return sourcePage;
-            }
-
-            // skip the documents but keep all the other headers
-            IReadOnlyList<CosmosElement> documentsAfterSkip = sourcePage.CosmosElements.Skip(this.skipCount).ToList();
-
-            int numberOfDocumentsSkipped = sourcePage.CosmosElements.Count() - documentsAfterSkip.Count();
-            this.skipCount -= numberOfDocumentsSkipped;
-            string updatedContinuationToken = null;
-
-            if (sourcePage.DisallowContinuationTokenMessage == null)
-            {
-                if (!this.TryGetContinuationToken(out updatedContinuationToken))
-                {
-                    throw new InvalidOperationException($"Failed to get state for {nameof(SkipDocumentQueryExecutionComponent)}.");
-                }
-            }
-
-            return QueryResponseCore.CreateSuccess(
-                    result: documentsAfterSkip,
-                    continuationToken: updatedContinuationToken,
-                    disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,
-                    activityId: sourcePage.ActivityId,
-                    requestCharge: sourcePage.RequestCharge,
-                    diagnostics: sourcePage.Diagnostics,
-                    responseLengthBytes: sourcePage.ResponseLengthBytes);
-        }
     }
 }

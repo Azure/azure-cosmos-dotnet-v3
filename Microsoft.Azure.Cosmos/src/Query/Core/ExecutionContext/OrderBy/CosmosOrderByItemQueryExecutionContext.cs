@@ -374,6 +374,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
                 throw new ArgumentNullException(nameof(sqlQuerySpec));
             }
 
+            if (requestContinuation == null)
+            {
+                throw new ArgumentNullException(nameof(requestContinuation));
+            }
+
             if (collectionRid == null)
             {
                 throw new ArgumentNullException(nameof(collectionRid));
@@ -396,7 +401,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
 
             cancellationToken.ThrowIfCancellationRequested();
 
-            if (requestContinuation == null)
+            if (requestContinuation.IsNull)
             {
                 SqlQuerySpec sqlQuerySpecForInit = new SqlQuerySpec(
                     sqlQuerySpec.QueryText.Replace(oldValue: FormatPlaceHolder, newValue: True),

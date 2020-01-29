@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                 }
 
                 DistinctContinuationToken distinctContinuationToken;
-                if (requestContinuation != null)
+                if (!requestContinuation.IsNull)
                 {
                     if (!DistinctContinuationToken.TryParse(cosmosElementRequestContinuationToken.Value, out distinctContinuationToken))
                     {

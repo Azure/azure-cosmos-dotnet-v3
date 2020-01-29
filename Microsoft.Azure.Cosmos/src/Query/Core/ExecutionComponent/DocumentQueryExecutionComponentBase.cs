@@ -14,6 +14,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
     /// </summary>
     internal abstract class DocumentQueryExecutionComponentBase : IDocumentQueryExecutionComponent
     {
+        public static readonly string UseSerializeStateInstead = $"Use Serialize State instead";
+
         /// <summary>
         /// Source DocumentQueryExecutionComponent that this component will drain from.
         /// </summary>
@@ -72,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
             IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
             this.SerializeState(jsonWriter);
             continuationToken = Utf8StringHelpers.ToString(jsonWriter.GetResult());
-            return false;
+            return true;
         }
 
         public abstract void SerializeState(IJsonWriter jsonWriter);

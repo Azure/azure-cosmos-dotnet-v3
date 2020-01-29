@@ -23,7 +23,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
             private const string SourceTokenName = "SourceToken";
             private const string GroupingTableContinuationTokenName = "GroupingTableContinuationToken";
             private const string DoneReadingGroupingsContinuationToken = "DONE";
-            private const string UseTryGetContinuationTokenInstead = "Use TryGetContinuationTokenInstead";
 
             private static readonly IReadOnlyList<CosmosElement> EmptyResults = new List<CosmosElement>().AsReadOnly();
             private static readonly IReadOnlyDictionary<string, QueryMetrics> EmptyQueryMetrics = new Dictionary<string, QueryMetrics>();
@@ -50,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                 }
 
                 GroupByContinuationToken groupByContinuationToken;
-                if (requestContinuation != null)
+                if (!requestContinuation.IsNull)
                 {
                     if (!GroupByContinuationToken.TryParse(cosmosElementRequestContinuationToken.Value, out groupByContinuationToken))
                     {
@@ -123,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                     response = QueryResponseCore.CreateSuccess(
                         result: EmptyResults,
                         continuationToken: null,
-                        disallowContinuationTokenMessage: UseTryGetContinuationTokenInstead,
+                        disallowContinuationTokenMessage: DocumentQueryExecutionComponentBase.UseSerializeStateInstead,
                         activityId: sourceResponse.ActivityId,
                         requestCharge: sourceResponse.RequestCharge,
                         diagnostics: sourceResponse.Diagnostics,
@@ -138,7 +137,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                     response = QueryResponseCore.CreateSuccess(
                        result: results,
                        continuationToken: null,
-                       disallowContinuationTokenMessage: UseTryGetContinuationTokenInstead,
+                       disallowContinuationTokenMessage: DocumentQueryExecutionComponentBase.UseSerializeStateInstead,
                        activityId: null,
                        requestCharge: 0,
                        diagnostics: QueryResponseCore.EmptyDiagnostics,

@@ -4,12 +4,16 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
 {
     using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
 
     internal abstract partial class SkipDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase
     {
@@ -67,6 +71,31 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                     .Try<IDocumentQueryExecutionComponent>((source) => new ClientSkipDocumentQueryExecutionComponent(
                     source,
                     offsetContinuationToken.Offset));
+            }
+
+            public override async Task<QueryResponseCore> DrainAsync(int maxElements, CancellationToken token)
+            {
+                token.ThrowIfCancellationRequested();
+                QueryResponseCore sourcePage = await base.DrainAsync(maxElements, token);
+                if (!sourcePage.IsSuccess)
+                {
+                    return sourcePage;
+                }
+
+                // skip the documents but keep all the other headers
+                IReadOnlyList<CosmosElement> documentsAfterSkip = sourcePage.CosmosElements.Skip(this.skipCount).ToList();
+
+                int numberOfDocumentsSkipped = sourcePage.CosmosElements.Count() - documentsAfterSkip.Count();
+                this.skipCount -= numberOfDocumentsSkipped;
+
+                return QueryResponseCore.CreateSuccess(
+                    result: documentsAfterSkip,
+                    continuationToken: null,
+                    disallowContinuationTokenMessage: DocumentQueryExecutionComponentBase.UseSerializeStateInstead,
+                    activityId: sourcePage.ActivityId,
+                    requestCharge: sourcePage.RequestCharge,
+                    diagnostics: sourcePage.Diagnostics,
+                    responseLengthBytes: sourcePage.ResponseLengthBytes);
             }
 
             public override void SerializeState(IJsonWriter jsonWriter)

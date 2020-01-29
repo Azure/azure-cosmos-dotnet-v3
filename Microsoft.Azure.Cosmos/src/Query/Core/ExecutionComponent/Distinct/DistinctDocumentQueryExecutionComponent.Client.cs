@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                 }
 
                 DistinctContinuationToken distinctContinuationToken;
-                if (requestContinuation != null)
+                if (!requestContinuation.IsNull)
                 {
                     if (!DistinctContinuationToken.TryParse(stringRequestContinuationToken, out distinctContinuationToken))
                     {
@@ -124,11 +124,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
 
                 // For clients we write out the continuation token if it's a streaming query.
                 QueryResponseCore queryResponseCore;
-                if (this.TryGetContinuationToken(out string continuationToken))
+                if (this.distinctQueryType == DistinctQueryType.Ordered)
                 {
+                    DistinctContinuationToken distinctContinuationToken = new DistinctContinuationToken(
+                        sourceToken: sourceResponse.ContinuationToken,
+                        distinctMapToken: this.distinctMap.GetContinuationToken());
                     queryResponseCore = QueryResponseCore.CreateSuccess(
                         result: distinctResults,
-                        continuationToken: continuationToken,
+                        continuationToken: distinctContinuationToken.ToString(),
                         disallowContinuationTokenMessage: null,
                         activityId: sourceResponse.ActivityId,
                         requestCharge: sourceResponse.RequestCharge,

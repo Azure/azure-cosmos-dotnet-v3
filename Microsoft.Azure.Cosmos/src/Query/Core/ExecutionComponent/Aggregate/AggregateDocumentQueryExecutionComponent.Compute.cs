@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
                 Func<RequestContinuationToken, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync)
             {
                 AggregateContinuationToken aggregateContinuationToken;
-                if (requestContinuation != null)
+                if (!requestContinuation.IsNull)
                 {
                     if (!AggregateContinuationToken.TryParse(requestContinuation, out aggregateContinuationToken))
                     {
