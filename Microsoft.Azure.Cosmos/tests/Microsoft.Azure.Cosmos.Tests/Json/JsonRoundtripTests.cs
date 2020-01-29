@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 {
     using System;
     using System.Diagnostics;
-    using System.IO;
     using System.Linq;
     using System.Text;
     using System.Text.RegularExpressions;
@@ -17,7 +16,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    [TestCategory("Functional")]
     public class JsonRoundTripsTests
     {
         [TestInitialize]
@@ -824,6 +822,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             Text,
             Binary,
             NewtonsoftText,
+            BinaryWithDictionaryEncoding,
         }
 
         private void MultiSerializationRoundTrip(string json)
@@ -847,6 +846,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                         case SerializationFormat.NewtonsoftText:
                             reader = NewtonsoftToCosmosDBReader.CreateFromString(json);
                             break;
+                        case SerializationFormat.BinaryWithDictionaryEncoding:
+                            JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(capacity: 128);
+                            reader = JsonReader.Create(JsonTestUtils.ConvertTextToBinary(json, jsonStringDictionary), jsonStringDictionary);
+                            break;
                         default:
                             throw new ArgumentException($"Unexpected {nameof(sourceFormat)} of type: {sourceFormat}");
                     }
@@ -863,6 +866,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                         case SerializationFormat.NewtonsoftText:
                             navigator = new JsonNewtonsoftNavigator(json);
                             break;
+                        case SerializationFormat.BinaryWithDictionaryEncoding:
+                            JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(capacity: 128);
+                            navigator = JsonNavigator.Create(JsonTestUtils.ConvertTextToBinary(json, jsonStringDictionary), jsonStringDictionary);
+                            break;
                         default:
                             throw new ArgumentException($"Unexpected {nameof(sourceFormat)} of type: {sourceFormat}");
                     }
@@ -871,31 +878,43 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                     foreach (object source in sources)
                     {
                         IJsonWriter writer;
+                        JsonStringDictionary jsonStringDictionary;
                         switch (destinationFormat)
                         {
                             case SerializationFormat.Text:
                                 writer = JsonWriter.Create(JsonSerializationFormat.Text);
+                                jsonStringDictionary = null;
                                 break;
                             case SerializationFormat.Binary:
                                 writer = JsonWriter.Create(JsonSerializationFormat.Binary);
+                                jsonStringDictionary = null;
                                 break;
                             case SerializationFormat.NewtonsoftText:
                                 writer = NewtonsoftToCosmosDBWriter.CreateTextWriter();
+                                jsonStringDictionary = null;
+                                break;
+                            case SerializationFormat.BinaryWithDictionaryEncoding:
+                                jsonStringDictionary = new JsonStringDictionary(capacity: 128);
+                                writer = JsonWriter.Create(JsonSerializationFormat.Binary, jsonStringDictionary);
                                 break;
                             default:
                                 throw new ArgumentException($"Unexpected {nameof(destinationFormat)} of type: {destinationFormat}");
                         }
 
                         Stopwatch stopwatch = Stopwatch.StartNew();
-                        if (source is IJsonReader)
+                        switch (source)
                         {
-                            IJsonReader sourceReader = source as IJsonReader;
-                            writer.WriteAll(sourceReader);
-                        }
-                        else if (source is IJsonNavigator)
-                        {
-                            IJsonNavigator sourceNavigator = source as IJsonNavigator;
-                            writer.WriteJsonNode(sourceNavigator, sourceNavigator.GetRootNode());
+                            case IJsonReader sourceReader:
+                                writer.WriteAll(sourceReader);
+                                break;
+
+                            case IJsonNavigator sourceNavigator:
+                                writer.WriteJsonNode(sourceNavigator, sourceNavigator.GetRootNode());
+                                break;
+
+                            default:
+                                Assert.Fail("Failed to downcast source type.");
+                                break;
                         }
                         stopwatch.Stop();
 
@@ -906,7 +925,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                                 result = Encoding.UTF8.GetString(writer.GetResult().ToArray());
                                 break;
                             case JsonSerializationFormat.Binary:
-                                result = JsonTestUtils.ConvertBinaryToText(writer.GetResult().ToArray());
+                                result = JsonTestUtils.ConvertBinaryToText(writer.GetResult().ToArray(), jsonStringDictionary);
                                 break;
                             default:
                                 throw new ArgumentException();
@@ -918,79 +937,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                         string sourceType = (source is IJsonReader) ? "Reader" : "Navigator";
                         Console.WriteLine($"{sourceFormat} {sourceType} to {destinationFormat} Writer took {stopwatch.ElapsedMilliseconds}ms");
                     }
-                }
-            }
-        }
-
-        private enum NewtonsoftWrapperFormat
-        {
-            NewtonsoftText,
-            CosmosDBText,
-            CosmosDBBinary,
-        }
-
-        private void NewtonsoftWrapperRoundTrip(string json)
-        {
-            // Normalize the json to get rid of any formatting issues
-            json = this.NewtonsoftFormat(json);
-
-            foreach (NewtonsoftWrapperFormat sourceFormat in Enum.GetValues(typeof(NewtonsoftWrapperFormat)))
-            {
-                foreach (NewtonsoftWrapperFormat destinationFormat in Enum.GetValues(typeof(NewtonsoftWrapperFormat)))
-                {
-                    IJsonReader reader;
-                    switch (sourceFormat)
-                    {
-                        case NewtonsoftWrapperFormat.NewtonsoftText:
-                            reader = NewtonsoftToCosmosDBReader.CreateFromString(json);
-                            break;
-                        case NewtonsoftWrapperFormat.CosmosDBText:
-                            reader = JsonReader.Create(Encoding.UTF8.GetBytes(json));
-                            break;
-                        case NewtonsoftWrapperFormat.CosmosDBBinary:
-                            reader = JsonReader.Create(JsonPerfMeasurement.ConvertTextToBinary(json));
-                            break;
-                        default:
-                            throw new ArgumentException($"Unexpected {nameof(sourceFormat)} of type: {sourceFormat}");
-                    }
-
-                    IJsonWriter writer;
-                    switch (destinationFormat)
-                    {
-                        case NewtonsoftWrapperFormat.NewtonsoftText:
-                            writer = NewtonsoftToCosmosDBWriter.CreateTextWriter();
-                            break;
-                        case NewtonsoftWrapperFormat.CosmosDBText:
-                            writer = JsonWriter.Create(JsonSerializationFormat.Text);
-                            break;
-                        case NewtonsoftWrapperFormat.CosmosDBBinary:
-                            writer = JsonWriter.Create(JsonSerializationFormat.Binary);
-                            break;
-                        default:
-                            throw new ArgumentException($"Unexpected {nameof(sourceFormat)} of type: {sourceFormat}");
-                    }
-
-                    Stopwatch stopwatch = Stopwatch.StartNew();
-                    writer.WriteAll(reader);
-                    stopwatch.Stop();
-
-                    string result;
-                    switch (writer.SerializationFormat)
-                    {
-                        case JsonSerializationFormat.Text:
-                            result = Encoding.UTF8.GetString(writer.GetResult().ToArray());
-                            break;
-                        case JsonSerializationFormat.Binary:
-                            result = JsonTestUtils.ConvertBinaryToText(writer.GetResult().ToArray());
-                            break;
-                        default:
-                            throw new ArgumentException();
-                    }
-
-                    result = this.NewtonsoftFormat(result);
-                    Assert.AreEqual(json, result);
-
-                    Console.WriteLine($"{sourceFormat} Reader to {destinationFormat} Writer took {stopwatch.ElapsedMilliseconds}ms");
                 }
             }
         }
@@ -1028,7 +974,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         {
             // Do the actual roundtrips
             this.MultiSerializationRoundTrip(input);
-            // this.NewtonsoftWrapperRoundTrip(input);
         }
 
         /// <summary>

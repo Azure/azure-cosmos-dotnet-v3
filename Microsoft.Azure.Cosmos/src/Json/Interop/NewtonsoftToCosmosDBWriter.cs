@@ -139,7 +139,19 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
             JsonTokenType jsonTokenType,
             ReadOnlySpan<byte> rawJsonToken)
         {
-            throw new NotImplementedException();
+            string rawJson = Encoding.UTF8.GetString(rawJsonToken);
+            Newtonsoft.Json.JsonTextReader jsonTextReader = new Newtonsoft.Json.JsonTextReader(new StringReader(rawJson));
+            while (jsonTextReader.Read())
+            {
+                if (jsonTokenType == JsonTokenType.FieldName)
+                {
+                    this.writer.WritePropertyName(jsonTextReader.Value as string);
+                }
+                else
+                {
+                    this.writer.WriteValue(jsonTextReader.Value);
+                }
+            }
         }
 
         public static NewtonsoftToCosmosDBWriter CreateTextWriter()

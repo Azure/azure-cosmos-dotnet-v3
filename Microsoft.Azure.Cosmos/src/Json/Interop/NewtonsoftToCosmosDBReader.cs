@@ -28,11 +28,6 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
             throw new NotImplementedException();
         }
 
-        public override ReadOnlyMemory<byte> GetBufferedRawJsonToken()
-        {
-            throw new NotImplementedException();
-        }
-
         public override float GetFloat32Value()
         {
             return (float)this.reader.Value;
@@ -170,7 +165,14 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
 
         public override bool TryGetBufferedUtf8StringValue(out ReadOnlyMemory<byte> bufferedUtf8StringValue)
         {
-            throw new NotImplementedException();
+            bufferedUtf8StringValue = default;
+            return false;
+        }
+
+        public override bool TryGetBufferedRawJsonToken(out ReadOnlyMemory<byte> bufferedRawJsonToken)
+        {
+            bufferedRawJsonToken = default;
+            return false;
         }
     }
 }

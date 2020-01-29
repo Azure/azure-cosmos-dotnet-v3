@@ -540,7 +540,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 StreamReader sr = new StreamReader(response.Content);
                 string result = await sr.ReadToEndAsync();
-                ICollection<T> responseResults = JsonConvert.DeserializeObject<CosmosFeedResponseUtil<T>>(result).Data;
+                ICollection<T> responseResults;
+                responseResults = JsonConvert.DeserializeObject<CosmosFeedResponseUtil<T>>(result).Data;
+
                 Assert.IsTrue(responseResults.Count <= 1);
 
                 streamResults.AddRange(responseResults);

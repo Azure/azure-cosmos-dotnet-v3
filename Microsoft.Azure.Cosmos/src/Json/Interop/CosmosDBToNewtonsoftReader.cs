@@ -140,7 +140,12 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         public override byte[] ReadAsBytes()
         {
             this.Read();
-            byte[] value = this.jsonReader.GetBufferedRawJsonToken().ToArray();
+            if (!this.jsonReader.TryGetBufferedRawJsonToken(out ReadOnlyMemory<byte> bufferedRawJsonToken))
+            {
+                throw new Exception("Failed to get the bytes.");
+            }
+
+            byte[] value = bufferedRawJsonToken.ToArray();
             this.SetToken(JsonToken.Bytes, value);
             return value;
         }
