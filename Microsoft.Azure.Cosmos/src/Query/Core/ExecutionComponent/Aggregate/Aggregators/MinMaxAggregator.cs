@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
     using System;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
@@ -165,21 +166,31 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
             }
         }
 
-        public static TryCatch<IAggregator> TryCreateMinAggregator(string continuationToken)
+        public static TryCatch<IAggregator> TryCreateMinAggregator(RequestContinuationToken continuationToken)
         {
             return MinMaxAggregator.TryCreate(isMinAggregation: true, continuationToken: continuationToken);
         }
 
-        public static TryCatch<IAggregator> TryCreateMaxAggregator(string continuationToken)
+        public static TryCatch<IAggregator> TryCreateMaxAggregator(RequestContinuationToken continuationToken)
         {
             return MinMaxAggregator.TryCreate(isMinAggregation: false, continuationToken: continuationToken);
         }
 
-        private static TryCatch<IAggregator> TryCreate(bool isMinAggregation, string continuationToken)
+        private static TryCatch<IAggregator> TryCreate(bool isMinAggregation, RequestContinuationToken continuationToken)
         {
-            CosmosElement globalMinMax;
-            if (continuationToken != null)
+            if (continuationToken == null)
             {
+                throw new ArgumentNullException(nameof(continuationToken));
+            }
+
+            CosmosElement globalMinMax;
+            if (!continuationToken.IsNull)
+            {
+                if (!continuationToken.TryConvertToCosmosElement(out CosmosElement globalMinMax))
+                {
+                    return TryCatch<IAggregator>.FromException(
+                            new MalformedContinuationTokenException($"Malformed continuation token: {continuationToken}"));
+                }
                 if (continuationToken == MinMaxAggregator.MaxValueContinuationToken)
                 {
                     globalMinMax = ItemComparer.MaxValue;
@@ -196,8 +207,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
                 {
                     if (!CosmosElement.TryParse(continuationToken, out globalMinMax))
                     {
-                        return TryCatch<IAggregator>.FromException(
-                            new MalformedContinuationTokenException($"Malformed continuation token: {continuationToken}"));
+                        
                     }
                 }
             }

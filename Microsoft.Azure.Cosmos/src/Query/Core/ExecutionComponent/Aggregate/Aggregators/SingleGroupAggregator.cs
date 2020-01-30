@@ -343,7 +343,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
 
                 public static TryCatch<AggregateValue> TryCreate(
                     AggregateOperator aggregateOperator,
-                    string continuationToken)
+                    RequestContinuationToken continuationToken)
                 {
                     TryCatch<IAggregator> tryCreateAggregator;
                     switch (aggregateOperator)

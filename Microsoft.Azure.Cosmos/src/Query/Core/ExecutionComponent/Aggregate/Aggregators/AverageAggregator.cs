@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
@@ -64,10 +65,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
             this.globalAverage.SerializeState(jsonWriter);
         }
 
-        public static TryCatch<IAggregator> TryCreate(string continuationToken)
+        public static TryCatch<IAggregator> TryCreate(RequestContinuationToken continuationToken)
         {
+            if (continuationToken == null)
+            {
+                throw new ArgumentNullException(nameof(continuationToken));
+            }
+
             AverageInfo averageInfo;
-            if (continuationToken != null)
+            if (!continuationToken.IsNull)
             {
                 if (!AverageInfo.TryParse(continuationToken, out averageInfo))
                 {
@@ -213,14 +219,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
                 }}";
             }
 
-            public static bool TryParse(string serializedAverageInfo, out AverageInfo averageInfo)
+            public static bool TryParse(RequestContinuationToken requestContinuationToken, out AverageInfo averageInfo)
             {
-                if (serializedAverageInfo == null)
+                if (requestContinuationToken == null)
                 {
-                    throw new ArgumentNullException(nameof(serializedAverageInfo));
+                    throw new ArgumentNullException(nameof(requestContinuationToken));
                 }
 
-                if (!CosmosElement.TryParse(serializedAverageInfo, out CosmosElement cosmosElementAverageInfo))
+                if (!requestContinuationToken.TryConvertToCosmosElement(out CosmosElement cosmosElementAverageInfo))
                 {
                     averageInfo = default;
                     return false;
