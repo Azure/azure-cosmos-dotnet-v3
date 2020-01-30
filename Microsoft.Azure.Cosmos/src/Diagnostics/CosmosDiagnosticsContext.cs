@@ -44,16 +44,11 @@ namespace Microsoft.Azure.Cosmos
 
         internal static CosmosDiagnosticsContext Create(RequestOptions requestOptions)
         {
-            return Create(requestOptions?.DisableDiagnostics ?? false);
+            return requestOptions?.DiagnosticContext ?? CosmosDiagnosticsContext.Create();
         }
 
-        internal static CosmosDiagnosticsContext Create(bool disableDiagnostics = false)
+        internal static CosmosDiagnosticsContext Create()
         {
-            if (disableDiagnostics)
-            {
-                return CosmosDiagnosticsContextDisabled.Singleton;
-            }
-
             return new CosmosDiagnosticsContextCore();
         }
     }

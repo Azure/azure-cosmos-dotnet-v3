@@ -22,12 +22,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private ContainerProperties containerSettings = null;
         private static RequestOptions DisableDiagnosticOptions = new RequestOptions()
         {
-            DisableDiagnostics = true
-        };
-
-        private static RequestOptions DefaultOptions = new RequestOptions()
-        {
-            DisableDiagnostics = true
+            DiagnosticContext = CosmosDiagnosticsContextDisabled.Singleton
         };
 
         [TestInitialize]
@@ -83,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             ItemRequestOptions requestOptions = new ItemRequestOptions()
             {
-                DisableDiagnostics = disableDiagnostics
+                DiagnosticContext = disableDiagnostics ? CosmosDiagnosticsContextDisabled.Singleton : null
             };
 
             //Checking point operation diagnostics on typed operations
@@ -254,7 +249,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             RequestOptions requestOptions = new RequestOptions()
             {
-                DisableDiagnostics = disableDiagnostics
+                DiagnosticContext = disableDiagnostics ? CosmosDiagnosticsContextDisabled.Singleton : null
             };
 
             DatabaseResponse databaseResponse = await this.cosmosClient.CreateDatabaseAsync(
@@ -439,7 +434,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 MaxItemCount = 1,
                 MaxConcurrency = 1,
-                DisableDiagnostics = disableDiagnostics
+                DiagnosticContext = disableDiagnostics ? CosmosDiagnosticsContextDisabled.Singleton : null
             };
 
             // Verify the typed query iterator

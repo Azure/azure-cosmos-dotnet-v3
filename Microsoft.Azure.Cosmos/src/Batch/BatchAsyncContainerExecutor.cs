@@ -132,7 +132,7 @@ namespace Microsoft.Azure.Cosmos
                     throw new InvalidOperationException(ClientResources.UnsupportedBulkRequestOptions);
                 }
 
-                Debug.Assert(!itemRequestOptions.DisableDiagnostics, "Disable Diagnostics is not supported on Bulk operations");
+                Debug.Assert(itemRequestOptions.DiagnosticContext == null, "Disable Diagnostics is not supported on Bulk operations");
                 Debug.Assert(BatchAsyncContainerExecutor.ValidateOperationEPK(operation, itemRequestOptions));
             }
 

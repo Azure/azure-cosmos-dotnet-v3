@@ -291,7 +291,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             QueryRequestOptions queryRequestOptions = new QueryRequestOptions()
             {
-                DisableDiagnostics = disableDiagnostic
+                DiagnosticContext = disableDiagnostic ? CosmosDiagnosticsContextDisabled.Singleton : null
             };
 
             IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(
