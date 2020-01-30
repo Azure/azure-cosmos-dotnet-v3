@@ -169,13 +169,34 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         }
 
         public static async Task<TryCatch<CosmosQueryExecutionContext>> TryCreateFromPartitionedQuerExecutionInfoAsync(
-        PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
-        ContainerQueryProperties containerQueryProperties,
-        CosmosQueryContext cosmosQueryContext,
-        InputParameters inputParameters,
-        CancellationToken cancellationToken)
+            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
+            ContainerQueryProperties containerQueryProperties,
+            CosmosQueryContext cosmosQueryContext,
+            InputParameters inputParameters,
+            CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
+
+            // Override with default values:
+            int resolvedMaxBufferedItemCount = inputParameters.MaxBufferedItemCount.GetValueOrDefault(
+                QueryRequestOptionsTuner.GetOptimalMaxBufferedItemCount(partitionedQueryExecutionInfo));
+            int resolvedMaxConcurrency = inputParameters.MaxConcurrency.GetValueOrDefault(
+                QueryRequestOptionsTuner.GetOptimalMaxConcurrency(partitionedQueryExecutionInfo));
+            int resolvedMaxItemCount = inputParameters.MaxItemCount.GetValueOrDefault(
+                QueryRequestOptionsTuner.GetOptimalMaxPageSize(partitionedQueryExecutionInfo));
+
+            inputParameters = new InputParameters(
+                sqlQuerySpec: inputParameters.SqlQuerySpec,
+                initialUserContinuationToken: inputParameters.InitialUserContinuationToken,
+                maxConcurrency: resolvedMaxConcurrency,
+                maxItemCount: resolvedMaxItemCount,
+                maxBufferedItemCount: resolvedMaxBufferedItemCount,
+                partitionKey: inputParameters.PartitionKey,
+                properties: inputParameters.Properties,
+                partitionedQueryExecutionInfo: partitionedQueryExecutionInfo,
+                executionEnvironment: inputParameters.ExecutionEnvironment,
+                returnResultsInDeterministicOrder: inputParameters.ReturnResultsInDeterministicOrder,
+                testInjections: inputParameters.TestInjections);
 
             List<Documents.PartitionKeyRange> targetRanges = await CosmosQueryExecutionContextFactory.GetTargetPartitionKeyRangesAsync(
                    cosmosQueryContext.QueryClient,
@@ -207,6 +228,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     inputParameters.TestInjections);
             }
 
+            // Add better defaults here.
+
             return await CosmosQueryExecutionContextFactory.TryCreateSpecializedDocumentQueryExecutionContextAsync(
                 cosmosQueryContext,
                 inputParameters,
@@ -229,7 +252,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             bool getLazyFeedResponse = queryInfo.HasTop;
 
             // We need to compute the optimal initial page size for order-by queries
-            long optimalPageSize = inputParameters.MaxItemCount;
+            long optimalPageSize = inputParameters.MaxItemCount.Value;
             if (queryInfo.HasOrderBy)
             {
                 int top;
@@ -338,9 +361,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
         public sealed class InputParameters
         {
-            private const int DefaultMaxConcurrency = 0;
-            private const int DefaultMaxItemCount = 1000;
-            private const int DefaultMaxBufferedItemCount = 1000;
             private const bool DefaultReturnResultsInDeterministicOrder = true;
             private const ExecutionEnvironment DefaultExecutionEnvironment = ExecutionEnvironment.Client;
 
@@ -359,28 +379,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             {
                 this.SqlQuerySpec = sqlQuerySpec ?? throw new ArgumentNullException(nameof(sqlQuerySpec));
                 this.InitialUserContinuationToken = initialUserContinuationToken;
-
-                int resolvedMaxConcurrency = maxConcurrency.GetValueOrDefault(InputParameters.DefaultMaxConcurrency);
-                if (resolvedMaxConcurrency < 0)
-                {
-                    resolvedMaxConcurrency = int.MaxValue;
-                }
-                this.MaxConcurrency = resolvedMaxConcurrency;
-
-                int resolvedMaxItemCount = maxItemCount.GetValueOrDefault(InputParameters.DefaultMaxItemCount);
-                if (resolvedMaxItemCount < 0)
-                {
-                    resolvedMaxItemCount = int.MaxValue;
-                }
-                this.MaxItemCount = resolvedMaxItemCount;
-
-                int resolvedMaxBufferedItemCount = maxBufferedItemCount.GetValueOrDefault(InputParameters.DefaultMaxBufferedItemCount);
-                if (resolvedMaxBufferedItemCount < 0)
-                {
-                    resolvedMaxBufferedItemCount = int.MaxValue;
-                }
-                this.MaxBufferedItemCount = resolvedMaxBufferedItemCount;
-
+                this.MaxConcurrency = maxConcurrency;
+                this.MaxItemCount = maxItemCount;
+                this.MaxBufferedItemCount = maxBufferedItemCount;
                 this.PartitionKey = partitionKey;
                 this.Properties = properties;
                 this.PartitionedQueryExecutionInfo = partitionedQueryExecutionInfo;
@@ -391,9 +392,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
             public SqlQuerySpec SqlQuerySpec { get; }
             public string InitialUserContinuationToken { get; }
-            public int MaxConcurrency { get; }
-            public int MaxItemCount { get; }
-            public int MaxBufferedItemCount { get; }
+            public int? MaxConcurrency { get; }
+            public int? MaxItemCount { get; }
+            public int? MaxBufferedItemCount { get; }
             public PartitionKey? PartitionKey { get; }
             public IReadOnlyDictionary<string, object> Properties { get; }
             public PartitionedQueryExecutionInfo PartitionedQueryExecutionInfo { get; }
