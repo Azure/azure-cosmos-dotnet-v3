@@ -12,13 +12,13 @@ namespace Microsoft.Azure.Cosmos
     /// This represents a disabled diagnostics context. This is used when the diagnostics
     /// should not be recorded to avoid the overhead of the data collection.
     /// </summary>
-    internal sealed class CosmosDiagnosticsContextDisabled : CosmosDiagnosticsContext
+    internal sealed class CosmosDiagnosticsContextEmpty : CosmosDiagnosticsContext
     {
         private static readonly CosmosDiagnosticScope DefaultScope = new CosmosDiagnosticScope("DisabledScope");
 
-        public static readonly CosmosDiagnosticsContext Singleton = new CosmosDiagnosticsContextDisabled();
+        public static readonly CosmosDiagnosticsContext Singleton = new CosmosDiagnosticsContextEmpty();
 
-        private CosmosDiagnosticsContextDisabled()
+        private CosmosDiagnosticsContextEmpty()
         {
         }
 
@@ -30,16 +30,16 @@ namespace Microsoft.Azure.Cosmos
 
         public override TimeSpan? TotalElapsedTime { get; protected set; }
 
-        public override string UserAgent { get; protected set; }
+        public override string UserAgent { get; protected set; } = "Empty Context";
 
         internal override CosmosDiagnosticScope CreateOverallScope(string name)
         {
-            return CosmosDiagnosticsContextDisabled.DefaultScope;
+            return CosmosDiagnosticsContextEmpty.DefaultScope;
         }
 
         internal override CosmosDiagnosticScope CreateScope(string name)
         {
-            return CosmosDiagnosticsContextDisabled.DefaultScope;
+            return CosmosDiagnosticsContextEmpty.DefaultScope;
         }
 
         internal override void AddDiagnosticsInternal(PointOperationStatistics pointOperationStatistics)
