@@ -259,6 +259,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             JArray jArray = sprocResponse;
             Assert.AreEqual(1, jArray.Count);
+            Assert.AreEqual(testPartitionId, jArray[0]["id"]);
 
             StoredProcedureResponse deleteResponse = await scriptsNonePk.DeleteStoredProcedureAsync(sprocId);
             Assert.AreEqual(HttpStatusCode.NoContent, deleteResponse.StatusCode);
