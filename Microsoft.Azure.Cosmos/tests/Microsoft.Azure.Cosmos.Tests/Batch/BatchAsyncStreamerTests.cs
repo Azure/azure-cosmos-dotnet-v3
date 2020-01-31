@@ -153,7 +153,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             await Task.Delay(2000);
 
-            Assert.IsTrue(newLimiter.CurrentCount >= 2);
+            Assert.IsTrue(newLimiter.CurrentCount >= 2, "Count of threads that can enter into semaphore should increase atleast by 1");
         }
 
         [TestMethod]
