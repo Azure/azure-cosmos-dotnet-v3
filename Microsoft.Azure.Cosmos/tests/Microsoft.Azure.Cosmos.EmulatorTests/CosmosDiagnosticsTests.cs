@@ -20,6 +20,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     {
         private Container Container = null;
         private ContainerProperties containerSettings = null;
+        private static RequestOptions DisableDiagnosticOptions = new RequestOptions()
+        {
+            DiagnosticContext = EmptyCosmosDiagnosticsContext.Singleton
+        };
 
         [TestInitialize]
         public async Task TestInitialize()
@@ -68,58 +72,86 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task PointOperationDiagnostic()
+        [DataRow(true)]
+        [DataRow(false)]
+        public async Task PointOperationDiagnostic(bool disableDiagnostics)
         {
+            ItemRequestOptions requestOptions = new ItemRequestOptions()
+            {
+                DiagnosticContext = disableDiagnostics ? EmptyCosmosDiagnosticsContext.Singleton : null
+            };
+
             //Checking point operation diagnostics on typed operations
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
-            ItemResponse<ToDoActivity> createResponse = await this.Container.CreateItemAsync<ToDoActivity>(item: testItem);
-            CosmosDiagnosticsTests.VerifyPointDiagnostics(createResponse.Diagnostics);
+            ItemResponse<ToDoActivity> createResponse = await this.Container.CreateItemAsync<ToDoActivity>(
+                item: testItem,
+                requestOptions: requestOptions);
+            CosmosDiagnosticsTests.VerifyPointDiagnostics(createResponse.Diagnostics, disableDiagnostics);
 
-            ItemResponse<ToDoActivity> readResponse = await this.Container.ReadItemAsync<ToDoActivity>(id: testItem.id, partitionKey: new PartitionKey(testItem.status));
+            ItemResponse<ToDoActivity> readResponse = await this.Container.ReadItemAsync<ToDoActivity>(
+                id: testItem.id,
+                partitionKey: new PartitionKey(testItem.status),
+                requestOptions);
             Assert.IsNotNull(readResponse.Diagnostics);
 
             testItem.description = "NewDescription";
-            ItemResponse<ToDoActivity> replaceResponse = await this.Container.ReplaceItemAsync<ToDoActivity>(item: testItem, id: testItem.id, partitionKey: new PartitionKey(testItem.status));
-            Assert.AreEqual(replaceResponse.Resource.description, "NewDescription");
-            CosmosDiagnosticsTests.VerifyPointDiagnostics(replaceResponse.Diagnostics);
+            ItemResponse<ToDoActivity> replaceResponse = await this.Container.ReplaceItemAsync<ToDoActivity>(
+                item: testItem,
+                id: testItem.id,
+                partitionKey: new PartitionKey(testItem.status),
+                requestOptions: requestOptions);
 
-            ItemResponse<ToDoActivity> deleteResponse = await this.Container.DeleteItemAsync<ToDoActivity>(partitionKey: new Cosmos.PartitionKey(testItem.status), id: testItem.id);
+            Assert.AreEqual(replaceResponse.Resource.description, "NewDescription");
+            CosmosDiagnosticsTests.VerifyPointDiagnostics(createResponse.Diagnostics, disableDiagnostics);
+
+            ItemResponse<ToDoActivity> deleteResponse = await this.Container.DeleteItemAsync<ToDoActivity>(
+                partitionKey: new Cosmos.PartitionKey(testItem.status),
+                id: testItem.id,
+                requestOptions: requestOptions);
+
             Assert.IsNotNull(deleteResponse);
-            CosmosDiagnosticsTests.VerifyPointDiagnostics(deleteResponse.Diagnostics);
+            CosmosDiagnosticsTests.VerifyPointDiagnostics(deleteResponse.Diagnostics, disableDiagnostics);
 
             //Checking point operation diagnostics on stream operations
             ResponseMessage createStreamResponse = await this.Container.CreateItemStreamAsync(
                 partitionKey: new PartitionKey(testItem.status),
-                streamPayload: TestCommon.SerializerCore.ToStream<ToDoActivity>(testItem));
-            CosmosDiagnosticsTests.VerifyPointDiagnostics(createStreamResponse.Diagnostics);
+                streamPayload: TestCommon.SerializerCore.ToStream<ToDoActivity>(testItem),
+                requestOptions: requestOptions);
+            CosmosDiagnosticsTests.VerifyPointDiagnostics(createStreamResponse.Diagnostics, disableDiagnostics);
 
             ResponseMessage readStreamResponse = await this.Container.ReadItemStreamAsync(
                 id: testItem.id,
-                partitionKey: new PartitionKey(testItem.status));
-            CosmosDiagnosticsTests.VerifyPointDiagnostics(readStreamResponse.Diagnostics);
+                partitionKey: new PartitionKey(testItem.status),
+                requestOptions: requestOptions);
+            CosmosDiagnosticsTests.VerifyPointDiagnostics(readStreamResponse.Diagnostics, disableDiagnostics);
 
             ResponseMessage replaceStreamResponse = await this.Container.ReplaceItemStreamAsync(
                streamPayload: TestCommon.SerializerCore.ToStream<ToDoActivity>(testItem),
                id: testItem.id,
-               partitionKey: new PartitionKey(testItem.status));
-            CosmosDiagnosticsTests.VerifyPointDiagnostics(replaceStreamResponse.Diagnostics);
+               partitionKey: new PartitionKey(testItem.status),
+               requestOptions: requestOptions);
+            CosmosDiagnosticsTests.VerifyPointDiagnostics(replaceStreamResponse.Diagnostics, disableDiagnostics);
 
             ResponseMessage deleteStreamResponse = await this.Container.DeleteItemStreamAsync(
                id: testItem.id,
-               partitionKey: new PartitionKey(testItem.status));
-            CosmosDiagnosticsTests.VerifyPointDiagnostics(deleteStreamResponse.Diagnostics);
+               partitionKey: new PartitionKey(testItem.status),
+               requestOptions: requestOptions);
+            CosmosDiagnosticsTests.VerifyPointDiagnostics(deleteStreamResponse.Diagnostics, disableDiagnostics);
 
             // Ensure diagnostics are set even on failed operations
             testItem.description = new string('x', Microsoft.Azure.Documents.Constants.MaxResourceSizeInBytes + 1);
             ResponseMessage createTooBigStreamResponse = await this.Container.CreateItemStreamAsync(
                 partitionKey: new PartitionKey(testItem.status),
-                streamPayload: TestCommon.SerializerCore.ToStream<ToDoActivity>(testItem));
+                streamPayload: TestCommon.SerializerCore.ToStream<ToDoActivity>(testItem),
+                requestOptions: requestOptions);
             Assert.IsFalse(createTooBigStreamResponse.IsSuccessStatusCode);
-            CosmosDiagnosticsTests.VerifyPointDiagnostics(createTooBigStreamResponse.Diagnostics);
+            CosmosDiagnosticsTests.VerifyPointDiagnostics(createTooBigStreamResponse.Diagnostics, disableDiagnostics);
         }
 
         [TestMethod]
-        public async Task BatchOperationDiagnostic()
+        [DataRow(true)]
+        [DataRow(false)]
+        public async Task BatchOperationDiagnostic(bool disableDiagnostics)
         {
             string pkValue = "DiagnosticTestPk";
             TransactionalBatch batch = this.Container.CreateTransactionalBatch(new PartitionKey(pkValue));
@@ -137,10 +169,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 batch.ReadItem(createItems[i].id);
             }
 
-            TransactionalBatchResponse response = await batch.ExecuteAsync();
+            RequestOptions requestOptions = disableDiagnostics ? DisableDiagnosticOptions : null;
+            TransactionalBatchResponse response = await ((BatchCore)batch).ExecuteAsync(requestOptions);
             
             Assert.IsNotNull(response);
-            CosmosDiagnosticsTests.VerifyPointDiagnostics(response.Diagnostics);
+            CosmosDiagnosticsTests.VerifyPointDiagnostics(response.Diagnostics, disableDiagnostics);
         }
 
         [TestMethod]
@@ -168,7 +201,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task QueryOperationDiagnostic()
+        [DataRow(true)]
+        [DataRow(false)]
+        public async Task QueryOperationDiagnostic(bool disableDiagnostics)
         {
             int totalItems = 3;
             IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(
@@ -180,44 +215,72 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //Checking query metrics on typed query
             long totalOutputDocumentCount = await this.ExecuteQueryAndReturnOutputDocumentCount(
                 queryText: "select * from ToDoActivity",
-                expectedItemCount: totalItems);
+                expectedItemCount: totalItems,
+                disableDiagnostics: disableDiagnostics);
 
             Assert.AreEqual(totalItems, totalOutputDocumentCount);
 
             totalOutputDocumentCount = await this.ExecuteQueryAndReturnOutputDocumentCount(
                 queryText: "select * from ToDoActivity t ORDER BY t.cost",
-                expectedItemCount: totalItems);
+                expectedItemCount: totalItems,
+                disableDiagnostics: disableDiagnostics);
 
             Assert.AreEqual(totalItems, totalOutputDocumentCount);
 
             totalOutputDocumentCount = await this.ExecuteQueryAndReturnOutputDocumentCount(
                 queryText: "select DISTINCT t.cost from ToDoActivity t",
-                expectedItemCount: 1);
+                expectedItemCount: 1,
+                disableDiagnostics: disableDiagnostics);
 
             Assert.IsTrue(totalOutputDocumentCount >= 1);
 
             totalOutputDocumentCount = await this.ExecuteQueryAndReturnOutputDocumentCount(
                 queryText: "select * from ToDoActivity OFFSET 1 LIMIT 1",
-                expectedItemCount: 1);
+                expectedItemCount: 1,
+                disableDiagnostics: disableDiagnostics);
 
             Assert.IsTrue(totalOutputDocumentCount >= 1);
         }
 
         [TestMethod]
-        public async Task NonDataPlaneDiagnosticTest()
+        [DataRow(true)]
+        [DataRow(false)]
+        public async Task NonDataPlaneDiagnosticTest(bool disableDiagnostics)
         {
-            DatabaseResponse databaseResponse = await this.cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            RequestOptions requestOptions = new RequestOptions()
+            {
+                DiagnosticContext = disableDiagnostics ? EmptyCosmosDiagnosticsContext.Singleton : null
+            };
+
+            DatabaseResponse databaseResponse = await this.cosmosClient.CreateDatabaseAsync(
+                id: Guid.NewGuid().ToString(),
+                requestOptions: requestOptions);
             Assert.IsNotNull(databaseResponse.Diagnostics);
             string diagnostics = databaseResponse.Diagnostics.ToString();
+            if (disableDiagnostics)
+            {
+                Assert.AreEqual(string.Empty, diagnostics);
+                return;
+            }
+
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
             Assert.IsTrue(diagnostics.Contains("StatusCode"));
             Assert.IsTrue(diagnostics.Contains("SubStatusCode"));
             Assert.IsTrue(diagnostics.Contains("RequestUri"));
         }
 
-        public static void VerifyQueryDiagnostics(CosmosDiagnostics diagnostics, bool isFirstPage)
+        public static void VerifyQueryDiagnostics(
+            CosmosDiagnostics diagnostics,
+            bool isFirstPage,
+            bool disableDiagnostics)
         {
             string info = diagnostics.ToString();
+            if (disableDiagnostics)
+            {
+                Assert.AreEqual(string.Empty, info);
+                return;
+            }
+
             Assert.IsNotNull(info);
             JObject jObject = JObject.Parse(info);
             JToken summary = jObject["Summary"];
@@ -268,9 +331,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ValidatePointOperation(pointStatistics);
         }
 
-        public static void VerifyPointDiagnostics(CosmosDiagnostics diagnostics)
+        public static void VerifyPointDiagnostics(CosmosDiagnostics diagnostics, bool disableDiagnostics)
         {
             string info = diagnostics.ToString();
+
+            if (disableDiagnostics)
+            {
+                Assert.AreEqual(string.Empty, info);
+                return;
+            }
+
             Assert.IsNotNull(info);
             JObject jObject = JObject.Parse(info);
             JToken summary = jObject["Summary"];
@@ -356,7 +426,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return jObject["Value"].ToObject<JObject>();
         }
 
-        private async Task<long> ExecuteQueryAndReturnOutputDocumentCount(string queryText, int expectedItemCount)
+        private async Task<long> ExecuteQueryAndReturnOutputDocumentCount(string queryText, int expectedItemCount, bool disableDiagnostics)
         {
             QueryDefinition sql = new QueryDefinition(queryText);
 
@@ -364,6 +434,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 MaxItemCount = 1,
                 MaxConcurrency = 1,
+                DiagnosticContext = disableDiagnostics ? EmptyCosmosDiagnosticsContext.Singleton : null
             };
 
             // Verify the typed query iterator
@@ -378,7 +449,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 FeedResponse<ToDoActivity> response = await feedIterator.ReadNextAsync();
                 results.AddRange(response);
-                VerifyQueryDiagnostics(response.Diagnostics, isFirst);
+                VerifyQueryDiagnostics(response.Diagnostics, isFirst, disableDiagnostics);
                 isFirst = false;
             }
 
@@ -397,7 +468,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ResponseMessage response = await streamIterator.ReadNextAsync();
                 Collection<ToDoActivity> result = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(response.Content).Data;
                 streamResults.AddRange(result);
-                VerifyQueryDiagnostics(response.Diagnostics, isFirst);
+                VerifyQueryDiagnostics(response.Diagnostics, isFirst, disableDiagnostics);
                 isFirst = false;
             }
 

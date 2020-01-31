@@ -399,11 +399,12 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            public override ReadOnlyMemory<byte> GetBufferedRawJsonToken()
+            public override bool TryGetBufferedRawJsonToken(out ReadOnlyMemory<byte> bufferedRawJsonToken)
             {
-                return this.jsonTextBuffer.GetBufferedRawJsonToken(
+                bufferedRawJsonToken = this.jsonTextBuffer.GetBufferedRawJsonToken(
                     this.token.Start,
                     this.token.End);
+                return true;
             }
 
             private static JsonTokenType JsonTextToJsonTokenType(JsonTextTokenType jsonTextTokenType)

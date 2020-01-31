@@ -153,7 +153,7 @@ namespace Microsoft.Azure.Cosmos
                     cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.ContentType, MediaTypes.QueryJson);
                     cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
                 },
-                diagnosticsScope: null,
+                diagnosticsScope: queryRequestOptions?.DiagnosticContext,
                 cancellationToken: cancellationToken);
 
             schedulingStopwatch.Stop();

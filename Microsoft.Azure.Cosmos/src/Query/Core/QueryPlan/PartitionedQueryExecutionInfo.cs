@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
     using Newtonsoft.Json;
     using Constants = Documents.Constants;
 
-    // Note: We also return this to client when query execution is disallowed by Gateway
     internal sealed class PartitionedQueryExecutionInfo
     {
         public PartitionedQueryExecutionInfo()

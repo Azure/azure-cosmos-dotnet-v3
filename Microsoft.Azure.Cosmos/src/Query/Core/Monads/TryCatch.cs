@@ -5,8 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.Monads
 {
     using System;
-    using System.Diagnostics;
-    using System.Reflection;
     using System.Threading.Tasks;
 
     internal readonly struct TryCatch

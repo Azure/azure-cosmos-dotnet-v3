@@ -26,19 +26,9 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
         public override (ParseFailureReason, BackendMetrics) Visit(CosmosDiagnosticsContext cosmosDiagnosticsContext)
         {
-            return cosmosDiagnosticsContext.ContextList.Accept(this);
-        }
-
-        public override (ParseFailureReason, BackendMetrics) Visit(CosmosDiagnosticScope cosmosDiagnosticScope)
-        {
-            return (ParseFailureReason.MetricsNotFound, default);
-        }
-
-        public override (ParseFailureReason, BackendMetrics) Visit(CosmosDiagnosticsContextList cosmosDiagnosticsContextList)
-        {
             BackendMetrics.Accumulator accumulator = default;
             bool metricsFound = false;
-            foreach (CosmosDiagnosticsInternal cosmosDiagnostics in cosmosDiagnosticsContextList)
+            foreach (CosmosDiagnosticsInternal cosmosDiagnostics in cosmosDiagnosticsContext)
             {
                 (ParseFailureReason parseFailureReason, BackendMetrics backendMetrics) = cosmosDiagnostics.Accept(this);
                 switch (parseFailureReason)
@@ -67,6 +57,11 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             }
 
             return failureReasonAndMetrics;
+        }
+
+        public override (ParseFailureReason, BackendMetrics) Visit(CosmosDiagnosticScope cosmosDiagnosticScope)
+        {
+            return (ParseFailureReason.MetricsNotFound, default);
         }
 
         public override (ParseFailureReason, BackendMetrics) Visit(QueryPageDiagnostics queryPageDiagnostics)

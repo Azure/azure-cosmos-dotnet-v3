@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
-    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
 
@@ -20,15 +19,18 @@ namespace Microsoft.Azure.Cosmos.Query
         private readonly CosmosQueryContext cosmosQueryContext;
         private readonly CosmosQueryExecutionContext cosmosQueryExecutionContext;
         private readonly CosmosSerializationFormatOptions cosmosSerializationFormatOptions;
+        private readonly RequestOptions requestOptions;
 
         private QueryIterator(
             CosmosQueryContext cosmosQueryContext,
             CosmosQueryExecutionContext cosmosQueryExecutionContext,
-            CosmosSerializationFormatOptions cosmosSerializationFormatOptions)
+            CosmosSerializationFormatOptions cosmosSerializationFormatOptions,
+            RequestOptions requestOptions)
         {
             this.cosmosQueryContext = cosmosQueryContext ?? throw new ArgumentNullException(nameof(cosmosQueryContext));
             this.cosmosQueryExecutionContext = cosmosQueryExecutionContext ?? throw new ArgumentNullException(nameof(cosmosQueryExecutionContext));
             this.cosmosSerializationFormatOptions = cosmosSerializationFormatOptions;
+            this.requestOptions = requestOptions;
         }
 
         public static QueryIterator Create(
@@ -73,14 +75,15 @@ namespace Microsoft.Azure.Cosmos.Query
             return new QueryIterator(
                 cosmosQueryContext,
                 CosmosQueryExecutionContextFactory.Create(cosmosQueryContext, inputParameters),
-                queryRequestOptions.CosmosSerializationFormatOptions);
+                queryRequestOptions.CosmosSerializationFormatOptions,
+                queryRequestOptions);
         }
 
         public override bool HasMoreResults => !this.cosmosQueryExecutionContext.IsDone;
 
         public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
-            CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContext();
+            CosmosDiagnosticsContext diagnostics = CosmosDiagnosticsContext.Create(this.requestOptions);
             using (diagnostics.CreateScope("QueryReadNextAsync"))
             {
                 // This catches exception thrown by the pipeline and converts it to QueryResponse
@@ -89,7 +92,6 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 foreach (QueryPageDiagnostics queryPage in responseCore.Diagnostics)
                 {
-                    diagnostics.Summary.Append(queryPage.DiagnosticsContext.Summary);
                     diagnostics.AddDiagnosticsInternal(queryPage);
                 }
 
@@ -142,4 +144,8 @@ namespace Microsoft.Azure.Cosmos.Query
             return this.cosmosQueryExecutionContext.TryGetContinuationToken(out continuationToken);
         }
     }
+#if INTERNAL
+#pragma warning restore SA1601 // Partial elements should be documented
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
+#endif
 }

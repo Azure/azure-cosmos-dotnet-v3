@@ -51,6 +51,11 @@ namespace Microsoft.Azure.Cosmos
         internal virtual ConsistencyLevel? BaseConsistencyLevel { get; set; }
 
         /// <summary>
+        /// This disables all diagnostics for the CosmosDiagnostic in the response.
+        /// </summary>
+        internal CosmosDiagnosticsContext DiagnosticContext { get; set; }
+
+        /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
         /// </summary>
         /// <param name="request">The <see cref="RequestMessage"/></param>

@@ -152,17 +152,33 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ComparableTask
             // Compute gateway uses custom task scheduler to track tenant resource utilization.
             // Task.Run() switches to default task scheduler for entire sub-tree of tasks making compute gateway incapable of tracking resource usage accurately.
             // Task.Factory.StartNew() allows specifying task scheduler to use.
-            Task.Factory.StartNewOnCurrentTaskSchedulerAsync(() =>
-                comparableTask.StartAsync(this.CancellationToken)
+            Task.Factory
+                .StartNewOnCurrentTaskSchedulerAsync(
+                    function: () => comparableTask
+                    .StartAsync(this.CancellationToken)
                     .ContinueWith((antecendent) =>
                     {
                         // Observing the exception.
                         Exception exception = antecendent.Exception;
                         Extensions.TraceException(exception);
-                        this.canRunTaskSemaphoreSlim.Release();
-                    },
-                    TaskScheduler.Current),
-                this.CancellationToken);
+
+                        // Semaphore.Release can also throw an exception.
+                        try
+                        {
+                            this.canRunTaskSemaphoreSlim.Release();
+                        }
+                        catch (Exception releaseException)
+                        {
+                            Extensions.TraceException(releaseException);
+                        }
+                    }, TaskScheduler.Current),
+                    cancellationToken: this.CancellationToken)
+                .ContinueWith((antecendent) =>
+                {
+                    // StartNew can have a task cancelled exception
+                    Exception exception = antecendent.Exception;
+                    Extensions.TraceException(exception);
+                });
 #pragma warning restore 4014
         }
     }
