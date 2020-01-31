@@ -348,8 +348,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     method: HttpMethod.Post,
                     requestUri: new Uri("http://localhost.com"),
                     requestSessionToken: null,
-                    responseSessionToken: null,
-                    clientSideRequestStatistics: null));
+                    responseSessionToken: null));
             IReadOnlyCollection<QueryPageDiagnostics> diagnostics = new List<QueryPageDiagnostics>()
             {
                 new QueryPageDiagnostics(

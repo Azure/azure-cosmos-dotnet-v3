@@ -53,6 +53,18 @@ namespace Microsoft.Azure.Cosmos
         {
         }
 
+        internal override void AddDiagnosticsInternal(StoreResponseStatistics storeResponseStatistics)
+        {
+        }
+
+        internal override void AddDiagnosticsInternal(AddressResolutionStatistics addressResolutionStatistics)
+        {
+        }
+
+        internal override void AddDiagnosticsInternal(CosmosClientSideRequestStatistics clientSideRequestStatistics)
+        {
+        }
+
         internal override void SetSdkUserAgent(string userAgent)
         {
         }

@@ -45,7 +45,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                         HttpMethod.Get,
                         new Uri("http://MockUri.com"),
                         null,
-                        null,
                         null));
                 }
 
@@ -59,7 +58,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                         null,
                         HttpMethod.Get,
                         new Uri("http://MockUri.com"),
-                        null,
                         null,
                         null));
                 }

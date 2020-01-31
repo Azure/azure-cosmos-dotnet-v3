@@ -20,8 +20,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             HttpMethod method,
             Uri requestUri,
             string requestSessionToken,
-            string responseSessionToken,
-            CosmosClientSideRequestStatistics clientSideRequestStatistics)
+            string responseSessionToken)
         {
             this.ActivityId = activityId;
             this.StatusCode = statusCode;
@@ -32,7 +31,6 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             this.RequestUri = requestUri;
             this.RequestSessionToken = requestSessionToken;
             this.ResponseSessionToken = responseSessionToken;
-            this.ClientSideRequestStatistics = clientSideRequestStatistics;
         }
 
         public string ActivityId { get; }
@@ -44,7 +42,6 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
         public Uri RequestUri { get; }
         public string RequestSessionToken { get; }
         public string ResponseSessionToken { get; }
-        public CosmosClientSideRequestStatistics ClientSideRequestStatistics { get; }
 
         public override void Accept(CosmosDiagnosticsInternalVisitor cosmosDiagnosticsInternalVisitor)
         {

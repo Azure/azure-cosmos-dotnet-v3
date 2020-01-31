@@ -86,8 +86,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 method: HttpMethod.Get,
                 requestUri: new Uri("http://localhost"),
                 requestSessionToken: null,
-                responseSessionToken: null,
-                clientSideRequestStatistics: new CosmosClientSideRequestStatistics());
+                responseSessionToken: null);
 
             ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.OK)
             {

@@ -82,8 +82,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 method: HttpMethod.Get,
                 requestUri: new Uri("http://localhost"),
                 requestSessionToken: null,
-                responseSessionToken: null,
-                clientSideRequestStatistics: new CosmosClientSideRequestStatistics());
+                responseSessionToken: null);
             CosmosDiagnosticsContext scope = CosmosDiagnosticsContext.Create();
             scope.AddDiagnosticsInternal(pointOperationStatistics);
 

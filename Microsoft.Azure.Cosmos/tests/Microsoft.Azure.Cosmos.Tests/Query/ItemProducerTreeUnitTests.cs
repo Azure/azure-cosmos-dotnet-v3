@@ -190,8 +190,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 method: HttpMethod.Post,
                 requestUri: new Uri("http://localhost.com"),
                 requestSessionToken: null,
-                responseSessionToken: null,
-                clientSideRequestStatistics: null));
+                responseSessionToken: null));
 
             QueryPageDiagnostics diagnostics = new QueryPageDiagnostics(
                 partitionKeyRangeId: "0",
@@ -246,8 +245,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 method: HttpMethod.Post,
                 requestUri: new Uri("http://localhost.com"),
                 requestSessionToken: null,
-                responseSessionToken: null,
-                clientSideRequestStatistics: null));
+                responseSessionToken: null));
 
             diagnostics = new QueryPageDiagnostics(
                 partitionKeyRangeId: "0",

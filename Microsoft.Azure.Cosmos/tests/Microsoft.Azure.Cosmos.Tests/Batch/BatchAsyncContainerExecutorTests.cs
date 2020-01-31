@@ -291,8 +291,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 method: HttpMethod.Get,
                 requestUri: new Uri("http://localhost"),
                 requestSessionToken: null,
-                responseSessionToken: null,
-                clientSideRequestStatistics: new CosmosClientSideRequestStatistics()));
+                responseSessionToken: null));
 
             responseMessage.Headers.SubStatusCode = SubStatusCodes.PartitionKeyRangeGone;
             return responseMessage;
@@ -333,8 +332,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 method: HttpMethod.Get,
                 requestUri: new Uri("http://localhost"),
                 requestSessionToken: null,
-                responseSessionToken: null,
-                clientSideRequestStatistics: new CosmosClientSideRequestStatistics()));
+                responseSessionToken: null));
 
             responseMessage.Headers.SubStatusCode = SubStatusCodes.NameCacheIsStale;
             return responseMessage;
@@ -374,8 +372,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 method: HttpMethod.Get,
                 requestUri: new Uri("http://localhost"),
                 requestSessionToken: null,
-                responseSessionToken: null,
-                clientSideRequestStatistics: new CosmosClientSideRequestStatistics()));
+                responseSessionToken: null));
 
             return responseMessage;
         }
@@ -414,8 +411,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 method: HttpMethod.Get,
                 requestUri: new Uri("http://localhost"),
                 requestSessionToken: null,
-                responseSessionToken: null,
-                clientSideRequestStatistics: new CosmosClientSideRequestStatistics()));
+                responseSessionToken: null));
 
             return responseMessage;
         }

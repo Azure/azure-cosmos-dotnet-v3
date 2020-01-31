@@ -31,8 +31,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
                     method: HttpMethod.Post,
                     requestUri: new Uri("http://localhost.com"),
                     requestSessionToken: nameof(PointOperationStatistics.RequestSessionToken),
-                    responseSessionToken: nameof(PointOperationStatistics.ResponseSessionToken),
-                    clientSideRequestStatistics: null))
+                    responseSessionToken: nameof(PointOperationStatistics.ResponseSessionToken)))
             };
 
             this.ExecuteTestSuite(inputs);

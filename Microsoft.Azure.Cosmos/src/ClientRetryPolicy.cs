@@ -49,8 +49,6 @@ namespace Microsoft.Azure.Cosmos
             this.enableEndpointDiscovery = enableEndpointDiscovery;
             this.sessionTokenRetryCount = 0;
             this.canUseMultipleWriteLocations = false;
-
-            this.sharedStatistics = new CosmosClientSideRequestStatistics();
         }
 
         /// <summary> 
@@ -126,7 +124,19 @@ namespace Microsoft.Azure.Cosmos
             this.isReadRequest = request.IsReadOnlyRequest;
             this.canUseMultipleWriteLocations = this.globalEndpointManager.CanUseMultipleWriteLocations(request);
 
-            request.RequestContext.ClientRequestStatistics = this.sharedStatistics;
+            if (request.RequestContext.ClientRequestStatistics == null)
+            {
+                if (this.sharedStatistics == null)
+                {
+                    this.sharedStatistics = new CosmosClientSideRequestStatistics();
+                }
+
+                request.RequestContext.ClientRequestStatistics = this.sharedStatistics;
+            }
+            else
+            {
+                this.sharedStatistics = request.RequestContext.ClientRequestStatistics;
+            }
 
             // clear previous location-based routing directive
             request.RequestContext.ClearRouteToLocation();

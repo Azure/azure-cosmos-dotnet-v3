@@ -24,8 +24,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             method: HttpMethod.Get,
             requestUri: new Uri("http://localhost"),
             requestSessionToken: null,
-            responseSessionToken: null,
-            clientSideRequestStatistics: new CosmosClientSideRequestStatistics());
+            responseSessionToken: null);
 
         private static readonly QueryPageDiagnostics MockQueryPageDiagnostics = new QueryPageDiagnostics(
             partitionKeyRangeId: nameof(QueryPageDiagnostics.PartitionKeyRangeId),

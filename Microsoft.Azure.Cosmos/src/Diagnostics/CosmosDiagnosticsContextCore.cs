@@ -93,6 +93,21 @@ namespace Microsoft.Azure.Cosmos
             this.ContextList.Add(pointOperationStatistics);
         }
 
+        internal override void AddDiagnosticsInternal(StoreResponseStatistics storeResponseStatistics)
+        {
+            this.ContextList.Add(storeResponseStatistics);
+        }
+
+        internal override void AddDiagnosticsInternal(AddressResolutionStatistics addressResolutionStatistics)
+        {
+            this.ContextList.Add(addressResolutionStatistics);
+        }
+
+        internal override void AddDiagnosticsInternal(CosmosClientSideRequestStatistics clientSideRequestStatistics)
+        {
+            this.ContextList.Add(clientSideRequestStatistics);
+        }
+
         internal override void AddDiagnosticsInternal(QueryPageDiagnostics queryPageDiagnostics)
         {
             if (queryPageDiagnostics == null)
