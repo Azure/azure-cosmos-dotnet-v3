@@ -260,6 +260,36 @@
       },
       "NestedTypes": {}
     },
+    "RemainingLeaseTokenWork": {
+      "Subclasses": {},
+      "Members": {
+        "Int64 get_RemainingWork()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Int64 get_RemainingWork()"
+        },
+        "Int64 RemainingWork": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Microsoft.Azure.Cosmos.FeedToken get_LeaseToken()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.FeedToken get_LeaseToken()"
+        },
+        "Microsoft.Azure.Cosmos.FeedToken LeaseToken": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        }
+      },
+      "NestedTypes": {}
+    },
     "ChangeFeedProcessor": {
       "Subclasses": {},
       "Members": {
@@ -647,6 +677,11 @@
     "Container": {
       "Subclasses": {},
       "Members": {
+        "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder GetChangeFeedEstimatorBuilder(System.String, ChangesEstimationDetailedHandler, System.Nullable`1[System.TimeSpan])": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder GetChangeFeedEstimatorBuilder(System.String, ChangesEstimationDetailedHandler, System.Nullable`1[System.TimeSpan])"
+        },
         "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder GetChangeFeedEstimatorBuilder(System.String, ChangesEstimationHandler, System.Nullable`1[System.TimeSpan])": {
           "Type": "Method",
           "Attributes": [],
@@ -666,6 +701,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Conflicts get_Conflicts()"
+        },
+        "Microsoft.Azure.Cosmos.Container+ChangesEstimationDetailedHandler": {
+          "Type": "NestedType",
+          "Attributes": [],
+          "MethodInfo": null
         },
         "Microsoft.Azure.Cosmos.Container+ChangesEstimationHandler": {
           "Type": "NestedType",
@@ -824,6 +864,32 @@
         }
       },
       "NestedTypes": {
+        "ChangesEstimationDetailedHandler": {
+          "Subclasses": {},
+          "Members": {
+            "System.IAsyncResult BeginInvoke(System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.ChangeFeed.RemainingLeaseTokenWork], System.Threading.CancellationToken, System.AsyncCallback, System.Object)": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.IAsyncResult BeginInvoke(System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.ChangeFeed.RemainingLeaseTokenWork], System.Threading.CancellationToken, System.AsyncCallback, System.Object)"
+            },
+            "System.Threading.Tasks.Task EndInvoke(System.IAsyncResult)": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.Threading.Tasks.Task EndInvoke(System.IAsyncResult)"
+            },
+            "System.Threading.Tasks.Task Invoke(System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.ChangeFeed.RemainingLeaseTokenWork], System.Threading.CancellationToken)": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.Threading.Tasks.Task Invoke(System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.ChangeFeed.RemainingLeaseTokenWork], System.Threading.CancellationToken)"
+            },
+            "Void .ctor(System.Object, IntPtr)": {
+              "Type": "Constructor",
+              "Attributes": [],
+              "MethodInfo": "Void .ctor(System.Object, IntPtr)"
+            }
+          },
+          "NestedTypes": {}
+        },
         "ChangesEstimationHandler": {
           "Subclasses": {},
           "Members": {
@@ -877,6 +943,32 @@
           "NestedTypes": {}
         }
       }
+    },
+    "ChangesEstimationDetailedHandler": {
+      "Subclasses": {},
+      "Members": {
+        "System.IAsyncResult BeginInvoke(System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.ChangeFeed.RemainingLeaseTokenWork], System.Threading.CancellationToken, System.AsyncCallback, System.Object)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.IAsyncResult BeginInvoke(System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.ChangeFeed.RemainingLeaseTokenWork], System.Threading.CancellationToken, System.AsyncCallback, System.Object)"
+        },
+        "System.Threading.Tasks.Task EndInvoke(System.IAsyncResult)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task EndInvoke(System.IAsyncResult)"
+        },
+        "System.Threading.Tasks.Task Invoke(System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.ChangeFeed.RemainingLeaseTokenWork], System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task Invoke(System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.ChangeFeed.RemainingLeaseTokenWork], System.Threading.CancellationToken)"
+        },
+        "Void .ctor(System.Object, IntPtr)": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "Void .ctor(System.Object, IntPtr)"
+        }
+      },
+      "NestedTypes": {}
     },
     "ChangesEstimationHandler": {
       "Subclasses": {},
@@ -2421,6 +2513,17 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "System.String get_ETag()"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "FeedToken": {
+      "Subclasses": {},
+      "Members": {
+        "System.String ToString()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.String ToString()"
         }
       },
       "NestedTypes": {}
