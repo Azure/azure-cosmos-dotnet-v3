@@ -392,6 +392,15 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
+        /// The event handler to be invoked before the request is sent.
+        /// </summary>
+        internal CosmosClientBuilder WithSessionContainer(ISessionContainer sessionContainer)
+        {
+            this.clientOptions.SessionContainer = sessionContainer;
+            return this;
+        }
+
+        /// <summary>
         /// (Optional) transport interceptor factory
         /// </summary>
         internal CosmosClientBuilder WithTransportClientHandlerFactory(Func<TransportClient, TransportClient> transportClientHandlerFactory)
