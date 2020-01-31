@@ -451,7 +451,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(estimationDelegate));
             }
 
-            ChangeFeedEstimatorCore changeFeedEstimatorCore = new ChangeFeedEstimatorCore(null, estimationPeriod);
+            ChangeFeedEstimatorCore changeFeedEstimatorCore = new ChangeFeedEstimatorCore(estimationDelegate, estimationPeriod);
             return new ChangeFeedProcessorBuilder(
                 processorName: processorName,
                 container: this,

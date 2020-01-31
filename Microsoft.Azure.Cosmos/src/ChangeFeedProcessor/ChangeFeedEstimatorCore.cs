@@ -20,10 +20,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         private const string EstimatorDefaultHostName = "Estimator";
 
         private readonly ChangesEstimationHandler initialEstimateDelegate;
+        private readonly ChangesEstimationDetailedHandler initialEstimateDetailedDelegate;
+        private readonly TimeSpan? estimatorPeriod;
         private CancellationTokenSource shutdownCts;
         private ContainerCore leaseContainer;
         private string monitoredContainerRid;
-        private TimeSpan? estimatorPeriod = null;
         private ContainerCore monitoredContainer;
         private DocumentServiceLeaseStoreManager documentServiceLeaseStoreManager;
         private FeedEstimator feedEstimator;
@@ -36,12 +37,21 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         public ChangeFeedEstimatorCore(
             ChangesEstimationHandler initialEstimateDelegate,
             TimeSpan? estimatorPeriod)
+            : this(estimatorPeriod)
         {
             if (initialEstimateDelegate == null) throw new ArgumentNullException(nameof(initialEstimateDelegate));
-            if (estimatorPeriod.HasValue && estimatorPeriod.Value <= TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(estimatorPeriod));
 
             this.initialEstimateDelegate = initialEstimateDelegate;
-            this.estimatorPeriod = estimatorPeriod;
+        }
+
+        public ChangeFeedEstimatorCore(
+            ChangesEstimationDetailedHandler initialEstimateDelegate,
+            TimeSpan? estimatorPeriod)
+            : this(estimatorPeriod)
+        {
+            if (initialEstimateDelegate == null) throw new ArgumentNullException(nameof(initialEstimateDelegate));
+
+            this.initialEstimateDetailedDelegate = initialEstimateDelegate;
         }
 
         /// <summary>
@@ -54,6 +64,25 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             : this(initialEstimateDelegate, estimatorPeriod)
         {
             this.remainingWorkEstimator = remainingWorkEstimator;
+        }
+
+        /// <summary>
+        /// Used for tests
+        /// </summary>
+        internal ChangeFeedEstimatorCore(
+            ChangesEstimationDetailedHandler initialEstimateDelegate,
+            TimeSpan? estimatorPeriod,
+            RemainingWorkEstimator remainingWorkEstimator)
+            : this(initialEstimateDelegate, estimatorPeriod)
+        {
+            this.remainingWorkEstimator = remainingWorkEstimator;
+        }
+
+        private ChangeFeedEstimatorCore(TimeSpan? estimatorPeriod)
+        {
+            if (estimatorPeriod.HasValue && estimatorPeriod.Value <= TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(estimatorPeriod));
+
+            this.estimatorPeriod = estimatorPeriod;
         }
 
         public void ApplyBuildConfiguration(
@@ -129,6 +158,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                    this.documentServiceLeaseStoreManager.LeaseContainer,
                    feedCreator,
                    this.monitoredContainer.ClientContext.Client.ClientOptions?.GatewayModeMaxConnectionLimit ?? 1);
+            }
+
+            if (this.initialEstimateDetailedDelegate != null)
+            {
+                return new FeedEstimatorCore(this.initialEstimateDetailedDelegate, this.remainingWorkEstimator, this.estimatorPeriod);
             }
 
             return new FeedEstimatorCore(this.initialEstimateDelegate, this.remainingWorkEstimator, this.estimatorPeriod);
