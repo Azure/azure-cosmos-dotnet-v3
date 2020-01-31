@@ -392,7 +392,8 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// The event handler to be invoked before the request is sent.
+        /// The ambient Session Container to use for this CosmosClient
+        /// This is used to track session tokens per client for requests made to the store.
         /// </summary>
         internal CosmosClientBuilder WithSessionContainer(ISessionContainer sessionContainer)
         {
