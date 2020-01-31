@@ -15,19 +15,19 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
     {
         private readonly PartitionCheckpointer checkpointer;
 
-        internal ChangeFeedObserverContextCore(string leaseToken)
+        internal ChangeFeedObserverContextCore(FeedToken leaseToken)
         {
             this.LeaseToken = leaseToken;
         }
 
-        internal ChangeFeedObserverContextCore(string leaseToken, ResponseMessage feedResponse, PartitionCheckpointer checkpointer)
+        internal ChangeFeedObserverContextCore(FeedToken leaseToken, ResponseMessage feedResponse, PartitionCheckpointer checkpointer)
         {
             this.LeaseToken = leaseToken;
             this.DocumentFeedResponse = feedResponse;
             this.checkpointer = checkpointer;
         }
 
-        public override string LeaseToken { get; }
+        public override FeedToken LeaseToken { get; }
 
         public ResponseMessage DocumentFeedResponse { get; }
 

@@ -54,10 +54,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public async Task Controller_ShouldPassLastKnownContinuationTokenToSynchronizer_IfPartitionSplitHappened()
         {
             //arrange
-            DocumentServiceLease lease = Mock.Of<DocumentServiceLease>(l => l.CurrentLeaseToken == PartitionId && l.ContinuationToken == InitialContinuationToken);
+            DocumentServiceLease lease = Mock.Of<DocumentServiceLease>(l => l.CurrentLeaseToken.ToString() == PartitionId && l.ContinuationToken == InitialContinuationToken);
             PartitionSynchronizer synchronizer = Mock.Of<PartitionSynchronizer>();
             Mock.Get(synchronizer)
-                .Setup(s => s.SplitPartitionAsync(It.Is<DocumentServiceLease>(l => l.CurrentLeaseToken == PartitionId && l.ContinuationToken == LastContinuationToken)))
+                .Setup(s => s.SplitPartitionAsync(It.Is<DocumentServiceLease>(l => l.CurrentLeaseToken.ToString() == PartitionId && l.ContinuationToken == LastContinuationToken)))
                 .ReturnsAsync(new[] { CreateMockLease(), CreateMockLease() });
 
             PartitionSupervisor partitionSupervisor = Mock.Of<PartitionSupervisor>(o => o.RunAsync(It.IsAny<CancellationToken>()) == Task.FromException(new FeedSplitException("message", LastContinuationToken)));
@@ -83,12 +83,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         {
             //arrange
             var customProperties = new Dictionary<string, string> { { "key", "value" } };
-            DocumentServiceLease lease = Mock.Of<DocumentServiceLease>(l => l.CurrentLeaseToken == PartitionId && l.Properties == customProperties);
+            DocumentServiceLease lease = Mock.Of<DocumentServiceLease>(l => l.CurrentLeaseToken.ToString() == PartitionId && l.Properties == customProperties);
             PartitionSynchronizer synchronizer = Mock.Of<PartitionSynchronizer>();
             DocumentServiceLease leaseChild1 = CreateMockLease();
             DocumentServiceLease leaseChild2 = CreateMockLease();
             Mock.Get(synchronizer)
-                .Setup(s => s.SplitPartitionAsync(It.Is<DocumentServiceLease>(l => l.CurrentLeaseToken == PartitionId && l.ContinuationToken == LastContinuationToken)))
+                .Setup(s => s.SplitPartitionAsync(It.Is<DocumentServiceLease>(l => l.CurrentLeaseToken.ToString() == PartitionId && l.ContinuationToken == LastContinuationToken)))
                 .ReturnsAsync(new[] { leaseChild1, leaseChild2 });
 
             PartitionSupervisor partitionSupervisor = Mock.Of<PartitionSupervisor>(o => o.RunAsync(It.IsAny<CancellationToken>()) == Task.FromException(new FeedSplitException("message", LastContinuationToken)));
@@ -143,7 +143,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             DocumentServiceLease leaseChild1 = CreateMockLease();
             DocumentServiceLease leaseChild2 = CreateMockLease();
             Mock.Get(synchronizer)
-                .Setup(s => s.SplitPartitionAsync(It.Is<DocumentServiceLease>(l => l.CurrentLeaseToken == PartitionId && l.ContinuationToken == LastContinuationToken)))
+                .Setup(s => s.SplitPartitionAsync(It.Is<DocumentServiceLease>(l => l.CurrentLeaseToken.ToString() == PartitionId && l.ContinuationToken == LastContinuationToken)))
                 .ReturnsAsync(new[] { leaseChild1, leaseChild2 });
 
             PartitionSupervisor partitionSupervisor = Mock.Of<PartitionSupervisor>(o => o.RunAsync(It.IsAny<CancellationToken>()) == Task.FromException(new FeedSplitException("message", LastContinuationToken)));
@@ -186,7 +186,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             DocumentServiceLease leaseChild1 = CreateMockLease();
             DocumentServiceLease leaseChild2 = CreateMockLease();
             Mock.Get(synchronizer)
-                .Setup(s => s.SplitPartitionAsync(It.Is<DocumentServiceLease>(l => l.CurrentLeaseToken == PartitionId && l.ContinuationToken == LastContinuationToken)))
+                .Setup(s => s.SplitPartitionAsync(It.Is<DocumentServiceLease>(l => l.CurrentLeaseToken.ToString() == PartitionId && l.ContinuationToken == LastContinuationToken)))
                 .ReturnsAsync(new[] { leaseChild1, leaseChild2 });
 
             PartitionSupervisor partitionSupervisor = Mock.Of<PartitionSupervisor>(o => o.RunAsync(It.IsAny<CancellationToken>()) == Task.FromException(new FeedSplitException("message", LastContinuationToken)));
@@ -290,7 +290,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         private DocumentServiceLease CreateMockLease(string partitionId = null)
         {
             partitionId = partitionId ?? Guid.NewGuid().ToString();
-            return Mock.Of<DocumentServiceLease>(l => l.CurrentLeaseToken == partitionId);
+            return Mock.Of<DocumentServiceLease>(l => l.CurrentLeaseToken.ToString() == partitionId);
         }
     }
 }

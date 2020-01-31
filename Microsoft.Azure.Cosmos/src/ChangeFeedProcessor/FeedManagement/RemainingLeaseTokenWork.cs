@@ -16,9 +16,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         /// </summary>
         /// <param name="leaseToken">The lease token for which the remaining work is calculated</param>
         /// <param name="remainingWork">The amount of documents remaining to be processed</param>
-        internal RemainingLeaseTokenWork(string leaseToken, long remainingWork)
+        internal RemainingLeaseTokenWork(FeedToken leaseToken, long remainingWork)
         {
-            if (string.IsNullOrEmpty(leaseToken)) throw new ArgumentNullException(nameof(leaseToken));
+            if (leaseToken == null) throw new ArgumentNullException(nameof(leaseToken));
 
             this.LeaseToken = leaseToken;
             this.RemainingWork = remainingWork;
@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         /// <summary>
         /// Gets the lease token for which the remaining work is calculated
         /// </summary>
-        public virtual string LeaseToken { get; }
+        public virtual FeedToken LeaseToken { get; }
 
         /// <summary>
         /// Gets the amount of documents remaining to be processed.

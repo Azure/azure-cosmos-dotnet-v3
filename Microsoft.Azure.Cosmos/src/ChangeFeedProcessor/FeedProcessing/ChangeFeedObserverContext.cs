@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
         /// <summary>
         /// Gets the Lease Token associated with the current Observer
         /// </summary>
-        public abstract string LeaseToken { get; }
+        public abstract FeedToken LeaseToken { get; }
 
         /// <summary>
         /// Checkpoints progress of a stream. This method is valid only if manual checkpoint was configured.

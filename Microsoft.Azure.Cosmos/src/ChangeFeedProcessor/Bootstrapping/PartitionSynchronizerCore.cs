@@ -58,17 +58,17 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
                 throw new ArgumentNullException(nameof(lease));
             }
 
-            string partitionId = lease.CurrentLeaseToken;
+            string partitionId = lease.CurrentLeaseToken.ToString();
             string lastContinuationToken = lease.ContinuationToken;
 
-            DefaultTrace.TraceInformation("Partition {0} is gone due to split", partitionId);
+            DefaultTrace.TraceInformation("Lease {0} is gone due to split", partitionId);
 
             // After split the childs are either all or none available
             List<PartitionKeyRange> ranges = await this.EnumPartitionKeyRangesAsync().ConfigureAwait(false);
             List<string> addedPartitionIds = ranges.Where(range => range.Parents.Contains(partitionId)).Select(range => range.Id).ToList();
             if (addedPartitionIds.Count == 0)
             {
-                DefaultTrace.TraceError("Partition {0} had split but we failed to find at least one child partition", partitionId);
+                DefaultTrace.TraceError("Lease {0} had split but we failed to find at least one child partition", partitionId);
                 throw new InvalidOperationException();
             }
 
@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
                 },
                 this.degreeOfParallelism).ConfigureAwait(false);
 
-            DefaultTrace.TraceInformation("partition {0} split into {1}", partitionId, string.Join(", ", newLeases.Select(l => l.CurrentLeaseToken)));
+            DefaultTrace.TraceInformation("lease {0} split into {1}", partitionId, string.Join(", ", newLeases.Select(l => l.CurrentLeaseToken.ToString())));
 
             return newLeases;
         }
@@ -127,7 +127,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
         {
             // Get leases after getting ranges, to make sure that no other hosts checked in continuation token for split partition after we got leases.
             IEnumerable<DocumentServiceLease> leases = await this.leaseContainer.GetAllLeasesAsync().ConfigureAwait(false);
-            HashSet<string> existingPartitionIds = new HashSet<string>(leases.Select(lease => lease.CurrentLeaseToken));
+            HashSet<string> existingPartitionIds = new HashSet<string>(leases.Select(lease => lease.CurrentLeaseToken.ToString()));
             HashSet<string> addedPartitionIds = new HashSet<string>(partitionIds);
             addedPartitionIds.ExceptWith(existingPartitionIds);
 

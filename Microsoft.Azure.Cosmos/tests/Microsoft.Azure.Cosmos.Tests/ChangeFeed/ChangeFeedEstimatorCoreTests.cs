@@ -239,8 +239,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         {
             IReadOnlyList<RemainingLeaseTokenWork> remainingWork = new List<RemainingLeaseTokenWork>()
             {
-                new RemainingLeaseTokenWork(Guid.NewGuid().ToString(), 5),
-                new RemainingLeaseTokenWork(Guid.NewGuid().ToString(), 10),
+                new RemainingLeaseTokenWork(new FeedTokenPartitionKeyRangeId(Guid.NewGuid().ToString()), 5),
+                new RemainingLeaseTokenWork(new FeedTokenPartitionKeyRangeId(Guid.NewGuid().ToString()), 10),
             };
 
             IReadOnlyList<RemainingLeaseTokenWork> estimationDelegateValue = null;

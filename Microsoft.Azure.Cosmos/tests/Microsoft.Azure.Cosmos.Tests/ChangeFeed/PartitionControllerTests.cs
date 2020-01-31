@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             lease = Mock.Of<DocumentServiceLease>();
             Mock.Get(lease)
                 .Setup(l => l.CurrentLeaseToken)
-                .Returns("partitionId");
+                .Returns(new FeedTokenPartitionKeyRangeId("partitionId"));
 
             partitionProcessor = MockPartitionProcessor();
             leaseRenewer = MockRenewer();
@@ -158,7 +158,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             DocumentServiceLease lease2 = Mock.Of<DocumentServiceLease>();
             Mock.Get(lease2)
                 .Setup(l => l.CurrentLeaseToken)
-                .Returns("partitionId2");
+                .Returns(new FeedTokenPartitionKeyRangeId("partitionId2"));
 
             Mock.Get(partitionSupervisorFactory)
                 .Setup(f => f.Create(lease2))
@@ -177,7 +177,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             DocumentServiceLease lease2 = Mock.Of<DocumentServiceLease>();
             Mock.Get(lease2)
                 .Setup(l => l.CurrentLeaseToken)
-                .Returns("partitionId2");
+                .Returns(new FeedTokenPartitionKeyRangeId("partitionId2"));
 
             FeedProcessor partitionProcessor2 = MockPartitionProcessor();
             Mock.Get(partitionSupervisorFactory)

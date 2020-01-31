@@ -53,8 +53,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         {
             IReadOnlyList<RemainingLeaseTokenWork> estimation = new List<RemainingLeaseTokenWork>()
             {
-                new RemainingLeaseTokenWork(Guid.NewGuid().ToString(), 5),
-                new RemainingLeaseTokenWork(Guid.NewGuid().ToString(), 10),
+                new RemainingLeaseTokenWork(new FeedTokenPartitionKeyRangeId(Guid.NewGuid().ToString()), 5),
+                new RemainingLeaseTokenWork(new FeedTokenPartitionKeyRangeId(Guid.NewGuid().ToString()), 10),
             };
             bool detectedEstimationCorrectly = false;
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource(500);

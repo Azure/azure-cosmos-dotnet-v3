@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
                             DocumentServiceLease item = partition.Current;
                             try
                             {
-                                if (string.IsNullOrEmpty(item?.CurrentLeaseToken)) continue;
+                                if (item?.CurrentLeaseToken == null) continue;
                                 long result = await this.GetRemainingWorkAsync(item, cancellationToken);
                                 partialResults.Add(new RemainingLeaseTokenWork(item.CurrentLeaseToken, result));
                             }
@@ -183,7 +183,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
         private async Task<long> GetRemainingWorkAsync(DocumentServiceLease existingLease, CancellationToken cancellationToken)
         {
             // Current lease schema maps Token to PKRangeId
-            string partitionKeyRangeId = existingLease.CurrentLeaseToken;
+            string partitionKeyRangeId = existingLease.CurrentLeaseToken.ToString();
             FeedIterator iterator = this.feedCreator(
                 partitionKeyRangeId,
                 existingLease.ContinuationToken,

@@ -128,7 +128,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             allLeases.AddRange(Enumerable.Range(1, 10).Select(index => CreateLease(owner2, "B" + index.ToString())));
             List<DocumentServiceLease> leasesToTake = strategy.SelectLeasesToTake(allLeases).ToList();
             Assert.IsTrue(leasesToTake.Count == 1);
-            Assert.IsTrue(leasesToTake.First().CurrentLeaseToken.StartsWith("B"));
+            Assert.IsTrue(leasesToTake.First().CurrentLeaseToken.ToString().StartsWith("B"));
         }
 
         [TestMethod]
@@ -173,7 +173,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             allLeases.AddRange(Enumerable.Range(1, 2).Select(index => CreateLease(ownerSelf, "B" + index.ToString())));
             List<DocumentServiceLease> leasesToTake = strategy.SelectLeasesToTake(allLeases).ToList();
             Assert.IsTrue(leasesToTake.Count == 1);
-            Assert.IsTrue(leasesToTake.First().CurrentLeaseToken.StartsWith("A"));
+            Assert.IsTrue(leasesToTake.First().CurrentLeaseToken.ToString().StartsWith("A"));
         }
 
         [TestMethod]
@@ -208,7 +208,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         {
             var lease = Mock.Of<DocumentServiceLease>();
             Mock.Get(lease).Setup(l => l.Owner).Returns(owner);
-            Mock.Get(lease).Setup(l => l.CurrentLeaseToken).Returns(partitionId);
+            Mock.Get(lease).Setup(l => l.CurrentLeaseToken).Returns(new FeedTokenPartitionKeyRangeId(partitionId));
             Mock.Get(lease).Setup(l => l.Timestamp).Returns(timestamp);
             return lease;
         }

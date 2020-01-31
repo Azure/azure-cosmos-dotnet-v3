@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             lease = Mock.Of<DocumentServiceLease>();
             Mock.Get(lease)
                 .Setup(l => l.CurrentLeaseToken)
-                .Returns("partitionId");
+                .Returns(new FeedTokenPartitionKeyRangeId("partitionId"));
 
             leaseRenewer = Mock.Of<LeaseRenewer>();
             partitionProcessor = Mock.Of<FeedProcessor>();
