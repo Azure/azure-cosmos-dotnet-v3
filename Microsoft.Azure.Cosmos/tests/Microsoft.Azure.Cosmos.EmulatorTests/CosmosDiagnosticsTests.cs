@@ -73,6 +73,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [DataRow(true)]
         [DataRow(false)]
         public async Task PointOperationDiagnostic(bool disableDiagnostics)
         {
