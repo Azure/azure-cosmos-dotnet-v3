@@ -44,6 +44,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             this.estimatorPeriod = estimatorPeriod;
         }
 
+        /// <summary>
+        /// Used for tests
+        /// </summary>
         internal ChangeFeedEstimatorCore(
             ChangesEstimationHandler initialEstimateDelegate,
             TimeSpan? estimatorPeriod,
@@ -128,9 +131,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                    this.monitoredContainer.ClientContext.Client.ClientOptions?.GatewayModeMaxConnectionLimit ?? 1);
             }
 
-            ChangeFeedEstimatorDispatcher estimatorDispatcher = new ChangeFeedEstimatorDispatcher(this.initialEstimateDelegate, this.estimatorPeriod);
-
-            return new FeedEstimatorCore(estimatorDispatcher, this.remainingWorkEstimator);
+            return new FeedEstimatorCore(this.initialEstimateDelegate, this.remainingWorkEstimator, this.estimatorPeriod);
         }
     }
 }
