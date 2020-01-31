@@ -128,9 +128,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
         {
             foreach (DocumentServiceLease lease in allLeases)
             {
-                Debug.Assert(lease.CurrentLeaseToken != null, "TakeLeasesAsync: lease.PartitionId cannot be null.");
+                Debug.Assert(lease.CurrentLeaseToken != null, "TakeLeasesAsync: lease.CurrentLeaseToken cannot be null.");
 
-                allPartitions.Add(lease.CurrentLeaseToken.ToString(), lease);
+                allPartitions.Add(lease.CurrentLeaseToken?.ToString(), lease);
                 if (string.IsNullOrWhiteSpace(lease.Owner) || this.IsExpired(lease))
                 {
                     DefaultTrace.TraceVerbose("Found unused or expired lease: {0}", lease);
@@ -138,9 +138,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
                 }
                 else
                 {
-                    var count = 0;
                     string assignedTo = lease.Owner;
-                    if (workerToPartitionCount.TryGetValue(assignedTo, out count))
+                    if (workerToPartitionCount.TryGetValue(assignedTo, out int count))
                     {
                         workerToPartitionCount[assignedTo] = count + 1;
                     }
