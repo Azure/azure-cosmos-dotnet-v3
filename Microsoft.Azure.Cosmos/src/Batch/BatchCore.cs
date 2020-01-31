@@ -209,7 +209,7 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContext();
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
             BatchExecutor executor = new BatchExecutor(
                 container: this.container,
                 partitionKey: this.partitionKey,

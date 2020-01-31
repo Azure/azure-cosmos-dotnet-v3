@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
         {
             if (this.isDisposed)
             {
-                throw new InvalidOperationException("The CosmosDiagnosticScope has already been disposed.");
+                return;
             }
 
             this.ElapsedTimeStopWatch.Stop();
