@@ -149,6 +149,15 @@ namespace Microsoft.Azure.Cosmos
 
         internal TestInjections TestSettings { get; set; }
 
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+    public
+#else
+        internal
+#endif
+        QueryOptionsDefaultOptimizer Optimizer { get; set; }
+
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
         /// </summary>
@@ -245,6 +254,30 @@ namespace Microsoft.Azure.Cosmos
             {
                 request.Headers.Add(HttpConstants.HttpHeaders.PageSize, maxItemCount.Value.ToString(CultureInfo.InvariantCulture));
             }
+        }
+
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+    public
+#else
+        internal
+#endif
+        sealed class QueryOptionsDefaultOptimizer
+        {
+            public QueryOptionsDefaultOptimizer(
+                Func<QueryMetadata, int> defaultForPageSizeCallback,
+                Func<QueryMetadata, int> defaultForMaxBufferedItemCountCallback,
+                Func<QueryMetadata, int> defaultForMaxConcurrencyCallback)
+            {
+                this.DefaultForPageSizeCallback = defaultForPageSizeCallback ?? throw new ArgumentNullException(nameof(defaultForPageSizeCallback));
+                this.DefaultForMaxBufferedItemCountCallback = defaultForMaxBufferedItemCountCallback ?? throw new ArgumentNullException(nameof(defaultForMaxBufferedItemCountCallback));
+                this.DefaultForMaxConcurrencyCallback = defaultForMaxConcurrencyCallback ?? throw new ArgumentNullException(nameof(defaultForMaxConcurrencyCallback));
+            }
+
+            public Func<QueryMetadata, int> DefaultForPageSizeCallback { get; }
+            public Func<QueryMetadata, int> DefaultForMaxBufferedItemCountCallback { get; }
+            public Func<QueryMetadata, int> DefaultForMaxConcurrencyCallback { get; }
         }
     }
 }

@@ -178,12 +178,41 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             cancellationToken.ThrowIfCancellationRequested();
 
             // Override with default values:
-            int resolvedMaxBufferedItemCount = inputParameters.MaxBufferedItemCount.GetValueOrDefault(
-                QueryRequestOptionsTuner.GetOptimalMaxBufferedItemCount(partitionedQueryExecutionInfo));
-            int resolvedMaxConcurrency = inputParameters.MaxConcurrency.GetValueOrDefault(
-                QueryRequestOptionsTuner.GetOptimalMaxConcurrency(partitionedQueryExecutionInfo));
-            int resolvedMaxItemCount = inputParameters.MaxItemCount.GetValueOrDefault(
-                QueryRequestOptionsTuner.GetOptimalMaxPageSize(partitionedQueryExecutionInfo));
+            Func<QueryMetadata, int> optimialMaxPageSizeCallback;
+            if (inputParameters.QueryOptionsDefaultOptimizer == null)
+            {
+                optimialMaxPageSizeCallback = QueryRequestOptionsTuner.GetOptimalMaxPageSize;
+            }
+            else
+            {
+                optimialMaxPageSizeCallback = inputParameters.QueryOptionsDefaultOptimizer.DefaultForPageSizeCallback;
+            }
+
+            Func<QueryMetadata, int> optimalMaxConcurrencyCallback;
+            if (inputParameters.QueryOptionsDefaultOptimizer == null)
+            {
+                optimalMaxConcurrencyCallback = QueryRequestOptionsTuner.GetOptimalMaxConcurrency;
+            }
+            else
+            {
+                optimalMaxConcurrencyCallback = inputParameters.QueryOptionsDefaultOptimizer.DefaultForMaxConcurrencyCallback;
+            }
+
+            Func<QueryMetadata, int> optimalMaxBufferedItemCount;
+            if (inputParameters.QueryOptionsDefaultOptimizer == null)
+            {
+                optimalMaxBufferedItemCount = QueryRequestOptionsTuner.GetOptimalMaxBufferedItemCount;
+            }
+            else
+            {
+                optimalMaxBufferedItemCount = inputParameters.QueryOptionsDefaultOptimizer.DefaultForMaxBufferedItemCountCallback;
+            }
+
+            QueryMetadata queryMetadata = QueryMetadata.Create(partitionedQueryExecutionInfo);
+
+            int resolvedMaxBufferedItemCount = inputParameters.MaxBufferedItemCount.GetValueOrDefault(optimalMaxBufferedItemCount(queryMetadata));
+            int resolvedMaxConcurrency = inputParameters.MaxBufferedItemCount.GetValueOrDefault(optimalMaxConcurrencyCallback(queryMetadata));
+            int resolvedMaxItemCount = inputParameters.MaxItemCount.GetValueOrDefault(optimialMaxPageSizeCallback(queryMetadata));
 
             inputParameters = new InputParameters(
                 sqlQuerySpec: inputParameters.SqlQuerySpec,
@@ -196,7 +225,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 partitionedQueryExecutionInfo: partitionedQueryExecutionInfo,
                 executionEnvironment: inputParameters.ExecutionEnvironment,
                 returnResultsInDeterministicOrder: inputParameters.ReturnResultsInDeterministicOrder,
-                testInjections: inputParameters.TestInjections);
+                testInjections: inputParameters.TestInjections,
+                queryOptionsDefaultOptimizer: inputParameters.QueryOptionsDefaultOptimizer);
 
             List<Documents.PartitionKeyRange> targetRanges = await CosmosQueryExecutionContextFactory.GetTargetPartitionKeyRangesAsync(
                    cosmosQueryContext.QueryClient,
@@ -225,7 +255,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     inputParameters.PartitionedQueryExecutionInfo,
                     inputParameters.ExecutionEnvironment,
                     inputParameters.ReturnResultsInDeterministicOrder,
-                    inputParameters.TestInjections);
+                    inputParameters.TestInjections,
+                    inputParameters.QueryOptionsDefaultOptimizer);
             }
 
             // Add better defaults here.
@@ -375,7 +406,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
                 ExecutionEnvironment? executionEnvironment,
                 bool? returnResultsInDeterministicOrder,
-                TestInjections testInjections)
+                TestInjections testInjections,
+                QueryRequestOptions.QueryOptionsDefaultOptimizer queryOptionsDefaultOptimizer)
             {
                 this.SqlQuerySpec = sqlQuerySpec ?? throw new ArgumentNullException(nameof(sqlQuerySpec));
                 this.InitialUserContinuationToken = initialUserContinuationToken;
@@ -388,6 +420,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 this.ExecutionEnvironment = executionEnvironment.GetValueOrDefault(InputParameters.DefaultExecutionEnvironment);
                 this.ReturnResultsInDeterministicOrder = returnResultsInDeterministicOrder.GetValueOrDefault(InputParameters.DefaultReturnResultsInDeterministicOrder);
                 this.TestInjections = testInjections;
+                this.QueryOptionsDefaultOptimizer = queryOptionsDefaultOptimizer;
             }
 
             public SqlQuerySpec SqlQuerySpec { get; }
@@ -401,6 +434,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             public ExecutionEnvironment ExecutionEnvironment { get; }
             public bool ReturnResultsInDeterministicOrder { get; }
             public TestInjections TestInjections { get; }
+            public QueryRequestOptions.QueryOptionsDefaultOptimizer QueryOptionsDefaultOptimizer { get; }
         }
     }
 }
