@@ -436,24 +436,38 @@ namespace Microsoft.Azure.Cosmos
 
             return TaskHelper.RunInlineIfNeededAsync(async () =>
             {
+                // Set a diagnostic context if one is not set.
+                // This will ensure that all diagnostics are recorded across the multiple requests.
+                if (requestOptions?.DiagnosticContext == null)
+                {
+                    if (requestOptions == null)
+                    {
+                        requestOptions = new RequestOptions();
+                    }
+
+                    requestOptions.DiagnosticContext = new CosmosDiagnosticsContextCore();
+                }
+
                 // Doing a Read before Create will give us better latency for existing databases
                 DatabaseProperties databaseProperties = this.PrepareDatabaseProperties(id);
                 Database database = this.GetDatabase(id);
-                ResponseMessage response = await database.ReadStreamAsync(requestOptions: requestOptions, cancellationToken: cancellationToken);
-                if (response.StatusCode != HttpStatusCode.NotFound)
+                ResponseMessage readResponse = await database.ReadStreamAsync(requestOptions: requestOptions, cancellationToken: cancellationToken);
+                if (readResponse.StatusCode != HttpStatusCode.NotFound)
                 {
-                    return await this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(database, Task.FromResult(response));
+                    return await this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(database, Task.FromResult(readResponse));
                 }
 
-                response = await this.CreateDatabaseStreamAsync(databaseProperties, throughput, requestOptions, cancellationToken);
-                if (response.StatusCode != HttpStatusCode.Conflict)
+                ResponseMessage createResponse = await this.CreateDatabaseStreamAsync(databaseProperties, throughput, requestOptions, cancellationToken);
+                if (createResponse.StatusCode != HttpStatusCode.Conflict)
                 {
-                    return await this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(this.GetDatabase(databaseProperties.Id), Task.FromResult(response));
+                    return await this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(this.GetDatabase(databaseProperties.Id), Task.FromResult(createResponse));
                 }
 
                 // This second Read is to handle the race condition when 2 or more threads have Read the database and only one succeeds with Create
                 // so for the remaining ones we should do a Read instead of throwing Conflict exception
-                return await database.ReadAsync(cancellationToken: cancellationToken);
+                return await database.ReadAsync(
+                    requestOptions: requestOptions,
+                    cancellationToken: cancellationToken);
             });
         }
 

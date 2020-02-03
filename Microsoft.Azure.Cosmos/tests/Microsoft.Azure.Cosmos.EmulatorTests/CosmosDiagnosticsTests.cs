@@ -268,6 +268,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(diagnostics.Contains("StatusCode"));
             Assert.IsTrue(diagnostics.Contains("SubStatusCode"));
             Assert.IsTrue(diagnostics.Contains("RequestUri"));
+
+            await databaseResponse.Database.DeleteAsync();
+
+            databaseResponse = await this.cosmosClient.CreateDatabaseIfNotExistsAsync(
+              id: Guid.NewGuid().ToString(),
+              requestOptions: requestOptions);
+            Assert.IsNotNull(databaseResponse.Diagnostics);
+            diagnostics = databaseResponse.Diagnostics.ToString();
+            if (disableDiagnostics)
+            {
+                Assert.AreEqual(string.Empty, diagnostics);
+                return;
+            }
+
+            Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
+
+            await databaseResponse.Database.DeleteAsync();
         }
 
         public static void VerifyQueryDiagnostics(
