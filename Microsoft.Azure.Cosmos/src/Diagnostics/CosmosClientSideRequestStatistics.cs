@@ -125,83 +125,11 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public override string ToString()
-        {
-            StringBuilder stringBuilder = new StringBuilder();
-            this.AppendToBuilder(stringBuilder);
-            return stringBuilder.ToString();
-        }
-
-        private void AppendJsonUriListToBuilder(
-            string listName,
-            IEnumerable<Uri> uris,
-            JsonWriter jsonWriter)
-        {
-            if (jsonWriter == null)
-            {
-                throw new ArgumentNullException(nameof(jsonWriter));
-            }
-
-            jsonWriter.WritePropertyName(listName);
-            jsonWriter.WriteStartArray();
-
-            foreach (Uri uri in uris)
-            {
-                jsonWriter.WriteValue(uri);
-            }
-
-            jsonWriter.WriteEndArray();
-        }
-
         public void AppendToBuilder(StringBuilder stringBuilder)
         {
-            using (StringWriter stringWriter = new StringWriter())
+            using (StringWriter stringWriter = new StringWriter(stringBuilder))
             {
-                using (JsonWriter jsonWriter = new JsonTextWriter(stringWriter))
-                {
-                    //need to lock in case of concurrent operations. this should be extremely rare since ToString()
-                    //should only be called at the end of request.
-                    lock (this.lockObject)
-                    {
-                        jsonWriter.WriteStartObject();
-
-                        //first trace request start time, as well as total non-head/headfeed requests made.
-                        string endTime = this.RequestEndTimeUtc.HasValue ? this.RequestEndTimeUtc.Value.ToString("o", CultureInfo.InvariantCulture) : "Not set";
-                        int regionsContacted = this.RegionsContacted.Count == 0 ? 1 : this.RegionsContacted.Count;
-
-                        jsonWriter.WritePropertyName("RequestStartTimeUtc");
-                        jsonWriter.WriteValue(this.RequestStartTimeUtc.ToString("o", CultureInfo.InvariantCulture));
-
-                        jsonWriter.WritePropertyName("RequestEndTimeUtc");
-                        jsonWriter.WriteValue(endTime);
-
-                        jsonWriter.WritePropertyName("RequestLatency");
-                        jsonWriter.WriteValue(this.RequestLatency);
-
-                        jsonWriter.WritePropertyName("IsCpuOverloaded");
-                        jsonWriter.WriteValue(this.IsCpuOverloaded);
-
-                        jsonWriter.WritePropertyName("NumberRegionsAttempted");
-                        jsonWriter.WriteValue(regionsContacted);
-
-                        this.AppendJsonUriListToBuilder(
-                            "FailedReplicas",
-                            this.FailedReplicas,
-                            jsonWriter);
-
-                        this.AppendJsonUriListToBuilder(
-                            "RegionsContacted",
-                            this.RegionsContacted,
-                            jsonWriter);
-
-                        this.AppendJsonUriListToBuilder(
-                            "ContactedReplicas",
-                            this.ContactedReplicas,
-                            jsonWriter);
-
-                        jsonWriter.WriteEndObject();
-                    }
-                }
+                this.WriteTo(stringWriter);
             }
         }
 

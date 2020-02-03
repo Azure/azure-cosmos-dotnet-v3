@@ -7,11 +7,14 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
     internal sealed class AddressResolutionStatistics : CosmosDiagnosticsInternal
     {
-        public AddressResolutionStatistics(DateTime startTime, DateTime endTime, string targetEndpoint)
+        public AddressResolutionStatistics(
+            DateTime startTime,
+            DateTime endTime,
+            string targetEndpoint)
         {
             this.StartTime = startTime;
             this.EndTime = endTime;
-            this.TargetEndpoint = targetEndpoint;
+            this.TargetEndpoint = targetEndpoint ?? throw new ArgumentNullException(nameof(startTime));
         }
 
         public DateTime StartTime { get; }
