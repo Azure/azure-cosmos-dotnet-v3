@@ -13,8 +13,7 @@
   },
   "RequestUri": "http://localhost.com",
   "RequestSessionToken": "RequestSessionToken",
-  "ResponseSessionToken": "ResponseSessionToken",
-  "ClientSideRequestStatistics": null
+  "ResponseSessionToken": "ResponseSessionToken"
 }]]></CosmosDiagnostics>
     </Input>
     <Output>
