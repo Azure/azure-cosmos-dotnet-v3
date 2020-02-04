@@ -75,6 +75,11 @@ namespace Microsoft.Azure.Cosmos
 
             lock (this.lockObject)
             {
+                if (!this.RequestEndTimeUtc.HasValue || responseTime > this.RequestEndTimeUtc)
+                {
+                    this.RequestEndTimeUtc = responseTime;
+                }
+
                 if (locationEndpoint != null)
                 {
                     this.RegionsContacted.Add(locationEndpoint);
@@ -125,11 +130,24 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        public override string ToString()
+        {
+            using (StringWriter stringWriter = new StringWriter())
+            {
+                // Add the entire diagnostic context to get the
+                // store response and other info
+                this.diagnosticsContext.WriteTo(stringWriter);
+                return stringWriter.ToString();
+            }
+        }
+
         public void AppendToBuilder(StringBuilder stringBuilder)
         {
             using (StringWriter stringWriter = new StringWriter(stringBuilder))
             {
-                this.WriteTo(stringWriter);
+                // Add the entire diagnostic context to get the
+                // store response and other info
+                this.diagnosticsContext.WriteTo(stringWriter);
             }
         }
 
