@@ -226,14 +226,36 @@ namespace Microsoft.Azure.Cosmos
                 handler: this.CreateHttpClientHandler(clientOptions),
                 sessionContainer: clientOptionsClone.SessionContainer);
 
-            this.Init(
-                clientOptionsClone,
-                documentClient);
+            this.ClientOptions = clientOptions;
+            this.DocumentClient = documentClient;
+
+            //Request pipeline 
+            ClientPipelineBuilder clientPipelineBuilder = new ClientPipelineBuilder(
+                this,
+                this.ClientOptions.CustomHandlers);
+
+            this.RequestHandler = clientPipelineBuilder.Build();
+
+            CosmosSerializerCore serializerCore = CosmosSerializerCore.Create(
+                this.ClientOptions.Serializer,
+                this.ClientOptions.SerializerOptions);
+
+            this.ResponseFactory = new CosmosResponseFactory(serializerCore);
+
+            this.ClientContext = new ClientContextCore(
+                client: this,
+                clientOptions: this.ClientOptions,
+                serializerCore: serializerCore,
+                cosmosResponseFactory: this.ResponseFactory,
+                requestHandler: this.RequestHandler,
+                documentClient: this.DocumentClient,
+                userAgent: this.DocumentClient.ConnectionPolicy.UserAgentContainer.UserAgent);
         }
 
         /// <summary>
         /// Used for unit testing only.
         /// </summary>
+        /// <remarks>This constructor should be removed at some point. The mocking should happen in a derivied class.</remarks>
         internal CosmosClient(
             string accountEndpoint,
             string authKeyOrResourceToken,
@@ -263,13 +285,36 @@ namespace Microsoft.Azure.Cosmos
             this.Endpoint = new Uri(accountEndpoint);
             this.AccountKey = authKeyOrResourceToken;
 
-            this.Init(cosmosClientOptions, documentClient);
+            this.ClientOptions = cosmosClientOptions;
+            this.DocumentClient = documentClient;
+
+            //Request pipeline 
+            ClientPipelineBuilder clientPipelineBuilder = new ClientPipelineBuilder(
+                this,
+                this.ClientOptions.CustomHandlers);
+
+            this.RequestHandler = clientPipelineBuilder.Build();
+
+            CosmosSerializerCore serializerCore = CosmosSerializerCore.Create(
+                this.ClientOptions.Serializer,
+                this.ClientOptions.SerializerOptions);
+
+            this.ResponseFactory = new CosmosResponseFactory(serializerCore);
+
+            this.ClientContext = new ClientContextCore(
+                client: this,
+                clientOptions: this.ClientOptions,
+                serializerCore: serializerCore,
+                cosmosResponseFactory: this.ResponseFactory,
+                requestHandler: this.RequestHandler,
+                documentClient: this.DocumentClient,
+                userAgent: this.DocumentClient.ConnectionPolicy.UserAgentContainer.UserAgent);
         }
 
         /// <summary>
         /// The <see cref="Cosmos.CosmosClientOptions"/> used initialize CosmosClient.
         /// </summary>
-        public virtual CosmosClientOptions ClientOptions { get; private set; }
+        public virtual CosmosClientOptions ClientOptions { get; }
 
         /// <summary>
         /// Gets the endpoint Uri for the Azure Cosmos DB service.
@@ -288,11 +333,11 @@ namespace Microsoft.Azure.Cosmos
         /// </value>
         internal string AccountKey { get; }
 
-        internal DocumentClient DocumentClient { get; private set; }
-        internal RequestInvokerHandler RequestHandler { get; private set; }
-        internal CosmosResponseFactory ResponseFactory { get; private set; }
-        internal CosmosClientContext ClientContext { get; private set; }
-        internal BatchAsyncContainerExecutorCache BatchExecutorCache { get; private set; } = new BatchAsyncContainerExecutorCache();
+        internal DocumentClient DocumentClient { get; }
+        internal RequestInvokerHandler RequestHandler { get; }
+        internal CosmosResponseFactory ResponseFactory { get; }
+        internal CosmosClientContext ClientContext { get; }
+        internal BatchAsyncContainerExecutorCache BatchExecutorCache { get; } = new BatchAsyncContainerExecutorCache();
 
         /// <summary>
         /// Reads the <see cref="Microsoft.Azure.Cosmos.AccountProperties"/> for the Azure Cosmos DB account.
@@ -698,36 +743,6 @@ namespace Microsoft.Azure.Cosmos
                 throughput,
                 requestOptions,
                 cancellationToken));
-        }
-
-        internal void Init(
-            CosmosClientOptions clientOptions,
-            DocumentClient documentClient)
-        {
-            this.ClientOptions = clientOptions;
-            this.DocumentClient = documentClient;
-
-            //Request pipeline 
-            ClientPipelineBuilder clientPipelineBuilder = new ClientPipelineBuilder(
-                this,
-                this.ClientOptions.CustomHandlers);
-
-            this.RequestHandler = clientPipelineBuilder.Build();
-
-            CosmosSerializerCore serializerCore = CosmosSerializerCore.Create(
-                this.ClientOptions.Serializer,
-                this.ClientOptions.SerializerOptions);
-
-            this.ResponseFactory = new CosmosResponseFactory(serializerCore);
-
-            this.ClientContext = new ClientContextCore(
-                client: this,
-                clientOptions: this.ClientOptions,
-                serializerCore: serializerCore,
-                cosmosResponseFactory: this.ResponseFactory,
-                requestHandler: this.RequestHandler,
-                documentClient: this.DocumentClient,
-                userAgent: this.DocumentClient.ConnectionPolicy.UserAgentContainer.UserAgent);
         }
 
         internal virtual async Task<ConsistencyLevel> GetAccountConsistencyLevelAsync()
