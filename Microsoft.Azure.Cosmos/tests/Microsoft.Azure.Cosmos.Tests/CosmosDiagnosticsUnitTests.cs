@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.IO;
     using System.Net;
     using System.Net.Http;
+    using System.Text;
     using System.Text.RegularExpressions;
     using System.Threading;
     using Microsoft.Azure.Cosmos.Diagnostics;
@@ -105,6 +106,56 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(diagnostics.Contains("MyCustomUserAgentString"));
             Assert.IsTrue(diagnostics.Contains("ValidateScope"));
             Assert.IsTrue(diagnostics.Contains("CosmosDiagnostics2Scope"));
+        }
+
+        [TestMethod]
+        public void ValidateClientSideRequestStatisticsToString()
+        {
+            // Verify that API using the interface get the older v2 string
+            CosmosClientSideRequestStatistics clientSideRequestStatistics = new CosmosClientSideRequestStatistics();
+            string noInfo = clientSideRequestStatistics.ToString();
+            Assert.IsNotNull(noInfo);
+
+            StringBuilder stringBuilder = new StringBuilder();
+            clientSideRequestStatistics.AppendToBuilder(stringBuilder);
+            string noInfoStringBuilder = stringBuilder.ToString();
+            Assert.IsNotNull(noInfoStringBuilder);
+
+            Assert.AreEqual(noInfo, noInfoStringBuilder);
+
+            string id = clientSideRequestStatistics.RecordAddressResolutionStart(new Uri("https://testuri"));
+            clientSideRequestStatistics.RecordAddressResolutionEnd(id);
+
+            clientSideRequestStatistics.RecordResponse(
+                new Documents.DocumentServiceRequest(
+                    operationType: Documents.OperationType.Read,
+                    resourceIdOrFullName: null,
+                    resourceType: Documents.ResourceType.Database,
+                    body: null,
+                    headers: null,
+                    isNameBased: false,
+                    authorizationTokenType: Documents.AuthorizationTokenType.PrimaryMasterKey),
+                new Documents.StoreResult(
+                    storeResponse: null,
+                    exception: null,
+                    partitionKeyRangeId: "PkRange",
+                    lsn: 42,
+                    quorumAckedLsn: 4242,
+                    requestCharge: 9000.42,
+                    currentReplicaSetSize: 3,
+                    currentWriteQuorum: 4,
+                    isValid: true,
+                    storePhysicalAddress: null,
+                    globalCommittedLSN: 2,
+                    numberOfReadRegions: 1,
+                    itemLSN: 5,
+                    sessionToken: null,
+                    usingLocalLSN: true));
+
+            string statistics = clientSideRequestStatistics.ToString();
+            Assert.IsTrue(statistics.Contains("AddressResolution - StartTime"));
+            Assert.IsTrue(statistics.Contains("Z, TargetEndpoint: https://testuri/"));
+            Assert.IsTrue(statistics.Contains("LSN: 42, GlobalCommittedLsn: 2, PartitionKeyRangeId: PkRange, IsValid: True, StatusCode: 0, SubStatusCode: 0, RequestCharge: 9000.42, ItemLSN: 5"));
         }
     }
 }
