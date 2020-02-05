@@ -387,10 +387,10 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Useful in collections with RU >= 300K for consuming full RU.
         /// </summary>
         /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
-        /// <seealso cref="CosmosClientOptions.EnableCongestionControlForBulkExecution"/>
-        public CosmosClientBuilder WithCongestionControlForBulkExecutionEnabled()
+        /// <seealso cref="CosmosClientOptions.EnableAdaptiveBulkExecution"/>
+        public CosmosClientBuilder WithAdaptiveBulkExecutionEnabled()
         {
-            this.clientOptions.EnableCongestionControlForBulkExecution = true;
+            this.clientOptions.EnableAdaptiveBulkExecution = true;
             return this;
         }
 

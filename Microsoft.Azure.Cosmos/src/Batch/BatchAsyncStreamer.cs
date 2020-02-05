@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos
             int dispatchTimerInSeconds,
             TimerPool timerPool,
             SemaphoreSlim limiter,
-            bool enableCongestionControl,
+            bool enableAdaptiveBulkExecution,
             int maxDegreeOfConcurrency,
             CosmosSerializerCore serializerCore,
             BatchAsyncBatcherExecuteDelegate executor,
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos
             this.partitionMetric = new BatchPartitionMetric();
             this.maxDegreeOfConcurrency = maxDegreeOfConcurrency;
 
-            if (enableCongestionControl)
+            if (enableAdaptiveBulkExecution)
             {
                 this.StartCongestionControlTimer();
             }

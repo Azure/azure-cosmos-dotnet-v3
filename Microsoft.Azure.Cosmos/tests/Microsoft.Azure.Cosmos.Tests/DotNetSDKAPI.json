@@ -1385,7 +1385,7 @@
           "Attributes": [],
           "MethodInfo": null
         },
-        "Boolean EnableCongestionControlForBulkExecution": {
+        "Boolean EnableAdaptiveBulkExecution": {
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": null
@@ -1397,12 +1397,12 @@
           ],
           "MethodInfo": "Boolean get_AllowBulkExecution()"
         },
-        "Boolean get_EnableCongestionControlForBulkExecution()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Boolean get_EnableAdaptiveBulkExecution()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "Boolean get_EnableCongestionControlForBulkExecution()"
+          "MethodInfo": "Boolean get_EnableAdaptiveBulkExecution()"
         },
         "Boolean get_LimitToEndpoint()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -1644,12 +1644,12 @@
           ],
           "MethodInfo": "Void set_ConsistencyLevel(System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel])"
         },
-        "Void set_EnableCongestionControlForBulkExecution(Boolean)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Void set_EnableAdaptiveBulkExecution(Boolean)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "Void set_EnableCongestionControlForBulkExecution(Boolean)"
+          "MethodInfo": "Void set_EnableAdaptiveBulkExecution(Boolean)"
         },
         "Void set_GatewayModeMaxConnectionLimit(Int32)": {
           "Type": "Method",

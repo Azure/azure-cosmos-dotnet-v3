@@ -237,7 +237,7 @@
             string endpoint,
             string authKey) =>
         // </Initialization>
-            new CosmosClient(endpoint, authKey, new CosmosClientOptions() { AllowBulkExecution = true, EnableCongestionControlForBulkExecution = true});
+            new CosmosClient(endpoint, authKey, new CosmosClientOptions() { AllowBulkExecution = true, EnableAdaptiveBulkExecution = true });
         // </Initialization>
 
         private static async Task CleanupAsync()
