@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ItemResponse<ToDoActivity> readResponse = await this.Container.ReadItemAsync<ToDoActivity>(
                 id: testItem.id,
                 partitionKey: new PartitionKey(testItem.status),
-                requestOptions);
+                requestOptions: requestOptions);
             Assert.IsNotNull(readResponse.Diagnostics);
 
             testItem.description = "NewDescription";
