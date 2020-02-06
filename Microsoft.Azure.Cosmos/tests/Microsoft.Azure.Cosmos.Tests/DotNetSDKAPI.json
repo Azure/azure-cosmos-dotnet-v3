@@ -2575,6 +2575,11 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder AddCustomHandlers(Microsoft.Azure.Cosmos.RequestHandler[])"
         },
+        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithAdaptiveBulkExecutionEnabled()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithAdaptiveBulkExecutionEnabled()"
+        },
         "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithApplicationName(System.String)": {
           "Type": "Method",
           "Attributes": [],
@@ -2589,11 +2594,6 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithBulkExecution(Boolean)"
-        },
-        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithCongestionControlForBulkExecutionEnabled()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithCongestionControlForBulkExecutionEnabled()"
         },
         "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithConnectionModeDirect()": {
           "Type": "Method",
