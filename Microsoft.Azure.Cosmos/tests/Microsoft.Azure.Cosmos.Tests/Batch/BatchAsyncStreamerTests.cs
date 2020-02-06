@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     serializerCore: MockCosmosUtil.Serializer,
                 cancellationToken: cancellationToken);
 
-                await Task.Delay(10);
+                await Task.Delay(20);
 
                 TransactionalBatchResponse batchresponse = await TransactionalBatchResponse.FromResponseMessageAsync(
                     new ResponseMessage(HttpStatusCode.OK) { Content = responseContent },
@@ -140,7 +140,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(newLimiter.CurrentCount, 1);
 
             List<Task<TransactionalBatchOperationResult>> contexts = new List<Task<TransactionalBatchOperationResult>>(100);
-            for (int i = 0; i < 200; i++)
+            for (int i = 0; i < 400; i++)
             {
                 ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, i, i.ToString());
                 ItemBatchOperationContext context = AttachContext(operation);
