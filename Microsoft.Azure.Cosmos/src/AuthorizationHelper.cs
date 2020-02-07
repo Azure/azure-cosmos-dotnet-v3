@@ -264,7 +264,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             authorizationToken = HttpUtility.UrlDecode(authorizationToken);
-
+ 
             // Format of the token being deciphered is 
             // type=<master/resource/system>&ver=<version>&sig=<base64encodedstring>
 
@@ -643,6 +643,10 @@ namespace Microsoft.Azure.Cosmos
             else if (resourceType.Equals(Paths.CollectionsPathSegment, StringComparison.OrdinalIgnoreCase))
             {
                 return parsedRId.DocumentCollectionId.ToString();
+            }
+            else if (resourceType.Equals(Paths.ClientEncryptionKeysPathSegment, StringComparison.OrdinalIgnoreCase))
+            {
+                return parsedRId.ClientEncryptionKeyId.ToString();
             }
             else if (resourceType.Equals(Paths.DocumentsPathSegment, StringComparison.OrdinalIgnoreCase))
             {
