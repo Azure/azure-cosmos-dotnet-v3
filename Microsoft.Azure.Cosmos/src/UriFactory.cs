@@ -75,7 +75,9 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>
         /// A data encryption key link in the format of /dbs/{0}/clientEncryptionkeys/{1}/ with {0} being a Uri escaped version of the <paramref name="databaseId"/> and {1} being <paramref name="clientEncryptionKeyId"/>
         /// </returns>
-        /// <remarks>Would be used when updating or deleting a <see cref="ClientEncryptionKey"/>
+        /// <remarks>
+        /// Would be used when updating or deleting a <see cref="ClientEncryptionKey"/>
+        /// </remarks>
         /// <seealso cref="Uri.EscapeUriString"/>
         static internal Uri CreateClientEncryptionKeyUri(string databaseId, string clientEncryptionKeyId)
         {

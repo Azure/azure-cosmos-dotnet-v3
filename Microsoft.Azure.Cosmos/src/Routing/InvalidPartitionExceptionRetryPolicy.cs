@@ -80,10 +80,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                         throw new InvalidOperationException("OnBeforeSendRequest was never called");
                     }
 
-                    if (!string.IsNullOrEmpty(resourceIdOrFullName))
-                    {
-                        this.clientCollectionCache.Refresh(resourceIdOrFullName);
-                    }
+                    this.documentServiceRequest.ForceNameCacheRefresh = true;
+                    this.documentServiceRequest.ClearRoutingHints();
 
                     this.retried = true;
                     return ShouldRetryResult.RetryAfter(TimeSpan.Zero);

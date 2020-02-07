@@ -548,8 +548,9 @@ namespace Microsoft.Azure.Cosmos
                                         collection,
                                         routingMap);
                 }
-                else // routingMap.OrderedPartitionKeyRanges.Count == 0
+                else
                 {
+                    // routingMap.OrderedPartitionKeyRanges.Count == 0
                     // Should never come here.
                     DefaultTrace.TraceCritical(
                         "No Partition Key ranges present for the collection {0}", collection.ResourceId);
