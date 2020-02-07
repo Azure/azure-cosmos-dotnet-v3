@@ -447,8 +447,8 @@ namespace Microsoft.Azure.Cosmos
                 serviceEndpoint: serviceEndpoint,
                 connectionPolicy: connectionPolicy,
                 desiredConsistencyLevel: desiredConsistencyLevel,
-                handler: handler, 
-                sessionContainer: sessionContainer, 
+                handler: handler,
+                sessionContainer: sessionContainer,
                 enableCpuMonitor: enableCpuMonitor,
                 storeClientFactory: storeClientFactory);
         }
@@ -5861,19 +5861,31 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<ResourceResponse<Document>> UpsertDocumentInlineAsync(string documentsFeedOrDatabaseLink, object document, Documents.Client.RequestOptions options, bool disableAutomaticIdGeneration, CancellationToken cancellationToken)
         {
+#pragma warning disable 618 // IPartitionResolver is being deprecated.
+            IPartitionResolver partitionResolver = null;
             IDocumentClientRetryPolicy requestRetryPolicy = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
-            if (options == null || options.PartitionKey == null)
+            if (this.PartitionResolvers.TryGetValue(documentsFeedOrDatabaseLink, out partitionResolver))
             {
-                requestRetryPolicy = new PartitionKeyMismatchRetryPolicy(await this.GetCollectionCacheAsync(), requestRetryPolicy);
+                object partitionKey = partitionResolver.GetPartitionKey(document);
+                string collectionLink = partitionResolver.ResolveForCreate(partitionKey);
+                return await TaskHelper.InlineIfPossible(() => this.UpsertDocumentPrivateAsync(collectionLink, document, options, disableAutomaticIdGeneration, requestRetryPolicy, cancellationToken), requestRetryPolicy, cancellationToken);
             }
+            else
+            {
+                if (options == null || options.PartitionKey == null)
+                {
+                    requestRetryPolicy = new PartitionKeyMismatchRetryPolicy(await this.GetCollectionCacheAsync(), requestRetryPolicy);
+                }
 
-            return await TaskHelper.InlineIfPossible(() => this.UpsertDocumentPrivateAsync(
-                documentsFeedOrDatabaseLink,
-                document,
-                options,
-                disableAutomaticIdGeneration,
-                requestRetryPolicy,
-                cancellationToken), requestRetryPolicy, cancellationToken);
+                return await TaskHelper.InlineIfPossible(() => this.UpsertDocumentPrivateAsync(
+                    documentsFeedOrDatabaseLink,
+                    document,
+                    options,
+                    disableAutomaticIdGeneration,
+                    requestRetryPolicy,
+                    cancellationToken), requestRetryPolicy, cancellationToken);
+            }
+#pragma warning restore 618
         }
 
         private async Task<ResourceResponse<Document>> UpsertDocumentPrivateAsync(

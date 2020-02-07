@@ -269,22 +269,22 @@ namespace Microsoft.Azure.Cosmos.Common
 
             if (request.RequestContext.ResolvedCollectionRid != null)
             {
-                 // Here we will issue backend call only if cache wasn't already refreshed (if whatever is there corresponds to presiously resolved collection rid).
-                 await cache.collectionInfoByName.GetAsync(
-                    resourceFullName,
-                    ContainerProperties.CreateWithResourceId(request.RequestContext.ResolvedCollectionRid),
-                    async () =>
-                    {
-                        DateTime currentTime = DateTime.UtcNow;
-                        ContainerProperties collection = await this.GetByNameAsync(request.Headers[HttpConstants.HttpHeaders.Version], resourceFullName, cancellationToken);
-                        cache.collectionInfoById.Set(collection.ResourceId, collection);
-                        cache.collectionInfoByNameLastRefreshTime.AddOrUpdate(resourceFullName, currentTime,
-                        (string currentKey, DateTime currentValue) => currentTime);
-                        cache.collectionInfoByIdLastRefreshTime.AddOrUpdate(collection.ResourceId, currentTime,
-                                 (string currentKey, DateTime currentValue) => currentTime);
-                        return collection;
-                    },
-                    cancellationToken);
+                // Here we will issue backend call only if cache wasn't already refreshed (if whatever is there corresponds to presiously resolved collection rid).
+                await cache.collectionInfoByName.GetAsync(
+                   resourceFullName,
+                   ContainerProperties.CreateWithResourceId(request.RequestContext.ResolvedCollectionRid),
+                   async () =>
+                   {
+                       DateTime currentTime = DateTime.UtcNow;
+                       ContainerProperties collection = await this.GetByNameAsync(request.Headers[HttpConstants.HttpHeaders.Version], resourceFullName, cancellationToken);
+                       cache.collectionInfoById.Set(collection.ResourceId, collection);
+                       cache.collectionInfoByNameLastRefreshTime.AddOrUpdate(resourceFullName, currentTime,
+                       (string currentKey, DateTime currentValue) => currentTime);
+                       cache.collectionInfoByIdLastRefreshTime.AddOrUpdate(collection.ResourceId, currentTime,
+                                (string currentKey, DateTime currentValue) => currentTime);
+                       return collection;
+                   },
+                   cancellationToken);
             }
             else
             {
@@ -302,7 +302,7 @@ namespace Microsoft.Azure.Cosmos.Common
         protected InternalCache GetCache(string apiVersion)
         {
             // Non Partitioned Migration Version. Need this to flight V3 SDK till we make this the Current Version
-            if (string.IsNullOrEmpty(apiVersion) || VersionUtility.IsLaterThan(apiVersion, HttpConstants.Versions.v2018_12_31))
+            if (!String.IsNullOrEmpty(apiVersion) && VersionUtility.IsLaterThan(apiVersion, HttpConstants.Versions.v2018_12_31))
             {
                 return this.cacheByApiList[1];
             }

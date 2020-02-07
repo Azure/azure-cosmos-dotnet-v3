@@ -73,7 +73,7 @@ namespace Microsoft.Azure.Cosmos
             if (this.request == null)
             {
                 // someone didn't call OnBeforeSendRequest - nothing we can do
-                DefaultTrace.TraceCritical("Cannot apply RenameCollectionAwareClientRetryPolicy as OnBeforeSendRequest has not been called and there is no DocumentServiceRequest context.");
+                DefaultTrace.TraceWarning("Cannot apply RenameCollectionAwareClientRetryPolicy as OnBeforeSendRequest has not been called and there is no DocumentServiceRequest context.");
                 return shouldRetryResult;
             }
 
