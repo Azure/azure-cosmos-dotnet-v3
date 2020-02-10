@@ -529,14 +529,24 @@ namespace Microsoft.Azure.Cosmos
                     id));
         }
 
-        internal FeedIterator<DataEncryptionKeyProperties> GetDataEncryptionKeyIterator(
+#if PREVIEW
+    public
+#else
+        internal
+#endif
+        override FeedIterator<DataEncryptionKeyProperties> GetDataEncryptionKeyIterator(
             string startId = null,
             string endId = null,
             bool isDescending = false,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            if (!(this.GetDataEncryptionKeyStreamIterator(startId, endId, isDescending, continuationToken, requestOptions) is FeedIteratorInternal dekStreamIterator))
+            if (!(this.GetDataEncryptionKeyStreamIterator(
+                startId,
+                endId,
+                isDescending,
+                continuationToken,
+                requestOptions) is FeedIteratorInternal dekStreamIterator))
             {
                 throw new InvalidOperationException($"Expected FeedIteratorInternal.");
             }

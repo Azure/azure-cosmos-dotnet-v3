@@ -902,6 +902,45 @@ namespace Microsoft.Azure.Cosmos
         abstract DataEncryptionKey GetDataEncryptionKey(string id);
 
         /// <summary>
+        /// Returns an iterator that can be iterated to get properties of data encryption keys.
+        /// </summary>
+        /// <param name="startId">(Optional) Starting value of the range of ids of data encryption keys for which properties needs to be returned.</param>
+        /// <param name="endId">(Optional) Ending value of the range of ids of data encryption keys for which properties needs to be returned.</param>
+        /// <param name="isDescending">Whether the results should be returned sorted in descending order of id.</param>
+        /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
+        /// <param name="requestOptions">(Optional) The options for the request. Set <see cref="QueryRequestOptions.MaxItemCount"/> to restrict the number of results returned.</param>
+        /// <returns>An iterator over data encryption keys.</returns>
+        /// <example>
+        /// This create the type feed iterator for containers with queryDefinition as input.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// FeedIterator<DataEncryptionKeyProperties> resultSet = this.cosmosDatabase.GetDataEncryptionKeyIterator();
+        /// while (feedIterator.HasMoreResults)
+        /// {
+        ///     foreach (DataEncryptionKeyProperties properties in await feedIterator.ReadNextAsync())
+        ///     {
+        ///         Console.WriteLine(properties.Id);
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <remarks>
+        /// <see cref="DataEncryptionKey.ReadAsync" /> is recommended for single data encryption key look-up.
+        /// </remarks>
+#if PREVIEW
+    public
+#else
+        internal
+#endif
+    abstract FeedIterator<DataEncryptionKeyProperties> GetDataEncryptionKeyIterator(
+        string startId = null,
+        string endId = null,
+        bool isDescending = false,
+        string continuationToken = null,
+        QueryRequestOptions requestOptions = null);
+
+        /// <summary>
         /// Generates a data encryption key, wraps it using the key wrap metadata provided
         /// with the key wrapping provider in the EncryptionSerializer configured on the client via <see cref="CosmosClientBuilder.WithCustomSerializer"/>,
         /// and saves the wrapped data encryption key as an asynchronous operation in the Azure Cosmos service.

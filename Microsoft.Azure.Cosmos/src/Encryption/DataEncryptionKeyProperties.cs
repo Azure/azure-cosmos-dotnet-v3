@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Converters;
 
     /// <summary> 
     /// Details of an encryption key for use with the Azure Cosmos DB service.

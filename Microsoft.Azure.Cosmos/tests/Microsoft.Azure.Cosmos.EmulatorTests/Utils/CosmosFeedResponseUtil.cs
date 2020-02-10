@@ -108,7 +108,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             set => this.Data = value;
         }
 
-        public Collection<T> ClientEncryptionKeys
+        [JsonProperty]
+        internal Collection<T> ClientEncryptionKeys
         {
             get => this.Data;
             set => this.Data = value;
