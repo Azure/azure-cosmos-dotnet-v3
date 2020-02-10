@@ -37,7 +37,7 @@
     <PackageReference Include="System.Linq.Dynamic.Core" Version="1.0.8.11" />
     <PackageReference Include="System.Reflection" Version="4.3.0" />
   </ItemGroup>
-
+  
   <ItemGroup>
     <None Include="settings.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>

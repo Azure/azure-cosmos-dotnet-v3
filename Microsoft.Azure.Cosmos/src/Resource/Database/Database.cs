@@ -904,8 +904,8 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Returns an iterator that can be iterated to get properties of data encryption keys.
         /// </summary>
-        /// <param name="startId">(Optional) Starting value of the range of ids of data encryption keys for which properties needs to be returned.</param>
-        /// <param name="endId">(Optional) Ending value of the range of ids of data encryption keys for which properties needs to be returned.</param>
+        /// <param name="startId">(Optional) Starting value of the range (inclusive) of ids of data encryption keys for which properties needs to be returned.</param>
+        /// <param name="endId">(Optional) Ending value of the range (inclusive) of ids of data encryption keys for which properties needs to be returned.</param>
         /// <param name="isDescending">Whether the results should be returned sorted in descending order of id.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the request. Set <see cref="QueryRequestOptions.MaxItemCount"/> to restrict the number of results returned.</param>
