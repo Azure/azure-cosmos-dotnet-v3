@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos
                 request.OperationType,
                 locationEndpoint);
 
-            if (storeResult.IsClientCpuOverloaded)
+            if (storeResult?.IsClientCpuOverloaded ?? false)
             {
                 this.IsCpuOverloaded = true;
             }
