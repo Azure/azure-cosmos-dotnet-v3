@@ -221,6 +221,16 @@ namespace Microsoft.Azure.Cosmos
             return this.database.GetDataEncryptionKey(id);
         }
 
+        internal override FeedIterator<DataEncryptionKeyProperties> GetDataEncryptionKeyIterator(
+            string startId = null,
+            string endId = null,
+            bool isDescending = false,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null)
+        {
+            return this.database.GetDataEncryptionKeyIterator(startId, endId, isDescending, continuationToken, requestOptions);
+        }
+
         internal override Task<DataEncryptionKeyResponse> CreateDataEncryptionKeyAsync(
             string id,
             CosmosEncryptionAlgorithm encryptionAlgorithm,

@@ -178,9 +178,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     expectedDoc.Id,
                     expectedDoc.NonSensitive),
                 expectedDoc);
-            await this.ValidateQueryResultsAsync("SELECT id, PK, Sensitive, NonSensitive FROM c", expectedDoc);
-            await this.ValidateQueryResultsAsync("SELECT id, PK, NonSensitive FROM c", expectedDoc);
-            await this.ValidateQueryResultsAsync(string.Format("SELECT * FROM c where c.Sensitive == {0}", testDoc.Sensitive), null);
+            await this.ValidateQueryResultsAsync("SELECT c.id, c.PK, c.Sensitive, c.NonSensitive FROM c", expectedDoc);
+            await this.ValidateQueryResultsAsync("SELECT c.id, c.PK, c.NonSensitive FROM c", expectedDoc);
+            await this.ValidateQueryResultsAsync(string.Format("SELECT * FROM c where c.Sensitive = '{0}'", testDoc.Sensitive), null);
         }
 
         private async Task ValidateQueryResultsAsync(string query, TestDoc expectedDoc)
