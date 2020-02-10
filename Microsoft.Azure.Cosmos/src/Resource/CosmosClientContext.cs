@@ -35,6 +35,8 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract CosmosClientOptions ClientOptions { get; }
 
+        internal abstract string UserAgent { get; }
+
         internal abstract DekCache DekCache { get; }
 
         /// <summary>
@@ -69,6 +71,7 @@ namespace Microsoft.Azure.Cosmos
             string itemId,
             Stream streamPayload,
             Action<RequestMessage> requestEnricher,
+            CosmosDiagnosticsContext diagnosticsScope,
             CancellationToken cancellationToken);
 
         /// <summary>
@@ -84,6 +87,7 @@ namespace Microsoft.Azure.Cosmos
             PartitionKey? partitionKey,
             Stream streamPayload,
             Action<RequestMessage> requestEnricher,
+            CosmosDiagnosticsContext diagnosticsScope,
             CancellationToken cancellationToken);
 
         /// <summary>
@@ -100,6 +104,7 @@ namespace Microsoft.Azure.Cosmos
            Stream streamPayload,
            Action<RequestMessage> requestEnricher,
            Func<ResponseMessage, T> responseCreator,
+           CosmosDiagnosticsContext diagnosticsScope,
            CancellationToken cancellationToken);
     }
 }

@@ -50,10 +50,17 @@ namespace Microsoft.Azure.Cosmos.Json
         string GetStringValue();
 
         /// <summary>
-        /// Gets current JSON token from the JsonReader as a raw series of bytes that is buffered.
+        /// Tries to get the buffered UTF-8 string value.
         /// </summary>
-        /// <returns>The current JSON token from the JsonReader as a raw series of bytes that is buffered.</returns>
-        ReadOnlyMemory<byte> GetBufferedRawJsonToken();
+        /// <param name="bufferedUtf8StringValue">The buffered UTF-8 string value if found.</param>
+        /// <returns>true if the buffered UTF-8 string value was retrieved; false otherwise.</returns>
+        bool TryGetBufferedUtf8StringValue(out ReadOnlyMemory<byte> bufferedUtf8StringValue);
+
+        /// <summary>
+        /// Tries to get the current JSON token from the JsonReader as a raw series of bytes that is buffered.
+        /// </summary>
+        /// <returns>true if the current JSON token was retrieved; false otherwise.</returns>
+        bool TryGetBufferedRawJsonToken(out ReadOnlyMemory<byte> bufferedRawJsonToken);
 
         /// <summary>
         /// Gets the next JSON token from the JsonReader as a 1 byte signed integer.

@@ -485,8 +485,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 MockCosmosUtil.Serializer,
                 cosmosClient.ResponseFactory,
                 null,
-                new MockDocumentClient()
-                );
+                new MockDocumentClient(),
+                "MockUserAgentString");
 
             return clientContextCore;
         }
@@ -664,7 +664,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 this.MockedExecutor
                     .Setup(e => e.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()))
-                    .ReturnsAsync(new TransactionalBatchOperationResult(HttpStatusCode.OK));
+                    .ReturnsAsync(new TransactionalBatchOperationResult(HttpStatusCode.OK)
+                    {
+                       DiagnosticsContext = CosmosDiagnosticsContext.Create()
+                    });
             }
 
             internal override BatchAsyncContainerExecutor InitializeBatchExecutorForContainer() => this.MockedExecutor.Object;

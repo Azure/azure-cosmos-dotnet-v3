@@ -11,7 +11,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     /// <summary>
     /// Class for composing multiple query metrics in a dictionary interface.
     /// </summary>
-    internal sealed class PartitionedQueryMetrics : IReadOnlyDictionary<string, QueryMetrics>
+#if INTERNAL
+#pragma warning disable SA1600
+#pragma warning disable CS1591
+    public
+#else
+    internal
+#endif
+    sealed class PartitionedQueryMetrics : IReadOnlyDictionary<string, QueryMetrics>
     {
         /// <summary>
         /// The backing store.

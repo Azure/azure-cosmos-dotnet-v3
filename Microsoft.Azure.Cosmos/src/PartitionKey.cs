@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Represents a partition key value in the Azure Cosmos DB service.
     /// </summary>
-    public struct PartitionKey
+    public readonly struct PartitionKey
     {
         private static readonly PartitionKeyInternal NullPartitionKeyInternal = new Documents.PartitionKey(null).InternalKey;
         private static readonly PartitionKeyInternal TruePartitionKeyInternal = new Documents.PartitionKey(true).InternalKey;

@@ -21,12 +21,12 @@ namespace Microsoft.Azure.Cosmos.Sql
         public abstract TResult Visit(SqlJoinCollectionExpression collectionExpression);
     }
 
-    internal abstract class SqlCollectionExpressionVisitor<TInput, TOutput>
+    internal abstract class SqlCollectionExpressionVisitor<TArg, TResult>
     {
-        public abstract TOutput Visit(SqlAliasedCollectionExpression collectionExpression, TInput input);
+        public abstract TResult Visit(SqlAliasedCollectionExpression collectionExpression, TArg input);
 
-        public abstract TOutput Visit(SqlArrayIteratorCollectionExpression collectionExpression, TInput input);
+        public abstract TResult Visit(SqlArrayIteratorCollectionExpression collectionExpression, TArg input);
 
-        public abstract TOutput Visit(SqlJoinCollectionExpression collectionExpression, TInput input);
+        public abstract TResult Visit(SqlJoinCollectionExpression collectionExpression, TArg input);
     }
 }

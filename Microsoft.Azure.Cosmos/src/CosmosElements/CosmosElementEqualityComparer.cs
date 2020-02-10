@@ -29,37 +29,9 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             {
                 return false;
             }
-            else if (number1.NumberType == CosmosNumberType.Number64)
-            {
-                double double1;
-                if (number1.IsFloatingPoint)
-                {
-                    double1 = number1.AsFloatingPoint().Value;
-                }
-                else
-                {
-                    double1 = number1.AsInteger().Value;
-                }
-
-                double double2;
-                if (number2.IsFloatingPoint)
-                {
-                    double2 = number2.AsFloatingPoint().Value;
-                }
-                else
-                {
-                    double2 = number2.AsInteger().Value;
-                }
-
-                return double1 == double2;
-            }
-            else if (number1.IsFloatingPoint)
-            {
-                return number1.AsFloatingPoint() == number2.AsFloatingPoint();
-            }
             else
             {
-                return number1.AsInteger() == number2.AsInteger();
+                return number1.Value == number2.Value;
             }
         }
 

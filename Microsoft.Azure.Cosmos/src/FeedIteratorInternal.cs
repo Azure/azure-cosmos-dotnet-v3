@@ -4,13 +4,17 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System.Threading;
-    using System.Threading.Tasks;
-
     /// <summary>
     /// Internal feed iterator API for casting and mocking purposes.
     /// </summary>
-    internal abstract class FeedIteratorInternal : FeedIterator
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+    public
+#else
+    internal
+#endif
+    abstract class FeedIteratorInternal : FeedIterator
     {
         public abstract bool TryGetContinuationToken(out string continuationToken);
     }

@@ -58,7 +58,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                         Token = initialContinuationToken
                     };
 
-                    fullConitnuationToken = JsonConvert.SerializeObject(new CompositeContinuationToken[] { compositeContinuation });
+                    fullConitnuationToken = CosmosArray.Create(
+                        new List<CosmosElement>()
+                        {
+                            CompositeContinuationToken.ToCosmosElement(compositeContinuation)
+                        }).ToString();
                 }
 
                 Mock<CosmosQueryClient> mockQueryClient = new Mock<CosmosQueryClient>();
@@ -84,9 +88,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                     maxConcurrency: null,
                     maxItemCount: maxPageSize,
                     maxBufferedItemCount: null,
+                    returnResultsInDeterministicOrder: true,
                     testSettings: new TestInjections(simulate429s: false, simulateEmptyPages: false));
 
-                CosmosParallelItemQueryExecutionContext executionContext = (await CosmosParallelItemQueryExecutionContext.TryCreateAsync(
+                IDocumentQueryExecutionComponent executionContext = (await CosmosParallelItemQueryExecutionContext.TryCreateAsync(
                     context,
                     initParams,
                     fullConitnuationToken,
@@ -116,7 +121,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
-
         [TestMethod]
         [DataRow(true)]
         [DataRow(false)]
@@ -142,7 +146,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                         Token = initialContinuationToken
                     };
 
-                    fullConitnuationToken = JsonConvert.SerializeObject(new CompositeContinuationToken[] { compositeContinuation });
+                    fullConitnuationToken = CosmosArray.Create(
+                        new List<CosmosElement>()
+                        {
+                            CompositeContinuationToken.ToCosmosElement(compositeContinuation)
+                        }).ToString();
                 }
 
                 Mock<CosmosQueryClient> mockQueryClient = new Mock<CosmosQueryClient>();
@@ -168,9 +176,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                     maxConcurrency: null,
                     maxItemCount: maxPageSize,
                     maxBufferedItemCount: null,
+                    returnResultsInDeterministicOrder: true,
                     testSettings: new TestInjections(simulate429s: false, simulateEmptyPages: false));
 
-                CosmosParallelItemQueryExecutionContext executionContext = (await CosmosParallelItemQueryExecutionContext.TryCreateAsync(
+                IDocumentQueryExecutionComponent executionContext = (await CosmosParallelItemQueryExecutionContext.TryCreateAsync(
                     context,
                     initParams,
                     fullConitnuationToken,
@@ -257,7 +266,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                         skipCount: 0,
                         filter: null);
 
-                    fullConitnuationToken = JsonConvert.SerializeObject(new OrderByContinuationToken[] { orderByContinuationToken });
+                    fullConitnuationToken = CosmosArray.Create(
+                        new List<CosmosElement>()
+                        {
+                            OrderByContinuationToken.ToCosmosElement(orderByContinuationToken)
+                        }).ToString();
                 }
 
 
@@ -296,9 +309,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                     maxConcurrency: null,
                     maxItemCount: maxPageSize,
                     maxBufferedItemCount: null,
+                    returnResultsInDeterministicOrder: true,
                     testSettings: new TestInjections(simulate429s: false, simulateEmptyPages: false));
 
-                CosmosOrderByItemQueryExecutionContext executionContext = (await CosmosOrderByItemQueryExecutionContext.TryCreateAsync(
+                IDocumentQueryExecutionComponent executionContext = (await CosmosOrderByItemQueryExecutionContext.TryCreateAsync(
                     context,
                     initParams,
                     fullConitnuationToken,
@@ -349,7 +363,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             foreach (MockPartitionResponse[] mockResponse in mockResponsesScenario)
             {
                 string initialContinuationToken = null;
-                string fullConitnuationToken = null;
+                string fullContinuationToken = null;
                 if (createInitialContinuationToken)
                 {
                     ToDoItem itemToRepresentPreviousQuery = ToDoItem.CreateItems(
@@ -380,9 +394,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                         skipCount: 0,
                         filter: null);
 
-                    fullConitnuationToken = JsonConvert.SerializeObject(new OrderByContinuationToken[] { orderByContinuationToken });
+                    fullContinuationToken = CosmosArray.Create(
+                        new List<CosmosElement>()
+                        {
+                            OrderByContinuationToken.ToCosmosElement(orderByContinuationToken)
+                        }).ToString();
                 }
-
 
                 IList<ToDoItem> allItems = MockQueryFactory.GenerateAndMockResponse(
                     mockQueryClient,
@@ -419,17 +436,18 @@ namespace Microsoft.Azure.Cosmos.Tests
                     maxConcurrency: null,
                     maxItemCount: maxPageSize,
                     maxBufferedItemCount: null,
+                    returnResultsInDeterministicOrder: true,
                     testSettings: new TestInjections(simulate429s: false, simulateEmptyPages: false));
 
-                TryCatch<CosmosOrderByItemQueryExecutionContext> tryCreate = await CosmosOrderByItemQueryExecutionContext.TryCreateAsync(
+                TryCatch<IDocumentQueryExecutionComponent> tryCreate = await CosmosOrderByItemQueryExecutionContext.TryCreateAsync(
                     context,
                     initParams,
-                    fullConitnuationToken,
+                    fullContinuationToken,
                     this.cancellationToken);
 
                 if (tryCreate.Succeeded)
                 {
-                    CosmosOrderByItemQueryExecutionContext executionContext = tryCreate.Result;
+                    IDocumentQueryExecutionComponent executionContext = tryCreate.Result;
 
                     Assert.IsTrue(!executionContext.IsDone);
 

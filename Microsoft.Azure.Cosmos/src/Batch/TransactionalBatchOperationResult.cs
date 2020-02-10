@@ -16,7 +16,8 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     public class TransactionalBatchOperationResult
     {
-        internal TransactionalBatchOperationResult(HttpStatusCode statusCode)
+        internal TransactionalBatchOperationResult(
+            HttpStatusCode statusCode)
         {
             this.StatusCode = statusCode;
         }
@@ -92,7 +93,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the cosmos diagnostic information for the current request to Azure Cosmos DB service
         /// </summary>
-        internal virtual CosmosDiagnostics Diagnostics { get; set; }
+        internal virtual CosmosDiagnosticsContext DiagnosticsContext { get; set; }
 
         internal static Result ReadOperationResult(Memory<byte> input, out TransactionalBatchOperationResult batchOperationResult)
         {
@@ -200,13 +201,25 @@ namespace Microsoft.Azure.Cosmos
 
         internal ResponseMessage ToResponseMessage()
         {
-            ResponseMessage responseMessage = new ResponseMessage(this.StatusCode);
-            responseMessage.Headers.SubStatusCode = this.SubStatusCode;
-            responseMessage.Headers.ETag = this.ETag;
-            responseMessage.Headers.RetryAfter = this.RetryAfter;
-            responseMessage.Headers.RequestCharge = this.RequestCharge;
-            responseMessage.Content = this.ResourceStream;
-            responseMessage.Diagnostics = this.Diagnostics;
+            Headers headers = new Headers()
+            {
+                SubStatusCode = this.SubStatusCode,
+                ETag = this.ETag,
+                RetryAfter = this.RetryAfter,
+                RequestCharge = this.RequestCharge,
+            };
+             
+            ResponseMessage responseMessage = new ResponseMessage(
+                statusCode: this.StatusCode,
+                requestMessage: null,
+                errorMessage: null,
+                error: null,
+                headers: headers,
+                diagnostics: this.DiagnosticsContext ?? CosmosDiagnosticsContext.Create())
+            {
+                Content = this.ResourceStream
+            };
+
             return responseMessage;
         }
     }

@@ -15,11 +15,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
     using Microsoft.Azure.Cosmos.Query.Core.Collections;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
     using PartitionKeyRange = Documents.PartitionKeyRange;
     using ResourceId = Documents.ResourceId;
 
@@ -50,11 +49,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
         /// Basically we are fetching from the partition with the least number of buffered documents first.
         /// </summary>
         private static readonly Func<ItemProducerTree, int> FetchPriorityFunction = itemProducerTree => itemProducerTree.BufferedItemCount;
-
-        private static readonly JsonSerializerSettings NoAsciiCharactersSerializerSettings = new JsonSerializerSettings()
-        {
-            StringEscapeHandling = StringEscapeHandling.EscapeNonAscii,
-        };
 
         /// <summary>
         /// Skip count used for JOIN queries.
@@ -91,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
             int? maxConcurrency,
             int? maxItemCount,
             int? maxBufferedItemCount,
-            OrderByConsumeComparer consumeComparer,
+            OrderByItemProducerTreeComparer consumeComparer,
             TestInjections testSettings)
             : base(
                 queryContext: initPararms,
@@ -101,6 +95,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
                 moveNextComparer: consumeComparer,
                 fetchPrioirtyFunction: CosmosOrderByItemQueryExecutionContext.FetchPriorityFunction,
                 equalityComparer: new OrderByEqualityComparer(consumeComparer),
+                returnResultsInDeterministicOrder: true,
                 testSettings: testSettings)
         {
         }
@@ -126,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
                 string continuationToken;
                 if (activeItemProducers.Any())
                 {
-                    IEnumerable<OrderByContinuationToken> orderByContinuationTokens = activeItemProducers.Select((itemProducer) =>
+                    IEnumerable<CosmosElement> orderByContinuationTokens = activeItemProducers.Select((itemProducer) =>
                     {
                         OrderByQueryResult orderByQueryResult = new OrderByQueryResult(itemProducer.Current);
                         string filter = itemProducer.Filter;
@@ -141,25 +136,24 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
                             this.ShouldIncrementSkipCount(itemProducer) ? this.skipCount + 1 : 0,
                             filter);
 
-                        return orderByContinuationToken;
+                        return OrderByContinuationToken.ToCosmosElement(orderByContinuationToken);
                     });
 
-                    continuationToken = JsonConvert.SerializeObject(orderByContinuationTokens, NoAsciiCharactersSerializerSettings);
-
-                    // Newtonsoft has a bug where non ascii characters aren't escaped for custom POGOs
-                    // so the workaround is to double serialize
-                    continuationToken = JsonConvert.SerializeObject(JToken.Parse(continuationToken), NoAsciiCharactersSerializerSettings);
+                    continuationToken = CosmosArray.Create(orderByContinuationTokens).ToString();
                 }
                 else
                 {
                     continuationToken = null;
                 }
 
+                // Note we are no longer escaping non ascii continuation tokens.
+                // It is the callers job to encode a continuation token before adding it to a header in their service.
+
                 return continuationToken;
             }
         }
 
-        public static async Task<TryCatch<CosmosOrderByItemQueryExecutionContext>> TryCreateAsync(
+        public static async Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
             CosmosQueryContext queryContext,
             CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams,
             string requestContinuationToken,
@@ -176,12 +170,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
 
             cancellationToken.ThrowIfCancellationRequested();
 
+            // TODO (brchon): For now we are not honoring non deterministic ORDER BY queries, since there is a bug in the continuation logic.
+            // We can turn it back on once the bug is fixed.
+            // This shouldn't hurt any query results.
+            OrderByItemProducerTreeComparer orderByItemProducerTreeComparer = new OrderByItemProducerTreeComparer(initParams.PartitionedQueryExecutionInfo.QueryInfo.OrderBy);
             CosmosOrderByItemQueryExecutionContext context = new CosmosOrderByItemQueryExecutionContext(
                 initPararms: queryContext,
                 maxConcurrency: initParams.MaxConcurrency,
                 maxItemCount: initParams.MaxItemCount,
                 maxBufferedItemCount: initParams.MaxBufferedItemCount,
-                consumeComparer: new OrderByConsumeComparer(initParams.PartitionedQueryExecutionInfo.QueryInfo.OrderBy),
+                consumeComparer: orderByItemProducerTreeComparer,
                 testSettings: initParams.TestSettings);
 
             return (await context.TryInitializeAsync(
@@ -193,7 +191,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
                 sortOrders: initParams.PartitionedQueryExecutionInfo.QueryInfo.OrderBy,
                 orderByExpressions: initParams.PartitionedQueryExecutionInfo.QueryInfo.OrderByExpressions,
                 cancellationToken: cancellationToken))
-                .Try<CosmosOrderByItemQueryExecutionContext>(() => context);
+                .Try<IDocumentQueryExecutionComponent>(() => context);
         }
 
         /// <summary>
@@ -472,9 +470,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
         }
 
         private static TryCatch<OrderByContinuationToken[]> TryExtractContinuationTokens(
-        string requestContinuation,
-        SortOrder[] sortOrders,
-        string[] orderByExpressions)
+            string requestContinuation,
+            SortOrder[] sortOrders,
+            string[] orderByExpressions)
         {
             Debug.Assert(
                 !(orderByExpressions == null
@@ -489,34 +487,40 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
                 throw new ArgumentNullException("continuation can not be null or empty.");
             }
 
-            try
-            {
-                OrderByContinuationToken[] suppliedOrderByContinuationTokens = JsonConvert.DeserializeObject<OrderByContinuationToken[]>(
-                    requestContinuation,
-                    DefaultJsonSerializationSettings.Value);
-
-                if (suppliedOrderByContinuationTokens.Length == 0)
-                {
-                    return TryCatch<OrderByContinuationToken[]>.FromException(
-                        new MalformedContinuationTokenException($"Order by continuation token cannot be empty: {requestContinuation}."));
-                }
-
-                foreach (OrderByContinuationToken suppliedOrderByContinuationToken in suppliedOrderByContinuationTokens)
-                {
-                    if (suppliedOrderByContinuationToken.OrderByItems.Count != sortOrders.Length)
-                    {
-                        return TryCatch<OrderByContinuationToken[]>.FromException(
-                            new MalformedContinuationTokenException($"Invalid order-by items in continuation token {requestContinuation} for OrderBy~Context."));
-                    }
-                }
-
-                return TryCatch<OrderByContinuationToken[]>.FromResult(suppliedOrderByContinuationTokens);
-            }
-            catch (JsonException ex)
+            if (!CosmosArray.TryParse(requestContinuation, out CosmosArray cosmosArray))
             {
                 return TryCatch<OrderByContinuationToken[]>.FromException(
-                    new MalformedContinuationTokenException($"Invalid JSON in continuation token {requestContinuation} for OrderBy~Context: {ex.Message}"));
+                    new MalformedContinuationTokenException($"Order by continuation token must be an array: {requestContinuation}."));
             }
+
+            List<OrderByContinuationToken> orderByContinuationTokens = new List<OrderByContinuationToken>();
+            foreach (CosmosElement arrayItem in cosmosArray)
+            {
+                TryCatch<OrderByContinuationToken> tryCreateOrderByContinuationToken = OrderByContinuationToken.TryCreateFromCosmosElement(arrayItem);
+                if (!tryCreateOrderByContinuationToken.Succeeded)
+                {
+                    return TryCatch<OrderByContinuationToken[]>.FromException(tryCreateOrderByContinuationToken.Exception);
+                }
+
+                orderByContinuationTokens.Add(tryCreateOrderByContinuationToken.Result);
+            }
+
+            if (orderByContinuationTokens.Count == 0)
+            {
+                return TryCatch<OrderByContinuationToken[]>.FromException(
+                    new MalformedContinuationTokenException($"Order by continuation token cannot be empty: {requestContinuation}."));
+            }
+
+            foreach (OrderByContinuationToken suppliedOrderByContinuationToken in orderByContinuationTokens)
+            {
+                if (suppliedOrderByContinuationToken.OrderByItems.Count != sortOrders.Length)
+                {
+                    return TryCatch<OrderByContinuationToken[]>.FromException(
+                        new MalformedContinuationTokenException($"Invalid order-by items in continuation token {requestContinuation} for OrderBy~Context."));
+                }
+            }
+
+            return TryCatch<OrderByContinuationToken[]>.FromResult(orderByContinuationTokens.ToArray());
         }
 
         /// <summary>
@@ -796,7 +800,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
                 string expression = expressions.First();
                 SortOrder sortOrder = sortOrders.First();
                 CosmosElement orderByItem = orderByItems.First();
-                string orderByItemToString = JsonConvert.SerializeObject(orderByItem, DefaultJsonSerializationSettings.Value);
+                StringBuilder sb = new StringBuilder();
+                CosmosElementToQueryLiteral cosmosElementToQueryLiteral = new CosmosElementToQueryLiteral(sb);
+                orderByItem.Accept(cosmosElementToQueryLiteral);
+                string orderByItemToString = sb.ToString();
                 left.Append($"{expression} {(sortOrder == SortOrder.Descending ? "<" : ">")} {orderByItemToString}");
                 target.Append($"{expression} {(sortOrder == SortOrder.Descending ? "<=" : ">=")} {orderByItemToString}");
                 right.Append($"{expression} {(sortOrder == SortOrder.Descending ? "<=" : ">=")} {orderByItemToString}");
@@ -870,7 +877,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
                         }
 
                         // Append SortOrder
-                        string orderByItemToString = JsonConvert.SerializeObject(orderByItem, DefaultJsonSerializationSettings.Value);
+                        StringBuilder sb = new StringBuilder();
+                        CosmosElementToQueryLiteral cosmosElementToQueryLiteral = new CosmosElementToQueryLiteral(sb);
+                        orderByItem.Accept(cosmosElementToQueryLiteral);
+                        string orderByItemToString = sb.ToString();
                         CosmosOrderByItemQueryExecutionContext.AppendToBuilders(builders, " ");
                         CosmosOrderByItemQueryExecutionContext.AppendToBuilders(builders, orderByItemToString);
                         CosmosOrderByItemQueryExecutionContext.AppendToBuilders(builders, " ");
@@ -948,13 +958,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
             /// <summary>
             /// The order by comparer.
             /// </summary>
-            private readonly OrderByConsumeComparer orderByConsumeComparer;
+            private readonly OrderByItemProducerTreeComparer orderByConsumeComparer;
 
             /// <summary>
             /// Initializes a new instance of the OrderByEqualityComparer class.
             /// </summary>
             /// <param name="orderByConsumeComparer">The order by consume comparer.</param>
-            public OrderByEqualityComparer(OrderByConsumeComparer orderByConsumeComparer)
+            public OrderByEqualityComparer(OrderByItemProducerTreeComparer orderByConsumeComparer)
             {
                 this.orderByConsumeComparer = orderByConsumeComparer ?? throw new ArgumentNullException($"{nameof(orderByConsumeComparer)} can not be null.");
             }

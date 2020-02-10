@@ -15,7 +15,14 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Represents the template class used by feed methods (enumeration operations) for the Azure Cosmos DB service.
     /// </summary>
-    internal class QueryResponse : ResponseMessage
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+    public
+#else
+    internal
+#endif
+    class QueryResponse : ResponseMessage
     {
         private readonly Lazy<MemoryStream> memoryStream;
 
@@ -33,7 +40,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosQueryResponseMessageHeaders responseHeaders,
             HttpStatusCode statusCode,
             RequestMessage requestMessage,
-            CosmosDiagnostics diagnostics,
+            CosmosDiagnosticsContext diagnostics,
             string errorMessage,
             Error error,
             Lazy<MemoryStream> memoryStream,
@@ -87,7 +94,7 @@ namespace Microsoft.Azure.Cosmos
             int count,
             long responseLengthBytes,
             CosmosQueryResponseMessageHeaders responseHeaders,
-            CosmosDiagnostics diagnostics,
+            CosmosDiagnosticsContext diagnostics,
             CosmosSerializationFormatOptions serializationOptions)
         {
             if (count < 0)
@@ -128,7 +135,7 @@ namespace Microsoft.Azure.Cosmos
             RequestMessage requestMessage,
             string errorMessage,
             Error error,
-            CosmosDiagnostics diagnostics)
+            CosmosDiagnosticsContext diagnostics)
         {
             QueryResponse cosmosQueryResponse = new QueryResponse(
                     result: new List<CosmosElement>(),
@@ -145,13 +152,24 @@ namespace Microsoft.Azure.Cosmos
 
             return cosmosQueryResponse;
         }
+#if INTERNAL
+#pragma warning restore SA1601 // Partial elements should be documented
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
+#endif
     }
 
     /// <summary>
     /// The cosmos query response
     /// </summary>
     /// <typeparam name="T">The type for the query response.</typeparam>
-    internal class QueryResponse<T> : FeedResponse<T>
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+    public
+#else
+    internal
+#endif
+    class QueryResponse<T> : FeedResponse<T>
     {
         private readonly CosmosSerializerCore serializerCore;
         private readonly CosmosSerializationFormatOptions serializationOptions;

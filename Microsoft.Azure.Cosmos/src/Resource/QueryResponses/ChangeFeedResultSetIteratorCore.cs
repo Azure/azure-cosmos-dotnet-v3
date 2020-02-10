@@ -62,6 +62,9 @@ namespace Microsoft.Azure.Cosmos
             do
             {
                 (currentKeyRangeId, response) = await this.ReadNextInternalAsync(cancellationToken);
+                // Read only one range at a time - Breath first
+                this.compositeContinuationToken.MoveToNextToken();
+                (_, nextKeyRangeId) = await this.compositeContinuationToken.GetCurrentTokenAsync();
                 if (response.StatusCode != HttpStatusCode.NotModified)
                 {
                     break;
@@ -73,10 +76,6 @@ namespace Microsoft.Azure.Cosmos
                     // First NotModified Response
                     firstNotModifiedKeyRangeId = currentKeyRangeId;
                 }
-
-                // Current Range is done, push it to the end
-                this.compositeContinuationToken.MoveToNextToken();
-                (_, nextKeyRangeId) = await this.compositeContinuationToken.GetCurrentTokenAsync();
             }
             // We need to keep checking across all ranges until one of them returns OK or we circle back to the start
             while (!firstNotModifiedKeyRangeId.Equals(nextKeyRangeId, StringComparison.InvariantCultureIgnoreCase));
@@ -169,6 +168,7 @@ namespace Microsoft.Azure.Cosmos
                 responseCreator: response => response,
                 partitionKey: null,
                 streamPayload: null,
+                diagnosticsScope: null,
                 cancellationToken: cancellationToken);
         }
     }

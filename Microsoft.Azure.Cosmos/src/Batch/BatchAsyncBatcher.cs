@@ -157,7 +157,19 @@ namespace Microsoft.Azure.Cosmos
                         foreach (ItemBatchOperation itemBatchOperation in batchResponse.Operations)
                         {
                             TransactionalBatchOperationResult response = batchResponse[itemBatchOperation.OperationIndex];
-                            itemBatchOperation.Context.Diagnostics.AppendDiagnostics(batchResponse.Diagnostics);
+
+                            // Bulk has diagnostics per a item operation.
+                            // Batch has a single diagnostics for the execute operation
+                            if (itemBatchOperation.DiagnosticsContext != null)
+                            {
+                                response.DiagnosticsContext = itemBatchOperation.DiagnosticsContext;
+                                response.DiagnosticsContext.AddDiagnosticsInternal(batchResponse.DiagnosticsContext);
+                            }
+                            else
+                            {
+                                response.DiagnosticsContext = batchResponse.DiagnosticsContext;
+                            }
+                            
                             if (!response.IsSuccessStatusCode)
                             {
                                 Documents.ShouldRetryResult shouldRetry = await itemBatchOperation.Context.ShouldRetryAsync(response, cancellationToken);
