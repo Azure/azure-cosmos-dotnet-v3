@@ -27,6 +27,7 @@ namespace Microsoft.Azure.Cosmos
         private const string DatabaseId = "mockDatabase";
         private const string ContainerId = "mockContainer";
         private const double requestCharge = 0.6;
+        private const CosmosEncryptionAlgorithm Algo = CosmosEncryptionAlgorithm.AEAD_AES_256_CBC_HMAC_SHA_256_RANDOMIZED;
 
         private TimeSpan cacheTTL = TimeSpan.FromDays(1);
         private byte[] dek = new byte[] { 1, 2, 3, 4 };
@@ -46,7 +47,7 @@ namespace Microsoft.Azure.Cosmos
 
             try
             {
-                await database.CreateDataEncryptionKeyAsync("mydek", this.metadata1);
+                await database.CreateDataEncryptionKeyAsync("mydek", EncryptionUnitTests.Algo, this.metadata1);
                 Assert.Fail();
             }
             catch (ArgumentException ex)
@@ -66,7 +67,7 @@ namespace Microsoft.Azure.Cosmos
             Container container = this.GetContainerWithMockSetup(testHandler);
             Database databaseWithSerializer = ((ContainerCore)(ContainerInlineCore)container).Database;
 
-            DataEncryptionKeyResponse dekResponse = await databaseWithSerializer.CreateDataEncryptionKeyAsync(dekId, this.metadata1);
+            DataEncryptionKeyResponse dekResponse = await databaseWithSerializer.CreateDataEncryptionKeyAsync(dekId, EncryptionUnitTests.Algo, this.metadata1);
             Assert.AreEqual(HttpStatusCode.Created, dekResponse.StatusCode);
 
             // Clear the handler pipeline that would have got setup
@@ -93,7 +94,7 @@ namespace Microsoft.Azure.Cosmos
             Database database = ((ContainerCore)(ContainerInlineCore)container).Database;
 
             string dekId = "mydek";
-            DataEncryptionKeyResponse dekResponse = await database.CreateDataEncryptionKeyAsync(dekId, this.metadata1);
+            DataEncryptionKeyResponse dekResponse = await database.CreateDataEncryptionKeyAsync(dekId, EncryptionUnitTests.Algo, this.metadata1);
             Assert.AreEqual(HttpStatusCode.Created, dekResponse.StatusCode);
             Assert.AreEqual(requestCharge, dekResponse.RequestCharge);
             Assert.IsNotNull(dekResponse.ETag);
@@ -114,7 +115,7 @@ namespace Microsoft.Azure.Cosmos
 
             // Make sure we didn't push anything else in the JSON (such as raw DEK) by comparing JSON properties
             // to properties exposed in DataEncryptionKeyProperties.
-            createDekRequestMessage.Content.Position = 0; // test assumption that the client uses MemoryStream
+            createDekRequestMessage.Content.Position = 0; // it is a test assumption that the client uses MemoryStream
             JObject jObj = JObject.Parse(await new StreamReader(createDekRequestMessage.Content).ReadToEndAsync());
             IEnumerable<string> dekPropertiesPropertyNames = GetJsonPropertyNamesForType(typeof(DataEncryptionKeyProperties));
 
@@ -148,7 +149,7 @@ namespace Microsoft.Azure.Cosmos
             Database database = ((ContainerCore)(ContainerInlineCore)container).Database;
 
             string dekId = "mydek";
-            DataEncryptionKeyResponse createResponse = await database.CreateDataEncryptionKeyAsync(dekId, this.metadata1);
+            DataEncryptionKeyResponse createResponse = await database.CreateDataEncryptionKeyAsync(dekId, EncryptionUnitTests.Algo, this.metadata1);
             DataEncryptionKeyProperties createdProperties = createResponse.Resource;
             Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
             this.VerifyWrap(this.dek, this.metadata1);
@@ -219,7 +220,7 @@ namespace Microsoft.Azure.Cosmos
             Database database = ((ContainerCore)(ContainerInlineCore)container).Database;
 
             string dekId = "mydek";
-            DataEncryptionKeyResponse dekResponse = await database.CreateDataEncryptionKeyAsync(dekId, this.metadata1);
+            DataEncryptionKeyResponse dekResponse = await database.CreateDataEncryptionKeyAsync(dekId, EncryptionUnitTests.Algo, this.metadata1);
             Assert.AreEqual(HttpStatusCode.Created, dekResponse.StatusCode);
             MyItem item = await EncryptionUnitTests.CreateItemAsync(container, dekId);
 
@@ -239,7 +240,6 @@ namespace Microsoft.Azure.Cosmos
 
             Assert.IsNotNull(encryptionPropertiesAtServer);
             Assert.AreEqual(dekResponse.Resource.ResourceId, encryptionPropertiesAtServer.DataEncryptionKeyRid);
-            Assert.AreEqual(1, encryptionPropertiesAtServer.EncryptionAlgorithmId);
             Assert.AreEqual(1, encryptionPropertiesAtServer.EncryptionFormatVersion);
             Assert.IsNotNull(encryptionPropertiesAtServer.EncryptedData);
 
@@ -256,7 +256,7 @@ namespace Microsoft.Azure.Cosmos
             Database database = ((ContainerCore)(ContainerInlineCore)container).Database;
 
             string dekId = "mydek";
-            DataEncryptionKeyResponse dekResponse = await database.CreateDataEncryptionKeyAsync(dekId, this.metadata1);
+            DataEncryptionKeyResponse dekResponse = await database.CreateDataEncryptionKeyAsync(dekId, EncryptionUnitTests.Algo, this.metadata1);
             Assert.AreEqual(HttpStatusCode.Created, dekResponse.StatusCode);
             MyItem item = await EncryptionUnitTests.CreateItemAsync(container, dekId);
 
@@ -388,8 +388,8 @@ namespace Microsoft.Azure.Cosmos
              {
                  Mock<DataEncryptionKeyCore> mockDekCore = new Mock<DataEncryptionKeyCore>(client.ClientContext, this.mockDatabaseCore.Object, id);
                  mockDekCore.CallBase = true;
-                 mockDekCore.Setup(m => m.GenerateKey()).Returns(this.dek);
-                 mockDekCore.Setup(m => m.GetEncryptionAlgorithm(It.IsAny<byte[]>(), It.IsAny<EncryptionType>()))
+                 mockDekCore.Setup(m => m.GenerateKey(EncryptionUnitTests.Algo)).Returns(this.dek);
+                 mockDekCore.Setup(m => m.GetEncryptionAlgorithm(It.IsAny<byte[]>(), EncryptionUnitTests.Algo))
                     .Returns(this.mockEncryptionAlgorithm.Object);
                  return new DataEncryptionKeyInlineCore(mockDekCore.Object);
              });
@@ -445,7 +445,6 @@ namespace Microsoft.Azure.Cosmos
                 if (x == null && y == null) return true;
                 if (x == null || y == null) return false;
                 return x.EncryptionFormatVersion == y.EncryptionFormatVersion
-                    && x.EncryptionAlgorithmId == y.EncryptionAlgorithmId
                     && x.DataEncryptionKeyRid == y.DataEncryptionKeyRid
                     && x.EncryptedData.SequenceEqual(y.EncryptedData);
             }

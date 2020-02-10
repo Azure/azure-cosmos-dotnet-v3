@@ -592,6 +592,7 @@ namespace Microsoft.Azure.Cosmos
 #endif
         override async Task<DataEncryptionKeyResponse> CreateDataEncryptionKeyAsync(
             string id,
+            CosmosEncryptionAlgorithm encryptionAlgorithmId,
             EncryptionKeyWrapMetadata encryptionKeyWrapMetadata,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
@@ -599,6 +600,11 @@ namespace Microsoft.Azure.Cosmos
             if (string.IsNullOrEmpty(id))
             {
                 throw new ArgumentNullException(nameof(id));
+            }
+
+            if (encryptionAlgorithmId != CosmosEncryptionAlgorithm.AEAD_AES_256_CBC_HMAC_SHA_256_RANDOMIZED)
+            {
+                throw new ArgumentException(string.Format("Unsupported Encryption Algorithm {0}", encryptionAlgorithmId), nameof(encryptionAlgorithmId));
             }
 
             if (encryptionKeyWrapMetadata == null)
@@ -610,11 +616,11 @@ namespace Microsoft.Azure.Cosmos
 
             DataEncryptionKeyCore newDek = (DataEncryptionKeyInlineCore)this.GetDataEncryptionKey(id);
 
-            byte[] rawDek = newDek.GenerateKey();
+            byte[] rawDek = newDek.GenerateKey(encryptionAlgorithmId);
 
-            (byte[] wrappedDek, EncryptionKeyWrapMetadata updatedMetadata, InMemoryRawDek inMemoryRawDek) = await newDek.WrapAsync(rawDek, encryptionKeyWrapMetadata, cancellationToken);
+            (byte[] wrappedDek, EncryptionKeyWrapMetadata updatedMetadata, InMemoryRawDek inMemoryRawDek) = await newDek.WrapAsync(rawDek, encryptionAlgorithmId, encryptionKeyWrapMetadata, cancellationToken);
 
-            DataEncryptionKeyProperties dekProperties = new DataEncryptionKeyProperties(id, wrappedDek, updatedMetadata);
+            DataEncryptionKeyProperties dekProperties = new DataEncryptionKeyProperties(id, encryptionAlgorithmId, wrappedDek, updatedMetadata);
             Stream streamPayload = this.ClientContext.SerializerCore.ToStream(dekProperties);
             Task<ResponseMessage> responseMessage = this.CreateDataEncryptionKeyStreamAsync(
                 streamPayload,

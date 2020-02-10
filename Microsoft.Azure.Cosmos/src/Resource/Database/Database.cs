@@ -879,6 +879,7 @@ namespace Microsoft.Azure.Cosmos
         /// and saves the wrapped data encryption key as an asynchronous operation in the Azure Cosmos service.
         /// </summary>
         /// <param name="id">Unique identifier for the data encryption key.</param>
+        /// <param name="encryptionAlgorithm">Encryption algorithm that will be used along with this data encryption key to encrypt/decrypt data.</param>
         /// <param name="encryptionKeyWrapMetadata">Metadata used by the configured key wrapping provider in order to wrap the key.</param>
         /// <param name="requestOptions">(Optional) The options for the request.</param>
         /// <param name="cancellationToken">(Optional) Token representing request cancellation.</param>
@@ -916,6 +917,7 @@ namespace Microsoft.Azure.Cosmos
 #endif
         abstract Task<DataEncryptionKeyResponse> CreateDataEncryptionKeyAsync(
             string id,
+            CosmosEncryptionAlgorithm encryptionAlgorithm,
             EncryptionKeyWrapMetadata encryptionKeyWrapMetadata,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));

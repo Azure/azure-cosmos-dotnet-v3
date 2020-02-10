@@ -19,6 +19,11 @@ namespace Microsoft.Azure.Cosmos
 #endif
          class EncryptionKeyWrapMetadata : IEquatable<EncryptionKeyWrapMetadata>
     {
+        // For JSON deserialize
+        private EncryptionKeyWrapMetadata()
+        {
+        }
+
         /// <summary>
         /// Creates a new instance of key wrap metadata.
         /// </summary>
@@ -39,7 +44,7 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = "type", NullValueHandling = NullValueHandling.Ignore)]
         internal string Type { get; set; }
 
-        [JsonProperty(PropertyName = "algo", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName = "algorithm", NullValueHandling = NullValueHandling.Ignore)]
         internal string Algorithm { get; set; }
 
         /// <summary>
@@ -48,7 +53,7 @@ namespace Microsoft.Azure.Cosmos
         /// Implementors of derived implementations should ensure that this does not have (private) key material or credential information.
         /// </summary>
         [JsonProperty(PropertyName = "value", NullValueHandling = NullValueHandling.Ignore)]
-        public string Value { get; }
+        public string Value { get; private set; }
 
         /// <inheritdoc/>
         public override bool Equals(object obj)
@@ -62,6 +67,7 @@ namespace Microsoft.Azure.Cosmos
         {
             int hashCode = 1265339359;
             hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.Type);
+            hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.Algorithm);
             hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.Value);
             return hashCode;
         }
@@ -77,6 +83,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return other != null &&
                    this.Type == other.Type &&
+                   this.Algorithm == other.Algorithm &&
                    this.Value == other.Value;
         }
     }

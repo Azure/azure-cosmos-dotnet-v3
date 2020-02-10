@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Converters;
 
     /// <summary> 
     /// Details of an encryption key for use with the Azure Cosmos DB service.
@@ -24,10 +25,12 @@ namespace Microsoft.Azure.Cosmos
         /// Initializes a new instance of <see cref="DataEncryptionKeyProperties"/>.
         /// </summary>
         /// <param name="id">Unique identifier for the data encryption key.</param>
+        /// <param name="encryptionAlgorithm">Encryption algorithm that will be used along with this data encryption key to encrypt/decrypt data.</param>
         /// <param name="wrappedDataEncryptionKey">Wrapped (encrypted) form of the data encryption key.</param>
         /// <param name="encryptionKeyWrapMetadata">Metadata used by the configured key wrapping provider in order to unwrap the key.</param>
         public DataEncryptionKeyProperties(
             string id,
+            CosmosEncryptionAlgorithm encryptionAlgorithm,
             byte[] wrappedDataEncryptionKey,
             EncryptionKeyWrapMetadata encryptionKeyWrapMetadata)
         {
@@ -37,6 +40,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.Id = id;
+            this.EncryptionAlgorithmId = encryptionAlgorithm;
             this.WrappedDataEncryptionKey = wrappedDataEncryptionKey ?? throw new ArgumentNullException(nameof(wrappedDataEncryptionKey));
             this.EncryptionKeyWrapMetadata = encryptionKeyWrapMetadata ?? throw new ArgumentNullException(nameof(encryptionKeyWrapMetadata));
         }
@@ -53,6 +57,7 @@ namespace Microsoft.Azure.Cosmos
             this.CreatedTime = source.CreatedTime;
             this.ETag = source.ETag;
             this.Id = source.Id;
+            this.EncryptionAlgorithmId = source.EncryptionAlgorithmId;
             this.EncryptionKeyWrapMetadata = new EncryptionKeyWrapMetadata(source.EncryptionKeyWrapMetadata);
             this.LastModified = source.LastModified;
             this.ResourceId = source.ResourceId;
@@ -78,6 +83,12 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.Id)]
         public string Id { get; internal set; }
+
+        /// <summary>
+        /// Encryption algorithm that will be used along with this data encryption key to encrypt/decrypt data.
+        /// </summary>
+        [JsonProperty(PropertyName = Constants.Properties.EncryptionAlgorithmId, NullValueHandling = NullValueHandling.Ignore)]
+        public CosmosEncryptionAlgorithm EncryptionAlgorithmId { get; internal set; }
 
         /// <summary>
         /// Wrapped form of the data encryption key.
@@ -162,6 +173,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return other != null &&
                    this.Id == other.Id &&
+                   this.EncryptionAlgorithmId == other.EncryptionAlgorithmId &&
                    this.Equals(this.WrappedDataEncryptionKey, other.WrappedDataEncryptionKey) &&
                    EqualityComparer<EncryptionKeyWrapMetadata>.Default.Equals(this.EncryptionKeyWrapMetadata, other.EncryptionKeyWrapMetadata) &&
                    this.Equals(this.CreatedTime, other.CreatedTime) &&
@@ -179,6 +191,7 @@ namespace Microsoft.Azure.Cosmos
         {
             int hashCode = -1673632966;
             hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.Id);
+            hashCode = (hashCode * -1521134295) + EqualityComparer<CosmosEncryptionAlgorithm>.Default.GetHashCode(this.EncryptionAlgorithmId);
             hashCode = (hashCode * -1521134295) + EqualityComparer<EncryptionKeyWrapMetadata>.Default.GetHashCode(this.EncryptionKeyWrapMetadata);
             hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.ETag);
             hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.SelfLink);

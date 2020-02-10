@@ -4,31 +4,27 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
     internal class EncryptionProperties
     {
-        [JsonProperty(PropertyName = "_ef")]
+        [JsonProperty(PropertyName = Constants.Properties.EncryptionFormatVersion)]
         public int EncryptionFormatVersion { get; private set; }
 
-        [JsonProperty(PropertyName = "_ek")]
+        [JsonProperty(PropertyName = Constants.Properties.DataEncryptionKeyRid)]
         public string DataEncryptionKeyRid { get; private set; }
 
-        [JsonProperty(PropertyName = "_ea")]
-        public int EncryptionAlgorithmId { get; private set; }
-
-        [JsonProperty(PropertyName = "_ed")]
+        [JsonProperty(PropertyName = Constants.Properties.EncryptedData)]
         public byte[] EncryptedData { get; private set; }
 
         public EncryptionProperties(
             int encryptionFormatVersion,
             string dataEncryptionKeyRid,
-            int encryptionAlgorithmId,
             byte[] encryptedData)
         {
             this.EncryptionFormatVersion = encryptionFormatVersion;
             this.DataEncryptionKeyRid = dataEncryptionKeyRid;
-            this.EncryptionAlgorithmId = encryptionAlgorithmId;
             this.EncryptedData = encryptedData;
         }
     }

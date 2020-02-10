@@ -104,7 +104,6 @@ namespace Microsoft.Azure.Cosmos
             EncryptionProperties encryptionProperties = new EncryptionProperties(
                 dataEncryptionKeyRid: dekProperties.ResourceId,
                 encryptionFormatVersion: 1,
-                encryptionAlgorithmId: 1,
                 encryptedData: inMemoryRawDek.AlgorithmUsingRawDek.EncryptData(plainText));
 
             itemJObj.Add(Constants.Properties.EncryptedInfo, JObject.FromObject(encryptionProperties));
@@ -139,11 +138,6 @@ namespace Microsoft.Azure.Cosmos
                 throw new CosmosException(HttpStatusCode.InternalServerError, $"Unknown encryption format version: {encryptionProperties.EncryptionFormatVersion}. Please upgrade your SDK to the latest version.");
             }
 
-            if (encryptionProperties.EncryptionAlgorithmId != 1)
-            {
-                throw new CosmosException(HttpStatusCode.InternalServerError, $"Unknown encryption algorithm id: {encryptionProperties.EncryptionAlgorithmId}. Please upgrade your SDK to the latest version.");
-            }
-
             ContainerCore containerCore = (ContainerCore)container;
             DataEncryptionKeyCore tempDek = (DataEncryptionKeyInlineCore)containerCore.Database.GetDataEncryptionKey(id: "unknown");
             (DataEncryptionKeyProperties _, InMemoryRawDek inMemoryRawDek) = await tempDek.FetchUnwrappedByRidAsync(encryptionProperties.DataEncryptionKeyRid, cancellationToken);
@@ -168,7 +162,8 @@ namespace Microsoft.Azure.Cosmos
 
         public override T FromStream<T>(Stream stream)
         {
-            throw new NotImplementedException("Method should not have been called");
+            // Will be called in query paths
+            return this.baseSerializer.FromStream<T>(stream);
         }
 
         public override Stream ToStream<T>(T input)

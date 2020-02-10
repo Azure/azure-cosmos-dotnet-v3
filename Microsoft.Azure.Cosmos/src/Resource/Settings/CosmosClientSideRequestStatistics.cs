@@ -341,6 +341,10 @@ namespace Microsoft.Azure.Cosmos
             stringBuilder.Append("]");
         }
 
+        public void RecordRequest(DocumentServiceRequest request)
+        {
+        }
+
         internal struct StoreResponseStatistics
         {
             public DateTime RequestResponseTime;
