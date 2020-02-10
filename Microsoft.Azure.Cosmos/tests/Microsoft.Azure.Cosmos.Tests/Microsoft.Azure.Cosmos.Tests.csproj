@@ -43,10 +43,10 @@
     <PackageReference Include="MSTest.TestFramework" Version="1.2.0" />
     <PackageReference Include="Newtonsoft.Json" Version="10.0.2" />
   </ItemGroup>
-
+  
   <ItemGroup>
     <ProjectReference Include="..\..\src\Microsoft.Azure.Cosmos.csproj" />
-  </ItemGroup>
+  </ItemGroup>  
 
   <ItemGroup Condition="$(OS) != 'Linux' AND '$(ProjectRef)' != 'True' ">
     <None Include="$(NugetPackageRoot)\Microsoft.Azure.Cosmos.Serialization.HybridRow\$(HybridRowVersion)\microsoft.azure.cosmos.serialization.hybridrow.nuspec">
@@ -215,6 +215,6 @@
     <DelaySign>true</DelaySign>
     <AssemblyOriginatorKeyFile>..\..\..\testkey.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
-
+  
 </Project>
 
