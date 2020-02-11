@@ -1119,5 +1119,25 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="partitionKey">The partition key for all items in the batch.</param>
         /// <returns>A new instance of <see cref="TransactionalBatch"/>.</returns>
         public abstract TransactionalBatch CreateTransactionalBatch(PartitionKey partitionKey);
+
+        /// <summary>
+        /// Obtains a list of <see cref="FeedToken"/> that can be used to parallelize Read Feed operations.
+        /// </summary>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>A list of <see cref="FeedToken"/>.</returns>
+        public abstract Task<IEnumerable<FeedToken>> GetFeedTokensAsync(CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
+        /// Obtains a list of <see cref="FeedToken"/> that can be used to parallelize Read Feed operations.
+        /// </summary>
+        /// <remarks>
+        /// The amount of tokens returned is up to <paramref name="maxTokens"/>, but it could be less.
+        /// </remarks>
+        /// <param name="maxTokens">Defines a maximum amount of tokens to be returned.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>A list of <see cref="FeedToken"/>.</returns>
+        public abstract Task<IEnumerable<FeedToken>> GetFeedTokensAsync(
+            int maxTokens,
+            CancellationToken cancellationToken = default(CancellationToken));
     }
 }
