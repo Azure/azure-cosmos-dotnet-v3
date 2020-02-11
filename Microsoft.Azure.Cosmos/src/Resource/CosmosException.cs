@@ -19,19 +19,16 @@ namespace Microsoft.Azure.Cosmos
         internal CosmosException(
             HttpStatusCode statusCode,
             string message,
-            Error error = null,
             Exception inner = null)
             : base(message, inner)
         {
             this.StatusCode = statusCode;
-            this.Error = error;
             this.Headers = new Headers();
         }
 
         internal CosmosException(
             ResponseMessage cosmosResponseMessage,
-            string message,
-            Error error = null)
+            string message)
             : base(message)
         {
             if (cosmosResponseMessage != null)
@@ -56,8 +53,6 @@ namespace Microsoft.Azure.Cosmos
                     }
                 }
             }
-
-            this.Error = error;
         }
 
         /// <summary>
@@ -130,11 +125,6 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the diagnostics for the request
         /// </summary>
         public virtual CosmosDiagnostics Diagnostics { get; }
-
-        /// <summary>
-        /// Gets the internal error object
-        /// </summary>
-        internal virtual Error Error { get; }
 
         /// <summary>
         /// Try to get a header from the cosmos response message

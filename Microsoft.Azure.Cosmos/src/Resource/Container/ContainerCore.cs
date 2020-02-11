@@ -213,7 +213,7 @@ namespace Microsoft.Azure.Cosmos
             }
             catch (DocumentClientException ex)
             {
-                throw new CosmosException(ex.ToCosmosResponseMessage(null), ex.Message, ex.Error);
+                throw new CosmosException(ex.ToCosmosResponseMessage(null), ex.Message);
             }
         }
 
