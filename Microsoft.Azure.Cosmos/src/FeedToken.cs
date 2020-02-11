@@ -57,11 +57,5 @@ namespace Microsoft.Azure.Cosmos
             splitFeedTokens = null;
             return false;
         }
-
-        /// <summary>
-        /// Gets a list of partition key range identifiers included in this FeedToken.
-        /// </summary>
-        /// <returns>A Task representing the action of obtaining the list of partition key range identifiers.</returns>
-        public abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync();
     }
 }

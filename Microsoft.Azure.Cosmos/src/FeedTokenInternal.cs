@@ -4,11 +4,26 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
+    using System.Threading;
     using System.Threading.Tasks;
 
     internal abstract class FeedTokenInternal : FeedToken
     {
-        public abstract void FillHeaders(RequestMessage request);
+        public string ContainerRid { get; }
+        public FeedTokenInternal(string containerRid)
+        {
+            if (string.IsNullOrEmpty(containerRid))
+            {
+                throw new ArgumentNullException(nameof(containerRid));
+            }
+
+            this.ContainerRid = containerRid;
+        }
+
+        public abstract void FillHeaders(
+            CosmosClientContext cosmosClientContext,
+            RequestMessage request);
 
         public abstract string GetContinuation();
 
@@ -20,6 +35,9 @@ namespace Microsoft.Azure.Cosmos
             return false;
         }
 
-        public virtual Task SplitAsync() => Task.CompletedTask;
+        public virtual Task<bool> ShouldRetryAsync(
+            CosmosClientContext cosmosClientContext,
+            ResponseMessage responseMessage,
+            CancellationToken cancellationToken = default(CancellationToken)) => Task.FromResult(false);
     }
 }
