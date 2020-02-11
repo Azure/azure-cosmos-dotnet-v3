@@ -1,6 +1,7 @@
 ﻿namespace Cosmos.Samples.Shared
 {
     using System;
+    using Microsoft.Azure.Cosmos;
     using Newtonsoft.Json;
 
     public class SalesOrder
@@ -29,6 +30,8 @@
         public decimal SubTotal { get; set; }
         public decimal TaxAmount { get; set; }
         public decimal Freight { get; set; }
+
+        [CosmosEncrypt]
         public decimal TotalDue { get; set; }
         public SalesOrderDetail[] Items { get; set; }
     }
