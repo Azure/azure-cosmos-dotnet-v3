@@ -29,12 +29,15 @@ namespace Microsoft.Azure.Cosmos
     {
         private readonly CosmosSerializer baseSerializer = new CosmosJsonSerializerWrapper(new CosmosJsonDotNetSerializer());
 
+        /// <summary>
+        /// Gets the provider used to wrap and unwrap data encryption keys.
+        /// </summary>
         public EncryptionKeyWrapProvider EncryptionKeyWrapProvider { get; }
 
         /// <summary>
         /// Creates a new instance of a serializer that allows for encryption of properties during serialization and decryption during deserialization.
         /// </summary>
-        /// <param name="encryptionKeyWrapProvider">New instance of serializer.</param>
+        /// <param name="encryptionKeyWrapProvider">Provider that can be used to wrap and unwrap data encryption keys for envelope based encryption.</param>
         public EncryptionSerializer(EncryptionKeyWrapProvider encryptionKeyWrapProvider)
         {
             this.EncryptionKeyWrapProvider = encryptionKeyWrapProvider ?? throw new ArgumentNullException(nameof(encryptionKeyWrapProvider));
@@ -160,12 +163,14 @@ namespace Microsoft.Azure.Cosmos
             return itemJObj.ToObject<T>();
         }
 
+        /// <inheritdoc/>
         public override T FromStream<T>(Stream stream)
         {
             // Will be called in query paths
             return this.baseSerializer.FromStream<T>(stream);
         }
 
+        /// <inheritdoc/>
         public override Stream ToStream<T>(T input)
         {
             throw new NotImplementedException("Method should not have been called");

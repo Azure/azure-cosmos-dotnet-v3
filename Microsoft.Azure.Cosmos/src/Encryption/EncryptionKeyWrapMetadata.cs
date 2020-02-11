@@ -34,6 +34,10 @@ namespace Microsoft.Azure.Cosmos
             this.Value = value;
         }
 
+        /// <summary>
+        /// Creates a new instance of key wrap metadata based on an existing instance.
+        /// </summary>
+        /// <param name="source">Existing instance from which to initialize.</param>
         public EncryptionKeyWrapMetadata(EncryptionKeyWrapMetadata source)
         {
             this.Type = source.Type;

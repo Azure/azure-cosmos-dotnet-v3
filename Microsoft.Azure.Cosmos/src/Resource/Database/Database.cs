@@ -896,7 +896,6 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public abstract DataEncryptionKey GetDataEncryptionKey(string id);
 
-
         /// <summary>
         /// Returns an iterator that can be iterated to get properties of data encryption keys.
         /// </summary>
