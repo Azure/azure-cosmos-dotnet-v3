@@ -208,7 +208,6 @@ namespace Microsoft.Azure.Cosmos
                  requestMessage: request,
                  errorMessage: this.Message,
                  statusCode: this.StatusCode,
-                 error: this.Error,
                  diagnostics: request.DiagnosticsContext);
         }
     }

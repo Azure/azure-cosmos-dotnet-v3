@@ -77,7 +77,6 @@ namespace Microsoft.Azure.Cosmos
             }
 
             responseMessage.ErrorMessage = reasonPhraseString;
-            responseMessage.Error = documentClientException.Error;
 
             if (documentClientException.Headers != null)
             {

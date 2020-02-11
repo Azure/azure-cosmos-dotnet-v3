@@ -42,14 +42,12 @@ namespace Microsoft.Azure.Cosmos
             RequestMessage requestMessage,
             CosmosDiagnosticsContext diagnostics,
             string errorMessage,
-            Error error,
             Lazy<MemoryStream> memoryStream,
             CosmosSerializationFormatOptions serializationOptions)
             : base(
                 statusCode: statusCode,
                 requestMessage: requestMessage,
                 errorMessage: errorMessage,
-                error: error,
                 headers: responseHeaders,
                 diagnostics: diagnostics)
         {
@@ -121,7 +119,6 @@ namespace Microsoft.Azure.Cosmos
                diagnostics: diagnostics,
                statusCode: HttpStatusCode.OK,
                errorMessage: null,
-               error: null,
                requestMessage: null,
                memoryStream: memoryStream,
                serializationOptions: serializationOptions);
@@ -145,7 +142,6 @@ namespace Microsoft.Azure.Cosmos
                     diagnostics: diagnostics,
                     statusCode: statusCode,
                     errorMessage: errorMessage,
-                    error: error,
                     requestMessage: requestMessage,
                     memoryStream: null,
                     serializationOptions: null);

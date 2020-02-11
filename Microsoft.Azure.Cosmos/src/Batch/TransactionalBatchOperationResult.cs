@@ -213,7 +213,6 @@ namespace Microsoft.Azure.Cosmos
                 statusCode: this.StatusCode,
                 requestMessage: null,
                 errorMessage: null,
-                error: null,
                 headers: headers,
                 diagnostics: this.DiagnosticsContext ?? CosmosDiagnosticsContext.Create())
             {

@@ -53,21 +53,18 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="statusCode">The HttpStatusCode of the response</param>
         /// <param name="requestMessage">The <see cref="Cosmos.RequestMessage"/> object</param>
         /// <param name="errorMessage">The reason for failures if any.</param>
-        /// <param name="error">The inner error object</param>
         /// <param name="headers">The headers for the response.</param>
         /// <param name="diagnostics">The diagnostics for the request</param>
         internal ResponseMessage(
             HttpStatusCode statusCode,
             RequestMessage requestMessage,
             string errorMessage,
-            Error error,
             Headers headers,
             CosmosDiagnosticsContext diagnostics)
         {
             this.StatusCode = statusCode;
             this.RequestMessage = requestMessage;
             this.ErrorMessage = errorMessage;
-            this.Error = error;
             this.Headers = headers ?? new Headers();
             this.DiagnosticsContext = diagnostics ?? throw new ArgumentNullException(nameof(diagnostics));
         }
@@ -120,11 +117,6 @@ namespace Microsoft.Azure.Cosmos
 
         internal CosmosDiagnosticsContext DiagnosticsContext { get; }
 
-        /// <summary>
-        /// Gets the internal error object.
-        /// </summary>
-        internal virtual Error Error { get; set; }
-
         private bool disposed;
 
         private Stream content;
@@ -148,8 +140,7 @@ namespace Microsoft.Azure.Cosmos
 
                 throw new CosmosException(
                         this,
-                        message,
-                        this.Error);
+                        message);
             }
 
             return this;
@@ -213,8 +204,7 @@ namespace Microsoft.Azure.Cosmos
 
         private void EnsureErrorMessage()
         {
-            if (this.Error != null
-                || !string.IsNullOrEmpty(this.ErrorMessage))
+            if (!string.IsNullOrEmpty(this.ErrorMessage))
             {
                 return;
             }
