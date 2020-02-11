@@ -465,7 +465,7 @@ namespace Microsoft.Azure.Cosmos
         {
             ChangeFeedRequestOptions cosmosQueryRequestOptions = requestOptions as ChangeFeedRequestOptions ?? new ChangeFeedRequestOptions();
 
-            return new ChangeFeedResultSetIteratorCore(
+            return new StandByFeedIteratorCore(
                 clientContext: this.ClientContext,
                 continuationToken: continuationToken,
                 maxItemCount: maxItemCount,

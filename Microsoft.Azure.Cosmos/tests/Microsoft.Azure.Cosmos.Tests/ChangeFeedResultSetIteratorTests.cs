@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             DatabaseCore databaseCore = new DatabaseCore(mockContext.Object, "mydb");
 
-            ChangeFeedResultSetIteratorCore iterator = new ChangeFeedResultSetIteratorCore(
+            StandByFeedIteratorCore iterator = new StandByFeedIteratorCore(
                 mockContext.Object, new ContainerCore(mockContext.Object, databaseCore, "myColl"), null, 10, new ChangeFeedRequestOptions());
             ResponseMessage firstRequest = await iterator.ReadNextAsync();
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(firstResponse.Headers.ETag), "Response should contain the first continuation");
@@ -111,7 +111,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             DatabaseCore databaseCore = new DatabaseCore(mockContext.Object, "mydb");
 
-            ChangeFeedResultSetIteratorCore iterator = new ChangeFeedResultSetIteratorCore(
+            StandByFeedIteratorCore iterator = new StandByFeedIteratorCore(
                 mockContext.Object, new ContainerCore(mockContext.Object, databaseCore, "myColl"), null, 10, new ChangeFeedRequestOptions());
             ResponseMessage firstRequest = await iterator.ReadNextAsync();
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(firstResponse.Headers.ETag), "Response should contain the first continuation");
@@ -170,7 +170,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             DatabaseCore databaseCore = new DatabaseCore(mockContext.Object, "mydb");
 
-            ChangeFeedResultSetIteratorCore iterator = new ChangeFeedResultSetIteratorCore(
+            StandByFeedIteratorCore iterator = new StandByFeedIteratorCore(
                 mockContext.Object, new ContainerCore(mockContext.Object, databaseCore, "myColl"), null, 10, new ChangeFeedRequestOptions());
             ResponseMessage firstRequest = await iterator.ReadNextAsync();
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(firstResponse.Headers.ETag), "Response should contain the first continuation");
@@ -224,7 +224,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             DatabaseCore databaseCore = new DatabaseCore(mockContext.Object, "mydb");
 
-            ChangeFeedResultSetIteratorCore iterator = new ChangeFeedResultSetIteratorCore(
+            StandByFeedIteratorCore iterator = new StandByFeedIteratorCore(
                 mockContext.Object, new ContainerCore(mockContext.Object, databaseCore, "myColl"), null, 10, new ChangeFeedRequestOptions());
             ResponseMessage firstRequest = await iterator.ReadNextAsync();
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(firstResponse.Headers.ETag), "Response should contain the first continuation");
