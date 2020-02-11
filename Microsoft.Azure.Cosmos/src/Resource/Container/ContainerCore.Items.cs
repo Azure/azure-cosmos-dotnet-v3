@@ -404,7 +404,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(onChangesDelegate));
             }
 
-            ChangeFeedObserverFactoryCore<T> observerFactory = new ChangeFeedObserverFactoryCore<T>(onChangesDelegate, this.ClientContext.CosmosSerializer);
+            ChangeFeedObserverFactoryCore<T> observerFactory = new ChangeFeedObserverFactoryCore<T>(onChangesDelegate, this.ClientContext.SerializerCore);
             ChangeFeedProcessorCore changeFeedProcessor = new ChangeFeedProcessorCore(observerFactory);
             return new ChangeFeedProcessorBuilder(
                 processorName: processorName,

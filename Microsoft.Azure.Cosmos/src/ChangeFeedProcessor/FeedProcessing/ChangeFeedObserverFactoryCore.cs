@@ -31,9 +31,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
     internal sealed class ChangeFeedObserverFactoryCore<T> : ChangeFeedObserverFactory
     {
         private readonly ChangesHandler<T> onChanges;
-        private readonly CosmosSerializer cosmosSerializer;
+        private readonly CosmosSerializerCore cosmosSerializer;
 
-        public ChangeFeedObserverFactoryCore(ChangesHandler<T> onChanges, CosmosSerializer cosmosSerializer)
+        public ChangeFeedObserverFactoryCore(ChangesHandler<T> onChanges, CosmosSerializerCore cosmosSerializer)
         {
             this.onChanges = onChanges ?? throw new ArgumentNullException(nameof(onChanges));
             this.cosmosSerializer = cosmosSerializer ?? throw new ArgumentNullException(nameof(cosmosSerializer));
