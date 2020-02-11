@@ -16,9 +16,9 @@ namespace Microsoft.Azure.Cosmos
     /// Cosmos Stand-By Feed iterator implementing Composite Continuation Token
     /// </summary>
     /// <remarks>
-    /// Legacy, see <see cref="ChangeFeedFeedIteratorCore"/>.
+    /// Legacy, see <see cref="ChangeFeedIteratorCore"/>.
     /// </remarks>
-    /// <seealso cref="ChangeFeedFeedIteratorCore"/>
+    /// <seealso cref="ChangeFeedIteratorCore"/>
     internal class StandByFeedIteratorCore : FeedIteratorInternal
     {
         internal StandByFeedContinuationToken compositeContinuationToken;

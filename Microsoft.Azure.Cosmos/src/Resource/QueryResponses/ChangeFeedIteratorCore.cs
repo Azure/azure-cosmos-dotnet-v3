@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
     /// <remarks>
     /// Legacy.
     /// </remarks>
-    internal class ChangeFeedFeedIteratorCore : FeedIteratorInternal
+    internal class ChangeFeedIteratorCore : FeedIteratorInternal
     {
         private readonly ChangeFeedRequestOptions changeFeedOptions;
         private readonly CosmosClientContext clientContext;
@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly FeedTokenInternal feedTokenInternal;
         private readonly int? maxItemCount;
 
-        internal ChangeFeedFeedIteratorCore(
+        internal ChangeFeedIteratorCore(
             CosmosClientContext clientContext,
             ContainerCore container,
             FeedTokenInternal feedTokenInternal,
