@@ -297,4 +297,7 @@
   <data name="FeedToken_UnknownFormat" xml:space="preserve">
     <value>The provided string does not represent any known FeedToken format.</value>
   </data>
+  <data name="FeedToken_MaxTokensOutOfRange" xml:space="preserve">
+    <value>Provide a value greater than zero.</value>
+  </data>
 </root>

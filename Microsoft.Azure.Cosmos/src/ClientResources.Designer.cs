@@ -304,6 +304,15 @@ namespace Microsoft.Azure.Cosmos {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Provide a value greater than zero..
+        /// </summary>
+        internal static string FeedToken_MaxTokensOutOfRange {
+            get {
+                return ResourceManager.GetString("FeedToken_MaxTokensOutOfRange", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to The provided string does not represent any known FeedToken format..
         /// </summary>
         internal static string FeedToken_UnknownFormat {
