@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
@@ -198,6 +199,35 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
+        public override async Task<IEnumerable<FeedToken>> GetFeedTokensAsync(CancellationToken cancellationToken = default(CancellationToken))
+        {
+            PartitionKeyRangeCache partitionKeyRangeCache = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
+            IReadOnlyList<PartitionKeyRange> partitionKeyRanges = await this.GetCurrentPartitionKeyRangesAsync(partitionKeyRangeCache);
+            string containerRId = await this.GetRIDAsync(cancellationToken);
+            return ContainerCore.CreateFeedTokensPerRange(containerRId, partitionKeyRanges);
+        }
+
+        public override async Task<IEnumerable<FeedToken>> GetFeedTokensAsync(
+            int maxTokens,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (maxTokens <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(maxTokens), ClientResources.FeedToken_MaxTokensOutOfRange);
+            }
+
+            PartitionKeyRangeCache partitionKeyRangeCache = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
+            IReadOnlyList<PartitionKeyRange> partitionKeyRanges = await this.GetCurrentPartitionKeyRangesAsync(partitionKeyRangeCache);
+            string containerRId = await this.GetRIDAsync(cancellationToken);
+            if (partitionKeyRanges.Count <= maxTokens)
+            {
+                return ContainerCore.CreateFeedTokensPerRange(containerRId, partitionKeyRanges);
+            }
+
+            // TODO: bucketize
+            return ContainerCore.CreateFeedTokensPerRange(containerRId, partitionKeyRanges);
+        }
+
         /// <summary>
         /// Gets the container's Properties by using the internal cache.
         /// In case the cache does not have information about this container, it may end up making a server call to fetch the data.
@@ -345,6 +375,31 @@ namespace Microsoft.Azure.Cosmos
               requestEnricher: null,
               diagnosticsScope: null,
               cancellationToken: cancellationToken);
+        }
+
+        private async Task<IReadOnlyList<PartitionKeyRange>> GetCurrentPartitionKeyRangesAsync(PartitionKeyRangeCache partitionKeyRangeCache)
+        {
+            return await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
+                        this.Id,
+                        new Range<string>(
+                            PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
+                            PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
+                            isMinInclusive: true,
+                            isMaxInclusive: false),
+                        forceRefresh: true);
+        }
+
+        private static List<FeedTokenEPKRange> CreateFeedTokensPerRange(
+            string containerRid,
+            IReadOnlyList<PartitionKeyRange> partitionKeyRanges)
+        {
+            List<FeedTokenEPKRange> feedTokens = new List<FeedTokenEPKRange>(partitionKeyRanges.Count);
+            foreach (PartitionKeyRange partitionKeyRange in partitionKeyRanges)
+            {
+                feedTokens.Add(new FeedTokenEPKRange(containerRid, partitionKeyRange));
+            }
+
+            return feedTokens;
         }
     }
 }

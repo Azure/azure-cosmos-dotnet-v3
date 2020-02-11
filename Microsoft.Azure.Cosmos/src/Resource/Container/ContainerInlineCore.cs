@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
     using System.Linq;
     using System.Threading;
@@ -260,6 +261,18 @@ namespace Microsoft.Azure.Cosmos
         public override TransactionalBatch CreateTransactionalBatch(PartitionKey partitionKey)
         {
             return this.container.CreateTransactionalBatch(partitionKey);
+        }
+
+        public override Task<IEnumerable<FeedToken>> GetFeedTokensAsync(CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return TaskHelper.RunInlineIfNeededAsync(() => this.container.GetFeedTokensAsync(cancellationToken));
+        }
+
+        public override Task<IEnumerable<FeedToken>> GetFeedTokensAsync(
+            int maxTokens,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return TaskHelper.RunInlineIfNeededAsync(() => this.container.GetFeedTokensAsync(maxTokens, cancellationToken));
         }
 
         public static implicit operator ContainerCore(ContainerInlineCore containerInlineCore) => containerInlineCore.container;
