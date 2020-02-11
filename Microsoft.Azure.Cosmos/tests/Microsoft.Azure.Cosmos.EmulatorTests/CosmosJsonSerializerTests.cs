@@ -142,6 +142,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int fromStreamCount = 0;
 
             Mock<CosmosSerializer> mockJsonSerializer = new Mock<CosmosSerializer>();
+            mockJsonSerializer.CallBase = true;
 
             //The item object will be serialized with the custom json serializer.
             ToDoActivity testItem = this.CreateRandomToDoActivity();

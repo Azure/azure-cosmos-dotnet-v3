@@ -177,6 +177,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             ResponseMessage itemResponse = this.CreateResponse();
 
             Mock<CosmosSerializer> mockUserJsonSerializer = new Mock<CosmosSerializer>();
+            mockUserJsonSerializer.CallBase = true;
             CosmosSerializerCore serializerCore = new CosmosSerializerCore(mockUserJsonSerializer.Object);
             CosmosResponseFactory cosmosResponseFactory = new CosmosResponseFactory(
                serializerCore);
