@@ -31,12 +31,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
     internal sealed class ChangeFeedObserverFactoryCore<T> : ChangeFeedObserverFactory
     {
         private readonly ChangesHandler<T> onChanges;
-        private readonly CosmosSerializerCore cosmosSerializer;
+        private readonly CosmosSerializerCore serializerCore;
 
-        public ChangeFeedObserverFactoryCore(ChangesHandler<T> onChanges, CosmosSerializerCore cosmosSerializer)
+        public ChangeFeedObserverFactoryCore(ChangesHandler<T> onChanges, CosmosSerializerCore serializerCore)
         {
             this.onChanges = onChanges ?? throw new ArgumentNullException(nameof(onChanges));
-            this.cosmosSerializer = cosmosSerializer ?? throw new ArgumentNullException(nameof(cosmosSerializer));
+            this.serializerCore = serializerCore ?? throw new ArgumentNullException(nameof(serializerCore));
         }
 
         public override ChangeFeedObserver CreateObserver()
@@ -46,10 +46,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 
         private async Task ChangesStreamHandlerAsync(Stream changes, CancellationToken cancellationToken)
         {
-            Collection<T> asFeedResponse;
+            IEnumerable<T> asEnumerable;
             try
             {
-                asFeedResponse = this.cosmosSerializer.FromStream<CosmosFeedResponseUtil<T>>(changes).Data;
+                asEnumerable = this.serializerCore.FromFeedResponseStream<T>(changes, Documents.ResourceType.Document);
             }
             catch (Exception serializationException)
             {
@@ -57,8 +57,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                 throw new ObserverException(serializationException);
             }
 
-            List<T> asReadOnlyList = new List<T>(asFeedResponse.Count);
-            asReadOnlyList.AddRange(asFeedResponse);
+            List<T> asReadOnlyList = asEnumerable as List<T> ?? new List<T>(asEnumerable);
             await this.onChanges(asReadOnlyList.AsReadOnly(), cancellationToken);
         }
     }
