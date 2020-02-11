@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     isNameBased: false,
                     authorizationTokenType: Documents.AuthorizationTokenType.PrimaryMasterKey),
                 new Documents.StoreResult(
-                    storeResponse: null,
+                    storeResponse: new Documents.StoreResponse(),
                     exception: null,
                     partitionKeyRangeId: "PkRange",
                     lsn: 42,
@@ -153,9 +153,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                     usingLocalLSN: true));
 
             string statistics = clientSideRequestStatistics.ToString();
-            Assert.IsTrue(statistics.Contains("AddressResolution - StartTime"));
-            Assert.IsTrue(statistics.Contains("Z, TargetEndpoint: https://testuri/"));
-            Assert.IsTrue(statistics.Contains("LSN: 42, GlobalCommittedLsn: 2, PartitionKeyRangeId: PkRange, IsValid: True, StatusCode: 0, SubStatusCode: 0, RequestCharge: 9000.42, ItemLSN: 5"));
+            Assert.IsTrue(statistics.Contains(@"{""Id"":""AddressResolutionStatistics"",""StartTimeUtc"":""20"));
+            Assert.IsTrue(statistics.Contains(@"Z"",""TargetEndpoint"":""https://testuri/"""));
+            Assert.IsTrue(statistics.Contains(@"""StoreResult"":""StorePhysicalAddress: , LSN: 42, GlobalCommittedLsn: 2, PartitionKeyRangeId: PkRange, IsValid: True, StatusCode: 0, SubStatusCode: 0, RequestCharge: 9000.42, ItemLSN: 5, SessionToken: , UsingLocalLSN: True, TransportException: null"));
         }
     }
 }
