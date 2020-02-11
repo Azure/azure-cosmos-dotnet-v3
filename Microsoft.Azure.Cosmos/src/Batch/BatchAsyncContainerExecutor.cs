@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly RetryOptions retryOptions;
 
         private readonly int defaultMaxDegreeOfConcurrency = 50;
-        private readonly bool enableAdaptiveBulkExecution;
+        private readonly bool adaptiveBulkExecution;
 
         /// <summary>
         /// For unit testing.
@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos
             this.dispatchTimerInSeconds = dispatchTimerInSeconds;
             this.timerPool = new TimerPool(BatchAsyncContainerExecutor.MinimumDispatchTimerInSeconds);
             this.retryOptions = cosmosClientContext.ClientOptions.GetConnectionPolicy().RetryOptions;
-            this.enableAdaptiveBulkExecution = cosmosClientContext.ClientOptions.EnableAdaptiveBulkExecution;
+            this.adaptiveBulkExecution = cosmosClientContext.ClientOptions.AdaptiveBulkExecution;
         }
 
         public virtual async Task<TransactionalBatchOperationResult> AddAsync(
@@ -270,7 +270,7 @@ namespace Microsoft.Azure.Cosmos
                 this.dispatchTimerInSeconds,
                 this.timerPool,
                 limiter,
-                this.enableAdaptiveBulkExecution,
+                this.adaptiveBulkExecution,
                 this.defaultMaxDegreeOfConcurrency,
                 this.cosmosClientContext.SerializerCore,
                 this.ExecuteAsync,

@@ -120,7 +120,9 @@ namespace Microsoft.Azure.Cosmos
             return true;
         }
 
-        public virtual async Task DispatchAsync(BatchPartitionMetric partitionMetric, CancellationToken cancellationToken = default(CancellationToken))
+        public virtual async Task DispatchAsync(
+            BatchPartitionMetric partitionMetric,
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             this.interlockIncrementCheck.EnterLockCheck();
 

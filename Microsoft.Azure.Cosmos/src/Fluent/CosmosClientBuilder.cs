@@ -373,24 +373,19 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <summary>
         /// Allows optimistic batching of requests to service. Setting this option might impact the latency of the operations. Hence this option is recommended for non-latency sensitive scenarios only.
         /// </summary>
-        /// <param name="enabled">Whether <see cref="CosmosClientOptions.AllowBulkExecution"/> is enabled.</param>
+        /// <param name="enableBulk">Whether <see cref="CosmosClientOptions.AllowBulkExecution"/> is enabled.</param>
+        /// <param name="adaptiveBulkExecution">Whether <see cref="CosmosClientOptions.AdaptiveBulkExecution"/> is enabled.</param>
         /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
         /// <seealso cref="CosmosClientOptions.AllowBulkExecution"/>
-        public CosmosClientBuilder WithBulkExecution(bool enabled)
+        public CosmosClientBuilder WithBulkExecution(bool enableBulk, bool adaptiveBulkExecution = true)
         {
-            this.clientOptions.AllowBulkExecution = enabled;
-            return this;
-        }
+            this.clientOptions.AllowBulkExecution = enableBulk;
 
-        /// <summary>
-        /// Allows Parallelization of requests in bulk execution mode. This can lead to some level of rate limiting to maintain the highest degree of parallelism.
-        /// Useful in collections with RU >= 300K for consuming full RU.
-        /// </summary>
-        /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
-        /// <seealso cref="CosmosClientOptions.EnableAdaptiveBulkExecution"/>
-        public CosmosClientBuilder WithAdaptiveBulkExecutionEnabled()
-        {
-            this.clientOptions.EnableAdaptiveBulkExecution = true;
+            if (enableBulk)
+            {
+                this.clientOptions.AdaptiveBulkExecution = adaptiveBulkExecution;
+            }
+
             return this;
         }
 

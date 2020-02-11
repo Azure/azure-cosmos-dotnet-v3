@@ -92,11 +92,8 @@
                 List<Task> workerTasks = new List<Task>();
                 for (int i = 0; i < numWorkers; i++)
                 {
-                    int tmpI = i;
                     workerTasks.Add(Task.Run(() =>
                     {
-                        Console.WriteLine($"Starting workload for worker: {tmpI}");
-
                         DataSource dataSource = new DataSource(itemsToCreate, itemSize, numWorkers);
                         int docCounter = 0;
 
@@ -134,7 +131,6 @@
             }
             finally
             {
-                Console.WriteLine("Total Memory: {0} MB", GC.GetTotalMemory(false) / (1024 * 1024));
                 while (globalDocCounter > taskCompleteCounter)
                 {
                     if (cancellationToken.IsCancellationRequested)
@@ -237,7 +233,7 @@
             string endpoint,
             string authKey) =>
         // </Initialization>
-            new CosmosClient(endpoint, authKey, new CosmosClientOptions() { AllowBulkExecution = true, EnableAdaptiveBulkExecution = true });
+            new CosmosClient(endpoint, authKey, new CosmosClientOptions() { AllowBulkExecution = true, AdaptiveBulkExecution = true });
         // </Initialization>
 
         private static async Task CleanupAsync()
