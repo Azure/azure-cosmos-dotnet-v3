@@ -111,13 +111,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             {
                 MyDocument document = new MyDocument();
                 document.id = "test";
-                CosmosFeedResponseUtil<MyDocument> cosmosFeedResponse = new CosmosFeedResponseUtil<MyDocument>();
-                cosmosFeedResponse.Data = new System.Collections.ObjectModel.Collection<MyDocument>()
-                {
-                    document
-                };
 
-                message.Content = new CosmosJsonDotNetSerializer().ToStream(cosmosFeedResponse);
+                message.Content = new CosmosJsonDotNetSerializer().ToStream(new { Documents = new List<MyDocument>() { document } });
             }
 
             return message;

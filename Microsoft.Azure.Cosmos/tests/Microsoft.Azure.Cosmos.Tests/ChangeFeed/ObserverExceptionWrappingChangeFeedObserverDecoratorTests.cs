@@ -27,12 +27,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         private readonly ChangeFeedObserverContext changeFeedObserverContext;
         private readonly ObserverExceptionWrappingChangeFeedObserverDecorator observerWrapper;
         private readonly IReadOnlyList<MyDocument> documents;
+        private readonly CosmosSerializerCore serializerCore;
 
         public ObserverExceptionWrappingChangeFeedObserverDecoratorTests()
         {
             this.observer = new Mock<ChangeFeedObserver>();
             this.changeFeedObserverContext = Mock.Of<ChangeFeedObserverContext>();
             this.observerWrapper = new FeedProcessing.ObserverExceptionWrappingChangeFeedObserverDecorator(this.observer.Object);
+            this.serializerCore = new CosmosSerializerCore();
 
             MyDocument document = new MyDocument();
             this.documents = new List<MyDocument> { document };
@@ -131,8 +133,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
         private bool ValidateStream(Stream stream)
         {
-            Collection<MyDocument> documents = new CosmosJsonDotNetSerializer().FromStream<CosmosFeedResponseUtil<MyDocument>>(stream).Data;
-            return this.documents.SequenceEqual(documents, new MyDocument.Comparer());
+            IEnumerable<MyDocument> asEnumerable = this.serializerCore.FromFeedResponseStream<MyDocument>(stream, Documents.ResourceType.Document);
+            return this.documents.SequenceEqual(asEnumerable, new MyDocument.Comparer());
         }
 
 
