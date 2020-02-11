@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 return Task.CompletedTask;
             };
 
-            ChangeFeedObserverFactoryCore<MyDocument> factory = new ChangeFeedObserverFactoryCore<MyDocument>(handler, serializer);
+            ChangeFeedObserverFactoryCore<MyDocument> factory = new ChangeFeedObserverFactoryCore<MyDocument>(handler, new CosmosSerializerCore(serializer));
             FeedProcessorCore processor = new FeedProcessorCore(factory.CreateObserver(), mockIterator.Object, FeedProcessorCoreTests.DefaultSettings, mockCheckpointer.Object);
 
             try
@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             CustomSerializerFails serializer = new CustomSerializerFails();
             ChangesHandler<dynamic> handler = (changes, cancelationToken) => Task.CompletedTask;
-            ChangeFeedObserverFactoryCore<dynamic> factory = new ChangeFeedObserverFactoryCore<dynamic>(handler, serializer);
+            ChangeFeedObserverFactoryCore<dynamic> factory = new ChangeFeedObserverFactoryCore<dynamic>(handler, new CosmosSerializerCore(serializer));
             FeedProcessorCore processor = new FeedProcessorCore(factory.CreateObserver(), mockIterator.Object, FeedProcessorCoreTests.DefaultSettings, mockCheckpointer.Object);
 
             ObserverException caughtException = await Assert.ThrowsExceptionAsync<ObserverException>(() => processor.RunAsync(cancellationTokenSource.Token));
