@@ -16,7 +16,6 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Client.Core.Tests;
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Documents;
@@ -178,6 +177,33 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public async Task QueryRequestOptionsSessionToken()
+        {
+            const string SessionToken = "SessionToken";
+            ItemRequestOptions options = new ItemRequestOptions
+            {
+                SessionToken = SessionToken
+            };
+
+            TestHandler testHandler = new TestHandler((request, cancellationToken) =>
+            {
+                Assert.AreEqual(SessionToken, request.Headers.GetValues(HttpConstants.HttpHeaders.SessionToken).First());
+                return TestHandler.ReturnSuccess();
+            });
+
+            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
+
+            RequestInvokerHandler invoker = new RequestInvokerHandler(client);
+            invoker.InnerHandler = testHandler;
+            RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"));
+            requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[]");
+            requestMessage.ResourceType = ResourceType.Document;
+            requestMessage.OperationType = OperationType.Read;
+            requestMessage.RequestOptions = options;
+            await invoker.SendAsync(requestMessage, new CancellationToken());
+        }
+
+        [TestMethod]
         public async Task ConsistencyLevelClient()
         {
             Cosmos.ConsistencyLevel clientLevel = Cosmos.ConsistencyLevel.Eventual;
@@ -307,7 +333,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ResponseMessage response = TransportHandler.AggregateExceptionConverter(ae, null);
             Assert.IsNotNull(response);
             Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
-            Assert.IsTrue(response.ErrorMessage.StartsWith(errorMessage));
+            Assert.IsTrue(response.ErrorMessage.Contains(errorMessage));
         }
 
         private class SomePayload

@@ -6,6 +6,9 @@ namespace Microsoft.Azure.Cosmos.Query
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Documents;
 
     internal class CosmosQueryContextCore : CosmosQueryContext
@@ -43,6 +46,7 @@ namespace Microsoft.Azure.Cosmos.Query
             PartitionKeyRangeIdentity partitionKeyRange,
             bool isContinuationExpected,
             int pageSize,
+            SchedulingStopwatch schedulingStopwatch,
             CancellationToken cancellationToken)
         {
             QueryRequestOptions requestOptions = null;
@@ -61,6 +65,7 @@ namespace Microsoft.Azure.Cosmos.Query
                            partitionKeyRange: partitionKeyRange,
                            isContinuationExpected: isContinuationExpected,
                            pageSize: pageSize,
+                           schedulingStopwatch: schedulingStopwatch,
                            cancellationToken: cancellationToken);
         }
     }

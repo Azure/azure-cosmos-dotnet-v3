@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -8,6 +8,9 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Collections.Specialized;
+    using System.Diagnostics.CodeAnalysis;
+    using System.Net;
+    using System.Runtime.ExceptionServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
@@ -23,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     {
         private const int DefaultBackgroundRefreshLocationTimeIntervalInMS = 5 * 60 * 1000;
 
-        private const string BackgroundRefreshLocationTimeIntervalInMS = "BackgroundRefreshLocationTimeIntervalInMS";
+        private const string BackgroundRefreshLocationTimeIntervalInMS = "BackgroundRefreshLocationTimeIntervalInMS";  
         private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
         private readonly LocationCache locationCache;
         private readonly Uri defaultEndpoint;
@@ -53,14 +56,22 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.isRefreshing = false;
             this.refreshLock = new object();
 #if !(NETSTANDARD15 || NETSTANDARD16)
-            string backgroundRefreshLocationTimeIntervalInMSConfig = System.Configuration.ConfigurationManager.AppSettings[GlobalEndpointManager.BackgroundRefreshLocationTimeIntervalInMS];
-            if (!string.IsNullOrEmpty(backgroundRefreshLocationTimeIntervalInMSConfig))
+#if NETSTANDARD20
+            // GetEntryAssembly returns null when loaded from native netstandard2.0
+            if (System.Reflection.Assembly.GetEntryAssembly() != null)
             {
-                if (!int.TryParse(backgroundRefreshLocationTimeIntervalInMSConfig, out this.backgroundRefreshLocationTimeIntervalInMS))
+#endif
+                string backgroundRefreshLocationTimeIntervalInMSConfig = System.Configuration.ConfigurationManager.AppSettings[GlobalEndpointManager.BackgroundRefreshLocationTimeIntervalInMS];
+                if (!string.IsNullOrEmpty(backgroundRefreshLocationTimeIntervalInMSConfig))
                 {
-                    this.backgroundRefreshLocationTimeIntervalInMS = GlobalEndpointManager.DefaultBackgroundRefreshLocationTimeIntervalInMS;
+                    if (!int.TryParse(backgroundRefreshLocationTimeIntervalInMSConfig, out this.backgroundRefreshLocationTimeIntervalInMS))
+                    {
+                        this.backgroundRefreshLocationTimeIntervalInMS = GlobalEndpointManager.DefaultBackgroundRefreshLocationTimeIntervalInMS;
+                    }
                 }
+#if NETSTANDARD20
             }
+#endif  
 #endif
         }
 
@@ -83,6 +94,8 @@ namespace Microsoft.Azure.Cosmos.Routing
         public static async Task<AccountProperties> GetDatabaseAccountFromAnyLocationsAsync(
             Uri defaultEndpoint, IList<string> locations, Func<Uri, Task<AccountProperties>> getDatabaseAccountFn)
         {
+            ExceptionDispatchInfo capturedException = null;
+
             try
             {
                 AccountProperties databaseAccount = await getDatabaseAccountFn(defaultEndpoint);
@@ -91,8 +104,18 @@ namespace Microsoft.Azure.Cosmos.Routing
             catch (Exception e)
             {
                 DefaultTrace.TraceInformation("Fail to reach global gateway {0}, {1}", defaultEndpoint, e.ToString());
+
+                if (IsNonRetriableException(e))
+                {
+                    DefaultTrace.TraceInformation("Exception is not retriable");
+                    throw;
+                }
+
                 if (locations.Count == 0)
                     throw;
+
+                // Save the exception and rethrow it at the end after trying all regions
+                capturedException = ExceptionDispatchInfo.Capture(e);
             }
 
             for (int index = 0; index < locations.Count; index++)
@@ -105,9 +128,18 @@ namespace Microsoft.Azure.Cosmos.Routing
                 catch (Exception e)
                 {
                     DefaultTrace.TraceInformation("Fail to reach location {0}, {1}", locations[index], e.ToString());
+
+                    // if is the last region, throw exception
                     if (index == locations.Count - 1)
                     {
-                        // if is the last one, throw exception
+                        // The reason for rethrowing the first exception is that the locations list might contain invalid regions,
+                        // so the last exception would be some generic exception ("The remote name could not be resolved") instead of the real exception.
+                        // Location list containing invalid regions is quite common when SetCurrentLocation is used since it will add all Azure regions to the list
+                        if (capturedException != null)
+                        {
+                            capturedException.Throw();
+                        }
+
                         throw;
                     }
                 }
@@ -125,6 +157,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// <summary>
         /// Returns location corresponding to the endpoint
         /// </summary>
+        /// <param name="endpoint"></param>
         public string GetLocation(Uri endpoint)
         {
             return this.locationCache.GetLocation(endpoint);
@@ -278,6 +311,17 @@ namespace Microsoft.Azure.Cosmos.Routing
                 () => GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(this.defaultEndpoint, this.connectionPolicy.PreferredLocations, this.GetDatabaseAccountAsync),
                 this.cancellationTokenSource.Token,
                 forceRefresh: true);
+        }
+
+        private static bool IsNonRetriableException(Exception exception)
+        {
+            DocumentClientException dce = exception as DocumentClientException;
+            if (dce != null && dce.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                return true;
+            }
+
+            return false;
         }
     }
 }

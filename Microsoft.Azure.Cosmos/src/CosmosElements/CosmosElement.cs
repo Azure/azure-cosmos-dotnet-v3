@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 {
     using System;
     using System.Text;
+    using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Json;
 
     [Newtonsoft.Json.JsonConverter(typeof(CosmosElementJsonConverter))]
@@ -22,21 +23,25 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             this.Type = cosmosItemType;
         }
 
-        public CosmosElementType Type
-        {
-            get;
-        }
+        public CosmosElementType Type { get; }
 
         public override string ToString()
         {
             IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
             this.WriteTo(jsonWriter);
-            return Encoding.UTF8.GetString(jsonWriter.GetResult());
+
+            return Utf8StringHelpers.ToString(jsonWriter.GetResult());
         }
 
         public abstract void WriteTo(IJsonWriter jsonWriter);
 
-        public static CosmosElement Create(byte[] buffer)
+        public abstract void Accept(ICosmosElementVisitor cosmosElementVisitor);
+
+        public abstract TResult Accept<TResult>(ICosmosElementVisitor<TResult> cosmosElementVisitor);
+
+        public abstract TResult Accept<TArg, TResult>(ICosmosElementVisitor<TArg, TResult> cosmosElementVisitor, TArg input);
+
+        public static CosmosElement CreateFromBuffer(ReadOnlyMemory<byte> buffer)
         {
             IJsonNavigator jsonNavigator = JsonNavigator.Create(buffer);
             IJsonNavigatorNode jsonNavigatorNode = jsonNavigator.GetRootNode();
@@ -122,6 +127,57 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             }
 
             return item;
+        }
+
+        public static bool TryParse(
+            string serializedCosmosElement,
+            out CosmosElement cosmosElement)
+        {
+            if (serializedCosmosElement == null)
+            {
+                throw new ArgumentNullException(nameof(serializedCosmosElement));
+            }
+
+            try
+            {
+                byte[] buffer = Encoding.UTF8.GetBytes(serializedCosmosElement);
+                cosmosElement = CosmosElement.CreateFromBuffer(buffer);
+            }
+            catch (JsonParseException)
+            {
+                cosmosElement = default;
+            }
+
+            return cosmosElement != default;
+        }
+
+        public static bool TryParse<TCosmosElement>(string serializedCosmosElement, out TCosmosElement cosmosElement)
+            where TCosmosElement : CosmosElement
+        {
+            if (!CosmosElement.TryParse(serializedCosmosElement, out CosmosElement rawCosmosElement))
+            {
+                cosmosElement = default(TCosmosElement);
+                return false;
+            }
+
+            if (!(rawCosmosElement is TCosmosElement typedCosmosElement))
+            {
+                cosmosElement = default(TCosmosElement);
+                return false;
+            }
+
+            cosmosElement = typedCosmosElement;
+            return true;
+        }
+
+        public static CosmosElement Parse(string json)
+        {
+            if (!CosmosElement.TryParse(json, out CosmosElement cosmosElement))
+            {
+                throw new ArgumentException($"Failed to parse json: {json}.");
+            }
+
+            return cosmosElement;
         }
     }
 #if INTERNAL

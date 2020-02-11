@@ -147,6 +147,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string diagnostics = containerResponse.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
             Assert.IsTrue(diagnostics.Contains("StatusCode"));
+            SelflinkValidator.ValidateContainerSelfLink(containerResponse.Resource.SelfLink);
 
             ContainerProperties settings = new ContainerProperties(containerName, partitionKeyPath)
             {
@@ -168,6 +169,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             diagnostics = containerResponse.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
             Assert.IsTrue(diagnostics.Contains("StatusCode"));
+            SelflinkValidator.ValidateContainerSelfLink(containerResponse.Resource.SelfLink);
 
             containerResponse = await container.ReadContainerAsync();
             Assert.AreEqual(HttpStatusCode.OK, containerResponse.StatusCode);
@@ -180,10 +182,255 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             diagnostics = containerResponse.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
             Assert.IsTrue(diagnostics.Contains("StatusCode"));
+            SelflinkValidator.ValidateContainerSelfLink(containerResponse.Resource.SelfLink);
 
             containerResponse = await containerResponse.Container.DeleteContainerAsync();
             Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
         }
+
+        [TestMethod]
+        public async Task SpatialTest()
+        {
+            ContainerProperties geographyWithoutBoundingBox = new ContainerProperties()
+            {
+                Id = "geographyWithoutBoundingBox",
+                PartitionKeyPath = "/pk",
+                IndexingPolicy = new Cosmos.IndexingPolicy()
+                {
+                    Automatic = true,
+                    IndexingMode = Cosmos.IndexingMode.Consistent,
+                    IncludedPaths = new Collection<Cosmos.IncludedPath>()
+                    {
+                        new Cosmos.IncludedPath()
+                        {
+                            Path = "/*",
+                        }
+                    },
+                    ExcludedPaths = new Collection<Cosmos.ExcludedPath>(),
+                    SpatialIndexes = new Collection<Cosmos.SpatialPath>()
+                    {
+                        new Cosmos.SpatialPath()
+                        {
+                            Path = "/location/?",
+                            SpatialTypes = new Collection<Cosmos.SpatialType>()
+                            {
+                                Cosmos.SpatialType.LineString,
+                                Cosmos.SpatialType.MultiPolygon,
+                                Cosmos.SpatialType.Point,
+                                Cosmos.SpatialType.Polygon,
+                            }
+                        }
+                    }
+                }
+            };
+
+            ContainerProperties geometryWithoutBoundingBox = new ContainerProperties()
+            {
+                Id = "geometryWithoutBoundingBox",
+                PartitionKeyPath = "/pk",
+                IndexingPolicy = new Cosmos.IndexingPolicy()
+                {
+                    Automatic = true,
+                    IndexingMode = Cosmos.IndexingMode.Consistent,
+                    IncludedPaths = new Collection<Cosmos.IncludedPath>()
+                    {
+                        new Cosmos.IncludedPath()
+                        {
+                            Path = "/*",
+                        }
+                    },
+                    ExcludedPaths = new Collection<Cosmos.ExcludedPath>(),
+                    SpatialIndexes = new Collection<Cosmos.SpatialPath>()
+                    {
+                        new Cosmos.SpatialPath()
+                        {
+                            Path = "/location/?",
+                            SpatialTypes = new Collection<Cosmos.SpatialType>()
+                            {
+                                Cosmos.SpatialType.LineString,
+                                Cosmos.SpatialType.MultiPolygon,
+                                Cosmos.SpatialType.Point,
+                                Cosmos.SpatialType.Polygon,
+                            }
+                        }
+                    }
+                },
+                GeospatialConfig = new Cosmos.GeospatialConfig()
+                {
+                    GeospatialType = Cosmos.GeospatialType.Geometry
+                }
+            };
+
+            ContainerProperties geographyWithBoundingBox = new ContainerProperties()
+            {
+                Id = "geographyWithBoundingBox",
+                PartitionKeyPath = "/pk",
+                IndexingPolicy = new Cosmos.IndexingPolicy()
+                {
+                    Automatic = true,
+                    IndexingMode = Cosmos.IndexingMode.Consistent,
+                    IncludedPaths = new Collection<Cosmos.IncludedPath>()
+                    {
+                        new Cosmos.IncludedPath()
+                        {
+                            Path = "/*",
+                        }
+                    },
+                    ExcludedPaths = new Collection<Cosmos.ExcludedPath>(),
+                    SpatialIndexes = new Collection<Cosmos.SpatialPath>()
+                    {
+                        new Cosmos.SpatialPath()
+                        {
+                            Path = "/location/?",
+                            SpatialTypes = new Collection<Cosmos.SpatialType>()
+                            {
+                                Cosmos.SpatialType.LineString,
+                                Cosmos.SpatialType.MultiPolygon,
+                                Cosmos.SpatialType.Point,
+                                Cosmos.SpatialType.Polygon,
+                            },
+                            BoundingBox = new Cosmos.BoundingBoxProperties()
+                            {
+                                Xmin = 0,
+                                Ymin = 0,
+                                Xmax = 10,
+                                Ymax = 10,
+                            }
+                        }
+                    }
+                }
+            };
+
+            ContainerProperties geometryWithBoundingBox = new ContainerProperties()
+            {
+                Id = "geometryWithBoundingBox",
+                PartitionKeyPath = "/pk",
+                IndexingPolicy = new Cosmos.IndexingPolicy()
+                {
+                    Automatic = true,
+                    IndexingMode = Cosmos.IndexingMode.Consistent,
+                    IncludedPaths = new Collection<Cosmos.IncludedPath>()
+                    {
+                        new Cosmos.IncludedPath()
+                        {
+                            Path = "/*",
+                        }
+                    },
+                    ExcludedPaths = new Collection<Cosmos.ExcludedPath>(),
+                    SpatialIndexes = new Collection<Cosmos.SpatialPath>()
+                    {
+                        new Cosmos.SpatialPath()
+                        {
+                            Path = "/location/?",
+                            SpatialTypes = new Collection<Cosmos.SpatialType>()
+                            {
+                                Cosmos.SpatialType.LineString,
+                                Cosmos.SpatialType.MultiPolygon,
+                                Cosmos.SpatialType.Point,
+                                Cosmos.SpatialType.Polygon,
+                            },
+                            BoundingBox = new Cosmos.BoundingBoxProperties()
+                            {
+                                Xmin = 0,
+                                Ymin = 0,
+                                Xmax = 10,
+                                Ymax = 10,
+                            }
+                        }
+                    }
+                },
+                GeospatialConfig = new Cosmos.GeospatialConfig()
+                {
+                    GeospatialType = Cosmos.GeospatialType.Geometry
+                }
+            };
+
+            ContainerProperties geometryWithWrongBoundingBox = new ContainerProperties()
+            {
+                Id = "geometryWithWrongBoundingBox",
+                PartitionKeyPath = "/pk",
+                IndexingPolicy = new Cosmos.IndexingPolicy()
+                {
+                    Automatic = true,
+                    IndexingMode = Cosmos.IndexingMode.Consistent,
+                    IncludedPaths = new Collection<Cosmos.IncludedPath>()
+                    {
+                        new Cosmos.IncludedPath()
+                        {
+                            Path = "/*",
+                        }
+                    },
+                    ExcludedPaths = new Collection<Cosmos.ExcludedPath>(),
+                    SpatialIndexes = new Collection<Cosmos.SpatialPath>()
+                    {
+                        new Cosmos.SpatialPath()
+                        {
+                            Path = "/location/?",
+                            SpatialTypes = new Collection<Cosmos.SpatialType>()
+                            {
+                                Cosmos.SpatialType.LineString,
+                                Cosmos.SpatialType.MultiPolygon,
+                                Cosmos.SpatialType.Point,
+                                Cosmos.SpatialType.Polygon,
+                            },
+                            BoundingBox = new Cosmos.BoundingBoxProperties()
+                            {
+                                Xmin = 0,
+                                Ymin = 0,
+                                Xmax = 0,
+                                Ymax = 0,
+                            }
+                        }
+                    }
+                },
+                GeospatialConfig = new Cosmos.GeospatialConfig()
+                {
+                    GeospatialType = Cosmos.GeospatialType.Geometry
+                }
+            };
+
+            //Test 1: try to create a geography collection, with no bounding box
+            ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerAsync(geographyWithoutBoundingBox);
+
+            // Test 2: try to create a geometry collection, with no bounding box
+            try
+            {
+                containerResponse = await this.cosmosDatabase.CreateContainerAsync(geometryWithoutBoundingBox);
+                Assert.Fail("Expected an exception");
+            }
+            catch
+            {
+                //"Required parameter 'boundingBox' for 'Geometry' collection is missing in spatial path '\/location\/?'"
+            }
+
+            // Test 3: try to create a geography collection, with bounding box
+            try
+            {
+                containerResponse = await this.cosmosDatabase.CreateContainerAsync(geographyWithBoundingBox);
+                Assert.Fail("Expected an exception");
+            }            
+            catch
+            {
+                //"Incorrect parameter 'boundingBox' specified for 'Geography' collection"
+            }
+
+            // Test 4: try to create a geometry collection, with bounding box
+            containerResponse = await this.cosmosDatabase.CreateContainerAsync(geometryWithBoundingBox);
+
+            // Test 5: try to create a geometry collection, with wrong bounding box
+            try
+            {
+                containerResponse = await this.cosmosDatabase.CreateContainerAsync(geometryWithWrongBoundingBox);
+            }
+            catch
+            {
+                //The value of parameter 'xmax' must be greater than the value of parameter 'xmin' in 'boundingBox' for spatial path '\/location\/?'
+            }
+
+            containerResponse = await containerResponse.Container.DeleteContainerAsync();
+            Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
+        }
+
 
         [TestMethod]
         public async Task CreateHashV1Container()
@@ -582,7 +829,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(readThroughput);
 
             await container.ReplaceThroughputAsync(readThroughput.Value + 1000);
-            int? replaceThroughput = await ((ContainerCore)container).ReadThroughputAsync();
+            int? replaceThroughput = await ((ContainerCore)(ContainerInlineCore)container).ReadThroughputAsync();
             Assert.IsNotNull(replaceThroughput);
             Assert.AreEqual(readThroughput.Value + 1000, replaceThroughput);
 
@@ -645,6 +892,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(containerThroughputResponse.MinThroughput);
             Assert.IsNotNull(containerThroughputResponse.Resource.Throughput);
             Assert.AreEqual(containerThroughput, containerThroughputResponse.Resource.Throughput.Value);
+            SelflinkValidator.ValidateTroughputSelfLink(containerThroughputResponse.Resource.SelfLink);
 
             containerThroughput += 500;
             containerThroughputResponse = await container.ReplaceThroughputAsync(containerThroughput, new RequestOptions());
@@ -652,6 +900,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(containerThroughputResponse.Resource);
             Assert.IsNotNull(containerThroughputResponse.Resource.Throughput);
             Assert.AreEqual(containerThroughput, containerThroughputResponse.Resource.Throughput.Value);
+            SelflinkValidator.ValidateTroughputSelfLink(containerThroughputResponse.Resource.SelfLink);
 
             Assert.AreEqual(0, toStreamCount, "Custom serializer to stream should not be used for offer operations");
             Assert.AreEqual(0, fromStreamCount, "Custom serializer from stream should not be used for offer operations");
@@ -756,7 +1005,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             containerResponse = await container.DeleteContainerAsync();
             Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
         }
-
+        
         private void ValidateCreateContainerResponseContract(ContainerResponse containerResponse)
         {
             Assert.IsNotNull(containerResponse);
@@ -775,7 +1024,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(1, containerSettings.PartitionKeyPathTokens.Length);
             Assert.AreEqual("id", containerSettings.PartitionKeyPathTokens[0]);
 
-            ContainerCore containerCore = containerResponse.Container as ContainerCore;
+            ContainerCore containerCore = containerResponse.Container as ContainerInlineCore;
             Assert.IsNotNull(containerCore);
             Assert.IsNotNull(containerCore.LinkUri);
             Assert.IsFalse(containerCore.LinkUri.ToString().StartsWith("/"));

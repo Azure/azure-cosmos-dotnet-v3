@@ -40,62 +40,19 @@ namespace Microsoft.Azure.Cosmos.Json
             /// </summary>
             private static readonly HashSet<char> EscapeCharacters = new HashSet<char> { 'b', 'f', 'n', 'r', 't', '\\', '"', '/', 'u' };
 
-            /// <summary>
-            /// Array for null literal character array.
-            /// </summary>
-            private static readonly char[] Null = { 'n', 'u', 'l', 'l' };
-
-            /// <summary>
-            /// Array for true literal character array.
-            /// </summary>
-            private static readonly char[] True = { 't', 'r', 'u', 'e' };
-
-            /// <summary>
-            /// Array for false literal character array.
-            /// </summary>
-            private static readonly char[] False = { 'f', 'a', 'l', 's', 'e' };
-
-            // See http://www.ietf.org/rfc/rfc4627.txt for JSON whitespace definition (Section 2).
-            private static readonly HashSet<char> WhitespaceSet = new HashSet<char> { ' ', '\t', '\r', '\n' };
-
-            private readonly IJsonTextBuffer jsonTextBuffer;
+            private readonly JsonTextMemoryReader jsonTextBuffer;
+            private Token token;
             private bool hasSeperator;
 
             /// <summary>
             /// Initializes a new instance of the JsonTextReader class.
             /// </summary>
-            /// <param name="buffer">The byte array to read from (assumes UTF8 encoding)</param>
-            /// <param name="skipValidation">Whether or not to skip validation</param>
-            public JsonTextReader(byte[] buffer, bool skipValidation = false)
-                : this(new JsonTextArrayBuffer(buffer), skipValidation)
-            {
-            }
-
-            /// <summary>
-            /// Initializes a new instance of the JsonTextReader class.
-            /// </summary>
-            /// <param name="stream">The stream to read from</param>
-            /// <param name="encoding">The encoding of the stream</param>
-            /// <param name="skipValidation">Whether to skip validation.</param>
-            public JsonTextReader(Stream stream, Encoding encoding, bool skipValidation)
-                : this(new JsonTextStreamBuffer(stream, encoding), skipValidation)
-            {
-            }
-
-            /// <summary>
-            /// Initializes a new instance of the JsonTextReader class.
-            /// </summary>
-            /// <param name="jsonTextBuffer">The IJsonTextBuffer to read from.</param>
+            /// <param name="buffer">The IJsonTextBuffer to read from.</param>
             /// <param name="skipValidation">Whether or not to skip validation.</param>
-            private JsonTextReader(IJsonTextBuffer jsonTextBuffer, bool skipValidation = false)
+            public JsonTextReader(ReadOnlyMemory<byte> buffer, bool skipValidation = false)
                 : base(skipValidation)
             {
-                if (jsonTextBuffer == null)
-                {
-                    throw new ArgumentNullException("jsonTextBuffer");
-                }
-
-                this.jsonTextBuffer = jsonTextBuffer;
+                this.jsonTextBuffer = new JsonTextMemoryReader(buffer);
             }
 
             /// <summary>
@@ -189,115 +146,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 Binary = JsonTokenType.Binary,
             }
 
-            #region IJsonTextBuffer
-            /// <summary>
-            /// Interface for JsonTextBuffers, which are responsible for buffering text tokens for <see cref="JsonTextReader"/>s.
-            /// </summary>
-            private interface IJsonTextBuffer
-            {
-                /// <summary>
-                /// Gets a value indicating whether the buffer is at the End of File for it's source.
-                /// </summary>
-                bool IsEof { get; }
-
-                /// <summary>
-                /// Gets a value indicating the encoding for the buffer, which is needed when you want to materialize a string from the buffered raw json token.
-                /// </summary>
-                Encoding Encoding { get; }
-
-                JsonTextTokenType CurrentTokenType { get; set; }
-
-                /// <summary>
-                /// Gets the number of value of the token that was just read from the buffer.
-                /// </summary>
-                /// <returns>The number of value of the token that was just read from the buffer.</returns>
-                Number64 GetNumberValue();
-
-                /// <summary>
-                /// Gets the Int8 value of the token that was just read from the buffer.
-                /// </summary>
-                /// <returns>The Int8 value of the token that was just read from the buffer.</returns>
-                sbyte GetInt8Value();
-
-                /// <summary>
-                /// Gets the Int16 value of the token that was just read from the buffer.
-                /// </summary>
-                /// <returns>The Int16 value of the token that was just read from the buffer.</returns>
-                short GetInt16Value();
-
-                /// <summary>
-                /// Gets the Int32 value of the token that was just read from the buffer.
-                /// </summary>
-                /// <returns>The Int32 value of the token that was just read from the buffer.</returns>
-                int GetInt32Value();
-
-                /// <summary>
-                /// Gets the Int64 value of the token that was just read from the buffer.
-                /// </summary>
-                /// <returns>The Int64 value of the token that was just read from the buffer.</returns>
-                long GetInt64Value();
-
-                /// <summary>
-                /// Gets the UInt32 value of the token that was just read from the buffer.
-                /// </summary>
-                /// <returns>The UInt32 value of the token that was just read from the buffer.</returns>
-                uint GetUInt32Value();
-
-                /// <summary>
-                /// Gets the float value of the token that was just read from the buffer.
-                /// </summary>
-                /// <returns>The float value of the token that was just read from the buffer.</returns>
-                float GetFloat32Value();
-
-                /// <summary>
-                /// Gets the float value of the token that was just read from the buffer.
-                /// </summary>
-                /// <returns>The float value of the token that was just read from the buffer.</returns>
-                double GetFloat64Value();
-
-                /// <summary>
-                /// Gets the string value of the token that was just read from the buffer.
-                /// </summary>
-                /// <returns>The string value of the token that was just read from the buffer.</returns>
-                string GetStringValue();
-
-                IReadOnlyList<byte> GetBinaryValue();
-
-                Guid GetGuidValue();
-
-                /// <summary>
-                /// Lets the buffer know that a token is about to be read.
-                /// </summary>
-                void BeginToken();
-
-                /// <summary>
-                /// Lets the buffer know that a token just finished reading.
-                /// </summary>
-                void EndToken();
-
-                /// <summary>
-                /// Reads a character from the buffer.
-                /// </summary>
-                /// <returns>The character that was just read.</returns>
-                char ReadCharacter();
-
-                /// <summary>
-                /// Peeks at the next character from the buffer.
-                /// </summary>
-                /// <returns>The character that was just peeked at.</returns>
-                char PeekCharacter();
-
-                /// <summary>
-                /// Gets the buffered raw json token from the buffer.
-                /// </summary>
-                /// <returns>The buffered raw json token from the buffer.</returns>
-                IReadOnlyList<byte> GetBufferedRawJsonToken();
-            }
-            #endregion
-
-            /// <summary>
-            /// Gets the SerializationFormat for the JsonReader
-            /// </summary>
+            /// <inheritdoc />
             public override JsonSerializationFormat SerializationFormat
             {
                 get
@@ -306,18 +155,12 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
             }
 
-            /// <summary>
-            /// Advances the JsonReader by one token.
-            /// </summary>
-            /// <returns>Whether the reader successfully read a token.</returns>
+            /// <inheritdoc />
             public override bool Read()
             {
                 // Skip past whitespace to the start of the next token
                 // (or to the end of the buffer if the whitespace is trailing)
-                while (WhitespaceSet.Contains(this.jsonTextBuffer.PeekCharacter()))
-                {
-                    this.jsonTextBuffer.ReadCharacter();
-                }
+                this.jsonTextBuffer.AdvanceWhileWhitespace();
 
                 if (this.jsonTextBuffer.IsEof)
                 {
@@ -341,7 +184,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     return false;
                 }
 
-                this.jsonTextBuffer.BeginToken();
+                this.token.Start = this.jsonTextBuffer.Position;
                 char nextChar = this.jsonTextBuffer.PeekCharacter();
 
                 switch (nextChar)
@@ -439,80 +282,129 @@ namespace Microsoft.Azure.Cosmos.Json
                         throw new JsonUnexpectedTokenException();
                 }
 
-                this.jsonTextBuffer.EndToken();
+                this.token.End = this.jsonTextBuffer.Position;
                 return true;
             }
 
-            /// <summary>
-            /// Gets the next JSON token from the JsonReader as a double.
-            /// </summary>
-            /// <returns>The next JSON token from the JsonReader as a double.</returns>
+            /// <inheritdoc />
             public override Number64 GetNumberValue()
             {
-                return this.jsonTextBuffer.GetNumberValue();
+                ReadOnlySpan<byte> numberToken = this.jsonTextBuffer.GetBufferedRawJsonToken(this.token.Start, this.token.End).Span;
+                return JsonTextParser.GetNumberValue(numberToken);
             }
 
-            /// <summary>
-            /// Gets the next JSON token from the JsonReader as a string.
-            /// </summary>
-            /// <returns>The next JSON token from the JsonReader as a string.</returns>
+            /// <inheritdoc />
             public override string GetStringValue()
             {
-                return this.jsonTextBuffer.GetStringValue();
+                ReadOnlySpan<byte> stringToken = this.jsonTextBuffer.GetBufferedRawJsonToken(
+                    this.token.Start,
+                    this.token.End).Span;
+                return JsonTextParser.GetStringValue(stringToken);
             }
 
+            /// <inheritdoc />
+            public override bool TryGetBufferedUtf8StringValue(out ReadOnlyMemory<byte> bufferedUtf8StringValue)
+            {
+                if (this.token.JsonTextTokenType.HasFlag(JsonTextTokenType.EscapedFlag))
+                {
+                    bufferedUtf8StringValue = default;
+                    return false;
+                }
+
+                bufferedUtf8StringValue = this.jsonTextBuffer.GetBufferedRawJsonToken(
+                    this.token.Start,
+                    this.token.End);
+                return true;
+            }
+
+            /// <inheritdoc />
             public override sbyte GetInt8Value()
             {
-                return this.jsonTextBuffer.GetInt8Value();
+                ReadOnlySpan<byte> numberToken = this.jsonTextBuffer.GetBufferedRawJsonToken(
+                    this.token.Start,
+                    this.token.End).Span;
+                return JsonTextParser.GetInt8Value(numberToken);
             }
 
+            /// <inheritdoc />
             public override short GetInt16Value()
             {
-                return this.jsonTextBuffer.GetInt16Value();
+                ReadOnlySpan<byte> numberToken = this.jsonTextBuffer.GetBufferedRawJsonToken(
+                    this.token.Start,
+                    this.token.End).Span;
+                return JsonTextParser.GetInt16Value(numberToken);
             }
 
+            /// <inheritdoc />
             public override int GetInt32Value()
             {
-                return this.jsonTextBuffer.GetInt32Value();
+                ReadOnlySpan<byte> numberToken = this.jsonTextBuffer.GetBufferedRawJsonToken(
+                    this.token.Start,
+                    this.token.End).Span;
+                return JsonTextParser.GetInt32Value(numberToken);
             }
 
+            /// <inheritdoc />
             public override long GetInt64Value()
             {
-                return this.jsonTextBuffer.GetInt64Value();
+                ReadOnlySpan<byte> numberToken = this.jsonTextBuffer.GetBufferedRawJsonToken(
+                    this.token.Start,
+                    this.token.End).Span;
+                return JsonTextParser.GetInt64Value(numberToken);
             }
 
+            /// <inheritdoc />
             public override uint GetUInt32Value()
             {
-                return this.jsonTextBuffer.GetUInt32Value();
+                ReadOnlySpan<byte> numberToken = this.jsonTextBuffer.GetBufferedRawJsonToken(
+                    this.token.Start,
+                    this.token.End).Span;
+                return JsonTextParser.GetUInt32Value(numberToken);
             }
 
+            /// <inheritdoc />
             public override float GetFloat32Value()
             {
-                return this.jsonTextBuffer.GetFloat32Value();
+                ReadOnlySpan<byte> numberToken = this.jsonTextBuffer.GetBufferedRawJsonToken(
+                    this.token.Start,
+                    this.token.End).Span;
+                return JsonTextParser.GetFloat32Value(numberToken);
             }
 
+            /// <inheritdoc />
             public override double GetFloat64Value()
             {
-                return this.jsonTextBuffer.GetFloat64Value();
+                ReadOnlySpan<byte> numberToken = this.jsonTextBuffer.GetBufferedRawJsonToken(
+                    this.token.Start,
+                    this.token.End).Span;
+                return JsonTextParser.GetFloat64Value(numberToken);
             }
 
+            /// <inheritdoc />
             public override Guid GetGuidValue()
             {
-                return this.jsonTextBuffer.GetGuidValue();
+                ReadOnlySpan<byte> guidToken = this.jsonTextBuffer.GetBufferedRawJsonToken(
+                    this.token.Start,
+                    this.token.End).Span;
+                return JsonTextParser.GetGuidValue(guidToken);
             }
 
-            public override IReadOnlyList<byte> GetBinaryValue()
+            /// <inheritdoc />
+            public override ReadOnlyMemory<byte> GetBinaryValue()
             {
-                return this.jsonTextBuffer.GetBinaryValue();
+                ReadOnlySpan<byte> binaryToken = this.jsonTextBuffer.GetBufferedRawJsonToken(
+                    this.token.Start,
+                    this.token.End).Span;
+                return JsonTextParser.GetBinaryValue(binaryToken);
             }
 
-            /// <summary>
-            /// Gets the next JSON token from the JsonReader as a buffered list of bytes
-            /// </summary>
-            /// <returns>the next JSON token from the JsonReader as a buffered list of bytes</returns>
-            public override IReadOnlyList<byte> GetBufferedRawJsonToken()
+            /// <inheritdoc />
+            public override bool TryGetBufferedRawJsonToken(out ReadOnlyMemory<byte> bufferedRawJsonToken)
             {
-                return this.jsonTextBuffer.GetBufferedRawJsonToken();
+                bufferedRawJsonToken = this.jsonTextBuffer.GetBufferedRawJsonToken(
+                    this.token.Start,
+                    this.token.End);
+                return true;
             }
 
             private static JsonTokenType JsonTextToJsonTokenType(JsonTextTokenType jsonTextTokenType)
@@ -530,7 +422,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 ////end-object      = ws %x7D ws  ; } right curly bracket
                 ////name-separator  = ws %x3A ws  ; : colon
                 ////value-separator = ws %x2C ws  ; , comma
-                this.jsonTextBuffer.CurrentTokenType = jsonTextTokenType;
+                this.token.JsonTextTokenType = jsonTextTokenType;
                 this.jsonTextBuffer.ReadCharacter();
                 this.RegisterToken();
             }
@@ -539,8 +431,12 @@ namespace Microsoft.Azure.Cosmos.Json
             {
                 ////https://tools.ietf.org/html/rfc7159#section-3
                 ////true  = %x74.72.75.65      ; true
-                this.jsonTextBuffer.CurrentTokenType = JsonTextTokenType.True;
-                this.ProcessLiteral(JsonTextReader.True);
+                this.token.JsonTextTokenType = JsonTextTokenType.True;
+                if (!this.jsonTextBuffer.TryReadTrueToken())
+                {
+                    throw new JsonInvalidTokenException();
+                }
+
                 this.RegisterToken();
             }
 
@@ -548,8 +444,12 @@ namespace Microsoft.Azure.Cosmos.Json
             {
                 ////https://tools.ietf.org/html/rfc7159#section-3
                 ////false = %x66.61.6c.73.65   ; false
-                this.jsonTextBuffer.CurrentTokenType = JsonTextTokenType.False;
-                this.ProcessLiteral(JsonTextReader.False);
+                this.token.JsonTextTokenType = JsonTextTokenType.False;
+                if (!this.jsonTextBuffer.TryReadFalseToken())
+                {
+                    throw new JsonInvalidTokenException();
+                }
+
                 this.RegisterToken();
             }
 
@@ -557,27 +457,19 @@ namespace Microsoft.Azure.Cosmos.Json
             {
                 ////https://tools.ietf.org/html/rfc7159#section-3
                 ////null  = %x6e.75.6c.6c      ; null
-                this.jsonTextBuffer.CurrentTokenType = JsonTextTokenType.Null;
-                this.ProcessLiteral(JsonTextReader.Null);
-                this.RegisterToken();
-            }
-
-            private void ProcessLiteral(char[] literal)
-            {
-                for (int i = 0; i < literal.Length; i++)
+                this.token.JsonTextTokenType = JsonTextTokenType.Null;
+                if (!this.jsonTextBuffer.TryReadNullToken())
                 {
-                    char characterRead = this.jsonTextBuffer.ReadCharacter();
-                    if (characterRead != literal[i])
-                    {
-                        throw new JsonInvalidTokenException();
-                    }
+                    throw new JsonInvalidTokenException();
                 }
+
+                this.RegisterToken();
             }
 
             private void ProcessNumber()
             {
                 this.ProcessNumberValueToken();
-                this.jsonTextBuffer.CurrentTokenType = JsonTextTokenType.Number;
+                this.token.JsonTextTokenType = JsonTextTokenType.Number;
                 this.RegisterToken();
             }
 
@@ -595,7 +487,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 ////plus = %x2B                ; +
                 ////zero = %x30                ; 
 
-                this.jsonTextBuffer.CurrentTokenType = JsonTextTokenType.Number;
+                this.token.JsonTextTokenType = JsonTextTokenType.Number;
 
                 // Check for optional sign.
                 if (this.jsonTextBuffer.PeekCharacter() == '-')
@@ -630,7 +522,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 // Check for optional '.'
                 if (this.jsonTextBuffer.PeekCharacter() == '.')
                 {
-                    this.jsonTextBuffer.CurrentTokenType = JsonTextTokenType.Number;
+                    this.token.JsonTextTokenType = JsonTextTokenType.Number;
 
                     this.jsonTextBuffer.ReadCharacter();
 
@@ -650,7 +542,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 // Check for optional e/E.
                 if (this.jsonTextBuffer.PeekCharacter() == 'e' || this.jsonTextBuffer.PeekCharacter() == 'E')
                 {
-                    this.jsonTextBuffer.CurrentTokenType = JsonTextTokenType.Number;
+                    this.token.JsonTextTokenType = JsonTextTokenType.Number;
                     this.jsonTextBuffer.ReadCharacter();
 
                     // Check for optional +/- after e/E.
@@ -674,7 +566,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 // Make sure no gargbage came after the number
                 char current = this.jsonTextBuffer.PeekCharacter();
-                if (!(this.jsonTextBuffer.IsEof || JsonTextReader.WhitespaceSet.Contains(current) || current == '}' || current == ',' || current == ']'))
+                if (!(this.jsonTextBuffer.IsEof || JsonTextMemoryReader.IsWhitespace(current) || current == '}' || current == ',' || current == ']'))
                 {
                     throw new JsonInvalidNumberException();
                 }
@@ -763,7 +655,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     this.jsonTextBuffer.ReadCharacter();
                 }
 
-                this.jsonTextBuffer.CurrentTokenType = jsonTextTokenType;
+                this.token.JsonTextTokenType = jsonTextTokenType;
                 this.RegisterToken();
             }
 
@@ -775,7 +667,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
 
                 this.ProcessNumberValueToken();
-                this.jsonTextBuffer.CurrentTokenType = JsonTextTokenType.Float32;
+                this.token.JsonTextTokenType = JsonTextTokenType.Float32;
                 this.RegisterToken();
             }
 
@@ -787,7 +679,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
 
                 this.ProcessNumberValueToken();
-                this.jsonTextBuffer.CurrentTokenType = JsonTextTokenType.Float64;
+                this.token.JsonTextTokenType = JsonTextTokenType.Float64;
                 this.RegisterToken();
             }
 
@@ -811,7 +703,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new JsonInvalidTokenException();
                 }
 
-                this.jsonTextBuffer.CurrentTokenType = JsonTextTokenType.Guid;
+                this.token.JsonTextTokenType = JsonTextTokenType.Guid;
                 this.RegisterToken();
             }
 
@@ -829,13 +721,13 @@ namespace Microsoft.Azure.Cosmos.Json
                     current = this.jsonTextBuffer.PeekCharacter();
                 }
 
-                this.jsonTextBuffer.CurrentTokenType = JsonTextTokenType.Binary;
+                this.token.JsonTextTokenType = JsonTextTokenType.Binary;
                 this.RegisterToken();
             }
 
             private void ProcessString()
             {
-                this.jsonTextBuffer.CurrentTokenType = this.JsonObjectState.IsPropertyExpected ? JsonTextTokenType.UnescapedFieldName : JsonTextTokenType.UnescapedString;
+                this.token.JsonTextTokenType = this.JsonObjectState.IsPropertyExpected ? JsonTextTokenType.UnescapedFieldName : JsonTextTokenType.UnescapedString;
 
                 // Skip the opening quote
                 char current = this.jsonTextBuffer.ReadCharacter();
@@ -856,7 +748,7 @@ namespace Microsoft.Azure.Cosmos.Json
                             break;
 
                         case '\\':
-                            this.jsonTextBuffer.CurrentTokenType = (JsonTextTokenType)(this.jsonTextBuffer.CurrentTokenType | JsonTextTokenType.EscapedFlag);
+                            this.token.JsonTextTokenType = (JsonTextTokenType)(this.token.JsonTextTokenType | JsonTextTokenType.EscapedFlag);
                             char escapeCharacter = this.jsonTextBuffer.ReadCharacter();
                             if (escapeCharacter == 'u')
                             {
@@ -941,7 +833,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
             private void RegisterToken()
             {
-                JsonTokenType jsonTokenType = JsonTextReader.JsonTextToJsonTokenType(this.jsonTextBuffer.CurrentTokenType);
+                JsonTokenType jsonTokenType = JsonTextReader.JsonTextToJsonTokenType(this.token.JsonTextTokenType);
 
                 // Save the previous token before registering the new one
                 JsonTokenType previousJsonTokenType = this.JsonObjectState.CurrentTokenType;
@@ -996,524 +888,80 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
             }
 
-            #region JsonTextArrayBuffer
-            /// <summary>
-            /// The <see cref="IJsonTextBuffer"/> for when the source is a byte of array (UTF8 encoding) that knows how to store the last token read from the source.
-            /// </summary>
-            private sealed class JsonTextArrayBuffer : IJsonTextBuffer
+            private sealed class JsonTextMemoryReader : JsonMemoryReader
             {
-                private readonly byte[] buffer;
+                private static readonly ReadOnlyMemory<byte> TrueMemory = new byte[] { (byte)'t', (byte)'r', (byte)'u', (byte)'e' };
+                private static readonly ReadOnlyMemory<byte> FalseMemory = new byte[] { (byte)'f', (byte)'a', (byte)'l', (byte)'s', (byte)'e' };
+                private static readonly ReadOnlyMemory<byte> NullMemory = new byte[] { (byte)'n', (byte)'u', (byte)'l', (byte)'l' };
 
-                private JsonTextTokenType currentJsonTextTokenType;
-                private int currentBeginOffset;
-                private int currentEndOffset;
-                private int bytesRead;
-
-                /// <summary>
-                /// Initializes a new instance of the JsonTextArrayBuffer class.
-                /// </summary>
-                /// <param name="buffer">The source for the JsonTextArrayBuffer.</param>
-                public JsonTextArrayBuffer(byte[] buffer)
+                public JsonTextMemoryReader(ReadOnlyMemory<byte> buffer)
+                    : base(buffer)
                 {
-                    if (buffer == null)
-                    {
-                        throw new ArgumentNullException("buffer");
-                    }
-
-                    this.buffer = buffer;
                 }
 
-                /// <summary>
-                /// Gets a value indicating whether the buffer is at the End of File for it's source.
-                /// </summary>
-                public bool IsEof
-                {
-                    get
-                    {
-                        return this.bytesRead == this.buffer.Length;
-                    }
-                }
-
-                /// <summary>
-                /// Gets a value indicating the encoding for the buffer, which is needed when you want to materialize a string from the buffered raw json token.
-                /// </summary>
-                public Encoding Encoding
-                {
-                    get
-                    {
-                        return Encoding.UTF8;
-                    }
-                }
-
-                public JsonTextTokenType CurrentTokenType
-                {
-                    get
-                    {
-                        return this.currentJsonTextTokenType;
-                    }
-
-                    set
-                    {
-                        this.currentJsonTextTokenType = value;
-                    }
-                }
-
-                /// <summary>
-                /// Gets the number value of the token that was just read from the buffer.
-                /// </summary>
-                /// <returns>The number value of the token that was just read from the buffer.</returns>
-                public Number64 GetNumberValue()
-                {
-                    return JsonTextUtil.GetNumberValue((ArraySegment<byte>)this.GetBufferedRawJsonToken());
-                }
-
-                public sbyte GetInt8Value()
-                {
-                    ArraySegment<byte> rawToken = (ArraySegment<byte>)this.GetBufferedRawJsonToken();
-                    long value = JsonTextUtil.GetIntegerValue(new ArraySegment<byte>(rawToken.Array, rawToken.Offset + 1, rawToken.Count - 1));
-                    if (value > sbyte.MaxValue || value < sbyte.MinValue)
-                    {
-                        throw new ArgumentOutOfRangeException($"Tried to read {value} as an {typeof(sbyte).FullName}");
-                    }
-
-                    return (sbyte)value;
-                }
-
-                public short GetInt16Value()
-                {
-                    ArraySegment<byte> rawToken = (ArraySegment<byte>)this.GetBufferedRawJsonToken();
-                    long value = JsonTextUtil.GetIntegerValue(new ArraySegment<byte>(rawToken.Array, rawToken.Offset + 1, rawToken.Count - 1));
-                    if (value > short.MaxValue || value < short.MinValue)
-                    {
-                        throw new ArgumentOutOfRangeException($"Tried to read {value} as an {typeof(short).FullName}");
-                    }
-
-                    return (short)value;
-                }
-
-                public int GetInt32Value()
-                {
-                    ArraySegment<byte> rawToken = (ArraySegment<byte>)this.GetBufferedRawJsonToken();
-                    long value = JsonTextUtil.GetIntegerValue(new ArraySegment<byte>(rawToken.Array, rawToken.Offset + 1, rawToken.Count - 1));
-                    if (value > int.MaxValue || value < int.MinValue)
-                    {
-                        throw new ArgumentOutOfRangeException($"Tried to read {value} as an {typeof(int).FullName}");
-                    }
-
-                    return (int)value;
-                }
-
-                public long GetInt64Value()
-                {
-                    ArraySegment<byte> rawToken = (ArraySegment<byte>)this.GetBufferedRawJsonToken();
-                    long value = JsonTextUtil.GetIntegerValue(new ArraySegment<byte>(rawToken.Array, rawToken.Offset + 2, rawToken.Count - 2));
-                    if (value > long.MaxValue || value < long.MinValue)
-                    {
-                        throw new ArgumentOutOfRangeException($"Tried to read {value} as an {typeof(long).FullName}");
-                    }
-
-                    return (long)value;
-                }
-
-                public uint GetUInt32Value()
-                {
-                    ArraySegment<byte> rawToken = (ArraySegment<byte>)this.GetBufferedRawJsonToken();
-                    long value = JsonTextUtil.GetIntegerValue(new ArraySegment<byte>(rawToken.Array, rawToken.Offset + 2, rawToken.Count - 2));
-                    if (value > uint.MaxValue || value < uint.MinValue)
-                    {
-                        throw new ArgumentOutOfRangeException($"Tried to read {value} as an {typeof(uint).FullName}");
-                    }
-
-                    return (uint)value;
-                }
-
-                public float GetFloat32Value()
-                {
-                    ArraySegment<byte> rawToken = (ArraySegment<byte>)this.GetBufferedRawJsonToken();
-                    float value = JsonTextUtil.GetFloatValue(new ArraySegment<byte>(rawToken.Array, rawToken.Offset + 1, rawToken.Count - 1));
-                    if (value > float.MaxValue || value < float.MinValue)
-                    {
-                        throw new ArgumentOutOfRangeException($"Tried to read {value} as an {typeof(float).FullName}");
-                    }
-
-                    return (float)value;
-                }
-
-                public double GetFloat64Value()
-                {
-                    ArraySegment<byte> rawToken = (ArraySegment<byte>)this.GetBufferedRawJsonToken();
-                    double value = JsonTextUtil.GetDoubleValue(new ArraySegment<byte>(rawToken.Array, rawToken.Offset + 1, rawToken.Count - 1));
-                    if (value > double.MaxValue || value < double.MinValue)
-                    {
-                        throw new ArgumentOutOfRangeException($"Tried to read {value} as an {typeof(double).FullName}");
-                    }
-
-                    return (double)value;
-                }
-
-                /// <summary>
-                /// Gets the string value of the token that was just read from the buffer.
-                /// </summary>
-                /// <returns>The string value of the token that was just read from the buffer.</returns>
-                public string GetStringValue()
-                {
-                    IReadOnlyList<byte> jsonTextToken = this.GetBufferedRawJsonToken();
-
-                    // Offsetting by an additional character and removing 2 from the length since I want to skip the quotes.
-                    ArraySegment<byte> bufferedToken = (ArraySegment<byte>)jsonTextToken;
-                    ArraySegment<byte> stringToken = new ArraySegment<byte>(bufferedToken.Array, bufferedToken.Offset + 1, bufferedToken.Count - 2);
-                    bool needsUnescaping = this.currentJsonTextTokenType == JsonTextTokenType.EscapedFieldName || this.currentJsonTextTokenType == JsonTextTokenType.EscapedString;
-                    if (!needsUnescaping)
-                    {
-                        return Encoding.UTF8.GetString(stringToken.Array, stringToken.Offset, stringToken.Count);
-                    }
-
-                    return JsonTextUtil.UnescapeJson(this.Encoding.GetChars(stringToken.Array, stringToken.Offset, stringToken.Count));
-                }
-
-                public IReadOnlyList<byte> GetBinaryValue()
-                {
-                    ArraySegment<byte> rawToken = (ArraySegment<byte>)this.GetBufferedRawJsonToken();
-                    ArraySegment<byte> offsetToken = new ArraySegment<byte>(
-                        rawToken.Array, 
-                        rawToken.Offset + 1, 
-                        rawToken.Count - 1);
-                    byte[] bytes = offsetToken.Array;
-                    int offset = offsetToken.Offset;
-                    int count = offsetToken.Count;
-
-                    string encodedString = this.Encoding.GetString(bytes, offset, count);
-                    return System.Convert.FromBase64String(encodedString);
-                }
-
-                public Guid GetGuidValue()
-                {
-                    ArraySegment<byte> rawToken = (ArraySegment<byte>)this.GetBufferedRawJsonToken();
-                    ArraySegment<byte> offsetToken = new ArraySegment<byte>(rawToken.Array, rawToken.Offset + 1, rawToken.Count - 1);
-                    byte[] bytes = offsetToken.Array;
-                    int offset = offsetToken.Offset;
-                    int count = offsetToken.Count;
-                    string stringGuid = this.Encoding.GetString(bytes, offset, count);
-                    return Guid.Parse(stringGuid);
-                }
-
-                /// <summary>
-                /// Lets the buffer know that a token is about to be read.
-                /// </summary>
-                public void BeginToken()
-                {
-                    this.currentBeginOffset = this.bytesRead;
-                }
-
-                /// <summary>
-                /// Lets the buffer know that a token just finished reading.
-                /// </summary>
-                public void EndToken()
-                {
-                    this.currentEndOffset = this.bytesRead;
-                }
-
-                /// <summary>
-                /// Reads a character from the buffer.
-                /// </summary>
-                /// <returns>The character that was just read.</returns>
                 public char ReadCharacter()
                 {
-                    char currentCharacter = this.PeekCharacter();
-                    if (currentCharacter != (char)0)
-                    {
-                        this.bytesRead++;
-                    }
-
-                    return currentCharacter;
+                    return (char)this.Read();
                 }
 
-                /// <summary>
-                /// Peeks at the next character from the buffer.
-                /// </summary>
-                /// <returns>The character that was just peeked at.</returns>
                 public char PeekCharacter()
                 {
-                    return this.IsEof ? (char)0 : (char)this.buffer[this.bytesRead];
+                    return (char)this.Peek();
                 }
 
-                /// <summary>
-                /// Gets the buffered raw json token from the buffer.
-                /// </summary>
-                /// <returns>The buffered raw json token from the buffer.</returns>
-                public IReadOnlyList<byte> GetBufferedRawJsonToken()
+                public void AdvanceWhileWhitespace()
                 {
-                    return new ArraySegment<byte>(
-                        this.buffer,
-                        this.currentBeginOffset,
-                        this.currentEndOffset - this.currentBeginOffset);
+                    while (JsonTextMemoryReader.IsWhitespace(this.PeekCharacter()))
+                    {
+                        this.ReadCharacter();
+                    }
+                }
+
+                public bool TryReadTrueToken()
+                {
+                    return this.TryReadToken(JsonTextMemoryReader.TrueMemory.Span);
+                }
+
+                public bool TryReadFalseToken()
+                {
+                    return this.TryReadToken(JsonTextMemoryReader.FalseMemory.Span);
+                }
+
+                public bool TryReadNullToken()
+                {
+                    return this.TryReadToken(JsonTextMemoryReader.NullMemory.Span);
+                }
+
+                private bool TryReadToken(ReadOnlySpan<byte> token)
+                {
+                    if (this.position + token.Length <= this.buffer.Length)
+                    {
+                        bool read = this.buffer
+                            .Slice(this.position, token.Length)
+                            .Span
+                            .SequenceEqual(token);
+                        this.position += token.Length;
+                        return read;
+                    }
+
+                    return false;
+                }
+
+                // See http://www.ietf.org/rfc/rfc4627.txt for JSON whitespace definition (Section 2).
+                public static bool IsWhitespace(char value)
+                {
+                    return value == ' ' || value == '\t' || value == '\r' || value == '\n';
                 }
             }
-            #endregion
 
-            #region JsonTextStreamBuffer
-            /// <summary>
-            /// The <see cref="IJsonTextBuffer"/> for when the source is a stream of a specific encoding that knows how to store the last token read from the source.
-            /// </summary>
-            private sealed class JsonTextStreamBuffer : IJsonTextBuffer
+            private struct Token
             {
-                /// <summary>
-                /// We need to buffer one token from the stream incase a user wants to materialize it and the stream is not seekable (like a network stream).
-                /// </summary>
-                private readonly MemoryStream bufferedToken;
-                private readonly StreamWriter bufferedTokenWriter;
-                private readonly Encoding encoding;
-                private readonly StreamReader streamReader;
-                private JsonTextTokenType currentJsonTextTokenType;
-                private int tokenLength;
+                public JsonTextTokenType JsonTextTokenType { get; set; }
 
-                /// <summary>
-                /// Initializes a new instance of the JsonTextStreamBuffer class.
-                /// </summary>
-                /// <param name="stream">The stream to read from.</param>
-                /// <param name="encoding">The encoding of the stream.</param>
-                public JsonTextStreamBuffer(Stream stream, Encoding encoding)
-                {
-                    this.streamReader = new StreamReader(stream, encoding);
+                public int Start { get; set; }
 
-                    this.bufferedToken = new MemoryStream();
-                    this.bufferedTokenWriter = new StreamWriter(this.bufferedToken, encoding);
-                    this.encoding = encoding;
-                }
-
-                /// <summary>
-                /// Gets a value indicating whether the buffer is at the End of File for it's source.
-                /// </summary>
-                public bool IsEof
-                {
-                    get
-                    {
-                        return this.streamReader.EndOfStream;
-                    }
-                }
-
-                /// <summary>
-                /// Gets a value indicating the encoding for the buffer, which is needed when you want to materialize a string from the buffered raw json token.
-                /// </summary>
-                public Encoding Encoding
-                {
-                    get
-                    {
-                        return this.encoding;
-                    }
-                }
-
-                public JsonTextTokenType CurrentTokenType
-                {
-                    get
-                    {
-                        return this.currentJsonTextTokenType;
-                    }
-
-                    set
-                    {
-                        this.currentJsonTextTokenType = value;
-                    }
-                }
-
-                /// <summary>
-                /// Gets the number of value of the token that was just read from the buffer.
-                /// </summary>
-                /// <returns>The number of value of the token that was just read from the buffer.</returns>
-                public Number64 GetNumberValue()
-                {
-                    string stringDouble = this.encoding.GetString(this.bufferedToken.GetBuffer(), 0, this.tokenLength);
-                    return double.Parse(stringDouble, CultureInfo.InvariantCulture);
-                }
-
-                public sbyte GetInt8Value()
-                {
-                    string stringified = this.encoding.GetString(
-                        this.bufferedToken.GetBuffer(),
-                        this.GetBytesPerChar(),
-                        this.tokenLength - this.GetBytesPerChar());
-                    return sbyte.Parse(stringified, CultureInfo.InvariantCulture);
-                }
-
-                public short GetInt16Value()
-                {
-                    string stringified = this.encoding.GetString(
-                        this.bufferedToken.GetBuffer(),
-                        this.GetBytesPerChar(),
-                        this.tokenLength - this.GetBytesPerChar());
-                    return short.Parse(stringified, CultureInfo.InvariantCulture);
-                }
-
-                public int GetInt32Value()
-                {
-                    string stringified = this.encoding.GetString(
-                        this.bufferedToken.GetBuffer(),
-                        this.GetBytesPerChar(),
-                        this.tokenLength - this.GetBytesPerChar());
-                    return int.Parse(stringified, CultureInfo.InvariantCulture);
-                }
-
-                public long GetInt64Value()
-                {
-                    string stringified = this.encoding.GetString(
-                        this.bufferedToken.GetBuffer(),
-                        2 * this.GetBytesPerChar(),
-                        this.tokenLength - (2 * this.GetBytesPerChar()));
-                    return long.Parse(stringified, CultureInfo.InvariantCulture);
-                }
-
-                public uint GetUInt32Value()
-                {
-                    string stringified = this.encoding.GetString(
-                        this.bufferedToken.GetBuffer(),
-                        2 * this.GetBytesPerChar(),
-                        this.tokenLength - (2 * this.GetBytesPerChar()));
-                    return uint.Parse(stringified, CultureInfo.InvariantCulture);
-                }
-
-                public float GetFloat32Value()
-                {
-                    string stringified = this.encoding.GetString(
-                        this.bufferedToken.GetBuffer(),
-                        this.GetBytesPerChar(),
-                        this.tokenLength - this.GetBytesPerChar());
-                    return float.Parse(stringified, CultureInfo.InvariantCulture);
-                }
-
-                public double GetFloat64Value()
-                {
-                    string stringified = this.encoding.GetString(
-                        this.bufferedToken.GetBuffer(),
-                        this.GetBytesPerChar(),
-                        this.tokenLength - this.GetBytesPerChar());
-                    return double.Parse(stringified, CultureInfo.InvariantCulture);
-                }
-
-                /// <summary>
-                /// Gets the string value of the token that was just read from the buffer.
-                /// </summary>
-                /// <returns>The string value of the token that was just read from the buffer.</returns>
-                public string GetStringValue()
-                {
-                    // Get the string from the buffer but don't include the quotes;
-                    int quoteSizeInBytes;
-                    if (this.encoding == Encoding.UTF8)
-                    {
-                        quoteSizeInBytes = 1;
-                    }
-                    else if (this.encoding == Encoding.Unicode)
-                    {
-                        quoteSizeInBytes = 2;
-                    }
-                    else
-                    {
-                        // UTF-32
-                        quoteSizeInBytes = 4;
-                    }
-
-                    bool needsUnescaping = this.currentJsonTextTokenType == JsonTextTokenType.EscapedFieldName || this.currentJsonTextTokenType == JsonTextTokenType.EscapedString;
-
-                    if (!needsUnescaping)
-                    {
-                        // Offsetting by an additional character and removing 2 from the length since I want to skip the quotes.
-                        return this.Encoding.GetString(this.bufferedToken.GetBuffer(), quoteSizeInBytes, this.tokenLength - (2 * quoteSizeInBytes));
-                    }
-
-                    char[] escapedString = this.encoding.GetChars(this.bufferedToken.GetBuffer(), quoteSizeInBytes, this.tokenLength - (2 * quoteSizeInBytes));
-                    return JsonTextUtil.UnescapeJson(escapedString);
-                }
-
-                public IReadOnlyList<byte> GetBinaryValue()
-                {
-                    string stringified = this.encoding.GetString(
-                        this.bufferedToken.GetBuffer(),
-                        this.GetBytesPerChar(),
-                        this.tokenLength - this.GetBytesPerChar());
-                    return Convert.FromBase64String(stringified);
-                }
-
-                public Guid GetGuidValue()
-                {
-                    string stringified = this.encoding.GetString(
-                        this.bufferedToken.GetBuffer(),
-                        this.GetBytesPerChar(),
-                        this.tokenLength - this.GetBytesPerChar());
-                    return Guid.Parse(stringified);
-                }
-
-                /// <summary>
-                /// Lets the buffer know that a token is about to be read.
-                /// </summary>
-                public void BeginToken()
-                {
-                    this.bufferedTokenWriter.Flush();
-                    this.bufferedToken.Position = 0;
-                }
-
-                /// <summary>
-                /// Lets the buffer know that a token just finished reading.
-                /// </summary>
-                public void EndToken()
-                {
-                    this.bufferedTokenWriter.Flush();
-                    this.tokenLength = (int)this.bufferedToken.Position;
-                }
-
-                /// <summary>
-                /// Reads a character from the buffer.
-                /// </summary>
-                /// <returns>The character that was just read.</returns>
-                public char ReadCharacter()
-                {
-                    if (this.IsEof)
-                    {
-                        return (char)0;
-                    }
-
-                    char characterRead = (char)this.streamReader.Read();
-                    this.bufferedTokenWriter.Write(characterRead);
-                    return characterRead;
-                }
-
-                /// <summary>
-                /// Peeks at the next character from the buffer.
-                /// </summary>
-                /// <returns>The character that was just peeked at.</returns>
-                public char PeekCharacter()
-                {
-                    return this.IsEof ? (char)0 : (char)this.streamReader.Peek();
-                }
-
-                /// <summary>
-                /// Gets the buffered raw json token from the buffer.
-                /// </summary>
-                /// <returns>The buffered raw json token from the buffer.</returns>
-                public IReadOnlyList<byte> GetBufferedRawJsonToken()
-                {
-                    return new ArraySegment<byte>(this.bufferedToken.GetBuffer(), 0, this.tokenLength);
-                }
-
-                private int GetBytesPerChar()
-                {
-                    int bytesPerChar;
-                    if (this.encoding == Encoding.UTF8)
-                    {
-                        bytesPerChar = 1;
-                    }
-                    else if (this.encoding == Encoding.Unicode)
-                    {
-                        bytesPerChar = 2;
-                    }
-                    else
-                    {
-                        // UTF-32
-                        bytesPerChar = 4;
-                    }
-
-                    return bytesPerChar;
-                }
+                public int End { get; set; }
             }
-            #endregion
         }
     }
 }

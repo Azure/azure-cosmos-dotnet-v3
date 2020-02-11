@@ -36,7 +36,7 @@ JOIN (
     )
 ) AS v0 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":105,"end":142},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -56,7 +56,7 @@ JOIN (
     )
 ) AS v2 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":58,"end":63},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -188,7 +188,7 @@ JOIN (
 ) AS v0 
 ORDER BY v0 ASC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -207,7 +207,7 @@ JOIN (
 ) AS v0 
 ORDER BY v0 ASC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -227,7 +227,7 @@ JOIN (
 ) AS v0 
 ORDER BY v0 ASC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -285,7 +285,7 @@ JOIN (
     )
 ) AS v1 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":124,"end":162},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":58,"end":63},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -345,7 +345,7 @@ JOIN (
     )
 ) AS v1 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":136,"end":173},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":58,"end":63},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -366,7 +366,7 @@ JOIN (
     )
 ) AS v1 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":58,"end":63},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -387,7 +387,7 @@ JOIN (
     )
 ) AS v1 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":58,"end":63},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -428,7 +428,7 @@ JOIN (
     )
 ) AS v1 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":121,"end":145},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":58,"end":63},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -452,7 +452,7 @@ JOIN (
     )
 ) AS v2 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":150,"end":187},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":88,"end":93},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -533,7 +533,7 @@ JOIN (
 ) AS v1 
 WHERE (v1 > 0) 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":159,"end":183},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":69,"end":74},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -555,7 +555,7 @@ JOIN (
 ) AS v0 
 ORDER BY v0 ASC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -575,7 +575,7 @@ JOIN (
 ) AS v0 
 ORDER BY v0 ASC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -594,7 +594,7 @@ JOIN (
 ) AS v1 
 ORDER BY v1 ASC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -617,7 +617,7 @@ JOIN (
 ) AS v1 
 ORDER BY v1 ASC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":130,"end":167},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":77,"end":82},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -1023,7 +1023,7 @@ JOIN (
 ) AS v1 
 WHERE (v0 >= 2) 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":13,"end":53},"code":"SC2990","message":"The specified query includes 'member indexer' which is currently not supported."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -1096,7 +1096,7 @@ JOIN (
 ) AS v0 
 ORDER BY LOG(v0) ASC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -1145,7 +1145,7 @@ FROM (
 WHERE ((r0["FamilyId"] > "ABC") AND (ARRAY_LENGTH(r0["SmartChildren"]) > 0)) 
 ORDER BY r0["ChildrenCount"] ASC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -1198,7 +1198,7 @@ JOIN (
 ) AS v6 
 WHERE (r0["FirstChild"] != null) 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":403,"end":408},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -1359,7 +1359,7 @@ JOIN (
 WHERE (v0 AND root["IsRegistered"]) 
 ORDER BY v1 ASC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -1465,7 +1465,7 @@ JOIN (
 ) AS v3 
 WHERE (ARRAY_LENGTH(root["Children"]) > 0) 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":110,"end":115},"code":"SC2203","message":"'TOP' is not supported in subqueries."},{"severity":"Error","location":{"start":252,"end":276},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -1972,7 +1972,7 @@ JOIN (
 ) AS v0 
 ORDER BY v0 ASC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -1990,7 +1990,7 @@ JOIN (
     JOIN v0 IN root["Children"]
 ) AS v2 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":39,"end":44},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -2009,7 +2009,7 @@ JOIN (
     ORDER BY c0["Grade"] ASC
 ) AS v0 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":86,"end":110},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -2028,7 +2028,7 @@ JOIN (
     WHERE (LENGTH(c0["FamilyName"]) > 10)
 ) AS v1 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":39,"end":44},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -2047,7 +2047,7 @@ JOIN (
     WHERE (LENGTH(c0["FamilyName"]) > 10)
 ) AS v1 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":39,"end":44},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
 </Results>

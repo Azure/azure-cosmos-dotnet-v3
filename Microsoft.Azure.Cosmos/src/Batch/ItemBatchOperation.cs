@@ -31,7 +31,8 @@ namespace Microsoft.Azure.Cosmos
             PartitionKey partitionKey,
             string id = null,
             Stream resourceStream = null,
-            BatchItemRequestOptions requestOptions = null)
+            TransactionalBatchItemRequestOptions requestOptions = null,
+            CosmosDiagnosticsContext diagnosticsContext = null)
         {
             this.OperationType = operationType;
             this.OperationIndex = operationIndex;
@@ -39,6 +40,7 @@ namespace Microsoft.Azure.Cosmos
             this.Id = id;
             this.ResourceStream = resourceStream;
             this.RequestOptions = requestOptions;
+            this.DiagnosticsContext = diagnosticsContext;
         }
 
         public ItemBatchOperation(
@@ -46,13 +48,14 @@ namespace Microsoft.Azure.Cosmos
             int operationIndex,
             string id = null,
             Stream resourceStream = null,
-            BatchItemRequestOptions requestOptions = null)
+            TransactionalBatchItemRequestOptions requestOptions = null)
         {
             this.OperationType = operationType;
             this.OperationIndex = operationIndex;
             this.Id = id;
             this.ResourceStream = resourceStream;
             this.RequestOptions = requestOptions;
+            this.DiagnosticsContext = null;
         }
 
         public PartitionKey? PartitionKey { get; internal set; }
@@ -63,9 +66,11 @@ namespace Microsoft.Azure.Cosmos
 
         public Stream ResourceStream { get; protected set; }
 
-        public BatchItemRequestOptions RequestOptions { get; }
+        public TransactionalBatchItemRequestOptions RequestOptions { get; }
 
         public int OperationIndex { get; internal set; }
+
+        internal CosmosDiagnosticsContext DiagnosticsContext { get; }
 
         internal string PartitionKeyJson { get; set; }
 
@@ -106,6 +111,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal static Result WriteOperation(ref RowWriter writer, TypeArgument typeArg, ItemBatchOperation operation)
         {
+            bool pkWritten = false;
             Result r = writer.WriteInt32("operationType", (int)operation.OperationType);
             if (r != Result.Success)
             {
@@ -125,6 +131,8 @@ namespace Microsoft.Azure.Cosmos
                 {
                     return r;
                 }
+
+                pkWritten = true;
             }
 
             if (operation.Id != null)
@@ -147,7 +155,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (operation.RequestOptions != null)
             {
-                BatchItemRequestOptions options = operation.RequestOptions;
+                TransactionalBatchItemRequestOptions options = operation.RequestOptions;
                 if (options.IndexingDirective.HasValue)
                 {
                     string indexingDirectiveString = IndexingDirectiveStrings.FromIndexingDirective(options.IndexingDirective.Value);
@@ -196,6 +204,21 @@ namespace Microsoft.Azure.Cosmos
                         if (epk != null)
                         {
                             r = writer.WriteBinary("effectivePartitionKey", epk);
+                            if (r != Result.Success)
+                            {
+                                return r;
+                            }
+                        }
+                    }
+
+                    if (!pkWritten && options.Properties.TryGetValue(
+                            HttpConstants.HttpHeaders.PartitionKey,
+                            out object pkStrObj))
+                    {
+                        string pkString = pkStrObj as string;
+                        if (pkString != null)
+                        {
+                            r = writer.WriteString("partitionKey", pkString);
                             if (r != Result.Success)
                             {
                                 return r;
@@ -287,13 +310,13 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Materializes the operation's resource into a Memory{byte} wrapping a byte array.
         /// </summary>
-        /// <param name="serializer">Serializer to serialize user provided objects to JSON.</param>
+        /// <param name="serializerCore">Serializer to serialize user provided objects to JSON.</param>
         /// <param name="cancellationToken"><see cref="CancellationToken"/> for cancellation.</param>
-        internal virtual async Task MaterializeResourceAsync(CosmosSerializer serializer, CancellationToken cancellationToken)
+        internal virtual async Task MaterializeResourceAsync(CosmosSerializerCore serializerCore, CancellationToken cancellationToken)
         {
             if (this.body.IsEmpty && this.ResourceStream != null)
             {
-                this.body = await BatchExecUtils.StreamToMemoryAsync(this.ResourceStream, Constants.MaxResourceSizeInBytes, cancellationToken);
+                this.body = await BatchExecUtils.StreamToMemoryAsync(this.ResourceStream, cancellationToken);
             }
         }
 
@@ -339,7 +362,7 @@ namespace Microsoft.Azure.Cosmos
             PartitionKey partitionKey,
             T resource,
             string id = null,
-            BatchItemRequestOptions requestOptions = null)
+            TransactionalBatchItemRequestOptions requestOptions = null)
             : base(operationType, operationIndex, partitionKey: partitionKey, id: id, requestOptions: requestOptions)
         {
             this.Resource = resource;
@@ -350,7 +373,7 @@ namespace Microsoft.Azure.Cosmos
             int operationIndex,
             T resource,
             string id = null,
-            BatchItemRequestOptions requestOptions = null)
+            TransactionalBatchItemRequestOptions requestOptions = null)
             : base(operationType, operationIndex, id: id, requestOptions: requestOptions)
         {
             this.Resource = resource;
@@ -361,14 +384,14 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Materializes the operation's resource into a Memory{byte} wrapping a byte array.
         /// </summary>
-        /// <param name="serializer">Serializer to serialize user provided objects to JSON.</param>
+        /// <param name="serializerCore">Serializer to serialize user provided objects to JSON.</param>
         /// <param name="cancellationToken"><see cref="CancellationToken"/> for cancellation.</param>
-        internal override Task MaterializeResourceAsync(CosmosSerializer serializer, CancellationToken cancellationToken)
+        internal override Task MaterializeResourceAsync(CosmosSerializerCore serializerCore, CancellationToken cancellationToken)
         {
             if (this.body.IsEmpty && this.Resource != null)
             {
-                this.ResourceStream = serializer.ToStream(this.Resource);
-                return base.MaterializeResourceAsync(serializer, cancellationToken);
+                this.ResourceStream = serializerCore.ToStream(this.Resource);
+                return base.MaterializeResourceAsync(serializerCore, cancellationToken);
             }
 
             return Task.FromResult(true);

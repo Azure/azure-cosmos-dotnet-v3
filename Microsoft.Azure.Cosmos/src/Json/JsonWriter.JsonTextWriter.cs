@@ -4,10 +4,9 @@
 namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
-    using System.Collections.Generic;
+    using System.Buffers;
+    using System.Buffers.Text;
     using System.Globalization;
-    using System.IO;
-    using System.Linq;
     using System.Text;
 
     /// <summary>
@@ -30,35 +29,54 @@ namespace Microsoft.Azure.Cosmos.Json
         /// </summary>
         private sealed class JsonTextWriter : JsonWriter
         {
-            private const char ValueSeperatorToken = ':';
-            private const char MemberSeperatorToken = ',';
-            private const char ObjectStartToken = '{';
-            private const char ObjectEndToken = '}';
-            private const char ArrayStartToken = '[';
-            private const char ArrayEndToken = ']';
-            private const char PropertyStartToken = '"';
-            private const char PropertyEndToken = '"';
-            private const char StringStartToken = '"';
-            private const char StringEndToken = '"';
+            private const int MaxStackAlloc = 4 * 1024;
 
-            private const string NotANumber = "NaN";
-            private const string PositiveInfinity = "Infinity";
-            private const string NegativeInfinity = "-Infinity";
-            private const string TrueString = "true";
-            private const string FalseString = "false";
-            private const string NullString = "null";
+            private const byte ValueSeperatorToken = (byte)':';
+            private const byte MemberSeperatorToken = (byte)',';
+            private const byte ObjectStartToken = (byte)'{';
+            private const byte ObjectEndToken = (byte)'}';
+            private const byte ArrayStartToken = (byte)'[';
+            private const byte ArrayEndToken = (byte)']';
+            private const byte PropertyStartToken = (byte)'"';
+            private const byte PropertyEndToken = (byte)'"';
+            private const byte StringStartToken = (byte)'"';
+            private const byte StringEndToken = (byte)'"';
 
-            private static readonly Dictionary<Encoding, string> ByteOrderMarkDictionary = new Dictionary<Encoding, string>
+            private const byte Int8TokenPrefix = (byte)'I';
+            private const byte Int16TokenPrefix = (byte)'H';
+            private const byte Int32TokenPrefix = (byte)'L';
+            private const byte UnsignedTokenPrefix = (byte)'U';
+            private const byte FloatTokenPrefix = (byte)'S';
+            private const byte DoubleTokenPrefix = (byte)'D';
+            private const byte GuidTokenPrefix = (byte)'G';
+            private const byte BinaryTokenPrefix = (byte)'B';
+
+            private static readonly ReadOnlyMemory<byte> NotANumber = new byte[]
             {
-                { Encoding.UTF8, "\xEF\xBB\xBF" },
-                { Encoding.Unicode, "\xFF\xFE" },
-                { Encoding.UTF32, "\xFF\xFE\x00\x00" },
+                (byte)'N', (byte)'a', (byte)'N'
+            };
+            private static readonly ReadOnlyMemory<byte> PositiveInfinity = new byte[]
+            {
+                (byte)'I', (byte)'n', (byte)'f', (byte)'i', (byte)'n', (byte)'i', (byte)'t', (byte)'y'
+            };
+            private static readonly ReadOnlyMemory<byte> NegativeInfinity = new byte[]
+            {
+                (byte)'-', (byte)'I', (byte)'n', (byte)'f', (byte)'i', (byte)'n', (byte)'i', (byte)'t', (byte)'y'
+            };
+            private static readonly ReadOnlyMemory<byte> TrueString = new byte[]
+            {
+                (byte)'t', (byte)'r', (byte)'u', (byte)'e'
+            };
+            private static readonly ReadOnlyMemory<byte> FalseString = new byte[]
+            {
+                (byte)'f', (byte)'a', (byte)'l', (byte)'s', (byte)'e'
+            };
+            private static readonly ReadOnlyMemory<byte> NullString = new byte[]
+            {
+                (byte)'n', (byte)'u', (byte)'l', (byte)'l'
             };
 
-            /// <summary>
-            /// The internal StreamWriter
-            /// </summary>
-            private readonly StreamWriter streamWriter;
+            private readonly JsonTextMemoryWriter jsonTextMemoryWriter;
 
             /// <summary>
             /// Whether we are writing the first value of an array or object
@@ -68,18 +86,15 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <summary>
             /// Initializes a new instance of the JsonTextWriter class.
             /// </summary>
-            /// <param name="encoding">The encoding to use.</param>
             /// <param name="skipValidation">Whether or not to skip validation</param>
-            public JsonTextWriter(Encoding encoding, bool skipValidation)
+            public JsonTextWriter(bool skipValidation)
                 : base(skipValidation)
             {
                 this.firstValue = true;
-                this.streamWriter = new StreamWriter(new MemoryStream(), encoding);
+                this.jsonTextMemoryWriter = new JsonTextMemoryWriter();
             }
 
-            /// <summary>
-            /// Gets the SerializationFormat of the JsonWriter.
-            /// </summary>
+            /// <inheritdoc />
             public override JsonSerializationFormat SerializationFormat
             {
                 get
@@ -88,68 +103,65 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
             }
 
-            /// <summary>
-            /// Gets the current length of the internal buffer.
-            /// </summary>
+            /// <inheritdoc />
             public override long CurrentLength
             {
                 get
                 {
-                    return this.streamWriter.BaseStream.Position;
+                    return this.jsonTextMemoryWriter.Position;
                 }
             }
 
-            /// <summary>
-            /// Writes the object start symbol to internal buffer.
-            /// </summary>
+            /// <inheritdoc />
             public override void WriteObjectStart()
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.BeginObject);
                 this.PrefixMemberSeparator();
-                this.WriteChar(ObjectStartToken);
+                this.jsonTextMemoryWriter.Write(ObjectStartToken);
                 this.firstValue = true;
             }
 
-            /// <summary>
-            /// Writes the object end symbol to the internal buffer.
-            /// </summary>
+            /// <inheritdoc />
             public override void WriteObjectEnd()
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.EndObject);
-                this.WriteChar(ObjectEndToken);
+                this.jsonTextMemoryWriter.Write(ObjectEndToken);
 
                 // We reset firstValue here because we'll need a separator before the next value
                 this.firstValue = false;
             }
 
-            /// <summary>
-            /// Writes the array start symbol to the internal buffer.
-            /// </summary>
+            /// <inheritdoc />
             public override void WriteArrayStart()
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.BeginArray);
                 this.PrefixMemberSeparator();
-                this.WriteChar(ArrayStartToken);
+                this.jsonTextMemoryWriter.Write(ArrayStartToken);
                 this.firstValue = true;
             }
 
-            /// <summary>
-            /// Writes the array end symbol to the internal buffer.
-            /// </summary>
+            /// <inheritdoc />
             public override void WriteArrayEnd()
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.EndArray);
-                this.WriteChar(ArrayEndToken);
+                this.jsonTextMemoryWriter.Write(ArrayEndToken);
 
                 // We reset firstValue here because we'll need a separator before the next value
                 this.firstValue = false;
             }
 
-            /// <summary>
-            /// Writes a field name to the the internal buffer.
-            /// </summary>
-            /// <param name="fieldName">The name of the field to write.</param>
-            public override void WriteFieldName(string fieldName)
+            /// <inheritdoc />
+            public override unsafe void WriteFieldName(string fieldName)
+            {
+                int utf8Length = Encoding.UTF8.GetByteCount(fieldName);
+                Span<byte> utf8FieldName = utf8Length < JsonTextWriter.MaxStackAlloc ? stackalloc byte[utf8Length] : new byte[utf8Length];
+                Encoding.UTF8.GetBytes(fieldName, utf8FieldName);
+
+                this.WriteFieldName(utf8FieldName);
+            }
+
+            /// <inheritdoc />
+            public override void WriteFieldName(ReadOnlySpan<byte> utf8FieldName)
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.FieldName);
                 this.PrefixMemberSeparator();
@@ -157,31 +169,35 @@ namespace Microsoft.Azure.Cosmos.Json
                 // no separator after property name
                 this.firstValue = true;
 
-                this.WriteChar(PropertyStartToken);
-                this.WriteEscapedStringToStreamWriter(fieldName, this.streamWriter);
-                this.WriteChar(PropertyEndToken);
+                this.jsonTextMemoryWriter.Write(PropertyStartToken);
+                this.WriteEscapedString(utf8FieldName);
+                this.jsonTextMemoryWriter.Write(PropertyEndToken);
 
-                this.WriteChar(ValueSeperatorToken);
+                this.jsonTextMemoryWriter.Write(ValueSeperatorToken);
             }
 
-            /// <summary>
-            /// Writes a string to the internal buffer.
-            /// </summary>
-            /// <param name="value">The value of the string to write.</param>
+            /// <inheritdoc />
             public override void WriteStringValue(string value)
+            {
+                int utf8Length = Encoding.UTF8.GetByteCount(value);
+                Span<byte> utf8String = utf8Length < JsonTextWriter.MaxStackAlloc ? stackalloc byte[utf8Length] : new byte[utf8Length];
+                Encoding.UTF8.GetBytes(value, utf8String);
+
+                this.WriteStringValue(utf8String);
+            }
+
+            /// <inheritdoc />
+            public override void WriteStringValue(ReadOnlySpan<byte> utf8StringValue)
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.String);
                 this.PrefixMemberSeparator();
 
-                this.WriteChar(StringStartToken);
-                this.WriteEscapedStringToStreamWriter(value, this.streamWriter);
-                this.WriteChar(StringEndToken);
+                this.jsonTextMemoryWriter.Write(StringStartToken);
+                this.WriteEscapedString(utf8StringValue);
+                this.jsonTextMemoryWriter.Write(StringEndToken);
             }
 
-            /// <summary>
-            /// Writes a number to the internal buffer.
-            /// </summary>
-            /// <param name="value">The value of the number to write.</param>
+            /// <inheritdoc />
             public override void WriteNumberValue(Number64 value)
             {
                 if (value.IsInteger)
@@ -194,10 +210,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
             }
 
-            /// <summary>
-            /// Writes a boolean to the internal buffer.
-            /// </summary>
-            /// <param name="value">The value of the boolean to write.</param>
+            /// <inheritdoc />
             public override void WriteBoolValue(bool value)
             {
                 this.JsonObjectState.RegisterToken(value ? JsonTokenType.True : JsonTokenType.False);
@@ -205,306 +218,465 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 if (value)
                 {
-                    this.streamWriter.Write(TrueString);
+                    this.jsonTextMemoryWriter.Write(TrueString.Span);
                 }
                 else
                 {
-                    this.streamWriter.Write(FalseString);
+                    this.jsonTextMemoryWriter.Write(FalseString.Span);
                 }
             }
 
-            /// <summary>
-            /// Writes a null to the internal buffer.
-            /// </summary>
+            /// <inheritdoc />
             public override void WriteNullValue()
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.Null);
                 this.PrefixMemberSeparator();
-                this.streamWriter.Write(NullString);
+                this.jsonTextMemoryWriter.Write(NullString.Span);
             }
 
+            /// <inheritdoc />
             public override void WriteInt8Value(sbyte value)
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.Int8);
                 this.PrefixMemberSeparator();
-                this.streamWriter.Write("I");
-                this.streamWriter.Write(value.ToString(CultureInfo.InvariantCulture));
+                this.jsonTextMemoryWriter.Write(Int8TokenPrefix);
+                this.jsonTextMemoryWriter.Write(value);
             }
 
+            /// <inheritdoc />
             public override void WriteInt16Value(short value)
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.Int16);
                 this.PrefixMemberSeparator();
-                this.streamWriter.Write("H");
-                this.streamWriter.Write(value.ToString(CultureInfo.InvariantCulture));
+                this.jsonTextMemoryWriter.Write(Int16TokenPrefix);
+                this.jsonTextMemoryWriter.Write(value);
             }
 
+            /// <inheritdoc />
             public override void WriteInt32Value(int value)
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.Int32);
                 this.PrefixMemberSeparator();
-                this.streamWriter.Write("L");
-                this.streamWriter.Write(value.ToString(CultureInfo.InvariantCulture));
+                this.jsonTextMemoryWriter.Write(Int32TokenPrefix);
+                this.jsonTextMemoryWriter.Write(value);
             }
 
+            /// <inheritdoc />
             public override void WriteInt64Value(long value)
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.Int64);
                 this.PrefixMemberSeparator();
-                this.streamWriter.Write("LL");
-                this.streamWriter.Write(value.ToString(CultureInfo.InvariantCulture));
+                this.jsonTextMemoryWriter.Write(Int32TokenPrefix);
+                this.jsonTextMemoryWriter.Write(Int32TokenPrefix);
+                this.jsonTextMemoryWriter.Write(value);
             }
 
+            /// <inheritdoc />
             public override void WriteFloat32Value(float value)
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.Float32);
                 this.PrefixMemberSeparator();
-                this.streamWriter.Write("S");
-                this.streamWriter.Write(value.ToString("G9", CultureInfo.InvariantCulture));
+                this.jsonTextMemoryWriter.Write(FloatTokenPrefix);
+                this.jsonTextMemoryWriter.Write(value);
             }
 
+            /// <inheritdoc />
             public override void WriteFloat64Value(double value)
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.Float64);
                 this.PrefixMemberSeparator();
-                this.streamWriter.Write("D");
-                this.streamWriter.Write(value.ToString("G17", CultureInfo.InvariantCulture));
+                this.jsonTextMemoryWriter.Write(DoubleTokenPrefix);
+                this.jsonTextMemoryWriter.Write(value);
             }
 
+            /// <inheritdoc />
             public override void WriteUInt32Value(uint value)
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.UInt32);
                 this.PrefixMemberSeparator();
-                this.streamWriter.Write("UL");
-                this.streamWriter.Write(value.ToString(CultureInfo.InvariantCulture));
+                this.jsonTextMemoryWriter.Write(UnsignedTokenPrefix);
+                this.jsonTextMemoryWriter.Write(Int32TokenPrefix);
+                this.jsonTextMemoryWriter.Write(value);
             }
 
+            /// <inheritdoc />
             public override void WriteGuidValue(Guid value)
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.Guid);
                 this.PrefixMemberSeparator();
-                this.streamWriter.Write("G");
-                this.streamWriter.Write(value.ToString());
+                this.jsonTextMemoryWriter.Write(GuidTokenPrefix);
+                this.jsonTextMemoryWriter.Write(value);
             }
 
-            public override void WriteBinaryValue(IReadOnlyList<byte> value)
+            /// <inheritdoc />
+            public override void WriteBinaryValue(ReadOnlySpan<byte> value)
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.Binary);
                 this.PrefixMemberSeparator();
-                this.streamWriter.Write("B");
-                this.streamWriter.Write(Convert.ToBase64String(value.ToArray()));
+                this.jsonTextMemoryWriter.Write(BinaryTokenPrefix);
+                this.jsonTextMemoryWriter.WriteBinaryAsBase64(value);
             }
 
-            /// <summary>
-            /// Gets the result of the JsonWriter.
-            /// </summary>
-            /// <returns>The result of the JsonWriter as an array of bytes.</returns>
-            public override byte[] GetResult()
+            /// <inheritdoc />
+            public override ReadOnlyMemory<byte> GetResult()
             {
-                // Flush the stream
-                this.streamWriter.Flush();
-
-                // Create a binaryreader to read from the stream
-                BinaryReader binaryReader = new BinaryReader(this.streamWriter.BaseStream);
-
-                // Figure out how many bytes have been written
-                long bytesWritten = this.CurrentLength;
-
-                // Seek to the begining but skip the byte order mark
-                int byteOrderMarkLength = JsonTextWriter.ByteOrderMarkDictionary[this.streamWriter.Encoding].Length;
-                this.streamWriter.BaseStream.Seek(byteOrderMarkLength, SeekOrigin.Begin);
-
-                // Read the entire steam
-                return binaryReader.ReadBytes((int)(bytesWritten - byteOrderMarkLength));
+                return this.jsonTextMemoryWriter.Buffer.Slice(
+                    0,
+                    this.jsonTextMemoryWriter.Position);
             }
 
-            /// <summary>
-            /// Gets the result of all the writes as a string.
-            /// </summary>
-            /// <returns>The result of all the writes as a string.</returns>
-            public string GetStringResult()
+            /// <inheritdoc />
+            protected override void WriteRawJsonToken(
+                JsonTokenType jsonTokenType,
+                ReadOnlySpan<byte> rawJsonToken)
             {
-                // Flush the stream
-                this.streamWriter.Flush();
+                switch (jsonTokenType)
+                {
+                    case JsonTokenType.String:
+                    case JsonTokenType.Number:
+                    case JsonTokenType.True:
+                    case JsonTokenType.False:
+                    case JsonTokenType.Null:
+                    case JsonTokenType.FieldName:
+                    case JsonTokenType.Int8:
+                    case JsonTokenType.Int16:
+                    case JsonTokenType.Int32:
+                    case JsonTokenType.Int64:
+                    case JsonTokenType.UInt32:
+                    case JsonTokenType.Float32:
+                    case JsonTokenType.Float64:
+                    case JsonTokenType.Guid:
+                    case JsonTokenType.Binary:
+                        // Supported Tokens
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException($"Unknown token type: {jsonTokenType}.");
+                }
 
-                // Create a stream reader to read from the stream
-                StreamReader streamReader = new StreamReader(
-                    this.streamWriter.BaseStream,
-                    this.streamWriter.Encoding);
+                if (rawJsonToken.IsEmpty)
+                {
+                    throw new ArgumentException($"Expected non empty {nameof(rawJsonToken)}.");
+                }
 
-                // Seek to the begining
-                this.streamWriter.BaseStream.Seek(0, SeekOrigin.Begin);
+                this.JsonObjectState.RegisterToken(jsonTokenType);
+                this.PrefixMemberSeparator();
 
-                // Read the entire stream
-                string stringResult = streamReader.ReadToEnd();
-                return stringResult;
+                // No separator after property name
+                if (jsonTokenType == JsonTokenType.FieldName)
+                {
+                    this.firstValue = true;
+                    this.jsonTextMemoryWriter.Write(rawJsonToken);
+                    this.jsonTextMemoryWriter.Write(ValueSeperatorToken);
+                }
+                else
+                {
+                    this.jsonTextMemoryWriter.Write(rawJsonToken);
+                }
             }
 
-            /// <summary>
-            /// Writes a raw json token to the internal buffer.
-            /// </summary>
-            /// <param name="jsonTokenType">The JsonTokenType of the rawJsonToken</param>
-            /// <param name="rawJsonToken">The raw json token.</param>
-            protected override void WriteRawJsonToken(JsonTokenType jsonTokenType, IReadOnlyList<byte> rawJsonToken)
-            {
-                throw new NotImplementedException();
-            }
-
-            /// <summary>
-            /// Writes an integer to the internal buffer.
-            /// </summary>
-            /// <param name="value">The value of the integer to write.</param>
             private void WriteIntegerInternal(long value)
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.Number);
                 this.PrefixMemberSeparator();
-                this.streamWriter.Write(value.ToString(CultureInfo.InvariantCulture));
+                this.jsonTextMemoryWriter.Write(value);
             }
 
-            /// <summary>
-            /// Writes an integer to the internal buffer.
-            /// </summary>
-            /// <param name="value">The value of the integer to write.</param>
             private void WriteDoubleInternal(double value)
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.Number);
                 this.PrefixMemberSeparator();
                 if (double.IsNaN(value))
                 {
-                    this.WriteChar(StringStartToken);
-                    this.streamWriter.Write(NotANumber);
-                    this.WriteChar(StringEndToken);
+                    this.jsonTextMemoryWriter.Write(StringStartToken);
+                    this.jsonTextMemoryWriter.Write(NotANumber.Span);
+                    this.jsonTextMemoryWriter.Write(StringEndToken);
                 }
                 else if (double.IsNegativeInfinity(value))
                 {
-                    this.WriteChar(StringStartToken);
-                    this.streamWriter.Write(NegativeInfinity);
-                    this.WriteChar(StringEndToken);
+                    this.jsonTextMemoryWriter.Write(StringStartToken);
+                    this.jsonTextMemoryWriter.Write(NegativeInfinity.Span);
+                    this.jsonTextMemoryWriter.Write(StringEndToken);
                 }
                 else if (double.IsPositiveInfinity(value))
                 {
-                    this.WriteChar(StringStartToken);
-                    this.streamWriter.Write(PositiveInfinity);
-                    this.WriteChar(StringEndToken);
+                    this.jsonTextMemoryWriter.Write(StringStartToken);
+                    this.jsonTextMemoryWriter.Write(PositiveInfinity.Span);
+                    this.jsonTextMemoryWriter.Write(StringEndToken);
                 }
                 else
                 {
-                    // If you require more precision, specify format with the "G17" format specification, which always returns 17 digits of precision,
-                    // or "R", which returns 15 digits if the number can be represented with that precision or 17 digits if the number can only be represented with maximum precision.
-                    // In some cases, Double values formatted with the "R" standard numeric format string do not successfully round-trip if compiled using the /platform:x64 or /platform:anycpu switches and run on 64-bit systems. To work around this problem, you can format Double values by using the "G17" standard numeric format string. 
-                    this.streamWriter.Write(value.ToString("R", CultureInfo.InvariantCulture));
+                    this.jsonTextMemoryWriter.Write(value);
                 }
             }
 
-            /// <summary>
-            /// Writes a character to the stream.
-            /// </summary>
-            /// <param name="value">The character to write to the stream.</param>
-            private void WriteChar(char value)
-            {
-                this.streamWriter.Write(value);
-            }
-
-            /// <summary>
-            /// Will insert a member separator token if one is needed.
-            /// </summary>
             private void PrefixMemberSeparator()
             {
                 if (!this.firstValue)
                 {
-                    this.WriteChar(MemberSeperatorToken);
+                    this.jsonTextMemoryWriter.Write(MemberSeperatorToken);
                 }
 
                 this.firstValue = false;
             }
 
-            private bool RequiresEscapeSequence(char value)
+            private void WriteEscapedString(ReadOnlySpan<byte> unescapedString)
             {
-                switch (value)
+                while (!unescapedString.IsEmpty)
                 {
-                    case '\\':
-                    case '"':
-                    case '/':
-                    case '\b':
-                    case '\f':
-                    case '\n':
-                    case '\r':
-                    case '\t':
-                        return true;
-                    default:
-                        return value < ' ';
+                    int? indexOfFirstCharacterThatNeedsEscaping = JsonTextWriter.IndexOfCharacterThatNeedsEscaping(unescapedString);
+                    if (!indexOfFirstCharacterThatNeedsEscaping.HasValue)
+                    {
+                        // No escaping needed;
+                        indexOfFirstCharacterThatNeedsEscaping = unescapedString.Length;
+                    }
+
+                    // Write as much of the string as possible
+                    this.jsonTextMemoryWriter.Write(
+                        unescapedString.Slice(
+                            start: 0,
+                            length: indexOfFirstCharacterThatNeedsEscaping.Value));
+                    unescapedString = unescapedString.Slice(start: indexOfFirstCharacterThatNeedsEscaping.Value);
+
+                    // Escape the next character if it exists
+                    if (!unescapedString.IsEmpty)
+                    {
+                        byte character = unescapedString[0];
+                        unescapedString = unescapedString.Slice(start: 1);
+
+                        switch (character)
+                        {
+                            case (byte)'\\':
+                                this.jsonTextMemoryWriter.Write((byte)'\\');
+                                this.jsonTextMemoryWriter.Write((byte)'\\');
+                                break;
+
+                            case (byte)'"':
+                                this.jsonTextMemoryWriter.Write((byte)'\\');
+                                this.jsonTextMemoryWriter.Write((byte)'"');
+                                break;
+
+                            case (byte)'/':
+                                this.jsonTextMemoryWriter.Write((byte)'\\');
+                                this.jsonTextMemoryWriter.Write((byte)'/');
+                                break;
+
+                            case (byte)'\b':
+                                this.jsonTextMemoryWriter.Write((byte)'\\');
+                                this.jsonTextMemoryWriter.Write((byte)'b');
+                                break;
+
+                            case (byte)'\f':
+                                this.jsonTextMemoryWriter.Write((byte)'\\');
+                                this.jsonTextMemoryWriter.Write((byte)'f');
+                                break;
+
+                            case (byte)'\n':
+                                this.jsonTextMemoryWriter.Write((byte)'\\');
+                                this.jsonTextMemoryWriter.Write((byte)'n');
+                                break;
+
+                            case (byte)'\r':
+                                this.jsonTextMemoryWriter.Write((byte)'\\');
+                                this.jsonTextMemoryWriter.Write((byte)'r');
+                                break;
+
+                            case (byte)'\t':
+                                this.jsonTextMemoryWriter.Write((byte)'\\');
+                                this.jsonTextMemoryWriter.Write((byte)'t');
+                                break;
+
+                            default:
+                                char wideCharToEscape = (char)character;
+                                // We got a control character (U+0000 through U+001F).
+                                this.jsonTextMemoryWriter.Write((byte)'\\');
+                                this.jsonTextMemoryWriter.Write((byte)'u');
+                                this.jsonTextMemoryWriter.Write(GetHexDigit((wideCharToEscape >> 12) & 0xF));
+                                this.jsonTextMemoryWriter.Write(GetHexDigit((wideCharToEscape >> 8) & 0xF));
+                                this.jsonTextMemoryWriter.Write(GetHexDigit((wideCharToEscape >> 4) & 0xF));
+                                this.jsonTextMemoryWriter.Write(GetHexDigit((wideCharToEscape >> 0) & 0xF));
+                                break;
+                        }
+                    }
                 }
             }
 
-            private char GetHexDigit(byte value)
+            private static int? IndexOfCharacterThatNeedsEscaping(ReadOnlySpan<byte> span)
             {
-                if (value > 0xF)
+                const byte DoubleQuote = (byte)'"';
+                const byte ReverseSolidus = (byte)'\\';
+                const byte Space = (byte)' ';
+
+                int? index = null;
+
+                int doubleQuoteIndex = span.IndexOf(DoubleQuote);
+                if (doubleQuoteIndex != -1)
                 {
-                    throw new ArgumentException("value must be less than 0xF");
+                    index = index.HasValue ? Math.Min(index.Value, doubleQuoteIndex) : doubleQuoteIndex;
                 }
 
-                return (value < 10) ? (char)('0' + value) : (char)('a' + value - 10);
+                int reverseSolidiusIndex = span.IndexOf(ReverseSolidus);
+                if (reverseSolidiusIndex != -1)
+                {
+                    index = index.HasValue ? Math.Min(index.Value, reverseSolidiusIndex) : reverseSolidiusIndex;
+                }
+
+                for (byte controlCharacter = 0; controlCharacter < Space; controlCharacter++)
+                {
+                    int controlCharacterIndex = span.IndexOf(controlCharacter);
+                    if (controlCharacterIndex != -1)
+                    {
+                        index = index.HasValue ? Math.Min(index.Value, controlCharacterIndex) : controlCharacterIndex;
+                    }
+                }
+
+                return index;
             }
 
-            private void WriteEscapedStringToStreamWriter(string value, StreamWriter streamWriter)
+            private static byte GetHexDigit(int value)
             {
-                int readOffset = 0;
-                while (readOffset != value.Length)
-                {
-                    if (!this.RequiresEscapeSequence(value[readOffset]))
-                    {
-                        // Just write the character as is
-                        this.streamWriter.Write(value[readOffset++]);
-                    }
-                    else
-                    {
-                        char characterToEscape = value[readOffset++];
-                        char escapeSequence = default(char);
-                        switch (characterToEscape)
-                        {
-                            case '\\':
-                                escapeSequence = '\\';
-                                break;
-                            case '"':
-                                escapeSequence = '"';
-                                break;
-                            case '/':
-                                escapeSequence = '/';
-                                break;
-                            case '\b':
-                                escapeSequence = 'b';
-                                break;
-                            case '\f':
-                                escapeSequence = 'f';
-                                break;
-                            case '\n':
-                                escapeSequence = 'n';
-                                break;
-                            case '\r':
-                                escapeSequence = 'r';
-                                break;
-                            case '\t':
-                                escapeSequence = 't';
-                                break;
-                        }
+                return (byte)((value < 10) ? '0' + value : 'A' + value - 10);
+            }
 
-                        if (escapeSequence >= ' ')
-                        {
-                            // We got a special character
-                            streamWriter.Write('\\');
-                            streamWriter.Write(escapeSequence);
-                        }
-                        else
-                        {
-                            // We got a control character (U+0000 through U+001F).
-                            streamWriter.Write('\\');
-                            streamWriter.Write('u');
-                            streamWriter.Write(this.GetHexDigit((byte)(((byte)characterToEscape >> 12) & 0xF)));
-                            streamWriter.Write(this.GetHexDigit((byte)(((byte)characterToEscape >> 8) & 0xF)));
-                            streamWriter.Write(this.GetHexDigit((byte)(((byte)characterToEscape >> 4) & 0xF)));
-                            streamWriter.Write(this.GetHexDigit((byte)(((byte)characterToEscape) & 0xF)));
-                        }
+            private sealed class JsonTextMemoryWriter : JsonMemoryWriter
+            {
+                private static readonly StandardFormat floatFormat = new StandardFormat(
+                    symbol: 'R');
+
+                private static readonly StandardFormat doubleFormat = new StandardFormat(
+                    symbol: 'R');
+
+                public JsonTextMemoryWriter(int initialCapacity = 256)
+                    : base(initialCapacity)
+                {
+                }
+
+                public void Write(bool value)
+                {
+                    const int MaxBoolLength = 5;
+                    this.EnsureRemainingBufferSpace(MaxBoolLength);
+                    if (!Utf8Formatter.TryFormat(value, this.Cursor.Span, out int bytesWritten))
+                    {
+                        throw new InvalidOperationException($"Failed to {nameof(this.Write)}({typeof(bool).FullName}{value})");
                     }
+
+                    this.Position += bytesWritten;
+                }
+
+                public void Write(byte value)
+                {
+                    this.EnsureRemainingBufferSpace(1);
+                    this.Buffer.Span[this.Position] = value;
+                    this.Position++;
+                }
+
+                public void Write(sbyte value)
+                {
+                    const int MaxInt8Length = 4;
+                    this.EnsureRemainingBufferSpace(MaxInt8Length);
+                    if (!Utf8Formatter.TryFormat(value, this.Cursor.Span, out int bytesWritten))
+                    {
+                        throw new InvalidOperationException($"Failed to {nameof(this.Write)}({typeof(sbyte).FullName}{value})");
+                    }
+
+                    this.Position += bytesWritten;
+                }
+
+                public void Write(short value)
+                {
+                    const int MaxInt16Length = 6;
+                    this.EnsureRemainingBufferSpace(MaxInt16Length);
+                    if (!Utf8Formatter.TryFormat(value, this.Cursor.Span, out int bytesWritten))
+                    {
+                        throw new InvalidOperationException($"Failed to {nameof(this.Write)}({typeof(short).FullName}{value})");
+                    }
+
+                    this.Position += bytesWritten;
+                }
+
+                public void Write(int value)
+                {
+                    const int MaxInt32Length = 11;
+                    this.EnsureRemainingBufferSpace(MaxInt32Length);
+                    if (!Utf8Formatter.TryFormat(value, this.Cursor.Span, out int bytesWritten))
+                    {
+                        throw new InvalidOperationException($"Failed to {nameof(this.Write)}({typeof(int).FullName}{value})");
+                    }
+
+                    this.Position += bytesWritten;
+                }
+
+                public void Write(uint value)
+                {
+                    const int MaxInt32Length = 11;
+                    this.EnsureRemainingBufferSpace(MaxInt32Length);
+                    if (!Utf8Formatter.TryFormat(value, this.Cursor.Span, out int bytesWritten))
+                    {
+                        throw new InvalidOperationException($"Failed to {nameof(this.Write)}({typeof(int).FullName}{value})");
+                    }
+
+                    this.Position += bytesWritten;
+                }
+
+                public void Write(long value)
+                {
+                    const int MaxInt64Length = 20;
+                    this.EnsureRemainingBufferSpace(MaxInt64Length);
+                    if (!Utf8Formatter.TryFormat(value, this.Cursor.Span, out int bytesWritten))
+                    {
+                        throw new InvalidOperationException($"Failed to {nameof(this.Write)}({typeof(long).FullName}{value})");
+                    }
+
+                    this.Position += bytesWritten;
+                }
+
+                public void Write(float value)
+                {
+                    const int MaxNumberLength = 32;
+                    this.EnsureRemainingBufferSpace(MaxNumberLength);
+                    // Can't use Utf8Formatter until we bump to core 3.0, since they don't support float.ToString("G9")
+                    // Also for the 2.0 shim they are creating an intermediary string anyways
+                    string floatString = value.ToString("R", CultureInfo.InvariantCulture);
+                    for (int index = 0; index < floatString.Length; index++)
+                    {
+                        // we can cast to byte, since it's all ascii
+                        this.Cursor.Span[0] = (byte)floatString[index];
+                        this.Position++;
+                    }
+                }
+
+                public void Write(double value)
+                {
+                    const int MaxNumberLength = 32;
+                    this.EnsureRemainingBufferSpace(MaxNumberLength);
+                    // Can't use Utf8Formatter until we bump to core 3.0, since they don't support float.ToString("R")
+                    // Also for the 2.0 shim they are creating an intermediary string anyways
+                    string doubleString = value.ToString("R", CultureInfo.InvariantCulture);
+                    for (int index = 0; index < doubleString.Length; index++)
+                    {
+                        // we can cast to byte, since it's all ascii
+                        this.Cursor.Span[0] = (byte)doubleString[index];
+                        this.Position++;
+                    }
+                }
+
+                public void Write(Guid value)
+                {
+                    const int GuidLength = 38;
+                    this.EnsureRemainingBufferSpace(GuidLength);
+                    if (!Utf8Formatter.TryFormat(value, this.Cursor.Span, out int bytesWritten))
+                    {
+                        throw new InvalidOperationException($"Failed to {nameof(this.Write)}({typeof(double).FullName}{value})");
+                    }
+
+                    this.Position += bytesWritten;
+                }
+
+                public void WriteBinaryAsBase64(ReadOnlySpan<byte> binary)
+                {
+                    this.EnsureRemainingBufferSpace(Base64.GetMaxEncodedToUtf8Length(binary.Length));
+                    Base64.EncodeToUtf8(binary, this.Cursor.Span, out int bytesConsumed, out int bytesWritten);
+
+                    this.Position += bytesWritten;
                 }
             }
         }

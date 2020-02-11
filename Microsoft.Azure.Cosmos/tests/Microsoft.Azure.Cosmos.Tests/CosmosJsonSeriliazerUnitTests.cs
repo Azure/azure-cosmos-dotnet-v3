@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -48,6 +49,73 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
                 Assert.AreEqual(this.toDoActivity.description, result.description);
                 Assert.AreEqual(this.toDoActivity.status, result.status);
             }
+        }
+
+        [TestMethod]
+        public void ValidatePropertySerialization()
+        {
+            string id = "testId";
+            this.TestProperty<AccountProperties>(
+                id,
+                $@"{{""id"":""{id}"",""writableLocations"":[],""readableLocations"":[],""userConsistencyPolicy"":null,""addresses"":null,""userReplicationPolicy"":null,""systemReplicationPolicy"":null,""readPolicy"":null,""queryEngineConfiguration"":null,""enableMultipleWriteLocations"":false}}");
+
+            this.TestProperty<DatabaseProperties>(
+                id,
+                $@"{{""id"":""{id}""}}");
+
+            this.TestProperty<ContainerProperties>(
+                id,
+                $@"{{""id"":""{id}"",""partitionKey"":{{""paths"":[],""kind"":""Hash""}}}}");
+
+            this.TestProperty<StoredProcedureProperties>(
+                id,
+                $@"{{""body"":""bodyCantBeNull"",""id"":""testId""}}");
+
+            this.TestProperty<TriggerProperties>(
+                id,
+                $@"{{""body"":null,""triggerType"":""Pre"",""triggerOperation"":""All"",""id"":""{id}""}}");
+
+            this.TestProperty<UserDefinedFunctionProperties>(
+                id,
+                $@"{{""body"":null,""id"":""{id}""}}");
+
+            this.TestProperty<UserProperties>
+                (id,
+                $@"{{""id"":""{id}"",""_permissions"":null}}");
+
+            this.TestProperty<PermissionProperties>(
+                id,
+                $@"{{""id"":""{id}"",""resource"":null,""permissionMode"":0}}");
+
+            this.TestProperty<ConflictProperties>(
+               id,
+               $@"{{""id"":""{id}"",""operationType"":""Invalid"",""resourceType"":null,""resourceId"":null,""content"":null,""conflict_lsn"":0}}");
+
+            // Throughput doesn't have an id.
+            string defaultThroughputJson = @"{""Throughput"":null}";
+            ThroughputProperties property = JsonConvert.DeserializeObject<ThroughputProperties>(defaultThroughputJson);
+            Assert.IsNull(property.Throughput);
+            string propertyJson = JsonConvert.SerializeObject(property, new JsonSerializerSettings()
+            {
+                Formatting = Formatting.None
+            });
+            Assert.AreEqual(defaultThroughputJson, propertyJson);
+        }
+
+        private void TestProperty<T>(string id, string defaultJson)
+        {
+            dynamic property = JsonConvert.DeserializeObject<T>(defaultJson);
+            Assert.AreEqual(id, property.Id);
+            string propertyJson = JsonConvert.SerializeObject(property, new JsonSerializerSettings() {
+                Formatting = Formatting.None
+            });
+
+            Assert.AreEqual(defaultJson, propertyJson);
+            // System properties should be ignored if null
+            Assert.IsFalse(propertyJson.Contains("_etag"));
+            Assert.IsFalse(propertyJson.Contains("_rid"));
+            Assert.IsFalse(propertyJson.Contains("_ts"));
+            Assert.IsFalse(propertyJson.Contains("_self"));
         }
 
         [TestMethod]
@@ -107,23 +175,19 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             ResponseMessage triggerResponse = this.CreateResponse();
             ResponseMessage udfResponse = this.CreateResponse();
             ResponseMessage itemResponse = this.CreateResponse();
-            ResponseMessage feedResponse = this.CreateResponse();
 
             Mock<CosmosSerializer> mockUserJsonSerializer = new Mock<CosmosSerializer>();
-            Mock<CosmosSerializer> mockDefaultJsonSerializer = new Mock<CosmosSerializer>();
+            CosmosSerializerCore serializerCore = new CosmosSerializerCore(mockUserJsonSerializer.Object);
             CosmosResponseFactory cosmosResponseFactory = new CosmosResponseFactory(
-               defaultJsonSerializer: mockDefaultJsonSerializer.Object,
-               userJsonSerializer: mockUserJsonSerializer.Object);
+               serializerCore);
 
             // Test the user specified response
-            mockUserJsonSerializer.Setup(x => x.FromStream<ToDoActivity>(itemResponse.Content)).Returns(new ToDoActivity());
-            mockUserJsonSerializer.Setup(x => x.FromStream<ToDoActivity>(storedProcedureExecuteResponse.Content)).Returns(new ToDoActivity());
-            mockUserJsonSerializer.Setup(x => x.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(feedResponse.Content)).Returns(new CosmosFeedResponseUtil<ToDoActivity>() { Data = new Collection<ToDoActivity>() });
+            mockUserJsonSerializer.Setup(x => x.FromStream<ToDoActivity>(itemResponse.Content)).Callback<Stream>(input => input.Dispose()).Returns(new ToDoActivity());
+            mockUserJsonSerializer.Setup(x => x.FromStream<ToDoActivity>(storedProcedureExecuteResponse.Content)).Callback<Stream>(input => input.Dispose()).Returns(new ToDoActivity());
 
             // Verify all the user types use the user specified version
             await cosmosResponseFactory.CreateItemResponseAsync<ToDoActivity>(Task.FromResult(itemResponse));
             await cosmosResponseFactory.CreateStoredProcedureExecuteResponseAsync<ToDoActivity>(Task.FromResult(storedProcedureExecuteResponse));
-            cosmosResponseFactory.CreateQueryFeedResponse<ToDoActivity>(feedResponse);
 
             // Throw if the setups were not called
             mockUserJsonSerializer.VerifyAll();
@@ -150,12 +214,6 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
                 Id = "mock"
             };
 
-            mockDefaultJsonSerializer.Setup(x => x.FromStream<DatabaseProperties>(databaseResponse.Content)).Returns(databaseSettings);
-            mockDefaultJsonSerializer.Setup(x => x.FromStream<ContainerProperties>(containerResponse.Content)).Returns(containerSettings);
-            mockDefaultJsonSerializer.Setup(x => x.FromStream<StoredProcedureProperties>(storedProcedureResponse.Content)).Returns(cosmosStoredProcedureSettings);
-            mockDefaultJsonSerializer.Setup(x => x.FromStream<TriggerProperties>(triggerResponse.Content)).Returns(cosmosTriggerSettings);
-            mockDefaultJsonSerializer.Setup(x => x.FromStream<UserDefinedFunctionProperties>(udfResponse.Content)).Returns(cosmosUserDefinedFunctionSettings);
-
             Mock<Container> mockContainer = new Mock<Container>();
             Mock<Database> mockDatabase = new Mock<Database>();
 
@@ -165,9 +223,6 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             await cosmosResponseFactory.CreateStoredProcedureResponseAsync(Task.FromResult(storedProcedureResponse));
             await cosmosResponseFactory.CreateTriggerResponseAsync(Task.FromResult(triggerResponse));
             await cosmosResponseFactory.CreateUserDefinedFunctionResponseAsync(Task.FromResult(udfResponse));
-
-            // Throw if the setups were not called
-            mockDefaultJsonSerializer.VerifyAll();
         }
 
         [TestMethod]

@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
 
-    internal class BatchCore : Batch
+    internal class BatchCore : TransactionalBatch
     {
         private readonly PartitionKey partitionKey;
 
@@ -33,9 +33,9 @@ namespace Microsoft.Azure.Cosmos
             this.operations = new List<ItemBatchOperation>();
         }
 
-        public override Batch CreateItem<T>(
+        public override TransactionalBatch CreateItem<T>(
             T item,
-            BatchItemRequestOptions requestOptions = null)
+            TransactionalBatchItemRequestOptions requestOptions = null)
         {
             if (item == null)
             {
@@ -51,9 +51,9 @@ namespace Microsoft.Azure.Cosmos
             return this;
         }
 
-        public override Batch CreateItemStream(
+        public override TransactionalBatch CreateItemStream(
             Stream streamPayload,
-            BatchItemRequestOptions requestOptions = null)
+            TransactionalBatchItemRequestOptions requestOptions = null)
         {
             if (streamPayload == null)
             {
@@ -69,9 +69,9 @@ namespace Microsoft.Azure.Cosmos
             return this;
         }
 
-        public override Batch ReadItem(
+        public override TransactionalBatch ReadItem(
             string id,
-            BatchItemRequestOptions requestOptions = null)
+            TransactionalBatchItemRequestOptions requestOptions = null)
         {
             if (id == null)
             {
@@ -87,9 +87,9 @@ namespace Microsoft.Azure.Cosmos
             return this;
         }
 
-        public override Batch UpsertItem<T>(
+        public override TransactionalBatch UpsertItem<T>(
             T item,
-            BatchItemRequestOptions requestOptions = null)
+            TransactionalBatchItemRequestOptions requestOptions = null)
         {
             if (item == null)
             {
@@ -105,9 +105,9 @@ namespace Microsoft.Azure.Cosmos
             return this;
         }
 
-        public override Batch UpsertItemStream(
+        public override TransactionalBatch UpsertItemStream(
             Stream streamPayload,
-            BatchItemRequestOptions requestOptions = null)
+            TransactionalBatchItemRequestOptions requestOptions = null)
         {
             if (streamPayload == null)
             {
@@ -123,10 +123,10 @@ namespace Microsoft.Azure.Cosmos
             return this;
         }
 
-        public override Batch ReplaceItem<T>(
+        public override TransactionalBatch ReplaceItem<T>(
             string id,
             T item,
-            BatchItemRequestOptions requestOptions = null)
+            TransactionalBatchItemRequestOptions requestOptions = null)
         {
             if (id == null)
             {
@@ -148,10 +148,10 @@ namespace Microsoft.Azure.Cosmos
             return this;
         }
 
-        public override Batch ReplaceItemStream(
+        public override TransactionalBatch ReplaceItemStream(
             string id,
             Stream streamPayload,
-            BatchItemRequestOptions requestOptions = null)
+            TransactionalBatchItemRequestOptions requestOptions = null)
         {
             if (id == null)
             {
@@ -173,9 +173,9 @@ namespace Microsoft.Azure.Cosmos
             return this;
         }
 
-        public override Batch DeleteItem(
+        public override TransactionalBatch DeleteItem(
             string id,
-            BatchItemRequestOptions requestOptions = null)
+            TransactionalBatchItemRequestOptions requestOptions = null)
         {
             if (id == null)
             {
@@ -191,12 +191,10 @@ namespace Microsoft.Azure.Cosmos
             return this;
         }
 
-        public override Task<BatchResponse> ExecuteAsync(
+        public override Task<TransactionalBatchResponse> ExecuteAsync(
             CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ExecuteAsync(
-                Constants.MaxDirectModeBatchRequestBodySizeInBytes,
-                Constants.MaxOperationsInDirectModeBatchRequest,
                 requestOptions: null,
                 cancellationToken: cancellationToken);
         }
@@ -206,16 +204,21 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="requestOptions">Options that apply to the batch. Used only for EPK routing.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>An awaitable <see cref="BatchResponse"/> which contains the completion status and results of each operation.</returns>
-        public virtual Task<BatchResponse> ExecuteAsync(
+        /// <returns>An awaitable <see cref="TransactionalBatchResponse"/> which contains the completion status and results of each operation.</returns>
+        public virtual Task<TransactionalBatchResponse> ExecuteAsync(
             RequestOptions requestOptions,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.ExecuteAsync(
-                Constants.MaxDirectModeBatchRequestBodySizeInBytes,
-                Constants.MaxOperationsInDirectModeBatchRequest,
-                requestOptions,
-                cancellationToken);
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
+            BatchExecutor executor = new BatchExecutor(
+                container: this.container,
+                partitionKey: this.partitionKey,
+                operations: this.operations,
+                batchOptions: requestOptions,
+                diagnosticsContext: diagnosticsContext);
+
+            this.operations = new List<ItemBatchOperation>();
+            return executor.ExecuteAsync(cancellationToken);
         }
 
         /// <summary>
@@ -223,12 +226,12 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="id">The cosmos item id.</param>
         /// <param name="patchStream">A <see cref="Stream"/> containing the patch specification.</param>
-        /// <param name="requestOptions">(Optional) The options for the item request. <see cref="BatchItemRequestOptions"/>.</param>
-        /// <returns>The <see cref="Batch"/> instance with the operation added.</returns>
-        public virtual Batch PatchItemStream(
+        /// <param name="requestOptions">(Optional) The options for the item request. <see cref="TransactionalBatchItemRequestOptions"/>.</param>
+        /// <returns>The <see cref="TransactionalBatch"/> instance with the operation added.</returns>
+        public virtual TransactionalBatch PatchItemStream(
             string id,
             Stream patchStream,
-            BatchItemRequestOptions requestOptions = null)
+            TransactionalBatchItemRequestOptions requestOptions = null)
         {
             this.operations.Add(new ItemBatchOperation(
                     operationType: OperationType.Patch,
@@ -238,17 +241,6 @@ namespace Microsoft.Azure.Cosmos
                     requestOptions: requestOptions));
 
             return this;
-        }
-
-        internal Task<BatchResponse> ExecuteAsync(
-            int maxServerRequestBodyLength,
-            int maxServerRequestOperationCount,
-            RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
-        {
-            BatchExecutor executor = new BatchExecutor(this.container, this.partitionKey, this.operations, requestOptions, maxServerRequestBodyLength, maxServerRequestOperationCount);
-            this.operations = new List<ItemBatchOperation>();
-            return executor.ExecuteAsync(cancellationToken);
         }
     }
 }

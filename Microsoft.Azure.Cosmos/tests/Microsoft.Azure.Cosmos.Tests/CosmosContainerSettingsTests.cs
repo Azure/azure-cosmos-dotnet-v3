@@ -2,12 +2,11 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos.Tests
 {
     using System.Collections.ObjectModel;
     using System.IO;
     using System.Linq;
-    using Microsoft.Azure.Cosmos.Client.Core.Tests;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
@@ -22,15 +21,15 @@ namespace Microsoft.Azure.Cosmos
             ContainerProperties containerSettings = new ContainerProperties("TestContainer", "/partitionKey");
             Assert.IsNotNull(containerSettings.IndexingPolicy);
 
-            containerSettings.IndexingPolicy = new IndexingPolicy();
+            containerSettings.IndexingPolicy = new Cosmos.IndexingPolicy();
             Assert.AreEqual(0, containerSettings.IndexingPolicy.IncludedPaths.Count);
 
-            // HAKC: Work-around till BE fixes defautls 
+            // HAKC: Work-around till BE fixes defaults 
             containerSettings.ValidateRequiredProperties();
             Assert.AreEqual(1, containerSettings.IndexingPolicy.IncludedPaths.Count);
 
-            IncludedPath defaultEntry = containerSettings.IndexingPolicy.IncludedPaths[0];
-            Assert.AreEqual(IndexingPolicy.DefaultPath, defaultEntry.Path);
+            Cosmos.IncludedPath defaultEntry = containerSettings.IndexingPolicy.IncludedPaths[0];
+            Assert.AreEqual(Cosmos.IndexingPolicy.DefaultPath, defaultEntry.Path);
             Assert.AreEqual(0, defaultEntry.Indexes.Count);
         }
 
@@ -51,17 +50,17 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsNotNull(containerSettings.IndexingPolicy);
 
             // Any exclude path should not auto-generate default indexing
-            containerSettings.IndexingPolicy = new IndexingPolicy();
-            containerSettings.IndexingPolicy.ExcludedPaths.Add(new ExcludedPath() { Path = "/some" });
+            containerSettings.IndexingPolicy = new Cosmos.IndexingPolicy();
+            containerSettings.IndexingPolicy.ExcludedPaths.Add(new Cosmos.ExcludedPath() { Path = "/some" });
 
             Assert.AreEqual(0, containerSettings.IndexingPolicy.IncludedPaths.Count);
             containerSettings.ValidateRequiredProperties();
             Assert.AreEqual(0, containerSettings.IndexingPolicy.IncludedPaths.Count);
 
             // None indexing mode should not auto-generate the default indexing 
-            containerSettings.IndexingPolicy = new IndexingPolicy
+            containerSettings.IndexingPolicy = new Cosmos.IndexingPolicy
             {
-                IndexingMode = IndexingMode.None
+                IndexingMode = Cosmos.IndexingMode.None
             };
 
             Assert.AreEqual(0, containerSettings.IndexingPolicy.IncludedPaths.Count);
@@ -93,7 +92,7 @@ namespace Microsoft.Azure.Cosmos
         {
             ContainerProperties containerSettings = new ContainerProperties("TestContainer", "/partitionKey")
             {
-                IndexingPolicy = new IndexingPolicy()
+                IndexingPolicy = new Cosmos.IndexingPolicy()
             };
 
             DocumentCollection dc = new DocumentCollection()
@@ -133,7 +132,7 @@ namespace Microsoft.Azure.Cosmos
                 NullValueHandling = NullValueHandling.Ignore
             };
 
-            // HAKC: Work-around till BE fixes defautls 
+            // HAKC: Work-around till BE fixes defaults 
             settings.ValidateRequiredProperties();
 
             string containerSerialized = JsonConvert.SerializeObject(settings, jsonSettings);

@@ -34,10 +34,10 @@
         [Option(Required = false, HelpText = "Container partition key path")]
         public string PartitionKeyPath { get; set; } = "/partitionKey";
 
-        [Option('p', Required = false, HelpText = "Degree of parallism")]
+        [Option("pl", Required = false, HelpText = "Degree of parallism")]
         public int DegreeOfParallelism { get; set; } = -1;
 
-        [Option(Required = false, HelpText = "Item tempplate")]
+        [Option(Required = false, HelpText = "Item template")]
         public string ItemTemplateFile { get; set; } = "Player.json";
 
         [Option(Required = false, HelpText = "Min thread pool size")]

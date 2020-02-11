@@ -1,7 +1,7 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.CosmosElements
+namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 {
     using System;
     using Microsoft.Azure.Cosmos.Json;
@@ -21,30 +21,28 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         {
         }
 
-        public override bool IsFloatingPoint => true;
+        public override Number64 Value => this.GetValue();
 
-        public override bool IsInteger => false;
+        public abstract double GetValue();
 
-        public static CosmosFloat64 Create(
-            IJsonNavigator jsonNavigator,
-            IJsonNavigatorNode jsonNavigatorNode)
+        public override void Accept(ICosmosNumberVisitor cosmosNumberVisitor)
         {
-            return new LazyCosmosFloat64(jsonNavigator, jsonNavigatorNode);
+            if (cosmosNumberVisitor == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosNumberVisitor));
+            }
+
+            cosmosNumberVisitor.Visit(this);
         }
 
-        public static CosmosFloat64 Create(double number)
+        public override TOutput Accept<TArg, TOutput>(ICosmosNumberVisitor<TArg, TOutput> cosmosNumberVisitor, TArg input)
         {
-            return new EagerCosmosFloat64(number);
-        }
+            if (cosmosNumberVisitor == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosNumberVisitor));
+            }
 
-        public override double? AsFloatingPoint()
-        {
-            return this.GetValue();
-        }
-
-        public override long? AsInteger()
-        {
-            return null;
+            return cosmosNumberVisitor.Visit(this, input);
         }
 
         public override void WriteTo(IJsonWriter jsonWriter)
@@ -57,7 +55,17 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             jsonWriter.WriteFloat64Value(this.GetValue());
         }
 
-        protected abstract double GetValue();
+        public static CosmosFloat64 Create(
+            IJsonNavigator jsonNavigator,
+            IJsonNavigatorNode jsonNavigatorNode)
+        {
+            return new LazyCosmosFloat64(jsonNavigator, jsonNavigatorNode);
+        }
+
+        public static CosmosFloat64 Create(double number)
+        {
+            return new EagerCosmosFloat64(number);
+        }
     }
 #if INTERNAL
 #pragma warning restore SA1601 // Partial elements should be documented

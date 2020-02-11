@@ -60,6 +60,10 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = Constants.Properties.IndexingPolicy, NullValueHandling = NullValueHandling.Ignore)]
         private IndexingPolicy indexingPolicyInternal;
 
+        // TODO: update spatial properties to Constants.Properties.* after the new direct package is released
+        [JsonProperty(PropertyName = "geospatialConfig", NullValueHandling = NullValueHandling.Ignore)]
+        private GeospatialConfig geospatialConfigInternal;
+
         [JsonProperty(PropertyName = Constants.Properties.UniqueKeyPolicy, NullValueHandling = NullValueHandling.Ignore)]
         private UniqueKeyPolicy uniqueKeyPolicyInternal;
 
@@ -142,7 +146,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// <para>
         /// Every resource within an Azure Cosmos DB database account needs to have a unique identifier. 
-        /// Unlike <see cref="Resource.ResourceId"/>, which is set internally, this Id is settable by the user and is not immutable.
+        /// Unlike <see cref="Documents.Resource.ResourceId"/>, which is set internally, this Id is settable by the user and is not immutable.
         /// </para>
         /// <para>
         /// When working with document resources, they too have this settable Id property. 
@@ -241,6 +245,29 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Gets the <see cref="GeospatialConfig"/> associated with the collection from the Azure Cosmos DB service. 
+        /// </summary>
+        /// <value>
+        /// Geospatial type of collection i.e. geography or geometry 
+        /// </value>
+        [JsonIgnore]
+        public GeospatialConfig GeospatialConfig
+        {
+            get
+            {
+                if (this.geospatialConfigInternal == null)
+                {
+                    this.geospatialConfigInternal = new GeospatialConfig();
+                }
+
+                return this.geospatialConfigInternal;
+            }
+            set
+            {
+                this.geospatialConfigInternal = value;
+            }
+        }
+        /// <summary>
         /// JSON path used for containers partitioning
         /// </summary>
         [JsonIgnore]
@@ -335,6 +362,17 @@ namespace Microsoft.Azure.Cosmos
         public int? DefaultTimeToLive { get; set; }
 
         /// <summary>
+        /// Gets the self-link associated with the resource from the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>The self-link associated with the resource.</value> 
+        /// <remarks>
+        /// A self-link is a static addressable Uri for each resource within a database account and follows the Azure Cosmos DB resource model.
+        /// E.g. a self-link for a document could be dbs/db_resourceid/colls/coll_resourceid/documents/doc_resourceid
+        /// </remarks>
+        [JsonProperty(PropertyName = Constants.Properties.SelfLink, NullValueHandling = NullValueHandling.Ignore)]
+        public string SelfLink { get; private set; }
+
+        /// <summary>
         /// The function selects the right partition key constant mapping for <see cref="PartitionKey.None"/>
         /// </summary>
         internal PartitionKeyInternal GetNoneValue()
@@ -376,7 +414,7 @@ namespace Microsoft.Azure.Cosmos
         /// Initializes a new instance of the <see cref="ContainerProperties"/> class for the Azure Cosmos DB service.
         /// </summary>
         /// <param name="id">The Id of the resource in the Azure Cosmos service.</param>
-        /// <param name="partitionKeyDefinition">The partition key <see cref="PartitionKeyDefinition"/></param>
+        /// <param name="partitionKeyDefinition">The partition key definition.</param>
         internal ContainerProperties(string id, PartitionKeyDefinition partitionKeyDefinition)
         {
             this.Id = id;

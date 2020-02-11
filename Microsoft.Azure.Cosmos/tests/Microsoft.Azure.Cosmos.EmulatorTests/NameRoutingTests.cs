@@ -1363,6 +1363,52 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [TestMethod]
+        public async Task TestInvalidPartitionKeyException()
+        {
+            RequestHandlerHelper testHandler = new RequestHandlerHelper();
+            int createItemCount = 0;
+            string partitionKey = null;
+            testHandler.UpdateRequestMessage = (requestMessage) =>
+            {
+                if (requestMessage.ResourceType == ResourceType.Document)
+                {
+                    createItemCount++;
+                    string pk = requestMessage.Headers.PartitionKey;
+                    Assert.AreNotEqual(partitionKey, pk, $"Same PK value should not be sent again. PK value:{pk}");
+                    partitionKey = pk;
+                }
+            };
+
+            using (CosmosClient client = TestCommon.CreateCosmosClient((builder) => builder.AddCustomHandlers(testHandler)))
+            {
+                Cosmos.Database database = null;
+                try
+                {
+                    database = await client.CreateDatabaseAsync("TestInvalidPartitionKey" + Guid.NewGuid().ToString());
+                    Container container = await database.CreateContainerAsync(id: "coll1", partitionKeyPath: "/doesnotexist");
+                    ToDoActivity toDoActivity = ToDoActivity.CreateRandomToDoActivity();
+
+                    ItemResponse<ToDoActivity> response = await container.CreateItemAsync(toDoActivity, partitionKey: new Cosmos.PartitionKey(toDoActivity.status));
+                    Assert.Fail("Create item should fail with wrong partition key value");
+                }
+                catch (CosmosException ce)
+                {
+                    Assert.AreEqual(HttpStatusCode.BadRequest, ce.StatusCode);
+                    Assert.AreEqual(SubStatusCodes.PartitionKeyMismatch, (SubStatusCodes)ce.SubStatusCode);
+                }
+                finally
+                {
+                    if (database != null)
+                    {
+                        await database.DeleteAsync();
+                    }
+                }
+
+                Assert.AreEqual(1, createItemCount, $"Request should use the custom handler, and it should only be used once. Count {createItemCount}");
+            }
+        }
+
         /// <summary>
         /// Tests that collection cache is refreshed when collection is recreated.
         /// The test just ensures that client retries and completes successfully for query - request which doesn't target single partition key.
@@ -1551,7 +1597,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 PartitionKeyDefinition pKDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/field1" }), Kind = PartitionKind.Hash };
                 Container container = await database.CreateContainerAsync(containerProperties: new ContainerProperties { Id = "coll1", PartitionKey = pKDefinition }, throughput: partitionCount * federationDefaultRUsPerPartition);
 
-                ContainerCore containerCore = (ContainerCore)container;
+                ContainerCore containerCore = (ContainerInlineCore)container;
                 CollectionRoutingMap collectionRoutingMap = await containerCore.GetRoutingMapAsync(default(CancellationToken));
 
                 Assert.AreEqual(partitionCount, collectionRoutingMap.OrderedPartitionKeyRanges.Count());
@@ -1624,7 +1670,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 PartitionKeyDefinition pKDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/field1" }), Kind = PartitionKind.Hash };
                 Container container = await database.CreateContainerAsync(containerProperties: new ContainerProperties { Id = "coll1", PartitionKey = pKDefinition }, throughput: partitionCount * federationDefaultRUsPerPartition);
 
-                ContainerCore containerCore = (ContainerCore)container;
+                ContainerCore containerCore = (ContainerInlineCore)container;
                 CollectionRoutingMap collectionRoutingMap = await containerCore.GetRoutingMapAsync(default(CancellationToken));
 
                 Assert.AreEqual(partitionCount, collectionRoutingMap.OrderedPartitionKeyRanges.Count());

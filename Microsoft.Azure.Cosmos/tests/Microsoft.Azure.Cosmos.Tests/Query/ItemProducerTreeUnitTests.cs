@@ -8,10 +8,17 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Collections.Generic;
     using System.Linq;
     using System.Net;
+    using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel;
+    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -20,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     [TestClass]
     public class ItemProducerTreeUnitTests
     {
-        private CancellationToken cancellationToken = new CancellationTokenSource().Token;
+        private readonly CancellationToken cancellationToken = new CancellationTokenSource().Token;
 
         [TestMethod]
         [DataRow(null)]
@@ -51,8 +58,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                    querySpecForInit: MockQueryFactory.DefaultQuerySpec,
                    partitionKeyRange: mockResponse[0].PartitionKeyRange,
                    produceAsyncCompleteCallback: MockItemProducerFactory.DefaultTreeProduceAsyncCompleteDelegate,
-                   itemProducerTreeComparer: new ParallelItemProducerTreeComparer(),
+                   itemProducerTreeComparer: DeterministicParallelItemProducerTreeComparer.Singleton,
                    equalityComparer: CosmosElementEqualityComparer.Value,
+                   testSettings: new TestInjections(simulate429s: false, simulateEmptyPages: false),
                    deferFirstPage: true,
                    collectionRid: MockQueryFactory.DefaultCollectionRid,
                    initialPageSize: maxPageSize,
@@ -61,12 +69,15 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.IsTrue(itemProducerTree.HasMoreResults);
 
                 List<ToDoItem> itemsRead = new List<ToDoItem>();
-                while ((await itemProducerTree.MoveNextAsync(this.cancellationToken)).successfullyMovedNext)
+                while ((await itemProducerTree.TryMoveNextPageAsync(this.cancellationToken)).movedToNextPage)
                 {
-                    Assert.IsTrue(itemProducerTree.HasMoreResults);
-                    string jsonValue = itemProducerTree.Current.ToString();
-                    ToDoItem item = JsonConvert.DeserializeObject<ToDoItem>(jsonValue);
-                    itemsRead.Add(item);
+                    while (itemProducerTree.TryMoveNextDocumentWithinPage())
+                    {
+                        Assert.IsTrue(itemProducerTree.HasMoreResults);
+                        string jsonValue = itemProducerTree.Current.ToString();
+                        ToDoItem item = JsonConvert.DeserializeObject<ToDoItem>(jsonValue);
+                        itemsRead.Add(item);
+                    }
                 }
 
                 Assert.IsFalse(itemProducerTree.HasMoreResults);
@@ -106,8 +117,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                    MockQueryFactory.DefaultQuerySpec,
                    mockResponse[0].PartitionKeyRange,
                    MockItemProducerFactory.DefaultTreeProduceAsyncCompleteDelegate,
-                   new ParallelItemProducerTreeComparer(),
+                   DeterministicParallelItemProducerTreeComparer.Singleton,
                    CosmosElementEqualityComparer.Value,
+                   new TestInjections(simulate429s: false, simulateEmptyPages: false),
                    true,
                    MockQueryFactory.DefaultCollectionRid,
                    maxPageSize,
@@ -116,15 +128,20 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.IsTrue(itemProducerTree.HasMoreResults);
 
                 List<ToDoItem> itemsRead = new List<ToDoItem>();
-                while ((await itemProducerTree.MoveNextAsync(this.cancellationToken)).successfullyMovedNext)
+                while ((await itemProducerTree.TryMoveNextPageAsync(this.cancellationToken)).movedToNextPage)
                 {
-                    Assert.IsTrue(itemProducerTree.HasMoreResults);
-                    if (itemProducerTree.Current != null)
+                    while (itemProducerTree.TryMoveNextDocumentWithinPage())
                     {
-                        string jsonValue = itemProducerTree.Current.ToString();
-                        ToDoItem item = JsonConvert.DeserializeObject<ToDoItem>(jsonValue);
-                        itemsRead.Add(item);
+                        Assert.IsTrue(itemProducerTree.HasMoreResults);
+                        if (itemProducerTree.Current != null)
+                        {
+                            string jsonValue = itemProducerTree.Current.ToString();
+                            ToDoItem item = JsonConvert.DeserializeObject<ToDoItem>(jsonValue);
+                            itemsRead.Add(item);
+                        }
                     }
+
+                    itemProducerTree.UpdatePriority();
                 }
 
                 Assert.IsFalse(itemProducerTree.HasMoreResults);
@@ -145,14 +162,14 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             SqlQuerySpec sqlQuerySpec = new SqlQuerySpec("Select * from t");
             PartitionKeyRange partitionKeyRange = new PartitionKeyRange { Id = "0", MinInclusive = "A", MaxExclusive = "B" };
-            ItemProducerTree.ProduceAsyncCompleteDelegate produceAsyncCompleteCallback = (
+            void produceAsyncCompleteCallback(
                 ItemProducerTree producer,
                 int itemsBuffered,
                 double resourceUnitUsage,
-                QueryMetrics queryMetrics,
+                IReadOnlyCollection<QueryPageDiagnostics> queryPageDiagnostics,
                 long responseLengthBytes,
-                CancellationToken token) =>
-            { callBackCount++; };
+                CancellationToken token)
+            { callBackCount++; }
 
             Mock<IComparer<ItemProducerTree>> comparer = new Mock<IComparer<ItemProducerTree>>();
             Mock<IEqualityComparer<CosmosElement>> cosmosElementComparer = new Mock<IEqualityComparer<CosmosElement>>();
@@ -163,6 +180,27 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new Mock<CosmosElement>(CosmosElementType.Object).Object
             };
 
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create();
+            diagnosticsContext.AddDiagnosticsInternal(new PointOperationStatistics(
+                Guid.NewGuid().ToString(),
+                System.Net.HttpStatusCode.OK,
+                subStatusCode: SubStatusCodes.Unknown,
+                requestCharge: 42,
+                errorMessage: null,
+                method: HttpMethod.Post,
+                requestUri: new Uri("http://localhost.com"),
+                requestSessionToken: null,
+                responseSessionToken: null,
+                clientSideRequestStatistics: null));
+
+            QueryPageDiagnostics diagnostics = new QueryPageDiagnostics(
+                partitionKeyRangeId: "0",
+                queryMetricText: "SomeRandomQueryMetricText",
+                indexUtilizationText: null,
+                diagnosticsContext: diagnosticsContext,
+                schedulingStopwatch: new SchedulingStopwatch());
+            IReadOnlyCollection<QueryPageDiagnostics> pageDiagnostics = new List<QueryPageDiagnostics>() { diagnostics };
+
             mockQueryContext.Setup(x => x.ContainerResourceId).Returns("MockCollectionRid");
             mockQueryContext.Setup(x => x.ExecuteQueryAsync(
                 sqlQuerySpec,
@@ -170,14 +208,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<PartitionKeyRangeIdentity>(),
                 It.IsAny<bool>(),
                 It.IsAny<int>(),
+                It.IsAny<SchedulingStopwatch>(),
                 cancellationTokenSource.Token)).Returns(
                 Task.FromResult(QueryResponseCore.CreateSuccess(
                     result: cosmosElements,
                     requestCharge: 42,
                     activityId: "AA470D71-6DEF-4D61-9A08-272D8C9ABCFE",
-                    queryMetrics: null,
-                    queryMetricsText: null,
-                    requestStatistics: null,
+                    diagnostics: pageDiagnostics,
                     responseLengthBytes: 500,
                     disallowContinuationTokenMessage: null,
                     continuationToken: "TestToken")));
@@ -189,6 +226,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 produceAsyncCompleteCallback: produceAsyncCompleteCallback,
                 itemProducerTreeComparer: comparer.Object,
                 equalityComparer: cosmosElementComparer.Object,
+                testSettings: new TestInjections(simulate429s: false, simulateEmptyPages: false),
                 deferFirstPage: false,
                 collectionRid: "collectionRid",
                 initialContinuationToken: null,
@@ -198,6 +236,27 @@ namespace Microsoft.Azure.Cosmos.Tests
             await itemProducerTree.BufferMoreDocumentsAsync(cancellationTokenSource.Token);
             await itemProducerTree.BufferMoreDocumentsAsync(cancellationTokenSource.Token);
 
+            CosmosDiagnosticsContext diagnosticsContextInternalServerError = CosmosDiagnosticsContext.Create();
+            diagnosticsContextInternalServerError.AddDiagnosticsInternal(new PointOperationStatistics(
+                Guid.NewGuid().ToString(),
+                System.Net.HttpStatusCode.InternalServerError,
+                subStatusCode: SubStatusCodes.Unknown,
+                requestCharge: 10.2,
+                errorMessage: "Error message",
+                method: HttpMethod.Post,
+                requestUri: new Uri("http://localhost.com"),
+                requestSessionToken: null,
+                responseSessionToken: null,
+                clientSideRequestStatistics: null));
+
+            diagnostics = new QueryPageDiagnostics(
+                partitionKeyRangeId: "0",
+                queryMetricText: null,
+                indexUtilizationText: null,
+                diagnosticsContext: diagnosticsContextInternalServerError,
+                schedulingStopwatch: new SchedulingStopwatch());
+            pageDiagnostics = new List<QueryPageDiagnostics>() { diagnostics };
+
             // Buffer a failure
             mockQueryContext.Setup(x => x.ExecuteQueryAsync(
                 sqlQuerySpec,
@@ -205,6 +264,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<PartitionKeyRangeIdentity>(),
                 It.IsAny<bool>(),
                 It.IsAny<int>(),
+                It.IsAny<SchedulingStopwatch>(),
                 cancellationTokenSource.Token)).Returns(
                 Task.FromResult(QueryResponseCore.CreateFailure(
                     statusCode: HttpStatusCode.InternalServerError,
@@ -212,28 +272,37 @@ namespace Microsoft.Azure.Cosmos.Tests
                     errorMessage: "Error message",
                     requestCharge: 10.2,
                     activityId: Guid.NewGuid().ToString(),
-                    queryMetricsText: null,
-                    queryMetrics: null)));
+                    diagnostics: pageDiagnostics)));
 
             await itemProducerTree.BufferMoreDocumentsAsync(cancellationTokenSource.Token);
 
             // First item should be a success
-            (bool successfullyMovedNext, QueryResponseCore? failureResponse) result = await itemProducerTree.MoveNextAsync(cancellationTokenSource.Token);
-            Assert.IsTrue(result.successfullyMovedNext);
-            Assert.IsNull(result.failureResponse);
-            Assert.IsTrue(itemProducerTree.HasMoreResults);
+            {
+                (bool movedToNextPage, QueryResponseCore? failureResponse) = await itemProducerTree.TryMoveNextPageAsync(cancellationTokenSource.Token);
+                Assert.IsTrue(movedToNextPage);
+                Assert.IsNull(failureResponse);
+                Assert.IsTrue(itemProducerTree.TryMoveNextDocumentWithinPage());
+                Assert.IsFalse(itemProducerTree.TryMoveNextDocumentWithinPage());
+                Assert.IsTrue(itemProducerTree.HasMoreResults);
+            }
 
             // Second item should be a success
-            result = await itemProducerTree.MoveNextAsync(cancellationTokenSource.Token);
-            Assert.IsTrue(result.successfullyMovedNext);
-            Assert.IsNull(result.failureResponse);
-            Assert.IsTrue(itemProducerTree.HasMoreResults);
+            {
+                (bool movedToNextPage, QueryResponseCore? failureResponse) = await itemProducerTree.TryMoveNextPageAsync(cancellationTokenSource.Token);
+                Assert.IsTrue(movedToNextPage);
+                Assert.IsNull(failureResponse);
+                Assert.IsTrue(itemProducerTree.TryMoveNextDocumentWithinPage());
+                Assert.IsFalse(itemProducerTree.TryMoveNextDocumentWithinPage());
+                Assert.IsTrue(itemProducerTree.HasMoreResults);
+            }
 
             // Third item should be a failure
-            result = await itemProducerTree.MoveNextAsync(cancellationTokenSource.Token);
-            Assert.IsFalse(result.successfullyMovedNext);
-            Assert.IsNotNull(result.failureResponse);
-            Assert.IsFalse(itemProducerTree.HasMoreResults);
+            {
+                (bool movedToNextPage, QueryResponseCore? failureResponse) = await itemProducerTree.TryMoveNextPageAsync(cancellationTokenSource.Token);
+                Assert.IsFalse(movedToNextPage);
+                Assert.IsNotNull(failureResponse);
+                Assert.IsFalse(itemProducerTree.HasMoreResults);
+            }
 
             // Try to buffer after failure. It should return the previous cached failure and not try to buffer again.
             mockQueryContext.Setup(x => x.ExecuteQueryAsync(
@@ -242,12 +311,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<PartitionKeyRangeIdentity>(),
                 It.IsAny<bool>(),
                 It.IsAny<int>(),
+                It.IsAny<SchedulingStopwatch>(),
                 cancellationTokenSource.Token)).
                 Throws(new Exception("Previous buffer failed. Operation should return original failure and not try again"));
 
             await itemProducerTree.BufferMoreDocumentsAsync(cancellationTokenSource.Token);
-            Assert.IsFalse(result.successfullyMovedNext);
-            Assert.IsNotNull(result.failureResponse);
             Assert.IsFalse(itemProducerTree.HasMoreResults);
         }
     }

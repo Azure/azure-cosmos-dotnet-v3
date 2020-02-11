@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.Generic;
     using System.IO;
     using System.Net;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Fluent;
@@ -177,34 +178,39 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task IteratorTest()
         {
-            string sprocBody = "function() { { var x = 42; } }";
-            int numberOfSprocs = 3;
-            string[] sprocIds = new string[numberOfSprocs];
-
-            for (int i = 0; i < numberOfSprocs; i++)
+            using (CosmosClient cosmosClient = TestCommon.CreateCosmosClient(new CosmosClientOptions() { Serializer = new FaultySerializer() }))
             {
-                string sprocId = Guid.NewGuid().ToString();
-                sprocIds[i] = sprocId;
+                // Should not use the custom serializer for these operations
+                Scripts scripts = cosmosClient.GetContainer(this.database.Id, this.container.Id).Scripts;
+                string sprocBody = "function() { { var x = 42; } }";
+                int numberOfSprocs = 3;
+                string[] sprocIds = new string[numberOfSprocs];
 
-                StoredProcedureResponse storedProcedureResponse =
-                    await this.scripts.CreateStoredProcedureAsync(new StoredProcedureProperties(sprocId, sprocBody));
-                Assert.AreEqual(HttpStatusCode.Created, storedProcedureResponse.StatusCode);
-            }
-
-            List<string> readSprocIds = new List<string>();
-            FeedIterator<StoredProcedureProperties> iter = this.scripts.GetStoredProcedureQueryIterator<StoredProcedureProperties>();
-            while (iter.HasMoreResults)
-            {
-                FeedResponse<StoredProcedureProperties> currentResultSet = await iter.ReadNextAsync();
+                for (int i = 0; i < numberOfSprocs; i++)
                 {
-                    foreach (StoredProcedureProperties storedProcedureSettingsEntry in currentResultSet)
+                    string sprocId = Guid.NewGuid().ToString();
+                    sprocIds[i] = sprocId;
+
+                    StoredProcedureResponse storedProcedureResponse =
+                        await scripts.CreateStoredProcedureAsync(new StoredProcedureProperties(sprocId, sprocBody));
+                    Assert.AreEqual(HttpStatusCode.Created, storedProcedureResponse.StatusCode);
+                }
+
+                List<string> readSprocIds = new List<string>();
+                FeedIterator<StoredProcedureProperties> iter = scripts.GetStoredProcedureQueryIterator<StoredProcedureProperties>();
+                while (iter.HasMoreResults)
+                {
+                    FeedResponse<StoredProcedureProperties> currentResultSet = await iter.ReadNextAsync();
                     {
-                        readSprocIds.Add(storedProcedureSettingsEntry.Id);
+                        foreach (StoredProcedureProperties storedProcedureSettingsEntry in currentResultSet)
+                        {
+                            readSprocIds.Add(storedProcedureSettingsEntry.Id);
+                        }
                     }
                 }
-            }
 
-            CollectionAssert.AreEquivalent(sprocIds, readSprocIds);
+                CollectionAssert.AreEquivalent(sprocIds, readSprocIds);
+            }
         }
 
         [TestMethod]
@@ -287,6 +293,55 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 sprocId,
                 new Cosmos.PartitionKey(testPartitionId),
                 null);
+
+            Assert.AreEqual(HttpStatusCode.OK, sprocResponse.StatusCode);
+
+            using (StreamReader sr = new System.IO.StreamReader(sprocResponse.Content))
+            {
+                string stringResponse = sr.ReadToEnd();
+                JArray jArray = JArray.Parse(stringResponse);
+                Assert.AreEqual(1, jArray.Count);
+            }
+
+            StoredProcedureResponse deleteResponse = await this.scripts.DeleteStoredProcedureAsync(sprocId);
+            Assert.AreEqual(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+        }
+
+        [TestMethod]
+        public async Task ExecuteTestAsStreamWithNullRequestStream()
+        {
+            string sprocId = Guid.NewGuid().ToString();
+            string sprocBody = @"function() {
+                var context = getContext();
+                var response = context.getResponse();
+                var collection = context.getCollection();
+                var collectionLink = collection.getSelfLink();
+
+                var filterQuery = 'SELECT * FROM c';
+
+                collection.queryDocuments(collectionLink, filterQuery, { },
+                    function(err, documents) {
+                        response.setBody(documents);
+                    }
+                );
+            }";
+
+            StoredProcedureResponse storedProcedureResponse =
+                await this.scripts.CreateStoredProcedureAsync(new StoredProcedureProperties(sprocId, sprocBody));
+            Assert.AreEqual(HttpStatusCode.Created, storedProcedureResponse.StatusCode);
+            StoredProcedureTests.ValidateStoredProcedureSettings(sprocId, sprocBody, storedProcedureResponse);
+
+            // Insert document and then query
+            string testPartitionId = Guid.NewGuid().ToString();
+            var payload = new { id = testPartitionId, user = testPartitionId };
+            ItemResponse<dynamic> createItemResponse = await this.container.CreateItemAsync<dynamic>(payload);
+            Assert.AreEqual(HttpStatusCode.Created, createItemResponse.StatusCode);
+
+            StoredProcedureProperties storedProcedure = storedProcedureResponse;
+            ResponseMessage sprocResponse = await this.scripts.ExecuteStoredProcedureStreamAsync(
+                sprocId,
+                null,
+                new Cosmos.PartitionKey(testPartitionId));
 
             Assert.AreEqual(HttpStatusCode.OK, sprocResponse.StatusCode);
 
@@ -394,6 +449,59 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task ExecuteTestWithStreamParameter()
+        {
+            string sprocId = Guid.NewGuid().ToString();
+            string sprocBody = @"function(param1) {
+                var context = getContext();
+                var response = context.getResponse();
+                response.setBody(param1);
+            }";
+
+            StoredProcedureResponse storedProcedureResponse =
+                await this.scripts.CreateStoredProcedureAsync(new StoredProcedureProperties(sprocId, sprocBody));
+            Assert.AreEqual(HttpStatusCode.Created, storedProcedureResponse.StatusCode);
+            StoredProcedureTests.ValidateStoredProcedureSettings(sprocId, sprocBody, storedProcedureResponse);
+
+            // Insert document and then query
+            string testPartitionId = Guid.NewGuid().ToString();
+            var payload = new { id = testPartitionId, user = testPartitionId };
+            ItemResponse<dynamic> createItemResponse = await this.container.CreateItemAsync<dynamic>(payload);
+            Assert.AreEqual(HttpStatusCode.Created, createItemResponse.StatusCode);
+
+            MemoryStream streamPayload = new MemoryStream(Encoding.UTF8.GetBytes(@"[""one""]"));
+
+            ResponseMessage response = await this.scripts.ExecuteStoredProcedureStreamAsync(
+                sprocId,
+                streamPayload: streamPayload,
+                partitionKey: new Cosmos.PartitionKey(testPartitionId));
+
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+
+            using (StreamReader reader = new StreamReader(response.Content))
+            {
+                string text = await reader.ReadToEndAsync();
+                Assert.AreEqual(@"""one""", text);
+            }
+
+            streamPayload = new MemoryStream(Encoding.UTF8.GetBytes("[null]"));
+
+            response = await this.scripts.ExecuteStoredProcedureStreamAsync(
+                 sprocId,
+                 streamPayload,
+                 new Cosmos.PartitionKey(testPartitionId));
+
+            using (StreamReader reader = new StreamReader(response.Content))
+            {
+                string text = await reader.ReadToEndAsync();
+                Assert.AreEqual("null", text);
+            }
+
+            StoredProcedureResponse deleteResponse = await this.scripts.DeleteStoredProcedureAsync(sprocId);
+            Assert.AreEqual(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+        }
+
+        [TestMethod]
         public async Task ExecuteTestWithMultipleParameters()
         {
             string sprocId = Guid.NewGuid().ToString();
@@ -431,6 +539,243 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.NoContent, deleteResponse.StatusCode);
         }
 
+        [TestMethod]
+        public async Task ExecuteTestWithMultipleStreamParameters()
+        {
+            string sprocId = Guid.NewGuid().ToString();
+            string sprocBody = @"function(param1, param2, param3) {
+                var context = getContext();
+                var response = context.getResponse();
+                response.setBody(param1+param2+param3);
+            }";
+
+            StoredProcedureResponse storedProcedureResponse =
+                await this.scripts.CreateStoredProcedureAsync(new StoredProcedureProperties(sprocId, sprocBody));
+            Assert.AreEqual(HttpStatusCode.Created, storedProcedureResponse.StatusCode);
+            StoredProcedureTests.ValidateStoredProcedureSettings(sprocId, sprocBody, storedProcedureResponse);
+
+            // Insert document and then query
+            string testPartitionId = Guid.NewGuid().ToString();
+            var payload = new { id = testPartitionId, user = testPartitionId };
+            ItemResponse<dynamic> createItemResponse = await this.container.CreateItemAsync<dynamic>(payload);
+            Assert.AreEqual(HttpStatusCode.Created, createItemResponse.StatusCode);
+
+            MemoryStream streamPayload = new MemoryStream(Encoding.UTF8.GetBytes(@"[""one"",""two"",""three""]"));
+
+            ResponseMessage response = await this.scripts.ExecuteStoredProcedureStreamAsync(
+                storedProcedureId: sprocId,
+                streamPayload: streamPayload,
+                partitionKey: new Cosmos.PartitionKey(testPartitionId),
+                requestOptions: null,
+                cancellationToken: default(CancellationToken));
+
+            using (StreamReader reader = new StreamReader(response.Content))
+            {
+                string text = await reader.ReadToEndAsync();
+                Assert.AreEqual(@"""onetwothree""", text);
+            }
+
+            StoredProcedureResponse deleteResponse = await this.scripts.DeleteStoredProcedureAsync(sprocId);
+            Assert.AreEqual(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+        }
+
+        [TestMethod]
+        public async Task ExecuteTestWithNonObjectStreamParameters()
+        {
+            string sprocId = Guid.NewGuid().ToString();
+            string sprocBody = @"function(param1) {
+                var context = getContext();
+                var response = context.getResponse();
+                response.setBody(param1);
+            }";
+
+            StoredProcedureResponse storedProcedureResponse =
+                await this.scripts.CreateStoredProcedureAsync(new StoredProcedureProperties(sprocId, sprocBody));
+            Assert.AreEqual(HttpStatusCode.Created, storedProcedureResponse.StatusCode);
+            StoredProcedureTests.ValidateStoredProcedureSettings(sprocId, sprocBody, storedProcedureResponse);
+
+            // Insert document and then query
+            string testPartitionId = Guid.NewGuid().ToString();
+            var payload = new { id = testPartitionId, user = testPartitionId };
+            ItemResponse<dynamic> createItemResponse = await this.container.CreateItemAsync<dynamic>(payload);
+            Assert.AreEqual(HttpStatusCode.Created, createItemResponse.StatusCode);
+
+            MemoryStream[] streamPayloads = new MemoryStream[]
+            {
+                new MemoryStream(Encoding.UTF8.GetBytes(@"""""")),
+                new MemoryStream(Encoding.UTF8.GetBytes(@"""hello""")),
+                new MemoryStream(Encoding.UTF8.GetBytes(@"0")),
+                new MemoryStream(Encoding.UTF8.GetBytes(@"undefined")),
+                new MemoryStream(Encoding.UTF8.GetBytes(@"-1.25")),
+                new MemoryStream(Encoding.UTF8.GetBytes(@"false")),
+                new MemoryStream(Encoding.UTF8.GetBytes(@"[x:4]")) // invalid json
+            };
+
+            foreach (MemoryStream streamPayload in streamPayloads)
+            {
+                ResponseMessage response = await this.scripts.ExecuteStoredProcedureStreamAsync(
+                    storedProcedureId: sprocId,
+                    streamPayload: streamPayload,
+                    partitionKey: new Cosmos.PartitionKey(testPartitionId),
+                    requestOptions: null,
+                    cancellationToken: default(CancellationToken));
+
+                Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
+            }
+
+            StoredProcedureResponse deleteResponse = await this.scripts.DeleteStoredProcedureAsync(sprocId);
+            Assert.AreEqual(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+        }
+
+        [TestMethod]
+        public async Task ExecuteTestWithTechnicallyJSONParseableButNotArraylikeParameters()
+        {
+            string sprocId = Guid.NewGuid().ToString();
+            string sprocBody = @"function(param1) {
+                var context = getContext();
+                var response = context.getResponse();
+                response.setBody(typeof param1);
+            }";
+
+            StoredProcedureResponse storedProcedureResponse =
+                await this.scripts.CreateStoredProcedureAsync(new StoredProcedureProperties(sprocId, sprocBody));
+            Assert.AreEqual(HttpStatusCode.Created, storedProcedureResponse.StatusCode);
+            StoredProcedureTests.ValidateStoredProcedureSettings(sprocId, sprocBody, storedProcedureResponse);
+
+            // Insert document and then query
+            string testPartitionId = Guid.NewGuid().ToString();
+            var payload = new { id = testPartitionId, user = testPartitionId };
+            ItemResponse<dynamic> createItemResponse = await this.container.CreateItemAsync<dynamic>(payload);
+            Assert.AreEqual(HttpStatusCode.Created, createItemResponse.StatusCode);
+
+            MemoryStream[] streamPayloads = new MemoryStream[]
+            {
+                new MemoryStream(Encoding.UTF8.GetBytes(@"null")),
+                new MemoryStream(Encoding.UTF8.GetBytes(@"{}")),
+                new MemoryStream(Encoding.UTF8.GetBytes(@"{""param1"":4}")),
+                new MemoryStream(Encoding.UTF8.GetBytes(@"{""0"":4}"))
+            };
+
+            foreach (MemoryStream streamPayload in streamPayloads)
+            {
+                ResponseMessage response = await this.scripts.ExecuteStoredProcedureStreamAsync(
+                    storedProcedureId: sprocId,
+                    streamPayload: streamPayload,
+                    partitionKey: new Cosmos.PartitionKey(testPartitionId),
+                    requestOptions: null,
+                    cancellationToken: default(CancellationToken));
+
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+
+                using (StreamReader reader = new StreamReader(response.Content))
+                {
+                    string text = await reader.ReadToEndAsync();
+                    Assert.AreEqual(@"""undefined""", text);
+                }
+            }
+
+            StoredProcedureResponse deleteResponse = await this.scripts.DeleteStoredProcedureAsync(sprocId);
+            Assert.AreEqual(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+        }
+
+        [TestMethod]
+        public async Task ExecuteTestWithArraylikeParameters()
+        {
+            string sprocId = Guid.NewGuid().ToString();
+            string sprocBody = @"function(param1, param2, param3) {
+                var context = getContext();
+                var response = context.getResponse();
+                response.setBody(param1 + (param2 || '') + (param3 || ''));
+            }";
+
+            StoredProcedureResponse storedProcedureResponse =
+                await this.scripts.CreateStoredProcedureAsync(new StoredProcedureProperties(sprocId, sprocBody));
+            Assert.AreEqual(HttpStatusCode.Created, storedProcedureResponse.StatusCode);
+            StoredProcedureTests.ValidateStoredProcedureSettings(sprocId, sprocBody, storedProcedureResponse);
+
+            // Insert document and then query
+            string testPartitionId = Guid.NewGuid().ToString();
+            var payload = new { id = testPartitionId, user = testPartitionId };
+            ItemResponse<dynamic> createItemResponse = await this.container.CreateItemAsync<dynamic>(payload);
+            Assert.AreEqual(HttpStatusCode.Created, createItemResponse.StatusCode);
+
+            MemoryStream[] streamPayloads = new MemoryStream[]
+            {
+                new MemoryStream(Encoding.UTF8.GetBytes(@"{""0"":""onetwothree"", ""length"": 1}")),
+                new MemoryStream(Encoding.UTF8.GetBytes(@"{""0"":""onetwothree"", ""length"": ""1""}")), // Javascript treats length string as a numebr
+                new MemoryStream(Encoding.UTF8.GetBytes(@"{""0"":""onetwothree"", ""length"": 10000}")), // Tons of extra arguments which aren't actually there
+                new MemoryStream(Encoding.UTF8.GetBytes(@"{""0"":""onetwothree"", ""1"": ""test"", ""length"": 1}")), // function.apply will not see the [1] parameter because length == 1
+                new MemoryStream(Encoding.UTF8.GetBytes(@"{""0"":""onetwothree"", ""1"": ""test"", ""length"": 1.5}")), // function.apply will not see the [1] parameter because length rounds down to 1
+                new MemoryStream(Encoding.UTF8.GetBytes(@"{""0"":""one"", ""1"": ""twothree"", ""length"": 2}")),
+                new MemoryStream(Encoding.UTF8.GetBytes(@"{""0"":""one"", ""2"": ""twothree"", ""length"": 3}")), // Skipping a parameter is okay
+                new MemoryStream(Encoding.UTF8.GetBytes(@"{""0"":""one"", ""2"": ""three"", ""1"": ""two"", ""length"": 3}")) // out of order is okay because arrays are just numeric indexers in javascript
+            };
+
+            foreach (MemoryStream streamPayload in streamPayloads)
+            {
+                ResponseMessage response = await this.scripts.ExecuteStoredProcedureStreamAsync(
+                    storedProcedureId: sprocId,
+                    streamPayload: streamPayload,
+                    partitionKey: new Cosmos.PartitionKey(testPartitionId),
+                    requestOptions: null,
+                    cancellationToken: default(CancellationToken));
+
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+
+                using (StreamReader reader = new StreamReader(response.Content))
+                {
+                    string text = await reader.ReadToEndAsync();
+                    Assert.AreEqual(@"""onetwothree""", text);
+                }
+            }
+
+            StoredProcedureResponse deleteResponse = await this.scripts.DeleteStoredProcedureAsync(sprocId);
+            Assert.AreEqual(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+        }
+
+        [TestMethod]
+        public async Task ExecuteTestWithNonAppliableArraylikeParameters()
+        {
+            string sprocId = Guid.NewGuid().ToString();
+            string sprocBody = @"function() {
+                var context = getContext();
+                var response = context.getResponse();
+                response.setBody(true);
+            }";
+
+            StoredProcedureResponse storedProcedureResponse =
+                await this.scripts.CreateStoredProcedureAsync(new StoredProcedureProperties(sprocId, sprocBody));
+            Assert.AreEqual(HttpStatusCode.Created, storedProcedureResponse.StatusCode);
+            StoredProcedureTests.ValidateStoredProcedureSettings(sprocId, sprocBody, storedProcedureResponse);
+
+            // Insert document and then query
+            string testPartitionId = Guid.NewGuid().ToString();
+            var payload = new { id = testPartitionId, user = testPartitionId };
+            ItemResponse<dynamic> createItemResponse = await this.container.CreateItemAsync<dynamic>(payload);
+            Assert.AreEqual(HttpStatusCode.Created, createItemResponse.StatusCode);
+
+            MemoryStream[] streamPayloads = new MemoryStream[]
+            {
+                new MemoryStream(Encoding.UTF8.GetBytes(@"{""0"":""onetwothree"", ""length"": 600000}")), // 600000 parameters -> "out of stack space"
+                new MemoryStream(Encoding.UTF8.GetBytes(@"{""0"":""onetwothree"", ""length"": 1e9}")), // 1 billion parameters -> exceeds javascript .apply maximum
+            };
+
+            foreach (MemoryStream streamPayload in streamPayloads)
+            {
+                ResponseMessage response = await this.scripts.ExecuteStoredProcedureStreamAsync(
+                    storedProcedureId: sprocId,
+                    streamPayload: streamPayload,
+                    partitionKey: new Cosmos.PartitionKey(testPartitionId),
+                    requestOptions: null,
+                    cancellationToken: default(CancellationToken));
+
+                Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
+            }
+
+            StoredProcedureResponse deleteResponse = await this.scripts.DeleteStoredProcedureAsync(sprocId);
+            Assert.AreEqual(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+        }
+
         private static void ValidateStoredProcedureSettings(string id, string body, StoredProcedureResponse cosmosResponse)
         {
             StoredProcedureProperties settings = cosmosResponse.Resource;
@@ -438,6 +783,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 "Stored Procedure id do not match");
             Assert.AreEqual(body, settings.Body,
                 "Stored Procedure functions do not match");
+            SelflinkValidator.ValidateSprocSelfLink(cosmosResponse.Resource.SelfLink);
         }
 
         private void ValidateStoredProcedureSettings(StoredProcedureProperties storedProcedureSettings, StoredProcedureResponse cosmosResponse)
@@ -448,8 +794,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(storedProcedureSettings.Id, settings.Id,
                 "Stored Procedure id do not match");
             Assert.IsTrue(cosmosResponse.RequestCharge > 0);
-            Assert.IsNotNull(cosmosResponse.MaxResourceQuota);
-            Assert.IsNotNull(cosmosResponse.CurrentResourceQuotaUsage);
+            Assert.IsNotNull(cosmosResponse.Headers.GetHeaderValue<string>(Documents.HttpConstants.HttpHeaders.MaxResourceQuota));
+            Assert.IsNotNull(cosmosResponse.Headers.GetHeaderValue<string>(Documents.HttpConstants.HttpHeaders.CurrentResourceQuotaUsage));
+        }
+
+        private class FaultySerializer : CosmosSerializer
+        {
+            public override T FromStream<T>(Stream stream)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override Stream ToStream<T>(T input)
+            {
+                throw new NotImplementedException();
+            }
         }
     }
 }

@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// <para>
         /// Every resource within an Azure Cosmos DB database account needs to have a unique identifier. 
-        /// Unlike <see cref="Resource.ResourceId"/>, which is set internally, this Id is settable by the user and is not immutable.
+        /// Unlike <see cref="Documents.Resource.ResourceId"/>, which is set internally, this Id is settable by the user and is not immutable.
         /// </para>
         /// <para>
         /// When working with document resources, they too have this settable Id property. 
@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// ETags are used for concurrency checking when updating resources. 
         /// </remarks>
-        [JsonProperty(PropertyName = Constants.Properties.ETag)]
+        [JsonProperty(PropertyName = Constants.Properties.ETag, NullValueHandling = NullValueHandling.Ignore)]
         public string ETag { get; internal set; }
 
         /// <summary>
@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos
         /// resource whether that is a database, a collection or a document.
         /// These resource ids are used when building up SelfLinks, a static addressable Uri for each resource within a database account.
         /// </remarks>
-        [JsonProperty(PropertyName = Constants.Properties.RId)]
+        [JsonProperty(PropertyName = Constants.Properties.RId, NullValueHandling = NullValueHandling.Ignore)]
         internal string ResourceId { get; set; }
 
         [JsonProperty(PropertyName = Constants.Properties.WritableLocations)]

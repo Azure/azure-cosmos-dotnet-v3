@@ -1,41 +1,27 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Query
+namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 {
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Globalization;
-    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.Query.ParallelQuery;
+    using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
+    using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
 
-    /// <summary>
-    /// Factory class for creating the appropriate DocumentQueryExecutionContext for the provided type of query.
-    /// </summary>
-    internal sealed class CosmosQueryExecutionContextFactory : CosmosQueryExecutionContext
+    internal static class CosmosQueryExecutionContextFactory
     {
-        internal const string InternalPartitionKeyDefinitionProperty = "x-ms-query-partitionkey-definition";
+        private const string InternalPartitionKeyDefinitionProperty = "x-ms-query-partitionkey-definition";
         private const int PageSizeFactorForTop = 5;
 
-        internal readonly CosmosQueryContext CosmosQueryContext;
-        private InputParameters inputParameters;
-        private CosmosQueryExecutionContext innerExecutionContext;
-
-        /// <summary>
-        /// Store the failed response
-        /// </summary>
-        private QueryResponseCore? responseMessageException;
-
-        /// <summary>
-        /// Store any exception thrown
-        /// </summary>
-        private Exception exception;
-
-        public CosmosQueryExecutionContextFactory(
+        public static CosmosQueryExecutionContext Create(
             CosmosQueryContext cosmosQueryContext,
             InputParameters inputParameters)
         {
@@ -44,189 +30,193 @@ namespace Microsoft.Azure.Cosmos.Query
                 throw new ArgumentNullException(nameof(cosmosQueryContext));
             }
 
-            this.CosmosQueryContext = cosmosQueryContext;
-            this.inputParameters = inputParameters;
-
-            // Swapping out negative values in feedOptions for int.MaxValue
-            if (this.inputParameters.MaxBufferedItemCount.HasValue && this.inputParameters.MaxBufferedItemCount < 0)
+            if (inputParameters == null)
             {
-                this.inputParameters.MaxBufferedItemCount = int.MaxValue;
+                throw new ArgumentNullException(nameof(inputParameters));
             }
 
-            if (this.inputParameters.MaxConcurrency.HasValue && this.inputParameters.MaxConcurrency < 0)
-            {
-                this.inputParameters.MaxConcurrency = int.MaxValue;
-            }
+            CosmosQueryExecutionContextWithNameCacheStaleRetry cosmosQueryExecutionContextWithNameCacheStaleRetry = new CosmosQueryExecutionContextWithNameCacheStaleRetry(
+                cosmosQueryContext: cosmosQueryContext,
+                cosmosQueryExecutionContextFactory: () =>
+                {
+                    // Query Iterator requires that the creation of the query context is defered until the user calls ReadNextAsync
+                    AsyncLazy<TryCatch<CosmosQueryExecutionContext>> lazyTryCreateCosmosQueryExecutionContext = new AsyncLazy<TryCatch<CosmosQueryExecutionContext>>(valueFactory: (innerCancellationToken) =>
+                    {
+                        innerCancellationToken.ThrowIfCancellationRequested();
+                        return CosmosQueryExecutionContextFactory.TryCreateCoreContextAsync(
+                            cosmosQueryContext,
+                            inputParameters,
+                            innerCancellationToken);
+                    });
+                    LazyCosmosQueryExecutionContext lazyCosmosQueryExecutionContext = new LazyCosmosQueryExecutionContext(lazyTryCreateCosmosQueryExecutionContext);
+                    return lazyCosmosQueryExecutionContext;
+                });
 
-            if (this.inputParameters.MaxItemCount.HasValue && this.inputParameters.MaxItemCount < 0)
-            {
-                this.inputParameters.MaxItemCount = int.MaxValue;
-            }
+            CatchAllCosmosQueryExecutionContext catchAllCosmosQueryExecutionContext = new CatchAllCosmosQueryExecutionContext(cosmosQueryExecutionContextWithNameCacheStaleRetry);
+
+            return catchAllCosmosQueryExecutionContext;
         }
 
-        public override bool IsDone
-        {
-            get
-            {
-                // No more results if an exception is hit
-                if (this.responseMessageException != null || this.exception != null)
-                {
-                    return true;
-                }
-
-                return this.innerExecutionContext != null ? this.innerExecutionContext.IsDone : false;
-            }
-        }
-
-        public override async Task<QueryResponseCore> ExecuteNextAsync(CancellationToken cancellationToken)
-        {
-            if (this.responseMessageException != null)
-            {
-                return this.responseMessageException.Value;
-            }
-
-            if (this.exception != null)
-            {
-                throw this.exception;
-            }
-
-            try
-            {
-                bool isFirstExecute = false;
-                QueryResponseCore response;
-                while (true)
-                {
-                    // The retry policy handles the scenario when the name cache is stale. If the cache is stale the entire 
-                    // execute context has incorrect values and should be recreated. This should only be done for the first 
-                    // execution. If results have already been pulled an error should be returned to the user since it's 
-                    // not possible to combine query results from multiple containers.
-                    if (this.innerExecutionContext == null)
-                    {
-                        this.innerExecutionContext = await this.CreateItemQueryExecutionContextAsync(cancellationToken);
-                        isFirstExecute = true;
-                    }
-
-                    response = await this.innerExecutionContext.ExecuteNextAsync(cancellationToken);
-
-                    if (response.IsSuccess)
-                    {
-                        break;
-                    }
-
-                    if (isFirstExecute && response.StatusCode == HttpStatusCode.Gone && response.SubStatusCode == Documents.SubStatusCodes.NameCacheIsStale)
-                    {
-                        await this.CosmosQueryContext.QueryClient.ForceRefreshCollectionCacheAsync(
-                            this.CosmosQueryContext.ResourceLink.OriginalString,
-                            cancellationToken);
-                        this.innerExecutionContext = await this.CreateItemQueryExecutionContextAsync(cancellationToken);
-                        isFirstExecute = false;
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-
-                if (!response.IsSuccess)
-                {
-                    this.responseMessageException = response;
-                }
-
-                return response;
-            }
-            catch (Exception e)
-            {
-                this.exception = e;
-                this.Dispose();
-                throw;
-            }
-        }
-
-        private async Task<CosmosQueryExecutionContext> CreateItemQueryExecutionContextAsync(
+        private static async Task<TryCatch<CosmosQueryExecutionContext>> TryCreateCoreContextAsync(
+            CosmosQueryContext cosmosQueryContext,
+            InputParameters inputParameters,
             CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            // Try to parse the continuation token.
+            string continuationToken = inputParameters.InitialUserContinuationToken;
+            PartitionedQueryExecutionInfo queryPlanFromContinuationToken = inputParameters.PartitionedQueryExecutionInfo;
+            if (continuationToken != null)
+            {
+                if (!PipelineContinuationToken.TryParse(
+                    continuationToken,
+                    out PipelineContinuationToken pipelineContinuationToken))
+                {
+                    return TryCatch<CosmosQueryExecutionContext>.FromException(
+                        new MalformedContinuationTokenException(
+                            $"Malformed {nameof(PipelineContinuationToken)}: {continuationToken}."));
+                }
 
-            CosmosQueryClient cosmosQueryClient = this.CosmosQueryContext.QueryClient;
+                if (PipelineContinuationToken.IsTokenFromTheFuture(pipelineContinuationToken))
+                {
+                    return TryCatch<CosmosQueryExecutionContext>.FromException(
+                        new MalformedContinuationTokenException(
+                            $"{nameof(PipelineContinuationToken)} Continuation token is from a newer version of the SDK. " +
+                            $"Upgrade the SDK to avoid this issue." +
+                            $"{continuationToken}."));
+                }
+
+                if (!PipelineContinuationToken.TryConvertToLatest(
+                    pipelineContinuationToken,
+                    out PipelineContinuationTokenV1_1 latestVersionPipelineContinuationToken))
+                {
+                    return TryCatch<CosmosQueryExecutionContext>.FromException(
+                        new MalformedContinuationTokenException(
+                            $"{nameof(PipelineContinuationToken)}: '{continuationToken}' is no longer supported."));
+                }
+
+                continuationToken = latestVersionPipelineContinuationToken.SourceContinuationToken;
+                if (latestVersionPipelineContinuationToken.QueryPlan != null)
+                {
+                    queryPlanFromContinuationToken = latestVersionPipelineContinuationToken.QueryPlan;
+                }
+            }
+
+            CosmosQueryClient cosmosQueryClient = cosmosQueryContext.QueryClient;
             ContainerQueryProperties containerQueryProperties = await cosmosQueryClient.GetCachedContainerQueryPropertiesAsync(
-                this.CosmosQueryContext.ResourceLink,
-                this.inputParameters.PartitionKey,
+                cosmosQueryContext.ResourceLink,
+                inputParameters.PartitionKey,
                 cancellationToken);
-
-            this.CosmosQueryContext.ContainerResourceId = containerQueryProperties.ResourceId;
+            cosmosQueryContext.ContainerResourceId = containerQueryProperties.ResourceId;
 
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
-            if (this.CosmosQueryContext.QueryClient.ByPassQueryParsing())
+            if (queryPlanFromContinuationToken != null)
             {
-                // For non-Windows platforms(like Linux and OSX) in .NET Core SDK, we cannot use ServiceInterop, so need to bypass in that case.
-                // We are also now bypassing this for 32 bit host process running even on Windows as there are many 32 bit apps that will not work without this
-                partitionedQueryExecutionInfo = await QueryPlanRetriever.GetQueryPlanThroughGatewayAsync(
-                    this.CosmosQueryContext.QueryClient,
-                    this.inputParameters.SqlQuerySpec,
-                    this.CosmosQueryContext.ResourceLink,
-                    cancellationToken);
+                partitionedQueryExecutionInfo = queryPlanFromContinuationToken;
             }
             else
             {
-                //todo:elasticcollections this may rely on information from collection cache which is outdated
-                //if collection is deleted/created with same name.
-                //need to make it not rely on information from collection cache.
-                Documents.PartitionKeyDefinition partitionKeyDefinition;
-                object partitionKeyDefinitionObject;
-                if (this.inputParameters.Properties != null
-                    && this.inputParameters.Properties.TryGetValue(InternalPartitionKeyDefinitionProperty, out partitionKeyDefinitionObject))
+                if (cosmosQueryContext.QueryClient.ByPassQueryParsing())
                 {
-                    if (partitionKeyDefinitionObject is Documents.PartitionKeyDefinition definition)
-                    {
-                        partitionKeyDefinition = definition;
-                    }
-                    else
-                    {
-                        throw new ArgumentException(
-                            "partitionkeydefinition has invalid type",
-                            nameof(partitionKeyDefinitionObject));
-                    }
+                    // For non-Windows platforms(like Linux and OSX) in .NET Core SDK, we cannot use ServiceInterop, so need to bypass in that case.
+                    // We are also now bypassing this for 32 bit host process running even on Windows as there are many 32 bit apps that will not work without this
+                    partitionedQueryExecutionInfo = await QueryPlanRetriever.GetQueryPlanThroughGatewayAsync(
+                        cosmosQueryContext.QueryClient,
+                        inputParameters.SqlQuerySpec,
+                        cosmosQueryContext.ResourceLink,
+                        inputParameters.PartitionKey,
+                        cancellationToken);
                 }
                 else
                 {
-                    partitionKeyDefinition = containerQueryProperties.PartitionKeyDefinition;
-                }
+                    //todo:elasticcollections this may rely on information from collection cache which is outdated
+                    //if collection is deleted/created with same name.
+                    //need to make it not rely on information from collection cache.
+                    Documents.PartitionKeyDefinition partitionKeyDefinition;
+                    if ((inputParameters.Properties != null)
+                        && inputParameters.Properties.TryGetValue(InternalPartitionKeyDefinitionProperty, out object partitionKeyDefinitionObject))
+                    {
+                        if (partitionKeyDefinitionObject is Documents.PartitionKeyDefinition definition)
+                        {
+                            partitionKeyDefinition = definition;
+                        }
+                        else
+                        {
+                            throw new ArgumentException(
+                                "partitionkeydefinition has invalid type",
+                                nameof(partitionKeyDefinitionObject));
+                        }
+                    }
+                    else
+                    {
+                        partitionKeyDefinition = containerQueryProperties.PartitionKeyDefinition;
+                    }
 
-                partitionedQueryExecutionInfo = await QueryPlanRetriever.GetQueryPlanWithServiceInteropAsync(
-                    this.CosmosQueryContext.QueryClient,
-                    this.inputParameters.SqlQuerySpec,
-                    partitionKeyDefinition,
-                    this.inputParameters.PartitionKey != null,
-                    cancellationToken);
+                    partitionedQueryExecutionInfo = await QueryPlanRetriever.GetQueryPlanWithServiceInteropAsync(
+                        cosmosQueryContext.QueryClient,
+                        inputParameters.SqlQuerySpec,
+                        partitionKeyDefinition,
+                        inputParameters.PartitionKey != null,
+                        cancellationToken);
+                }
             }
 
+            return await TryCreateFromPartitionedQuerExecutionInfoAsync(
+                partitionedQueryExecutionInfo,
+                containerQueryProperties,
+                cosmosQueryContext,
+                inputParameters,
+                cancellationToken);
+        }
+
+        public static async Task<TryCatch<CosmosQueryExecutionContext>> TryCreateFromPartitionedQuerExecutionInfoAsync(
+        PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
+        ContainerQueryProperties containerQueryProperties,
+        CosmosQueryContext cosmosQueryContext,
+        InputParameters inputParameters,
+        CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
             List<Documents.PartitionKeyRange> targetRanges = await CosmosQueryExecutionContextFactory.GetTargetPartitionKeyRangesAsync(
-                   this.CosmosQueryContext.QueryClient,
-                   this.CosmosQueryContext.ResourceLink.OriginalString,
+                   cosmosQueryContext.QueryClient,
+                   cosmosQueryContext.ResourceLink.OriginalString,
                    partitionedQueryExecutionInfo,
                    containerQueryProperties,
-                   this.inputParameters.Properties);
+                   inputParameters.Properties);
 
             if (!string.IsNullOrEmpty(partitionedQueryExecutionInfo.QueryInfo.RewrittenQuery))
             {
                 // We need pass down the rewritten query.
-                this.inputParameters.SqlQuerySpec = new SqlQuerySpec()
+                SqlQuerySpec rewrittenQuerySpec = new SqlQuerySpec()
                 {
                     QueryText = partitionedQueryExecutionInfo.QueryInfo.RewrittenQuery,
-                    Parameters = this.inputParameters.SqlQuerySpec.Parameters
+                    Parameters = inputParameters.SqlQuerySpec.Parameters
                 };
+
+                inputParameters = new InputParameters(
+                    rewrittenQuerySpec,
+                    inputParameters.InitialUserContinuationToken,
+                    inputParameters.MaxConcurrency,
+                    inputParameters.MaxItemCount,
+                    inputParameters.MaxBufferedItemCount,
+                    inputParameters.PartitionKey,
+                    inputParameters.Properties,
+                    inputParameters.PartitionedQueryExecutionInfo,
+                    inputParameters.ExecutionEnvironment,
+                    inputParameters.ReturnResultsInDeterministicOrder,
+                    inputParameters.TestInjections);
             }
 
-            return await CosmosQueryExecutionContextFactory.CreateSpecializedDocumentQueryExecutionContextAsync(
-                this.CosmosQueryContext,
-                this.inputParameters,
+            return await CosmosQueryExecutionContextFactory.TryCreateSpecializedDocumentQueryExecutionContextAsync(
+                cosmosQueryContext,
+                inputParameters,
                 partitionedQueryExecutionInfo,
                 targetRanges,
                 containerQueryProperties.ResourceId,
                 cancellationToken);
         }
 
-        public static async Task<CosmosQueryExecutionContext> CreateSpecializedDocumentQueryExecutionContextAsync(
+        private static async Task<TryCatch<CosmosQueryExecutionContext>> TryCreateSpecializedDocumentQueryExecutionContextAsync(
             CosmosQueryContext cosmosQueryContext,
             InputParameters inputParameters,
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
@@ -234,26 +224,12 @@ namespace Microsoft.Azure.Cosmos.Query
             string collectionRid,
             CancellationToken cancellationToken)
         {
-            if (!string.IsNullOrEmpty(partitionedQueryExecutionInfo.QueryInfo?.RewrittenQuery))
-            {
-                inputParameters.SqlQuerySpec = new SqlQuerySpec(
-                    partitionedQueryExecutionInfo.QueryInfo.RewrittenQuery,
-                    inputParameters.SqlQuerySpec.Parameters);
-            }
-
-            // Figure out the optimal page size.
-            long initialPageSize = inputParameters.MaxItemCount.GetValueOrDefault(ParallelQueryConfig.GetConfig().ClientInternalPageSize);
-
-            if (initialPageSize < -1 || initialPageSize == 0)
-            {
-                throw cosmosQueryContext.QueryClient.CreateBadRequestException($"Invalid MaxItemCount {initialPageSize}");
-            }
-
             QueryInfo queryInfo = partitionedQueryExecutionInfo.QueryInfo;
 
             bool getLazyFeedResponse = queryInfo.HasTop;
 
             // We need to compute the optimal initial page size for order-by queries
+            long optimalPageSize = inputParameters.MaxItemCount;
             if (queryInfo.HasOrderBy)
             {
                 int top;
@@ -261,53 +237,37 @@ namespace Microsoft.Azure.Cosmos.Query
                 {
                     // All partitions should initially fetch about 1/nth of the top value.
                     long pageSizeWithTop = (long)Math.Min(
-                        Math.Ceiling(top / (double)targetRanges.Count) * PageSizeFactorForTop,
+                        Math.Ceiling(top / (double)targetRanges.Count) * CosmosQueryExecutionContextFactory.PageSizeFactorForTop,
                         top);
 
-                    if (initialPageSize > 0)
-                    {
-                        initialPageSize = Math.Min(pageSizeWithTop, initialPageSize);
-                    }
-                    else
-                    {
-                        initialPageSize = pageSizeWithTop;
-                    }
+                    optimalPageSize = Math.Min(pageSizeWithTop, optimalPageSize);
                 }
                 else if (cosmosQueryContext.IsContinuationExpected)
                 {
-                    if (initialPageSize < 0)
-                    {
-                        if (inputParameters.MaxBufferedItemCount.HasValue)
-                        {
-                            // Max of what the user is willing to buffer and the default (note this is broken if MaxBufferedItemCount = -1)
-                            initialPageSize = Math.Max(inputParameters.MaxBufferedItemCount.Value, ParallelQueryConfig.GetConfig().DefaultMaximumBufferSize);
-                        }
-                        else
-                        {
-                            initialPageSize = ParallelQueryConfig.GetConfig().DefaultMaximumBufferSize;
-                        }
-                    }
-
-                    initialPageSize = (long)Math.Min(
-                        Math.Ceiling(initialPageSize / (double)targetRanges.Count) * PageSizeFactorForTop,
-                        initialPageSize);
+                    optimalPageSize = (long)Math.Min(
+                        Math.Ceiling(optimalPageSize / (double)targetRanges.Count) * CosmosQueryExecutionContextFactory.PageSizeFactorForTop,
+                        optimalPageSize);
                 }
             }
 
-            Debug.Assert(initialPageSize > 0 && initialPageSize <= int.MaxValue,
-                string.Format(CultureInfo.InvariantCulture, "Invalid MaxItemCount {0}", initialPageSize));
+            Debug.Assert(
+                (optimalPageSize > 0) && (optimalPageSize <= int.MaxValue),
+                $"Invalid MaxItemCount {optimalPageSize}");
 
             CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams = new CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams(
                 sqlQuerySpec: inputParameters.SqlQuerySpec,
                 collectionRid: collectionRid,
                 partitionedQueryExecutionInfo: partitionedQueryExecutionInfo,
                 partitionKeyRanges: targetRanges,
-                initialPageSize: (int)initialPageSize,
+                initialPageSize: (int)optimalPageSize,
                 maxConcurrency: inputParameters.MaxConcurrency,
                 maxItemCount: inputParameters.MaxItemCount,
-                maxBufferedItemCount: inputParameters.MaxBufferedItemCount);
+                maxBufferedItemCount: inputParameters.MaxBufferedItemCount,
+                returnResultsInDeterministicOrder: inputParameters.ReturnResultsInDeterministicOrder,
+                testSettings: inputParameters.TestInjections);
 
-            return await PipelinedDocumentQueryExecutionContext.CreateAsync(
+            return await PipelinedDocumentQueryExecutionContext.TryCreateAsync(
+                inputParameters.ExecutionEnvironment,
                 cosmosQueryContext,
                 initParams,
                 inputParameters.InitialUserContinuationToken,
@@ -326,7 +286,7 @@ namespace Microsoft.Azure.Cosmos.Query
             string resourceLink,
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
             ContainerQueryProperties containerQueryProperties,
-            IDictionary<string, object> properties)
+            IReadOnlyDictionary<string, object> properties)
         {
             List<Documents.PartitionKeyRange> targetRanges;
             if (containerQueryProperties.EffectivePartitionKeyString != null)
@@ -354,30 +314,8 @@ namespace Microsoft.Azure.Cosmos.Query
             return targetRanges;
         }
 
-        public static Task<PartitionedQueryExecutionInfo> GetPartitionedQueryExecutionInfoAsync(
-            CosmosQueryClient queryClient,
-            SqlQuerySpec sqlQuerySpec,
-            Documents.PartitionKeyDefinition partitionKeyDefinition,
-            bool requireFormattableOrderByQuery,
-            bool isContinuationExpected,
-            bool allowNonValueAggregateQuery,
-            bool hasLogicalPartitionKey,
-            CancellationToken cancellationToken)
-        {
-            // $ISSUE-felixfan-2016-07-13: We should probably get PartitionedQueryExecutionInfo from Gateway in GatewayMode
-
-            return queryClient.GetPartitionedQueryExecutionInfoAsync(
-                sqlQuerySpec,
-                partitionKeyDefinition,
-                requireFormattableOrderByQuery,
-                isContinuationExpected,
-                allowNonValueAggregateQuery,
-                hasLogicalPartitionKey,
-                cancellationToken);
-        }
-
         private static bool TryGetEpkProperty(
-            IDictionary<string, object> properties,
+            IReadOnlyDictionary<string, object> properties,
             out string effectivePartitionKeyString)
         {
             if (properties != null
@@ -398,23 +336,70 @@ namespace Microsoft.Azure.Cosmos.Query
             return false;
         }
 
-        public override void Dispose()
+        public sealed class InputParameters
         {
-            if (this.innerExecutionContext != null && !this.innerExecutionContext.IsDone)
-            {
-                this.innerExecutionContext.Dispose();
-            }
-        }
+            private const int DefaultMaxConcurrency = 0;
+            private const int DefaultMaxItemCount = 1000;
+            private const int DefaultMaxBufferedItemCount = 1000;
+            private const bool DefaultReturnResultsInDeterministicOrder = true;
+            private const ExecutionEnvironment DefaultExecutionEnvironment = ExecutionEnvironment.Client;
 
-        public struct InputParameters
-        {
-            internal SqlQuerySpec SqlQuerySpec { get; set; }
-            internal string InitialUserContinuationToken { get; set; }
-            internal int? MaxConcurrency { get; set; }
-            internal int? MaxItemCount { get; set; }
-            internal int? MaxBufferedItemCount { get; set; }
-            internal PartitionKey? PartitionKey { get; set; }
-            internal IDictionary<string, object> Properties { get; set; }
+            public InputParameters(
+                SqlQuerySpec sqlQuerySpec,
+                string initialUserContinuationToken,
+                int? maxConcurrency,
+                int? maxItemCount,
+                int? maxBufferedItemCount,
+                PartitionKey? partitionKey,
+                IReadOnlyDictionary<string, object> properties,
+                PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
+                ExecutionEnvironment? executionEnvironment,
+                bool? returnResultsInDeterministicOrder,
+                TestInjections testInjections)
+            {
+                this.SqlQuerySpec = sqlQuerySpec ?? throw new ArgumentNullException(nameof(sqlQuerySpec));
+                this.InitialUserContinuationToken = initialUserContinuationToken;
+
+                int resolvedMaxConcurrency = maxConcurrency.GetValueOrDefault(InputParameters.DefaultMaxConcurrency);
+                if (resolvedMaxConcurrency < 0)
+                {
+                    resolvedMaxConcurrency = int.MaxValue;
+                }
+                this.MaxConcurrency = resolvedMaxConcurrency;
+
+                int resolvedMaxItemCount = maxItemCount.GetValueOrDefault(InputParameters.DefaultMaxItemCount);
+                if (resolvedMaxItemCount < 0)
+                {
+                    resolvedMaxItemCount = int.MaxValue;
+                }
+                this.MaxItemCount = resolvedMaxItemCount;
+
+                int resolvedMaxBufferedItemCount = maxBufferedItemCount.GetValueOrDefault(InputParameters.DefaultMaxBufferedItemCount);
+                if (resolvedMaxBufferedItemCount < 0)
+                {
+                    resolvedMaxBufferedItemCount = int.MaxValue;
+                }
+                this.MaxBufferedItemCount = resolvedMaxBufferedItemCount;
+
+                this.PartitionKey = partitionKey;
+                this.Properties = properties;
+                this.PartitionedQueryExecutionInfo = partitionedQueryExecutionInfo;
+                this.ExecutionEnvironment = executionEnvironment.GetValueOrDefault(InputParameters.DefaultExecutionEnvironment);
+                this.ReturnResultsInDeterministicOrder = returnResultsInDeterministicOrder.GetValueOrDefault(InputParameters.DefaultReturnResultsInDeterministicOrder);
+                this.TestInjections = testInjections;
+            }
+
+            public SqlQuerySpec SqlQuerySpec { get; }
+            public string InitialUserContinuationToken { get; }
+            public int MaxConcurrency { get; }
+            public int MaxItemCount { get; }
+            public int MaxBufferedItemCount { get; }
+            public PartitionKey? PartitionKey { get; }
+            public IReadOnlyDictionary<string, object> Properties { get; }
+            public PartitionedQueryExecutionInfo PartitionedQueryExecutionInfo { get; }
+            public ExecutionEnvironment ExecutionEnvironment { get; }
+            public bool ReturnResultsInDeterministicOrder { get; }
+            public TestInjections TestInjections { get; }
         }
     }
 }

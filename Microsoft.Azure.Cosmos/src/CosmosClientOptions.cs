@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Data.Common;
     using System.Linq;
     using System.Net;
+    using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -18,7 +19,9 @@ namespace Microsoft.Azure.Cosmos
     /// Defines all the configurable options that the CosmosClient requires.
     /// </summary>
     /// <example>
-    /// An example on how to configure the serialization option to ignore null values
+    /// An example on how to configure the serialization option to ignore null values.
+    /// <code language="c#">
+    /// <![CDATA[
     /// CosmosClientOptions clientOptions = new CosmosClientOptions()
     /// {
     ///     SerializerOptions = new CosmosSerializationOptions(){
@@ -28,6 +31,8 @@ namespace Microsoft.Azure.Cosmos
     /// };
     /// 
     /// CosmosClient client = new CosmosClient("endpoint", "key", clientOptions);
+    /// ]]>
+    /// </code>
     /// </example>
     public class CosmosClientOptions
     {
@@ -49,8 +54,6 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Default request timeout
         /// </summary>
-        private static readonly CosmosSerializer propertiesSerializer = new CosmosJsonSerializerWrapper(new CosmosJsonDotNetSerializer());
-
         private int gatewayModeMaxConnectionLimit;
         private CosmosSerializationOptions serializerOptions;
         private CosmosSerializer serializer;
@@ -61,6 +64,7 @@ namespace Microsoft.Azure.Cosmos
         private TimeSpan? openTcpConnectionTimeout;
         private int? maxRequestsPerTcpConnection;
         private int? maxTcpConnectionsPerEndpoint;
+        private PortReuseMode? portReuseMode;
         private IWebProxy webProxy;
 
         /// <summary>
@@ -68,7 +72,6 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public CosmosClientOptions()
         {
-            this.UserAgentContainer = new Cosmos.UserAgentContainer();
             this.GatewayModeMaxConnectionLimit = ConnectionPolicy.Default.MaxConnectionLimit;
             this.RequestTimeout = ConnectionPolicy.Default.RequestTimeout;
             this.ConnectionMode = CosmosClientOptions.DefaultConnectionMode;
@@ -83,11 +86,12 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// Setting this property after sending any request won't have any effect.
         /// </remarks>
-        public string ApplicationName
-        {
-            get => this.UserAgentContainer.Suffix;
-            set => this.UserAgentContainer.Suffix = value;
-        }
+        public string ApplicationName { get; set; }
+
+        /// <summary>
+        /// Get or set session container for the client
+        /// </summary>
+        internal ISessionContainer SessionContainer { get; set; }
 
         /// <summary>
         /// Get or set the preferred geo-replicated region to be used for Azure Cosmos DB service interaction.
@@ -96,10 +100,9 @@ namespace Microsoft.Azure.Cosmos
         /// When this property is specified, the SDK prefers the region to perform operations. Also SDK auto-selects 
         /// fallback geo-replicated regions for high availability. 
         /// When this property is not specified, the SDK uses the write region as the preferred region for all operations.
-        /// 
-        /// <seealso cref="CosmosClientBuilder.WithApplicationRegion(string)"/>
-        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/how-to-multi-master"/>
         /// </remarks>
+        /// <seealso cref="CosmosClientBuilder.WithApplicationRegion(string)"/>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/how-to-multi-master">Configure multi-master</seealso>
         public string ApplicationRegion { get; set; }
 
         /// <summary>
@@ -274,6 +277,27 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// (Direct/TCP) Controls the client port reuse policy used by the transport stack.
+        /// </summary>
+        /// <value>
+        /// The default value is PortReuseMode.ReuseUnicastPort.
+        /// </value>
+        /// <remarks>
+        /// ReuseUnicastPort and PrivatePortPool are not mutually exclusive.
+        /// When PrivatePortPool is enabled, the client first tries to reuse a port it already has.
+        /// It falls back to allocating a new port if the initial attempts failed. If this fails, too, the client then falls back to ReuseUnicastPort.
+        /// </remarks>
+        public PortReuseMode? PortReuseMode
+        {
+            get => this.portReuseMode;
+            set
+            {
+                this.portReuseMode = value;
+                this.ValidateDirectTCPSettings();
+            }
+        }
+
+        /// <summary>
         /// (Gateway/Https) Get or set the proxy information used for web requests.
         /// </summary>
         [JsonIgnore]
@@ -361,26 +385,13 @@ namespace Microsoft.Azure.Cosmos
         /// When set to true, availability is limited to the endpoint specified on the CosmosClient constructor.
         /// Defining the <see cref="ApplicationRegion"/> is not allowed when setting the value to true.
         /// </remarks>
-        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/high-availability"/>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/high-availability">High availability</seealso>
         public bool LimitToEndpoint { get; set; } = false;
 
         /// <summary>
         /// Allows optimistic batching of requests to service. Setting this option might impact the latency of the operations. Hence this option is recommended for non-latency sensitive scenarios only.
         /// </summary>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        bool AllowBulkExecution { get; set; }
-
-        /// <summary>
-        /// A JSON serializer used by the CosmosClient to serialize or de-serialize cosmos request/responses.
-        /// The default serializer is always used for all system owned types like DatabaseProperties.
-        /// The default serializer is used for user types if no UserJsonSerializer is specified
-        /// </summary>
-        [JsonConverter(typeof(ClientOptionJsonConverter))]
-        internal CosmosSerializer PropertiesSerializer => CosmosClientOptions.propertiesSerializer;
+        public bool AllowBulkExecution { get; set; }
 
         /// <summary>
         /// Gets or sets the connection protocol when connecting to the Azure Cosmos service.
@@ -402,8 +413,6 @@ namespace Microsoft.Azure.Cosmos
                 this.connectionProtocol = value;
             }
         }
-
-        internal UserAgentContainer UserAgentContainer { get; private set; }
 
         /// <summary>
         /// The event handler to be invoked before the request is sent.
@@ -488,22 +497,6 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal bool? EnableCpuMonitor { get; set; }
 
-        /// <summary>
-        /// Gets the user json serializer with the CosmosJsonSerializerWrapper or the default
-        /// </summary>
-        internal CosmosSerializer GetCosmosSerializerWithWrapperOrDefault()
-        {
-            if (this.SerializerOptions != null)
-            {
-                CosmosJsonDotNetSerializer cosmosJsonDotNetSerializer = new CosmosJsonDotNetSerializer(this.SerializerOptions);
-                return new CosmosJsonSerializerWrapper(cosmosJsonDotNetSerializer);
-            }
-            else
-            {
-                return this.Serializer == null ? this.PropertiesSerializer : new CosmosJsonSerializerWrapper(this.Serializer);
-            }
-        }
-
         internal CosmosClientOptions Clone()
         {
             CosmosClientOptions cloneConfiguration = (CosmosClientOptions)this.MemberwiseClone();
@@ -514,19 +507,22 @@ namespace Microsoft.Azure.Cosmos
         {
             this.ValidateDirectTCPSettings();
             this.ValidateLimitToEndpointSettings();
+            UserAgentContainer userAgent = this.BuildUserAgentContainer();
+            
             ConnectionPolicy connectionPolicy = new ConnectionPolicy()
             {
                 MaxConnectionLimit = this.GatewayModeMaxConnectionLimit,
                 RequestTimeout = this.RequestTimeout,
                 ConnectionMode = this.ConnectionMode,
                 ConnectionProtocol = this.ConnectionProtocol,
-                UserAgentContainer = this.UserAgentContainer,
+                UserAgentContainer = userAgent,
                 UseMultipleWriteLocations = true,
                 IdleTcpConnectionTimeout = this.IdleTcpConnectionTimeout,
                 OpenTcpConnectionTimeout = this.OpenTcpConnectionTimeout,
                 MaxRequestsPerTcpConnection = this.MaxRequestsPerTcpConnection,
                 MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
-                EnableEndpointDiscovery = !this.LimitToEndpoint
+                EnableEndpointDiscovery = !this.LimitToEndpoint,
+                PortReuseMode = this.portReuseMode
             };
 
             if (this.ApplicationRegion != null)
@@ -654,12 +650,50 @@ namespace Microsoft.Azure.Cosmos
                 {
                     settingName = nameof(this.MaxTcpConnectionsPerEndpoint);
                 }
+                else if (this.PortReuseMode.HasValue)
+                {
+                    settingName = nameof(this.PortReuseMode);
+                }
             }
 
             if (!string.IsNullOrEmpty(settingName))
             {
                 throw new ArgumentException($"{settingName} requires {nameof(this.ConnectionMode)} to be set to {nameof(ConnectionMode.Direct)}");
             }
+        }
+
+        internal UserAgentContainer BuildUserAgentContainer()
+        {
+            UserAgentContainer userAgent = new UserAgentContainer();
+            string features = this.GetUserAgentFeatures();
+
+            if (!string.IsNullOrEmpty(features))
+            {
+                userAgent.SetFeatures(features.ToString());
+            }
+            
+            if (!string.IsNullOrEmpty(this.ApplicationName))
+            {
+                userAgent.Suffix = this.ApplicationName;
+            }
+
+            return userAgent;
+        }
+
+        private string GetUserAgentFeatures()
+        {
+            CosmosClientOptionsFeatures features = CosmosClientOptionsFeatures.NoFeatures;
+            if (this.AllowBulkExecution)
+            {
+                features |= CosmosClientOptionsFeatures.AllowBulkExecution;
+            }
+
+            if (features == CosmosClientOptionsFeatures.NoFeatures)
+            {
+                return null;
+            }
+            
+            return Convert.ToString((int)features, 2).PadLeft(8, '0');
         }
 
         /// <summary>

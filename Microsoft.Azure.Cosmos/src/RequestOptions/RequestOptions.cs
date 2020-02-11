@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     public class RequestOptions
     {
-        internal IDictionary<string, object> Properties { get; set; }
+        internal Dictionary<string, object> Properties { get; set; }
 
         /// <summary>
         /// Gets or sets the If-Match (ETag) associated with the request in the Azure Cosmos DB service.
@@ -49,6 +49,11 @@ namespace Microsoft.Azure.Cosmos
         /// ConsistencyLevel compatibility will validated and set by RequestInvokeHandler
         /// </remarks>
         internal virtual ConsistencyLevel? BaseConsistencyLevel { get; set; }
+
+        /// <summary>
+        /// This disables all diagnostics for the CosmosDiagnostic in the response.
+        /// </summary>
+        internal CosmosDiagnosticsContext DiagnosticContext { get; set; }
 
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties

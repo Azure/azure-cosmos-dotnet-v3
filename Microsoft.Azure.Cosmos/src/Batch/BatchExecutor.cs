@@ -25,51 +25,47 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly RequestOptions batchOptions;
 
-        private readonly int maxServerRequestBodyLength;
-
-        private readonly int maxServerRequestOperationCount;
+        private readonly CosmosDiagnosticsContext diagnosticsContext;
 
         public BatchExecutor(
             ContainerCore container,
             PartitionKey partitionKey,
             IReadOnlyList<ItemBatchOperation> operations,
             RequestOptions batchOptions,
-            int maxServerRequestBodyLength,
-            int maxServerRequestOperationCount)
+            CosmosDiagnosticsContext diagnosticsContext)
         {
             this.container = container;
             this.clientContext = this.container.ClientContext;
             this.inputOperations = operations;
             this.partitionKey = partitionKey;
             this.batchOptions = batchOptions;
-            this.maxServerRequestBodyLength = maxServerRequestBodyLength;
-            this.maxServerRequestOperationCount = maxServerRequestOperationCount;
+            this.diagnosticsContext = diagnosticsContext;
         }
 
-        public async Task<BatchResponse> ExecuteAsync(CancellationToken cancellationToken)
+        public async Task<TransactionalBatchResponse> ExecuteAsync(CancellationToken cancellationToken)
         {
-            BatchExecUtils.EnsureValid(this.inputOperations, this.batchOptions, this.maxServerRequestOperationCount);
-
-            PartitionKey? serverRequestPartitionKey = this.partitionKey;
-            if (this.batchOptions != null && this.batchOptions.IsEffectivePartitionKeyRouting)
+            using (this.diagnosticsContext.CreateOverallScope("BatchExecuteAsync"))
             {
-                serverRequestPartitionKey = null;
+                BatchExecUtils.EnsureValid(this.inputOperations, this.batchOptions);
+
+                PartitionKey? serverRequestPartitionKey = this.partitionKey;
+                if (this.batchOptions != null && this.batchOptions.IsEffectivePartitionKeyRouting)
+                {
+                    serverRequestPartitionKey = null;
+                }
+
+                SinglePartitionKeyServerBatchRequest serverRequest;
+                using (this.diagnosticsContext.CreateScope("CreateBatchRequest"))
+                {
+                    serverRequest = await SinglePartitionKeyServerBatchRequest.CreateAsync(
+                          serverRequestPartitionKey,
+                          new ArraySegment<ItemBatchOperation>(this.inputOperations.ToArray()),
+                          this.clientContext.SerializerCore,
+                          cancellationToken);
+                }
+
+                return await this.ExecuteServerRequestAsync(serverRequest, cancellationToken);
             }
-
-            SinglePartitionKeyServerBatchRequest serverRequest = await SinglePartitionKeyServerBatchRequest.CreateAsync(
-                      serverRequestPartitionKey,
-                      new ArraySegment<ItemBatchOperation>(this.inputOperations.ToArray()),
-                      this.maxServerRequestBodyLength,
-                      this.maxServerRequestOperationCount,
-                      serializer: this.clientContext.CosmosSerializer,
-                      cancellationToken: cancellationToken);
-
-            if (serverRequest.Operations.Count != this.inputOperations.Count)
-            {
-                throw new RequestEntityTooLargeException(ClientResources.BatchTooLarge);
-            }
-
-            return await this.ExecuteServerRequestAsync(serverRequest, cancellationToken);
         }
 
         /// <summary>
@@ -78,14 +74,14 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="serverRequest">A server request with a set of operations on items.</param>
         /// <param name="cancellationToken"><see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>Response from the server.</returns>
-        private async Task<BatchResponse> ExecuteServerRequestAsync(
+        private async Task<TransactionalBatchResponse> ExecuteServerRequestAsync(
             SinglePartitionKeyServerBatchRequest serverRequest,
             CancellationToken cancellationToken)
         {
             using (Stream serverRequestPayload = serverRequest.TransferBodyStream())
             {
                 Debug.Assert(serverRequestPayload != null, "Server request payload expected to be non-null");
-                ResponseMessage responseMessage = await clientContext.ProcessResourceOperationStreamAsync(
+                ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
                     this.container.LinkUri,
                     ResourceType.Document,
                     OperationType.Batch,
@@ -99,12 +95,16 @@ namespace Microsoft.Azure.Cosmos
                         requestMessage.Headers.Add(HttpConstants.HttpHeaders.IsBatchAtomic, bool.TrueString);
                         requestMessage.Headers.Add(HttpConstants.HttpHeaders.IsBatchOrdered, bool.TrueString);
                     },
+                    diagnosticsScope: this.diagnosticsContext,
                     cancellationToken);
 
-                return await BatchResponse.FromResponseMessageAsync(
-                    responseMessage,
-                    serverRequest,
-                    this.clientContext.CosmosSerializer);
+                using (this.diagnosticsContext.CreateScope("TransactionalBatchResponse"))
+                {
+                    return await TransactionalBatchResponse.FromResponseMessageAsync(
+                        responseMessage,
+                        serverRequest,
+                        this.clientContext.SerializerCore);
+                }
             }
         }
     }

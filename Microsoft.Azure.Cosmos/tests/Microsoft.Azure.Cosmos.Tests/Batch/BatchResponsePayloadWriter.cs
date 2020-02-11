@@ -17,9 +17,9 @@ namespace Microsoft.Azure.Cosmos.Tests
 
     internal class BatchResponsePayloadWriter
     {
-        private List<BatchOperationResult> results;
+        private List<TransactionalBatchOperationResult> results;
 
-        public BatchResponsePayloadWriter(List<BatchOperationResult> results)
+        public BatchResponsePayloadWriter(List<TransactionalBatchOperationResult> results)
         {
             this.results = results;
         }
@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             return r;
         }
 
-        private static Result WriteResult(ref RowWriter writer, TypeArgument typeArg, BatchOperationResult result)
+        private static Result WriteResult(ref RowWriter writer, TypeArgument typeArg, TransactionalBatchOperationResult result)
         {
             Result r = writer.WriteInt32("statusCode", (int)result.StatusCode);
             if (r != Result.Success)
@@ -99,10 +99,16 @@ namespace Microsoft.Azure.Cosmos.Tests
                 }
             }
 
+            r = writer.WriteFloat64("requestCharge", result.RequestCharge);
+            if (r != Result.Success)
+            {
+                return r;
+            }
+
             return Result.Success;
         }
 
-        private static byte[] StreamToBytes(MemoryStream stream)
+        private static byte[] StreamToBytes(Stream stream)
         {
             byte[] bytes = new byte[stream.Length];
             stream.Read(bytes, 0, bytes.Length);

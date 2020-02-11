@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos.Sql
 {
     using System;
     using System.Collections.Generic;
+    using Microsoft.Azure.Cosmos.Query.Core;
 
     internal sealed class SqlObjectObfuscator : SqlObjectVisitor<SqlObject>
     {
@@ -409,21 +410,6 @@ namespace Microsoft.Azure.Cosmos.Sql
         public override SqlObject Visit(SqlWhereClause sqlWhereClause)
         {
             return SqlWhereClause.Create(sqlWhereClause.FilterExpression.Accept(this) as SqlScalarExpression);
-        }
-
-        public override SqlObject Visit(SqlConversionScalarExpression sqlConversionScalarExpression)
-        {
-            throw new NotImplementedException("This is not part of the actual grammar");
-        }
-
-        public override SqlObject Visit(SqlGeoNearCallScalarExpression sqlGeoNearCallScalarExpression)
-        {
-            throw new NotImplementedException("This is not part of the actual grammar");
-        }
-
-        public override SqlObject Visit(SqlObjectLiteral sqlObjectLiteral)
-        {
-            throw new NotImplementedException("This is not part of the actual grammar");
         }
 
         private Number64 GetObfuscatedNumber(Number64 value)

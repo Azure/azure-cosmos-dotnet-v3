@@ -1,13 +1,12 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
+namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
 {
     using System;
-    using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
 
     /// <summary>
     /// Interface for all DocumentQueryExecutionComponents
@@ -32,10 +31,6 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         /// </summary>
         void Stop();
 
-        /// <summary>
-        /// Gets the QueryMetrics from this component.
-        /// </summary>
-        /// <returns>The QueryMetrics from this component.</returns>
-        IReadOnlyDictionary<string, QueryMetrics> GetQueryMetrics();
+        bool TryGetContinuationToken(out string state);
     }
 }

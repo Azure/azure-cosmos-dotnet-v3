@@ -3,7 +3,7 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
-    using System.Collections.Generic;
+    using System;
     using Microsoft.Azure.Cosmos.Json;
 
 #if INTERNAL
@@ -21,9 +21,36 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         {
         }
 
-        public abstract IReadOnlyList<byte> Value
+        public abstract ReadOnlyMemory<byte> Value { get; }
+
+        public override void Accept(ICosmosElementVisitor cosmosElementVisitor)
         {
-            get;
+            if (cosmosElementVisitor == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosElementVisitor));
+            }
+
+            cosmosElementVisitor.Visit(this);
+        }
+
+        public override TResult Accept<TResult>(ICosmosElementVisitor<TResult> cosmosElementVisitor)
+        {
+            if (cosmosElementVisitor == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosElementVisitor));
+            }
+
+            return cosmosElementVisitor.Visit(this);
+        }
+
+        public override TResult Accept<TArg, TResult>(ICosmosElementVisitor<TArg, TResult> cosmosElementVisitor, TArg input)
+        {
+            if (cosmosElementVisitor == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosElementVisitor));
+            }
+
+            return cosmosElementVisitor.Visit(this, input);
         }
 
         public static CosmosBinary Create(
@@ -33,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return new LazyCosmosBinary(jsonNavigator, jsonNavigatorNode);
         }
 
-        public static CosmosBinary Create(IReadOnlyList<byte> value)
+        public static CosmosBinary Create(ReadOnlyMemory<byte> value)
         {
             return new EagerCosmosBinary(value);
         }

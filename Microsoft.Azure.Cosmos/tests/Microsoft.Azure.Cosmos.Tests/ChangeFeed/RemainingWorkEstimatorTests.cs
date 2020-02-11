@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
 using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
+using Microsoft.Azure.Cosmos.Query.Core;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Newtonsoft.Json.Linq;
@@ -211,13 +212,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             {
                 JObject firstDocument = new JObject();
                 firstDocument["_lsn"] = itemLsn;
-                CosmosFeedResponseUtil<JObject> cosmosFeedResponse = new CosmosFeedResponseUtil<JObject>();
-                cosmosFeedResponse.Data = new System.Collections.ObjectModel.Collection<JObject>()
-                {
-                    firstDocument
-                };
 
-                message.Content = (new CosmosJsonDotNetSerializer()).ToStream(cosmosFeedResponse);
+                message.Content = new CosmosJsonDotNetSerializer().ToStream( new { Documents = new List<JObject>() { firstDocument } });
             }
 
             return message;

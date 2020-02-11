@@ -10,14 +10,14 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
 
     [TestClass]
     public class ItemProducerTests
     {
-        private CancellationToken cancellationToken = new CancellationTokenSource().Token;
+        private readonly CancellationToken cancellationToken = new CancellationTokenSource().Token;
 
         [TestMethod]
         [DataRow(0, 5)]
@@ -53,12 +53,15 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                 Assert.IsTrue(itemProducer.HasMoreResults);
 
-                while ((await itemProducer.MoveNextAsync(this.cancellationToken)).successfullyMovedNext)
+                while ((await itemProducer.TryMoveNextPageAsync(this.cancellationToken)).movedToNextPage)
                 {
-                    Assert.IsTrue(itemProducer.HasMoreResults);
-                    string jsonValue = itemProducer.Current.ToString();
-                    ToDoItem item = JsonConvert.DeserializeObject<ToDoItem>(jsonValue);
-                    itemsRead.Add(item);
+                    while (itemProducer.TryMoveNextDocumentWithinPage())
+                    {
+                        Assert.IsTrue(itemProducer.HasMoreResults);
+                        string jsonValue = itemProducer.Current.ToString();
+                        ToDoItem item = JsonConvert.DeserializeObject<ToDoItem>(jsonValue);
+                        itemsRead.Add(item);
+                    }
                 }
 
                 Assert.IsFalse(itemProducer.HasMoreResults);
@@ -129,7 +132,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             bool blockExecute = true;
             int callBackCount = 0;
-            Action callbackBlock = () =>
+            void callbackBlock()
             {
                 int callBackWaitCount = 0;
                 callBackCount++;
@@ -145,7 +148,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                 // Reset the block for the  next call
                 blockExecute = true;
-            };
+            }
 
             int[] pageSizes = new int[] { 2, 3, 1, 4 };
             (ItemProducer itemProducer, ReadOnlyCollection<ToDoItem> allItems) itemFactory = MockItemProducerFactory.Create(
@@ -159,13 +162,13 @@ namespace Microsoft.Azure.Cosmos.Tests
             // BufferMore
             // Fire and Forget this task.
 #pragma warning disable 4014
-            Task bufferTask = Task.Run(()=> itemProducer.BufferMoreDocumentsAsync(this.cancellationToken));
+            Task bufferTask = Task.Run(() => itemProducer.BufferMoreDocumentsAsync(this.cancellationToken));
 
             // Verify the task started
             int waitCount = 0;
-            while(callBackCount == 0)
+            while (callBackCount == 0)
             {
-                if(waitCount++ > 100)
+                if (waitCount++ > 100)
                 {
                     Assert.Fail("The task never started to buffer the items. The callback was never called");
                 }
@@ -211,7 +214,14 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             itemsToRead = pageSizes[2] + pageSizes[3];
 #pragma warning disable 4014
-            Task moveNext = Task.Run(() => itemProducer.MoveNextAsync(this.cancellationToken));
+            Task moveNext = Task.Run(async () =>
+            {
+                if (!itemProducer.TryMoveNextDocumentWithinPage())
+                {
+                    Assert.IsTrue((await itemProducer.TryMoveNextPageAsync(this.cancellationToken)).movedToNextPage);
+                    Assert.IsTrue(itemProducer.TryMoveNextDocumentWithinPage());
+                }
+            });
 #pragma warning restore 4014
             while (callBackCount == 2)
             {
@@ -240,8 +250,12 @@ namespace Microsoft.Azure.Cosmos.Tests
             List<ToDoItem> itemsRead = new List<ToDoItem>();
             for (int i = 0; i < numItems; i++)
             {
-                (bool successfullyMovedNext, QueryResponseCore? failureResponse) movedNext = await itemProducer.MoveNextAsync(this.cancellationToken);
-                Assert.IsTrue(movedNext.successfullyMovedNext);
+                if (!itemProducer.TryMoveNextDocumentWithinPage())
+                {
+                    Assert.IsTrue((await itemProducer.TryMoveNextPageAsync(this.cancellationToken)).movedToNextPage);
+                    Assert.IsTrue(itemProducer.TryMoveNextDocumentWithinPage());
+                }
+
                 Assert.IsTrue(itemProducer.HasMoreResults);
                 itemsRead.Add(this.ConvertCosmosElement(itemProducer.Current));
             }

@@ -1,7 +1,7 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.CosmosElements
+namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 {
 #if INTERNAL
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 this.number = number;
             }
 
-            protected override short GetValue()
+            public override short GetValue()
             {
                 return this.number;
             }

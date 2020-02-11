@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
     using System.IO;
     using System.Linq;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Query.Core.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
 
@@ -29,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
         public void TestPriorityQueueConstuctors()
         {
             // Constructor Test 1
-            Assert.AreEqual(0, new PriorityQueue<int>(PriorityQueueTest.Size).Count);
+            Assert.AreEqual(0, new PriorityQueue<int>(Size).Count);
 
             // Constructor Test 2
             try
@@ -60,12 +61,12 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
 
             // Constructor Test 5
             {
-                new PriorityQueue<string>(new string[PriorityQueueTest.Size]);
+                new PriorityQueue<string>(new string[Size]);
             }
 
             // Constructor Test 6
             {
-                string[] array = new string[PriorityQueueTest.Size];
+                string[] array = new string[Size];
                 for (int i = 0; i < array.Length - 1; ++i)
                 {
                     array[i] = i.ToString(CultureInfo.InvariantCulture);
@@ -76,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
 
             // Constructor Test 7
             {
-                int[] array = new int[PriorityQueueTest.Size];
+                int[] array = new int[Size];
                 for (int i = 0; i < array.Length; ++i)
                 {
                     array[i] = i;
@@ -92,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
 
             // Constructor Test 8
             {
-                int[] array = new int[PriorityQueueTest.Size];
+                int[] array = new int[Size];
                 for (int i = 0; i < array.Length; ++i)
                 {
                     array[i] = i;
@@ -113,18 +114,18 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
         [TestMethod]
         public void TestCount()
         {
-            TestCount(PriorityQueueTest.PopulatedPriorityQueue(PriorityQueueTest.Size));
+            this.TestCount(PopulatedPriorityQueue(Size));
         }
 
         private void TestCount(PriorityQueue<int> queue)
         {
-            for (int i = 0; i < PriorityQueueTest.Size; ++i)
+            for (int i = 0; i < Size; ++i)
             {
-                Assert.AreEqual(PriorityQueueTest.Size - i, queue.Count);
+                Assert.AreEqual(Size - i, queue.Count);
                 queue.Dequeue();
             }
 
-            for (int i = 0; i < PriorityQueueTest.Size; ++i)
+            for (int i = 0; i < Size; ++i)
             {
                 Assert.AreEqual(i, queue.Count);
                 queue.Enqueue(i);
@@ -137,7 +138,7 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
         [TestMethod]
         public void TestEnqueue()
         {
-            TestEnqueue((int size) => new PriorityQueue<object>(size));
+            this.TestEnqueue((int size) => new PriorityQueue<object>(size));
         }
 
         private void TestEnqueue(Func<int, PriorityQueue<object>> func)
@@ -169,8 +170,8 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
             { }
 
             {
-                PriorityQueue<object> queue = func(PriorityQueueTest.Size);
-                for (int i = 0; i < PriorityQueueTest.Size; ++i)
+                PriorityQueue<object> queue = func(Size);
+                for (int i = 0; i < Size; ++i)
                 {
                     Assert.AreEqual(i, queue.Count);
                     queue.Enqueue(i);
@@ -184,12 +185,12 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
         [TestMethod]
         public void TestDequeue()
         {
-            TestDequeue(PriorityQueueTest.PopulatedPriorityQueue(PriorityQueueTest.Size));
+            this.TestDequeue(PopulatedPriorityQueue(Size));
         }
 
         private void TestDequeue(PriorityQueue<int> queue)
         {
-            for (int i = 0; i < PriorityQueueTest.Size; ++i)
+            for (int i = 0; i < Size; ++i)
             {
                 Assert.AreEqual(i, queue.Dequeue());
             }
@@ -210,12 +211,12 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
         [TestMethod]
         public void TestPeek()
         {
-            TestPeek(PriorityQueueTest.PopulatedPriorityQueue(PriorityQueueTest.Size));
+            this.TestPeek(PopulatedPriorityQueue(Size));
         }
 
         private void TestPeek(PriorityQueue<int> queue)
         {
-            for (int i = 0; i < PriorityQueueTest.Size; ++i)
+            for (int i = 0; i < Size; ++i)
             {
                 Assert.AreEqual(i, queue.Peek());
                 queue.Dequeue();
@@ -236,12 +237,12 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
         [TestMethod]
         public void TestContains()
         {
-            TestContains(PriorityQueueTest.PopulatedPriorityQueue(PriorityQueueTest.Size));
+            this.TestContains(PopulatedPriorityQueue(Size));
         }
 
         private void TestContains(PriorityQueue<int> queue)
         {
-            for (int i = 0; i < PriorityQueueTest.Size; ++i)
+            for (int i = 0; i < Size; ++i)
             {
                 Assert.IsTrue(queue.Contains(i));
                 queue.Dequeue();
@@ -255,7 +256,7 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
         [TestMethod]
         public void TestClear()
         {
-            TestClear(PriorityQueueTest.PopulatedPriorityQueue(PriorityQueueTest.Size));
+            this.TestClear(PopulatedPriorityQueue(Size));
         }
 
         private void TestClear(PriorityQueue<int> queue)
@@ -274,7 +275,7 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
         [TestMethod]
         public void SimpleTest()
         {
-            SimpleTest(new PriorityQueue<int>(0));
+            this.SimpleTest(new PriorityQueue<int>(0));
         }
 
         private void SimpleTest(PriorityQueue<int> queue)
@@ -324,7 +325,7 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
         [TestMethod]
         public void RandomTest()
         {
-            RandomTest(
+            this.RandomTest(
                 (int size, IComparer<int> comparer) => new PriorityQueue<int>(size, comparer),
                 (int[] array, IComparer<int> comparer) => new PriorityQueue<int>(array, comparer));
         }
@@ -411,7 +412,7 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
             {
                 queue.Enqueue(i);
             }
-            for (int i = (n & 1); i < n; i += 2)
+            for (int i = n & 1; i < n; i += 2)
             {
                 queue.Enqueue(i);
             }

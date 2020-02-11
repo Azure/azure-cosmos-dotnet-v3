@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -18,25 +19,15 @@ namespace Microsoft.Azure.Cosmos.Tests
     public class PartitionKeyBatchResponseTests
     {
         [TestMethod]
-        public void StatusCodesAreSet()
-        {
-            const string errorMessage = "some error";
-            PartitionKeyRangeBatchResponse response = new PartitionKeyRangeBatchResponse(HttpStatusCode.NotFound, SubStatusCodes.ClientTcpChannelFull, errorMessage, null);
-            Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
-            Assert.AreEqual(SubStatusCodes.ClientTcpChannelFull, response.SubStatusCode);
-            Assert.AreEqual(errorMessage, response.ErrorMessage);
-        }
-
-        [TestMethod]
         public async Task StatusCodesAreSetThroughResponseAsync()
         {
-            List<BatchOperationResult> results = new List<BatchOperationResult>();
+            List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
             ItemBatchOperation[] arrayOperations = new ItemBatchOperation[1];
 
             ItemBatchOperation operation = new ItemBatchOperation(OperationType.AddComputeGatewayRequestCharges, 0, "0");
 
             results.Add(
-                    new BatchOperationResult(HttpStatusCode.OK)
+                    new TransactionalBatchOperationResult(HttpStatusCode.OK)
                     {
                         ResourceStream = new MemoryStream(new byte[] { 0x41, 0x42 }, index: 0, count: 2, writable: false, publiclyVisible: true),
                         ETag = operation.Id
@@ -49,30 +40,28 @@ namespace Microsoft.Azure.Cosmos.Tests
             SinglePartitionKeyServerBatchRequest batchRequest = await SinglePartitionKeyServerBatchRequest.CreateAsync(
                 partitionKey: null,
                 operations: new ArraySegment<ItemBatchOperation>(arrayOperations),
-                maxBodyLength: 100,
-                maxOperationCount: 1,
-                serializer: new CosmosJsonDotNetSerializer(),
+                serializerCore: MockCosmosUtil.Serializer,
             cancellationToken: default(CancellationToken));
 
-            BatchResponse batchresponse = await BatchResponse.PopulateFromContentAsync(
+            TransactionalBatchResponse batchresponse = await TransactionalBatchResponse.FromResponseMessageAsync(
                 new ResponseMessage(HttpStatusCode.OK) { Content = responseContent },
                 batchRequest,
-                new CosmosJsonDotNetSerializer());
+                MockCosmosUtil.Serializer);
 
-            PartitionKeyRangeBatchResponse response = new PartitionKeyRangeBatchResponse(arrayOperations.Length, batchresponse, new CosmosJsonDotNetSerializer());
+            PartitionKeyRangeBatchResponse response = new PartitionKeyRangeBatchResponse(arrayOperations.Length, batchresponse, MockCosmosUtil.Serializer);
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
         }
 
         [TestMethod]
         public async Task DiagnosticsAreSetThroughResponseAsync()
         {
-            List<BatchOperationResult> results = new List<BatchOperationResult>();
+            List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
             ItemBatchOperation[] arrayOperations = new ItemBatchOperation[1];
 
             ItemBatchOperation operation = new ItemBatchOperation(OperationType.AddComputeGatewayRequestCharges, 0, "0");
 
             results.Add(
-                    new BatchOperationResult(HttpStatusCode.OK)
+                    new TransactionalBatchOperationResult(HttpStatusCode.OK)
                     {
                         ResourceStream = new MemoryStream(new byte[] { 0x41, 0x42 }, index: 0, count: 2, writable: false, publiclyVisible: true),
                         ETag = operation.Id
@@ -85,20 +74,39 @@ namespace Microsoft.Azure.Cosmos.Tests
             SinglePartitionKeyServerBatchRequest batchRequest = await SinglePartitionKeyServerBatchRequest.CreateAsync(
                 partitionKey: null,
                 operations: new ArraySegment<ItemBatchOperation>(arrayOperations),
-                maxBodyLength: 100,
-                maxOperationCount: 1,
-                serializer: new CosmosJsonDotNetSerializer(),
+                serializerCore: MockCosmosUtil.Serializer,
             cancellationToken: default(CancellationToken));
 
-            CosmosDiagnostics diagnostics = new PointOperationStatistics(HttpStatusCode.OK, SubStatusCodes.Unknown, 0, string.Empty, HttpMethod.Get, new Uri("http://localhost"), new CosmosClientSideRequestStatistics());
+            PointOperationStatistics diagnostics = new PointOperationStatistics(
+                activityId: Guid.NewGuid().ToString(),
+                statusCode: HttpStatusCode.OK,
+                subStatusCode: SubStatusCodes.Unknown,
+                requestCharge: 0,
+                errorMessage: string.Empty,
+                method: HttpMethod.Get,
+                requestUri: new Uri("http://localhost"),
+                requestSessionToken: null,
+                responseSessionToken: null,
+                clientSideRequestStatistics: new CosmosClientSideRequestStatistics());
 
-            BatchResponse batchresponse = await BatchResponse.PopulateFromContentAsync(
-                new ResponseMessage(HttpStatusCode.OK) { Content = responseContent, Diagnostics = diagnostics },
+            ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.OK)
+            {
+                Content = responseContent,
+            };
+
+            responseMessage.DiagnosticsContext.AddDiagnosticsInternal(diagnostics);
+
+            TransactionalBatchResponse batchresponse = await TransactionalBatchResponse.FromResponseMessageAsync(
+                responseMessage,
                 batchRequest,
-                new CosmosJsonDotNetSerializer());
+                MockCosmosUtil.Serializer);
 
-            PartitionKeyRangeBatchResponse response = new PartitionKeyRangeBatchResponse(arrayOperations.Length, batchresponse, new CosmosJsonDotNetSerializer());
-            Assert.AreEqual(diagnostics, response.Diagnostics);
+            PartitionKeyRangeBatchResponse response = new PartitionKeyRangeBatchResponse(arrayOperations.Length, batchresponse, MockCosmosUtil.Serializer);
+
+            string pointDiagnosticString = diagnostics.ToString();
+            pointDiagnosticString = pointDiagnosticString.Substring(1, pointDiagnosticString.Length - 2);
+            string diagnosticContextString = response.DiagnosticsContext.ToString();
+            Assert.IsTrue(diagnosticContextString.Contains(pointDiagnosticString));
         }
     }
 }

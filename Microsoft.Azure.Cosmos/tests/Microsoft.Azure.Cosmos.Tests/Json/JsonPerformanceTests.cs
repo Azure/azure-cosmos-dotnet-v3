@@ -3,16 +3,20 @@
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
 //-----------------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
+namespace Microsoft.Azure.Cosmos.Tests.Json
 {
-    using System.IO;
+    using System;
+    using System.Diagnostics;
+    using System.Text;
+    using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     [TestCategory("Functional")]
     public class JsonPerformanceTests
     {
-        private static readonly bool runPerformanceTests = true;
+        private static readonly bool runPerformanceTests = false;
 
         [TestInitialize]
         public void TestInitialize()
@@ -42,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         {
             if (runPerformanceTests)
             {
-                this.PerformanceBenchmarkCuratedJson("countries.json");
+                this.PerformanceBenchmarkCuratedJson("countries");
             }
         }
 
@@ -62,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         {
             if (runPerformanceTests)
             {
-                this.PerformanceBenchmarkCuratedJson("lastfm.json");
+                this.PerformanceBenchmarkCuratedJson("lastfm");
             }
         }
 
@@ -102,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         {
             if (runPerformanceTests)
             {
-                this.PerformanceBenchmarkCuratedJson("NutritionData.json");
+                this.PerformanceBenchmarkCuratedJson("NutritionData");
             }
         }
 
@@ -112,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         {
             if (runPerformanceTests)
             {
-                this.PerformanceBenchmarkCuratedJson("runsCollection.json");
+                this.PerformanceBenchmarkCuratedJson("runsCollection");
             }
         }
 
@@ -132,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         {
             if (runPerformanceTests)
             {
-                this.PerformanceBenchmarkCuratedJson("states_legislators.json");
+                this.PerformanceBenchmarkCuratedJson("states_legislators");
             }
         }
 
@@ -152,7 +156,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         {
             if (runPerformanceTests)
             {
-                this.PerformanceBenchmarkCuratedJson("TicinoErrorBuckets.json");
+                this.PerformanceBenchmarkCuratedJson("TicinoErrorBuckets");
             }
         }
 
@@ -162,7 +166,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         {
             if (runPerformanceTests)
             {
-                this.PerformanceBenchmarkCuratedJson("twitter_data.json");
+                this.PerformanceBenchmarkCuratedJson("twitter_data");
             }
         }
 
@@ -172,7 +176,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         {
             if (runPerformanceTests)
             {
-                this.PerformanceBenchmarkCuratedJson("ups1.json");
+                this.PerformanceBenchmarkCuratedJson("ups1");
             }
         }
 
@@ -182,17 +186,101 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         {
             if (runPerformanceTests)
             {
-                this.PerformanceBenchmarkCuratedJson("XpertEvents.json");
+                this.PerformanceBenchmarkCuratedJson("XpertEvents");
             }
         }
 
-        private void PerformanceBenchmarkCuratedJson(string filename)
+        [TestMethod]
+        [Owner("brchon")]
+        public void Utf8VsUtf16StringWrite()
         {
-            string path = string.Format("TestJsons/{0}", filename);
-            string json = File.ReadAllText(path);
+            void RunPerf(string utf16String, JsonSerializationFormat jsonSerializationFormat, bool useUtf8)
+            {
+                ReadOnlySpan<byte> utf8String = Encoding.UTF8.GetBytes(utf16String);
+
+                Stopwatch stopWatch = new Stopwatch();
+                for (int i = 0; i < 1000000; i++)
+                {
+                    IJsonWriter writer = JsonWriter.Create(jsonSerializationFormat);
+                    stopWatch.Start();
+                    if (useUtf8)
+                    {
+                        writer.WriteStringValue(utf8String);
+                    }
+                    else
+                    {
+                        writer.WriteStringValue(utf16String);
+                    }
+                    stopWatch.Stop();
+                }
+
+                Console.WriteLine($"UTF {(useUtf8 ? 8 : 16)} {jsonSerializationFormat} writer + string length: {utf16String.Length} = {stopWatch.ElapsedMilliseconds} ms");
+            }
+
+            foreach (int stringLength in new int[] { 8, 32, 256, 1024, 4096 })
+            {
+                foreach (JsonSerializationFormat jsonSerializationFormat in new JsonSerializationFormat[] { JsonSerializationFormat.Text, JsonSerializationFormat.Binary })
+                {
+                    foreach (bool useUtf8 in new bool[] { false, true })
+                    {
+                        RunPerf(
+                            utf16String: new string('a', stringLength),
+                            jsonSerializationFormat: jsonSerializationFormat,
+                            useUtf8: useUtf8);
+                    }
+                }
+            }
+        }
+
+        [TestMethod]
+        [Owner("brchon")]
+        public void Utf8VsUtf16StringRead()
+        {
+            void RunPerf(string utf16String, JsonSerializationFormat jsonSerializationFormat, bool useUtf8)
+            {
+                Stopwatch stopWatch = new Stopwatch();
+                byte[] payload = JsonTestUtils.ConvertTextToBinary("\"" + utf16String + "\"");
+                for (int i = 0; i < 1000000; i++)
+                {
+                    IJsonReader reader = JsonReader.Create(payload);
+                    reader.Read();
+                    stopWatch.Start();
+                    if (useUtf8)
+                    {
+                        reader.TryGetBufferedUtf8StringValue(out ReadOnlyMemory<byte> bufferedUtf8StringValue);
+                    }
+                    else
+                    {
+                        string value = reader.GetStringValue();
+                    }
+                    stopWatch.Stop();
+                }
+
+                Console.WriteLine($"UTF {(useUtf8 ? 8 : 16)} {jsonSerializationFormat} reader + string length: {utf16String.Length} = {stopWatch.ElapsedMilliseconds} ms");
+            }
+
+            foreach (int stringLength in new int[] { 8, 32, 256, 1024, 4096 })
+            {
+                foreach (JsonSerializationFormat jsonSerializationFormat in new JsonSerializationFormat[] { JsonSerializationFormat.Text, JsonSerializationFormat.Binary })
+                {
+                    foreach (bool useUtf8 in new bool[] { false, true })
+                    {
+                        RunPerf(
+                            utf16String: new string('a', stringLength),
+                            jsonSerializationFormat: jsonSerializationFormat,
+                            useUtf8: useUtf8);
+                    }
+                }
+            }
+        }
+
+        private void PerformanceBenchmarkCuratedJson(string path)
+        {
+            path = string.Format("TestJsons/{0}", path);
+            string json = TextFileConcatenation.ReadMultipartFile(path);
             const int numberOfIterations = 1;
 
-            JsonPerfMeasurement.MeasurePerf(json, filename, numberOfIterations);
+            JsonPerfMeasurement.MeasurePerf(json, path, numberOfIterations);
         }
     }
 }

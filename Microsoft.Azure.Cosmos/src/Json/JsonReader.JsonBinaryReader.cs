@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.IO;
     using System.Text;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Query.Core;
 
     /// <summary>
     /// Partial JsonReader with a private JsonBinaryReader implementation
@@ -25,9 +26,9 @@ namespace Microsoft.Azure.Cosmos.Json
         private sealed class JsonBinaryReader : JsonReader
         {
             /// <summary>
-            /// JsonBinaryReader can read from either a stream or a byte array and that is abstracted as a JsonBinaryBuffer.
+            /// Buffer to read from.
             /// </summary>
-            private readonly JsonBinaryBufferBase jsonBinaryBuffer;
+            private readonly JsonBinaryMemoryReader jsonBinaryBuffer;
 
             /// <summary>
             /// Dictionary used for user string encoding.
@@ -39,47 +40,44 @@ namespace Microsoft.Azure.Cosmos.Json
             /// To accommodate for this we have a progress stack to let us know how many bytes there are left to read for all levels of nesting. 
             /// With this information we know that we are at the end of a context and can now surface an end object / array token.
             /// </summary>
-            private readonly ProgressStack progressStack;
+            private readonly Stack<int> arrayAndObjectEndStack;
 
-            public JsonBinaryReader(byte[] buffer, JsonStringDictionary jsonStringDictionary = null, bool skipValidation = false)
-                : this(new JsonBinaryArrayBuffer(buffer, jsonStringDictionary))
-            {
-            }
+            private int currentTokenPosition;
 
-            public JsonBinaryReader(Stream stream, JsonStringDictionary jsonStringDictionary = null, bool skipValidation = false)
-                : this(new JsonBinaryStreamBuffer(stream, jsonStringDictionary))
-            {
-            }
-
-            private JsonBinaryReader(JsonBinaryBufferBase jsonBinaryBuffer, JsonStringDictionary jsonStringDictionary = null, bool skipValidation = false)
+            public JsonBinaryReader(
+                ReadOnlyMemory<byte> buffer,
+                JsonStringDictionary jsonStringDictionary = null,
+                bool skipValidation = false)
                 : base(skipValidation)
             {
-                this.jsonBinaryBuffer = jsonBinaryBuffer;
+                if (buffer.Length < 2)
+                {
+                    throw new ArgumentException($"{nameof(buffer)} must have at least two byte.");
+                }
 
-                // First byte is the serialization format so we are skipping over it
-                this.jsonBinaryBuffer.ReadByte();
-                this.progressStack = new ProgressStack();
+                if (buffer.Span[0] != (byte)JsonSerializationFormat.Binary)
+                {
+                    throw new ArgumentNullException("buffer must be binary encoded.");
+                }
+
+                // offset for the 0x80 (128) binary serialization type marker.
+                buffer = buffer.Slice(1);
+
+                // Only navigate the outer most json value and trim off trailing bytes
+                int jsonValueLength = JsonBinaryEncoding.GetValueLength(buffer.Span);
+                if (buffer.Length < jsonValueLength)
+                {
+                    throw new ArgumentException("buffer is shorter than the length prefix.");
+                }
+
+                buffer = buffer.Slice(0, jsonValueLength);
+
+                this.jsonBinaryBuffer = new JsonBinaryMemoryReader(buffer);
+                this.arrayAndObjectEndStack = new Stack<int>();
                 this.jsonStringDictionary = jsonStringDictionary;
             }
 
-            /// <summary>
-            /// Callback for processing json tokens.
-            /// </summary>
-            /// <param name="newContextLength">The length of the new context if there is one.</param>
-            /// <returns>Whether or not there is a new context.</returns>
-            private delegate bool ProcessJsonTokenCallback(out long newContextLength);
-
-            private enum ContextType
-            {
-                EmptyContext = 0,
-                SingleItemContext = -1,
-                SinglePropertyContext = -2,
-                ContextWithLength = 1,
-            }
-
-            /// <summary>
-            /// Gets the <see cref="JsonSerializationFormat"/> for the JsonReader
-            /// </summary>
+            /// <inheritdoc />
             public override JsonSerializationFormat SerializationFormat
             {
                 get
@@ -88,16 +86,14 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
             }
 
-            /// <summary>
-            /// Advances the JsonReader by one token.
-            /// </summary>
-            /// <returns><code>true</code> if the JsonReader successfully advanced to the next token; <code>false</code> if the JsonReader has passed the end of the JSON.</returns>
+            /// <inheritdoc />
             public override bool Read()
             {
+                JsonTokenType jsonTokenType;
+                int nextTokenOffset;
                 // First check if we just finished an array or object context
-                if (this.progressStack.IsAtEndOfContext)
+                if ((this.arrayAndObjectEndStack.Count != 0) && (this.arrayAndObjectEndStack.Peek() == this.jsonBinaryBuffer.Position))
                 {
-                    JsonTokenType jsonTokenType = JsonTokenType.NotStarted;
                     if (this.JsonObjectState.InArrayContext)
                     {
                         jsonTokenType = JsonTokenType.EndArray;
@@ -108,12 +104,11 @@ namespace Microsoft.Azure.Cosmos.Json
                     }
                     else
                     {
-                        DefaultTrace.TraceCritical("Expected to be in either array or object context");
+                        throw new JsonInvalidTokenException();
                     }
 
-                    this.JsonObjectState.RegisterToken(jsonTokenType);
-                    this.progressStack.Pop();
-                    return true;
+                    nextTokenOffset = 0;
+                    this.arrayAndObjectEndStack.Pop();
                 }
                 else
                 {
@@ -133,673 +128,246 @@ namespace Microsoft.Azure.Cosmos.Json
                             }
                             else
                             {
-                                DefaultTrace.TraceCritical("Expected to be in either array or object context");
+                                throw new InvalidOperationException("Expected to be in either array or object context");
                             }
                         }
 
                         return false;
                     }
-                    else
+
+                    if ((this.JsonObjectState.CurrentDepth == 0) && (this.CurrentTokenType != JsonTokenType.NotStarted))
                     {
-                        if (this.JsonObjectState.CurrentDepth == 0 && this.CurrentTokenType != JsonTokenType.NotStarted)
+                        // There are trailing characters outside of the outter most object or array
+                        throw new JsonUnexpectedTokenException();
+                    }
+
+                    jsonTokenType = JsonBinaryReader.GetJsonTokenType(this.jsonBinaryBuffer.Peek());
+                    if ((jsonTokenType == JsonTokenType.String) && this.JsonObjectState.IsPropertyExpected)
+                    {
+                        jsonTokenType = JsonTokenType.FieldName;
+                    }
+
+                    // If this is begin array/object token then we need to identify where array/object end token is.
+                    // Also the next token offset is just the array type marker + length prefix + count prefix
+                    if ((jsonTokenType == JsonTokenType.BeginArray) || (jsonTokenType == JsonTokenType.BeginObject))
+                    {
+                        if (!JsonBinaryEncoding.TryGetValueLength(
+                            this.jsonBinaryBuffer.GetBufferedRawJsonToken().Span,
+                            out int arrayOrObjectLength))
                         {
-                            // There are trailing characters outside of the outter most object or array
                             throw new JsonUnexpectedTokenException();
                         }
 
-                        this.ReadToken();
-                        return true;
+                        this.arrayAndObjectEndStack.Push(this.jsonBinaryBuffer.Position + arrayOrObjectLength);
+                        nextTokenOffset = JsonBinaryReader.GetArrayOrObjectPrefixLength(this.jsonBinaryBuffer.Peek());
+                    }
+                    else
+                    {
+                        if (!JsonBinaryEncoding.TryGetValueLength(
+                            this.jsonBinaryBuffer.GetBufferedRawJsonToken().Span,
+                            out nextTokenOffset))
+                        {
+                            throw new JsonUnexpectedTokenException();
+                        }
                     }
                 }
+
+                this.JsonObjectState.RegisterToken(jsonTokenType);
+                this.currentTokenPosition = this.jsonBinaryBuffer.Position;
+                this.jsonBinaryBuffer.SkipBytes(nextTokenOffset);
+                return true;
             }
 
-            /// <summary>
-            /// Gets the next JSON token from the JsonReader as a double.
-            /// </summary>
-            /// <returns>The next JSON token from the JsonReader as a double.</returns>
+            /// <inheritdoc />
             public override Number64 GetNumberValue()
             {
-                return this.jsonBinaryBuffer.GetNumberValue();
+                if (this.JsonObjectState.CurrentTokenType != JsonTokenType.Number)
+                {
+                    throw new JsonNotNumberTokenException();
+                }
+
+                return JsonBinaryEncoding.GetNumberValue(
+                    this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition).Span);
             }
 
-            /// <summary>
-            /// Gets the next JSON token from the JsonReader as a string.
-            /// </summary>
-            /// <returns>The next JSON token from the JsonReader as a string.</returns>
+            /// <inheritdoc />
             public override string GetStringValue()
             {
-                return this.jsonBinaryBuffer.GetStringValue();
+                if (!(
+                    (this.JsonObjectState.CurrentTokenType == JsonTokenType.String) ||
+                    (this.JsonObjectState.CurrentTokenType == JsonTokenType.FieldName)))
+                {
+                    throw new JsonInvalidTokenException();
+                }
+
+                return JsonBinaryEncoding.GetStringValue(
+                    this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition),
+                    this.jsonStringDictionary);
             }
 
-            /// <summary>
-            /// Gets next JSON token from the JsonReader as a raw series of bytes that is buffered.
-            /// </summary>
-            /// <returns>The next JSON token from the JsonReader as a raw series of bytes that is buffered.</returns>
-            public override IReadOnlyList<byte> GetBufferedRawJsonToken()
+            /// <inheritdoc />
+            public override bool TryGetBufferedUtf8StringValue(out ReadOnlyMemory<byte> bufferedUtf8StringValue)
             {
-                return this.jsonBinaryBuffer.GetBufferedRawJsonToken();
+                if (!(
+                    (this.JsonObjectState.CurrentTokenType == JsonTokenType.String) ||
+                    (this.JsonObjectState.CurrentTokenType == JsonTokenType.FieldName)))
+                {
+                    throw new JsonInvalidTokenException();
+                }
+
+                return JsonBinaryEncoding.TryGetBufferedUtf8StringValue(
+                    this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition),
+                    this.jsonStringDictionary,
+                    out bufferedUtf8StringValue);
             }
 
-            public override sbyte GetInt8Value()
+            /// <inheritdoc />
+            public override bool TryGetBufferedRawJsonToken(out ReadOnlyMemory<byte> bufferedRawJsonToken)
             {
-                return this.jsonBinaryBuffer.GetInt8Value();
+                if (!JsonBinaryEncoding.TryGetValueLength(
+                    this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition).Span,
+                    out int length))
+                {
+                    throw new InvalidOperationException();
+                }
+
+                ReadOnlyMemory<byte> candidate = this.jsonBinaryBuffer.GetBufferedRawJsonToken(
+                    this.currentTokenPosition,
+                    this.currentTokenPosition + length);
+
+                if ((this.jsonStringDictionary != null) && JsonBinaryReader.IsStringOrNested(this.CurrentTokenType))
+                {
+                    // If there is dictionary encoding, then we need to force a rewrite.
+                    bufferedRawJsonToken = default;
+                    return false;
+                }
+
+                bufferedRawJsonToken = candidate;
+                return true;
             }
 
-            public override short GetInt16Value()
+            private static bool IsStringOrNested(JsonTokenType type)
             {
-                return this.jsonBinaryBuffer.GetInt16Value();
-            }
-
-            public override int GetInt32Value()
-            {
-                return this.jsonBinaryBuffer.GetInt32Value();
-            }
-
-            public override long GetInt64Value()
-            {
-                return this.jsonBinaryBuffer.GetInt64Value();
-            }
-
-            public override uint GetUInt32Value()
-            {
-                return this.jsonBinaryBuffer.GetUInt32Value();
-            }
-
-            public override float GetFloat32Value()
-            {
-                return this.jsonBinaryBuffer.GetFloat32Value();
-            }
-
-            public override double GetFloat64Value()
-            {
-                return this.jsonBinaryBuffer.GetFloat64Value();
-            }
-
-            public override Guid GetGuidValue()
-            {
-                return this.jsonBinaryBuffer.GetGuidValue();
-            }
-
-            public override IReadOnlyList<byte> GetBinaryValue()
-            {
-                return this.jsonBinaryBuffer.GetBinaryValue();
-            }
-
-            private void ReadToken()
-            {
-                byte typeMarker = this.jsonBinaryBuffer.Peek();
-                switch (this.GetJsonTokenType(typeMarker))
+                switch (type)
                 {
                     case JsonTokenType.BeginArray:
-                        this.ProcessBeginArray();
-                        break;
-
                     case JsonTokenType.BeginObject:
-                        this.ProcessBeginObject();
-                        break;
-
                     case JsonTokenType.String:
-                        this.ProcessString();
-                        break;
-
-                    case JsonTokenType.Number:
-                        this.ProcessNumber();
-                        break;
-
-                    case JsonTokenType.True:
-                        this.ProcessTrue();
-                        break;
-
-                    case JsonTokenType.False:
-                        this.ProcessFalse();
-                        break;
-
-                    case JsonTokenType.Null:
-                        this.ProcessNull();
-                        break;
-
-                    case JsonTokenType.Int8:
-                        this.ProcessInt8();
-                        break;
-
-                    case JsonTokenType.Int16:
-                        this.ProcessInt16();
-                        break;
-
-                    case JsonTokenType.Int32:
-                        this.ProcessInt32();
-                        break;
-
-                    case JsonTokenType.Int64:
-                        this.ProcessInt64();
-                        break;
-
-                    case JsonTokenType.UInt32:
-                        this.ProcessUInt32();
-                        break;
-
-                    case JsonTokenType.Float32:
-                        this.ProcessFloat32();
-                        break;
-
-                    case JsonTokenType.Float64:
-                        this.ProcessFloat64();
-                        break;
-
-                    case JsonTokenType.Guid:
-                        this.ProcessGuid();
-                        break;
-
-                    case JsonTokenType.Binary:
-                        this.ProcessBinary();
-                        break;
-
+                    case JsonTokenType.FieldName:
+                        return true;
                     default:
-                        throw new JsonUnexpectedTokenException();
+                        return false;
                 }
             }
 
-            /// <summary>
-            /// Given a jsonTokenType and supplied callback this function will update jsonBuffer, jsonObject, and progressStack.
-            /// The buffer will know the current token type, where that token starts and ends.
-            /// The object state will also know the current token type.
-            /// Finally the progress stack will add a new context if there is one and make progress on all parent context.
-            /// </summary>
-            /// <param name="jsonTokenType">The type of token being processed.</param>
-            /// <param name="processJsonTokenCallback">The callback used to actually process the token.</param>
-            private void ProcessJsonToken(JsonTokenType jsonTokenType, ProcessJsonTokenCallback processJsonTokenCallback)
+            /// <inheritdoc />
+            public override sbyte GetInt8Value()
             {
-                // Start the token
-                this.jsonBinaryBuffer.CurrentJsonTokenType = jsonTokenType;
-                this.jsonBinaryBuffer.StartToken();
-
-                // Process the value and see how many bytes to push on to the progess stack.
-                long newContextLength;
-                bool hasNewContext = processJsonTokenCallback(out newContextLength);
-
-                // End the token
-                this.jsonBinaryBuffer.EndToken();
-                this.JsonObjectState.RegisterToken(jsonTokenType);
-                long bytesRead = this.jsonBinaryBuffer.GetBufferedRawJsonToken().Count;
-
-                // reading bytes from the most nested context means we read bytes from all context
-                // Need to modify all elements of the stack to reflect the number of bytes read.
-                this.progressStack.UpdateProgress(bytesRead);
-
-                if (this.progressStack.Count != 0)
+                if (this.JsonObjectState.CurrentTokenType != JsonTokenType.Int8)
                 {
-                    switch (this.progressStack.CurrentContextType)
-                    {
-                        case ContextType.EmptyContext:
-                            // Don't so anything, since the context just became empty
-                            break;
-
-                        case ContextType.SingleItemContext:
-                            // This was the only item in a single item context
-                            this.progressStack.Pop();
-
-                            // Which means there is nothing left to read from said array
-                            this.progressStack.PushEmptyContext();
-                            break;
-
-                        case ContextType.SinglePropertyContext:
-                            // This was the fieldname of a single property object
-                            this.progressStack.Pop();
-
-                            // But there is still a property value left to read
-                            this.progressStack.PushSingleItemContext();
-                            break;
-
-                        case ContextType.ContextWithLength:
-                            // Still working on this context, so don't do anything to it.
-                            break;
-
-                        default:
-                            DefaultTrace.TraceCritical("Progress stack's has unknown context type.");
-                            break;
-                    }
+                    throw new JsonNotNumberTokenException();
                 }
 
-                // Push the new context length is necessary.
-                if (hasNewContext)
+                return JsonBinaryEncoding.GetInt8Value(
+                    this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition).Span);
+            }
+
+            /// <inheritdoc />
+            public override short GetInt16Value()
+            {
+                if (this.JsonObjectState.CurrentTokenType != JsonTokenType.Int16)
                 {
-                    this.progressStack.Push(newContextLength);
+                    throw new JsonNotNumberTokenException();
                 }
+
+                return JsonBinaryEncoding.GetInt16Value(
+                    this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition).Span);
             }
 
-            private bool ProcessBeginArrayCallback(out long newContextLength)
+            /// <inheritdoc />
+            public override int GetInt32Value()
             {
-                byte typeMarker = this.jsonBinaryBuffer.ReadByte();
-                long count;
-                switch (typeMarker)
+                if (this.JsonObjectState.CurrentTokenType != JsonTokenType.Int32)
                 {
-                    case JsonBinaryEncoding.TypeMarker.EmptyArray:
-                        newContextLength = ProgressStack.EmptyContext;
-                        break;
-                    case JsonBinaryEncoding.TypeMarker.SingleItemArray:
-                        // We don't know the length of a single item array at this point so we just delay and will update once we do know.
-                        newContextLength = ProgressStack.SingleItemContext;
-                        break;
-                    case JsonBinaryEncoding.TypeMarker.Array1ByteLength:
-                        newContextLength = this.jsonBinaryBuffer.ReadByte();
-                        break;
-                    case JsonBinaryEncoding.TypeMarker.Array1ByteLengthAndCount:
-                        newContextLength = this.jsonBinaryBuffer.ReadByte();
-                        count = this.jsonBinaryBuffer.ReadByte();
-                        break;
-                    case JsonBinaryEncoding.TypeMarker.Array2ByteLength:
-                        newContextLength = this.jsonBinaryBuffer.ReadUInt16();
-                        break;
-                    case JsonBinaryEncoding.TypeMarker.Array2ByteLengthAndCount:
-                        newContextLength = this.jsonBinaryBuffer.ReadUInt16();
-                        count = this.jsonBinaryBuffer.ReadUInt16();
-                        break;
-                    case JsonBinaryEncoding.TypeMarker.Array4ByteLength:
-                        newContextLength = this.jsonBinaryBuffer.ReadUInt32();
-                        break;
-                    case JsonBinaryEncoding.TypeMarker.Array4ByteLengthAndCount:
-                        newContextLength = this.jsonBinaryBuffer.ReadUInt32();
-                        count = this.jsonBinaryBuffer.ReadUInt32();
-                        break;
-                    default:
-                        throw new JsonInvalidTokenException();
+                    throw new JsonNotNumberTokenException();
                 }
 
-                return true;
+                return JsonBinaryEncoding.GetInt32Value(
+                    this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition).Span);
             }
 
-            private void ProcessBeginArray()
+            /// <inheritdoc />
+            public override long GetInt64Value()
             {
-                this.ProcessJsonToken(JsonTokenType.BeginArray, this.ProcessBeginArrayCallback);
-            }
-
-            private bool ProcessBeingObjectCallback(out long newContextLength)
-            {
-                byte typeMarker = this.jsonBinaryBuffer.ReadByte();
-                long count;
-                switch (typeMarker)
+                if (this.JsonObjectState.CurrentTokenType != JsonTokenType.Int64)
                 {
-                    case JsonBinaryEncoding.TypeMarker.EmptyObject:
-                        newContextLength = ProgressStack.EmptyContext;
-                        break;
-                    case JsonBinaryEncoding.TypeMarker.SinglePropertyObject:
-                        // We don't know the length of a single property object so we will delay by saying "2" things need to be read.
-                        newContextLength = ProgressStack.SinglePropertyContext;
-                        break;
-                    case JsonBinaryEncoding.TypeMarker.Object1ByteLength:
-                        newContextLength = this.jsonBinaryBuffer.ReadByte();
-                        break;
-                    case JsonBinaryEncoding.TypeMarker.Object1ByteLengthAndCount:
-                        newContextLength = this.jsonBinaryBuffer.ReadByte();
-                        count = this.jsonBinaryBuffer.ReadByte();
-                        break;
-                    case JsonBinaryEncoding.TypeMarker.Object2ByteLength:
-                        newContextLength = this.jsonBinaryBuffer.ReadUInt16();
-                        break;
-                    case JsonBinaryEncoding.TypeMarker.Object2ByteLengthAndCount:
-                        newContextLength = this.jsonBinaryBuffer.ReadUInt16();
-                        count = this.jsonBinaryBuffer.ReadUInt16();
-                        break;
-                    case JsonBinaryEncoding.TypeMarker.Object4ByteLength:
-                        newContextLength = this.jsonBinaryBuffer.ReadUInt32();
-                        break;
-                    case JsonBinaryEncoding.TypeMarker.Object4ByteLengthAndCount:
-                        newContextLength = this.jsonBinaryBuffer.ReadUInt32();
-                        count = this.jsonBinaryBuffer.ReadUInt32();
-                        break;
-                    default:
-                        throw new JsonInvalidTokenException();
+                    throw new JsonNotNumberTokenException();
                 }
 
-                return true;
+                return JsonBinaryEncoding.GetInt64Value(
+                    this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition).Span);
             }
 
-            private void ProcessBeginObject()
+            /// <inheritdoc />
+            public override uint GetUInt32Value()
             {
-                this.ProcessJsonToken(JsonTokenType.BeginObject, this.ProcessBeingObjectCallback);
-            }
-
-            private bool ProcessStringCallback(out long newContextLength)
-            {
-                byte typeMarker = this.jsonBinaryBuffer.ReadByte();
-
-                if (JsonBinaryEncoding.TypeMarker.IsSystemString(typeMarker))
+                if (this.JsonObjectState.CurrentTokenType != JsonTokenType.UInt32)
                 {
-                    this.ProcessEncodedSystemString(typeMarker);
+                    throw new JsonNotNumberTokenException();
                 }
-                else if (JsonBinaryEncoding.TypeMarker.IsUserString(typeMarker))
+
+                return JsonBinaryEncoding.GetUInt32Value(
+                    this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition).Span);
+            }
+
+            /// <inheritdoc />
+            public override float GetFloat32Value()
+            {
+                if (this.JsonObjectState.CurrentTokenType != JsonTokenType.Float32)
                 {
-                    this.ProcessEncodedUserString(typeMarker);
+                    throw new JsonNotNumberTokenException();
                 }
-                else
+
+                return JsonBinaryEncoding.GetFloat32Value(
+                    this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition).Span);
+            }
+
+            /// <inheritdoc />
+            public override double GetFloat64Value()
+            {
+                if (this.JsonObjectState.CurrentTokenType != JsonTokenType.Float64)
                 {
-                    // Retrieve utf-8 buffered string
-                    this.ProcessStringWithLength(typeMarker);
+                    throw new JsonNotNumberTokenException();
                 }
 
-                newContextLength = 0;
-                return false;
+                return JsonBinaryEncoding.GetFloat64Value(
+                    this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition).Span);
             }
 
-            private void ProcessString()
+            /// <inheritdoc />
+            public override Guid GetGuidValue()
             {
-                this.ProcessJsonToken(
-                    this.JsonObjectState.IsPropertyExpected ? JsonTokenType.FieldName : JsonTokenType.String,
-                    this.ProcessStringCallback);
-            }
-
-            private void ProcessStringWithLength(byte typeMarker)
-            {
-                long length;
-                if (JsonBinaryEncoding.TypeMarker.IsEncodedLengthString(typeMarker))
+                if (this.JsonObjectState.CurrentTokenType != JsonTokenType.Guid)
                 {
-                    length = JsonBinaryEncoding.GetStringLengths(typeMarker);
+                    throw new JsonNotNumberTokenException();
                 }
-                else
+
+                return JsonBinaryEncoding.GetGuidValue(
+                    this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition).Span);
+            }
+
+            /// <inheritdoc />
+            public override ReadOnlyMemory<byte> GetBinaryValue()
+            {
+                if (this.JsonObjectState.CurrentTokenType != JsonTokenType.Binary)
                 {
-                    switch (typeMarker)
-                    {
-                        case JsonBinaryEncoding.TypeMarker.String1ByteLength:
-                            length = this.jsonBinaryBuffer.ReadByte();
-                            break;
-                        case JsonBinaryEncoding.TypeMarker.String2ByteLength:
-                            length = this.jsonBinaryBuffer.ReadUInt16();
-                            break;
-                        case JsonBinaryEncoding.TypeMarker.String4ByteLength:
-                            length = this.jsonBinaryBuffer.ReadUInt32();
-                            break;
-                        default:
-                            throw new JsonNotStringTokenException();
-                    }
+                    throw new JsonNotNumberTokenException();
                 }
 
-                if (length > int.MaxValue)
-                {
-                    throw new InvalidOperationException("Tried to read a string whose length is greater than int.MaxValue");
-                }
-
-                this.jsonBinaryBuffer.ReadBytes((int)length);
+                return JsonBinaryEncoding.GetBinaryValue(this.jsonBinaryBuffer.GetRawMemoryJsonToken(this.currentTokenPosition));
             }
 
-            private void ProcessEncodedUserString(byte typeMarker)
-            {
-                if (JsonBinaryEncoding.TypeMarker.IsOneByteEncodedUserString(typeMarker))
-                {
-                    // typemarker is the encoded user string.
-                }
-                else if (JsonBinaryEncoding.TypeMarker.IsTwoByteEncodedUserString(typeMarker))
-                {
-                    this.jsonBinaryBuffer.ReadByte();
-                }
-                else
-                {
-                    throw new JsonInvalidStringCharacterException();
-                }
-            }
-
-            private void ProcessEncodedSystemString(byte typeMarker)
-            {
-                if (JsonBinaryEncoding.TypeMarker.IsOneByteEncodedSystemString(typeMarker))
-                {
-                    // typemarker is the encoded system string.
-                }
-                else
-                {
-                    throw new JsonInvalidStringCharacterException();
-                }
-            }
-
-            private bool ProcessNumberCallback(out long newContextLength)
-            {
-                byte typeMarker = this.jsonBinaryBuffer.ReadByte();
-
-                if (JsonBinaryEncoding.TypeMarker.IsEncodedNumberLiteral(typeMarker))
-                {
-                    // The number marker is the value;
-                }
-                else
-                {
-                    switch (typeMarker)
-                    {
-                        case JsonBinaryEncoding.TypeMarker.NumberUInt8:
-                            this.jsonBinaryBuffer.ReadByte();
-                            break;
-                        case JsonBinaryEncoding.TypeMarker.NumberInt16:
-                            this.jsonBinaryBuffer.ReadInt16();
-                            break;
-                        case JsonBinaryEncoding.TypeMarker.NumberInt32:
-                            this.jsonBinaryBuffer.ReadInt32();
-                            break;
-                        case JsonBinaryEncoding.TypeMarker.NumberInt64:
-                            this.jsonBinaryBuffer.ReadInt64();
-                            break;
-                        case JsonBinaryEncoding.TypeMarker.NumberDouble:
-                            this.jsonBinaryBuffer.ReadDouble();
-                            break;
-                        default:
-                            throw new JsonInvalidNumberException();
-                    }
-                }
-
-                newContextLength = 0;
-                return false;
-            }
-
-            private void ProcessNumber()
-            {
-                this.ProcessJsonToken(JsonTokenType.Number, this.ProcessNumberCallback);
-            }
-
-            private bool ProcessInt8Callback(out long newContextLength)
-            {
-                if (this.jsonBinaryBuffer.ReadByte() != JsonBinaryEncoding.TypeMarker.Int8)
-                {
-                    throw new JsonInvalidNumberException();
-                }
-
-                this.jsonBinaryBuffer.ReadByte();
-
-                newContextLength = 0;
-                return false;
-            }
-
-            private bool ProcessInt16Callback(out long newContextLength)
-            {
-                if (this.jsonBinaryBuffer.ReadByte() != JsonBinaryEncoding.TypeMarker.Int16)
-                {
-                    throw new JsonInvalidNumberException();
-                }
-
-                this.jsonBinaryBuffer.ReadInt16();
-
-                newContextLength = 0;
-                return false;
-            }
-
-            private bool ProcessInt32Callback(out long newContextLength)
-            {
-                if (this.jsonBinaryBuffer.ReadByte() != JsonBinaryEncoding.TypeMarker.Int32)
-                {
-                    throw new JsonInvalidNumberException();
-                }
-
-                this.jsonBinaryBuffer.ReadInt32();
-
-                newContextLength = 0;
-                return false;
-            }
-
-            private bool ProcessUInt32Callback(out long newContextLength)
-            {
-                if (this.jsonBinaryBuffer.ReadByte() != JsonBinaryEncoding.TypeMarker.UInt32)
-                {
-                    throw new JsonInvalidNumberException();
-                }
-
-                this.jsonBinaryBuffer.ReadUInt32();
-
-                newContextLength = 0;
-                return false;
-            }
-
-            private bool ProcessInt64Callback(out long newContextLength)
-            {
-                if (this.jsonBinaryBuffer.ReadByte() != JsonBinaryEncoding.TypeMarker.Int64)
-                {
-                    throw new JsonInvalidNumberException();
-                }
-
-                this.jsonBinaryBuffer.ReadInt64();
-
-                newContextLength = 0;
-                return false;
-            }
-
-            private bool ProcessFloat32Callback(out long newContextLength)
-            {
-                if (this.jsonBinaryBuffer.ReadByte() != JsonBinaryEncoding.TypeMarker.Float32)
-                {
-                    throw new JsonInvalidNumberException();
-                }
-
-                this.jsonBinaryBuffer.ReadSingle();
-
-                newContextLength = 0;
-                return false;
-            }
-
-            private bool ProcessFloat64Callback(out long newContextLength)
-            {
-                if (this.jsonBinaryBuffer.ReadByte() != JsonBinaryEncoding.TypeMarker.Float64)
-                {
-                    throw new JsonInvalidNumberException();
-                }
-
-                this.jsonBinaryBuffer.ReadDouble();
-
-                newContextLength = 0;
-                return false;
-            }
-
-            private bool ProcessGuidCallback(out long newContextLength)
-            {
-                if (this.jsonBinaryBuffer.ReadByte() != JsonBinaryEncoding.TypeMarker.Guid)
-                {
-                    throw new JsonInvalidNumberException();
-                }
-
-                const byte SizeOfGuid = 16;
-                this.jsonBinaryBuffer.ReadBytes(SizeOfGuid);
-
-                newContextLength = 0;
-                return false;
-            }
-
-            private bool ProcessBinaryCallback(out long newContextLength)
-            {
-                byte typeMarker = this.jsonBinaryBuffer.ReadByte();
-                long length;
-                switch (typeMarker)
-                {
-                    case JsonBinaryEncoding.TypeMarker.Binary1ByteLength:
-                        length = this.jsonBinaryBuffer.ReadByte();
-                        break;
-                    case JsonBinaryEncoding.TypeMarker.Binary2ByteLength:
-                        length = this.jsonBinaryBuffer.ReadUInt16();
-                        break;
-                    case JsonBinaryEncoding.TypeMarker.Binary4ByteLength:
-                        length = this.jsonBinaryBuffer.ReadUInt32();
-                        break;
-                    default:
-                        throw new JsonNotStringTokenException();
-                }
-
-                if (length > int.MaxValue)
-                {
-                    throw new InvalidOperationException("Tried to read a string whose length is greater than int.MaxValue");
-                }
-
-                this.jsonBinaryBuffer.ReadBytes((int)length);
-
-                newContextLength = 0;
-                return false;
-            }
-
-            private void ProcessTrue()
-            {
-                this.ProcessSingleByteToken(JsonTokenType.True);
-            }
-
-            private void ProcessFalse()
-            {
-                this.ProcessSingleByteToken(JsonTokenType.False);
-            }
-
-            private void ProcessNull()
-            {
-                this.ProcessSingleByteToken(JsonTokenType.Null);
-            }
-
-            private void ProcessInt8()
-            {
-                this.ProcessJsonToken(JsonTokenType.Int8, this.ProcessInt8Callback);
-            }
-
-            private void ProcessInt16()
-            {
-                this.ProcessJsonToken(JsonTokenType.Int16, this.ProcessInt16Callback);
-            }
-
-            private void ProcessInt32()
-            {
-                this.ProcessJsonToken(JsonTokenType.Int32, this.ProcessInt32Callback);
-            }
-
-            private void ProcessInt64()
-            {
-                this.ProcessJsonToken(JsonTokenType.Int64, this.ProcessInt64Callback);
-            }
-
-            private void ProcessUInt32()
-            {
-                this.ProcessJsonToken(JsonTokenType.UInt32, this.ProcessUInt32Callback);
-            }
-
-            private void ProcessFloat32()
-            {
-                this.ProcessJsonToken(JsonTokenType.Float32, this.ProcessFloat32Callback);
-            }
-
-            private void ProcessFloat64()
-            {
-                this.ProcessJsonToken(JsonTokenType.Float64, this.ProcessFloat64Callback);
-            }
-
-            private void ProcessGuid()
-            {
-                this.ProcessJsonToken(JsonTokenType.Guid, this.ProcessGuidCallback);
-            }
-
-            private void ProcessBinary()
-            {
-                this.ProcessJsonToken(JsonTokenType.Binary, this.ProcessBinaryCallback);
-            }
-
-            private bool ProcessSingleByteTokenCallback(out long newContextLength)
-            {
-                // Consume the type marker
-                this.jsonBinaryBuffer.ReadByte();
-
-                newContextLength = 0;
-                return false;
-            }
-
-            private void ProcessSingleByteToken(JsonTokenType jsonTokenType)
-            {
-                this.ProcessJsonToken(jsonTokenType, this.ProcessSingleByteTokenCallback);
-            }
-
-            private JsonTokenType GetJsonTokenType(byte typeMarker)
+            private static JsonTokenType GetJsonTokenType(byte typeMarker)
             {
                 JsonTokenType jsonTokenType;
                 if (JsonBinaryEncoding.TypeMarker.IsEncodedNumberLiteral(typeMarker))
@@ -922,847 +490,87 @@ namespace Microsoft.Azure.Cosmos.Json
                 return jsonTokenType;
             }
 
-            #region JsonBinaryBufferBase
-            /// <summary>
-            /// Base implementation of JsonBinaryBuffer that other classes will derive from.
-            /// </summary>
-            private abstract class JsonBinaryBufferBase
+            private static int GetArrayOrObjectPrefixLength(byte typeMarker)
             {
-                /// <summary>
-                /// The reader we will use to read from the stream.
-                /// Note that this reader is able to read from a little endian stream even if the client is on a big endian machine.
-                /// </summary>
-                protected readonly LittleEndianBinaryReader BinaryReader;
-                protected readonly JsonStringDictionary jsonStringDictionary;
-                private JsonTokenType currentTokenType;
-
-                /// <summary>
-                /// Initializes a new instance of the JsonBinaryBufferBase class from an array of bytes.
-                /// </summary>
-                /// <param name="stream">A stream to read from.</param>
-                /// <param name="jsonStringDictionary">The JSON string dictionary to use for user string encoding.</param>
-                protected JsonBinaryBufferBase(Stream stream, JsonStringDictionary jsonStringDictionary = null)
+                int prefixLength;
+                switch (typeMarker)
                 {
-                    if (stream == null)
-                    {
-                        throw new ArgumentNullException("stream");
-                    }
+                    // Array Values
+                    case JsonBinaryEncoding.TypeMarker.EmptyArray:
+                    case JsonBinaryEncoding.TypeMarker.SingleItemArray:
+                        prefixLength = 1;
+                        break;
 
-                    this.BinaryReader = new LittleEndianBinaryReader(stream, Encoding.UTF8);
-                    this.jsonStringDictionary = jsonStringDictionary;
+                    case JsonBinaryEncoding.TypeMarker.Array1ByteLength:
+                        prefixLength = 1 + 1;
+                        break;
+                    case JsonBinaryEncoding.TypeMarker.Array2ByteLength:
+                        prefixLength = 1 + 2;
+                        break;
+                    case JsonBinaryEncoding.TypeMarker.Array4ByteLength:
+                        prefixLength = 1 + 4;
+                        break;
+
+                    case JsonBinaryEncoding.TypeMarker.Array1ByteLengthAndCount:
+                        prefixLength = 1 + 1 + 1;
+                        break;
+                    case JsonBinaryEncoding.TypeMarker.Array2ByteLengthAndCount:
+                        prefixLength = 1 + 2 + 2;
+                        break;
+                    case JsonBinaryEncoding.TypeMarker.Array4ByteLengthAndCount:
+                        prefixLength = 1 + 4 + 4;
+                        break;
+
+                    // Object Values
+                    case JsonBinaryEncoding.TypeMarker.EmptyObject:
+                    case JsonBinaryEncoding.TypeMarker.SinglePropertyObject:
+                        prefixLength = 1;
+                        break;
+
+                    case JsonBinaryEncoding.TypeMarker.Object1ByteLength:
+                        prefixLength = 1 + 1;
+                        break;
+                    case JsonBinaryEncoding.TypeMarker.Object2ByteLength:
+                        prefixLength = 1 + 2;
+                        break;
+                    case JsonBinaryEncoding.TypeMarker.Object4ByteLength:
+                        prefixLength = 1 + 4;
+                        break;
+
+                    case JsonBinaryEncoding.TypeMarker.Object1ByteLengthAndCount:
+                        prefixLength = 1 + 1 + 1;
+                        break;
+                    case JsonBinaryEncoding.TypeMarker.Object2ByteLengthAndCount:
+                        prefixLength = 1 + 2 + 2;
+                        break;
+                    case JsonBinaryEncoding.TypeMarker.Object4ByteLengthAndCount:
+                        prefixLength = 1 + 4 + 4;
+                        break;
+
+                    default:
+                        throw new ArgumentException($"Unknown typemarker: {typeMarker}");
                 }
 
-                /// <summary>
-                /// Gets a value indicating whether the buffer is at the End of File for it's source.
-                /// </summary>
-                public bool IsEof
+                return prefixLength;
+            }
+
+            private sealed class JsonBinaryMemoryReader : JsonMemoryReader
+            {
+                public JsonBinaryMemoryReader(ReadOnlyMemory<byte> buffer)
+                    : base(buffer)
                 {
-                    get
-                    {
-                        return this.BinaryReader.BaseStream.Position == this.BinaryReader.BaseStream.Length;
-                    }
                 }
 
-                /// <summary>
-                /// Gets or sets a value indicating the current <see cref="JsonTokenType"/>.
-                /// </summary>
-                public JsonTokenType CurrentJsonTokenType
+                public void SkipBytes(int offset)
                 {
-                    get
-                    {
-                        return this.currentTokenType;
-                    }
-
-                    set
-                    {
-                        this.currentTokenType = value;
-                    }
+                    this.position += offset;
                 }
 
-                /// <summary>
-                /// Lets the IJsonBinaryBuffer know that it is at the start of a token.
-                /// </summary>
-                public abstract void StartToken();
-
-                /// <summary>
-                /// Lets the IJsonBinaryBuffer know that an end of a token has just been read from it.
-                /// </summary>
-                public abstract void EndToken();
-
-                /// <summary>
-                /// Returns the next available byte and does not advance the byte position
-                /// </summary>
-                /// <returns>The next available byte, or -1 if no more bytes are available or the buffer does not support seeking.</returns>
-                public virtual byte Peek()
+                public ReadOnlyMemory<byte> GetRawMemoryJsonToken(int startPosition)
                 {
-                    byte byteRead = this.BinaryReader.ReadByte();
-                    this.BinaryReader.BaseStream.Position--;
-                    return byteRead;
-                }
-
-                /// <summary>
-                /// Reads a Boolean value from the current stream and advances the current position of the stream by one byte.
-                /// </summary>
-                /// <returns>true if the byte is nonzero; otherwise, false.</returns>
-                public virtual bool ReadBoolean()
-                {
-                    byte boolean = this.BinaryReader.ReadBoolean() ? (byte)1 : (byte)0;
-                    return boolean == 1 ? true : false;
-                }
-
-                /// <summary>
-                /// Reads the next byte from the current stream and advances the current position of the stream by one byte.
-                /// </summary>
-                /// <returns>The next byte read from the current stream.</returns>
-                public virtual byte ReadByte()
-                {
-                    byte byteRead = this.BinaryReader.ReadByte();
-                    return byteRead;
-                }
-
-                /// <summary>
-                /// Reads the specified number of bytes from the current stream into a byte array and advances the current position by that number of bytes.
-                /// </summary>
-                /// <param name="count">The number of bytes to read.</param>
-                /// <returns>A byte array containing data read from the underlying stream. This might be less than the number of bytes requested if the end of the stream is reached.</returns>
-                public virtual byte[] ReadBytes(int count)
-                {
-                    byte[] bytesRead = this.BinaryReader.ReadBytes(count);
-                    return bytesRead;
-                }
-
-                /// <summary>
-                /// Reads an 8-byte floating point value from the current stream and advances the current position of the stream by eight bytes.
-                /// </summary>
-                /// <returns>An 8-byte floating point value read from the current stream.</returns>
-                public virtual double ReadDouble()
-                {
-                    double doubleRead = this.BinaryReader.ReadDouble();
-                    return doubleRead;
-                }
-
-                /// <summary>
-                /// Reads a 2-byte signed integer from the current stream and advances the current position of the stream by two bytes.
-                /// </summary>
-                /// <returns>A 2-byte signed integer read from the current stream.</returns>
-                public virtual short ReadInt16()
-                {
-                    short shortRead = this.BinaryReader.ReadInt16();
-                    return shortRead;
-                }
-
-                /// <summary>
-                /// Reads a 4-byte signed integer from the current stream and advances the current position of the stream by four bytes.
-                /// </summary>
-                /// <returns>A 4-byte signed integer read from the current stream.</returns>
-                public virtual int ReadInt32()
-                {
-                    int intRead = this.BinaryReader.ReadInt32();
-                    return intRead;
-                }
-
-                /// <summary>
-                /// Reads an 8-byte signed integer from the current stream and advances the current position of the stream by eight bytes.
-                /// </summary>
-                /// <returns>An 8-byte signed integer read from the current stream.</returns>
-                public virtual long ReadInt64()
-                {
-                    long longRead = this.BinaryReader.ReadInt64();
-                    return longRead;
-                }
-
-                /// <summary>
-                /// Reads a signed byte from this stream and advances the current position of the stream by one byte.
-                /// </summary>
-                /// <returns> A signed byte read from the current stream.</returns>
-                public virtual sbyte ReadSByte()
-                {
-                    sbyte sbyteRead = this.BinaryReader.ReadSByte();
-                    return sbyteRead;
-                }
-
-                /// <summary>
-                /// Reads a 4-byte floating point value from the current stream and advances the current position of the stream by four bytes.
-                /// </summary>
-                /// <returns>A 4-byte floating point value read from the current stream.</returns>
-                public virtual float ReadSingle()
-                {
-                    float floatRead = this.BinaryReader.ReadSingle();
-                    return floatRead;
-                }
-
-                /// <summary>
-                /// Reads a 2-byte unsigned integer from the current stream using little-endian encoding and advances the position of the stream by two bytes.
-                /// </summary>
-                /// <returns>A 2-byte unsigned integer read from this stream.</returns>
-                public virtual ushort ReadUInt16()
-                {
-                    ushort ushortRead = this.BinaryReader.ReadUInt16();
-                    return ushortRead;
-                }
-
-                /// <summary>
-                /// Reads a 4-byte unsigned integer from the current stream and advances the position of the stream by four bytes.
-                /// </summary>
-                /// <returns>A 4-byte unsigned integer read from this stream.</returns>
-                public virtual uint ReadUInt32()
-                {
-                    uint uintRead = this.BinaryReader.ReadUInt32();
-                    return uintRead;
-                }
-
-                /// <summary>
-                /// Reads an 8-byte unsigned integer from the current stream and advances the position of the stream by eight bytes.
-                /// </summary>
-                /// <returns>An 8-byte unsigned integer read from this stream.</returns>
-                public virtual ulong ReadUInt64()
-                {
-                    ulong ulongRead = this.BinaryReader.ReadUInt64();
-                    return ulongRead;
-                }
-
-                /// <summary>
-                /// Gets the buffered raw json token.
-                /// </summary>
-                /// <returns>The buffered raw json token.</returns>
-                public abstract IReadOnlyList<byte> GetBufferedRawJsonToken();
-
-                /// <summary>
-                /// Gets the next JSON token from the IJsonBinaryBuffer as a double.
-                /// </summary>
-                /// <returns>The next JSON token from the BinaryBuffer as a double.</returns>
-                public Number64 GetNumberValue()
-                {
-                    if (this.CurrentJsonTokenType != JsonTokenType.Number)
-                    {
-                        throw new JsonNotNumberTokenException();
-                    }
-
-                    long currentPosition = this.BinaryReader.BaseStream.Position;
-                    Number64 value = this.GetNumberValue((ArraySegment<byte>)this.GetBufferedRawJsonToken());
-                    this.BinaryReader.BaseStream.Seek(currentPosition, SeekOrigin.Begin);
-                    return value;
-                }
-
-                /// <summary>
-                /// Gets the next JSON token from the IJsonBinaryBuffer as a string.
-                /// </summary>
-                /// <returns>The next JSON token from the JsonReader as a string.</returns>
-                public string GetStringValue()
-                {
-                    if (this.CurrentJsonTokenType != JsonTokenType.String && this.CurrentJsonTokenType != JsonTokenType.FieldName)
-                    {
-                        throw new JsonNotStringTokenException();
-                    }
-
-                    long currentPosition = this.BinaryReader.BaseStream.Position;
-                    string value = this.GetStringValue((ArraySegment<byte>)this.GetBufferedRawJsonToken());
-                    this.BinaryReader.BaseStream.Seek(currentPosition, SeekOrigin.Begin);
-                    return value;
-                }
-
-                public sbyte GetInt8Value()
-                {
-                    if (this.CurrentJsonTokenType != JsonTokenType.Int8)
-                    {
-                        throw new JsonNotNumberTokenException();
-                    }
-
-                    long currentPosition = this.BinaryReader.BaseStream.Position;
-                    sbyte value = this.GetInt8Value((ArraySegment<byte>)this.GetBufferedRawJsonToken());
-                    this.BinaryReader.BaseStream.Seek(currentPosition, SeekOrigin.Begin);
-                    return value;
-                }
-
-                public short GetInt16Value()
-                {
-                    if (this.CurrentJsonTokenType != JsonTokenType.Int16)
-                    {
-                        throw new JsonNotNumberTokenException();
-                    }
-
-                    long currentPosition = this.BinaryReader.BaseStream.Position;
-                    short value = this.GetInt16Value((ArraySegment<byte>)this.GetBufferedRawJsonToken());
-                    this.BinaryReader.BaseStream.Seek(currentPosition, SeekOrigin.Begin);
-                    return value;
-                }
-
-                public int GetInt32Value()
-                {
-                    if (this.CurrentJsonTokenType != JsonTokenType.Int32)
-                    {
-                        throw new JsonNotNumberTokenException();
-                    }
-
-                    long currentPosition = this.BinaryReader.BaseStream.Position;
-                    int value = this.GetInt32Value((ArraySegment<byte>)this.GetBufferedRawJsonToken());
-                    this.BinaryReader.BaseStream.Seek(currentPosition, SeekOrigin.Begin);
-                    return value;
-                }
-
-                public long GetInt64Value()
-                {
-                    if (this.CurrentJsonTokenType != JsonTokenType.Int64)
-                    {
-                        throw new JsonNotNumberTokenException();
-                    }
-
-                    long currentPosition = this.BinaryReader.BaseStream.Position;
-                    long value = this.GetInt64Value((ArraySegment<byte>)this.GetBufferedRawJsonToken());
-                    this.BinaryReader.BaseStream.Seek(currentPosition, SeekOrigin.Begin);
-                    return value;
-                }
-
-                public uint GetUInt32Value()
-                {
-                    if (this.CurrentJsonTokenType != JsonTokenType.UInt32)
-                    {
-                        throw new JsonNotNumberTokenException();
-                    }
-
-                    long currentPosition = this.BinaryReader.BaseStream.Position;
-                    uint value = this.GetUInt32Value((ArraySegment<byte>)this.GetBufferedRawJsonToken());
-                    this.BinaryReader.BaseStream.Seek(currentPosition, SeekOrigin.Begin);
-                    return value;
-                }
-
-                public float GetFloat32Value()
-                {
-                    if (this.CurrentJsonTokenType != JsonTokenType.Float32)
-                    {
-                        throw new JsonNotNumberTokenException();
-                    }
-
-                    long currentPosition = this.BinaryReader.BaseStream.Position;
-                    float value = this.GetFloat32Value((ArraySegment<byte>)this.GetBufferedRawJsonToken());
-                    this.BinaryReader.BaseStream.Seek(currentPosition, SeekOrigin.Begin);
-                    return value;
-                }
-
-                public double GetFloat64Value()
-                {
-                    if (this.CurrentJsonTokenType != JsonTokenType.Float64)
-                    {
-                        throw new JsonNotNumberTokenException();
-                    }
-
-                    long currentPosition = this.BinaryReader.BaseStream.Position;
-                    double value = this.GetFloat64Value((ArraySegment<byte>)this.GetBufferedRawJsonToken());
-                    this.BinaryReader.BaseStream.Seek(currentPosition, SeekOrigin.Begin);
-                    return value;
-                }
-
-                public Guid GetGuidValue()
-                {
-                    long currentPosition = this.BinaryReader.BaseStream.Position;
-                    Guid value = this.GetGuidValue((ArraySegment<byte>)this.GetBufferedRawJsonToken());
-                    this.BinaryReader.BaseStream.Seek(currentPosition, SeekOrigin.Begin);
-                    return value;
-                }
-
-                public IReadOnlyList<byte> GetBinaryValue()
-                {
-                    long currentPosition = this.BinaryReader.BaseStream.Position;
-                    IReadOnlyList<byte> value = this.GetBinaryValue((ArraySegment<byte>)this.GetBufferedRawJsonToken());
-                    this.BinaryReader.BaseStream.Seek(currentPosition, SeekOrigin.Begin);
-                    return value;
-                }
-
-                /// <summary>
-                /// Gets a binary reader whose position is at the beginning of the provided jsonToken.
-                /// </summary>
-                /// <param name="jsonToken">The json token input.</param>
-                /// <returns>A binary reader whose position is at the beginning of the provided jsonToken.</returns>
-                protected abstract BinaryReader GetBinaryReaderAtToken(ArraySegment<byte> jsonToken);
-
-                /// <summary>
-                /// Gets the number value from a json token as a double.
-                /// </summary>
-                /// <param name="jsonToken">The json token to get the number value of.</param>
-                /// <returns>the number value from a json token as a double.</returns>
-                private Number64 GetNumberValue(ArraySegment<byte> jsonToken)
-                {
-                    BinaryReader binaryReader = this.GetBinaryReaderAtToken(jsonToken);
-                    return JsonBinaryEncoding.GetNumberValue(binaryReader);
-                }
-
-                /// <summary>
-                /// Gets the string value from a json token as a string.
-                /// </summary>
-                /// <param name="jsonToken">The json token to get the string value of.</param>
-                /// <returns>the string value from a json token as a string.</returns>
-                private string GetStringValue(ArraySegment<byte> jsonToken)
-                {
-                    BinaryReader binaryReader = this.GetBinaryReaderAtToken(jsonToken);
-                    return JsonBinaryEncoding.GetStringValue(binaryReader, this.jsonStringDictionary);
-                }
-
-                private sbyte GetInt8Value(ArraySegment<byte> jsonToken)
-                {
-                    BinaryReader binaryReader = this.GetBinaryReaderAtToken(jsonToken);
-                    return JsonBinaryEncoding.GetInt8Value(binaryReader);
-                }
-
-                private short GetInt16Value(ArraySegment<byte> jsonToken)
-                {
-                    BinaryReader binaryReader = this.GetBinaryReaderAtToken(jsonToken);
-                    return JsonBinaryEncoding.GetInt16Value(binaryReader);
-                }
-
-                private int GetInt32Value(ArraySegment<byte> jsonToken)
-                {
-                    BinaryReader binaryReader = this.GetBinaryReaderAtToken(jsonToken);
-                    return JsonBinaryEncoding.GetInt32Value(binaryReader);
-                }
-
-                private long GetInt64Value(ArraySegment<byte> jsonToken)
-                {
-                    BinaryReader binaryReader = this.GetBinaryReaderAtToken(jsonToken);
-                    return JsonBinaryEncoding.GetInt64Value(binaryReader);
-                }
-
-                private uint GetUInt32Value(ArraySegment<byte> jsonToken)
-                {
-                    BinaryReader binaryReader = this.GetBinaryReaderAtToken(jsonToken);
-                    return JsonBinaryEncoding.GetUInt32Value(binaryReader);
-                }
-
-                private float GetFloat32Value(ArraySegment<byte> jsonToken)
-                {
-                    BinaryReader binaryReader = this.GetBinaryReaderAtToken(jsonToken);
-                    return JsonBinaryEncoding.GetFloat32Value(binaryReader);
-                }
-
-                private double GetFloat64Value(ArraySegment<byte> jsonToken)
-                {
-                    BinaryReader binaryReader = this.GetBinaryReaderAtToken(jsonToken);
-                    return JsonBinaryEncoding.GetFloat64Value(binaryReader);
-                }
-
-                private Guid GetGuidValue(ArraySegment<byte> jsonToken)
-                {
-                    BinaryReader binaryReader = this.GetBinaryReaderAtToken(jsonToken);
-                    return JsonBinaryEncoding.GetGuidValue(binaryReader);
-                }
-
-                private IReadOnlyList<byte> GetBinaryValue(ArraySegment<byte> jsonToken)
-                {
-                    BinaryReader binaryReader = this.GetBinaryReaderAtToken(jsonToken);
-                    return JsonBinaryEncoding.GetBinaryValue(binaryReader);
+                    return this.buffer.Slice(startPosition);
                 }
             }
-            #endregion
-
-            #region JsonBinaryArrayBuffer
-            /// <summary>
-            /// JsonBinaryBuffer where the source is an array of bytes.
-            /// </summary>
-            private sealed class JsonBinaryArrayBuffer : JsonBinaryBufferBase
-            {
-                private readonly byte[] buffer;
-                private long currentBeginOffset;
-                private long currentEndOffset;
-
-                /// <summary>
-                /// Initializes a new instance of the JsonBinaryArrayBuffer class.
-                /// </summary>
-                /// <param name="buffer">The source buffer to read from.</param>
-                /// <param name="jsonStringDictionary">The string dictionary to use for dictionary encoding.</param>
-                public JsonBinaryArrayBuffer(byte[] buffer, JsonStringDictionary jsonStringDictionary = null)
-                    : base(new MemoryStream(buffer, 0, buffer.Length, false, true), jsonStringDictionary)
-                {
-                    if (buffer == null)
-                    {
-                        throw new ArgumentNullException("buffer");
-                    }
-
-                    this.buffer = buffer;
-                }
-
-                /// <summary>
-                /// Gets a value indicating how many bytes have been read from the binary buffer.
-                /// </summary>
-                private long BytesRead
-                {
-                    get
-                    {
-                        return this.BinaryReader.BaseStream.Position;
-                    }
-                }
-
-                /// <summary>
-                /// Lets the IJsonBinaryBuffer know that it is at the start of a token.
-                /// </summary>
-                public override void StartToken()
-                {
-                    this.currentBeginOffset = this.BytesRead;
-                }
-
-                /// <summary>
-                /// Lets the IJsonBinaryBuffer know that an end of a token has just been read from it.
-                /// </summary>
-                public override void EndToken()
-                {
-                    this.currentEndOffset = this.BytesRead;
-                }
-
-                /// <summary>
-                /// Gets the buffered raw json token.
-                /// </summary>
-                /// <returns>The buffered raw json token.</returns>
-                public override IReadOnlyList<byte> GetBufferedRawJsonToken()
-                {
-                    return new ArraySegment<byte>(
-                        this.buffer,
-                        (int)this.currentBeginOffset,
-                        (int)(this.currentEndOffset - this.currentBeginOffset));
-                }
-
-                /// <summary>
-                /// Gets a binary reader whose position is at the beginning of the provided jsonToken.
-                /// </summary>
-                /// <param name="jsonToken">The json token input.</param>
-                /// <returns>A binary reader whose position is at the beginning of the provided jsonToken.</returns>
-                protected override BinaryReader GetBinaryReaderAtToken(ArraySegment<byte> jsonToken)
-                {
-                    this.BinaryReader.BaseStream.Seek(jsonToken.Offset, SeekOrigin.Begin);
-                    return this.BinaryReader;
-                }
-            }
-            #endregion
-
-            #region JsonBinaryStreamBuffer
-            /// <summary>
-            /// JsonBinaryBuffer whose source is a stream.
-            /// </summary>
-            private sealed class JsonBinaryStreamBuffer : JsonBinaryBufferBase
-            {
-                /// <summary>
-                /// We need to buffer one token from the stream incase a user wants to materialize it and the stream is not seekable (like a network stream).
-                /// </summary>
-                private readonly MemoryStream bufferedToken;
-                private readonly BinaryWriter bufferedTokenWriter;
-                private readonly BinaryReader bufferedTokenReader;
-                private int tokenLength;
-
-                /// <summary>
-                /// Initializes a new instance of the JsonBinaryStreamBuffer class.
-                /// </summary>
-                /// <param name="stream">The stream to buffer from.</param>
-                /// <param name="jsonStringDictionary">The dictionary to use for user string encoding.</param>
-                public JsonBinaryStreamBuffer(Stream stream, JsonStringDictionary jsonStringDictionary = null)
-                    : base(stream, jsonStringDictionary)
-                {
-                    if (stream == null)
-                    {
-                        throw new ArgumentNullException("stream");
-                    }
-
-                    this.bufferedToken = new MemoryStream();
-                    this.bufferedTokenWriter = new BinaryWriter(this.bufferedToken);
-                    this.bufferedTokenReader = new BinaryReader(this.bufferedToken);
-                }
-
-                /// <summary>
-                /// Reads a Boolean value from the current stream and advances the current position of the stream by one byte.
-                /// </summary>
-                /// <returns>true if the byte is nonzero; otherwise, false.</returns>
-                public override bool ReadBoolean()
-                {
-                    bool value = base.ReadBoolean();
-                    this.bufferedTokenWriter.Write(value);
-                    return value;
-                }
-
-                /// <summary>
-                /// Reads the next byte from the current stream and advances the current position of the stream by one byte.
-                /// </summary>
-                /// <returns>The next byte read from the current stream.</returns>
-                public override byte ReadByte()
-                {
-                    byte value = base.ReadByte();
-                    this.bufferedTokenWriter.Write(value);
-                    return value;
-                }
-
-                /// <summary>
-                /// Reads the specified number of bytes from the current stream into a byte array and advances the current position by that number of bytes.
-                /// </summary>
-                /// <param name="count">The number of bytes to read.</param>
-                /// <returns>A byte array containing data read from the underlying stream. This might be less than the number of bytes requested if the end of the stream is reached.</returns>
-                public override byte[] ReadBytes(int count)
-                {
-                    byte[] value = base.ReadBytes(count);
-                    this.bufferedTokenWriter.Write(value);
-                    return value;
-                }
-
-                /// <summary>
-                /// Reads an 8-byte floating point value from the current stream and advances the current position of the stream by eight bytes.
-                /// </summary>
-                /// <returns>An 8-byte floating point value read from the current stream.</returns>
-                public override double ReadDouble()
-                {
-                    double value = base.ReadDouble();
-                    this.bufferedTokenWriter.Write(value);
-                    return value;
-                }
-
-                /// <summary>
-                /// Reads a 2-byte signed integer from the current stream and advances the current position of the stream by two bytes.
-                /// </summary>
-                /// <returns>A 2-byte signed integer read from the current stream.</returns>
-                public override short ReadInt16()
-                {
-                    short value = base.ReadInt16();
-                    this.bufferedTokenWriter.Write(value);
-                    return value;
-                }
-
-                /// <summary>
-                /// Reads a 4-byte signed integer from the current stream and advances the current position of the stream by four bytes.
-                /// </summary>
-                /// <returns>A 4-byte signed integer read from the current stream.</returns>
-                public override int ReadInt32()
-                {
-                    int value = base.ReadInt32();
-                    this.bufferedTokenWriter.Write(value);
-                    return value;
-                }
-
-                /// <summary>
-                /// Reads an 8-byte signed integer from the current stream and advances the current position of the stream by eight bytes.
-                /// </summary>
-                /// <returns>An 8-byte signed integer read from the current stream.</returns>
-                public override long ReadInt64()
-                {
-                    long value = base.ReadInt64();
-                    this.bufferedTokenWriter.Write(value);
-                    return value;
-                }
-
-                /// <summary>
-                /// Reads a signed byte from this stream and advances the current position of the stream by one byte.
-                /// </summary>
-                /// <returns> A signed byte read from the current stream.</returns>
-                public override sbyte ReadSByte()
-                {
-                    sbyte value = base.ReadSByte();
-                    this.bufferedTokenWriter.Write(value);
-                    return value;
-                }
-
-                /// <summary>
-                /// Reads a 4-byte floating point value from the current stream and advances the current position of the stream by four bytes.
-                /// </summary>
-                /// <returns>A 4-byte floating point value read from the current stream.</returns>
-                public override float ReadSingle()
-                {
-                    float value = base.ReadSingle();
-                    this.bufferedTokenWriter.Write(value);
-                    return value;
-                }
-
-                /// <summary>
-                /// Reads a 2-byte unsigned integer from the current stream using little-endian encoding and advances the position of the stream by two bytes.
-                /// </summary>
-                /// <returns>A 2-byte unsigned integer read from this stream.</returns>
-                public override ushort ReadUInt16()
-                {
-                    ushort value = base.ReadUInt16();
-                    this.bufferedTokenWriter.Write(value);
-                    return value;
-                }
-
-                /// <summary>
-                /// Reads a 4-byte unsigned integer from the current stream and advances the position of the stream by four bytes.
-                /// </summary>
-                /// <returns>A 4-byte unsigned integer read from this stream.</returns>
-                public override uint ReadUInt32()
-                {
-                    uint value = base.ReadUInt32();
-                    this.bufferedTokenWriter.Write(value);
-                    return value;
-                }
-
-                /// <summary>
-                /// Reads an 8-byte unsigned integer from the current stream and advances the position of the stream by eight bytes.
-                /// </summary>
-                /// <returns>An 8-byte unsigned integer read from this stream.</returns>
-                public override ulong ReadUInt64()
-                {
-                    ulong value = base.ReadUInt64();
-                    this.bufferedTokenWriter.Write(value);
-                    return value;
-                }
-
-                /// <summary>
-                /// Lets the IJsonBinaryBuffer know that it is at the start of a token.
-                /// </summary>
-                public override void StartToken()
-                {
-                    this.bufferedTokenWriter.Flush();
-                    this.bufferedToken.Position = 0;
-                }
-
-                /// <summary>
-                /// Lets the IJsonBinaryBuffer know that an end of a token has just been read from it.
-                /// </summary>
-                public override void EndToken()
-                {
-                    this.bufferedTokenWriter.Flush();
-                    this.tokenLength = (int)this.bufferedToken.Position;
-                }
-
-                /// <summary>
-                /// Gets the buffered raw json token.
-                /// </summary>
-                /// <returns>The buffered raw json token.</returns>
-                public override IReadOnlyList<byte> GetBufferedRawJsonToken()
-                {
-                    return new ArraySegment<byte>(this.bufferedToken.GetBuffer(), 0, this.tokenLength);
-                }
-
-                /// <summary>
-                /// Gets a binary reader whose position is at the beginning of the provided jsonToken.
-                /// </summary>
-                /// <param name="jsonToken">The json token input.</param>
-                /// <returns>A binary reader whose position is at the beginning of the provided jsonToken.</returns>
-                protected override BinaryReader GetBinaryReaderAtToken(ArraySegment<byte> jsonToken)
-                {
-                    this.bufferedTokenReader.BaseStream.Position = 0;
-                    return this.bufferedTokenReader;
-                }
-            }
-            #endregion
-
-            #region ProgressStack
-            private class ProgressStack
-            {
-                public const int EmptyContext = (int)ContextType.EmptyContext;
-                public const int SingleItemContext = (int)ContextType.SingleItemContext;
-                public const int SinglePropertyContext = (int)ContextType.SinglePropertyContext;
-                private const int JsonMaxNestingDepth = 128;
-                private readonly long[] bytesLeftAtNestingLevel;
-                private int count;
-
-                public ProgressStack()
-                {
-                    this.bytesLeftAtNestingLevel = new long[JsonMaxNestingDepth];
-                }
-
-                public int Count
-                {
-                    get
-                    {
-                        return this.count;
-                    }
-                }
-
-                public ContextType CurrentContextType
-                {
-                    get
-                    {
-                        long returnValue = this.Peek();
-                        ContextType contextType;
-                        switch (returnValue)
-                        {
-                            case EmptyContext:
-                                contextType = ContextType.EmptyContext;
-                                break;
-
-                            case SingleItemContext:
-                                contextType = ContextType.SingleItemContext;
-                                break;
-
-                            case SinglePropertyContext:
-                                contextType = ContextType.SinglePropertyContext;
-                                break;
-
-                            default:
-                                contextType = ContextType.ContextWithLength;
-                                break;
-                        }
-
-                        return contextType;
-                    }
-                }
-
-                public bool IsAtEndOfContext
-                {
-                    get
-                    {
-                        return this.count != 0 && this.Peek() == ProgressStack.EmptyContext;
-                    }
-                }
-
-                public void Push(long contextLength)
-                {
-                    // JsonObjectState will make sure that the caller doesn't overflow the stack
-                    if (!ProgressStack.IsValidContext(contextLength))
-                    {
-                        throw new InvalidOperationException("Tried to push on an invalid context");
-                    }
-
-                    this.bytesLeftAtNestingLevel[this.count++] = contextLength;
-                }
-
-                public void PushSingleItemContext()
-                {
-                    this.Push(SingleItemContext);
-                }
-
-                public void PushEmptyContext()
-                {
-                    this.Push(EmptyContext);
-                }
-
-                public void PushSinglePropertyContext()
-                {
-                    this.Push(SinglePropertyContext);
-                }
-
-                public long Pop()
-                {
-                    return this.bytesLeftAtNestingLevel[--this.count];
-                }
-
-                public long Peek()
-                {
-                    return this.bytesLeftAtNestingLevel[this.count - 1];
-                }
-
-                public void UpdateProgress(long progress)
-                {
-                    for (int i = 0; i < this.count; i++)
-                    {
-                        if (this.bytesLeftAtNestingLevel[i] > 0)
-                        {
-                            if (progress > this.bytesLeftAtNestingLevel[i])
-                            {
-                                throw new InvalidOperationException("Tried to make more progress than there is progress to be made");
-                            }
-
-                            this.bytesLeftAtNestingLevel[i] -= progress;
-                        }
-                        else
-                        {
-                            if (!(this.bytesLeftAtNestingLevel[i] == SingleItemContext
-                                || this.bytesLeftAtNestingLevel[i] == SinglePropertyContext
-                                || this.bytesLeftAtNestingLevel[i] == EmptyContext))
-                            {
-                                throw new InvalidOperationException("Progress Stack got corruputed.");
-                            }
-                        }
-                    }
-                }
-
-                private static bool IsValidContext(long context)
-                {
-                    return context == EmptyContext || context == SingleItemContext || context == SinglePropertyContext || context > 0;
-                }
-            }
-            #endregion
         }
     }
 }

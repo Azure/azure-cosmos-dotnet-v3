@@ -1,12 +1,12 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Query
+namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 {
     using System;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
 
     /// <summary>
     /// Interface for all document query execution contexts
@@ -26,8 +26,10 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Executes the context to feed the next page of results.
         /// </summary>
-        /// <param name="token">The cancellation token.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task to await on, which in return provides a DoucmentFeedResponse of documents.</returns>
-        public abstract Task<QueryResponseCore> ExecuteNextAsync(CancellationToken token);
+        public abstract Task<QueryResponseCore> ExecuteNextAsync(CancellationToken cancellationToken);
+
+        public abstract bool TryGetContinuationToken(out string continuationToken);
     }
 }

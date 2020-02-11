@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos
@@ -21,6 +21,8 @@ namespace Microsoft.Azure.Cosmos
         private const int defaultMediaRequestTimeout = 300;
         private const int defaultMaxConcurrentFanoutRequests = 32;
         private const int defaultMaxConcurrentConnectionLimit = 50;
+
+        private static ConnectionPolicy defaultPolicy;
 
         private Protocol connectionProtocol;
         private ObservableCollection<string> preferredLocations;
@@ -187,7 +189,11 @@ namespace Microsoft.Azure.Cosmos
         {
             get
             {
-                return new ConnectionPolicy();
+                if (ConnectionPolicy.defaultPolicy == null)
+                {
+                    ConnectionPolicy.defaultPolicy = new ConnectionPolicy();
+                }
+                return ConnectionPolicy.defaultPolicy;
             }
         }
 
@@ -380,6 +386,18 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// (Direct/TCP) Controls the client port reuse policy used by the transport stack.
+        /// </summary>
+        /// <value>
+        /// The default value is PortReuseMode.ReuseUnicastPort.
+        /// </value>
+        public PortReuseMode? PortReuseMode
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
         /// (Direct/TCP) This is an advanced setting that controls the number of TCP connections that will be opened eagerly to each Cosmos DB back-end.
         /// </summary>
         /// <value>
@@ -407,6 +425,11 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.preferredLocations.CollectionChanged -= value;
             }
+        }
+
+        internal RetryWithConfiguration GetRetryWithConfiguration()
+        {
+            return this.RetryOptions?.GetRetryWithConfiguration();
         }
     }
 }

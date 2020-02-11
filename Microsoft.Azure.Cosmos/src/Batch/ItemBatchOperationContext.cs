@@ -19,13 +19,11 @@ namespace Microsoft.Azure.Cosmos
 
         public BatchAsyncBatcher CurrentBatcher { get; set; }
 
-        public Task<BatchOperationResult> OperationTask => this.taskCompletionSource.Task;
-
-        public ItemBatchOperationStatistics Diagnostics { get; } = new ItemBatchOperationStatistics();
+        public Task<TransactionalBatchOperationResult> OperationTask => this.taskCompletionSource.Task;
 
         private readonly IDocumentClientRetryPolicy retryPolicy;
 
-        private TaskCompletionSource<BatchOperationResult> taskCompletionSource = new TaskCompletionSource<BatchOperationResult>();
+        private TaskCompletionSource<TransactionalBatchOperationResult> taskCompletionSource = new TaskCompletionSource<TransactionalBatchOperationResult>();
 
         public ItemBatchOperationContext(
             string partitionKeyRangeId,
@@ -39,7 +37,7 @@ namespace Microsoft.Azure.Cosmos
         /// Based on the Retry Policy, if a failed response should retry.
         /// </summary>
         public Task<ShouldRetryResult> ShouldRetryAsync(
-            BatchOperationResult batchOperationResult,
+            TransactionalBatchOperationResult batchOperationResult,
             CancellationToken cancellationToken)
         {
             if (this.retryPolicy == null
@@ -54,12 +52,10 @@ namespace Microsoft.Azure.Cosmos
 
         public void Complete(
             BatchAsyncBatcher completer,
-            BatchOperationResult result)
+            TransactionalBatchOperationResult result)
         {
             if (this.AssertBatcher(completer))
             {
-                this.Diagnostics.Complete();
-                result.Diagnostics = this.Diagnostics;
                 this.taskCompletionSource.SetResult(result);
             }
 

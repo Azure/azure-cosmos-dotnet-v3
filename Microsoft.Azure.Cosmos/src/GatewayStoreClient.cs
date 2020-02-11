@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Net.Http;
     using System.Net.Http.Headers;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
@@ -79,22 +80,33 @@ namespace Microsoft.Azure.Cosmos
         {
             using (responseMessage)
             {
+                IClientSideRequestStatistics requestStatistics = request?.RequestContext?.ClientRequestStatistics;
                 if ((int)responseMessage.StatusCode < 400)
                 {
                     INameValueCollection headers = GatewayStoreClient.ExtractResponseHeaders(responseMessage);
                     Stream contentStream = await GatewayStoreClient.BufferContentIfAvailableAsync(responseMessage);
-                    return new DocumentServiceResponse(contentStream, headers, responseMessage.StatusCode, serializerSettings);
+                    return new DocumentServiceResponse(
+                        body: contentStream,
+                        headers: headers,
+                        statusCode: responseMessage.StatusCode,
+                        clientSideRequestStatistics: requestStatistics,
+                        serializerSettings: serializerSettings);
                 }
                 else if (request != null
                     && request.IsValidStatusCodeForExceptionlessRetry((int)responseMessage.StatusCode))
                 {
                     INameValueCollection headers = GatewayStoreClient.ExtractResponseHeaders(responseMessage);
                     Stream contentStream = await GatewayStoreClient.BufferContentIfAvailableAsync(responseMessage);
-                    return new DocumentServiceResponse(contentStream, headers, responseMessage.StatusCode, serializerSettings);
+                    return new DocumentServiceResponse(
+                        body: contentStream,
+                        headers: headers,
+                        statusCode: responseMessage.StatusCode,
+                        clientSideRequestStatistics: requestStatistics,
+                        serializerSettings: serializerSettings);
                 }
                 else
                 {
-                    throw await GatewayStoreClient.CreateDocumentClientExceptionAsync(responseMessage);
+                    throw await GatewayStoreClient.CreateDocumentClientExceptionAsync(responseMessage, requestStatistics);
                 }
             }
         }
@@ -145,7 +157,9 @@ namespace Microsoft.Azure.Cosmos
             return headers;
         }
 
-        internal static async Task<DocumentClientException> CreateDocumentClientExceptionAsync(HttpResponseMessage responseMessage)
+        internal static async Task<DocumentClientException> CreateDocumentClientExceptionAsync(
+            HttpResponseMessage responseMessage,
+            IClientSideRequestStatistics requestStatistics)
         {
             // ensure there is no local ActivityId, since in Gateway mode ActivityId
             // should always come from message headers
@@ -166,28 +180,48 @@ namespace Microsoft.Azure.Cosmos
             if (string.Equals(responseMessage.Content?.Headers?.ContentType?.MediaType, "application/json", StringComparison.OrdinalIgnoreCase))
             {
                 Stream readStream = await responseMessage.Content.ReadAsStreamAsync();
-                Error error = Resource.LoadFrom<Error>(readStream);
+                Error error = Documents.Resource.LoadFrom<Error>(readStream);
                 return new DocumentClientException(
                     error,
                     responseMessage.Headers,
                     responseMessage.StatusCode)
                 {
                     StatusDescription = responseMessage.ReasonPhrase,
-                    ResourceAddress = resourceIdOrFullName
+                    ResourceAddress = resourceIdOrFullName,
+                    RequestStatistics = requestStatistics
                 };
             }
             else
             {
+                StringBuilder context = new StringBuilder();
+                context.AppendLine(await responseMessage.Content.ReadAsStringAsync());
+
+                HttpRequestMessage requestMessage = responseMessage.RequestMessage;
+                if (requestMessage != null)
+                {
+                    context.AppendLine($"RequestUri: {requestMessage.RequestUri.ToString()};");
+                    context.AppendLine($"RequestMethod: {requestMessage.Method.Method};");
+
+                    if (requestMessage.Headers != null)
+                    {
+                        foreach (KeyValuePair<string, IEnumerable<string>> header in requestMessage.Headers)
+                        {
+                            context.AppendLine($"Header: {header.Key} Length: {string.Join(",", header.Value).Length};");
+                        }
+                    }
+                }
+
                 String message = await responseMessage.Content.ReadAsStringAsync();
                 return new DocumentClientException(
-                    message: message,
+                    message: context.ToString(),
                     innerException: null,
                     responseHeaders: responseMessage.Headers,
                     statusCode: responseMessage.StatusCode,
                     requestUri: responseMessage.RequestMessage.RequestUri)
                 {
                     StatusDescription = responseMessage.ReasonPhrase,
-                    ResourceAddress = resourceIdOrFullName
+                    ResourceAddress = resourceIdOrFullName,
+                    RequestStatistics = requestStatistics
                 };
             }
         }
@@ -324,19 +358,29 @@ namespace Microsoft.Azure.Cosmos
                     DateTime sendTimeUtc = DateTime.UtcNow;
                     Guid localGuid = Guid.NewGuid();  // For correlating HttpRequest and HttpResponse Traces
 
+                    IClientSideRequestStatistics clientSideRequestStatistics = request.RequestContext.ClientRequestStatistics;
+                    if (clientSideRequestStatistics == null)
+                    {
+                        clientSideRequestStatistics = new CosmosClientSideRequestStatistics();
+                        request.RequestContext.ClientRequestStatistics = clientSideRequestStatistics;
+                    }
+
+                    Guid requestedActivityId = Trace.CorrelationManager.ActivityId;
                     this.eventSource.Request(
-                        Guid.Empty,
+                        requestedActivityId,
                         localGuid,
                         requestMessage.RequestUri.ToString(),
                         resourceType.ToResourceTypeString(),
                         requestMessage.Headers);
 
+                    TimeSpan durationTimeSpan;
+                    string recordAddressResolutionId = clientSideRequestStatistics.RecordAddressResolutionStart(requestMessage.RequestUri);
                     try
                     {
                         HttpResponseMessage responseMessage = await this.httpClient.SendAsync(requestMessage, cancellationToken);
 
                         DateTime receivedTimeUtc = DateTime.UtcNow;
-                        double durationInMilliSeconds = (receivedTimeUtc - sendTimeUtc).TotalMilliseconds;
+                        durationTimeSpan = receivedTimeUtc - sendTimeUtc;
 
                         IEnumerable<string> headerValues;
                         Guid activityId = Guid.Empty;
@@ -350,7 +394,7 @@ namespace Microsoft.Azure.Cosmos
                             activityId,
                             localGuid,
                             (short)responseMessage.StatusCode,
-                            durationInMilliSeconds,
+                            durationTimeSpan.TotalMilliseconds,
                             responseMessage.Headers);
 
                         return responseMessage;
@@ -360,12 +404,32 @@ namespace Microsoft.Azure.Cosmos
                         if (!cancellationToken.IsCancellationRequested)
                         {
                             // throw timeout if the cancellationToken is not canceled (i.e. httpClient timed out)
-                            throw new RequestTimeoutException(ex, requestMessage.RequestUri);
+                            durationTimeSpan = DateTime.UtcNow - sendTimeUtc;
+                            string message = $"GatewayStoreClient Request Timeout. Start Time:{sendTimeUtc}; Total Duration:{durationTimeSpan}; Http Client Timeout:{this.httpClient.Timeout}; Activity id: {requestedActivityId}; Inner Message: {ex.Message};";
+                            throw new RequestTimeoutException(message, ex, requestMessage.RequestUri);
                         }
                         else
                         {
                             throw;
                         }
+                    }
+                    catch (OperationCanceledException ex)
+                    {
+                        if (!cancellationToken.IsCancellationRequested)
+                        {
+                            // throw timeout if the cancellationToken is not canceled (i.e. httpClient timed out)
+                            durationTimeSpan = DateTime.UtcNow - sendTimeUtc;
+                            string message = $"GatewayStoreClient Request Timeout. Start Time:{sendTimeUtc}; Total Duration:{durationTimeSpan}; Http Client Timeout:{this.httpClient.Timeout}; Activity id: {requestedActivityId}; Inner Message: {ex.Message};";
+                            throw new RequestTimeoutException(message, ex, requestMessage.RequestUri);
+                        }
+                        else
+                        {
+                            throw;
+                        }
+                    }
+                    finally
+                    {
+                        clientSideRequestStatistics.RecordAddressResolutionEnd(recordAddressResolutionId);
                     }
                 }
             };

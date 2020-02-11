@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     using System;
     using System.Collections.Generic;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
 
     internal sealed class DocumentServiceLeaseContainerCosmos : DocumentServiceLeaseContainer
     {
@@ -29,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
         public override async Task<IEnumerable<DocumentServiceLease>> GetOwnedLeasesAsync()
         {
-            var ownedLeases = new List<DocumentServiceLease>();
+            List<DocumentServiceLease> ownedLeases = new List<DocumentServiceLease>();
             foreach (DocumentServiceLease lease in await this.GetAllLeasesAsync().ConfigureAwait(false))
             {
                 if (string.Compare(lease.Owner, this.options.HostName, StringComparison.OrdinalIgnoreCase) == 0)
@@ -46,15 +47,21 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             if (string.IsNullOrEmpty(prefix))
                 throw new ArgumentException("Prefix must be non-empty string", nameof(prefix));
 
-            var query = this.container.GetItemQueryIterator<DocumentServiceLeaseCore>(
+            FeedIterator iterator = this.container.GetItemQueryStreamIterator(
                 "SELECT * FROM c WHERE STARTSWITH(c.id, '" + prefix + "')",
                 continuationToken: null,
                 requestOptions: queryRequestOptions);
 
-            var leases = new List<DocumentServiceLeaseCore>();
-            while (query.HasMoreResults)
+            List<DocumentServiceLeaseCore> leases = new List<DocumentServiceLeaseCore>();
+            while (iterator.HasMoreResults)
             {
-                leases.AddRange(await query.ReadNextAsync().ConfigureAwait(false));
+                using (ResponseMessage responseMessage = await iterator.ReadNextAsync().ConfigureAwait(false))
+                {
+                    responseMessage.EnsureSuccessStatusCode();
+                    leases.AddRange(CosmosContainerExtensions.DefaultJsonSerializer.FromFeedResponseStream<DocumentServiceLeaseCore>(
+                        responseMessage.Content,
+                        Documents.ResourceType.Document));
+                }   
             }
 
             return leases;

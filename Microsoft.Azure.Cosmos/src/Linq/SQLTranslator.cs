@@ -3,7 +3,9 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Linq
 {
+    using System.Collections.Generic;
     using System.Linq.Expressions;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Sql;
 
     /// <summary>
@@ -41,11 +43,24 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         internal static SqlQuerySpec TranslateQuery(
             Expression inputExpression,
-            CosmosSerializationOptions serializationOptions = null)
+            CosmosSerializationOptions serializationOptions,
+            IDictionary<object, string> parameters)
         {
             inputExpression = ConstantEvaluator.PartialEval(inputExpression);
-            SqlQuery query = ExpressionToSql.TranslateQuery(inputExpression, serializationOptions);
-            return new SqlQuerySpec(query.ToString());
+            SqlQuery query = ExpressionToSql.TranslateQuery(inputExpression, parameters, serializationOptions);
+            string queryText = null;
+            SqlParameterCollection sqlParameters = new SqlParameterCollection();
+            if (parameters != null && parameters.Count > 0)
+            {
+                foreach (KeyValuePair<object, string> keyValuePair in parameters)
+                {
+                    sqlParameters.Add(new Microsoft.Azure.Cosmos.Query.Core.SqlParameter(keyValuePair.Value, keyValuePair.Key));
+                }
+            }
+            queryText = query.ToString();
+
+            SqlQuerySpec sqlQuerySpec = new SqlQuerySpec(queryText, sqlParameters);
+            return sqlQuerySpec;
         }
     }
 }

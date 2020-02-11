@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
     using System.Net;
     using System.Threading.Tasks;
@@ -30,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response);
             Assert.IsNotNull(response.Container);
             Assert.IsNotNull(response.Resource);
-            this.container = (ContainerCore)response;
+            this.container = (ContainerInlineCore)response;
             this.scripts = this.container.Scripts;
         }
 
@@ -153,22 +154,28 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task UserDefinedFunctionsIteratorTest()
         {
-            UserDefinedFunctionProperties cosmosUserDefinedFunction = await CreateRandomUdf();
-
-            HashSet<string> settings = new HashSet<string>();
-            FeedIterator<UserDefinedFunctionProperties> iter = this.scripts.GetUserDefinedFunctionQueryIterator<UserDefinedFunctionProperties>(); ;
-            while (iter.HasMoreResults)
+            using (CosmosClient cosmosClient = TestCommon.CreateCosmosClient(new CosmosClientOptions() { Serializer = new FaultySerializer() }))
             {
-                foreach (UserDefinedFunctionProperties storedProcedureSettingsEntry in await iter.ReadNextAsync())
+                // Should not use the custom serializer for these operations
+                Scripts scripts = cosmosClient.GetContainer(this.database.Id, this.container.Id).Scripts;
+
+                UserDefinedFunctionProperties cosmosUserDefinedFunction = await this.CreateRandomUdf();
+
+                HashSet<string> settings = new HashSet<string>();
+                FeedIterator<UserDefinedFunctionProperties> iter = scripts.GetUserDefinedFunctionQueryIterator<UserDefinedFunctionProperties>(); ;
+                while (iter.HasMoreResults)
                 {
-                    settings.Add(storedProcedureSettingsEntry.Id);
+                    foreach (UserDefinedFunctionProperties storedProcedureSettingsEntry in await iter.ReadNextAsync())
+                    {
+                        settings.Add(storedProcedureSettingsEntry.Id);
+                    }
                 }
+
+                Assert.IsTrue(settings.Contains(cosmosUserDefinedFunction.Id), "The iterator did not return the user defined function definition.");
+
+                // Delete existing user defined functions.
+                await scripts.DeleteUserDefinedFunctionAsync(cosmosUserDefinedFunction.Id);
             }
-
-            Assert.IsTrue(settings.Contains(cosmosUserDefinedFunction.Id), "The iterator did not return the user defined function definition.");
-
-            // Delete existing user defined functions.
-            await this.scripts.DeleteUserDefinedFunctionAsync(cosmosUserDefinedFunction.Id);
         }
 
         private static void ValidateUserDefinedFunctionSettings(UserDefinedFunctionProperties udfSettings, UserDefinedFunctionResponse cosmosResponse)
@@ -179,8 +186,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(udfSettings.Id, settings.Id,
                 "User defined function id do not match");
             Assert.IsTrue(cosmosResponse.RequestCharge > 0);
-            Assert.IsNotNull(cosmosResponse.MaxResourceQuota);
-            Assert.IsNotNull(cosmosResponse.CurrentResourceQuotaUsage);
+            Assert.IsNotNull(cosmosResponse.Headers.GetHeaderValue<string>(Documents.HttpConstants.HttpHeaders.MaxResourceQuota));
+            Assert.IsNotNull(cosmosResponse.Headers.GetHeaderValue<string>(Documents.HttpConstants.HttpHeaders.CurrentResourceQuotaUsage));
+            SelflinkValidator.ValidateUdfSelfLink(cosmosResponse.Resource.SelfLink);
         }
 
         private async Task<UserDefinedFunctionResponse> CreateRandomUdf()
@@ -211,6 +219,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             public double cost { get; set; }
             public string description { get; set; }
             public string status { get; set; }
+        }
+
+        private class FaultySerializer : CosmosSerializer
+        {
+            public override T FromStream<T>(Stream stream)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override Stream ToStream<T>(T input)
+            {
+                throw new NotImplementedException();
+            }
         }
     }
 }

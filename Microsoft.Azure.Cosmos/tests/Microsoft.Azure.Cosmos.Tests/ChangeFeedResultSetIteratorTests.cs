@@ -11,8 +11,8 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Client.Core.Tests;
     using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Newtonsoft.Json;
@@ -28,8 +28,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
             mockContext.Setup(x => x.ClientOptions).Returns(MockCosmosUtil.GetDefaultConfiguration());
             mockContext.Setup(x => x.DocumentClient).Returns(documentClient);
-            mockContext.Setup(x => x.CosmosSerializer).Returns(MockCosmosUtil.Serializer);
+            mockContext.Setup(x => x.SerializerCore).Returns(MockCosmosUtil.Serializer);
             mockContext.Setup(x => x.Client).Returns(client);
+            mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(new Uri("/dbs/test/colls/test", UriKind.Relative));
 
             ResponseMessage firstResponse = new ResponseMessage(HttpStatusCode.NotModified);
             firstResponse.Headers.ETag = "FirstContinuation";
@@ -47,12 +48,15 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<Func<ResponseMessage, ResponseMessage>>(),
+                It.IsAny<CosmosDiagnosticsContext>(),
                 It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(firstResponse))
                 .Returns(Task.FromResult(secondResponse));
 
+            DatabaseCore databaseCore = new DatabaseCore(mockContext.Object, "mydb");
+
             ChangeFeedResultSetIteratorCore iterator = new ChangeFeedResultSetIteratorCore(
-                mockContext.Object, (ContainerCore)client.GetContainer("myDb", "myColl"), null, 10, new ChangeFeedRequestOptions());
+                mockContext.Object, new ContainerCore(mockContext.Object, databaseCore, "myColl"), null, 10, new ChangeFeedRequestOptions());
             ResponseMessage firstRequest = await iterator.ReadNextAsync();
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(firstResponse.Headers.ETag), "Response should contain the first continuation");
             Assert.IsTrue(!firstRequest.Headers.ContinuationToken.Contains(secondResponse.Headers.ETag), "Response should not contain the second continuation");
@@ -68,6 +72,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<Func<ResponseMessage, ResponseMessage>>(),
+                It.IsAny<CosmosDiagnosticsContext>(),
                 It.IsAny<CancellationToken>()), Times.Exactly(2));
         }
 
@@ -80,8 +85,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
             mockContext.Setup(x => x.ClientOptions).Returns(MockCosmosUtil.GetDefaultConfiguration());
             mockContext.Setup(x => x.DocumentClient).Returns(documentClient);
-            mockContext.Setup(x => x.CosmosSerializer).Returns(MockCosmosUtil.Serializer);
+            mockContext.Setup(x => x.SerializerCore).Returns(MockCosmosUtil.Serializer);
             mockContext.Setup(x => x.Client).Returns(client);
+            mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(new Uri("/dbs/test/colls/test", UriKind.Relative));
 
             ResponseMessage firstResponse = new ResponseMessage(HttpStatusCode.NotModified);
             firstResponse.Headers.ETag = "FirstContinuation";
@@ -98,12 +104,15 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<Func<ResponseMessage, ResponseMessage>>(),
+                It.IsAny<CosmosDiagnosticsContext>(),
                 It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(firstResponse))
                 .Returns(Task.FromResult(secondResponse));
 
+            DatabaseCore databaseCore = new DatabaseCore(mockContext.Object, "mydb");
+
             ChangeFeedResultSetIteratorCore iterator = new ChangeFeedResultSetIteratorCore(
-                mockContext.Object, (ContainerCore)client.GetContainer("myDb", "myColl"), null, 10, new ChangeFeedRequestOptions());
+                mockContext.Object, new ContainerCore(mockContext.Object, databaseCore, "myColl"), null, 10, new ChangeFeedRequestOptions());
             ResponseMessage firstRequest = await iterator.ReadNextAsync();
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(firstResponse.Headers.ETag), "Response should contain the first continuation");
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(secondResponse.Headers.ETag), "Response should contain the second continuation");
@@ -119,6 +128,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<Func<ResponseMessage, ResponseMessage>>(),
+                It.IsAny<CosmosDiagnosticsContext>(),
                 It.IsAny<CancellationToken>()), Times.Exactly(2));
         }
 
@@ -131,8 +141,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
             mockContext.Setup(x => x.ClientOptions).Returns(MockCosmosUtil.GetDefaultConfiguration());
             mockContext.Setup(x => x.DocumentClient).Returns(documentClient);
-            mockContext.Setup(x => x.CosmosSerializer).Returns(MockCosmosUtil.Serializer);
+            mockContext.Setup(x => x.SerializerCore).Returns(MockCosmosUtil.Serializer);
             mockContext.Setup(x => x.Client).Returns(client);
+            mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(new Uri("/dbs/test/colls/test", UriKind.Relative));
 
             ResponseMessage firstResponse = new ResponseMessage(HttpStatusCode.NotModified);
             firstResponse.Headers.ETag = "FirstContinuation";
@@ -151,13 +162,16 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<Func<ResponseMessage, ResponseMessage>>(),
+                It.IsAny<CosmosDiagnosticsContext>(),
                 It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(firstResponse))
                 .Returns(Task.FromResult(secondResponse))
                 .Returns(Task.FromResult(thirdResponse));
 
+            DatabaseCore databaseCore = new DatabaseCore(mockContext.Object, "mydb");
+
             ChangeFeedResultSetIteratorCore iterator = new ChangeFeedResultSetIteratorCore(
-                mockContext.Object, (ContainerCore)client.GetContainer("myDb", "myColl"), null, 10, new ChangeFeedRequestOptions());
+                mockContext.Object, new ContainerCore(mockContext.Object, databaseCore, "myColl"), null, 10, new ChangeFeedRequestOptions());
             ResponseMessage firstRequest = await iterator.ReadNextAsync();
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(firstResponse.Headers.ETag), "Response should contain the first continuation");
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(secondResponse.Headers.ETag), "Response should contain the second continuation");
@@ -174,6 +188,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<Func<ResponseMessage, ResponseMessage>>(),
+                It.IsAny<CosmosDiagnosticsContext>(),
                 It.IsAny<CancellationToken>()), Times.Exactly(3));
         }
 
@@ -186,8 +201,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
             mockContext.Setup(x => x.ClientOptions).Returns(MockCosmosUtil.GetDefaultConfiguration());
             mockContext.Setup(x => x.DocumentClient).Returns(new MockDocumentClient());
-            mockContext.Setup(x => x.CosmosSerializer).Returns(MockCosmosUtil.Serializer);
+            mockContext.Setup(x => x.SerializerCore).Returns(MockCosmosUtil.Serializer);
             mockContext.Setup(x => x.Client).Returns(client);
+            mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(new Uri("/dbs/test/colls/test", UriKind.Relative));
 
             ResponseMessage firstResponse = new ResponseMessage(HttpStatusCode.NotModified);
             firstResponse.Headers.ETag = "FirstContinuation";
@@ -202,11 +218,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<Func<ResponseMessage, ResponseMessage>>(),
+                It.IsAny<CosmosDiagnosticsContext>(),
                 It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(firstResponse));
 
+            DatabaseCore databaseCore = new DatabaseCore(mockContext.Object, "mydb");
+
             ChangeFeedResultSetIteratorCore iterator = new ChangeFeedResultSetIteratorCore(
-                mockContext.Object, (ContainerCore)client.GetContainer("myDb", "myColl"), null, 10, new ChangeFeedRequestOptions());
+                mockContext.Object, new ContainerCore(mockContext.Object, databaseCore, "myColl"), null, 10, new ChangeFeedRequestOptions());
             ResponseMessage firstRequest = await iterator.ReadNextAsync();
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(firstResponse.Headers.ETag), "Response should contain the first continuation");
             Assert.AreEqual(HttpStatusCode.NotModified, firstRequest.StatusCode);
@@ -221,6 +240,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<Func<ResponseMessage, ResponseMessage>>(),
+                It.IsAny<CosmosDiagnosticsContext>(),
                 It.IsAny<CancellationToken>()), Times.Once);
         }
 
@@ -233,7 +253,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
             mockContext.Setup(x => x.ClientOptions).Returns(MockCosmosUtil.GetDefaultConfiguration());
             mockContext.Setup(x => x.DocumentClient).Returns(documentClient);
-            mockContext.Setup(x => x.CosmosSerializer).Returns(MockCosmosUtil.Serializer);
+            mockContext.Setup(x => x.SerializerCore).Returns(MockCosmosUtil.Serializer);
             mockContext.Setup(x => x.Client).Returns(client);
             mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(UriFactory.CreateDocumentCollectionUri("test", "test"));
 

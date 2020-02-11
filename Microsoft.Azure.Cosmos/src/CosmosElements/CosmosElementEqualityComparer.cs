@@ -29,37 +29,9 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             {
                 return false;
             }
-            else if (number1.NumberType == CosmosNumberType.Number64)
-            {
-                double double1;
-                if (number1.IsFloatingPoint)
-                {
-                    double1 = number1.AsFloatingPoint().Value;
-                }
-                else
-                {
-                    double1 = number1.AsInteger().Value;
-                }
-
-                double double2;
-                if (number2.IsFloatingPoint)
-                {
-                    double2 = number2.AsFloatingPoint().Value;
-                }
-                else
-                {
-                    double2 = number2.AsInteger().Value;
-                }
-
-                return double1 == double2;
-            }
-            else if (number1.IsFloatingPoint)
-            {
-                return number1.AsFloatingPoint() == number2.AsFloatingPoint();
-            }
             else
             {
-                return number1.AsInteger() == number2.AsInteger();
+                return number1.Value == number2.Value;
             }
         }
 
@@ -75,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public bool Equals(CosmosBinary binary1, CosmosBinary binary2)
         {
-            return binary1.Value.SequenceEqual(binary2.Value);
+            return binary1.Value.Span.SequenceEqual(binary2.Value.Span);
         }
 
         public bool Equals(CosmosBoolean bool1, CosmosBoolean bool2)
@@ -114,8 +86,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 string name = kvp.Key;
                 CosmosElement value1 = kvp.Value;
 
-                CosmosElement value2;
-                if (cosmosObject2.TryGetValue(name, out value2))
+                if (cosmosObject2.TryGetValue(name, out CosmosElement value2))
                 {
                     deepEquals &= this.Equals(value1, value2);
                 }
@@ -158,16 +129,16 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
                 case CosmosElementType.Boolean:
                     return this.Equals(
-                        (cosmosElement1 as CosmosBoolean),
-                        (cosmosElement2 as CosmosBoolean));
+                        cosmosElement1 as CosmosBoolean,
+                        cosmosElement2 as CosmosBoolean);
 
                 case CosmosElementType.Null:
                     return true;
 
                 case CosmosElementType.Number:
                     return this.Equals(
-                        (cosmosElement1 as CosmosNumber),
-                        (cosmosElement2 as CosmosNumber));
+                        cosmosElement1 as CosmosNumber,
+                        cosmosElement2 as CosmosNumber);
 
                 case CosmosElementType.Object:
                     return this.Equals(
@@ -176,18 +147,18 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
                 case CosmosElementType.String:
                     return this.Equals(
-                        (cosmosElement1 as CosmosString),
-                        (cosmosElement2 as CosmosString));
+                        cosmosElement1 as CosmosString,
+                        cosmosElement2 as CosmosString);
 
                 case CosmosElementType.Guid:
                     return this.Equals(
-                        (cosmosElement1 as CosmosGuid),
-                        (cosmosElement2 as CosmosGuid));
+                        cosmosElement1 as CosmosGuid,
+                        cosmosElement2 as CosmosGuid);
 
                 case CosmosElementType.Binary:
                     return this.Equals(
-                        (cosmosElement1 as CosmosBinary),
-                        (cosmosElement2 as CosmosBinary));
+                        cosmosElement1 as CosmosBinary,
+                        cosmosElement2 as CosmosBinary);
 
                 default:
                     throw new ArgumentException();

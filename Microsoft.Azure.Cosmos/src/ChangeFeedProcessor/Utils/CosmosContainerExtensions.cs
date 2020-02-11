@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
 {
     using System.Globalization;
+    using System.IO;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
@@ -13,41 +14,70 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
 
     internal static class CosmosContainerExtensions
     {
+        public static readonly CosmosSerializerCore DefaultJsonSerializer = new CosmosSerializerCore();
+
         public static async Task<T> TryGetItemAsync<T>(
             this Container container,
             PartitionKey partitionKey,
             string itemId)
         {
-            return await container.ReadItemAsync<T>(
+            using (ResponseMessage responseMessage = await container.ReadItemStreamAsync(
                     itemId,
                     partitionKey)
-                    .ConfigureAwait(false);
+                    .ConfigureAwait(false))
+            {
+                responseMessage.EnsureSuccessStatusCode();
+                return CosmosContainerExtensions.DefaultJsonSerializer.FromStream<T>(responseMessage.Content);
+            }
         }
 
         public static async Task<ItemResponse<T>> TryCreateItemAsync<T>(
             this Container container,
-            object partitionKey,
+            PartitionKey partitionKey,
             T item)
         {
-            var response = await container.CreateItemAsync<T>(item).ConfigureAwait(false);
-            if (response.StatusCode == HttpStatusCode.Conflict)
+            using (Stream itemStream = CosmosContainerExtensions.DefaultJsonSerializer.ToStream<T>(item))
             {
-                // Ignore-- document already exists.
-                return null;
-            }
+                using (ResponseMessage response = await container.CreateItemStreamAsync(itemStream, partitionKey).ConfigureAwait(false))
+                {
+                    if (response.StatusCode == HttpStatusCode.Conflict)
+                    {
+                        // Ignore-- document already exists.
+                        return null;
+                    }
 
-            return response;
+                    return new ItemResponse<T>(response.StatusCode, response.Headers, CosmosContainerExtensions.DefaultJsonSerializer.FromStream<T>(response.Content), response.Diagnostics);
+                }
+            }
         }
 
-        public static async Task<T> TryDeleteItemAsync<T>(
+        public static async Task<ItemResponse<T>> TryReplaceItemAsync<T>(
+            this Container container,
+            string itemId,
+            T item,
+            PartitionKey partitionKey,
+            ItemRequestOptions itemRequestOptions)
+        {
+            using (Stream itemStream = CosmosContainerExtensions.DefaultJsonSerializer.ToStream<T>(item))
+            {
+                using (ResponseMessage response = await container.ReplaceItemStreamAsync(itemStream, itemId, partitionKey, itemRequestOptions).ConfigureAwait(false))
+                {
+                    response.EnsureSuccessStatusCode();
+                    return new ItemResponse<T>(response.StatusCode, response.Headers, CosmosContainerExtensions.DefaultJsonSerializer.FromStream<T>(response.Content), response.Diagnostics);
+                }
+            }
+        }
+
+        public static async Task<bool> TryDeleteItemAsync<T>(
             this Container container,
             PartitionKey partitionKey,
             string itemId,
             ItemRequestOptions cosmosItemRequestOptions = null)
         {
-            var response = await container.DeleteItemAsync<T>(itemId, partitionKey, cosmosItemRequestOptions).ConfigureAwait(false);
-
-            return response.Resource;
+            using (ResponseMessage response = await container.DeleteItemStreamAsync(itemId, partitionKey, cosmosItemRequestOptions).ConfigureAwait(false))
+            {
+                return response.IsSuccessStatusCode;
+            }
         }
 
         public static async Task<bool> ItemExistsAsync(
@@ -55,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
             PartitionKey partitionKey,
             string itemId)
         {
-            var response = await container.ReadItemStreamAsync(
+            ResponseMessage response = await container.ReadItemStreamAsync(
                         itemId,
                         partitionKey)
                         .ConfigureAwait(false);

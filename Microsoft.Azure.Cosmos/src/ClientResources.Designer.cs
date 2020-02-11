@@ -565,11 +565,11 @@ namespace Microsoft.Azure.Cosmos {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Consistency, Session, and Triggers are not allowed when using the Batch streaming feature..
+        ///   Looks up a localized string similar to Consistency, Session, and Triggers are not allowed when AllowBulkExecution is set to true..
         /// </summary>
-        internal static string UnsupportedBatchRequestOptions {
+        internal static string UnsupportedBulkRequestOptions {
             get {
-                return ResourceManager.GetString("UnsupportedBatchRequestOptions", resourceCulture);
+                return ResourceManager.GetString("UnsupportedBulkRequestOptions", resourceCulture);
             }
         }
         

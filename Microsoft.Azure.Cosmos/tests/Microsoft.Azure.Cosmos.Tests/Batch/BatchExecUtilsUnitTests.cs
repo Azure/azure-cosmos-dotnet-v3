@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System;
     using System.IO;
     using System.Linq;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
@@ -24,22 +25,21 @@ namespace Microsoft.Azure.Cosmos.Tests
             const int bytesLength = 10;
             byte[] bytes = new byte[bytesLength];
             this.random.NextBytes(bytes);
-            const int maximumLength = 100;
             {
                 Stream stream = new MemoryStream(bytes);
-                Memory<byte> actual = await BatchExecUtils.StreamToMemoryAsync(stream, maximumLength, CancellationToken.None);
+                Memory<byte> actual = await BatchExecUtils.StreamToMemoryAsync(stream, CancellationToken.None);
                 Assert.IsTrue(actual.Span.SequenceEqual(bytes));
             }
 
             {
                 Stream stream = new MemoryStream(bytes, 2, 5, writable: false, publiclyVisible: true);
-                Memory<byte> actual = await BatchExecUtils.StreamToMemoryAsync(stream, maximumLength, CancellationToken.None);
+                Memory<byte> actual = await BatchExecUtils.StreamToMemoryAsync(stream, CancellationToken.None);
                 Assert.IsTrue(actual.Span.SequenceEqual(bytes.Skip(2).Take(5).ToArray()));
             }
 
             {
                 Stream stream = new MemoryStream(bytes, 2, 5, writable: false, publiclyVisible: false);
-                Memory<byte> actual = await BatchExecUtils.StreamToMemoryAsync(stream, maximumLength, CancellationToken.None);
+                Memory<byte> actual = await BatchExecUtils.StreamToMemoryAsync(stream, CancellationToken.None);
                 Assert.IsTrue(actual.Span.SequenceEqual(bytes.Skip(2).Take(5).ToArray()));
             }
 
@@ -47,49 +47,16 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Stream stream = new MemoryStream(bytes.Length * 2);
                 await stream.WriteAsync(bytes, 0, bytes.Length);
                 stream.Position = 0;
-                Memory<byte> actual = await BatchExecUtils.StreamToMemoryAsync(stream, maximumLength, CancellationToken.None);
+                Memory<byte> actual = await BatchExecUtils.StreamToMemoryAsync(stream, CancellationToken.None);
                 Assert.IsTrue(actual.Span.SequenceEqual(bytes));
             }
 
             {
                 Stream stream = new TestSeekableStream(bytes, maxLengthToReturnPerRead: 3);
-                Memory<byte> actual = await BatchExecUtils.StreamToMemoryAsync(stream, maximumLength, CancellationToken.None);
+                Memory<byte> actual = await BatchExecUtils.StreamToMemoryAsync(stream, CancellationToken.None);
                 Assert.IsTrue(actual.Span.SequenceEqual(bytes));
             }
         }
-
-        [TestMethod]
-        [Owner("abpai")]
-        public async Task StreamToBytesAsyncSeekableMaximumLengthAsync()
-        {
-            byte[] bytes = new byte[10];
-            this.random.NextBytes(bytes);
-
-            Stream stream = new MemoryStream(bytes);
-            {
-                Memory<byte> actual = await BatchExecUtils.StreamToMemoryAsync(stream, maximumLength: 100, cancellationToken: CancellationToken.None);
-                Assert.IsTrue(actual.Span.SequenceEqual(bytes));
-            }
-
-            {
-                stream.Position = 0;
-                Memory<byte> actual = await BatchExecUtils.StreamToMemoryAsync(stream, maximumLength: 10, cancellationToken: CancellationToken.None);
-                Assert.IsTrue(actual.Span.SequenceEqual(bytes));
-            }
-
-            {
-                stream.Position = 0;
-                try
-                {
-                    Memory<byte> actual = await BatchExecUtils.StreamToMemoryAsync(stream, maximumLength: 9, cancellationToken: CancellationToken.None);
-                    Assert.Fail("Expected " + nameof(RequestEntityTooLargeException));
-                }
-                catch (RequestEntityTooLargeException)
-                {
-                }
-            }
-        }
-
 
         [TestMethod]
         [Owner("abpai")]
@@ -99,26 +66,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             this.random.NextBytes(bytes);
             TestNonSeekableStream stream = new TestNonSeekableStream(bytes, maxLengthToReturnPerRead: 3);
             {
-                Memory<byte> actual = await BatchExecUtils.StreamToMemoryAsync(stream, maximumLength: 100, cancellationToken: CancellationToken.None);
+                Memory<byte> actual = await BatchExecUtils.StreamToMemoryAsync(stream, cancellationToken: CancellationToken.None);
                 Assert.IsTrue(actual.Span.SequenceEqual(bytes));
-            }
-
-            {
-                stream.Reset();
-                Memory<byte> actual = await BatchExecUtils.StreamToMemoryAsync(stream, maximumLength: 10, cancellationToken: CancellationToken.None);
-                Assert.IsTrue(actual.Span.SequenceEqual(bytes));
-            }
-
-            {
-                stream.Reset();
-                try
-                {
-                    Memory<byte> actual = await BatchExecUtils.StreamToMemoryAsync(stream, maximumLength: 9, cancellationToken: CancellationToken.None);
-                    Assert.Fail("Expected " + nameof(RequestEntityTooLargeException));
-                }
-                catch (RequestEntityTooLargeException)
-                {
-                }
             }
         }
 

@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Sql
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using Microsoft.Azure.Cosmos.Query.Core;
 
     internal sealed class SqlNumberLiteral : SqlLiteral
     {
@@ -28,38 +29,22 @@ namespace Microsoft.Azure.Cosmos.Sql
             get;
         }
 
-        public static SqlNumberLiteral Create(decimal number)
+        public static SqlNumberLiteral Create(Number64 number64)
         {
             SqlNumberLiteral sqlNumberLiteral;
-            if ((number >= long.MinValue) && (number <= long.MaxValue) && (number % 1 == 0))
+            if (number64.IsDouble)
             {
-                sqlNumberLiteral = Create(Convert.ToInt64(number));
+                if (!SqlNumberLiteral.FrequentDoubles.TryGetValue(Number64.ToDouble(number64), out sqlNumberLiteral))
+                {
+                    sqlNumberLiteral = new SqlNumberLiteral(number64);
+                }
             }
             else
             {
-                sqlNumberLiteral = Create(Convert.ToDouble(number));
-            }
-
-            return sqlNumberLiteral;
-        }
-
-        public static SqlNumberLiteral Create(double number)
-        {
-            SqlNumberLiteral sqlNumberLiteral;
-            if (!SqlNumberLiteral.FrequentDoubles.TryGetValue(number, out sqlNumberLiteral))
-            {
-                sqlNumberLiteral = new SqlNumberLiteral(number);
-            }
-
-            return sqlNumberLiteral;
-        }
-
-        public static SqlNumberLiteral Create(long number)
-        {
-            SqlNumberLiteral sqlNumberLiteral;
-            if (!SqlNumberLiteral.FrequentLongs.TryGetValue(number, out sqlNumberLiteral))
-            {
-                sqlNumberLiteral = new SqlNumberLiteral(number);
+                if (!SqlNumberLiteral.FrequentLongs.TryGetValue(Number64.ToLong(number64), out sqlNumberLiteral))
+                {
+                    sqlNumberLiteral = new SqlNumberLiteral(number64);
+                }
             }
 
             return sqlNumberLiteral;

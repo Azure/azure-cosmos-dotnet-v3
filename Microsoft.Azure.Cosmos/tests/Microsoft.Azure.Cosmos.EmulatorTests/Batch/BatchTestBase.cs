@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 },
                 throughput: 400).GetAwaiter().GetResult().Container;
 
-            BatchTestBase.PartitionKeyDefinition = ((ContainerCore)BatchTestBase.LowThroughputJsonContainer).GetPartitionKeyDefinitionAsync(CancellationToken.None).GetAwaiter().GetResult();
+            BatchTestBase.PartitionKeyDefinition = ((ContainerCore)(ContainerInlineCore)BatchTestBase.LowThroughputJsonContainer).GetPartitionKeyDefinitionAsync(CancellationToken.None).GetAwaiter().GetResult();
 
             // Create a container with at least 2 physical partitions for effective cross-partition testing
             BatchTestBase.JsonContainer = BatchTestBase.Database.CreateContainerAsync(
@@ -233,7 +233,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             else
             {
                 
-                return TestCommon.Serializer.ToStream<TestDoc>(testDoc);
+                return TestCommon.SerializerCore.ToStream<TestDoc>(testDoc);
             }
         }
 
@@ -245,7 +245,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             else
             {
-                return TestCommon.Serializer.FromStream<TestDoc>(stream);
+                return TestCommon.SerializerCore.FromStream<TestDoc>(stream);
             }
         }
 
@@ -342,9 +342,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return doc.Id;
         }
 
-        internal static BatchItemRequestOptions GetBatchItemRequestOptions(TestDoc doc, bool isSchematized, bool useEpk = false, int? ttlInSeconds = null)
+        internal static TransactionalBatchItemRequestOptions GetBatchItemRequestOptions(TestDoc doc, bool isSchematized, bool useEpk = false, int? ttlInSeconds = null)
         {
-            BatchItemRequestOptions requestOptions = new BatchItemRequestOptions()
+            TransactionalBatchItemRequestOptions requestOptions = new TransactionalBatchItemRequestOptions()
             {
                 Properties = new Dictionary<string, object>()
             };

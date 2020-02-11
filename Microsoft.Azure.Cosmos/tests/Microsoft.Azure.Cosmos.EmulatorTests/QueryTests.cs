@@ -15,31 +15,31 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Net.Http;
     using System.Reflection;
     using System.Text;
-    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Query;
-    using Microsoft.Azure.Cosmos.Query.ExecutionComponent;
-    using Microsoft.Azure.Cosmos.Query.ParallelQuery;
+    using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel;
+    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.Azure.Cosmos.Utils;
     using Microsoft.Azure.Cosmos.Services.Management.Tests;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Converters;
-    using Newtonsoft.Json.Linq;
-    using Microsoft.Azure.Documents.Client;
+    using Microsoft.Azure.Cosmos.Utils;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Routing;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     [TestClass]
+    [TestCategory("Query")]
     public class QueryTests
     {
         private DocumentClient client;
         private DocumentClient primaryReadonlyClient;
         private DocumentClient secondaryReadonlyClient;
-        private PartitionKeyDefinition defaultPartitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
+        private readonly PartitionKeyDefinition defaultPartitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
 
         private enum PrecisionType
         {
@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Action<DocumentClient> queryAction = (documentClient) =>
                 {
                     // query by  name
-                    foreach (var index in Enumerable.Range(1, 3))
+                    foreach (int index in Enumerable.Range(1, 3))
                     {
                         string name = string.Format(CultureInfo.InvariantCulture, "{0}{1}", dbprefix, index);
                         DatabaseProperties queriedDatabases = documentClient.CreateDatabaseQuery(@"select * from root r where r.id = """ + name + @"""").AsEnumerable().Single().ToObject<DatabaseProperties>();
@@ -162,7 +162,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Action<DocumentClient> queryAction = (documentClient) =>
                 {
                     // query by  name
-                    foreach (var index in Enumerable.Range(1, 3))
+                    foreach (int index in Enumerable.Range(1, 3))
                     {
                         string name = string.Format(CultureInfo.InvariantCulture, "{0}{1}", collprefix, index);
                         ContainerProperties queriedCollections = documentClient.CreateDocumentCollectionQuery(database, @"select * from root r where r.id = """ + name + @"""").AsEnumerable().Single().ToObject<ContainerProperties>();
@@ -551,7 +551,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 DocumentCollection collection = TestCommon.CreateCollectionAsync(this.client, database, collectionDefinition).Result;
 
-                TestQueryDocuments(collection);
+                this.TestQueryDocuments(collection);
             }
             catch (DocumentClientException e)
             {
@@ -569,7 +569,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 documentCollection.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
                 DocumentCollection collection = TestCommon.CreateCollectionAsync(this.client, database, documentCollection).Result;
 
-                TestQueryDocuments(collection);
+                this.TestQueryDocuments(collection);
             }
             catch (DocumentClientException e)
             {
@@ -591,8 +591,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 };
                 sourceCollection.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
                 DocumentCollection collection = TestCommon.CreateCollectionAsync(this.client, database, sourceCollection).Result;
-                JObject property = new JObject();
-                property["pk"] = JToken.FromObject("test");
+                JObject property = new JObject
+                {
+                    ["pk"] = JToken.FromObject("test")
+                };
                 dynamic doc = new Document()
                 {
                     Id = string.Format(CultureInfo.InvariantCulture, "doc{0}", 222)
@@ -601,8 +603,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 doc.StringField = "222";
                 Document documentDefinition = (Document)doc;
                 documentDefinition.SetPropertyValue("pk", "test");
-                INameValueCollection requestHeaders = new DictionaryNameValueCollection();
-                requestHeaders.Add("x-ms-indexing-directive", "exclude");
+                INameValueCollection requestHeaders = new DictionaryNameValueCollection
+                {
+                    { "x-ms-indexing-directive", "exclude" }
+                };
                 this.client.Create<Document>(collection.GetIdOrFullName(), documentDefinition, requestHeaders);
 
                 IEnumerable<Document> queriedDocuments = this.client.CreateDocumentQuery<Document>(collection.GetLink(), @"select * from root r where r.StringField = ""222""", new FeedOptions { EnableCrossPartitionQuery = true });
@@ -637,8 +641,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     StringField = "333",
                 };
                 doc.SetPropertyValue("pk", "test");
-                INameValueCollection requestHeaders = new DictionaryNameValueCollection();
-                requestHeaders.Add("x-ms-indexing-directive", "include");
+                INameValueCollection requestHeaders = new DictionaryNameValueCollection
+                {
+                    { "x-ms-indexing-directive", "include" }
+                };
 
                 QueryDocument docCreated = this.client.Create<QueryDocument>(collection.GetIdOrFullName(), doc, requestHeaders);
                 Assert.IsNotNull(this.client.CreateDocumentQuery(collection.SelfLink, @"select * from root r where r.StringField=""333""", new FeedOptions { EnableCrossPartitionQuery = true }).AsEnumerable().Single());
@@ -689,7 +695,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 DocumentCollection collection = TestCommon.CreateCollectionAsync(this.client, database, sourceCollection).Result;
 
-                TestQueryDocuments(collection, true);
+                this.TestQueryDocuments(collection, true);
             }
             catch (DocumentClientException e)
             {
@@ -716,12 +722,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 dynamic myDocument = new Document();
                 myDocument.Id = "doc0";
                 myDocument.Title = "TestSessionTokenControlThroughFeedOptions";
-                ResourceResponse<Document> response = client.CreateDocumentAsync(collection.GetLink(), myDocument).Result;
+                ResourceResponse<Document> response = this.client.CreateDocumentAsync(collection.GetLink(), myDocument).Result;
                 sessionTokenBeforeReplication = response.SessionToken;
 
                 Assert.IsNotNull(sessionTokenBeforeReplication);
 
-                IQueryable<dynamic> documentIdQuery = client.CreateDocumentQuery(collection.GetLink(), @"select * from root r where r.Title=""TestSessionTokenControlThroughFeedOptions""",
+                IQueryable<dynamic> documentIdQuery = this.client.CreateDocumentQuery(collection.GetLink(), @"select * from root r where r.Title=""TestSessionTokenControlThroughFeedOptions""",
                     new FeedOptions() { SessionToken = sessionTokenBeforeReplication, EnableCrossPartitionQuery = true });
 
                 Assert.AreEqual(1, documentIdQuery.AsEnumerable().Count());
@@ -735,14 +741,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     myDocument = new Document();
                     myDocument.Id = "doc" + retryCounter;
                     myDocument.Title = "TestSessionTokenControlThroughFeedOptions";
-                    response = client.CreateDocumentAsync(collection.SelfLink, myDocument).Result;
+                    response = this.client.CreateDocumentAsync(collection.SelfLink, myDocument).Result;
 
                     sessionTokenAfterReplication = response.SessionToken;
                     Assert.IsNotNull(sessionTokenAfterReplication);
 
                     if (!string.Equals(sessionTokenAfterReplication, sessionTokenBeforeReplication))
                     {
-                        documentIdQuery = client.CreateDocumentQuery(collection.SelfLink, @"select * from root r where r.Title=""TestSessionTokenControlThroughFeedOptions""",
+                        documentIdQuery = this.client.CreateDocumentQuery(collection.SelfLink, @"select * from root r where r.Title=""TestSessionTokenControlThroughFeedOptions""",
                             new FeedOptions() { SessionToken = sessionTokenAfterReplication, EnableCrossPartitionQuery = true });
 
                         Assert.AreEqual(1 + retryCounter, documentIdQuery.AsEnumerable().Count());
@@ -757,27 +763,27 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             finally
             {
-                client.DeleteDocumentCollectionAsync(collection).Wait();
+                this.client.DeleteDocumentCollectionAsync(collection).Wait();
             }
         }
 
         [TestMethod]
         public void TestQueryUnicodeDocumentHttpsGateway()
         {
-            TestQueryUnicodeDocument(useGateway: true, protocol: Protocol.Https);
+            this.TestQueryUnicodeDocument(useGateway: true, protocol: Protocol.Https);
         }
 
         [TestMethod]
         public void TestQueryUnicodeDocumentHttpsDirect()
         {
-            TestQueryUnicodeDocument(useGateway: false, protocol: Protocol.Https);
+            this.TestQueryUnicodeDocument(useGateway: false, protocol: Protocol.Https);
         }
 
         private void TestQueryUnicodeDocument(bool useGateway, Protocol protocol)
         {
             try
             {
-                using (var testClient = TestCommon.CreateClient(useGateway, protocol: protocol, defaultConsistencyLevel: Documents.ConsistencyLevel.Session))
+                using (DocumentClient testClient = TestCommon.CreateClient(useGateway, protocol: protocol, defaultConsistencyLevel: Documents.ConsistencyLevel.Session))
                 {
                     Database database = testClient.Create<Database>(null, new Database { Id = "TestQueryUnicodeDocument" + Guid.NewGuid().ToString() });
 
@@ -790,14 +796,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     sourceCollection.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
                     DocumentCollection collection = testClient.Create<DocumentCollection>(database.GetIdOrFullName(), sourceCollection);
 
-                    INameValueCollection requestHeaders = new DictionaryNameValueCollection();
-                    requestHeaders.Add("x-ms-indexing-directive", "include");
+                    INameValueCollection requestHeaders = new DictionaryNameValueCollection
+                    {
+                        { "x-ms-indexing-directive", "include" }
+                    };
 
                     Action<string, string, string> testDocumentSQL = (name, rawValue, escapedValue) =>
                     {
                         escapedValue = escapedValue ?? rawValue;
 
-                        var document = new QueryDocument()
+                        QueryDocument document = new QueryDocument()
                         {
                             Id = name,
                             StringField = rawValue,
@@ -860,7 +868,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 // Let the lazy indexer do force checkpointing frequently as possible.
                 TestCommon.SetFederationWideConfigurationProperty("lazyIndexForceCheckpointIntervalInSeconds", 1);
 
-                Database db = client.CreateDatabaseAsync(new Database
+                Database db = this.client.CreateDatabaseAsync(new Database
                 {
                     Id = System.Reflection.MethodBase.GetCurrentMethod().Name + Guid.NewGuid().ToString("N")
                 }).Result.Resource;
@@ -869,10 +877,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 coll.IndexingPolicy.Automatic = true;
                 coll.IndexingPolicy.IndexingMode = IndexingMode.Lazy;
 
-                coll = TestCommon.CreateCollectionAsync(client, db, coll).Result;
+                coll = TestCommon.CreateCollectionAsync(this.client, db, coll).Result;
 
                 DateTime startTime = DateTime.Now;
-                LoadDocuments(coll).Wait();
+                this.LoadDocuments(coll).Wait();
                 Trace.TraceInformation("Load documents took {0} ms", (DateTime.Now - startTime).TotalMilliseconds);
 
                 startTime = DateTime.Now;
@@ -881,10 +889,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Trace.TraceInformation("Indexing took {0} ms", (DateTime.Now - startTime).TotalMilliseconds);
 
                 QueryOracle.QueryOracle qo =
-                    new QueryOracle.QueryOracle(client, coll.SelfLink, true,
+                    new QueryOracle.QueryOracle(this.client, coll.SelfLink, true,
                                                 targetNumberOfQueriesToValidate: 20000);
                 Assert.AreEqual(0, qo.IndexAndValidate(100), "Query oracle validation failed");
-                client.DeleteDatabaseAsync(db).Wait();
+                this.client.DeleteDatabaseAsync(db).Wait();
             }
             finally
             {
@@ -947,8 +955,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task TestQueryMultiplePartitions()
         {
-            await TestQueryMultiplePartitions(false);
-            await TestQueryMultiplePartitions(true);
+            await this.TestQueryMultiplePartitions(false);
+            await this.TestQueryMultiplePartitions(true);
         }
 
         private async Task TestQueryMultiplePartitions(bool useGateway)
@@ -1164,8 +1172,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 for (int j = 0; j < 100; j++)
                 {
-                    sb.Append("{\"id\":\"documentId" + (100 * i + j));
-                    sb.Append("\",\"partitionKey\":" + (100 * i + j));
+                    sb.Append("{\"id\":\"documentId" + ((100 * i) + j));
+                    sb.Append("\",\"partitionKey\":" + ((100 * i) + j));
                     for (int k = 1; k < 20; k++)
                     {
                         sb.Append(",\"field_" + k + "\":" + random.Next(100000));
@@ -1227,7 +1235,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<string> result = new List<string>();
 
             string queryText = @"SELECT * FROM Root r WHERE r.partitionKey = 123 OR r.partitionKey = 124 OR r.partitionKey = 125";
-            var feedOptions = new FeedOptions
+            FeedOptions feedOptions = new FeedOptions
             {
                 MaxItemCount = 5,
                 MaxDegreeOfParallelism = 3,
@@ -1261,9 +1269,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 MaxBufferedItemCount = 100
             };
             IQueryable<Document> rangeDocumentQuery = client.CreateDocumentQuery<Document>(coll.AltLink, queryText, feedOptions);
-            var enumerableIds = rangeDocumentQuery.ToList().Select(doc => doc.Id).ToArray();
+            string[] enumerableIds = rangeDocumentQuery.ToList().Select(doc => doc.Id).ToArray();
             Assert.AreEqual(
-                (endRange - startRange + 1),
+                endRange - startRange + 1,
                 enumerableIds.Count(),
                 this.getQueryExecutionDebugInfo(queryText, seed, feedOptions));
 
@@ -1276,7 +1284,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 MaxBufferedItemCount = 100
             };
             rangeDocumentQuery = client.CreateDocumentQuery<Document>(coll.AltLink, queryText, feedOptions);
-            var enumerableIdsOneTask = rangeDocumentQuery.ToList().Select(doc => doc.Id).ToArray();
+            string[] enumerableIdsOneTask = rangeDocumentQuery.ToList().Select(doc => doc.Id).ToArray();
             Assert.AreEqual(
                 string.Join(",", enumerableIds),
                 string.Join(",", enumerableIdsOneTask),
@@ -1291,7 +1299,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 EnableCrossPartitionQuery = true
             };
             rangeDocumentQuery = client.CreateDocumentQuery<Document>(coll.AltLink, queryText, feedOptions);
-            var enumerableIdsTwoTasks = rangeDocumentQuery.ToList().Select(doc => doc.Id).ToArray();
+            string[] enumerableIdsTwoTasks = rangeDocumentQuery.ToList().Select(doc => doc.Id).ToArray();
             Assert.AreEqual(
                 string.Join(",", enumerableIds),
                 string.Join(",", enumerableIdsTwoTasks),
@@ -1305,19 +1313,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 MaxBufferedItemCount = 100,
                 EnableCrossPartitionQuery = true
             };
-            var rangeQuery = client.CreateDocumentQuery(coll.AltLink, queryText, feedOptions).AsDocumentQuery();
-            var ids1 = new List<dynamic>();
+            IDocumentQuery<dynamic> rangeQuery = client.CreateDocumentQuery(coll.AltLink, queryText, feedOptions).AsDocumentQuery();
+            List<dynamic> ids1 = new List<dynamic>();
 
             while (rangeQuery.HasMoreResults)
             {
-                var page = await rangeQuery.ExecuteNextAsync().ConfigureAwait(false);
+                DocumentFeedResponse<dynamic> page = await rangeQuery.ExecuteNextAsync().ConfigureAwait(false);
                 if (page != null)
                 {
                     ids1.AddRange(page.AsEnumerable());
                 }
             }
 
-            var enumerableIdsAutoTasks = ids1.Select(doc => ((Document)doc).Id).ToArray();
+            string[] enumerableIdsAutoTasks = ids1.Select(doc => ((Document)doc).Id).ToArray();
             Assert.AreEqual(
                 string.Join(",", enumerableIds),
                 string.Join(",", enumerableIdsAutoTasks),
@@ -1333,7 +1341,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 EnableCrossPartitionQuery = true
             };
             IQueryable<dynamic> valueDocumentQuery = client.CreateDocumentQuery<dynamic>(coll.AltLink, valueQueryText, feedOptions);
-            var enumerableIdsLink = valueDocumentQuery.ToList();
+            List<dynamic> enumerableIdsLink = valueDocumentQuery.ToList();
             Assert.AreEqual(
                 enumerableIds.Count(),
                 enumerableIdsLink.Count,
@@ -1381,7 +1389,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await routingMapProvider.TryGetOverlappingRangesAsync(coll.ResourceId, fullRange);
             Assert.AreEqual(5, ranges.Count);
 
-            var feedOptions = new FeedOptions
+            FeedOptions feedOptions = new FeedOptions
             {
                 MaxItemCount = 5,
                 MaxDegreeOfParallelism = 50,
@@ -1400,7 +1408,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string queryText = @"SELECT * FROM Root r";
             IQueryable<Document> selectStarDocumentQuery = client.CreateDocumentQuery<Document>(coll.AltLink, queryText, feedOptions);
             DateTime startTime = DateTime.Now;
-            var enumerableIdsSelectStar = selectStarDocumentQuery.ToList().Select(doc => doc.Id).ToArray();
+            string[] enumerableIdsSelectStar = selectStarDocumentQuery.ToList().Select(doc => doc.Id).ToArray();
             double totalMillParallelOneTask = (DateTime.Now - startTime).TotalMilliseconds;
 
             // Read feed 1
@@ -1413,7 +1421,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
             ResourceFeedReader<Document> feedReader = client.CreateDocumentFeedReader(coll, feedOptions);
             startTime = DateTime.Now;
-            var enumerableIds = feedReader.Select(doc => doc.Id).ToArray();
+            string[] enumerableIds = feedReader.Select(doc => doc.Id).ToArray();
             double totalMillParallelReedFeed1 = (DateTime.Now - startTime).TotalMilliseconds;
 
             Assert.AreEqual(
@@ -1440,7 +1448,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             } while (!string.IsNullOrEmpty(feedOptions.RequestContinuationToken));
             double totalMillParallelReedFeed2 = (DateTime.Now - startTime).TotalMilliseconds;
 
-            var enumerableIds2 = result.Select(doc => ((Document)doc).Id).ToArray();
+            string[] enumerableIds2 = result.Select(doc => ((Document)doc).Id).ToArray();
             Assert.AreEqual(
                 string.Join(",", enumerableIds2),
                 string.Join(",", enumerableIdsSelectStar),
@@ -1599,7 +1607,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await client.CreateDocumentAsync(coll, new Document());
             await client.CreateDocumentAsync(coll, new Document());
 
-            var seqQuery = client.CreateDocumentQuery(
+            IDocumentQuery<dynamic> seqQuery = client.CreateDocumentQuery(
                 coll,
                 "SELECT * FROM r",
                 new FeedOptions { EnableCrossPartitionQuery = true, MaxItemCount = 1 }).AsDocumentQuery();
@@ -1615,7 +1623,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             }
 
-            var parallelQuery = client.CreateDocumentQuery(
+            IDocumentQuery<dynamic> parallelQuery = client.CreateDocumentQuery(
                 coll,
                 "SELECT * FROM r",
                 new FeedOptions { EnableCrossPartitionQuery = true, MaxItemCount = 1, MaxDegreeOfParallelism = 1 }).AsDocumentQuery();
@@ -1635,7 +1643,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 try
                 {
-                    var r = await client.CreateDocumentQuery(
+                    DocumentFeedResponse<dynamic> r = await client.CreateDocumentQuery(
                             coll,
                             "SELECT * FROM r",
                             new FeedOptions
@@ -1665,11 +1673,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Uri baseUri = new Uri(ConfigurationManager.AppSettings["GatewayEndpoint"]);
                 string masterKey = ConfigurationManager.AppSettings["MasterKey"];
 
-                var uri = new Uri(baseUri, new Uri(coll.SelfLink + "docs", UriKind.Relative));
+                Uri uri = new Uri(baseUri, new Uri(coll.SelfLink + "docs", UriKind.Relative));
                 SqlQuerySpec querySpec = new SqlQuerySpec(string.Format("SELECT * FROM r"));
                 using (HttpClient httpClient = new HttpClient())
                 {
-                    var headers = new DictionaryNameValueCollection();
+                    DictionaryNameValueCollection headers = new DictionaryNameValueCollection();
                     httpClient.AddMasterAuthorizationHeader("post", coll.ResourceId, "docs", headers, masterKey);
                     httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
                     httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.EnableScanInQuery, bool.TrueString);
@@ -1677,7 +1685,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.Version, HttpConstants.Versions.v2017_01_19);
                     httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.Continuation, continuationToken);
 
-                    var stringContent = new StringContent(JsonConvert.SerializeObject(querySpec), Encoding.UTF8, "application/query+json");
+                    StringContent stringContent = new StringContent(JsonConvert.SerializeObject(querySpec), Encoding.UTF8, "application/query+json");
                     stringContent.Headers.ContentType.CharSet = null;
                     using (HttpResponseMessage message = await httpClient.PostAsync(uri, stringContent))
                     {
@@ -1793,160 +1801,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
         */
 
-        private void AssertQueryMetricsPublicMembers(QueryMetrics queryMetrics)
-        {
-            Assert.IsNotNull(queryMetrics.TotalQueryExecutionTime.TotalMilliseconds);
-            Assert.IsNotNull(queryMetrics.RetrievedDocumentCount);
-            Assert.IsNotNull(queryMetrics.RetrievedDocumentSize);
-            Assert.IsNotNull(queryMetrics.OutputDocumentCount);
-            Assert.IsNotNull(queryMetrics.IndexHitRatio);
-            Assert.IsNotNull(queryMetrics.ClientSideMetrics.Retries);
-
-            Assert.IsNotNull(queryMetrics.QueryPreparationTimes.QueryCompilationTime.TotalMilliseconds);
-            Assert.IsNotNull(queryMetrics.QueryPreparationTimes.LogicalPlanBuildTime.TotalMilliseconds);
-            Assert.IsNotNull(queryMetrics.QueryPreparationTimes.PhysicalPlanBuildTime.TotalMilliseconds);
-            Assert.IsNotNull(queryMetrics.QueryPreparationTimes.QueryOptimizationTime.TotalMilliseconds);
-
-            Assert.IsNotNull(queryMetrics.IndexLookupTime.TotalMilliseconds);
-            Assert.IsNotNull(queryMetrics.DocumentLoadTime.TotalMilliseconds);
-            Assert.IsNotNull(queryMetrics.DocumentWriteTime.TotalMilliseconds);
-
-            Assert.IsNotNull(queryMetrics.RuntimeExecutionTimes.QueryEngineExecutionTime.TotalMilliseconds);
-            Assert.IsNotNull(queryMetrics.RuntimeExecutionTimes.SystemFunctionExecutionTime.TotalMilliseconds);
-            Assert.IsNotNull(queryMetrics.RuntimeExecutionTimes.UserDefinedFunctionExecutionTime.TotalMilliseconds);
-        }
-
-        /// <summary>
-        /// Ensures that there are no breaking changes to the public api
-        /// </summary>
-        [TestMethod]
-        public void TestQueryMetricsAPI()
-        {
-            // Checking all public members
-            QueryMetrics queryMetrics = QueryMetrics.CreateFromDelimitedString("totalExecutionTimeInMs=33.67;queryCompileTimeInMs=0.06;queryLogicalPlanBuildTimeInMs=0.02;queryPhysicalPlanBuildTimeInMs=0.10;queryOptimizationTimeInMs=0.00;VMExecutionTimeInMs=32.56;indexLookupTimeInMs=0.36;documentLoadTimeInMs=9.58;systemFunctionExecuteTimeInMs=0.00;userFunctionExecuteTimeInMs=0.00;retrievedDocumentCount=2000;retrievedDocumentSize=1125600;outputDocumentCount=2000;outputDocumentSize=1125600;writeOutputTimeInMs=18.10;indexUtilizationRatio=1.00");
-            AssertQueryMetricsPublicMembers(queryMetrics);
-
-            // Checking to see if you can serialize and deserialize using ToString and the constructor.
-            QueryMetrics queryMetrics2 = QueryMetrics.CreateFromDelimitedString(queryMetrics.ToDelimitedString());
-            AssertQueryMetricsPublicMembers(queryMetrics2);
-
-            AssertQueryMetricsEquality(queryMetrics, queryMetrics2);
-        }
-
-        /// <summary>
-        /// Ensures that QueryMetrics Serialization function is accesible.
-        /// </summary>
-        [TestMethod]
-        public void TestQueryMetricsToStrings()
-        {
-            QueryMetrics queryMetrics = QueryMetrics.CreateFromDelimitedString("totalExecutionTimeInMs=33.67;queryCompileTimeInMs=0.06;queryLogicalPlanBuildTimeInMs=0.02;queryPhysicalPlanBuildTimeInMs=0.10;queryOptimizationTimeInMs=0.00;VMExecutionTimeInMs=32.56;indexLookupTimeInMs=0.36;documentLoadTimeInMs=9.58;systemFunctionExecuteTimeInMs=0.00;userFunctionExecuteTimeInMs=0.00;retrievedDocumentCount=2000;retrievedDocumentSize=1125600;outputDocumentCount=2000;outputDocumentSize=1125600;writeOutputTimeInMs=18.10;indexUtilizationRatio=1.00");
-
-            string queryMetricsToTextString = queryMetrics.ToString();
-            Assert.IsFalse(string.IsNullOrWhiteSpace(queryMetricsToTextString));
-
-            string queryMetricsToDelimitedString = queryMetrics.ToDelimitedString();
-            Assert.IsFalse(string.IsNullOrWhiteSpace(queryMetricsToDelimitedString));
-        }
-
-        private void AssertQueryMetricsEquality(QueryMetrics m1, QueryMetrics m2)
-        {
-            Assert.AreEqual(m1.IndexHitRatio, m2.IndexHitRatio);
-            Assert.AreEqual(m1.OutputDocumentCount, m2.OutputDocumentCount);
-            Assert.AreEqual(m1.OutputDocumentSize, m2.OutputDocumentSize);
-            Assert.AreEqual(m1.RetrievedDocumentCount, m2.RetrievedDocumentCount);
-            Assert.AreEqual(m1.RetrievedDocumentSize, m2.RetrievedDocumentSize);
-            Assert.AreEqual(m1.TotalQueryExecutionTime, m2.TotalQueryExecutionTime);
-
-            Assert.AreEqual(m1.DocumentLoadTime, m2.DocumentLoadTime);
-            Assert.AreEqual(m1.DocumentWriteTime, m2.DocumentWriteTime);
-            Assert.AreEqual(m1.IndexLookupTime, m2.IndexLookupTime);
-            Assert.AreEqual(m1.VMExecutionTime, m2.VMExecutionTime);
-
-            Assert.AreEqual(m1.QueryPreparationTimes.LogicalPlanBuildTime, m2.QueryPreparationTimes.LogicalPlanBuildTime);
-            Assert.AreEqual(m1.QueryPreparationTimes.PhysicalPlanBuildTime, m2.QueryPreparationTimes.PhysicalPlanBuildTime);
-            Assert.AreEqual(m1.QueryPreparationTimes.QueryCompilationTime, m2.QueryPreparationTimes.QueryCompilationTime);
-            Assert.AreEqual(m1.QueryPreparationTimes.QueryOptimizationTime, m2.QueryPreparationTimes.QueryOptimizationTime);
-
-            Assert.AreEqual(m1.RuntimeExecutionTimes.QueryEngineExecutionTime, m2.RuntimeExecutionTimes.QueryEngineExecutionTime);
-            Assert.AreEqual(m1.RuntimeExecutionTimes.SystemFunctionExecutionTime, m2.RuntimeExecutionTimes.SystemFunctionExecutionTime);
-            Assert.AreEqual(m1.RuntimeExecutionTimes.UserDefinedFunctionExecutionTime, m2.RuntimeExecutionTimes.UserDefinedFunctionExecutionTime);
-
-            Assert.AreEqual(m1.ClientSideMetrics.FetchExecutionRanges.Count(), m2.ClientSideMetrics.FetchExecutionRanges.Count());
-            Assert.AreEqual(m1.ClientSideMetrics.RequestCharge, m2.ClientSideMetrics.RequestCharge);
-            Assert.AreEqual(m1.ClientSideMetrics.Retries, m2.ClientSideMetrics.Retries);
-        }
-
-        /// <summary>
-        /// Ensures that QueryMetrics Serialization function is accesible.
-        /// </summary>
-        [TestMethod]
-        public void TestQueryMetricsCreateAPI()
-        {
-            TimeSpan totalExecutionTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 33.67));
-            TimeSpan queryCompileTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 0.06));
-            TimeSpan logicalPlanBuildTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 0.02));
-            TimeSpan queryPhysicalPlanBuildTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 0.10));
-            TimeSpan queryOptimizationTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 0.01));
-            TimeSpan vmExecutionTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 32.56));
-            TimeSpan indexLookupTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 0.36));
-            TimeSpan documentLoadTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 9.58));
-            TimeSpan systemFunctionExecuteTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 0.05));
-            TimeSpan userFunctionExecuteTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 0.07));
-            TimeSpan documentWriteTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 18.10));
-            long retrievedDocumentCount = 2000;
-            long retrievedDocumentSize = 1125600;
-            long outputDocumentCount = 2000;
-            long outputDocumentSize = 1125600;
-            double indexUtilizationRatio = 1.00;
-
-            double requestCharge = 42;
-            long retries = 5;
-
-            Guid guid = Guid.NewGuid();
-            List<FetchExecutionRange> fetchExecutionRanges = new List<FetchExecutionRange>
-            {
-                new FetchExecutionRange("0", guid.ToString(), new DateTime(), new DateTime(), 5, 5)
-            };
-
-            QueryMetrics queryMetrics = QueryMetrics.CreateFromDelimitedStringAndClientSideMetrics("totalExecutionTimeInMs=33.67;queryCompileTimeInMs=0.06;queryLogicalPlanBuildTimeInMs=0.02;queryPhysicalPlanBuildTimeInMs=0.10;queryOptimizationTimeInMs=0.01;VMExecutionTimeInMs=32.56;indexLookupTimeInMs=0.36;documentLoadTimeInMs=9.58;systemFunctionExecuteTimeInMs=0.05;userFunctionExecuteTimeInMs=0.07;retrievedDocumentCount=2000;retrievedDocumentSize=1125600;outputDocumentCount=2000;outputDocumentSize=1125600;writeOutputTimeInMs=18.10;indexUtilizationRatio=1.00",
-                new ClientSideMetrics(retries, requestCharge, fetchExecutionRanges, new List<Tuple<string, SchedulingTimeSpan>>()));
-
-            QueryMetrics queryMetrics2 = QueryMetrics.CreateFromDelimitedStringAndClientSideMetrics(queryMetrics.ToDelimitedString(), queryMetrics.ClientSideMetrics);
-            this.AssertQueryMetricsEquality(queryMetrics, queryMetrics2);
-
-            QueryMetrics queryMetricsFromIEnumberable = QueryMetrics.CreateFromIEnumerable(new List<QueryMetrics> { queryMetrics, queryMetrics });
-            QueryMetrics queryMetricsFromAddition = queryMetrics + queryMetrics2;
-
-            this.AssertQueryMetricsEquality(queryMetricsFromIEnumberable, queryMetricsFromAddition);
-
-            Assert.AreEqual(queryMetricsFromAddition.IndexHitRatio, indexUtilizationRatio);
-            Assert.AreEqual(queryMetricsFromAddition.OutputDocumentCount, outputDocumentCount * 2);
-            Assert.AreEqual(queryMetricsFromAddition.OutputDocumentSize, outputDocumentSize * 2);
-            Assert.AreEqual(queryMetricsFromAddition.RetrievedDocumentCount, retrievedDocumentCount * 2);
-            Assert.AreEqual(queryMetricsFromAddition.RetrievedDocumentSize, retrievedDocumentSize * 2);
-            Assert.AreEqual(queryMetricsFromAddition.TotalQueryExecutionTime, totalExecutionTime + totalExecutionTime);
-
-            Assert.AreEqual(queryMetricsFromAddition.DocumentLoadTime, documentLoadTime + documentLoadTime);
-            Assert.AreEqual(queryMetricsFromAddition.DocumentWriteTime, documentWriteTime + documentWriteTime);
-            Assert.AreEqual(queryMetricsFromAddition.IndexLookupTime, indexLookupTime + indexLookupTime);
-            Assert.AreEqual(queryMetricsFromAddition.VMExecutionTime, vmExecutionTime + vmExecutionTime);
-
-            Assert.AreEqual(queryMetricsFromAddition.QueryPreparationTimes.LogicalPlanBuildTime, logicalPlanBuildTime + logicalPlanBuildTime);
-            Assert.AreEqual(queryMetricsFromAddition.QueryPreparationTimes.PhysicalPlanBuildTime, queryPhysicalPlanBuildTime + queryPhysicalPlanBuildTime);
-            Assert.AreEqual(queryMetricsFromAddition.QueryPreparationTimes.QueryCompilationTime, queryCompileTime + queryCompileTime);
-            Assert.AreEqual(queryMetricsFromAddition.QueryPreparationTimes.QueryOptimizationTime, queryOptimizationTime + queryOptimizationTime);
-
-            //Assert.AreEqual(queryMetricsFromAddition.RuntimeExecutionTimes.QueryEngineExecutionTime, RuntimeExecutionTimes.QueryEngineExecutionTime);
-            Assert.AreEqual(queryMetricsFromAddition.RuntimeExecutionTimes.SystemFunctionExecutionTime, systemFunctionExecuteTime + systemFunctionExecuteTime);
-            Assert.AreEqual(queryMetricsFromAddition.RuntimeExecutionTimes.UserDefinedFunctionExecutionTime, userFunctionExecuteTime + userFunctionExecuteTime);
-
-            Assert.AreEqual(queryMetricsFromAddition.ClientSideMetrics.FetchExecutionRanges.Count(), 2 * fetchExecutionRanges.Count());
-            Assert.AreEqual(queryMetricsFromAddition.ClientSideMetrics.RequestCharge, requestCharge * 2);
-            Assert.AreEqual(queryMetricsFromAddition.ClientSideMetrics.Retries, retries * 2);
-            Assert.AreEqual(queryMetricsFromAddition.ClientSideMetrics.FetchExecutionRanges.ToList()[0].ActivityId, guid.ToString());
-            Assert.AreEqual(queryMetricsFromAddition.ClientSideMetrics.FetchExecutionRanges.ToList()[1].ActivityId, guid.ToString());
-        }
-
         //Query metrics are not on by default anymore, but turned on hin Feed options. This to be quarantined until a recent FI from master to direct and sdk is completed
         [Ignore] // Need to use v3 pipeline
         [TestMethod]
@@ -1958,7 +1812,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 return this.client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() }).Result.Resource;
             });
 
-            TestQueryMetricsHeaders(database, true);
+            this.TestQueryMetricsHeaders(database, true);
 
             TestCommon.RetryRateLimiting<ResourceResponse<Database>>(() =>
             {
@@ -2008,11 +1862,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             QueryMetrics queryMetrics = QueryMetrics.CreateFromIEnumerable(feedResonse.QueryMetrics.Values);
 
-            Assert.IsTrue(queryMetrics.RetrievedDocumentCount > 0);
-            Assert.IsTrue(queryMetrics.RetrievedDocumentSize > 0);
-            Assert.IsTrue(queryMetrics.OutputDocumentCount > 0);
-            Assert.IsTrue(queryMetrics.OutputDocumentSize > 0);
-            Assert.IsTrue(queryMetrics.IndexHitRatio > 0);
+            Assert.IsTrue(queryMetrics.BackendMetrics.RetrievedDocumentCount > 0);
+            Assert.IsTrue(queryMetrics.BackendMetrics.RetrievedDocumentSize > 0);
+            Assert.IsTrue(queryMetrics.BackendMetrics.OutputDocumentCount > 0);
+            Assert.IsTrue(queryMetrics.BackendMetrics.OutputDocumentSize > 0);
+            Assert.IsTrue(queryMetrics.BackendMetrics.IndexHitRatio > 0);
 
             await client.DeleteDatabaseAsync(database);
         }
@@ -2026,7 +1880,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 return this.client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() }).Result.Resource;
             });
 
-            TestForceQueryScanHeaders(database, true);
+            this.TestForceQueryScanHeaders(database, true);
 
             TestCommon.RetryRateLimiting<ResourceResponse<Database>>(() =>
             {
@@ -2098,7 +1952,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     query,
                     feedOptions).AsDocumentQuery().ExecuteNextAsync().Result;
             queryMetrics = result.QueryMetrics.Values.Aggregate((curr, acc) => curr + acc);
-            Assert.AreEqual(TimeSpan.Zero, queryMetrics.IndexLookupTime);
+            Assert.AreEqual(TimeSpan.Zero, queryMetrics.BackendMetrics.IndexLookupTime);
 
             // Without ForceQueryScan
             feedOptions = new FeedOptions()
@@ -2114,7 +1968,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     query,
                     feedOptions).AsDocumentQuery().ExecuteNextAsync().Result;
             queryMetrics = result.QueryMetrics.Values.Aggregate((curr, acc) => curr + acc);
-            Assert.AreNotEqual(TimeSpan.Zero, queryMetrics.IndexLookupTime);
+            Assert.AreNotEqual(TimeSpan.Zero, queryMetrics.BackendMetrics.IndexLookupTime);
         }
 
         [Ignore] // Need to use v3 pipeline
@@ -2132,7 +1986,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 new Tuple<int?, int>(int.MaxValue, int.MaxValue),
             };
 
-            TestFeedOptionInput(
+            this.TestFeedOptionInput(
                 nameof(FeedOptions.MaxDegreeOfParallelism),
                 "MaxDegreeOfParallelism",
                 inputOutputMaxDops);
@@ -2153,7 +2007,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 new Tuple<int?, int>(int.MaxValue, int.MaxValue),
             };
 
-            TestFeedOptionInput(
+            this.TestFeedOptionInput(
                 nameof(FeedOptions.MaxBufferedItemCount),
                 "ActualMaxBufferedItemCount",
                 inputOutputMaxBufferedItemCounts);
@@ -2165,7 +2019,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             List<Tuple<int?, int>> inputOutputMaxItemCounts = new List<Tuple<int?, int>>()
             {
-                new Tuple<int?, int>(null, (int)ParallelQueryConfig.GetConfig().ClientInternalPageSize),
+                new Tuple<int?, int>(null, ParallelQueryConfig.GetConfig().ClientInternalPageSize),
                 new Tuple<int?, int>(-1, int.MaxValue),
                 new Tuple<int?, int>(-2, int.MaxValue),
                 // 0 is not a valid MaxItemCount
@@ -2175,7 +2029,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 new Tuple<int?, int>(int.MaxValue, int.MaxValue),
             };
 
-            TestFeedOptionInput(
+            this.TestFeedOptionInput(
                 nameof(FeedOptions.MaxItemCount),
                 "ActualMaxPageSize",
                 inputOutputMaxItemCounts);
@@ -2231,7 +2085,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     .AsDocumentQuery();
 
                 // Execute Once to force the execution context to initialize
-                var garbage = documentQuery.ExecuteNextAsync().Result;
+                DocumentFeedResponse<dynamic> garbage = documentQuery.ExecuteNextAsync().Result;
 
                 // Get the value using reflection.
                 Type documentQueryType = documentQuery.GetType();
@@ -2272,7 +2126,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 return this.client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() }).Result.Resource;
             });
 
-            TestContinuationLimitHeaders(database, true);
+            this.TestContinuationLimitHeaders(database, true);
 
             TestCommon.RetryRateLimiting<ResourceResponse<Database>>(() =>
             {
@@ -2443,7 +2297,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             result = this.client.CreateDocumentQuery<Document>(collection, "SELECT r.id FROM root r", new FeedOptions() { PopulateQueryMetrics = true, EnableCrossPartitionQuery = true }).AsDocumentQuery().ExecuteNextAsync().Result;
             Assert.IsNotNull(result.ResponseHeaders[WFConstants.BackendHeaders.QueryMetrics], "Expected metrics headers for query");
 
-            ValidateQueryMetricsHeadersOverContinuations(collection, maxDocumentCount).Wait();
+            this.ValidateQueryMetricsHeadersOverContinuations(collection, maxDocumentCount).Wait();
         }
 
         private async Task ValidateQueryMetricsHeadersOverContinuations(
@@ -2461,7 +2315,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 "SELECT r.id FROM root r WHERE r.NumericField in (" + inClauseArgument + ") ORDER BY r._ts" };
             int[] pageSizes = { 100, 200, 2000 };
 
-            foreach (var query in queries)
+            foreach (string query in queries)
             {
                 foreach (int pageSize in pageSizes)
                 {
@@ -2472,7 +2326,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     do
                     {
-                        var feedOptions = new FeedOptions
+                        FeedOptions feedOptions = new FeedOptions
                         {
                             EnableCrossPartitionQuery = true,
                             MaxDegreeOfParallelism = -1,
@@ -2481,20 +2335,25 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             PopulateQueryMetrics = true
                         };
 
-                        using (IDocumentQuery<Document> documentQuery = client.CreateDocumentQuery<Document>(
+                        using (IDocumentQuery<Document> documentQuery = this.client.CreateDocumentQuery<Document>(
                             coll,
                             query,
                                 feedOptions).AsDocumentQuery())
                         {
                             DocumentFeedResponse<Document> response = await documentQuery.ExecuteNextAsync<Document>();
                             string responseQueryMetrics = response.ResponseHeaders[WFConstants.BackendHeaders.QueryMetrics];
+                            string indexUtilization = response.ResponseHeaders[WFConstants.BackendHeaders.IndexUtilization];
 
-                            ValidateQueryMetrics(QueryMetrics.CreateFromDelimitedString(responseQueryMetrics));
+                            QueryMetrics queryMetrics = new QueryMetrics(
+                                BackendMetrics.ParseFromDelimitedString(responseQueryMetrics),
+                                IndexUtilizationInfo.CreateFromString(indexUtilization),
+                                ClientSideMetrics.Empty);
+                            this.ValidateQueryMetrics(queryMetrics);
 
                             foreach (KeyValuePair<string, QueryMetrics> pair in response.QueryMetrics)
                             {
                                 Trace.TraceInformation(JsonConvert.SerializeObject(pair));
-                                ValidateQueryMetrics(pair.Value);
+                                this.ValidateQueryMetrics(pair.Value);
                             }
 
                             continuationToken = response.ResponseContinuation;
@@ -2510,19 +2369,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(0, metrics.ClientSideMetrics.Retries);
             //We are not checking VMExecutionTime, since that is not a public property
             //Assert.IsTrue(metrics.QueryEngineTimes.VMExecutionTime.TotalMilliseconds > 0, "Expected VMExecutionTimeInMs to be > 0, metrics = {0}", metrics);
-            Assert.IsTrue(metrics.QueryPreparationTimes.QueryCompilationTime.TotalMilliseconds > 0, "Expected CompileTimeInMs to be > 0, metrics = {0}", metrics);
+            Assert.IsTrue(metrics.BackendMetrics.QueryPreparationTimes.QueryCompilationTime.TotalMilliseconds > 0, "Expected CompileTimeInMs to be > 0, metrics = {0}", metrics);
             //We are not checking DocumentLoadTime and RetrievedDocumentCount, since some queries don't return any documents (especially in the last continuation).
             //Assert.IsTrue(metrics.QueryEngineTimes.DocumentLoadTime.TotalMilliseconds > 0, "Expected DocumentLoadTimeInMs to be > 0, metrics = {0}", metrics);
             //Assert.IsTrue(metrics.RetrievedDocumentCount > 0, "Expected RetrievedDocumentCount to be > 0, metrics = {0}", metrics);
-            Assert.IsTrue(metrics.TotalQueryExecutionTime.TotalMilliseconds > 0, "Expected TotalExecutionTimeInMs to be > 0, metrics = {0}", metrics);
+            Assert.IsTrue(metrics.BackendMetrics.TotalTime.TotalMilliseconds > 0, "Expected TotalExecutionTimeInMs to be > 0, metrics = {0}", metrics);
             //Assert.IsTrue(metrics.QueryEngineTimes.WriteOutputTime.TotalMilliseconds > 0, "Expected WriteOutputTimeInMs to be > 0, metrics = {0}", metrics);
             //Assert.IsTrue(metrics.RetrievedDocumentSize > 0, "Expected RetrievedDocumentSize to be > 0, metrics = {0}", metrics);
-            Assert.IsTrue(metrics.IndexLookupTime.TotalMilliseconds > 0, "Expected IndexLookupTimeInMs to be > 0, metrics = {0}", metrics);
-            Assert.IsTrue(metrics.QueryPreparationTimes.LogicalPlanBuildTime.TotalMilliseconds > 0, "Expected LogicalPlanBuildTimeInMs to be > 0, metrics = {0}", metrics);
+            Assert.IsTrue(metrics.BackendMetrics.IndexLookupTime.TotalMilliseconds > 0, "Expected IndexLookupTimeInMs to be > 0, metrics = {0}", metrics);
+            Assert.IsTrue(metrics.BackendMetrics.QueryPreparationTimes.LogicalPlanBuildTime.TotalMilliseconds > 0, "Expected LogicalPlanBuildTimeInMs to be > 0, metrics = {0}", metrics);
             //Assert.AreEqual(metrics.QueryEngineTimes.VMExecutionTime - metrics.QueryEngineTimes.IndexLookupTime - metrics.QueryEngineTimes.DocumentLoadTime - metrics.QueryEngineTimes.WriteOutputTime,
             //    metrics.QueryEngineTimes.RuntimeExecutionTimes.TotalTime);
-            Assert.IsTrue(metrics.RuntimeExecutionTimes.QueryEngineExecutionTime >= metrics.RuntimeExecutionTimes.SystemFunctionExecutionTime + metrics.RuntimeExecutionTimes.UserDefinedFunctionExecutionTime,
-                "Expected Query VM Execution Time to be > {0}, metrics = {1}", metrics.RuntimeExecutionTimes.SystemFunctionExecutionTime + metrics.RuntimeExecutionTimes.UserDefinedFunctionExecutionTime, metrics);
+            Assert.IsTrue(metrics.BackendMetrics.RuntimeExecutionTimes.QueryEngineExecutionTime >= metrics.BackendMetrics.RuntimeExecutionTimes.SystemFunctionExecutionTime + metrics.BackendMetrics.RuntimeExecutionTimes.UserDefinedFunctionExecutionTime,
+                "Expected Query VM Execution Time to be > {0}, metrics = {1}", metrics.BackendMetrics.RuntimeExecutionTimes.SystemFunctionExecutionTime + metrics.BackendMetrics.RuntimeExecutionTimes.UserDefinedFunctionExecutionTime, metrics);
             //Assert.IsTrue(metrics.QueryEngineTimes.VMExecutionTime >= metrics.QueryEngineTimes.RuntimeExecutionTimes.TotalTime,
             //    "Expected Query VM Execution Time to be > {0}, metrics = {1}", metrics.QueryEngineTimes.RuntimeExecutionTimes.TotalTime, metrics);
         }
@@ -2583,7 +2442,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     "/\"tags\"/*",
                 };
 
-                foreach (var path in candidatePaths)
+                foreach (string path in candidatePaths)
                 {
                     switch (random.Next(3))
                     {
@@ -2602,13 +2461,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
 
                 Logger.LogLine("Included paths: ({0})", collection.IndexingPolicy.IncludedPaths.Count);
-                foreach (var indexPath in collection.IndexingPolicy.IncludedPaths)
+                foreach (IncludedPath indexPath in collection.IndexingPolicy.IncludedPaths)
                 {
                     Logger.LogLine(" * {0}", indexPath.Path);
                 }
 
                 Logger.LogLine("Excluded paths: ({0})", collection.IndexingPolicy.ExcludedPaths.Count);
-                foreach (var path in collection.IndexingPolicy.ExcludedPaths)
+                foreach (ExcludedPath path in collection.IndexingPolicy.ExcludedPaths)
                 {
                     Logger.LogLine(" * {0}", path);
                 }
@@ -2651,24 +2510,26 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task LoadDocuments(DocumentCollection coll)
         {
-            await LoadDocuments(coll, File.ReadAllLines(@"Documents\MillionSong1KDocuments.json"));
+            await this.LoadDocuments(coll, File.ReadAllLines(@"Documents\MillionSong1KDocuments.json"));
         }
 
         private async Task LoadDocuments(DocumentCollection coll, IEnumerable<string> serializedDocuments)
         {
-            var script = MakeCreateDocumentsScript();
-            var sproc = await Util.GetOrCreateStoredProcedureAsync(client, coll, new StoredProcedure { Id = "bulkInsert", Body = script });
+            string script = this.MakeCreateDocumentsScript();
+            StoredProcedure sproc = await Util.GetOrCreateStoredProcedureAsync(this.client, coll, new StoredProcedure { Id = "bulkInsert", Body = script });
 
             List<string> documents = new List<string>();
-            RequestOptions requestOptions = new RequestOptions();
-            requestOptions.PartitionKey = new PartitionKey("test");
+            RequestOptions requestOptions = new RequestOptions
+            {
+                PartitionKey = new PartitionKey("test")
+            };
             foreach (string line in serializedDocuments)
             {
                 documents.Add(line);
                 if (documents.Count == 15)
                 {
                     await TestCommon.AsyncRetryRateLimiting(() =>
-                        client.ExecuteStoredProcedureAsync<dynamic>(sproc, requestOptions, new[] { documents.ToArray() }));
+                        this.client.ExecuteStoredProcedureAsync<dynamic>(sproc, requestOptions, new[] { documents.ToArray() }));
                     documents = new List<string>();
                 }
             }
@@ -2676,7 +2537,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             if (documents.Count != 0)
             {
                 await TestCommon.AsyncRetryRateLimiting(() =>
-                    client.ExecuteStoredProcedureAsync<dynamic>(sproc, requestOptions, new[] { documents.ToArray() })); ;
+                    this.client.ExecuteStoredProcedureAsync<dynamic>(sproc, requestOptions, new[] { documents.ToArray() })); ;
             }
         }
 
@@ -2737,7 +2598,7 @@ function sproc(feed) {
         internal void TestQueryDocuments(DocumentCollection collection, bool manualIndex = false)
         {
             List<QueryDocument> listQueryDocuments = new List<QueryDocument>();
-            foreach (var index in Enumerable.Range(1, 3))
+            foreach (int index in Enumerable.Range(1, 3))
             {
                 QueryDocument doc = new QueryDocument()
                 {
@@ -2757,7 +2618,7 @@ function sproc(feed) {
             }
 
             QueryDocument[] documents = listQueryDocuments.ToArray();
-            TestSQLQuery(collection, documents);
+            this.TestSQLQuery(collection, documents);
 
         }
 
@@ -2765,7 +2626,7 @@ function sproc(feed) {
         {
             Action<DocumentClient> queryAction = (documentClient) =>
             {
-                foreach (var index in Enumerable.Range(1, 3))
+                foreach (int index in Enumerable.Range(1, 3))
                 {
                     string name = string.Format(CultureInfo.InvariantCulture, "doc{0}", index);
 
@@ -2808,7 +2669,7 @@ function sproc(feed) {
             bool bExpectRangePathError = true)
         {
             List<QueryDocument> listQueryDocuments = new List<QueryDocument>();
-            foreach (var index in Enumerable.Range(1, 3))
+            foreach (int index in Enumerable.Range(1, 3))
             {
                 QueryDocument doc = new QueryDocument()
                 {
@@ -2829,7 +2690,7 @@ function sproc(feed) {
 
             QueryDocument[] documents = listQueryDocuments.ToArray();
 
-            foreach (var index in Enumerable.Range(1, 3))
+            foreach (int index in Enumerable.Range(1, 3))
             {
                 string name = string.Format(CultureInfo.InvariantCulture, "doc{0}", index);
 
@@ -2928,8 +2789,8 @@ function sproc(feed) {
             this.VerifyQueryWithTimestampShouldReturnNothing(collection, document.GetPropertyValue<long>("_ts"));
 
             // Bulk insert
-            var script = MakeCreateDocumentsScript();
-            var sproc = await Util.GetOrCreateStoredProcedureAsync(client, collection, new StoredProcedure { Id = "bulkInsert", Body = script });
+            string script = this.MakeCreateDocumentsScript();
+            StoredProcedure sproc = await Util.GetOrCreateStoredProcedureAsync(this.client, collection, new StoredProcedure { Id = "bulkInsert", Body = script });
 
             Document[] documents = Enumerable.Repeat(new Document(), 10).ToArray();
             await this.client.ExecuteStoredProcedureAsync<dynamic>(sproc, new[] { documents });
@@ -2974,38 +2835,20 @@ function sproc(feed) {
         {
             public int NumericField
             {
-                get
-                {
-                    return base.GetValue<int>("NumericField");
-                }
-                set
-                {
-                    base.SetValue("NumericField", value);
-                }
+                get => base.GetValue<int>("NumericField");
+                set => base.SetValue("NumericField", value);
             }
 
             public int NumericField2
             {
-                get
-                {
-                    return base.GetValue<int>("NumericField2");
-                }
-                set
-                {
-                    base.SetValue("NumericField2", value);
-                }
+                get => base.GetValue<int>("NumericField2");
+                set => base.SetValue("NumericField2", value);
             }
 
             public string StringField
             {
-                get
-                {
-                    return base.GetValue<string>("StringField");
-                }
-                set
-                {
-                    base.SetValue("StringField", value);
-                }
+                get => base.GetValue<string>("StringField");
+                set => base.SetValue("StringField", value);
             }
         }
     }

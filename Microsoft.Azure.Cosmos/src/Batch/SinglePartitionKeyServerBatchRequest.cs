@@ -15,15 +15,13 @@ namespace Microsoft.Azure.Cosmos
         /// Single partition key server request.
         /// </summary>
         /// <param name="partitionKey">Partition key that applies to all operations in this request.</param>
-        /// <param name="maxBodyLength">Maximum length allowed for the request body.</param>
-        /// <param name="maxOperationCount">Maximum number of operations allowed in the request.</param>
-        /// <param name="serializer">Serializer to serialize user provided objects to JSON.</param>
+        /// <param name="serializerCore">Serializer to serialize user provided objects to JSON.</param>
         private SinglePartitionKeyServerBatchRequest(
             PartitionKey? partitionKey,
-            int maxBodyLength,
-            int maxOperationCount,
-            CosmosSerializer serializer)
-            : base(maxBodyLength, maxOperationCount, serializer)
+            CosmosSerializerCore serializerCore)
+            : base(maxBodyLength: int.MaxValue,
+                  maxOperationCount: int.MaxValue,
+                  serializerCore: serializerCore)
         {
             this.PartitionKey = partitionKey;
         }
@@ -39,20 +37,16 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="partitionKey">Partition key of the request.</param>
         /// <param name="operations">Operations to be added into this batch request.</param>
-        /// <param name="maxBodyLength">Desired maximum length of the request body.</param>
-        /// <param name="maxOperationCount">Maximum number of operations allowed in the request.</param>
-        /// <param name="serializer">Serializer to serialize user provided objects to JSON.</param>
+        /// <param name="serializerCore">Serializer to serialize user provided objects to JSON.</param>
         /// <param name="cancellationToken"><see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A newly created instance of <see cref="SinglePartitionKeyServerBatchRequest"/>.</returns>
         public static async Task<SinglePartitionKeyServerBatchRequest> CreateAsync(
             PartitionKey? partitionKey,
             ArraySegment<ItemBatchOperation> operations,
-            int maxBodyLength,
-            int maxOperationCount,
-            CosmosSerializer serializer,
+            CosmosSerializerCore serializerCore,
             CancellationToken cancellationToken)
         {
-            SinglePartitionKeyServerBatchRequest request = new SinglePartitionKeyServerBatchRequest(partitionKey, maxBodyLength, maxOperationCount, serializer);
+            SinglePartitionKeyServerBatchRequest request = new SinglePartitionKeyServerBatchRequest(partitionKey, serializerCore);
             await request.CreateBodyStreamAsync(operations, cancellationToken);
             return request;
         }

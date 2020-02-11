@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.IO;
     using System.Linq;
     using System.Text;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using RMResources = Documents.RMResources;
 
     /// <summary>
@@ -42,31 +43,11 @@ namespace Microsoft.Azure.Cosmos.Json
             this.SkipValidation = skipValidation;
         }
 
-        /// <summary>
-        /// Gets the SerializationFormat of the JsonWriter.
-        /// </summary>
+        /// <inheritdoc />
         public abstract JsonSerializationFormat SerializationFormat { get; }
 
-        /// <summary>
-        /// Gets the current length of the internal buffer.
-        /// </summary>
+        /// <inheritdoc />
         public abstract long CurrentLength { get; }
-
-        /// <summary>
-        /// Creates a JsonTextWriter that can write in a particular encoding
-        /// </summary>
-        /// <param name="encoding">The encoding to write in.</param>
-        /// <param name="skipValidation">Whether or not to skip validation</param>
-        /// <returns>A JsonWriter that can write in a particular JsonSerializationFormat</returns>
-        public static IJsonWriter Create(Encoding encoding, bool skipValidation = false)
-        {
-            if (encoding != Encoding.UTF8 && encoding != Encoding.Unicode && encoding != Encoding.UTF32)
-            {
-                throw new ArgumentException("Text encoding must be UTF8, UTF16 / Unicode or UTF32");
-            }
-
-            return new JsonTextWriter(encoding, skipValidation);
-        }
 
         /// <summary>
         /// Creates a JsonWriter that can write in a particular JsonSerializationFormat (utf8 if text)
@@ -83,61 +64,48 @@ namespace Microsoft.Azure.Cosmos.Json
             switch (jsonSerializationFormat)
             {
                 case JsonSerializationFormat.Text:
-                    return new JsonTextWriter(Encoding.UTF8, skipValidation);
+                    return new JsonTextWriter(skipValidation);
                 case JsonSerializationFormat.Binary:
-                    return new JsonBinaryWriter(skipValidation, jsonStringDictionary, serializeCount: false);
+                    return new JsonBinaryWriter(
+                        skipValidation,
+                        jsonStringDictionary,
+                        serializeCount: false);
                 default:
                     throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, RMResources.UnexpectedJsonSerializationFormat, jsonSerializationFormat));
             }
         }
 
-        /// <summary>
-        /// Writes the object start symbol to internal buffer.
-        /// </summary>
+        /// <inheritdoc />
         public abstract void WriteObjectStart();
 
-        /// <summary>
-        /// Writes the object end symbol to the internal buffer.
-        /// </summary>
+        /// <inheritdoc />
         public abstract void WriteObjectEnd();
 
-        /// <summary>
-        /// Writes the array start symbol to the internal buffer.
-        /// </summary>
+        /// <inheritdoc />
         public abstract void WriteArrayStart();
 
-        /// <summary>
-        /// Writes the array end symbol to the internal buffer.
-        /// </summary>
+        /// <inheritdoc />
         public abstract void WriteArrayEnd();
 
-        /// <summary>
-        /// Writes a field name to the the internal buffer.
-        /// </summary>
-        /// <param name="fieldName">The name of the field to write.</param>
+        /// <inheritdoc />
         public abstract void WriteFieldName(string fieldName);
 
-        /// <summary>
-        /// Writes a string to the internal buffer.
-        /// </summary>
-        /// <param name="value">The value of the string to write.</param>
+        /// <inheritdoc />
+        public abstract void WriteFieldName(ReadOnlySpan<byte> utf8FieldName);
+
+        /// <inheritdoc />
         public abstract void WriteStringValue(string value);
 
-        /// <summary>
-        /// Writes a number to the internal buffer.
-        /// </summary>
-        /// <param name="value">The value of the number to write.</param>
+        /// <inheritdoc />
+        public abstract void WriteStringValue(ReadOnlySpan<byte> utf8StringValue);
+
+        /// <inheritdoc />
         public abstract void WriteNumberValue(Number64 value);
 
-        /// <summary>
-        /// Writes a boolean to the internal buffer.
-        /// </summary>
-        /// <param name="value">The value of the boolean to write.</param>
+        /// <inheritdoc />
         public abstract void WriteBoolValue(bool value);
 
-        /// <summary>
-        /// Writes a null to the internal buffer.
-        /// </summary>
+        /// <inheritdoc />
         public abstract void WriteNullValue();
 
         /// <inheritdoc />
@@ -165,7 +133,7 @@ namespace Microsoft.Azure.Cosmos.Json
         public abstract void WriteGuidValue(Guid value);
 
         /// <inheritdoc />
-        public abstract void WriteBinaryValue(IReadOnlyList<byte> value);
+        public abstract void WriteBinaryValue(ReadOnlySpan<byte> value);
 
         /// <summary>
         /// Writes current token from a json reader to the internal buffer.
@@ -178,9 +146,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 throw new ArgumentNullException("jsonReader can not be null");
             }
 
-            // For now we don't optimize for text, since the reader could be UTF-8 and the writer could be UTF-16.
-            // We need to add more enums for the different serialization formats.
-            bool sameFormat = jsonReader.SerializationFormat == this.SerializationFormat && (this.SerializationFormat == JsonSerializationFormat.Binary || this.SerializationFormat == JsonSerializationFormat.HybridRow);
+            bool sameFormat = jsonReader.SerializationFormat == this.SerializationFormat;
 
             JsonTokenType jsonTokenType = jsonReader.CurrentTokenType;
             switch (jsonTokenType)
@@ -218,10 +184,9 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 default:
                     {
-                        if (sameFormat)
+                        if (sameFormat && jsonReader.TryGetBufferedRawJsonToken(out ReadOnlyMemory<byte> bufferedRawJsonToken))
                         {
-                            IReadOnlyList<byte> bufferedRawJson = jsonReader.GetBufferedRawJsonToken();
-                            this.WriteRawJsonToken(jsonTokenType, bufferedRawJson);
+                            this.WriteRawJsonToken(jsonTokenType, bufferedRawJsonToken.Span);
                         }
                         else
                         {
@@ -308,8 +273,8 @@ namespace Microsoft.Azure.Cosmos.Json
 
                                 case JsonTokenType.Binary:
                                     {
-                                        IReadOnlyList<byte> value = jsonReader.GetBinaryValue();
-                                        this.WriteBinaryValue(value);
+                                        ReadOnlyMemory<byte> value = jsonReader.GetBinaryValue();
+                                        this.WriteBinaryValue(value.Span);
                                     }
                                     break;
 
@@ -343,14 +308,9 @@ namespace Microsoft.Azure.Cosmos.Json
         /// Writes a fragment of a json to the internal buffer
         /// </summary>
         /// <param name="jsonFragment">A section of a valid json</param>
-        public void WriteJsonFragment(IReadOnlyList<byte> jsonFragment)
+        public void WriteJsonFragment(ReadOnlyMemory<byte> jsonFragment)
         {
-            if (jsonFragment == null)
-            {
-                throw new ArgumentNullException("jsonFragment can not be null");
-            }
-
-            IJsonReader jsonReader = JsonReader.Create(new MemoryStream(jsonFragment.ToArray()));
+            IJsonReader jsonReader = JsonReader.Create(jsonFragment);
             this.WriteAll(jsonReader);
         }
 
@@ -371,9 +331,6 @@ namespace Microsoft.Azure.Cosmos.Json
                 throw new ArgumentNullException($"{nameof(jsonNavigatorNode)} can not be null");
             }
 
-            // For now short circuit this to false until we figure out how to optimize this.
-            bool sameFormat = jsonNavigator.SerializationFormat == this.SerializationFormat && (this.SerializationFormat == JsonSerializationFormat.Binary || this.SerializationFormat == JsonSerializationFormat.HybridRow);
-
             JsonNodeType jsonNodeType = jsonNavigator.GetNodeType(jsonNavigatorNode);
 
             // See if we can write the node without looking at it's value
@@ -390,13 +347,14 @@ namespace Microsoft.Azure.Cosmos.Json
                     return;
             }
 
+            bool sameFormat = jsonNavigator.SerializationFormat == this.SerializationFormat;
+
             // If the navigator has the same format as this writer then we try to retrieve the node raw JSON
-            IReadOnlyList<byte> bufferedRawJson;
-            if (sameFormat && jsonNavigator.TryGetBufferedRawJson(jsonNavigatorNode, out bufferedRawJson))
+            if (sameFormat && jsonNavigator.TryGetBufferedRawJson(jsonNavigatorNode, out ReadOnlyMemory<byte> bufferedRawJson))
             {
                 // Token type really doesn't make any difference other than whether this is a field name
-                JsonTokenType jsonTokenType = (jsonNodeType == JsonNodeType.FieldName ? JsonTokenType.FieldName : JsonTokenType.Null);
-                this.WriteRawJsonToken(jsonTokenType, bufferedRawJson);
+                JsonTokenType jsonTokenType = jsonNodeType == JsonNodeType.FieldName ? JsonTokenType.FieldName : JsonTokenType.Null;
+                this.WriteRawJsonToken(jsonTokenType, bufferedRawJson.Span);
             }
             else
             {
@@ -411,16 +369,17 @@ namespace Microsoft.Azure.Cosmos.Json
                     case JsonNodeType.String:
                     case JsonNodeType.FieldName:
                         bool fieldName = jsonNodeType == JsonNodeType.FieldName;
-                        IReadOnlyList<byte> bufferedStringValue;
-                        if (jsonNavigator.TryGetBufferedStringValue(jsonNavigatorNode, out bufferedStringValue))
+                        if (jsonNavigator.TryGetBufferedUtf8StringValue(
+                            jsonNavigatorNode,
+                            out ReadOnlyMemory<byte> bufferedStringValue))
                         {
                             if (fieldName)
                             {
-                                this.WriteRawJsonToken(JsonTokenType.FieldName, bufferedStringValue);
+                                this.WriteFieldName(bufferedStringValue.Span);
                             }
                             else
                             {
-                                this.WriteRawJsonToken(JsonTokenType.String, bufferedStringValue);
+                                this.WriteStringValue(bufferedStringValue.Span);
                             }
                         }
                         else
@@ -496,15 +455,14 @@ namespace Microsoft.Azure.Cosmos.Json
 
                     case JsonNodeType.Binary:
                         {
-                            IReadOnlyList<byte> bufferedBinaryValue;
-                            if (jsonNavigator.TryGetBufferedBinaryValue(jsonNavigatorNode, out bufferedBinaryValue))
+                            if (jsonNavigator.TryGetBufferedBinaryValue(jsonNavigatorNode, out ReadOnlyMemory<byte> bufferedBinaryValue))
                             {
-                                this.WriteRawJsonToken(JsonTokenType.Binary, bufferedBinaryValue);
+                                this.WriteRawJsonToken(JsonTokenType.Binary, bufferedBinaryValue.Span);
                             }
                             else
                             {
-                                IReadOnlyList<byte> value = jsonNavigator.GetBinaryValue(jsonNavigatorNode);
-                                this.WriteBinaryValue(value);
+                                ReadOnlyMemory<byte> value = jsonNavigator.GetBinaryValue(jsonNavigatorNode);
+                                this.WriteBinaryValue(value.Span);
                             }
 
                             break;
@@ -537,17 +495,16 @@ namespace Microsoft.Azure.Cosmos.Json
             }
         }
 
-        /// <summary>
-        /// Gets the result of the JsonWriter.
-        /// </summary>
-        /// <returns>The result of the JsonWriter as an array of bytes.</returns>
-        public abstract byte[] GetResult();
+        /// <inheritdoc />
+        public abstract ReadOnlyMemory<byte> GetResult();
 
         /// <summary>
         /// Writes a raw json token to the internal buffer.
         /// </summary>
         /// <param name="jsonTokenType">The JsonTokenType of the rawJsonToken</param>
         /// <param name="rawJsonToken">The raw json token.</param>
-        protected abstract void WriteRawJsonToken(JsonTokenType jsonTokenType, IReadOnlyList<byte> rawJsonToken);
+        protected abstract void WriteRawJsonToken(
+            JsonTokenType jsonTokenType,
+            ReadOnlySpan<byte> rawJsonToken);
     }
 }

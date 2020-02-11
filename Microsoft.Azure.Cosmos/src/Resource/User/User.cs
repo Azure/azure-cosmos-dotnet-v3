@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Reads a <see cref="UserProperties"/> from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
-        /// <param name="requestOptions">(Optional) The options for the user request <see cref="RequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the user request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="UserResponse"/> which wraps a <see cref="UserProperties"/> containing the read resource record.
@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos
         /// Replace a <see cref="UserProperties"/> from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
         /// <param name="userProperties">The <see cref="UserProperties"/> object.</param>
-        /// <param name="requestOptions">(Optional) The options for the user request <see cref="RequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the user request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="UserResponse"/> which wraps a <see cref="UserProperties"/> containing the replace resource record.
@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Delete a <see cref="UserProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
-        /// <param name="requestOptions">(Optional) The options for the user request <see cref="RequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the user request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="UserResponse"/> which will contain information about the request issued.</returns>
         /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a user are:
@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="id">The cosmos permission id.</param>
         /// <returns>Cosmos permission reference</returns>
         /// <remarks>
-        /// Returns a Permission reference. Reference doesn't guarantees existence.
+        /// Returns a Permission reference. Reference doesn't guarantee existence.
         /// Please ensure permssion already exists or is created through a create operation.
         /// </remarks>
         /// <example>
@@ -139,7 +139,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="permissionProperties">The <see cref="PermissionProperties"/> object.</param>
         /// <param name="tokenExpiryInSeconds">(Optional) The expiry time for resource token in seconds. This value can range from 10 seconds, to 24 hours (or 86,400 seconds). The default value for this is 1 hour (or 3,600 seconds). This does not change the default value for future tokens.</param>
-        /// <param name="requestOptions">(Optional) The options for the permission request <see cref="RequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the permission request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="PermissionResponse"/> which wraps a <see cref="PermissionProperties"/> containing the read resource record.</returns>
         /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a permission are:
@@ -176,7 +176,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="permissionProperties">The <see cref="PermissionProperties"/> object.</param>
         /// <param name="tokenExpiryInSeconds">(Optional) The expiry time for resource token in seconds. This value can range from 10 seconds, to 24 hours (or 86,400 seconds). The default value for this is 1 hour (or 3,600 seconds). This does not change the default value for future tokens.</param>
-        /// <param name="requestOptions">(Optional) The options for the permission request <see cref="RequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the permission request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="PermissionResponse"/> which wraps a <see cref="PermissionProperties"/> containing the read resource record.</returns>
         /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a permission are:
@@ -217,12 +217,15 @@ namespace Microsoft.Azure.Cosmos
         /// 1. This create the type feed iterator for permission with queryText as input,
         /// <code language="c#">
         /// <![CDATA[
-        /// string queryText = "SELECT * FROM c where c.id like '%testId%'";
-        /// FeedIterator<PermissionProperties> resultSet = this.users.GetPermissionQueryIterator<PermissionProperties>(queryText);
+        /// string queryText = "SELECT * FROM c where c.status like 'start%'";
+        /// FeedIterator<PermissionProperties> feedIterator = this.users.GetPermissionQueryIterator<PermissionProperties>(queryText);
         /// while (feedIterator.HasMoreResults)
         /// {
-        ///     FeedResponse<PermissionProperties> iterator =
-        ///     await feedIterator.ReadNextAsync(this.cancellationToken);
+        ///     FeedResponse<PermissionProperties> response = await feedIterator.ReadNextAsync();
+        ///     foreach (var permission in response)
+        ///     {
+        ///         Console.WriteLine(permission);
+        ///     }
         /// }
         /// ]]>
         /// </code>
@@ -231,11 +234,14 @@ namespace Microsoft.Azure.Cosmos
         /// 2. This create the type feed iterator for permissions without queryText, retrieving all permissions.
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator<PermissionProperties> resultSet = this.user.GetPermissionQueryIterator<PermissionProperties>();
+        /// FeedIterator<PermissionProperties> feedIterator = this.user.GetPermissionQueryIterator<PermissionProperties>();
         /// while (feedIterator.HasMoreResults)
         /// {
-        ///     FeedResponse<PermissionProperties> iterator =
-        ///     await feedIterator.ReadNextAsync(this.cancellationToken);
+        ///     FeedResponse<PermissionProperties> response = await feedIterator.ReadNextAsync();
+        ///     foreach (var permission in response)
+        ///     {
+        ///         Console.WriteLine(permission);
+        ///     }
         /// }
         /// ]]>
         /// </code>
@@ -260,9 +266,8 @@ namespace Microsoft.Azure.Cosmos
         /// This create the type feed iterator for permissions with queryDefinition as input.
         /// <code language="c#">
         /// <![CDATA[
-        /// string queryText = "SELECT * FROM c where c.id like @testId";
-        /// QueryDefinition queryDefinition = new QueryDefinition(queryText);
-        /// queryDefinition.WithParameter("@testId", "testPermissionId");
+        /// QueryDefinition queryDefinition = new QueryDefinition("SELECT * FROM c where c.status like @status")
+        ///     .WithParameter("@status", "start%");
         /// FeedIterator<PermissionProperties> resultSet = this.user.GetPermissionQueryIterator<PermissionProperties>(queryDefinition);
         /// while (feedIterator.HasMoreResults)
         /// {

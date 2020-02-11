@@ -42,10 +42,10 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         /// <summary>
         /// Initializes a new instance of the NewtonsoftReader class.
         /// </summary>
-        /// <param name="stream">The stream to read from.</param>
-        public CosmosDBToNewtonsoftReader(Stream stream)
+        /// <param name="buffer">The buffer to read from.</param>
+        public CosmosDBToNewtonsoftReader(ReadOnlyMemory<byte> buffer)
         {
-            this.jsonReader = Microsoft.Azure.Cosmos.Json.JsonReader.Create(stream);
+            this.jsonReader = Microsoft.Azure.Cosmos.Json.JsonReader.Create(buffer);
         }
 
         /// <summary>
@@ -140,7 +140,12 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         public override byte[] ReadAsBytes()
         {
             this.Read();
-            byte[] value = this.jsonReader.GetBufferedRawJsonToken().ToArray();
+            if (!this.jsonReader.TryGetBufferedRawJsonToken(out ReadOnlyMemory<byte> bufferedRawJsonToken))
+            {
+                throw new Exception("Failed to get the bytes.");
+            }
+
+            byte[] value = bufferedRawJsonToken.ToArray();
             this.SetToken(JsonToken.Bytes, value);
             return value;
         }

@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Cosmos Change Feed Iterator for a particular Partition Key Range
     /// </summary>
-    internal class ChangeFeedPartitionKeyResultSetIteratorCore : FeedIterator
+    internal sealed class ChangeFeedPartitionKeyResultSetIteratorCore : FeedIteratorInternal
     {
         private readonly CosmosClientContext clientContext;
         private readonly ContainerCore container;
@@ -75,6 +75,12 @@ namespace Microsoft.Azure.Cosmos
                 }, cancellationToken);
         }
 
+        public override bool TryGetContinuationToken(out string continuationToken)
+        {
+            continuationToken = this.continuationToken;
+            return true;
+        }
+
         private Task<ResponseMessage> NextResultSetDelegateAsync(
             string continuationToken,
             string partitionKeyRangeId,
@@ -83,22 +89,23 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             Uri resourceUri = this.container.LinkUri;
-            return this.clientContext.ProcessResourceOperationAsync<ResponseMessage>(
-                cosmosContainerCore: this.container,
-                resourceUri: resourceUri,
-                resourceType: Documents.ResourceType.Document,
-                operationType: Documents.OperationType.ReadFeed,
-                requestOptions: options,
-                requestEnricher: request =>
-                {
-                    ChangeFeedRequestOptions.FillContinuationToken(request, continuationToken);
-                    ChangeFeedRequestOptions.FillMaxItemCount(request, maxItemCount);
-                    ChangeFeedRequestOptions.FillPartitionKeyRangeId(request, partitionKeyRangeId);
-                },
-                responseCreator: response => response,
-                partitionKey: null,
-                streamPayload: null,
-                cancellationToken: cancellationToken);
+            return this.clientContext.ProcessResourceOperationStreamAsync(
+               cosmosContainerCore: this.container,
+               resourceUri: resourceUri,
+               resourceType: Documents.ResourceType.Document,
+               operationType: Documents.OperationType.ReadFeed,
+               requestOptions: options,
+               requestEnricher: request =>
+               {
+                   ChangeFeedRequestOptions.FillContinuationToken(request, continuationToken);
+                   ChangeFeedRequestOptions.FillMaxItemCount(request, maxItemCount);
+                   ChangeFeedRequestOptions.FillPartitionKeyRangeId(request, partitionKeyRangeId);
+               },
+               partitionKey: null,
+               streamPayload: null,
+               diagnosticsScope: null,
+               cancellationToken: cancellationToken);
+
         }
     }
 }

@@ -355,6 +355,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "UniqueKeyPolicy",
                 "DefaultTimeToLive",
                 "IndexingPolicy",
+                "GeospatialConfig",
                 "TimeToLivePropertyPath",
                 "PartitionKeyPath",
                 "PartitionKeyDefinitionVersion",
@@ -394,18 +395,18 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             string containerJsonString = "{\"indexingPolicy\":{\"automatic\":true,\"indexingMode\":\"Consistent\",\"includedPaths\":[{\"path\":\"/*\",\"indexes\":[{\"dataType\":\"Number\",\"precision\":-1,\"kind\":\"Range\"},{\"dataType\":\"String\",\"precision\":-1,\"kind\":\"Range\"}]}],\"excludedPaths\":[{\"path\":\"/\\\"_etag\\\"/?\"}],\"compositeIndexes\":[],\"spatialIndexes\":[]},\"id\":\"MigrationTest\",\"partitionKey\":{\"paths\":[\"/id\"],\"kind\":\"Hash\"}}";
 
-            CosmosJsonDotNetSerializer cosmosSerializer = new CosmosJsonDotNetSerializer();
+            CosmosJsonDotNetSerializer serializerCore = new CosmosJsonDotNetSerializer();
             ContainerProperties containerProperties = null;
             using (MemoryStream memory = new MemoryStream(Encoding.UTF8.GetBytes(containerJsonString)))
             {
-                containerProperties = cosmosSerializer.FromStream<ContainerProperties>(memory);
+                containerProperties = serializerCore.FromStream<ContainerProperties>(memory);
             }
 
             Assert.IsNotNull(containerProperties);
             Assert.AreEqual("MigrationTest", containerProperties.Id);
 
             string containerJsonAfterConversion = null;
-            using (Stream stream = cosmosSerializer.ToStream<ContainerProperties>(containerProperties))
+            using (Stream stream = serializerCore.ToStream<ContainerProperties>(containerProperties))
             {
                 using (StreamReader sr = new StreamReader(stream))
                 {
@@ -501,13 +502,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                 documentCollection.SaveTo(memoryStream);
                 memoryStream.Position = 0;
 
-                CosmosJsonDotNetSerializer cosmosSerializer = new CosmosJsonDotNetSerializer();
-                ContainerProperties containerProperties = cosmosSerializer.FromStream<ContainerProperties>(memoryStream);
+                CosmosJsonDotNetSerializer serializerCore = new CosmosJsonDotNetSerializer();
+                ContainerProperties containerProperties = serializerCore.FromStream<ContainerProperties>(memoryStream);
 
                 Assert.IsNotNull(containerProperties);
                 Assert.AreEqual(containerId, containerProperties.Id);
 
-                using (Stream stream = cosmosSerializer.ToStream<ContainerProperties>(containerProperties))
+                using (Stream stream = serializerCore.ToStream<ContainerProperties>(containerProperties))
                 {
                     using (StreamReader sr = new StreamReader(stream))
                     {
@@ -518,7 +519,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             JObject jObjectDocumentCollection = JObject.Parse(documentJsonString);
             JObject jObjectContainer = JObject.Parse(cosmosJsonString);
-            Assert.IsTrue(JToken.DeepEquals(jObjectDocumentCollection, jObjectContainer));
+            Assert.IsTrue(JToken.DeepEquals(jObjectDocumentCollection, jObjectContainer), $"v2:{documentJsonString}; v3:{cosmosJsonString}");
         }
 
         [TestMethod]

@@ -167,7 +167,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </code>
         /// </example>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
-        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/high-availability"/>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/high-availability">High availability</seealso>
         /// <seealso cref="CosmosClientOptions.LimitToEndpoint"/>
         public CosmosClientBuilder WithLimitToEndpoint(bool limitToEndpoint)
         {
@@ -230,6 +230,10 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Together with MaxRequestsPerTcpConnection, this setting limits the number of requests that are simultaneously sent to a single Cosmos DB back-end(MaxRequestsPerTcpConnection x MaxTcpConnectionPerEndpoint).
         /// The default value is 65,535. Value must be greater than or equal to 16.
         /// </param>
+        /// <param name="portReuseMode">
+        /// (Direct/TCP) Controls the client port reuse policy used by the transport stack.
+        /// The default value is PortReuseMode.ReuseUnicastPort.
+        /// </param>
         /// <remarks>
         /// For more information, see <see href="https://docs.microsoft.com/azure/documentdb/documentdb-performance-tips#direct-connection">Connection policy: Use direct connection mode</see>.
         /// </remarks>
@@ -238,12 +242,14 @@ namespace Microsoft.Azure.Cosmos.Fluent
         internal CosmosClientBuilder WithConnectionModeDirect(TimeSpan? idleTcpConnectionTimeout = null,
             TimeSpan? openTcpConnectionTimeout = null,
             int? maxRequestsPerTcpConnection = null,
-            int? maxTcpConnectionsPerEndpoint = null)
+            int? maxTcpConnectionsPerEndpoint = null,
+            Cosmos.PortReuseMode? portReuseMode = null)
         {
             this.clientOptions.IdleTcpConnectionTimeout = idleTcpConnectionTimeout;
             this.clientOptions.OpenTcpConnectionTimeout = openTcpConnectionTimeout;
             this.clientOptions.MaxRequestsPerTcpConnection = maxRequestsPerTcpConnection;
             this.clientOptions.MaxTcpConnectionsPerEndpoint = maxTcpConnectionsPerEndpoint;
+            this.clientOptions.PortReuseMode = portReuseMode;
 
             this.clientOptions.ConnectionMode = ConnectionMode.Direct;
             this.clientOptions.ConnectionProtocol = Protocol.Tcp;
@@ -370,12 +376,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <param name="enabled">Whether <see cref="CosmosClientOptions.AllowBulkExecution"/> is enabled.</param>
         /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
         /// <seealso cref="CosmosClientOptions.AllowBulkExecution"/>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        CosmosClientBuilder WithBulkexecution(bool enabled)
+        public CosmosClientBuilder WithBulkExecution(bool enabled)
         {
             this.clientOptions.AllowBulkExecution = enabled;
             return this;
@@ -387,6 +388,16 @@ namespace Microsoft.Azure.Cosmos.Fluent
         internal CosmosClientBuilder WithSendingRequestEventArgs(EventHandler<SendingRequestEventArgs> sendingRequestEventArgs)
         {
             this.clientOptions.SendingRequestEventArgs = sendingRequestEventArgs;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the ambient Session Container to use for this CosmosClient.
+        /// This is used to track session tokens per client for requests made to the store.
+        /// </summary>
+        internal CosmosClientBuilder WithSessionContainer(ISessionContainer sessionContainer)
+        {
+            this.clientOptions.SessionContainer = sessionContainer;
             return this;
         }
 

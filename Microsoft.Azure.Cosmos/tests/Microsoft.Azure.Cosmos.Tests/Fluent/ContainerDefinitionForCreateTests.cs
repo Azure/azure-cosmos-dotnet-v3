@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Client.Core.Tests;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -286,12 +285,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
             return new ClientContextCore(
                 client: null,
                 clientOptions: null,
-                userJsonSerializer: null,
-                defaultJsonSerializer: null,
-                sqlQuerySpecSerializer: null,
+                serializerCore: null,
                 cosmosResponseFactory: null,
                 requestHandler: null,
-                documentClient: new MockDocumentClient());
+                documentClient: new MockDocumentClient(),
+                userAgent: null);
         }
     }
 }

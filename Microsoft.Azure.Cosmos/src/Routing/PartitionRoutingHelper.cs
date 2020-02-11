@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -12,7 +12,10 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Net;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Routing;
@@ -35,29 +38,32 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             if (querySpec == null)
             {
-                throw new ArgumentNullException("querySpec");
+                throw new ArgumentNullException(nameof(querySpec));
             }
 
             if (partitionKeyDefinition == null)
             {
-                throw new ArgumentNullException("partitionKeyDefinition");
+                throw new ArgumentNullException(nameof(partitionKeyDefinition));
             }
 
             if (queryPartitionProvider == null)
             {
-                throw new ArgumentNullException("queryPartitionProvider");
+                throw new ArgumentNullException(nameof(queryPartitionProvider));
             }
 
-            PartitionedQueryExecutionInfo queryExecutionInfo = null;
-            queryExecutionInfo = queryPartitionProvider.GetPartitionedQueryExecutionInfo(
-                createBadRequestException: createBadRequestException,
+            TryCatch<PartitionedQueryExecutionInfo> tryGetPartitionQueryExecutionInfo = queryPartitionProvider.TryGetPartitionedQueryExecutionInfo(
                 querySpec: querySpec,
                 partitionKeyDefinition: partitionKeyDefinition,
                 requireFormattableOrderByQuery: VersionUtility.IsLaterThan(clientApiVersion, HttpConstants.Versions.v2016_11_14),
                 isContinuationExpected: isContinuationExpected,
                 allowNonValueAggregateQuery: false,
                 hasLogicalPartitionKey: hasLogicalPartitionKey);
+            if (!tryGetPartitionQueryExecutionInfo.Succeeded)
+            {
+                throw new BadRequestException(tryGetPartitionQueryExecutionInfo.Exception);
+            }
 
+            PartitionedQueryExecutionInfo queryExecutionInfo = tryGetPartitionQueryExecutionInfo.Result;
             if (queryExecutionInfo == null ||
                 queryExecutionInfo.QueryRanges == null ||
                 queryExecutionInfo.QueryInfo == null ||
@@ -83,7 +89,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                         queryExecutionInfo.QueryInfo.HasAggregates ||
                         queryExecutionInfo.QueryInfo.HasDistinct ||
                         queryExecutionInfo.QueryInfo.HasOffset ||
-                        queryExecutionInfo.QueryInfo.HasLimit;
+                        queryExecutionInfo.QueryInfo.HasLimit ||
+                        queryExecutionInfo.QueryInfo.HasGroupBy;
 
                     if (queryNotServiceableByGateway)
                     {
@@ -132,14 +139,25 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
                 else if (queryExecutionInfo.QueryInfo.HasDistinct)
                 {
-                    // If the query has distinct then we have to reject it since the backend only returns
-                    // elements that are distinct within a page and we need the client to do post distinct processing
+                    // If the query has DISTINCT then we have to reject it since the backend only returns
+                    // elements that are DISTINCT within a page and we need the client to do post distinct processing
                     DocumentClientException exception = new DocumentClientException(
                         RMResources.UnsupportedCrossPartitionQuery,
                         HttpStatusCode.BadRequest,
                         SubStatusCodes.CrossPartitionQueryNotServable);
 
                     exception.Error.AdditionalErrorInfo = JsonConvert.SerializeObject(queryExecutionInfo);
+                    throw exception;
+                }
+                else if (queryExecutionInfo.QueryInfo.HasGroupBy)
+                {
+                    // If the query has GROUP BY then we have to reject it since the backend only returns
+                    // elements that are grouped within a page and we need the client to merge the groupings
+                    DocumentClientException exception = new DocumentClientException(
+                        RMResources.UnsupportedCrossPartitionQuery,
+                        HttpStatusCode.BadRequest,
+                        SubStatusCodes.Unknown);
+
                     throw exception;
                 }
             }
@@ -185,10 +203,10 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 if (direction == RntdbEnumerationDirection.Reverse)
                 {
-                    PartitionKeyRange lastPartitionKeyRange = (await routingMapProvider.TryGetOverlappingRangesAsync(collectionRid, providedPartitionKeyRanges.Single())).Last();
-                    return new ResolvedRangeInfo(
-                        lastPartitionKeyRange,
-                        suppliedTokens);
+                    IReadOnlyList<PartitionKeyRange> partitionKeyRanges = await routingMapProvider.TryGetOverlappingRangesAsync(collectionRid, providedPartitionKeyRanges.Single());
+                    PartitionKeyRange lastPartitionKeyRange = partitionKeyRanges[partitionKeyRanges.Count - 1];
+
+                    return new ResolvedRangeInfo(lastPartitionKeyRange, suppliedTokens);
                 }
 
                 Range<string> minimumRange = PartitionRoutingHelper.Min(
@@ -256,6 +274,10 @@ namespace Microsoft.Azure.Cosmos.Routing
             return (await routingMapProvider.TryGetOverlappingRangesAsync(collectionRid, targetRange.ToRange(), true)).ToList();
         }
 
+        /// <summary>
+        /// TryAddPartitionKeyRangeToContinuationTokenAsync
+        /// </summary>
+        /// <returns><c>false</c> if collectionRid is likely wrong because range was not found. Cache needs to be refreshed probably.</returns>
         public virtual async Task<bool> TryAddPartitionKeyRangeToContinuationTokenAsync(
             INameValueCollection backendResponseHeaders,
             IReadOnlyList<Range<string>> providedPartitionKeyRanges,

@@ -11,7 +11,9 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Linq.Expressions;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Newtonsoft.Json;
 
     /// <summary> 
@@ -139,20 +141,20 @@ namespace Microsoft.Azure.Cosmos.Linq
             return this.container.LinkUri.ToString();
         }
 
-        public QueryDefinition ToQueryDefinition()
+        public QueryDefinition ToQueryDefinition(IDictionary<object, string> parameters = null)
         {
-            SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression, this.serializationOptions);
+            SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression, this.serializationOptions, parameters);
             return new QueryDefinition(querySpec);
         }
 
         public FeedIterator<T> ToFeedIterator()
         {
-            return this.CreateFeedIterator(true);
+            return new FeedIteratorInlineCore<T>(this.CreateFeedIterator(true));
         }
 
         public FeedIterator ToStreamIterator()
         {
-            return this.CreateStreamIterator(true);
+            return new FeedIteratorInlineCore(this.CreateStreamIterator(true));
         }
 
         public void Dispose()
@@ -170,17 +172,35 @@ namespace Microsoft.Azure.Cosmos.Linq
             throw new NotImplementedException();
         }
 
-        internal async Task<Response<T>> AggregateResultAsync(CancellationToken cancellationToken = default(CancellationToken))
+        internal async Task<Response<T>> AggregateResultAsync(CancellationToken cancellationToken = default)
         {
             List<T> result = new List<T>();
-            CosmosDiagnosticsAggregate cosmosDiagnostics = new CosmosDiagnosticsAggregate();
+            CosmosDiagnosticsContext diagnosticsContext = null;
             Headers headers = new Headers();
             FeedIterator<T> localFeedIterator = this.CreateFeedIterator(false);
             while (localFeedIterator.HasMoreResults)
             {
                 FeedResponse<T> response = await localFeedIterator.ReadNextAsync();
                 headers.RequestCharge += response.RequestCharge;
-                cosmosDiagnostics.Diagnostics.Add(response.Diagnostics);
+
+                // If the first page has a diagnostic context use that. Else create a new one and add the diagnostic to it.
+                if (response.Diagnostics is CosmosDiagnosticsContext responseDiagnosticContext)
+                {
+                    if (diagnosticsContext == null)
+                    {
+                        diagnosticsContext = responseDiagnosticContext;
+                    }
+                    else
+                    {
+                        diagnosticsContext.AddDiagnosticsInternal(responseDiagnosticContext);
+                    }
+                    
+                }
+                else
+                {
+                    throw new ArgumentException($"Invalid diagnostic object {response.Diagnostics.GetType().FullName}");
+                }
+
                 result.AddRange(response);
             }
 
@@ -188,10 +208,10 @@ namespace Microsoft.Azure.Cosmos.Linq
                 System.Net.HttpStatusCode.OK,
                 headers,
                 result.FirstOrDefault(),
-                cosmosDiagnostics);
+                diagnosticsContext);
         }
 
-        private FeedIterator CreateStreamIterator(bool isContinuationExcpected)
+        private FeedIteratorInternal CreateStreamIterator(bool isContinuationExcpected)
         {
             SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression, this.serializationOptions);
 
@@ -206,10 +226,10 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression, this.serializationOptions);
 
-            FeedIterator streamIterator = this.CreateStreamIterator(isContinuationExcpected);
-            return new FeedIteratorCore<T>(
+            FeedIteratorInternal streamIterator = this.CreateStreamIterator(isContinuationExcpected);
+            return new FeedIteratorInlineCore<T>(new FeedIteratorCore<T>(
                 streamIterator,
-                this.responseFactory.CreateQueryFeedResponse<T>);
+                this.responseFactory.CreateQueryFeedUserTypeResponse<T>));
         }
     }
 }

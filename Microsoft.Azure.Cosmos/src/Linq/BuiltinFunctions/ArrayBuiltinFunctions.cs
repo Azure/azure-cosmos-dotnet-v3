@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
                 if (searchList.NodeType == ExpressionType.Constant)
                 {
-                    return VisitIN(searchExpression, (ConstantExpression)searchList, context);
+                    return this.VisitIN(searchExpression, (ConstantExpression)searchList, context);
                 }
 
                 SqlScalarExpression array = ExpressionToSql.VisitScalarExpression(searchList, context);
@@ -77,9 +77,9 @@ namespace Microsoft.Azure.Cosmos.Linq
             private SqlScalarExpression VisitIN(Expression expression, ConstantExpression constantExpressionList, TranslationContext context)
             {
                 List<SqlScalarExpression> items = new List<SqlScalarExpression>();
-                foreach (object item in ((IEnumerable)(constantExpressionList.Value)))
+                foreach (object item in (IEnumerable)constantExpressionList.Value)
                 {
-                    items.Add(ExpressionToSql.VisitConstant(Expression.Constant(item)));
+                    items.Add(ExpressionToSql.VisitConstant(Expression.Constant(item), context));
                 }
 
                 // if the items list empty, then just return false expression

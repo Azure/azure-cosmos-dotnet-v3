@@ -5,9 +5,12 @@
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 {
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -58,6 +61,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             await processor.StopAsync();
             // Verify that we maintain order
             CollectionAssert.AreEqual(expectedIds.ToList(), receivedIds);
+        }
+
+        [TestMethod]
+        public async Task NotExistentLeaseContainer()
+        {
+            Container notFoundContainer = this.cosmosClient.GetContainer(this.database.Id, "NonExistent");
+            ChangeFeedProcessor processor = this.Container
+                .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<TestClass> docs, CancellationToken token) =>
+                {
+                    return Task.CompletedTask;
+                })
+                .WithInstanceName("random")
+                .WithLeaseContainer(notFoundContainer).Build();
+
+            CosmosException exception = await Assert.ThrowsExceptionAsync<CosmosException>(() => processor.StartAsync());
+            Assert.AreEqual(HttpStatusCode.NotFound, exception.StatusCode);
         }
 
         [TestMethod]
@@ -160,6 +179,68 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             await processor.StopAsync();
             // Verify that we maintain order
             CollectionAssert.AreEqual(expectedIds.ToList(), receivedIds);
+        }
+
+        [TestMethod]
+        public async Task DoesNotUseUserSerializer()
+        {
+            CosmosClient cosmosClient = TestCommon.CreateCosmosClient(builder => builder.WithCustomSerializer(new FailedUserSerializer()));
+
+            ManualResetEvent allDocsProcessed = new ManualResetEvent(false);
+
+            int processedDocCount = 0;
+            string accumulator = string.Empty;
+            ChangeFeedProcessor processor = cosmosClient.GetContainer(this.database.Id, this.Container.Id)
+                .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<TestClass> docs, CancellationToken token) =>
+                {
+                    processedDocCount += docs.Count();
+                    foreach (TestClass doc in docs)
+                    {
+                        accumulator += doc.id.ToString() + ".";
+                    }
+
+                    if (processedDocCount == 10)
+                    {
+                        allDocsProcessed.Set();
+                    }
+
+                    return Task.CompletedTask;
+                })
+                .WithInstanceName("random")
+                .WithLeaseContainer(cosmosClient.GetContainer(this.database.Id, this.LeaseContainer.Id)).Build();
+
+            // Start the processor, insert 1 document to generate a checkpoint
+            await processor.StartAsync();
+            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+            foreach (int id in Enumerable.Range(0, 10))
+            {
+                await this.Container.CreateItemAsync<TestClass>(new TestClass { id = id.ToString() });
+            }
+
+            bool isStartOk = allDocsProcessed.WaitOne(10 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+            await processor.StopAsync();
+            Assert.IsTrue(isStartOk, "Timed out waiting for docs to process");
+            Assert.AreEqual("0.1.2.3.4.5.6.7.8.9.", accumulator);
+        }
+
+        private class FailedUserSerializer : CosmosSerializer
+        {
+            private readonly CosmosSerializer cosmosSerializer = new CosmosJsonDotNetSerializer();
+            public override T FromStream<T>(Stream stream)
+            {
+                // Only let changes serialization pass through
+                if (typeof(T) == typeof(TestClass))
+                {
+                    return this.cosmosSerializer.FromStream<T>(stream);
+                }
+
+                throw new System.NotImplementedException();
+            }
+
+            public override Stream ToStream<T>(T input)
+            {
+                throw new System.NotImplementedException();
+            }
         }
 
         public class TestClass

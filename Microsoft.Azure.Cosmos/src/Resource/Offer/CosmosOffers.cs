@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos
             OfferV2 newOffer = new OfferV2(offerV2, throughput);
 
             return await this.GetThroughputResponseAsync(
-                streamPayload: this.ClientContext.PropertiesSerializer.ToStream(newOffer),
+                streamPayload: this.ClientContext.SerializerCore.ToStream(newOffer),
                 operationType: OperationType.Replace,
                 linkUri: new Uri(offerV2.SelfLink, UriKind.Relative),
                 resourceType: ResourceType.Offer,
@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos
                 OfferV2 newOffer = new OfferV2(offerV2, throughput);
 
                 return await this.GetThroughputResponseAsync(
-                    streamPayload: this.ClientContext.PropertiesSerializer.ToStream(newOffer),
+                    streamPayload: this.ClientContext.SerializerCore.ToStream(newOffer),
                     operationType: OperationType.Replace,
                     linkUri: new Uri(offerV2.SelfLink, UriKind.Relative),
                     resourceType: ResourceType.Offer,
@@ -157,15 +157,20 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
-            FeedIterator databaseStreamIterator = this.GetOfferQueryStreamIterator(
+            if (!(this.GetOfferQueryStreamIterator(
                queryDefinition,
                continuationToken,
                requestOptions,
-               cancellationToken);
+               cancellationToken) is FeedIteratorInternal databaseStreamIterator))
+            {
+                throw new InvalidOperationException($"Expected a FeedIteratorInternal.");
+            }
 
             return new FeedIteratorCore<T>(
                 databaseStreamIterator,
-                this.ClientContext.ResponseFactory.CreateQueryFeedResponseWithPropertySerializer<T>);
+                (response) => this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>(
+                    responseMessage: response,
+                    resourceType: ResourceType.Offer));
         }
 
         internal virtual FeedIterator GetOfferQueryStreamIterator(
@@ -217,6 +222,7 @@ namespace Microsoft.Azure.Cosmos
               streamPayload: streamPayload,
               requestOptions: requestOptions,
               requestEnricher: null,
+              diagnosticsScope: null,
               cancellationToken: cancellationToken);
             return await this.ClientContext.ResponseFactory.CreateThroughputResponseAsync(responseMessage);
         }

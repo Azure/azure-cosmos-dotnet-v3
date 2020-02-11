@@ -63,14 +63,16 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             string resourceType,
             string requestVerb,
             INameValueCollection headers,
-            AuthorizationTokenType tokenType) /* unused, use token based upon what is passed in constructor */
+            AuthorizationTokenType tokenType,
+            out string payload) /* unused, use token based upon what is passed in constructor */
         {
+            payload = null;
             return null;
         }
 
         private void Init()
         {
-            this.collectionCache = new Mock<ClientCollectionCache>(new ServerStoreModel(null), null, null);
+            this.collectionCache = new Mock<ClientCollectionCache>(null, new ServerStoreModel(null), null, null);
             this.collectionCache.Setup
                     (m =>
                         m.ResolveCollectionAsync(
@@ -97,13 +99,13 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
         private void InitStoreModels()
         {
-            this.GatewayStoreModel = GetMockGatewayStoreModel();
+            this.GatewayStoreModel = this.GetMockGatewayStoreModel();
 
-            var sessionContainer = new SessionContainer("localhost");
-            this.Session = sessionContainer;
+            SessionContainer sessionContainer = new SessionContainer("localhost");
+            this.sessionContainer = sessionContainer;
 
-            AddressInformation[] addressInformation = GetMockAddressInformation();
-            var mockAddressCache = GetMockAddressCache(addressInformation);
+            AddressInformation[] addressInformation = this.GetMockAddressInformation();
+            Mock<IAddressResolver> mockAddressCache = this.GetMockAddressCache(addressInformation);
 
             ReplicationPolicy replicationPolicy = new ReplicationPolicy();
             replicationPolicy.MaxReplicaSetSize = 1;
@@ -118,7 +120,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                         mockServiceConfigReader.Object,
                         mockAuthorizationTokenProvider.Object,
                         Protocol.Tcp,
-                        GetMockTransportClient(addressInformation)));
+                        this.GetMockTransportClient(addressInformation),
+                        enableRequestDiagnostics: true));
         }
 
         private Mock<IAddressResolver> GetMockAddressCache(AddressInformation[] addressInformation)

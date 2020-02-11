@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
 
+    // TODO: This class should inherit from ConflictsInternal to avoid the downcasting hacks.
     internal class ConflictsCore : Conflicts
     {
         private readonly ContainerCore container;
@@ -57,6 +58,7 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey: partitionKey,
                 streamPayload: null,
                 requestEnricher: null,
+                diagnosticsScope: null,
                 cancellationToken: cancellationToken);
         }
 
@@ -113,14 +115,19 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            FeedIterator databaseStreamIterator = this.GetConflictQueryStreamIterator(
+            if (!(this.GetConflictQueryStreamIterator(
                 queryDefinition,
                 continuationToken,
-                requestOptions);
+                requestOptions) is FeedIteratorInternal databaseStreamIterator))
+            {
+                throw new InvalidOperationException($"Expected a FeedIteratorInternal.");
+            }
 
             return new FeedIteratorCore<T>(
                 databaseStreamIterator,
-                this.clientContext.ResponseFactory.CreateQueryFeedResponse<T>);
+                (response) => this.clientContext.ResponseFactory.CreateQueryFeedResponse<T>(
+                    responseMessage: response,
+                    resourceType: ResourceType.Conflict));
         }
 
         public override async Task<ItemResponse<T>> ReadCurrentAsync<T>(
@@ -162,6 +169,7 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey: partitionKey,
                 streamPayload: null,
                 requestEnricher: null,
+                diagnosticsScope: null,
                 cancellationToken: cancellationToken);
 
             return await this.clientContext.ResponseFactory.CreateItemResponseAsync<T>(response);
@@ -184,7 +192,7 @@ namespace Microsoft.Azure.Cosmos
                         writer.Write(cosmosConflict.Content);
                         writer.Flush();
                         stream.Position = 0;
-                        return this.clientContext.CosmosSerializer.FromStream<T>(stream);
+                        return this.clientContext.SerializerCore.FromStream<T>(stream);
                     }
                 }
             }

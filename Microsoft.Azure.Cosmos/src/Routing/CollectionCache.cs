@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -29,10 +29,10 @@ namespace Microsoft.Azure.Cosmos.Common
         {
             internal InternalCache()
             {
-                collectionInfoByName = new AsyncCache<string, ContainerProperties>(new CollectionRidComparer());
-                collectionInfoById = new AsyncCache<string, ContainerProperties>(new CollectionRidComparer());
-                collectionInfoByNameLastRefreshTime = new ConcurrentDictionary<string, DateTime>();
-                collectionInfoByIdLastRefreshTime = new ConcurrentDictionary<string, DateTime>();
+                this.collectionInfoByName = new AsyncCache<string, ContainerProperties>(new CollectionRidComparer());
+                this.collectionInfoById = new AsyncCache<string, ContainerProperties>(new CollectionRidComparer());
+                this.collectionInfoByNameLastRefreshTime = new ConcurrentDictionary<string, DateTime>();
+                this.collectionInfoByIdLastRefreshTime = new ConcurrentDictionary<string, DateTime>();
             }
 
             internal readonly AsyncCache<string, ContainerProperties> collectionInfoByName;
@@ -302,7 +302,7 @@ namespace Microsoft.Azure.Cosmos.Common
         protected InternalCache GetCache(string apiVersion)
         {
             // Non Partitioned Migration Version. Need this to flight V3 SDK till we make this the Current Version
-            if (String.IsNullOrEmpty(apiVersion) || VersionUtility.IsLaterThan(apiVersion, HttpConstants.Versions.v2018_12_31))
+            if (string.IsNullOrEmpty(apiVersion) || VersionUtility.IsLaterThan(apiVersion, HttpConstants.Versions.v2018_12_31))
             {
                 return this.cacheByApiList[1];
             }

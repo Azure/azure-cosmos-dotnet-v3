@@ -88,7 +88,18 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <remarks>
         /// ETags are used for concurrency checking when updating resources. 
         /// </remarks>
-        [JsonProperty(PropertyName = Constants.Properties.ETag)]
+        [JsonProperty(PropertyName = Constants.Properties.ETag, NullValueHandling = NullValueHandling.Ignore)]
         public string ETag { get; private set; }
+
+        /// <summary>
+        /// Gets the self-link associated with the resource from the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>The self-link associated with the resource.</value> 
+        /// <remarks>
+        /// A self-link is a static addressable Uri for each resource within a database account and follows the Azure Cosmos DB resource model.
+        /// E.g. a self-link for a document could be dbs/db_resourceid/colls/coll_resourceid/documents/doc_resourceid
+        /// </remarks>
+        [JsonProperty(PropertyName = Constants.Properties.SelfLink, NullValueHandling = NullValueHandling.Ignore)]
+        public string SelfLink { get; private set; }
     }
 }

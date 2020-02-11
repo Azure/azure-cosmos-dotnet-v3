@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
 
@@ -241,6 +242,18 @@ namespace Microsoft.Azure.Cosmos
             requestOptions.PopulateRequestOptions(request);
 
             Assert.AreEqual(ChangeFeedRequestOptions.IfNoneMatchAllHeaderValue, request.Headers.IfNoneMatch);
+            Assert.IsNull(request.Headers[Documents.HttpConstants.HttpHeaders.IfModifiedSince]);
+        }
+
+        [TestMethod]
+        public void ChangeFeedRequestOptions_StartFromBeginning()
+        {
+            RequestMessage request = new RequestMessage();
+            ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue.ToUniversalTime() };
+
+            requestOptions.PopulateRequestOptions(request);
+
+            Assert.IsNull(request.Headers.IfNoneMatch);
             Assert.IsNull(request.Headers[Documents.HttpConstants.HttpHeaders.IfModifiedSince]);
         }
 

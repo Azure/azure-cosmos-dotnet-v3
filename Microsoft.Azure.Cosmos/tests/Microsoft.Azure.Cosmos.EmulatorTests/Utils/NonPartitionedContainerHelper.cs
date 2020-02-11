@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 database,
                 documentCollection);
 
-            return (ContainerCore)database.GetContainer(containerId);
+            return (ContainerInlineCore)database.GetContainer(containerId);
         }
 
         internal static async Task<DocumentCollection> CreateNonPartitionedContainer(
@@ -46,11 +46,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //Creating non partition Container, rest api used instead of .NET SDK api as it is not supported anymore.
             HttpClient client = new System.Net.Http.HttpClient();
             Uri baseUri = new Uri(accountInfo.endpoint);
+            string dateTimeUtc = NonPartitionedContainerHelper.GetUtcDateTime();
+
             string verb = "POST";
             string resourceType = "colls";
             string resourceId = string.Format("dbs/{0}", database.Id);
             string resourceLink = string.Format("dbs/{0}/colls", database.Id);
-            client.DefaultRequestHeaders.Add("x-ms-date", NonPartitionedContainerHelper.GetUtcDateTime());
+            client.DefaultRequestHeaders.Add("x-ms-date", dateTimeUtc);
             client.DefaultRequestHeaders.Add("x-ms-version", NonPartitionedContainerHelper.PreNonPartitionedMigrationApiVersion);
 
             string authHeader = NonPartitionedContainerHelper.GenerateMasterKeyAuthorizationSignature(
@@ -59,7 +61,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 resourceType,
                 accountInfo.authKey,
                 "master",
-                "1.0");
+                "1.0",
+                dateTimeUtc);
 
             client.DefaultRequestHeaders.Add("authorization", authHeader);
             string containerDefinition = documentCollection.ToString();
@@ -85,7 +88,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //Creating undefined partition key  item, rest api used instead of .NET SDK api as it is not supported anymore.
             HttpClient client = new System.Net.Http.HttpClient();
             Uri baseUri = new Uri(accountInfo.endpoint);
-            client.DefaultRequestHeaders.Add("x-ms-date", NonPartitionedContainerHelper.GetUtcDateTime());
+            string dateTimeUtc = NonPartitionedContainerHelper.GetUtcDateTime();
+
+            client.DefaultRequestHeaders.Add("x-ms-date", dateTimeUtc);
             client.DefaultRequestHeaders.Add("x-ms-version", NonPartitionedContainerHelper.PreNonPartitionedMigrationApiVersion);
             client.DefaultRequestHeaders.Add("x-ms-documentdb-partitionkey", "[{}]");
 
@@ -100,7 +105,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 resourceType,
                 accountInfo.authKey,
                 "master",
-                "1.0");
+                "1.0",
+                dateTimeUtc);
 
             client.DefaultRequestHeaders.Remove("authorization");
             client.DefaultRequestHeaders.Add("authorization", authHeader);
@@ -120,6 +126,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //Creating non partition Container item.
             HttpClient client = new System.Net.Http.HttpClient();
             Uri baseUri = new Uri(accountInfo.endpoint);
+            string dateTimeUtc = NonPartitionedContainerHelper.GetUtcDateTime();
             string verb = "POST";
             string resourceType = "docs";
             string resourceLink = string.Format("dbs/{0}/colls/{1}/docs", container.Database.Id, container.Id);
@@ -128,9 +135,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 resourceType,
                 accountInfo.authKey,
                 "master",
-                "1.0");
+                "1.0",
+                dateTimeUtc);
 
-            client.DefaultRequestHeaders.Add("x-ms-date", NonPartitionedContainerHelper.GetUtcDateTime());
+            client.DefaultRequestHeaders.Add("x-ms-date", dateTimeUtc);
             client.DefaultRequestHeaders.Add("x-ms-version", NonPartitionedContainerHelper.PreNonPartitionedMigrationApiVersion);
             client.DefaultRequestHeaders.Add("authorization", authHeader);
 
@@ -149,7 +157,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string resourceType,
             string key,
             string keyType,
-            string tokenVersion)
+            string tokenVersion,
+            string dateTimeUtc)
         {
             System.Security.Cryptography.HMACSHA256 hmacSha256 = new System.Security.Cryptography.HMACSHA256 { Key = Convert.FromBase64String(key) };
 
@@ -157,7 +166,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     verb.ToLowerInvariant(),
                     resourceType.ToLowerInvariant(),
                     resourceId,
-                    NonPartitionedContainerHelper.GetUtcDateTime().ToLowerInvariant(),
+                    dateTimeUtc.ToLowerInvariant(),
                     ""
             );
 

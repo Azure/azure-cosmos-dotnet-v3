@@ -1,7 +1,7 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.CosmosElements
+namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 {
     using System;
     using Microsoft.Azure.Cosmos.Json;
@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 this.lazyNumber = new Lazy<long>(() => jsonNavigator.GetInt64Value(jsonNavigatorNode));
             }
 
-            protected override long GetValue()
+            public override long GetValue()
             {
                 return this.lazyNumber.Value;
             }

@@ -13,7 +13,13 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel;
+    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -27,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public static readonly PartitionKeyRange DefaultPartitionKeyRange = new PartitionKeyRange() { MinInclusive = "A", MaxExclusive = "B", Id = "0" };
         public static readonly int[] DefaultResponseSizes = { 3, 0, 3 };
         public static readonly CancellationToken DefaultCancellationToken = new CancellationTokenSource().Token;
-        
+
         /// <summary>
         /// Create a item producer with a list of responses mocked
         /// </summary>
@@ -90,6 +96,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 partitionKeyRange,
                 completeDelegate,
                 CosmosElementEqualityComparer.Value,
+                new TestInjections(simulate429s: false, simulateEmptyPages: false),
                 maxPageSize,
                 initialContinuationToken: continuationToken);
 
@@ -99,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public static void DefaultProduceAsyncCompleteDelegate(
             int numberOfDocuments,
             double requestCharge,
-            QueryMetrics queryMetrics,
+            IReadOnlyCollection<QueryPageDiagnostics> diagnostics,
             long responseLengthInBytes,
             CancellationToken token)
         {
@@ -142,7 +149,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             if (itemProducerTreeComparer == null)
             {
-                itemProducerTreeComparer = new ParallelItemProducerTreeComparer();
+                itemProducerTreeComparer = DeterministicParallelItemProducerTreeComparer.Singleton;
             }
 
             if (mockQueryContext == null)
@@ -171,6 +178,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 completeDelegate,
                 itemProducerTreeComparer,
                 CosmosElementEqualityComparer.Value,
+                new TestInjections(simulate429s: false, simulateEmptyPages: false),
                 deferFirstPage,
                 collectionRid,
                 maxPageSize,
@@ -183,7 +191,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ItemProducerTree itemProducerTree,
             int numberOfDocuments,
             double requestCharge,
-            QueryMetrics queryMetrics,
+            IReadOnlyCollection<QueryPageDiagnostics> diagnostics,
             long responseLengthInBytes,
             CancellationToken token)
         {
@@ -233,6 +241,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         It.Is<PartitionKeyRangeIdentity>(rangeId => string.Equals(rangeId.PartitionKeyRangeId, partitionKeyRange.Id) && string.Equals(rangeId.CollectionRid, collectionRid)),
                         It.IsAny<bool>(),
                         maxPageSize,
+                        It.IsAny<SchedulingStopwatch>(),
                         cancellationToken))
                         .Callback(() => executeCallback?.Invoke())
                         .Returns(Task.FromResult(queryResponse.response));
@@ -286,8 +295,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                         It.Is<PartitionKeyRangeIdentity>(rangeId => string.Equals(rangeId.PartitionKeyRangeId, partitionKeyRange.Id) && string.Equals(rangeId.CollectionRid, collectionRid)),
                         It.IsAny<bool>(),
                         maxPageSize,
+                        It.IsAny<SchedulingStopwatch>(),
                         cancellationToken))
-                        .Callback(() =>executeCallback?.Invoke())
+                        .Callback(() => executeCallback?.Invoke())
                         .Returns(Task.FromResult(queryResponse.response));
                 previousContinuationToken = newContinuationToken;
             }

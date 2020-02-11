@@ -3,7 +3,7 @@
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
 //-----------------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
+namespace Microsoft.Azure.Cosmos.Tests.Json
 {
     using System;
     using System.Collections.Generic;
@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
     using Microsoft.Azure.Cosmos.Json;
     using System.IO;
     using System.Globalization;
+    using Microsoft.Azure.Cosmos.Tests;
 
     [TestClass]
     [TestCategory("Functional")]
@@ -369,7 +370,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         [Owner("brchon")]
         public void CountriesTest()
         {
-            this.VerifyNavigatorWithCurratedDoc("countries.json", false);
+            this.VerifyNavigatorWithCurratedDoc("countries", false);
         }
 
         [TestMethod]
@@ -383,7 +384,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         [Owner("brchon")]
         public void LastFMTest()
         {
-            this.VerifyNavigatorWithCurratedDoc("lastfm.json");
+            this.VerifyNavigatorWithCurratedDoc("lastfm");
         }
 
         [TestMethod]
@@ -411,14 +412,14 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         [Owner("brchon")]
         public void NutritionDataTest()
         {
-            this.VerifyNavigatorWithCurratedDoc("NutritionData.json");
+            this.VerifyNavigatorWithCurratedDoc("NutritionData");
         }
 
         [TestMethod]
         [Owner("brchon")]
         public void RunsCollectionTest()
         {
-            this.VerifyNavigatorWithCurratedDoc("runsCollection.json");
+            this.VerifyNavigatorWithCurratedDoc("runsCollection");
         }
 
         [TestMethod]
@@ -432,7 +433,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         [Owner("brchon")]
         public void StatesLegislatorsTest()
         {
-            this.VerifyNavigatorWithCurratedDoc("states_legislators.json");
+            this.VerifyNavigatorWithCurratedDoc("states_legislators");
         }
 
         [TestMethod]
@@ -446,34 +447,34 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         [Owner("brchon")]
         public void TicinoErrorBucketsTest()
         {
-            this.VerifyNavigatorWithCurratedDoc("TicinoErrorBuckets.json");
+            this.VerifyNavigatorWithCurratedDoc("TicinoErrorBuckets");
         }
 
         [TestMethod]
         [Owner("brchon")]
         public void TwitterDataTest()
         {
-            this.VerifyNavigatorWithCurratedDoc("twitter_data.json");
+            this.VerifyNavigatorWithCurratedDoc("twitter_data");
         }
 
         [TestMethod]
         [Owner("brchon")]
         public void Ups1Test()
         {
-            this.VerifyNavigatorWithCurratedDoc("ups1.json");
+            this.VerifyNavigatorWithCurratedDoc("ups1");
         }
 
         [TestMethod]
         [Owner("brchon")]
         public void XpertEventsTest()
         {
-            this.VerifyNavigatorWithCurratedDoc("XpertEvents.json");
+            this.VerifyNavigatorWithCurratedDoc("XpertEvents");
         }
 
-        private void VerifyNavigatorWithCurratedDoc(string filename, bool performExtraChecks = true)
+        private void VerifyNavigatorWithCurratedDoc(string path, bool performExtraChecks = true)
         {
-            string path = string.Format("TestJsons/{0}", filename);
-            string json = File.ReadAllText(path);
+            path = string.Format("TestJsons/{0}", path);
+            string json = TextFileConcatenation.ReadMultipartFile(path);
 #if true
             json = JsonTestUtils.RandomSampleJson(json);
 #endif
@@ -487,7 +488,10 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             this.VerifyNavigator(input, null, performExtraChecks);
         }
 
-        private void VerifyNavigator(string input, Exception expectedException, bool performExtraChecks = true)
+        private void VerifyNavigator(
+            string input,
+            Exception expectedException,
+            bool performExtraChecks = true)
         {
             CultureInfo defaultCultureInfo = System.Threading.Thread.CurrentThread.CurrentCulture;
 

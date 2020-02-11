@@ -1,10 +1,11 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.CosmosElements
+namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 {
     using System;
     using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Query.Core;
 
 #if INTERNAL
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
@@ -34,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 jsonWriter.WriteNumberValue(this.number);
             }
 
-            protected override Number64 GetValue()
+            public override Number64 GetValue()
             {
                 return this.number;
             }

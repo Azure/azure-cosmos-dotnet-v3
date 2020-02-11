@@ -1,20 +1,27 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Query
+namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 {
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
-    using System.Globalization;
     using System.Linq;
-    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Collections.Generic;
-    using ExecutionComponent;
+    using Core.ExecutionComponent;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using ParallelQuery;
+    using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.Collections;
+    using Microsoft.Azure.Cosmos.Query.Core.ComparableTask;
+    using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel;
+    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using PartitionKeyRange = Documents.PartitionKeyRange;
     using RequestChargeTracker = Documents.RequestChargeTracker;
     using RMResources = Documents.RMResources;
@@ -35,6 +42,11 @@ namespace Microsoft.Azure.Cosmos.Query
         private const double DynamicPageSizeAdjustmentFactor = 1.6;
 
         /// <summary>
+        /// Request Charge Tracker used to atomically add request charges (doubles).
+        /// </summary>
+        protected readonly RequestChargeTracker requestChargeTracker;
+
+        /// <summary>
         /// Priority Queue of ItemProducerTrees that make a forest that can be iterated on.
         /// </summary>
         private readonly PriorityQueue<ItemProducerTree> itemProducerForest;
@@ -53,12 +65,6 @@ namespace Microsoft.Azure.Cosmos.Query
         /// The equality comparer used to determine whether a document producer needs it's continuation token to be part of the composite continuation token.
         /// </summary>
         private readonly IEqualityComparer<CosmosElement> equalityComparer;
-
-        /// <summary>
-        /// Request Charge Tracker used to atomically add request charges (doubles).
-        /// </summary>
-        private readonly RequestChargeTracker requestChargeTracker;
-
         /// <summary>
         /// The actual max page size after all the optimizations have been made it in the create document query execution context layer.
         /// </summary>
@@ -69,16 +75,17 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         private readonly long actualMaxBufferedItemCount;
 
-        private CosmosQueryContext queryContext;
-
-        protected CosmosQueryClient queryClient;
-
         /// <summary>
-        /// This stores all the query metrics which have been grouped by partition id.
-        /// When a feed response is returned (which includes multiple partitions and potentially multiple continuations)
-        /// we take a snapshot of partitionedQueryMetrics and store it in grouped query metrics.
+        /// Injections used to reproduce special failure cases.
+        /// Convert this to a mock in the future.
         /// </summary>
-        private IReadOnlyDictionary<string, QueryMetrics> groupedQueryMetrics;
+        private readonly TestInjections testSettings;
+
+        private readonly CosmosQueryContext queryContext;
+
+        private readonly bool returnResultsInDeterministicOrder;
+
+        protected readonly CosmosQueryClient queryClient;
 
         /// <summary>
         /// This stores the running query metrics.
@@ -94,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// but we eventually used the whole page for the next continuation; which continuation reports the cost?
         /// Basically the only thing we can ensure is if you drain a query fully you should get back the same query metrics by the end.
         /// </remarks>
-        private ConcurrentBag<Tuple<string, QueryMetrics>> partitionedQueryMetrics;
+        private ConcurrentBag<QueryPageDiagnostics> diagnosticsPages;
 
         /// <summary>
         /// Total number of buffered items to determine if we can go for another prefetch while still honoring the MaxBufferedItemCount.
@@ -116,6 +123,8 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="moveNextComparer">Comparer used to figure out that document producer tree to serve documents from next.</param>
         /// <param name="fetchPrioirtyFunction">The priority function to determine which partition to fetch documents from next.</param>
         /// <param name="equalityComparer">Used to determine whether we need to return the continuation token for a partition.</param>
+        /// <param name="returnResultsInDeterministicOrder">Whether or not to return results in deterministic order.</param>
+        /// <param name="testSettings">Test settings.</param>
         protected CosmosCrossPartitionQueryExecutionContext(
             CosmosQueryContext queryContext,
             int? maxConcurrency,
@@ -123,31 +132,24 @@ namespace Microsoft.Azure.Cosmos.Query
             int? maxBufferedItemCount,
             IComparer<ItemProducerTree> moveNextComparer,
             Func<ItemProducerTree, int> fetchPrioirtyFunction,
-            IEqualityComparer<CosmosElement> equalityComparer)
+            IEqualityComparer<CosmosElement> equalityComparer,
+            bool returnResultsInDeterministicOrder,
+            TestInjections testSettings)
         {
             if (moveNextComparer == null)
             {
                 throw new ArgumentNullException(nameof(moveNextComparer));
             }
 
-            if (fetchPrioirtyFunction == null)
-            {
-                throw new ArgumentNullException(nameof(fetchPrioirtyFunction));
-            }
-
-            if (equalityComparer == null)
-            {
-                throw new ArgumentNullException(nameof(equalityComparer));
-            }
-
             this.queryContext = queryContext ?? throw new ArgumentNullException(nameof(queryContext));
             this.queryClient = queryContext.QueryClient ?? throw new ArgumentNullException(nameof(queryContext.QueryClient));
             this.itemProducerForest = new PriorityQueue<ItemProducerTree>(moveNextComparer, isSynchronized: true);
-            this.fetchPrioirtyFunction = fetchPrioirtyFunction;
+            this.fetchPrioirtyFunction = fetchPrioirtyFunction ?? throw new ArgumentNullException(nameof(fetchPrioirtyFunction));
             this.comparableTaskScheduler = new ComparableTaskScheduler(maxConcurrency.GetValueOrDefault(0));
-            this.equalityComparer = equalityComparer;
+            this.equalityComparer = equalityComparer ?? throw new ArgumentNullException(nameof(equalityComparer));
+            this.testSettings = testSettings;
             this.requestChargeTracker = new RequestChargeTracker();
-            this.partitionedQueryMetrics = new ConcurrentBag<Tuple<string, QueryMetrics>>();
+            this.diagnosticsPages = new ConcurrentBag<QueryPageDiagnostics>();
             this.actualMaxPageSize = maxItemCount.GetValueOrDefault(ParallelQueryConfig.GetConfig().ClientInternalMaxItemCount);
 
             if (this.actualMaxPageSize < 0)
@@ -180,22 +182,14 @@ namespace Microsoft.Azure.Cosmos.Query
             }
 
             this.CanPrefetch = maxConcurrency.HasValue && maxConcurrency.Value != 0;
+
+            this.returnResultsInDeterministicOrder = returnResultsInDeterministicOrder;
         }
 
         /// <summary>
         /// Gets a value indicating whether this context is done having documents drained.
         /// </summary>
         public override bool IsDone => !this.HasMoreResults;
-
-        /// <summary>
-        /// If a failure is hit store it and return it on the next drain call.
-        /// This allows returning the results computed before the failure.
-        /// </summary>
-        public QueryResponseCore? FailureResponse
-        {
-            get;
-            protected set;
-        }
 
         protected int ActualMaxBufferedItemCount => (int)this.actualMaxBufferedItemCount;
 
@@ -218,21 +212,12 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Gets a value indicating whether the context still has more results.
         /// </summary>
-        private bool HasMoreResults => this.itemProducerForest.Count != 0 && this.CurrentItemProducerTree().HasMoreResults;
+        private bool HasMoreResults => (this.itemProducerForest.Count != 0) && this.CurrentItemProducerTree().HasMoreResults;
 
         /// <summary>
         /// Gets the number of documents we can still buffer.
         /// </summary>
         private long FreeItemSpace => this.actualMaxBufferedItemCount - Interlocked.Read(ref this.totalBufferedItems);
-
-        /// <summary>
-        /// Gets the query metrics that are set in SetQueryMetrics
-        /// </summary>
-        /// <returns>The grouped query metrics.</returns>
-        public override IReadOnlyDictionary<string, QueryMetrics> GetQueryMetrics()
-        {
-            return new PartitionedQueryMetrics(this.groupedQueryMetrics);
-        }
 
         /// <summary>
         /// After a split you need to maintain the continuation tokens for all the child document producers until a condition is met.
@@ -260,7 +245,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </returns>
         public IEnumerable<ItemProducer> GetActiveItemProducers()
         {
-            lock (this.itemProducerForest)
+            if (this.returnResultsInDeterministicOrder)
             {
                 ItemProducerTree current = this.itemProducerForest.Peek().CurrentItemProducerTree;
                 if (current.HasMoreResults && !current.IsActive)
@@ -275,6 +260,20 @@ namespace Microsoft.Azure.Cosmos.Query
                     foreach (ItemProducer itemProducer in itemProducerTree.GetActiveItemProducers())
                     {
                         yield return itemProducer;
+                    }
+                }
+            }
+            else
+            {
+                // Just return all item producers that have a continuation token
+                foreach (ItemProducerTree itemProducerTree in this.itemProducerForest)
+                {
+                    foreach (ItemProducerTree leaf in itemProducerTree)
+                    {
+                        if (leaf.HasMoreResults)
+                        {
+                            yield return leaf.Root;
+                        }
                     }
                 }
             }
@@ -294,6 +293,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         public void PushCurrentItemProducerTree(ItemProducerTree itemProducerTree)
         {
+            itemProducerTree.UpdatePriority();
             this.itemProducerForest.Enqueue(itemProducerTree);
         }
 
@@ -323,76 +323,6 @@ namespace Microsoft.Azure.Cosmos.Query
         }
 
         /// <summary>
-        /// A helper to move next and set the failure response if one is received
-        /// </summary>
-        /// <param name="itemProducerTree">The item producer tree</param>
-        /// <param name="cancellationToken">The cancellation token</param>
-        /// <returns>True if it move next failed. It can fail from an error or hitting the end of the tree</returns>
-        protected async Task<bool> MoveNextHelperAsync(ItemProducerTree itemProducerTree, CancellationToken cancellationToken)
-        {
-            (bool successfullyMovedNext, QueryResponseCore? failureResponse) moveNextResponse = await itemProducerTree.MoveNextAsync(cancellationToken);
-            if (moveNextResponse.failureResponse != null)
-            {
-                this.FailureResponse = moveNextResponse.failureResponse;
-            }
-
-            return !moveNextResponse.successfullyMovedNext;
-        }
-
-        /// <summary>
-        /// Drains documents from this component. This has the common drain logic for each implementation.
-        /// </summary>
-        /// <param name="maxElements">The maximum number of documents to drain.</param>
-        /// <param name="cancellationToken">The cancellation token to cancel tasks.</param>
-        /// <returns>A task that when awaited on returns a feed response.</returns>
-        public override async Task<QueryResponseCore> DrainAsync(int maxElements, CancellationToken cancellationToken)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            // The initialization or previous Drain Async failed. Just return the failure.
-            if (this.FailureResponse != null)
-            {
-                this.Stop();
-                return this.FailureResponse.Value;
-            }
-
-            // Drain the results. If there is no results and a failure then return the failure.
-            IReadOnlyList<CosmosElement> results = await this.InternalDrainAsync(maxElements, cancellationToken);
-            if ((results == null || results.Count == 0) && this.FailureResponse != null)
-            {
-                this.Stop();
-                return this.FailureResponse.Value;
-            }
-
-            string continuation = this.ContinuationToken;
-            if (continuation == "[]")
-            {
-                throw new InvalidOperationException("Somehow a document query execution context returned an empty array of continuations.");
-            }
-
-            this.SetQueryMetrics();
-
-            return QueryResponseCore.CreateSuccess(
-                result: results,
-                requestCharge: this.requestChargeTracker.GetAndResetCharge(),
-                activityId: null,
-                queryMetricsText: null,
-                disallowContinuationTokenMessage: null,
-                continuationToken: continuation,
-                queryMetrics: this.GetQueryMetrics(),
-                requestStatistics: null,
-                responseLengthBytes: this.GetAndResetResponseLengthBytes());
-        }
-
-        /// <summary>
-        /// The drain async logic for the different implementation 
-        /// </summary>
-        /// <param name="maxElements">The maximum number of documents to drain.</param>
-        /// <param name="token">The cancellation token to cancel tasks.</param>
-        /// <returns>A task that when awaited on returns a feed response.</returns>
-        public abstract Task<IReadOnlyList<CosmosElement>> InternalDrainAsync(int maxElements, CancellationToken token);
-
-        /// <summary>
         /// Initializes cross partition query execution context by initializing the necessary document producers.
         /// </summary>
         /// <param name="collectionRid">The collection to drain from.</param>
@@ -402,24 +332,38 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="targetRangeToContinuationMap">Map from partition to it's corresponding continuation token.</param>
         /// <param name="deferFirstPage">Whether or not we should defer the fetch of the first page from each partition.</param>
         /// <param name="filter">The filter to inject in the predicate.</param>
-        /// <param name="filterCallback">The callback used to filter each partition.</param>
-        /// <param name="token">The cancellation token.</param>
+        /// <param name="tryFilterAsync">The callback used to filter each partition.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task to await on.</returns>
-        protected async Task InitializeAsync(
+        protected async Task<TryCatch> TryInitializeAsync(
             string collectionRid,
             IReadOnlyList<PartitionKeyRange> partitionKeyRanges,
             int initialPageSize,
             SqlQuerySpec querySpecForInit,
-            Dictionary<string, string> targetRangeToContinuationMap,
+            IReadOnlyDictionary<string, string> targetRangeToContinuationMap,
             bool deferFirstPage,
             string filter,
-            Func<ItemProducerTree, Task> filterCallback,
-            CancellationToken token)
+            Func<ItemProducerTree, Task<TryCatch>> tryFilterAsync,
+            CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             List<ItemProducerTree> itemProducerTrees = new List<ItemProducerTree>();
             foreach (PartitionKeyRange partitionKeyRange in partitionKeyRanges)
             {
-                string initialContinuationToken = (targetRangeToContinuationMap != null && targetRangeToContinuationMap.ContainsKey(partitionKeyRange.Id)) ? targetRangeToContinuationMap[partitionKeyRange.Id] : null;
+                string initialContinuationToken;
+                if (targetRangeToContinuationMap != null)
+                {
+                    if (!targetRangeToContinuationMap.TryGetValue(partitionKeyRange.Id, out initialContinuationToken))
+                    {
+                        initialContinuationToken = null;
+                    }
+                }
+                else
+                {
+                    initialContinuationToken = null;
+                }
+
                 ItemProducerTree itemProducerTree = new ItemProducerTree(
                     this.queryContext,
                     querySpecForInit,
@@ -427,6 +371,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     this.OnItemProducerTreeCompleteFetching,
                     this.itemProducerForest.Comparer as IComparer<ItemProducerTree>,
                     this.equalityComparer,
+                    this.testSettings,
                     deferFirstPage,
                     collectionRid,
                     initialPageSize,
@@ -449,27 +394,51 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 if (!deferFirstPage)
                 {
-                    (bool successfullyMovedNext, QueryResponseCore? failureResponse) response = await itemProducerTree.MoveNextIfNotSplitAsync(token);
-                    if (response.failureResponse != null)
+                    while (true)
                     {
-                        // Set the failure so on drain it can be returned.
-                        this.FailureResponse = response.failureResponse;
+                        (bool movedToNextPage, QueryResponseCore? failureResponse) = await itemProducerTree.TryMoveNextPageAsync(cancellationToken);
 
-                        // No reason to enqueue the rest of the itemProducerTrees since there is a failure.
-                        break;
+                        if (failureResponse.HasValue)
+                        {
+                            return TryCatch.FromException(
+                                new CosmosException(
+                                    statusCode: failureResponse.Value.StatusCode,
+                                    subStatusCode: (int)failureResponse.Value.SubStatusCode.GetValueOrDefault(0),
+                                    message: failureResponse.Value.ErrorMessage,
+                                    activityId: failureResponse.Value.ActivityId,
+                                    requestCharge: failureResponse.Value.RequestCharge));
+                        }
+
+                        if (!movedToNextPage)
+                        {
+                            break;
+                        }
+
+                        if (itemProducerTree.IsAtBeginningOfPage)
+                        {
+                            break;
+                        }
+
+                        if (itemProducerTree.TryMoveNextDocumentWithinPage())
+                        {
+                            break;
+                        }
                     }
                 }
 
-                if (filterCallback != null)
+                if (tryFilterAsync != null)
                 {
-                    await filterCallback(itemProducerTree);
+                    TryCatch tryFilter = await tryFilterAsync(itemProducerTree);
+                    if (!tryFilter.Succeeded)
+                    {
+                        return tryFilter;
+                    }
                 }
 
-                if (itemProducerTree.HasMoreResults)
-                {
-                    this.itemProducerForest.Enqueue(itemProducerTree);
-                }
+                this.itemProducerForest.Enqueue(itemProducerTree);
             }
+
+            return TryCatch.FromResult();
         }
 
         /// <summary>
@@ -488,16 +457,14 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="partitionKeyRanges">The partition key ranges to extract continuation tokens for.</param>
         /// <param name="suppliedContinuationTokens">The continuation token that the user supplied.</param>
-        /// <param name="targetRangeToContinuationTokenMap">The output dictionary of partition key range to continuation token.</param>
         /// <typeparam name="TContinuationToken">The type of continuation token to generate.</typeparam>
         /// <Remarks>
         /// The code assumes that merge doesn't happen and 
         /// </Remarks>
-        /// <returns>The index of the partition whose MinInclusive is equal to the suppliedContinuationTokens</returns>
-        protected int FindTargetRangeAndExtractContinuationTokens<TContinuationToken>(
+        /// <returns>The index of the partition whose MinInclusive is equal to the suppliedContinuationTokens along with the continuation tokens.</returns>
+        protected static TryCatch<InitInfo<TContinuationToken>> TryFindTargetRangeAndExtractContinuationTokens<TContinuationToken>(
             List<PartitionKeyRange> partitionKeyRanges,
-            IEnumerable<Tuple<TContinuationToken, Documents.Routing.Range<string>>> suppliedContinuationTokens,
-            out Dictionary<string, TContinuationToken> targetRangeToContinuationTokenMap)
+            IEnumerable<Tuple<TContinuationToken, Documents.Routing.Range<string>>> suppliedContinuationTokens)
         {
             if (partitionKeyRanges == null)
             {
@@ -532,7 +499,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 throw new ArgumentException($"{nameof(suppliedContinuationTokens)} can not have more elements than {nameof(partitionKeyRanges)}.");
             }
 
-            targetRangeToContinuationTokenMap = new Dictionary<string, TContinuationToken>();
+            Dictionary<string, TContinuationToken> targetRangeToContinuationTokenMap = new Dictionary<string, TContinuationToken>();
 
             // Find the minimum index.
             Tuple<TContinuationToken, Documents.Routing.Range<string>> firstContinuationTokenAndRange = suppliedContinuationTokens
@@ -550,7 +517,9 @@ namespace Microsoft.Azure.Cosmos.Query
                 Comparer<PartitionKeyRange>.Create((range1, range2) => string.CompareOrdinal(range1.MinInclusive, range2.MinInclusive)));
             if (minIndex < 0)
             {
-                throw new ArgumentException($"{RMResources.InvalidContinuationToken} - Could not find continuation token: {firstContinuationToken}");
+                return TryCatch<InitInfo<TContinuationToken>>.FromException(
+                    new MalformedContinuationTokenException(
+                        $"{RMResources.InvalidContinuationToken} - Could not find continuation token: {firstContinuationToken}"));
             }
 
             foreach (Tuple<TContinuationToken, Documents.Routing.Range<string>> suppledContinuationToken in suppliedContinuationTokens)
@@ -568,8 +537,9 @@ namespace Microsoft.Azure.Cosmos.Query
                 // Could not find the child ranges
                 if (replacementRanges.Count() == 0)
                 {
-                   throw this.queryClient.CreateBadRequestException(
-                       $"{RMResources.InvalidContinuationToken} - Could not find continuation token: {continuationToken}");
+                    return TryCatch<InitInfo<TContinuationToken>>.FromException(
+                        new MalformedContinuationTokenException(
+                            $"{RMResources.InvalidContinuationToken} - Could not find continuation token: {continuationToken}"));
                 }
 
                 // PMax = C2Max > C2Min > C1Max > C1Min = PMin.
@@ -586,8 +556,9 @@ namespace Microsoft.Azure.Cosmos.Query
                     string.CompareOrdinal(child1Max, child1Min) >= 0 &&
                     child1Min == parentMin))
                 {
-                    throw this.queryClient.CreateBadRequestException(
-                        $"{RMResources.InvalidContinuationToken} - PMax = C2Max > C2Min > C1Max > C1Min = PMin: {continuationToken}");
+                    return TryCatch<InitInfo<TContinuationToken>>.FromException(
+                        new MalformedContinuationTokenException(
+                            $"{RMResources.InvalidContinuationToken} - PMax = C2Max > C2Min > C1Max > C1Min = PMin: {continuationToken}"));
                 }
 
                 foreach (PartitionKeyRange partitionKeyRange in replacementRanges)
@@ -596,7 +567,10 @@ namespace Microsoft.Azure.Cosmos.Query
                 }
             }
 
-            return minIndex;
+            return TryCatch<InitInfo<TContinuationToken>>.FromResult(
+                new InitInfo<TContinuationToken>(
+                    minIndex,
+                    targetRangeToContinuationTokenMap));
         }
 
         protected virtual long GetAndResetResponseLengthBytes()
@@ -613,11 +587,14 @@ namespace Microsoft.Azure.Cosmos.Query
         /// Since query metrics are being aggregated asynchronously to the feed responses as explained in the member documentation,
         /// this function allows us to take a snapshot of the query metrics.
         /// </summary>
-        private void SetQueryMetrics()
+        protected IReadOnlyCollection<QueryPageDiagnostics> GetAndResetDiagnostics()
         {
-            this.groupedQueryMetrics = Interlocked.Exchange(ref this.partitionedQueryMetrics, new ConcurrentBag<Tuple<string, QueryMetrics>>())
-                .GroupBy(tuple => tuple.Item1, tuple => tuple.Item2)
-                .ToDictionary(group => group.Key, group => QueryMetrics.CreateFromIEnumerable(group));
+            // Safely swap the current ConcurrentBag<QueryPageDiagnostics> for a new instance. 
+            ConcurrentBag<QueryPageDiagnostics> queryPageDiagnostics = Interlocked.Exchange(
+                ref this.diagnosticsPages,
+                new ConcurrentBag<QueryPageDiagnostics>());
+
+            return queryPageDiagnostics;
         }
 
         /// <summary>
@@ -631,7 +608,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 new ItemProducerTreeComparableTask(
                     itemProducerTree,
                     this.fetchPrioirtyFunction),
-                default(TimeSpan));
+                default);
         }
 
         /// <summary>
@@ -641,7 +618,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="producer">The document producer that just finished fetching.</param>
         /// <param name="itemsBuffered">The number of items that the producer just fetched.</param>
         /// <param name="resourceUnitUsage">The amount of RUs that the producer just consumed.</param>
-        /// <param name="queryMetrics">The query metrics that the producer just got back from the backend.</param>
+        /// <param name="diagnostics">The query metrics that the producer just got back from the backend.</param>
         /// <param name="responseLengthBytes">The length of the response the producer just got back in bytes.</param>
         /// <param name="token">The cancellation token.</param>
         /// <remarks>
@@ -652,7 +629,7 @@ namespace Microsoft.Azure.Cosmos.Query
             ItemProducerTree producer,
             int itemsBuffered,
             double resourceUnitUsage,
-            QueryMetrics queryMetrics,
+            IReadOnlyCollection<QueryPageDiagnostics> diagnostics,
             long responseLengthBytes,
             CancellationToken token)
         {
@@ -660,7 +637,12 @@ namespace Microsoft.Azure.Cosmos.Query
             this.requestChargeTracker.AddCharge(resourceUnitUsage);
             Interlocked.Add(ref this.totalBufferedItems, itemsBuffered);
             this.IncrementResponseLengthBytes(responseLengthBytes);
-            this.partitionedQueryMetrics.Add(Tuple.Create(producer.PartitionKeyRange.Id, queryMetrics));
+
+            // Add the pages to the concurrent bag to safely merge all the list together.
+            foreach (QueryPageDiagnostics diagnosticPage in diagnostics)
+            {
+                this.diagnosticsPages.Add(diagnosticPage);
+            }
 
             // Adjust the producer page size so that we reach the optimal page size.
             producer.PageSize = Math.Min((long)(producer.PageSize * DynamicPageSizeAdjustmentFactor), this.actualMaxPageSize);
@@ -680,26 +662,23 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        /// <summary>
-        /// Gets the formatting for a trace.
-        /// </summary>
-        /// <param name="message">The message to format</param>
-        /// <returns>The formatted message ready for a trace.</returns>
-        private string GetTrace(string message)
+        public bool TryGetContinuationToken(out string state)
         {
-            const string TracePrefixFormat = "{0}, CorrelatedActivityId: {1}, ActivityId: {2} | {3}";
-            return string.Format(
-                CultureInfo.InvariantCulture,
-                TracePrefixFormat,
-                DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
-                this.queryContext.CorrelatedActivityId,
-                this.itemProducerForest.Count != 0 ? this.CurrentItemProducerTree().ActivityId : Guid.Empty,
-                message);
+            state = this.ContinuationToken;
+            return true;
         }
 
-        private static bool IsMaxBufferedItemCountSet(int maxBufferedItemCount)
+        public readonly struct InitInfo<TContinuationToken>
         {
-            return maxBufferedItemCount != default(int);
+            public InitInfo(int targetIndex, IReadOnlyDictionary<string, TContinuationToken> continuationTokens)
+            {
+                this.TargetIndex = targetIndex;
+                this.ContinuationTokens = continuationTokens;
+            }
+
+            public int TargetIndex { get; }
+
+            public IReadOnlyDictionary<string, TContinuationToken> ContinuationTokens { get; }
         }
 
         /// <summary>
@@ -720,6 +699,8 @@ namespace Microsoft.Azure.Cosmos.Query
             /// <param name="maxConcurrency">The max concurrency</param>
             /// <param name="maxBufferedItemCount">The max buffered item count</param>
             /// <param name="maxItemCount">Max item count</param>
+            /// <param name="returnResultsInDeterministicOrder">Whether or not to return results in a deterministic order.</param>
+            /// <param name="testSettings">Test settings.</param>
             public CrossPartitionInitParams(
                 SqlQuerySpec sqlQuerySpec,
                 string collectionRid,
@@ -728,16 +709,13 @@ namespace Microsoft.Azure.Cosmos.Query
                 int initialPageSize,
                 int? maxConcurrency,
                 int? maxItemCount,
-                int? maxBufferedItemCount)
+                int? maxBufferedItemCount,
+                bool returnResultsInDeterministicOrder,
+                TestInjections testSettings)
             {
                 if (string.IsNullOrWhiteSpace(collectionRid))
                 {
                     throw new ArgumentException($"{nameof(collectionRid)} can not be null, empty, or white space.");
-                }
-
-                if (partitionedQueryExecutionInfo == null)
-                {
-                    throw new ArgumentNullException($"{nameof(partitionedQueryExecutionInfo)} can not be null.");
                 }
 
                 if (partitionKeyRanges == null)
@@ -758,20 +736,17 @@ namespace Microsoft.Azure.Cosmos.Query
                     throw new ArgumentOutOfRangeException($"{nameof(initialPageSize)} must be at least 1.");
                 }
 
-                if (sqlQuerySpec == null)
-                {
-                    throw new ArgumentNullException($"{nameof(sqlQuerySpec)} can not be null.");
-                }
-
                 //// Request continuation is allowed to be null
-                this.SqlQuerySpec = sqlQuerySpec;
+                this.SqlQuerySpec = sqlQuerySpec ?? throw new ArgumentNullException($"{nameof(sqlQuerySpec)} can not be null.");
                 this.CollectionRid = collectionRid;
-                this.PartitionedQueryExecutionInfo = partitionedQueryExecutionInfo;
+                this.PartitionedQueryExecutionInfo = partitionedQueryExecutionInfo ?? throw new ArgumentNullException($"{nameof(partitionedQueryExecutionInfo)} can not be null.");
                 this.PartitionKeyRanges = partitionKeyRanges;
                 this.InitialPageSize = initialPageSize;
                 this.MaxBufferedItemCount = maxBufferedItemCount;
                 this.MaxConcurrency = maxConcurrency;
                 this.MaxItemCount = maxItemCount;
+                this.ReturnResultsInDeterministicOrder = returnResultsInDeterministicOrder;
+                this.TestSettings = testSettings;
             }
 
             /// <summary>
@@ -813,6 +788,10 @@ namespace Microsoft.Azure.Cosmos.Query
             /// Gets the max buffered item count
             /// </summary>
             public int? MaxBufferedItemCount { get; }
+
+            public bool ReturnResultsInDeterministicOrder { get; }
+
+            public TestInjections TestSettings { get; }
         }
 
         #region ItemProducerTreeComparableTask

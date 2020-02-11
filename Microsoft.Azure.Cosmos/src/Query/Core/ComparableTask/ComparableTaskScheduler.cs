@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos.Query.Core.ComparableTask
 {
     using System;
     using System.Collections.Concurrent;
@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Collections.Generic;
+    using Microsoft.Azure.Cosmos.Query.Core.Collections;
     using Microsoft.Azure.Documents;
 
     internal sealed class ComparableTaskScheduler : IDisposable
@@ -21,7 +21,6 @@ namespace Microsoft.Azure.Cosmos
         private readonly CancellationTokenSource tokenSource;
         private readonly SemaphoreSlim canRunTaskSemaphoreSlim;
         private readonly Task schedulerTask;
-        private int maximumConcurrencyLevel;
         private volatile bool isStopped;
 
         public ComparableTaskScheduler()
@@ -38,25 +37,19 @@ namespace Microsoft.Azure.Cosmos
         {
             this.taskQueue = new AsyncCollection<IComparableTask>(new PriorityQueue<IComparableTask>(tasks, true));
             this.delayedTasks = new ConcurrentDictionary<IComparableTask, Task>();
-            this.maximumConcurrencyLevel = maximumConcurrencyLevel;
+            this.MaximumConcurrencyLevel = maximumConcurrencyLevel;
             this.tokenSource = new CancellationTokenSource();
             this.canRunTaskSemaphoreSlim = new SemaphoreSlim(maximumConcurrencyLevel);
             this.schedulerTask = this.ScheduleAsync();
         }
 
-        public int MaximumConcurrencyLevel
-        {
-            get
-            {
-                return this.maximumConcurrencyLevel;
-            }
-        }
+        public int MaximumConcurrencyLevel { get; private set; }
 
         public int CurrentRunningTaskCount
         {
             get
             {
-                return this.maximumConcurrencyLevel - Math.Max(0, this.canRunTaskSemaphoreSlim.CurrentCount);
+                return this.MaximumConcurrencyLevel - Math.Max(0, this.canRunTaskSemaphoreSlim.CurrentCount);
             }
         }
 
@@ -84,7 +77,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.canRunTaskSemaphoreSlim.Release(delta);
-            this.maximumConcurrencyLevel += delta;
+            this.MaximumConcurrencyLevel += delta;
         }
 
         public void Dispose()
@@ -99,7 +92,7 @@ namespace Microsoft.Azure.Cosmos
             this.delayedTasks.Clear();
         }
 
-        public bool TryQueueTask(IComparableTask comparableTask, TimeSpan delay = default(TimeSpan))
+        public bool TryQueueTask(IComparableTask comparableTask, TimeSpan delay = default)
         {
             if (comparableTask == null)
             {
@@ -124,16 +117,14 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task QueueDelayedTaskAsync(IComparableTask comparableTask, TimeSpan delay)
         {
-            Task task;
-            if (this.delayedTasks.TryRemove(comparableTask, out task) && !task.IsCanceled)
+            if (this.delayedTasks.TryRemove(comparableTask, out Task task) && !task.IsCanceled)
             {
                 if (delay > default(TimeSpan))
                 {
                     await Task.Delay(delay, this.CancellationToken);
                 }
 
-                IComparableTask firstComparableTask;
-                if (this.taskQueue.TryPeek(out firstComparableTask) && comparableTask.CompareTo(firstComparableTask) <= 0)
+                if (this.taskQueue.TryPeek(out IComparableTask firstComparableTask) && (comparableTask.CompareTo(firstComparableTask) <= 0))
                 {
                     await this.ExecuteComparableTaskAsync(comparableTask);
                 }
@@ -161,14 +152,33 @@ namespace Microsoft.Azure.Cosmos
             // Compute gateway uses custom task scheduler to track tenant resource utilization.
             // Task.Run() switches to default task scheduler for entire sub-tree of tasks making compute gateway incapable of tracking resource usage accurately.
             // Task.Factory.StartNew() allows specifying task scheduler to use.
-            Task.Factory.StartNewOnCurrentTaskSchedulerAsync(() =>
-                comparableTask.StartAsync(this.CancellationToken)
+            Task.Factory
+                .StartNewOnCurrentTaskSchedulerAsync(
+                    function: () => comparableTask
+                    .StartAsync(this.CancellationToken)
                     .ContinueWith((antecendent) =>
                     {
-                        this.canRunTaskSemaphoreSlim.Release();
-                    },
-                    TaskScheduler.Current),
-                this.CancellationToken);
+                        // Observing the exception.
+                        Exception exception = antecendent.Exception;
+                        Extensions.TraceException(exception);
+
+                        // Semaphore.Release can also throw an exception.
+                        try
+                        {
+                            this.canRunTaskSemaphoreSlim.Release();
+                        }
+                        catch (Exception releaseException)
+                        {
+                            Extensions.TraceException(releaseException);
+                        }
+                    }, TaskScheduler.Current),
+                    cancellationToken: this.CancellationToken)
+                .ContinueWith((antecendent) =>
+                {
+                    // StartNew can have a task cancelled exception
+                    Exception exception = antecendent.Exception;
+                    Extensions.TraceException(exception);
+                });
 #pragma warning restore 4014
         }
     }

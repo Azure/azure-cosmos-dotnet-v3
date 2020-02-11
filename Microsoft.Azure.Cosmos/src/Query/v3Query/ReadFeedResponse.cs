@@ -4,21 +4,27 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System.Collections.Generic;
+    using System.IO;
     using System.Net;
+    using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
 
     internal class ReadFeedResponse<T> : FeedResponse<T>
     {
         protected ReadFeedResponse(
             HttpStatusCode httpStatusCode,
-            ICollection<T> resource,
+            CosmosArray cosmosArray,
+            CosmosSerializerCore serializerCore,
             Headers responseMessageHeaders,
             CosmosDiagnostics diagnostics)
         {
-            this.Count = resource.Count;
+            this.Count = cosmosArray.Count;
             this.Headers = responseMessageHeaders;
-            this.Resource = resource;
             this.StatusCode = httpStatusCode;
             this.Diagnostics = diagnostics;
+            this.Resource = CosmosElementSerializer.GetResources<T>(
+                cosmosArray: cosmosArray,
+                serializerCore: serializerCore);
         }
 
         public override int Count { get; }
@@ -40,20 +46,26 @@ namespace Microsoft.Azure.Cosmos
 
         internal static ReadFeedResponse<TInput> CreateResponse<TInput>(
             ResponseMessage responseMessage,
-            CosmosSerializer jsonSerializer)
+            CosmosSerializerCore serializerCore,
+            Documents.ResourceType resourceType)
         {
             using (responseMessage)
             {
-                ICollection<TInput> resources = default(ICollection<TInput>);
+                responseMessage.EnsureSuccessStatusCode();
+
+                CosmosArray cosmosArray = null;
                 if (responseMessage.Content != null)
                 {
-                    CosmosFeedResponseUtil<TInput> response = jsonSerializer.FromStream<CosmosFeedResponseUtil<TInput>>(responseMessage.Content);
-                    resources = response.Data;
+                    cosmosArray = CosmosElementSerializer.ToCosmosElements(
+                        responseMessage.Content,
+                        resourceType,
+                        null);
                 }
 
                 ReadFeedResponse<TInput> readFeedResponse = new ReadFeedResponse<TInput>(
                     httpStatusCode: responseMessage.StatusCode,
-                    resource: resources,
+                    cosmosArray: cosmosArray,
+                    serializerCore: serializerCore,
                     responseMessageHeaders: responseMessage.Headers,
                     diagnostics: responseMessage.Diagnostics);
 

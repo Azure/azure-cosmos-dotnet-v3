@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
 
@@ -130,17 +131,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
                 get
                 {
                     CosmosNumber cosmosNumber = this.cosmosObject[nameof(Person.Age)] as CosmosNumber;
-
-                    int age;
-                    if (cosmosNumber.IsFloatingPoint)
-                    {
-                        age = (int)cosmosNumber.AsFloatingPoint().Value;
-                    }
-                    else
-                    {
-                        age = (int)cosmosNumber.AsInteger().Value;
-                    }
-
+                    int age = (int)Number64.ToLong(cosmosNumber.Value);
                     return age;
                 }
             }
@@ -162,7 +153,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
         [Owner("brchon")]
         public void TestQuickNavigation()
         {
-            CosmosArray lazilyDeserializedPeople = CosmosElement.Create(LazyCosmosElementTests.bufferedSerializedPeople) as CosmosArray;
+            CosmosArray lazilyDeserializedPeople = CosmosElement.CreateFromBuffer(LazyCosmosElementTests.bufferedSerializedPeople) as CosmosArray;
             LazilyDeserializedPerson lazilyDeserializedFirstPerson = new LazilyDeserializedPerson(lazilyDeserializedPeople[0] as CosmosObject);
 
             Assert.AreEqual(people.First().Name, lazilyDeserializedFirstPerson.Name);
@@ -173,14 +164,38 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
         [Owner("brchon")]
         public void WriteToWriter()
         {
-            CosmosArray lazilyDeserializedPeople = CosmosElement.Create(LazyCosmosElementTests.bufferedSerializedPeople) as CosmosArray;
-            IJsonWriter jsonWriter = Microsoft.Azure.Cosmos.Json.JsonWriter.Create(Encoding.UTF8);
+            CosmosArray lazilyDeserializedPeople = CosmosElement.CreateFromBuffer(LazyCosmosElementTests.bufferedSerializedPeople) as CosmosArray;
+            IJsonWriter jsonWriter = Microsoft.Azure.Cosmos.Json.JsonWriter.Create(JsonSerializationFormat.Text);
             lazilyDeserializedPeople.WriteTo(jsonWriter);
-            byte[] bufferedResult = jsonWriter.GetResult();
+            byte[] bufferedResult = jsonWriter.GetResult().ToArray();
 
             string bufferedSerializedPeopleString = Encoding.UTF8.GetString(bufferedSerializedPeople);
             string bufferedResultString = Encoding.UTF8.GetString(bufferedResult);
             Assert.AreEqual(bufferedSerializedPeopleString, bufferedResultString);
+        }
+
+        [TestMethod]
+        [Owner("brchon")]
+        public void TestCaching()
+        {
+            CosmosArray lazilyDeserializedPeople = CosmosElement.CreateFromBuffer(LazyCosmosElementTests.bufferedSerializedPeople) as CosmosArray;
+            Assert.IsTrue(
+                object.ReferenceEquals(lazilyDeserializedPeople[0], lazilyDeserializedPeople[0]),
+                "Array did not return the item from the cache.");
+
+            CosmosObject lazilyDeserializedPerson = lazilyDeserializedPeople[0] as CosmosObject;
+            Assert.IsTrue(
+                object.ReferenceEquals(lazilyDeserializedPerson[nameof(Person.Age)], lazilyDeserializedPerson[nameof(Person.Age)]),
+                "Object did not return the property from the cache.");
+
+            CosmosString personName = lazilyDeserializedPerson[nameof(Person.Name)] as CosmosString;
+            Assert.IsTrue(
+                object.ReferenceEquals(personName.Value, personName.Value),
+                "Did not return the string from the cache.");
+
+            // Numbers is a value type so we don't need to test for the cache.
+            // Booleans are multitons so we don't need to test for the cache.
+            // Nulls are singletons so we don't need to test for the cache.
         }
 
         #region CurratedDocs
@@ -202,7 +217,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
         [Owner("brchon")]
         public void LastFMTest()
         {
-            LazyCosmosElementTests.TestCosmosElementVisitability("lastfm.json");
+            LazyCosmosElementTests.TestCosmosElementVisitability("lastfm");
         }
 
         [TestMethod]
@@ -230,14 +245,14 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
         [Owner("brchon")]
         public void NutritionDataTest()
         {
-            LazyCosmosElementTests.TestCosmosElementVisitability("NutritionData.json");
+            LazyCosmosElementTests.TestCosmosElementVisitability("NutritionData");
         }
 
         [TestMethod]
         [Owner("brchon")]
         public void RunsCollectionTest()
         {
-            LazyCosmosElementTests.TestCosmosElementVisitability("runsCollection.json");
+            LazyCosmosElementTests.TestCosmosElementVisitability("runsCollection");
         }
 
         [TestMethod]
@@ -251,7 +266,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
         [Owner("brchon")]
         public void StatesLegislatorsTest()
         {
-            LazyCosmosElementTests.TestCosmosElementVisitability("states_legislators.json");
+            LazyCosmosElementTests.TestCosmosElementVisitability("states_legislators");
         }
 
         [TestMethod]
@@ -265,35 +280,35 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
         [Owner("brchon")]
         public void TicinoErrorBucketsTest()
         {
-            LazyCosmosElementTests.TestCosmosElementVisitability("TicinoErrorBuckets.json");
+            LazyCosmosElementTests.TestCosmosElementVisitability("TicinoErrorBuckets");
         }
 
         [TestMethod]
         [Owner("brchon")]
         public void TwitterDataTest()
         {
-            LazyCosmosElementTests.TestCosmosElementVisitability("twitter_data.json");
+            LazyCosmosElementTests.TestCosmosElementVisitability("twitter_data");
         }
 
         [TestMethod]
         [Owner("brchon")]
         public void Ups1Test()
         {
-            LazyCosmosElementTests.TestCosmosElementVisitability("ups1.json");
+            LazyCosmosElementTests.TestCosmosElementVisitability("ups1");
         }
 
         [TestMethod]
         [Owner("brchon")]
         public void XpertEventsTest()
         {
-            LazyCosmosElementTests.TestCosmosElementVisitability("XpertEvents.json");
+            LazyCosmosElementTests.TestCosmosElementVisitability("XpertEvents");
         }
 
         private static void TestCosmosElementVisitability(string filename)
         {
-            byte[] payload = LazyCosmosElementTests.GetPayload(filename);
+            ReadOnlyMemory<byte> payload = LazyCosmosElementTests.GetPayload(filename);
 
-            CosmosElement cosmosElement = CosmosElement.Create(payload);
+            CosmosElement cosmosElement = CosmosElement.CreateFromBuffer(payload);
 
             IJsonWriter jsonWriterIndexer = Microsoft.Azure.Cosmos.Json.JsonWriter.Create(JsonSerializationFormat.Binary);
             IJsonWriter jsonWriterEnumerable = Microsoft.Azure.Cosmos.Json.JsonWriter.Create(JsonSerializationFormat.Binary);
@@ -301,17 +316,17 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
             LazyCosmosElementTests.VisitCosmosElementIndexer(cosmosElement, jsonWriterIndexer);
             LazyCosmosElementTests.VisitCosmosElementEnumerable(cosmosElement, jsonWriterEnumerable);
 
-            byte[] payloadIndexer = jsonWriterIndexer.GetResult();
-            byte[] payloadEnumerable = jsonWriterEnumerable.GetResult();
+            ReadOnlySpan<byte> payloadIndexer = jsonWriterIndexer.GetResult().Span;
+            ReadOnlySpan<byte> payloadEnumerable = jsonWriterEnumerable.GetResult().Span;
 
-            Assert.IsTrue(payload.SequenceEqual(payloadIndexer));
-            Assert.IsTrue(payload.SequenceEqual(payloadEnumerable));
+            Assert.IsTrue(payload.Span.SequenceEqual(payloadIndexer));
+            Assert.IsTrue(payload.Span.SequenceEqual(payloadEnumerable));
         }
 
-        private static byte[] GetPayload(string filename)
+        private static ReadOnlyMemory<byte> GetPayload(string filename)
         {
             string path = string.Format("TestJsons/{0}", filename);
-            string json = File.ReadAllText(path);
+            string json = TextFileConcatenation.ReadMultipartFile(path);
 
             IEnumerable<object> documents = null;
             try
@@ -416,14 +431,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
 
         private static void VisitCosmosNumber(CosmosNumber cosmosNumber, IJsonWriter jsonWriter)
         {
-            if (cosmosNumber.IsFloatingPoint)
-            {
-                jsonWriter.WriteNumberValue(cosmosNumber.AsFloatingPoint().Value);
-            }
-            else
-            {
-                jsonWriter.WriteNumberValue(cosmosNumber.AsInteger().Value);
-            }
+            jsonWriter.WriteNumberValue(cosmosNumber.Value);
         }
 
         private static void VisitCosmosObjectIndexer(CosmosObject cosmosObject, IJsonWriter jsonWriter)

@@ -3,8 +3,10 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
+    using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Linq;
     using Microsoft.Azure.Cosmos.Json;
 
 #if INTERNAL
@@ -22,24 +24,72 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         {
         }
 
-        public abstract IEnumerable<string> Keys
+        public abstract IEnumerable<string> Keys { get; }
+
+        public abstract IEnumerable<CosmosElement> Values { get; }
+
+        public abstract int Count { get; }
+
+        public abstract CosmosElement this[string key] { get; }
+
+        public abstract bool ContainsKey(string key);
+
+        public abstract bool TryGetValue(string key, out CosmosElement value);
+
+        public override void Accept(ICosmosElementVisitor cosmosElementVisitor)
         {
-            get;
+            if (cosmosElementVisitor == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosElementVisitor));
+            }
+
+            cosmosElementVisitor.Visit(this);
         }
 
-        public abstract IEnumerable<CosmosElement> Values
+        public override TResult Accept<TResult>(ICosmosElementVisitor<TResult> cosmosElementVisitor)
         {
-            get;
+            if (cosmosElementVisitor == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosElementVisitor));
+            }
+
+            return cosmosElementVisitor.Visit(this);
         }
 
-        public abstract int Count
+        public override TResult Accept<TArg, TResult>(ICosmosElementVisitor<TArg, TResult> cosmosElementVisitor, TArg input)
         {
-            get;
+            if (cosmosElementVisitor == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosElementVisitor));
+            }
+
+            return cosmosElementVisitor.Visit(this, input);
         }
 
-        public abstract CosmosElement this[string key]
+        public bool TryGetValue<TCosmosElement>(string key, out TCosmosElement typedCosmosElement)
+            where TCosmosElement : CosmosElement
         {
-            get;
+            if (!this.TryGetValue(key, out CosmosElement cosmosElement))
+            {
+                typedCosmosElement = default;
+                return false;
+            }
+
+            if (!(cosmosElement is TCosmosElement tCosmosElement))
+            {
+                typedCosmosElement = default;
+                return false;
+            }
+
+            typedCosmosElement = tCosmosElement;
+            return true;
+        }
+
+        public abstract IEnumerator<KeyValuePair<string, CosmosElement>> GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return this.GetEnumerator();
         }
 
         public static CosmosObject Create(
@@ -49,20 +99,14 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return new LazyCosmosObject(jsonNavigator, jsonNavigatorNode);
         }
 
-        public static CosmosObject Create(IDictionary<string, CosmosElement> dictionary)
+        public static CosmosObject Create(IReadOnlyDictionary<string, CosmosElement> dictionary)
         {
-            return new EagerCosmosObject(dictionary);
+            return new EagerCosmosObject(dictionary.ToList());
         }
 
-        public abstract bool ContainsKey(string key);
-
-        public abstract bool TryGetValue(string key, out CosmosElement value);
-
-        public abstract IEnumerator<KeyValuePair<string, CosmosElement>> GetEnumerator();
-
-        IEnumerator IEnumerable.GetEnumerator()
+        public static CosmosObject Create(IReadOnlyList<KeyValuePair<string, CosmosElement>> properties)
         {
-            return this.GetEnumerator();
+            return new EagerCosmosObject(properties);
         }
     }
 #if INTERNAL

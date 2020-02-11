@@ -4,8 +4,10 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
     using System.Collections.Generic;
     using System.Net.Http;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using static Microsoft.Azure.Cosmos.CosmosClientSideRequestStatistics;
 
@@ -18,42 +20,43 @@ namespace Microsoft.Azure.Cosmos
 
             CosmosClientSideRequestStatistics cosmosClientSideRequestStatistics = new CosmosClientSideRequestStatistics();
             //Setting null supplementalResponseStatisticsList
-            cosmosClientSideRequestStatistics.supplementalResponseStatisticsList = null;
             PointOperationStatistics pointOperationStatistics = new PointOperationStatistics(
+                activityId: Guid.NewGuid().ToString(),
                 statusCode: System.Net.HttpStatusCode.OK,
                 subStatusCode: Documents.SubStatusCodes.Unknown,
                 requestCharge: 42,
                 errorMessage: null,
                 method: HttpMethod.Get,
                 requestUri: new System.Uri("https://localhost:8081"),
+                requestSessionToken: null,
+                responseSessionToken: null,
                 clientSideRequestStatistics: cosmosClientSideRequestStatistics);
 
-            pointOperationStatistics.ToString();
-            Assert.IsNull(pointOperationStatistics.supplementalResponseStatisticsList);
+            Assert.IsNotNull(pointOperationStatistics.ToString());
 
             //Adding 5 objects supplementalResponseStatisticsList
-            cosmosClientSideRequestStatistics.supplementalResponseStatisticsList = new List<StoreResponseStatistics>
+            for (int i = 0; i < 5; i++)
             {
-                new StoreResponseStatistics(),
-                new StoreResponseStatistics(),
-                new StoreResponseStatistics(),
-                new StoreResponseStatistics(),
-                new StoreResponseStatistics()
-            };
+                cosmosClientSideRequestStatistics.SupplementalResponseStatisticsList.Add(new StoreResponseStatistics());
+            }
 
             pointOperationStatistics = new PointOperationStatistics(
+                activityId: Guid.NewGuid().ToString(),
                 statusCode: System.Net.HttpStatusCode.OK,
                 subStatusCode: Documents.SubStatusCodes.Unknown,
                 requestCharge: 42,
                 errorMessage: null,
                 method: HttpMethod.Get,
                 requestUri: new System.Uri("https://localhost:8081"),
+                requestSessionToken: null,
+                responseSessionToken: null,
                 clientSideRequestStatistics: cosmosClientSideRequestStatistics);
+
             pointOperationStatistics.ToString();
-            Assert.AreEqual(5, pointOperationStatistics.supplementalResponseStatisticsList.Count);
+            Assert.AreEqual(5, pointOperationStatistics.ClientSideRequestStatistics.SupplementalResponseStatisticsList.Count);
 
             //Adding 5 more objects supplementalResponseStatisticsList, making total 10
-            cosmosClientSideRequestStatistics.supplementalResponseStatisticsList.AddRange(new List<StoreResponseStatistics>()
+            cosmosClientSideRequestStatistics.SupplementalResponseStatisticsList.AddRange(new List<StoreResponseStatistics>()
             {
                 new StoreResponseStatistics(),
                 new StoreResponseStatistics(),
@@ -63,33 +66,39 @@ namespace Microsoft.Azure.Cosmos
             });
 
             pointOperationStatistics = new PointOperationStatistics(
+                activityId: Guid.NewGuid().ToString(),
                 statusCode: System.Net.HttpStatusCode.OK,
                 subStatusCode: Documents.SubStatusCodes.Unknown,
                 requestCharge: 42,
                 errorMessage: null,
                 method: HttpMethod.Get,
                 requestUri: new System.Uri("https://localhost:8081"),
+                requestSessionToken: null,
+                responseSessionToken: null,
                 clientSideRequestStatistics:  cosmosClientSideRequestStatistics);
             pointOperationStatistics.ToString();
-            Assert.AreEqual(10, pointOperationStatistics.supplementalResponseStatisticsList.Count);
+            Assert.AreEqual(10, pointOperationStatistics.ClientSideRequestStatistics.SupplementalResponseStatisticsList.Count);
 
             //Adding 2 more objects supplementalResponseStatisticsList, making total 12
-            cosmosClientSideRequestStatistics.supplementalResponseStatisticsList.AddRange(new List<StoreResponseStatistics>()
+            cosmosClientSideRequestStatistics.SupplementalResponseStatisticsList.AddRange(new List<StoreResponseStatistics>()
             {
                 new StoreResponseStatistics(),
                 new StoreResponseStatistics()
             });
 
             pointOperationStatistics = new PointOperationStatistics(
+                activityId: Guid.NewGuid().ToString(),
                 statusCode: System.Net.HttpStatusCode.OK,
                 subStatusCode: Documents.SubStatusCodes.Unknown,
                 requestCharge: 42,
                 errorMessage: null,
                 method: HttpMethod.Get,
                 requestUri: new System.Uri("https://localhost:8081"),
+                requestSessionToken: null,
+                responseSessionToken: null,
                 clientSideRequestStatistics:  cosmosClientSideRequestStatistics);
             pointOperationStatistics.ToString();
-            Assert.AreEqual(10, pointOperationStatistics.supplementalResponseStatisticsList.Count);
+            Assert.AreEqual(12, pointOperationStatistics.ClientSideRequestStatistics.SupplementalResponseStatisticsList.Count);
         }
     }
 }

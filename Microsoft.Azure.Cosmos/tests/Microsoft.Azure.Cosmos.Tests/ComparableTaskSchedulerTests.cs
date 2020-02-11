@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Test
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Query.Core.ComparableTask;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 
@@ -51,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.Test
                     }
                 }
 
-                bool completionStatus = Task.WaitAll(tasks.ToArray(), TimeSpan.FromSeconds(1));
+                bool completionStatus = Task.WaitAll(tasks.ToArray(), TimeSpan.FromSeconds(10));
                 Assert.IsTrue(completionStatus);
 
                 foreach (Task task in tasks)

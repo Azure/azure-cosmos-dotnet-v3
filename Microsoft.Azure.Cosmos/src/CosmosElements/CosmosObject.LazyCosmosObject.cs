@@ -21,6 +21,8 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         {
             private readonly IJsonNavigator jsonNavigator;
             private readonly IJsonNavigatorNode jsonNavigatorNode;
+            private readonly Dictionary<string, CosmosElement> cachedElements;
+            private readonly Lazy<int> lazyCount;
 
             public LazyCosmosObject(IJsonNavigator jsonNavigator, IJsonNavigatorNode jsonNavigatorNode)
             {
@@ -42,21 +44,23 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
                 this.jsonNavigator = jsonNavigator;
                 this.jsonNavigatorNode = jsonNavigatorNode;
+                this.cachedElements = new Dictionary<string, CosmosElement>();
+                this.lazyCount = new Lazy<int>(() => this.jsonNavigator.GetObjectPropertyCount(this.jsonNavigatorNode));
             }
 
+            // This method is not efficient (but that's the expectation of IEnumerable ... A user should call ToList() if they are calling multiple times).
             public override IEnumerable<string> Keys => this
                 .jsonNavigator
                 .GetObjectProperties(this.jsonNavigatorNode)
                 .Select((objectProperty) => this.jsonNavigator.GetStringValue(objectProperty.NameNode));
 
+            // This method is not efficient (but that's the expectation of IEnumerable ... A user should call ToList() if they are calling multiple times).
             public override IEnumerable<CosmosElement> Values => this
                 .jsonNavigator
                 .GetObjectProperties(this.jsonNavigatorNode)
                 .Select((objectProperty) => CosmosElement.Dispatch(this.jsonNavigator, objectProperty.ValueNode));
 
-            public override int Count => this
-                .jsonNavigator
-                .GetObjectPropertyCount(this.jsonNavigatorNode);
+            public override int Count => this.lazyCount.Value;
 
             public override CosmosElement this[string key]
             {
@@ -64,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 {
                     if (!this.TryGetValue(key, out CosmosElement value))
                     {
-                        value = null;
+                        throw new KeyNotFoundException($"Failed to find key: {key}");
                     }
 
                     return value;
@@ -88,15 +92,23 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
             public override bool TryGetValue(string key, out CosmosElement value)
             {
-                value = default(CosmosElement);
+                value = default;
                 bool gotValue;
-                if (this.jsonNavigator.TryGetObjectProperty(
+                if (this.cachedElements.TryGetValue(
+                    key,
+                    out CosmosElement cosmosElemet))
+                {
+                    value = cosmosElemet;
+                    gotValue = true;
+                }
+                else if (this.jsonNavigator.TryGetObjectProperty(
                     this.jsonNavigatorNode,
                     key,
                     out ObjectProperty objectProperty))
                 {
                     value = CosmosElement.Dispatch(this.jsonNavigator, objectProperty.ValueNode);
                     gotValue = true;
+                    this.cachedElements[key] = value;
                 }
                 else
                 {

@@ -6,30 +6,50 @@ parameters:
   VmImage: '' # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
   OS: 'Windows'
 
-jobs: 
-- job: 
-  displayName: ${{ parameters.BuildConfiguration }}-${{ parameters.VmImage }} Microsoft.Azure.Cosmos.Tests
+jobs:
+- job:
+  displayName: Tests ${{ parameters.BuildConfiguration }}
   pool:
     vmImage: ${{ parameters.VmImage }}
-    
+
   steps:
   - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
     clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
-    lfs: true  # whether to download Git-LFS files; defaults to false
 
   - task: DotNetCoreCLI@2
     displayName: Microsoft.Azure.Cosmos.Tests
-    condition: succeeded() 
-    inputs: 
-      command: test  
-      projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/*.csproj' 
+    condition: succeeded()
+    inputs:
+      command: test
+      projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/*.csproj'
       arguments: ${{ parameters.Arguments }} --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }}
-      publishTestResults: true 
-      nugetConfigPath: NuGet.config 
+      publishTestResults: true
+      nugetConfigPath: NuGet.config
       testRunTitle: Microsoft.Azure.Cosmos.Tests
+      
+- job:
+  displayName: PerformanceTests ${{ parameters.BuildConfiguration }}
+  pool:
+    vmImage: ${{ parameters.VmImage }}
 
-- job: 
-  displayName: ${{ parameters.BuildConfiguration }}-${{ parameters.VmImage }} Microsoft.Azure.Cosmos.EmulatorTests
+  steps:
+  - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
+    clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
+
+  - task: DotNetCoreCLI@2
+    displayName: Microsoft.Azure.Cosmos.PerformanceTests
+    condition: succeeded()
+    inputs:
+      command: run
+      projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Performance.Tests/*.csproj'
+      arguments: --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }} -c Release -- -j short -f * -m --allStats --join
+      publishTestResults: true
+      nugetConfigPath: NuGet.config
+      testRunTitle: Microsoft.Azure.Cosmos.PerformanceTests
+
+- job:
+  displayName: EmulatorTests ${{ parameters.BuildConfiguration }}
+  timeoutInMinutes: 90
   condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'))
   pool:
     vmImage: ${{ parameters.VmImage }}
@@ -37,18 +57,16 @@ jobs:
   steps:
   - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
     clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
-    lfs: true  # whether to download Git-LFS files; defaults to false
 
   - template:  emulator-setup.yml
 
   - task: DotNetCoreCLI@2
     displayName: Microsoft.Azure.Cosmos.EmulatorTests
-    condition: succeeded() 
+    condition: succeeded()
     inputs:
-      command: test 
+      command: test
       projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/*.csproj'
       arguments: ${{ parameters.Arguments }} --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }}
-      nugetConfigPath: NuGet.config 
-      publishTestResults: true 
+      nugetConfigPath: NuGet.config
+      publishTestResults: true
       testRunTitle: Microsoft.Azure.Cosmos.EmulatorTests
-

@@ -20,9 +20,11 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         {
             private readonly IJsonNavigator jsonNavigator;
             private readonly IJsonNavigatorNode jsonNavigatorNode;
-            private readonly Lazy<IReadOnlyList<byte>> lazyBytes;
+            private readonly Lazy<ReadOnlyMemory<byte>> lazyBytes;
 
-            public LazyCosmosBinary(IJsonNavigator jsonNavigator, IJsonNavigatorNode jsonNavigatorNode)
+            public LazyCosmosBinary(
+                IJsonNavigator jsonNavigator,
+                IJsonNavigatorNode jsonNavigatorNode)
             {
                 if (jsonNavigator == null)
                 {
@@ -42,13 +44,21 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
                 this.jsonNavigator = jsonNavigator;
                 this.jsonNavigatorNode = jsonNavigatorNode;
-                this.lazyBytes = new Lazy<IReadOnlyList<byte>>(() =>
+                this.lazyBytes = new Lazy<ReadOnlyMemory<byte>>(() =>
                 {
-                    return this.jsonNavigator.GetBinaryValue(this.jsonNavigatorNode);
+                    if (!this.jsonNavigator.TryGetBufferedBinaryValue(
+                        this.jsonNavigatorNode,
+                        out ReadOnlyMemory<byte> bufferedBinaryValue))
+                    {
+                        bufferedBinaryValue = this.jsonNavigator.GetBinaryValue(
+                            this.jsonNavigatorNode);
+                    }
+
+                    return bufferedBinaryValue;
                 });
             }
 
-            public override IReadOnlyList<byte> Value
+            public override ReadOnlyMemory<byte> Value
             {
                 get
                 {

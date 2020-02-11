@@ -5,16 +5,19 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
+    using System.Collections;
+    using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.IO;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Client.Core.Tests;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
+    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class ResultSetIteratorTests
@@ -49,10 +52,10 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task CosmosConflictsIteratorBuildsSettings()
         {
-            string conflictResponsePayload = @"{ 'Data':[{
-                 id: 'Conflict1',
-                 operationType: 'Replace',
-                 resourceType: 'trigger'
+            string conflictResponsePayload = @"{ ""Conflicts"":[{
+                 ""id"": ""Conflict1"",
+                 ""operationType"": ""Replace"",
+                 ""resourceType"": ""trigger""
                 }]}";
 
             CosmosClient mockClient = MockCosmosUtil.CreateMockCosmosClient(
@@ -93,12 +96,13 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task CosmosConflictsStreamIteratorBuildsSettings()
         {
-            string conflictResponsePayload = @"{ 'Data':[{
-                 id: 'Conflict1',
-                 operationType: 'Replace',
-                 resourceType: 'trigger'
+            string conflictResponsePayload = @"{ ""Conflicts"":[{
+                 ""id"": ""Conflict1"",
+                 ""operationType"": ""Replace"",
+                 ""resourceType"": ""trigger""
                 }]}";
 
+            JObject jObject = JObject.Parse(conflictResponsePayload);
             CosmosClient mockClient = MockCosmosUtil.CreateMockCosmosClient(
                 (cosmosClientBuilder) => cosmosClientBuilder.WithConnectionModeDirect());
 
@@ -123,7 +127,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             mockClient.RequestHandler.InnerHandler = testHandler;
             ResponseMessage streamResponse = await feedIterator.ReadNextAsync();
 
-            Collection<ConflictProperties> response = MockCosmosUtil.Serializer.FromStream<CosmosFeedResponseUtil<ConflictProperties>>(streamResponse.Content).Data;
+            IEnumerable<ConflictProperties> response = MockCosmosUtil.Serializer.FromFeedResponseStream<ConflictProperties>(
+                streamResponse.Content,
+                ResourceType.Conflict);
 
             Assert.AreEqual(1, response.Count());
 

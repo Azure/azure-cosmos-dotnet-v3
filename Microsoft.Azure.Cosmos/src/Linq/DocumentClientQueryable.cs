@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Linq;
     using Microsoft.Azure.Cosmos.Linq;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Documents;
 
     internal partial class DocumentClient
@@ -46,7 +47,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
+        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.</remarks>
         /// <seealso cref="Database"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         public IQueryable<dynamic> CreateDatabaseQuery(string sqlExpression, FeedOptions feedOptions = null)
@@ -71,7 +72,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
+        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.</remarks>
         /// <seealso cref="Database"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         public IQueryable<dynamic> CreateDatabaseQuery(SqlQuerySpec querySpec, FeedOptions feedOptions = null)
@@ -127,7 +128,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
+        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.</remarks>
         /// <seealso cref="DocumentCollection"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         public IQueryable<dynamic> CreateDocumentCollectionQuery(string databaseLink, string sqlExpression, FeedOptions feedOptions = null)
@@ -152,7 +153,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
+        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.</remarks>
         /// <seealso cref="DocumentCollection"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         public IQueryable<dynamic> CreateDocumentCollectionQuery(string databaseLink, SqlQuerySpec querySpec, FeedOptions feedOptions = null)
@@ -214,7 +215,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
+        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.</remarks>
         /// <seealso cref="StoredProcedure"/>
         public IQueryable<dynamic> CreateStoredProcedureQuery(string collectionLink, string sqlExpression, FeedOptions feedOptions = null)
         {
@@ -238,7 +239,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
+        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.</remarks>
         /// <seealso cref="StoredProcedure"/>
         public IQueryable<dynamic> CreateStoredProcedureQuery(string collectionLink, SqlQuerySpec querySpec, FeedOptions feedOptions = null)
         {
@@ -281,7 +282,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
+        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.</remarks>
         /// <seealso cref="Trigger"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         public IQueryable<dynamic> CreateTriggerQuery(string collectionLink, string sqlExpression, FeedOptions feedOptions = null)
@@ -306,7 +307,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
+        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.</remarks>
         /// <seealso cref="Trigger"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         public IQueryable<dynamic> CreateTriggerQuery(string collectionLink, SqlQuerySpec querySpec, FeedOptions feedOptions = null)
@@ -350,7 +351,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
+        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.</remarks>
         /// <seealso cref="UserDefinedFunction"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         public IQueryable<dynamic> CreateUserDefinedFunctionQuery(string collectionLink, string sqlExpression, FeedOptions feedOptions = null)
@@ -375,7 +376,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
+        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.</remarks>
         /// <seealso cref="UserDefinedFunction"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         public IQueryable<dynamic> CreateUserDefinedFunctionQuery(string collectionLink, SqlQuerySpec querySpec, FeedOptions feedOptions = null)
@@ -419,7 +420,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
+        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.</remarks>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         public IQueryable<dynamic> CreateConflictQuery(string collectionLink, string sqlExpression, FeedOptions feedOptions = null)
         {
@@ -443,7 +444,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
+        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.</remarks>
         /// <seealso cref="Microsoft.Azure.Documents.Document"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         public IQueryable<dynamic> CreateConflictQuery(string collectionLink, SqlQuerySpec querySpec, FeedOptions feedOptions = null)
@@ -509,7 +510,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <remarks>
-        /// The Azure Cosmos DB LINQ provider compiles LINQ to SQL statements. Refer to http://azure.microsoft.com/documentation/articles/documentdb-sql-query/#linq-to-documentdb-sql for the list of expressions supported by the Azure Cosmos DB LINQ provider. ToString() on the generated IQueryable returns the translated SQL statement. The Azure Cosmos DB provider translates JSON.NET and DataContract serialization attributes for members to their JSON property names.
+        /// The Azure Cosmos DB LINQ provider compiles LINQ to SQL statements. Refer to https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started#linq-to-documentdb-sql for the list of expressions supported by the Azure Cosmos DB LINQ provider. ToString() on the generated IQueryable returns the translated SQL statement. The Azure Cosmos DB provider translates JSON.NET and DataContract serialization attributes for members to their JSON property names.
         /// </remarks>
         /// <seealso cref="Microsoft.Azure.Documents.Document"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
@@ -598,7 +599,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
+        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.</remarks>
         /// <seealso cref="Microsoft.Azure.Documents.Document"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         public IQueryable<T> CreateDocumentQuery<T>(string collectionLink, string sqlExpression, FeedOptions feedOptions = null)
@@ -700,7 +701,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
+        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.</remarks>
         /// <seealso cref="Microsoft.Azure.Documents.Document"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         public IQueryable<T> CreateDocumentQuery<T>(string collectionLink, SqlQuerySpec querySpec, FeedOptions feedOptions = null)
@@ -795,7 +796,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
+        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.</remarks>
         /// <seealso cref="Microsoft.Azure.Documents.Document"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         public IQueryable<dynamic> CreateDocumentQuery(string collectionLink, string sqlExpression, FeedOptions feedOptions = null)
@@ -845,7 +846,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
+        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.</remarks>
         /// <seealso cref="Microsoft.Azure.Documents.Document"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         public IQueryable<dynamic> CreateDocumentQuery(string collectionLink, SqlQuerySpec querySpec, FeedOptions feedOptions = null)
@@ -942,7 +943,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
+        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.</remarks>
         /// <seealso cref="Microsoft.Azure.Documents.Offer"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         public IOrderedQueryable<Offer> CreateOfferQuery(FeedOptions feedOptions = null)
@@ -966,7 +967,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
+        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.</remarks>
         /// <seealso cref="Microsoft.Azure.Documents.Offer"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         public IQueryable<dynamic> CreateOfferQuery(string sqlExpression, FeedOptions feedOptions = null)
@@ -993,7 +994,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
+        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.</remarks>
         /// <seealso cref="Microsoft.Azure.Documents.Offer"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         public IQueryable<dynamic> CreateOfferQuery(SqlQuerySpec querySpec, FeedOptions feedOptions = null)
@@ -1037,7 +1038,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
+        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.</remarks>
         /// <seealso cref="UserDefinedType"/>
         /// <seealso cref="IDocumentQuery"/>
         internal IQueryable<dynamic> CreateUserDefinedTypeQuery(string userDefinedTypesLink, string sqlExpression, FeedOptions feedOptions = null)
@@ -1065,7 +1066,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
+        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.</remarks>
         /// <seealso cref="UserDefinedType"/>
         /// <seealso cref="IDocumentQuery"/>
         internal IQueryable<dynamic> CreateUserDefinedTypeQuery(string userDefinedTypesLink, SqlQuerySpec querySpec, FeedOptions feedOptions = null)

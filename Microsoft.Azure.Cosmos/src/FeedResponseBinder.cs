@@ -3,9 +3,9 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Documents;
@@ -43,6 +43,7 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// DEVNOTE: Need to refactor to use CosmosJsonSerializer
+        /// Todo: This method can be optimized by not writing the result out to text.
         /// </summary>
         public static DocumentFeedResponse<T> ConvertCosmosElementFeed<T>(
             DocumentFeedResponse<CosmosElement> dynamicFeed,
@@ -72,13 +73,16 @@ namespace Microsoft.Azure.Cosmos
             }
 
             jsonWriter.WriteArrayEnd();
-            string jsonText = Encoding.UTF8.GetString(jsonWriter.GetResult());
+
+            ReadOnlyMemory<byte> buffer = jsonWriter.GetResult();
+            string jsonText = Utf8StringHelpers.ToString(buffer);
+
             IEnumerable<T> typedResults;
 
             // If the resource type is an offer and the requested type is either a Offer or OfferV2 or dynamic
             // create a OfferV2 object and cast it to T. This is a temporary fix until offers is moved to v3 API. 
             if (resourceType == ResourceType.Offer &&
-                (typeof(T).IsSubclassOf(typeof(Resource)) || typeof(T) == typeof(object)))
+                (typeof(T).IsSubclassOf(typeof(Documents.Resource)) || typeof(T) == typeof(object)))
             {
                 typedResults = JsonConvert.DeserializeObject<List<OfferV2>>(jsonText, settings).Cast<T>();
             }

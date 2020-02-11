@@ -1,11 +1,12 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Query
+namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
 {
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using OperationType = Documents.OperationType;
     using PartitionKeyRangeIdentity = Documents.PartitionKeyRangeIdentity;
     using ResourceType = Documents.ResourceType;
@@ -37,30 +38,15 @@ namespace Microsoft.Azure.Cosmos.Query
             bool allowNonValueAggregateQuery,
             string containerResourceId = null)
         {
-            if (client == null)
-            {
-                throw new ArgumentNullException(nameof(client));
-            }
-
-            if (resourceType == null)
-            {
-                throw new ArgumentNullException(nameof(resourceType));
-            }
-
-            if (correlatedActivityId == Guid.Empty)
-            {
-                throw new ArgumentException(nameof(correlatedActivityId));
-            }
-
             this.OperationTypeEnum = operationType;
-            this.QueryClient = client;
+            this.QueryClient = client ?? throw new ArgumentNullException(nameof(client));
             this.ResourceTypeEnum = resourceTypeEnum;
-            this.ResourceType = resourceType;
+            this.ResourceType = resourceType ?? throw new ArgumentNullException(nameof(resourceType));
             this.ResourceLink = resourceLink;
             this.ContainerResourceId = containerResourceId;
             this.IsContinuationExpected = isContinuationExpected;
             this.AllowNonValueAggregateQuery = allowNonValueAggregateQuery;
-            this.CorrelatedActivityId = correlatedActivityId;
+            this.CorrelatedActivityId = (correlatedActivityId == Guid.Empty) ? throw new ArgumentOutOfRangeException(nameof(correlatedActivityId)) : correlatedActivityId;
         }
 
         internal abstract Task<QueryResponseCore> ExecuteQueryAsync(
@@ -69,6 +55,7 @@ namespace Microsoft.Azure.Cosmos.Query
             PartitionKeyRangeIdentity partitionKeyRange,
             bool isContinuationExpected,
             int pageSize,
+            SchedulingStopwatch schedulingStopwatch,
             CancellationToken cancellationToken);
     }
 }

@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
     using System.Collections.Generic;
     using System.IO;
     using System.Text;
+    using Microsoft.Azure.Cosmos.Query.Core;
 
     internal sealed class NewtonsoftToCosmosDBWriter : Microsoft.Azure.Cosmos.Json.JsonWriter
     {
@@ -32,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
 
         public override JsonSerializationFormat SerializationFormat => JsonSerializationFormat.Text;
 
-        public override byte[] GetResult()
+        public override ReadOnlyMemory<byte> GetResult()
         {
             return this.getResultCallback();
         }
@@ -47,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
             this.writer.WriteStartArray();
         }
 
-        public override void WriteBinaryValue(IReadOnlyList<byte> value)
+        public override void WriteBinaryValue(ReadOnlySpan<byte> value)
         {
             throw new NotImplementedException();
         }
@@ -134,9 +135,23 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
             throw new NotImplementedException();
         }
 
-        protected override void WriteRawJsonToken(JsonTokenType jsonTokenType, IReadOnlyList<byte> rawJsonToken)
+        protected override void WriteRawJsonToken(
+            JsonTokenType jsonTokenType,
+            ReadOnlySpan<byte> rawJsonToken)
         {
-            throw new NotImplementedException();
+            string rawJson = Encoding.UTF8.GetString(rawJsonToken);
+            Newtonsoft.Json.JsonTextReader jsonTextReader = new Newtonsoft.Json.JsonTextReader(new StringReader(rawJson));
+            while (jsonTextReader.Read())
+            {
+                if (jsonTokenType == JsonTokenType.FieldName)
+                {
+                    this.writer.WritePropertyName(jsonTextReader.Value as string);
+                }
+                else
+                {
+                    this.writer.WriteValue(jsonTextReader.Value);
+                }
+            }
         }
 
         public static NewtonsoftToCosmosDBWriter CreateTextWriter()
@@ -144,7 +159,7 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
             StringWriter stringWriter = new StringWriter();
             Newtonsoft.Json.JsonTextWriter newtonsoftJsonWriter = new Newtonsoft.Json.JsonTextWriter(stringWriter);
             NewtonsoftToCosmosDBWriter newtonsoftToCosmosDBWriter = new NewtonsoftToCosmosDBWriter(
-                newtonsoftJsonWriter, 
+                newtonsoftJsonWriter,
                 () => Encoding.UTF8.GetBytes(stringWriter.ToString()));
             return newtonsoftToCosmosDBWriter;
         }
@@ -157,6 +172,16 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
             }
 
             return new NewtonsoftToCosmosDBWriter(writer, () => throw new NotSupportedException());
+        }
+
+        public override void WriteFieldName(ReadOnlySpan<byte> utf8FieldName)
+        {
+            this.WriteFieldName(Encoding.UTF8.GetString(utf8FieldName));
+        }
+
+        public override void WriteStringValue(ReadOnlySpan<byte> utf8StringValue)
+        {
+            this.WriteStringValue(Encoding.UTF8.GetString(utf8StringValue));
         }
     }
 }

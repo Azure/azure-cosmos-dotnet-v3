@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Linq;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
 
@@ -396,7 +397,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<Document>> CreateDocumentAsync(string collectionLink, object document, Documents.Client.RequestOptions options = null, bool disableAutomaticIdGeneration = false, CancellationToken cancellationToken = default(CancellationToken));
+        Task<ResourceResponse<Document>> CreateDocumentAsync(string collectionLink, object document, Documents.Client.RequestOptions options = null, bool disableAutomaticIdGeneration = false, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Creates a document as an asychronous operation in the Azure Cosmos DB service.
@@ -412,7 +413,7 @@ namespace Microsoft.Azure.Cosmos
             object document,
             Documents.Client.RequestOptions options = null,
             bool disableAutomaticIdGeneration = false,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Creates a stored procedure as an asychronous operation in the Azure Cosmos DB service.
@@ -722,7 +723,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<Document>> DeleteDocumentAsync(string documentLink, Documents.Client.RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
+        Task<ResourceResponse<Document>> DeleteDocumentAsync(string documentLink, Documents.Client.RequestOptions options = null, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Delete a document as an asynchronous operation in the Azure Cosmos DB service.
@@ -731,7 +732,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="options">(Optional) The <see cref="Microsoft.Azure.Documents.Client.RequestOptions"/> for the request.</param>
         /// <param name="cancellationToken">(Optional) A <see cref="CancellationToken"/> that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        Task<ResourceResponse<Document>> DeleteDocumentAsync(Uri documentUri, Documents.Client.RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
+        Task<ResourceResponse<Document>> DeleteDocumentAsync(Uri documentUri, Documents.Client.RequestOptions options = null, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Delete a <see cref="StoredProcedure"/> from the Azure Cosmos DB service as an asynchronous operation.
@@ -971,7 +972,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<Document>> ReplaceDocumentAsync(string documentLink, object document, Documents.Client.RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
+        Task<ResourceResponse<Document>> ReplaceDocumentAsync(string documentLink, object document, Documents.Client.RequestOptions options = null, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Replaces a document as an asynchronous operation in the Azure Cosmos DB service.
@@ -981,7 +982,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="options">(Optional) The <see cref="Microsoft.Azure.Documents.Client.RequestOptions"/> for the request.</param>
         /// <param name="cancellationToken">(Optional) A <see cref="CancellationToken"/> that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        Task<ResourceResponse<Document>> ReplaceDocumentAsync(Uri documentUri, object document, Documents.Client.RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
+        Task<ResourceResponse<Document>> ReplaceDocumentAsync(Uri documentUri, object document, Documents.Client.RequestOptions options = null, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Replaces a <see cref="Microsoft.Azure.Documents.Document"/> in the Azure Cosmos DB service as an asynchronous operation.
@@ -1025,7 +1026,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<Document>> ReplaceDocumentAsync(Document document, Documents.Client.RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
+        Task<ResourceResponse<Document>> ReplaceDocumentAsync(Document document, Documents.Client.RequestOptions options = null, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Replaces a <see cref="StoredProcedure"/> in the Azure Cosmos DB service as an asynchronous operation.
@@ -1269,7 +1270,7 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// <para>
         /// The example shown uses ID-based links, where the link is composed of the ID properties used when the resources were created.
-        /// You can still use the <see cref="Resource.SelfLink"/> property of the Database if you prefer. A self-link is a URI for a resource that is made up of Resource Identifiers  (or the _rid properties).
+        /// You can still use the <see cref="Documents.Resource.SelfLink"/> property of the Database if you prefer. A self-link is a URI for a resource that is made up of Resource Identifiers  (or the _rid properties).
         /// ID-based links and SelfLink will both work.
         /// The format for <paramref name="databaseLink"/> is always "/dbs/{db identifier}" only
         /// the values within the {} change depending on which method you wish to use to address the resource.
@@ -1364,7 +1365,7 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// <para>
         /// The example shown uses ID-based links, where the link is composed of the ID properties used when the resources were created.
-        /// You can still use the <see cref="Resource.SelfLink"/> property of the DocumentCollection if you prefer. A self-link is a URI for a resource that is made up of Resource Identifiers  (or the _rid properties).
+        /// You can still use the <see cref="Documents.Resource.SelfLink"/> property of the DocumentCollection if you prefer. A self-link is a URI for a resource that is made up of Resource Identifiers  (or the _rid properties).
         /// ID-based links and SelfLink will both work.
         /// The format for <paramref name="documentCollectionLink"/> is always "/dbs/{db identifier}/colls/{coll identifier}" only
         /// the values within the {} change depending on which method you wish to use to address the resource.
@@ -1462,7 +1463,7 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// <para>
         /// The example shown uses ID-based links, where the link is composed of the ID properties used when the resources were created.
-        /// You can still use the <see cref="Resource.SelfLink"/> property of the Document if you prefer. A self-link is a URI for a resource that is made up of Resource Identifiers  (or the _rid properties).
+        /// You can still use the <see cref="Documents.Resource.SelfLink"/> property of the Document if you prefer. A self-link is a URI for a resource that is made up of Resource Identifiers  (or the _rid properties).
         /// ID-based links and SelfLink will both work.
         /// The format for <paramref name="documentLink"/> is always "dbs/{db identifier}/colls/{coll identifier}/docs/{doc identifier}" only
         /// the values within the {} change depending on which method you wish to use to address the resource.
@@ -1473,7 +1474,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
         /// <seealso cref="System.Uri"/>
-        Task<ResourceResponse<Document>> ReadDocumentAsync(string documentLink, Documents.Client.RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
+        Task<ResourceResponse<Document>> ReadDocumentAsync(string documentLink, Documents.Client.RequestOptions options = null, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Reads a <see cref="Microsoft.Azure.Documents.Document"/> as an asynchronous operation from the Azure Cosmos DB service.
@@ -1519,7 +1520,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<Document>> ReadDocumentAsync(Uri documentUri, Documents.Client.RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
+        Task<ResourceResponse<Document>> ReadDocumentAsync(Uri documentUri, Documents.Client.RequestOptions options = null, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Reads a <see cref="Microsoft.Azure.Documents.Document"/> as a generic type T from the Azure Cosmos DB service as an asynchronous operation.
@@ -1562,7 +1563,7 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// <para>
         /// The example shown uses ID-based links, where the link is composed of the ID properties used when the resources were created.
-        /// You can still use the <see cref="Resource.SelfLink"/> property of the Document if you prefer. A self-link is a URI for a resource that is made up of Resource Identifiers  (or the _rid properties).
+        /// You can still use the <see cref="Documents.Resource.SelfLink"/> property of the Document if you prefer. A self-link is a URI for a resource that is made up of Resource Identifiers  (or the _rid properties).
         /// ID-based links and SelfLink will both work.
         /// The format for <paramref name="documentLink"/> is always "dbs/{db identifier}/colls/{coll identifier}/docs/{doc identifier}" only
         /// the values within the {} change depending on which method you wish to use to address the resource.
@@ -1573,7 +1574,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.DocumentResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
         /// <seealso cref="System.Uri"/>
-        Task<DocumentResponse<T>> ReadDocumentAsync<T>(string documentLink, Documents.Client.RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
+        Task<DocumentResponse<T>> ReadDocumentAsync<T>(string documentLink, Documents.Client.RequestOptions options = null, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Reads a <see cref="Microsoft.Azure.Documents.Document"/> as a generic type T from the Azure Cosmos DB service as an asynchronous operation.
@@ -1619,7 +1620,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.DocumentResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<DocumentResponse<T>> ReadDocumentAsync<T>(Uri documentUri, Documents.Client.RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
+        Task<DocumentResponse<T>> ReadDocumentAsync<T>(Uri documentUri, Documents.Client.RequestOptions options = null, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Reads a <see cref="StoredProcedure"/> from the Azure Cosmos DB service as an asynchronous operation.
@@ -1661,7 +1662,7 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// <para>
         /// The example shown uses ID-based links, where the link is composed of the ID properties used when the resources were created.
-        /// You can still use the <see cref="Resource.SelfLink"/> property of the Stored Procedure if you prefer. A self-link is a URI for a resource that is made up of Resource Identifiers  (or the _rid properties).
+        /// You can still use the <see cref="Documents.Resource.SelfLink"/> property of the Stored Procedure if you prefer. A self-link is a URI for a resource that is made up of Resource Identifiers  (or the _rid properties).
         /// ID-based links and SelfLink will both work.
         /// The format for <paramref name="storedProcedureLink"/> is always "/dbs/{db identifier}/colls/{coll identifier}/sprocs/{sproc identifier}"
         /// only the values within the {...} change depending on which method you wish to use to address the resource.
@@ -1759,7 +1760,7 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// <para>
         /// The example shown uses ID-based links, where the link is composed of the ID properties used when the resources were created.
-        /// You can still use the <see cref="Resource.SelfLink"/> property of the Trigger if you prefer. A self-link is a URI for a resource that is made up of Resource Identifiers  (or the _rid properties).
+        /// You can still use the <see cref="Documents.Resource.SelfLink"/> property of the Trigger if you prefer. A self-link is a URI for a resource that is made up of Resource Identifiers  (or the _rid properties).
         /// ID-based links and SelfLink will both work.
         /// The format for <paramref name="triggerLink"/> is always "/dbs/{db identifier}/colls/{coll identifier}/triggers/{trigger identifier}"
         /// only the values within the {...} change depending on which method you wish to use to address the resource.
@@ -1857,7 +1858,7 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// <para>
         /// The example shown uses ID-based links, where the link is composed of the ID properties used when the resources were created.
-        /// You can still use the <see cref="Resource.SelfLink"/> property of the User Defined Function if you prefer. A self-link is a URI for a resource that is made up of Resource Identifiers  (or the _rid properties).
+        /// You can still use the <see cref="Documents.Resource.SelfLink"/> property of the User Defined Function if you prefer. A self-link is a URI for a resource that is made up of Resource Identifiers  (or the _rid properties).
         /// ID-based links and SelfLink will both work.
         /// The format for <paramref name="functionLink"/> is always "/dbs/{db identifier}/colls/{coll identifier}/udfs/{udf identifier}"
         /// only the values within the {...} change depending on which method you wish to use to address the resource.
@@ -1955,7 +1956,7 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// <para>
         /// The example shown uses ID-based links, where the link is composed of the ID properties used when the resources were created.
-        /// You can still use the <see cref="Resource.SelfLink"/> property of the Conflict if you prefer. A self-link is a URI for a resource that is made up of Resource Identifiers  (or the _rid properties).
+        /// You can still use the <see cref="Documents.Resource.SelfLink"/> property of the Conflict if you prefer. A self-link is a URI for a resource that is made up of Resource Identifiers  (or the _rid properties).
         /// ID-based links and SelfLink will both work.
         /// The format for <paramref name="conflictLink"/> is always "/dbs/{db identifier}/colls/{collectioon identifier}/conflicts/{conflict identifier}"
         /// only the values within the {...} change depending on which method you wish to use to address the resource.
@@ -2301,7 +2302,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<DocumentFeedResponse<dynamic>> ReadDocumentFeedAsync(string documentsLink, FeedOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
+        Task<DocumentFeedResponse<dynamic>> ReadDocumentFeedAsync(string documentsLink, FeedOptions options = null, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Reads the feed (sequence) of documents for a collection as an asynchronous operation in the Azure Cosmos DB service.
@@ -2310,7 +2311,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="options">(Optional) The <see cref="Microsoft.Azure.Cosmos.FeedOptions"/> for the request.</param>
         /// <param name="cancellationToken">(Optional) A <see cref="CancellationToken"/> that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        Task<DocumentFeedResponse<dynamic>> ReadDocumentFeedAsync(Uri documentCollectionUri, FeedOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
+        Task<DocumentFeedResponse<dynamic>> ReadDocumentFeedAsync(Uri documentCollectionUri, FeedOptions options = null, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Reads the feed (sequence) of <see cref="StoredProcedure"/> for a collection from the Azure Cosmos DB service as an asynchronous operation.
@@ -2829,7 +2830,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<Document>> UpsertDocumentAsync(string collectionLink, object document, Documents.Client.RequestOptions options = null, bool disableAutomaticIdGeneration = false, CancellationToken cancellationToken = default(CancellationToken));
+        Task<ResourceResponse<Document>> UpsertDocumentAsync(string collectionLink, object document, Documents.Client.RequestOptions options = null, bool disableAutomaticIdGeneration = false, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Upserts a document as an asychronous operation in the Azure Cosmos DB service.
@@ -2845,7 +2846,7 @@ namespace Microsoft.Azure.Cosmos
             object document,
             Documents.Client.RequestOptions options = null,
             bool disableAutomaticIdGeneration = false,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Upserts a stored procedure as an asychronous operation in the Azure Cosmos DB service.
@@ -3286,7 +3287,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
+        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.</remarks>
         /// <seealso cref="Documents.Database"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         IQueryable<dynamic> CreateDatabaseQuery(string sqlExpression, FeedOptions feedOptions = null);
@@ -3308,7 +3309,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
+        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.</remarks>
         /// <seealso cref="Database"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         IQueryable<dynamic> CreateDatabaseQuery(SqlQuerySpec querySpec, FeedOptions feedOptions = null);
@@ -3346,7 +3347,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
+        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.</remarks>
         /// <seealso cref="DocumentCollection"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         IQueryable<dynamic> CreateDocumentCollectionQuery(string databaseLink, string sqlExpression, FeedOptions feedOptions = null);
@@ -3368,7 +3369,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
+        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.</remarks>
         /// <seealso cref="DocumentCollection"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         IQueryable<dynamic> CreateDocumentCollectionQuery(string databaseLink, SqlQuerySpec querySpec, FeedOptions feedOptions = null);
@@ -3406,7 +3407,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
+        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.</remarks>
         /// <seealso cref="StoredProcedure"/>
         IQueryable<dynamic> CreateStoredProcedureQuery(string collectionLink, string sqlExpression, FeedOptions feedOptions = null);
 
@@ -3427,7 +3428,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
+        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.</remarks>
         /// <seealso cref="StoredProcedure"/>
         IQueryable<dynamic> CreateStoredProcedureQuery(string collectionLink, SqlQuerySpec querySpec, FeedOptions feedOptions = null);
 
@@ -3464,7 +3465,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
+        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.</remarks>
         /// <seealso cref="Trigger"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         IQueryable<dynamic> CreateTriggerQuery(string collectionLink, string sqlExpression, FeedOptions feedOptions = null);
@@ -3512,7 +3513,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
+        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.</remarks>
         /// <seealso cref="UserDefinedFunction"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         IQueryable<dynamic> CreateUserDefinedFunctionQuery(string collectionLink, string sqlExpression, FeedOptions feedOptions = null);
@@ -3534,7 +3535,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
+        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.</remarks>
         /// <seealso cref="UserDefinedFunction"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         IQueryable<dynamic> CreateUserDefinedFunctionQuery(string collectionLink, SqlQuerySpec querySpec, FeedOptions feedOptions = null);
@@ -3573,7 +3574,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
+        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.</remarks>
         /// <seealso cref="Microsoft.Azure.Documents.Conflict"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         IQueryable<dynamic> CreateConflictQuery(string collectionLink, string sqlExpression, FeedOptions feedOptions = null);
@@ -3595,7 +3596,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
+        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.</remarks>
         /// <seealso cref="Microsoft.Azure.Documents.Document"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         IQueryable<dynamic> CreateConflictQuery(string collectionLink, SqlQuerySpec querySpec, FeedOptions feedOptions = null);
@@ -3658,7 +3659,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <remarks>
-        /// The Azure Cosmos DB LINQ provider compiles LINQ to SQL statements. Refer to http://azure.microsoft.com/documentation/articles/documentdb-sql-query/#linq-to-documentdb-sql for the list of expressions supported by the Azure Cosmos DB LINQ provider. ToString() on the generated IQueryable returns the translated SQL statement. The Azure Cosmos DB provider translates JSON.NET and DataContract serialization attributes for members to their JSON property names.
+        /// The Azure Cosmos DB LINQ provider compiles LINQ to SQL statements. Refer to https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started#linq-to-documentdb-sql for the list of expressions supported by the Azure Cosmos DB LINQ provider. ToString() on the generated IQueryable returns the translated SQL statement. The Azure Cosmos DB provider translates JSON.NET and DataContract serialization attributes for members to their JSON property names.
         /// </remarks>
         /// <seealso cref="Microsoft.Azure.Documents.Document"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
@@ -3723,7 +3724,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
+        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.</remarks>
         /// <seealso cref="Microsoft.Azure.Documents.Document"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         IQueryable<T> CreateDocumentQuery<T>(string collectionLink, string sqlExpression, FeedOptions feedOptions = null);
@@ -3800,7 +3801,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
+        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.</remarks>
         /// <seealso cref="Microsoft.Azure.Documents.Document"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         IQueryable<T> CreateDocumentQuery<T>(string collectionLink, SqlQuerySpec querySpec, FeedOptions feedOptions = null);
@@ -3846,7 +3847,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
+        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.</remarks>
         /// <seealso cref="Microsoft.Azure.Documents.Document"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         IQueryable<dynamic> CreateDocumentQuery(string collectionLink, string sqlExpression, FeedOptions feedOptions = null);
@@ -3872,7 +3873,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
+        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.</remarks>
         /// <seealso cref="Microsoft.Azure.Documents.Document"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         IQueryable<dynamic> CreateDocumentQuery(string collectionLink, SqlQuerySpec querySpec, FeedOptions feedOptions = null);
@@ -3939,7 +3940,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
+        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.</remarks>
         /// <seealso cref="Microsoft.Azure.Documents.Offer"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         IOrderedQueryable<Offer> CreateOfferQuery(FeedOptions feedOptions = null);
@@ -3963,7 +3964,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
+        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.</remarks>
         /// <seealso cref="Microsoft.Azure.Documents.Offer"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         IQueryable<dynamic> CreateOfferQuery(string sqlExpression, FeedOptions feedOptions = null);
@@ -3987,7 +3988,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
+        /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and https://docs.microsoft.com/azure/cosmos-db/sql-query-getting-started for syntax and examples.</remarks>
         /// <seealso cref="Microsoft.Azure.Documents.Offer"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         IQueryable<dynamic> CreateOfferQuery(SqlQuerySpec querySpec, FeedOptions feedOptions = null);

@@ -26,13 +26,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             DatabaseResponse db = await this.cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition();
             partitionKeyDefinition.Paths.Add("/Status");
-            this.cosmosContainer = (ContainerCore)await db.Database.CreateContainerAsync(new ContainerProperties() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition }, 10000);
+            this.cosmosContainer = (ContainerInlineCore)await db.Database.CreateContainerAsync(new ContainerProperties() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition }, 10000);
         }
 
         [TestCleanup]
         public async Task CleanupAsync()
         {
-            await this.cosmosContainer.DeleteContainerAsync();
+            if (this.cosmosContainer != null)
+            {
+                await this.cosmosContainer.Database.DeleteAsync();
+            }
         }
 
         [TestMethod]
@@ -41,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             BatchAsyncContainerExecutor executor = new BatchAsyncContainerExecutor(this.cosmosContainer, this.cosmosContainer.ClientContext, 20, Constants.MaxDirectModeBatchRequestBodySizeInBytes);
 
-            List<Task<BatchOperationResult>> tasks = new List<Task<BatchOperationResult>>();
+            List<Task<TransactionalBatchOperationResult>> tasks = new List<Task<TransactionalBatchOperationResult>>();
             for (int i = 0; i < 100; i++)
             {
                 tasks.Add(executor.AddAsync(CreateItem(i.ToString()), null, default(CancellationToken)));
@@ -51,8 +54,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             for (int i = 0; i < 100; i++)
             {
-                Task<BatchOperationResult> task = tasks[i];
-                BatchOperationResult result = await task;
+                Task<TransactionalBatchOperationResult> task = tasks[i];
+                TransactionalBatchOperationResult result = await task;
                 Assert.AreEqual(HttpStatusCode.Created, result.StatusCode);
 
                 MyDocument document = cosmosDefaultJsonSerializer.FromStream<MyDocument>(result.ResourceStream);
@@ -75,18 +78,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             MyDocument myDocument = new MyDocument() { id = id, Status = id };
 
             await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => executor.ValidateOperationAsync(new ItemBatchOperation(OperationType.Replace, 0, new Cosmos.PartitionKey(id), id, cosmosDefaultJsonSerializer.ToStream(myDocument)), new ItemRequestOptions() { SessionToken = "something" }));
-        }
-
-        [TestMethod]
-        [Owner("maquaran")]
-        public async Task ValidateInvalidDocumentSizeAsync()
-        {
-            BatchAsyncContainerExecutor executor = new BatchAsyncContainerExecutor(this.cosmosContainer, this.cosmosContainer.ClientContext, 50, 2);
-
-            string id = Guid.NewGuid().ToString();
-            MyDocument myDocument = new MyDocument() { id = id, Status = id };
-
-            await Assert.ThrowsExceptionAsync<ArgumentException>(() => executor.ValidateOperationAsync(new ItemBatchOperation(OperationType.Replace, 0, new Cosmos.PartitionKey(id), id, cosmosDefaultJsonSerializer.ToStream(myDocument))));
         }
 
         private static ItemBatchOperation CreateItem(string id)

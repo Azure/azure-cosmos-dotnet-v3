@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.ClientContext.ValidateResource(userProperties.Id);
             Task<ResponseMessage> response = this.ReplaceStreamInternalAsync(
-                streamPayload: this.ClientContext.PropertiesSerializer.ToStream(userProperties),
+                streamPayload: this.ClientContext.SerializerCore.ToStream(userProperties),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.ClientContext.ValidateResource(userProperties.Id);
             return this.ReplaceStreamInternalAsync(
-                streamPayload: this.ClientContext.PropertiesSerializer.ToStream(userProperties),
+                streamPayload: this.ClientContext.SerializerCore.ToStream(userProperties),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
@@ -122,10 +122,10 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessStreamAsync(
-               streamPayload: null,
-               operationType: OperationType.Delete,
-               requestOptions: requestOptions,
-               cancellationToken: cancellationToken);
+                streamPayload: null,
+                operationType: OperationType.Delete,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
         }
 
         /// <inheritdoc/>
@@ -136,10 +136,10 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(id));
             }
 
-            return new PermissionCore(
+            return new PermissionInlineCore(new PermissionCore(
                     this.ClientContext,
                     this,
-                    id);
+                    id));
         }
 
         /// <inheritdoc/>
@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos
             this.ClientContext.ValidateResource(permissionProperties.Id);
 
             Task<ResponseMessage> response = this.CreatePermissionStreamInternalAsync(
-                streamPayload: this.ClientContext.PropertiesSerializer.ToStream(permissionProperties),
+                streamPayload: this.ClientContext.SerializerCore.ToStream(permissionProperties),
                 tokenExpiryInSeconds: tokenExpiryInSeconds,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
@@ -176,7 +176,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.ClientContext.ValidateResource(permissionProperties.Id);
 
-            Stream streamPayload = this.ClientContext.PropertiesSerializer.ToStream(permissionProperties);
+            Stream streamPayload = this.ClientContext.SerializerCore.ToStream(permissionProperties);
             return this.CreatePermissionStreamInternalAsync(streamPayload,
                 tokenExpiryInSeconds,
                 requestOptions,
@@ -196,7 +196,7 @@ namespace Microsoft.Azure.Cosmos
             this.ClientContext.ValidateResource(permissionProperties.Id);
 
             Task<ResponseMessage> response = this.UpsertPermissionStreamInternalAsync(
-                streamPayload: this.ClientContext.PropertiesSerializer.ToStream(permissionProperties),
+                streamPayload: this.ClientContext.SerializerCore.ToStream(permissionProperties),
                 tokenExpiryInSeconds: tokenExpiryInSeconds,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
@@ -209,14 +209,19 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            FeedIterator permissionStreamIterator = this.GetPermissionQueryStreamIterator(
+            if (!(this.GetPermissionQueryStreamIterator(
                 queryDefinition,
                 continuationToken,
-                requestOptions);
+                requestOptions) is FeedIteratorInternal permissionStreamIterator))
+            {
+                throw new InvalidOperationException($"Expected a FeedIteratorInternal.");
+            }
 
             return new FeedIteratorCore<T>(
                 permissionStreamIterator,
-                this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>);
+                (response) => this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>(
+                    responseMessage: response,
+                    resourceType: ResourceType.Permission));
         }
 
         public FeedIterator GetPermissionQueryStreamIterator(QueryDefinition queryDefinition,
@@ -285,6 +290,7 @@ namespace Microsoft.Azure.Cosmos
                        requestMessage.Headers.Add(HttpConstants.HttpHeaders.ResourceTokenExpiry, tokenExpiryInSeconds.Value.ToString());
                    }
                },
+               diagnosticsScope: null,
                cancellationToken: cancellationToken);
         }
 
@@ -309,6 +315,7 @@ namespace Microsoft.Azure.Cosmos
                        requestMessage.Headers.Add(HttpConstants.HttpHeaders.ResourceTokenExpiry, tokenExpiryInSeconds.Value.ToString());
                    }
                },
+               diagnosticsScope: null,
                cancellationToken: cancellationToken);
         }
 
@@ -330,7 +337,7 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ProcessResourceOperationStreamAsync(
+            return this.ProcessResourceOperationStreamAsync(
                 streamPayload: streamPayload,
                 operationType: operationType,
                 linkUri: this.LinkUri,
@@ -356,6 +363,7 @@ namespace Microsoft.Azure.Cosmos
               streamPayload: streamPayload,
               requestOptions: requestOptions,
               requestEnricher: null,
+              diagnosticsScope: null,
               cancellationToken: cancellationToken);
         }
 

@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     /// </summary>
     internal class CosmosSerializerHelper : CosmosSerializer
     {
-        private readonly CosmosSerializer cosmosSerializer = TestCommon.Serializer;
+        private readonly CosmosSerializer cosmosSerializer;
         private readonly Action<dynamic> fromStreamCallback;
         private readonly Action<dynamic> toStreamCallBack;
 
@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             if (jsonSerializerSettings == null)
             {
-                this.cosmosSerializer = TestCommon.Serializer;
+                this.cosmosSerializer = new CosmosJsonDotNetSerializer();
             }
             else
             {

@@ -1,7 +1,7 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.CosmosElements
+namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 {
     using System;
     using Microsoft.Azure.Cosmos.Json;
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 jsonWriter.WriteNumberValue(this.lazyNumber.Value);
             }
 
-            protected override Number64 GetValue()
+            public override Number64 GetValue()
             {
                 return this.lazyNumber.Value;
             }

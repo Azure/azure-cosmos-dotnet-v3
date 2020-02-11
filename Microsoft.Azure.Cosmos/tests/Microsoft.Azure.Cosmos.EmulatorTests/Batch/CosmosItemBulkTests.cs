@@ -9,12 +9,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Net;
     using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class CosmosItemBulkTests
     {
-        private static CosmosSerializer cosmosDefaultJsonSerializer = new CosmosJsonDotNetSerializer();
-
         private Container container;
         private Database database;
 
@@ -54,8 +53,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Task<ResponseMessage> task = tasks[i];
                 ResponseMessage result = await task;
                 Assert.AreEqual(HttpStatusCode.Created, result.StatusCode);
+                Assert.IsTrue(result.Headers.RequestCharge > 0);
                 Assert.IsFalse(string.IsNullOrEmpty(result.Diagnostics.ToString()));
-                MyDocument document = cosmosDefaultJsonSerializer.FromStream<MyDocument>(result.Content);
+                MyDocument document = TestCommon.SerializerCore.FromStream<MyDocument>(result.Content);
                 Assert.AreEqual(i.ToString(), document.id);
             }
         }
@@ -75,6 +75,28 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Task<ItemResponse<MyDocument>> task = tasks[i];
                 ItemResponse<MyDocument> result = await task;
+                Assert.IsTrue(result.Headers.RequestCharge > 0);
+                Assert.IsFalse(string.IsNullOrEmpty(result.Diagnostics.ToString()));
+                Assert.AreEqual(HttpStatusCode.Created, result.StatusCode);
+            }
+        }
+
+        [TestMethod]
+        public async Task CreateItemJObjectWithoutPK_WithBulk()
+        {
+            List<Task<ItemResponse<JObject>>> tasks = new List<Task<ItemResponse<JObject>>>();
+            for (int i = 0; i < 100; i++)
+            {
+                tasks.Add(this.container.CreateItemAsync(CreateJObjectWithoutPK(i.ToString())));
+            }
+
+            await Task.WhenAll(tasks);
+
+            for (int i = 0; i < 100; i++)
+            {
+                Task<ItemResponse<JObject>> task = tasks[i];
+                ItemResponse<JObject> result = await task;
+                Assert.IsTrue(result.Headers.RequestCharge > 0);
                 Assert.IsFalse(string.IsNullOrEmpty(result.Diagnostics.ToString()));
                 Assert.AreEqual(HttpStatusCode.Created, result.StatusCode);
             }
@@ -96,8 +118,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Task<ResponseMessage> task = tasks[i];
                 ResponseMessage result = await task;
                 Assert.AreEqual(HttpStatusCode.Created, result.StatusCode);
+                Assert.IsTrue(result.Headers.RequestCharge > 0);
                 Assert.IsFalse(string.IsNullOrEmpty(result.Diagnostics.ToString()));
-                MyDocument document = cosmosDefaultJsonSerializer.FromStream<MyDocument>(result.Content);
+                MyDocument document = TestCommon.SerializerCore.FromStream<MyDocument>(result.Content);
                 Assert.AreEqual(i.ToString(), document.id);
             }
         }
@@ -117,6 +140,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Task<ItemResponse<MyDocument>> task = tasks[i];
                 ItemResponse<MyDocument> result = await task;
+                Assert.IsTrue(result.Headers.RequestCharge > 0);
                 Assert.IsFalse(string.IsNullOrEmpty(result.Diagnostics.ToString()));
                 Assert.AreEqual(HttpStatusCode.Created, result.StatusCode);
             }
@@ -149,6 +173,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Task<ResponseMessage> task = deleteTasks[i];
                 ResponseMessage result = await task;
+                Assert.IsTrue(result.Headers.RequestCharge > 0);
                 Assert.IsFalse(string.IsNullOrEmpty(result.Diagnostics.ToString()));
                 Assert.AreEqual(HttpStatusCode.NoContent, result.StatusCode);
             }
@@ -181,6 +206,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Task<ItemResponse<MyDocument>> task = deleteTasks[i];
                 ItemResponse<MyDocument> result = await task;
+                Assert.IsTrue(result.Headers.RequestCharge > 0);
                 Assert.IsFalse(string.IsNullOrEmpty(result.Diagnostics.ToString()));
                 Assert.AreEqual(HttpStatusCode.NoContent, result.StatusCode);
             }
@@ -213,6 +239,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Task<ResponseMessage> task = readTasks[i];
                 ResponseMessage result = await task;
+                Assert.IsTrue(result.Headers.RequestCharge > 0);
                 Assert.IsFalse(string.IsNullOrEmpty(result.Diagnostics.ToString()));
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
             }
@@ -245,6 +272,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Task<ItemResponse<MyDocument>> task = readTasks[i];
                 ItemResponse<MyDocument> result = await task;
+                Assert.IsTrue(result.Headers.RequestCharge > 0);
                 Assert.IsFalse(string.IsNullOrEmpty(result.Diagnostics.ToString()));
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
             }
@@ -277,6 +305,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Task<ResponseMessage> task = replaceTasks[i];
                 ResponseMessage result = await task;
+                Assert.IsTrue(result.Headers.RequestCharge > 0);
                 Assert.IsFalse(string.IsNullOrEmpty(result.Diagnostics.ToString()));
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
             }
@@ -309,14 +338,65 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Task<ItemResponse<MyDocument>> task = replaceTasks[i];
                 ItemResponse<MyDocument> result = await task;
+                Assert.IsTrue(result.Headers.RequestCharge > 0);
                 Assert.IsFalse(string.IsNullOrEmpty(result.Diagnostics.ToString()));
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
+            }
+        }
+
+        [TestMethod]
+        public async Task CreateItemStreamSlightlyTooLarge_WithBulk()
+        {
+            // The item is such that it is just over the limit for an item
+            // but the batch request created with it and other operations should still
+            // be small enough to be valid.
+            await this.CreateLargeItemStreamWithBulk(Microsoft.Azure.Documents.Constants.MaxResourceSizeInBytes + 1);
+        }
+
+        [TestMethod]
+        public async Task CreateItemStreamExtremelyLarge_WithBulk()
+        {
+            await this.CreateLargeItemStreamWithBulk(Microsoft.Azure.Documents.Constants.MaxResourceSizeInBytes * 2);
+        }
+
+        private async Task CreateLargeItemStreamWithBulk(int appxItemSize)
+        {
+            List<Task<ResponseMessage>> tasks = new List<Task<ResponseMessage>>();
+            for (int i = 0; i < 3; i++)
+            {
+                MyDocument item = CreateItem(i.ToString());
+
+                if (i == 1) { item.Description = new string('x', appxItemSize); }
+                tasks.Add(ExecuteCreateStreamAsync(this.container, item));
+            }
+
+            await Task.WhenAll(tasks);
+
+            for (int i = 0; i < 3; i++)
+            {
+                Task<ResponseMessage> task = tasks[i];
+                ResponseMessage result = await task;
+                if (i == 0 || i == 2)
+                {
+                    Assert.IsTrue(result.Headers.RequestCharge > 0);
+                    Assert.IsFalse(string.IsNullOrEmpty(result.Diagnostics.ToString()));
+                    Assert.AreEqual(HttpStatusCode.Created, result.StatusCode);
+                }
+                else
+                {
+                    Assert.AreEqual(HttpStatusCode.RequestEntityTooLarge, result.StatusCode);
+                }
             }
         }
 
         private static Task<ItemResponse<MyDocument>> ExecuteCreateAsync(Container container, MyDocument item)
         {
             return container.CreateItemAsync<MyDocument>(item, new PartitionKey(item.Status));
+        }
+
+        private static Task<ItemResponse<JObject>> ExecuteCreateAsync(Container container, JObject item)
+        {
+            return container.CreateItemAsync<JObject>(item);
         }
 
         private static Task<ItemResponse<MyDocument>> ExecuteUpsertAsync(Container container, MyDocument item)
@@ -341,17 +421,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private static Task<ResponseMessage> ExecuteCreateStreamAsync(Container container, MyDocument item)
         {
-            return container.CreateItemStreamAsync(cosmosDefaultJsonSerializer.ToStream(item), new PartitionKey(item.Status));
+            return container.CreateItemStreamAsync(TestCommon.SerializerCore.ToStream(item), new PartitionKey(item.Status));
         }
 
         private static Task<ResponseMessage> ExecuteUpsertStreamAsync(Container container, MyDocument item)
         {
-            return container.UpsertItemStreamAsync(cosmosDefaultJsonSerializer.ToStream(item), new PartitionKey(item.Status));
+            return container.UpsertItemStreamAsync(TestCommon.SerializerCore.ToStream(item), new PartitionKey(item.Status));
         }
 
         private static Task<ResponseMessage> ExecuteReplaceStreamAsync(Container container, MyDocument item)
         {
-            return container.ReplaceItemStreamAsync(cosmosDefaultJsonSerializer.ToStream(item), item.id, new PartitionKey(item.Status));
+            return container.ReplaceItemStreamAsync(TestCommon.SerializerCore.ToStream(item), item.id, new PartitionKey(item.Status));
         }
 
         private static Task<ResponseMessage> ExecuteDeleteStreamAsync(Container container, MyDocument item)
@@ -366,11 +446,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private static MyDocument CreateItem(string id) => new MyDocument() { id = id, Status = id };
 
+        private static JObject CreateJObjectWithoutPK(string id)
+        {
+            JObject document = new JObject();
+            document["id"] = id;
+            return document;
+        }
+
         private class MyDocument
         {
             public string id { get; set; }
 
             public string Status { get; set; }
+
+            public string Description { get; set; }
 
             public bool Updated { get; set; }
         }

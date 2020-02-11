@@ -3,7 +3,7 @@
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
 //-----------------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
+namespace Microsoft.Azure.Cosmos.Tests.Json
 {
     using System;
     using System.Collections.Generic;
@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             return new NewtonsoftNode(jArray[index], this.JTokenToJsonNodeType(jArray[index]));
         }
 
-        public bool TryGetBufferedBinaryValue(IJsonNavigatorNode binaryNode, out IReadOnlyList<byte> bufferedBinaryValue)
+        public bool TryGetBufferedBinaryValue(IJsonNavigatorNode binaryNode, out ReadOnlyMemory<byte> bufferedBinaryValue)
         {
             throw new NotImplementedException();
         }
@@ -176,12 +176,12 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             throw new NotImplementedException();
         }
 
-        public IReadOnlyList<byte> GetBinaryValue(IJsonNavigatorNode binaryNode)
+        public ReadOnlyMemory<byte> GetBinaryValue(IJsonNavigatorNode binaryNode)
         {
             throw new NotImplementedException();
         }
 
-        public bool TryGetBufferedStringValue(IJsonNavigatorNode stringNode, out IReadOnlyList<byte> bufferedStringValue)
+        public bool TryGetBufferedStringValue(IJsonNavigatorNode stringNode, out ReadOnlyMemory<byte> bufferedStringValue)
         {
             bufferedStringValue = null;
             return false;
@@ -203,9 +203,15 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             return false;
         }
 
-        public bool TryGetBufferedRawJson(IJsonNavigatorNode jsonNode, out IReadOnlyList<byte> bufferedRawJson)
+        public bool TryGetBufferedRawJson(IJsonNavigatorNode jsonNode, out ReadOnlyMemory<byte> bufferedRawJson)
         {
             bufferedRawJson = null;
+            return false;
+        }
+
+        public bool TryGetBufferedUtf8StringValue(IJsonNavigatorNode stringNode, out ReadOnlyMemory<byte> bufferedUtf8StringValue)
+        {
+            bufferedUtf8StringValue = null;
             return false;
         }
     }

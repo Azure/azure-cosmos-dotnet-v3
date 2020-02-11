@@ -3,12 +3,13 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
     using Microsoft.Azure.Documents.Routing;
 
     /// <summary>
     /// Represents a partition key value in the Azure Cosmos DB service.
     /// </summary>
-    public struct PartitionKey
+    public readonly struct PartitionKey
     {
         private static readonly PartitionKeyInternal NullPartitionKeyInternal = new Documents.PartitionKey(null).InternalKey;
         private static readonly PartitionKeyInternal TruePartitionKeyInternal = new Documents.PartitionKey(true).InternalKey;
@@ -112,6 +113,39 @@ namespace Microsoft.Azure.Cosmos
         public override string ToString()
         {
             return this.InternalKey.ToJsonString();
+        }
+
+        internal string ToJsonString()
+        {
+            return this.InternalKey.ToJsonString();
+        }
+
+        internal static bool TryParseJsonString(string partitionKeyString, out PartitionKey partitionKey)
+        {
+            if (partitionKeyString == null)
+            {
+                throw new ArgumentNullException(partitionKeyString);
+            }
+
+            try
+            {
+                PartitionKeyInternal partitionKeyInternal = PartitionKeyInternal.FromJsonString(partitionKeyString);
+                if (partitionKeyInternal.Components == null)
+                {
+                    partitionKey = PartitionKey.None;
+                }
+                else
+                {
+                    partitionKey = new PartitionKey(partitionKeyInternal, isNone: false);
+                }
+
+                return true;
+            }
+            catch (Exception)
+            {
+                partitionKey = default;
+                return false;
+            }
         }
     }
 }

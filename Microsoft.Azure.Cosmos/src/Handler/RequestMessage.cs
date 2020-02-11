@@ -31,6 +31,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public RequestMessage()
         {
+            this.DiagnosticsContext = CosmosDiagnosticsContext.Create();
         }
 
         /// <summary>
@@ -42,6 +43,23 @@ namespace Microsoft.Azure.Cosmos
         {
             this.Method = method;
             this.RequestUri = requestUri;
+            this.DiagnosticsContext = CosmosDiagnosticsContext.Create();
+        }
+
+        /// <summary>
+        /// Create a <see cref="RequestMessage"/>
+        /// </summary>
+        /// <param name="method">The http method</param>
+        /// <param name="requestUri">The requested URI</param>
+        /// <param name="diagnosticsContext">The diagnostics object used to track the request</param>
+        internal RequestMessage(
+            HttpMethod method,
+            Uri requestUri,
+            CosmosDiagnosticsContext diagnosticsContext)
+        {
+            this.Method = method;
+            this.RequestUri = requestUri;
+            this.DiagnosticsContext = diagnosticsContext ?? throw new ArgumentNullException(nameof(diagnosticsContext));
         }
 
         /// <summary>
@@ -71,6 +89,8 @@ namespace Microsoft.Azure.Cosmos
                 this.content = value;
             }
         }
+
+        internal CosmosDiagnosticsContext DiagnosticsContext { get; }
 
         internal RequestOptions RequestOptions { get; set; }
 

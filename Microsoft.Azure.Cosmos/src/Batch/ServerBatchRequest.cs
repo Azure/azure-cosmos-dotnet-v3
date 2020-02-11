@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Serialization.HybridRow;
     using Microsoft.Azure.Cosmos.Serialization.HybridRow.IO;
     using Microsoft.Azure.Cosmos.Serialization.HybridRow.RecordIO;
-    using Microsoft.Azure.Documents;
 
 #pragma warning disable CA1001 // Types that own disposable fields should be disposable
     internal abstract class ServerBatchRequest
@@ -22,7 +21,7 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly int maxOperationCount;
 
-        private readonly CosmosSerializer serializer;
+        private readonly CosmosSerializerCore serializerCore;
 
         private ArraySegment<ItemBatchOperation> operations;
 
@@ -41,12 +40,12 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="maxBodyLength">Maximum length allowed for the request body.</param>
         /// <param name="maxOperationCount">Maximum number of operations allowed in the request.</param>
-        /// <param name="serializer">Serializer to serialize user provided objects to JSON.</param>
-        protected ServerBatchRequest(int maxBodyLength, int maxOperationCount, CosmosSerializer serializer)
+        /// <param name="serializerCore">Serializer to serialize user provided objects to JSON.</param>
+        protected ServerBatchRequest(int maxBodyLength, int maxOperationCount, CosmosSerializerCore serializerCore)
         {
             this.maxBodyLength = maxBodyLength;
             this.maxOperationCount = maxOperationCount;
-            this.serializer = serializer;
+            this.serializerCore = serializerCore;
         }
 
         public IReadOnlyList<ItemBatchOperation> Operations => this.operations;
@@ -88,7 +87,7 @@ namespace Microsoft.Azure.Cosmos
                     break;
                 }
 
-                await operation.MaterializeResourceAsync(this.serializer, cancellationToken);
+                await operation.MaterializeResourceAsync(this.serializerCore, cancellationToken);
                 materializedCount++;
 
                 previousOperationIndex = operation.OperationIndex;
@@ -129,11 +128,6 @@ namespace Microsoft.Azure.Cosmos
                 this.operations = new ArraySegment<ItemBatchOperation>(operations.Array, operations.Offset, this.lastWrittenOperationIndex + 1);
             }
 
-            if (this.operations.Count == 0)
-            {
-                throw new RequestEntityTooLargeException(RMResources.RequestTooLarge);
-            }
-
             int overflowOperations = operations.Count - this.operations.Count;
             return new ArraySegment<ItemBatchOperation>(operations.Array, this.operations.Count + operations.Offset, overflowOperations);
         }
@@ -142,7 +136,13 @@ namespace Microsoft.Azure.Cosmos
         {
             if (this.bodyStream.Length > this.maxBodyLength)
             {
-                this.shouldDeleteLastWrittenRecord = true;
+                // If there is only one operation within the request, we will keep it even if it
+                // exceeds the maximum size allowed for the body.
+                if (index > 1)
+                {
+                    this.shouldDeleteLastWrittenRecord = true;
+                }
+
                 buffer = default(ReadOnlyMemory<byte>);
                 return Result.Success;
             }

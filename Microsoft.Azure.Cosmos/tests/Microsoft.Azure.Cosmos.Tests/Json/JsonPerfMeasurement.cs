@@ -3,15 +3,16 @@
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
 //-----------------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
+namespace Microsoft.Azure.Cosmos.Tests.Json
 {
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Linq;
     using System.Text;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Json.Interop;
+    using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
 
     internal static class JsonPerfMeasurement
     {
@@ -103,10 +104,73 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             Stopwatch stopwatch = new Stopwatch();
             for (int i = 0; i < numberOfIterations; i++)
             {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+
                 stopwatch.Start();
                 while (jsonReader.Read())
                 {
-                    /* all the work is done in the loop */
+                    // Materialize the value
+                    switch (jsonReader.CurrentTokenType)
+                    {
+                        case JsonTokenType.BeginArray:
+                        case JsonTokenType.EndArray:
+                        case JsonTokenType.BeginObject:
+                        case JsonTokenType.EndObject:
+                        case JsonTokenType.Null:
+                        case JsonTokenType.True:
+                        case JsonTokenType.False:
+                            // Single byte tokens
+                            break;
+
+                        case JsonTokenType.String:
+                        case JsonTokenType.FieldName:
+                            string stringValue = jsonReader.GetStringValue();
+                            break;
+
+                        case JsonTokenType.Number:
+                            Number64 number64Value = jsonReader.GetNumberValue();
+                            break;
+
+                        case JsonTokenType.Int8:
+                            sbyte int8Value = jsonReader.GetInt8Value();
+                            break;
+
+                        case JsonTokenType.Int16:
+                            short int16Value = jsonReader.GetInt16Value();
+                            break;
+
+                        case JsonTokenType.Int32:
+                            int int32Value = jsonReader.GetInt32Value();
+                            break;
+
+                        case JsonTokenType.Int64:
+                            long int64Value = jsonReader.GetInt64Value();
+                            break;
+
+                        case JsonTokenType.UInt32:
+                            uint uInt32Value = jsonReader.GetUInt32Value();
+                            break;
+
+                        case JsonTokenType.Float32:
+                            float float32Value = jsonReader.GetFloat32Value();
+                            break;
+
+                        case JsonTokenType.Float64:
+                            double doubleValue = jsonReader.GetFloat64Value();
+                            break;
+
+                        case JsonTokenType.Guid:
+                            Guid guidValue = jsonReader.GetGuidValue();
+                            break;
+
+                        case JsonTokenType.Binary:
+                            ReadOnlyMemory<byte> binaryValue = jsonReader.GetBinaryValue();
+                            break;
+
+                        default:
+                            throw new ArgumentException("$Unknown token type.");
+                    }
                 }
 
                 stopwatch.Stop();
@@ -117,6 +181,9 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
 
         public static TimeSpan MeasureNavigationPerformance(IJsonNavigator jsonNavigator, int numberOfIterations = 1)
         {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+
             JsonToken[] tokensFromNode;
             Stopwatch stopwatch = new Stopwatch();
             for (int i = 0; i < numberOfIterations; i++)
@@ -142,6 +209,9 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
 
         public static TimeSpan MeasureWritePerformance(JsonToken[] tokensToWrite, IJsonWriter jsonWriter, int numberOfIterations = 1)
         {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+
             Stopwatch stopwatch = new Stopwatch();
             foreach (JsonToken token in tokensToWrite)
             {
@@ -262,7 +332,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             return tokensFromReader.ToArray();
         }
 
-        public static byte[] ConvertTextToBinary(string text)
+        public static ReadOnlyMemory<byte> ConvertTextToBinary(string text)
         {
             IJsonWriter binaryWriter = JsonWriter.Create(JsonSerializationFormat.Binary);
             IJsonReader textReader = JsonReader.Create(Encoding.UTF8.GetBytes(text));
@@ -275,7 +345,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             IJsonReader binaryReader = JsonReader.Create(binary);
             IJsonWriter textWriter = JsonWriter.Create(JsonSerializationFormat.Text);
             textWriter.WriteAll(binaryReader);
-            return Encoding.UTF8.GetString(textWriter.GetResult());
+            return Encoding.UTF8.GetString(textWriter.GetResult().ToArray());
         }
 
         public static void PrintStatisticsTable(string inputFileName, JsonExecutionTimes text, JsonExecutionTimes newtonsoft, JsonExecutionTimes binary)
