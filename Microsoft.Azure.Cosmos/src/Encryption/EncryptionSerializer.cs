@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos
                 return this.baseSerializer.ToStream<T>(input);
             }
 
-            DataEncryptionKey dek = containerCore.Database.GetDataEncryptionKey(itemRequestOptions.EncryptionOptions.DataEncryptionKey.Id);
+            DataEncryptionKey dek = ((DatabaseCore)containerCore.Database).GetDataEncryptionKey(itemRequestOptions.EncryptionOptions.DataEncryptionKey.Id);
 
             DataEncryptionKeyCore dekCore = (DataEncryptionKeyInlineCore)dek;
             (DataEncryptionKeyProperties dekProperties, InMemoryRawDek inMemoryRawDek) = await dekCore.FetchUnwrappedAsync(cancellationToken);
@@ -139,7 +139,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             ContainerCore containerCore = (ContainerCore)container;
-            DataEncryptionKeyCore tempDek = (DataEncryptionKeyInlineCore)containerCore.Database.GetDataEncryptionKey(id: "unknown");
+            DataEncryptionKeyCore tempDek = (DataEncryptionKeyInlineCore)((DatabaseCore)containerCore.Database).GetDataEncryptionKey(id: "unknown");
             (DataEncryptionKeyProperties _, InMemoryRawDek inMemoryRawDek) = await tempDek.FetchUnwrappedByRidAsync(encryptionProperties.DataEncryptionKeyRid, cancellationToken);
             byte[] plainText = inMemoryRawDek.AlgorithmUsingRawDek.DecryptData(encryptionProperties.EncryptedData);
 

@@ -511,11 +511,11 @@ namespace Microsoft.Azure.Cosmos
         }
 
 #if PREVIEW
-    public
+        public override
 #else
-        internal
+        internal virtual
 #endif
-        override DataEncryptionKey GetDataEncryptionKey(string id)
+        DataEncryptionKey GetDataEncryptionKey(string id)
         {
             if (string.IsNullOrEmpty(id))
             {
@@ -530,16 +530,16 @@ namespace Microsoft.Azure.Cosmos
         }
 
 #if PREVIEW
-    public
+        public override
 #else
-        internal
+        internal virtual
 #endif
-        override FeedIterator<DataEncryptionKeyProperties> GetDataEncryptionKeyIterator(
-            string startId = null,
-            string endId = null,
-            bool isDescending = false,
-            string continuationToken = null,
-            QueryRequestOptions requestOptions = null)
+            FeedIterator<DataEncryptionKeyProperties> GetDataEncryptionKeyIterator(
+                string startId = null,
+                string endId = null,
+                bool isDescending = false,
+                string continuationToken = null,
+                QueryRequestOptions requestOptions = null)
         {
             if (!(this.GetDataEncryptionKeyStreamIterator(
                 startId,
@@ -586,26 +586,26 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return new FeedIteratorCore(
-               clientContext: this.ClientContext,
-               resourceLink: this.LinkUri,
-               resourceType: ResourceType.ClientEncryptionKey,
-               queryDefinition: null,
-               continuationToken: continuationToken,
-               options: requestOptions,
-               usePropertySerializer: true);
+                clientContext: this.ClientContext,
+                resourceLink: this.LinkUri,
+                resourceType: ResourceType.ClientEncryptionKey,
+                queryDefinition: null,
+                continuationToken: continuationToken,
+                options: requestOptions,
+                usePropertySerializer: true);
         }
 
 #if PREVIEW
-    public
+        public override
 #else
-        internal
+        internal virtual
 #endif
-        override async Task<DataEncryptionKeyResponse> CreateDataEncryptionKeyAsync(
-            string id,
-            CosmosEncryptionAlgorithm encryptionAlgorithmId,
-            EncryptionKeyWrapMetadata encryptionKeyWrapMetadata,
-            RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default)
+            async Task<DataEncryptionKeyResponse> CreateDataEncryptionKeyAsync(
+                string id,
+                CosmosEncryptionAlgorithm encryptionAlgorithmId,
+                EncryptionKeyWrapMetadata encryptionKeyWrapMetadata,
+                RequestOptions requestOptions = null,
+                CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(id))
             {

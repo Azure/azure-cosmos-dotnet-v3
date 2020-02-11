@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos
     {
         /// <summary>
         /// Reference to encryption key to be used for encryption / decrytion of data.
-        /// The key must already be created using <see cref="Database.CreateDataEncryptionKeyAsync"/>
+        /// The key must already be created using Database.CreateDataEncryptionKeyAsync
         /// before using it in encryption options.
         /// </summary>
         public DataEncryptionKey DataEncryptionKey { get; set; }

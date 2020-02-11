@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Newtonsoft.Json;
 
     [TestClass]
+    [Ignore]
     public class EncryptionTests
     {
         private static EncryptionKeyWrapMetadata metadata1 = new EncryptionKeyWrapMetadata("metadata1");
@@ -78,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Use a different client instance to avoid (unintentional) cache impact
             using (CosmosClient client = EncryptionTests.GetClient())
             {
-                DataEncryptionKeyProperties readProperties = await client.GetDatabase(this.database.Id).GetDataEncryptionKey(dekId).ReadAsync();
+                DataEncryptionKeyProperties readProperties = await ((DatabaseCore)(DatabaseInlineCore)client.GetDatabase(this.database.Id)).GetDataEncryptionKey(dekId).ReadAsync();
                 Assert.AreEqual(dekProperties, readProperties);
             }
         }

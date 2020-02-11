@@ -875,6 +875,7 @@ namespace Microsoft.Azure.Cosmos
             string name,
             string partitionKeyPath);
 
+#if PREVIEW
         /// <summary>
         /// Returns a reference to a data encryption key object.
         /// </summary>
@@ -893,13 +894,8 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-#if PREVIEW
-    public
-#else
+        public abstract DataEncryptionKey GetDataEncryptionKey(string id);
 
-        internal
-#endif
-        abstract DataEncryptionKey GetDataEncryptionKey(string id);
 
         /// <summary>
         /// Returns an iterator that can be iterated to get properties of data encryption keys.
@@ -928,17 +924,12 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// <see cref="DataEncryptionKey.ReadAsync" /> is recommended for single data encryption key look-up.
         /// </remarks>
-#if PREVIEW
-    public
-#else
-        internal
-#endif
-    abstract FeedIterator<DataEncryptionKeyProperties> GetDataEncryptionKeyIterator(
-        string startId = null,
-        string endId = null,
-        bool isDescending = false,
-        string continuationToken = null,
-        QueryRequestOptions requestOptions = null);
+        public abstract FeedIterator<DataEncryptionKeyProperties> GetDataEncryptionKeyIterator(
+            string startId = null,
+            string endId = null,
+            bool isDescending = false,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null);
 
         /// <summary>
         /// Generates a data encryption key, wraps it using the key wrap metadata provided
@@ -977,16 +968,12 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-#if PREVIEW
-    public
-#else
-        internal
-#endif
-        abstract Task<DataEncryptionKeyResponse> CreateDataEncryptionKeyAsync(
+        public abstract Task<DataEncryptionKeyResponse> CreateDataEncryptionKeyAsync(
             string id,
             CosmosEncryptionAlgorithm encryptionAlgorithm,
             EncryptionKeyWrapMetadata encryptionKeyWrapMetadata,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
+#endif
     }
 }

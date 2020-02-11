@@ -216,12 +216,22 @@ namespace Microsoft.Azure.Cosmos
             return TaskHelper.RunInlineIfNeededAsync(() => this.database.UpsertUserAsync(id, requestOptions, cancellationToken));
         }
 
-        internal override DataEncryptionKey GetDataEncryptionKey(string id)
+#if PREVIEW
+        public override
+#else
+        internal
+#endif
+        DataEncryptionKey GetDataEncryptionKey(string id)
         {
             return this.database.GetDataEncryptionKey(id);
         }
 
-        internal override FeedIterator<DataEncryptionKeyProperties> GetDataEncryptionKeyIterator(
+#if PREVIEW
+        public override
+#else
+        internal
+#endif
+        FeedIterator<DataEncryptionKeyProperties> GetDataEncryptionKeyIterator(
             string startId = null,
             string endId = null,
             bool isDescending = false,
@@ -231,7 +241,12 @@ namespace Microsoft.Azure.Cosmos
             return this.database.GetDataEncryptionKeyIterator(startId, endId, isDescending, continuationToken, requestOptions);
         }
 
-        internal override Task<DataEncryptionKeyResponse> CreateDataEncryptionKeyAsync(
+#if PREVIEW
+        public override
+#else
+        internal
+#endif
+        Task<DataEncryptionKeyResponse> CreateDataEncryptionKeyAsync(
             string id,
             CosmosEncryptionAlgorithm encryptionAlgorithm,
             EncryptionKeyWrapMetadata encryptionKeyWrapMetadata,

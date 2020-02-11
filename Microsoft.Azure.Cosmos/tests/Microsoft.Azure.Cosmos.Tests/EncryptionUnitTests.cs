@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos
         [TestMethod]
         public async Task EncryptionUTCreateDekWithoutEncryptionSerializer()
         {
-            Database database = ((ContainerCore)(ContainerInlineCore)this.GetContainer()).Database;
+            DatabaseCore database = (DatabaseCore)((ContainerCore)(ContainerInlineCore)this.GetContainer()).Database;
 
             try
             {
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos
 
             // Create a DEK using a properly setup client first
             Container container = this.GetContainerWithMockSetup(testHandler);
-            Database databaseWithSerializer = ((ContainerCore)(ContainerInlineCore)container).Database;
+            DatabaseCore databaseWithSerializer = (DatabaseCore)((ContainerCore)(ContainerInlineCore)container).Database;
 
             DataEncryptionKeyResponse dekResponse = await databaseWithSerializer.CreateDataEncryptionKeyAsync(dekId, EncryptionUnitTests.Algo, this.metadata1);
             Assert.AreEqual(HttpStatusCode.Created, dekResponse.StatusCode);
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos
             // Ensure rewrap for this key fails on improperly configured client
             try
             {
-                Database database = ((ContainerCore)(ContainerInlineCore)this.GetContainer(testHandler)).Database;
+                DatabaseCore database = (DatabaseCore)((ContainerCore)(ContainerInlineCore)this.GetContainer(testHandler)).Database;
                 DataEncryptionKey dek = database.GetDataEncryptionKey(dekId);
                 await dek.RewrapAsync(this.metadata2);
                 Assert.Fail();
@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos
         public async Task EncryptionUTCreateDek()
         {
             Container container = this.GetContainerWithMockSetup();
-            Database database = ((ContainerCore)(ContainerInlineCore)container).Database;
+            DatabaseCore database = (DatabaseCore)((ContainerCore)(ContainerInlineCore)container).Database;
 
             string dekId = "mydek";
             DataEncryptionKeyResponse dekResponse = await database.CreateDataEncryptionKeyAsync(dekId, EncryptionUnitTests.Algo, this.metadata1);
@@ -146,7 +146,7 @@ namespace Microsoft.Azure.Cosmos
         public async Task EncryptionUTRewrapDek()
         {
             Container container = this.GetContainerWithMockSetup();
-            Database database = ((ContainerCore)(ContainerInlineCore)container).Database;
+            DatabaseCore database = (DatabaseCore)((ContainerCore)(ContainerInlineCore)container).Database;
 
             string dekId = "mydek";
             DataEncryptionKeyResponse createResponse = await database.CreateDataEncryptionKeyAsync(dekId, EncryptionUnitTests.Algo, this.metadata1);
@@ -189,7 +189,7 @@ namespace Microsoft.Azure.Cosmos
         public async Task EncryptionUTCreateItemWithUnknownDek()
         {
             Container container = this.GetContainerWithMockSetup();
-            Database database = ((ContainerCore)(ContainerInlineCore)container).Database;
+            DatabaseCore database = (DatabaseCore)((ContainerCore)(ContainerInlineCore)container).Database;
 
             MyItem item = EncryptionUnitTests.GetNewItem();
             try
@@ -217,7 +217,7 @@ namespace Microsoft.Azure.Cosmos
         public async Task EncryptionUTCreateItem()
         {
             Container container = this.GetContainerWithMockSetup();
-            Database database = ((ContainerCore)(ContainerInlineCore)container).Database;
+            DatabaseCore database = (DatabaseCore)((ContainerCore)(ContainerInlineCore)container).Database;
 
             string dekId = "mydek";
             DataEncryptionKeyResponse dekResponse = await database.CreateDataEncryptionKeyAsync(dekId, EncryptionUnitTests.Algo, this.metadata1);
@@ -253,7 +253,7 @@ namespace Microsoft.Azure.Cosmos
         public async Task EncryptionUTReadItem()
         {
             Container container = this.GetContainerWithMockSetup();
-            Database database = ((ContainerCore)(ContainerInlineCore)container).Database;
+            DatabaseCore database = (DatabaseCore)((ContainerCore)(ContainerInlineCore)container).Database;
 
             string dekId = "mydek";
             DataEncryptionKeyResponse dekResponse = await database.CreateDataEncryptionKeyAsync(dekId, EncryptionUnitTests.Algo, this.metadata1);
@@ -266,7 +266,7 @@ namespace Microsoft.Azure.Cosmos
 
         private static async Task<MyItem> CreateItemAsync(Container container, string dekId)
         {
-            Database database = ((ContainerCore)(ContainerInlineCore)container).Database;
+            DatabaseCore database = (DatabaseCore)((ContainerCore)(ContainerInlineCore)container).Database;
 
             MyItem item = EncryptionUnitTests.GetNewItem();
 
