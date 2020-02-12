@@ -262,7 +262,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.container.CreateTransactionalBatch(partitionKey);
         }
-
+#if PREVIEW
         public override Task<IEnumerable<FeedToken>> GetFeedTokensAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             return TaskHelper.RunInlineIfNeededAsync(() => this.container.GetFeedTokensAsync(cancellationToken));
@@ -319,7 +319,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return TaskHelper.RunInlineIfNeededAsync(() => this.container.GetPartitionKeyRangesAsync(feedToken, cancellationToken));
         }
-
+#endif
         public static implicit operator ContainerCore(ContainerInlineCore containerInlineCore) => containerInlineCore.container;
     }
 }

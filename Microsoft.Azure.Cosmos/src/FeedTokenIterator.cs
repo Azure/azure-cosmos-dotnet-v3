@@ -33,7 +33,12 @@ namespace Microsoft.Azure.Cosmos
     /// ]]>
     /// </code>
     /// </example>
-    public abstract class FeedTokenIterator
+#if PREVIEW
+    public
+#else
+    internal
+#endif
+    abstract class FeedTokenIterator
     {
         /// <summary>
         /// Tells if there is more results that need to be retrieved from the service

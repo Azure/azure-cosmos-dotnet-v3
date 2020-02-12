@@ -11,7 +11,12 @@ namespace Microsoft.Azure.Cosmos
     /// Represents a unit of feed consumption that can be used as unit of parallelism.
     /// </summary>
     [Serializable]
-    public abstract class FeedToken
+#if PREVIEW
+    public
+#else
+    internal
+#endif
+    abstract class FeedToken
     {
         /// <summary>
         /// Creates a <see cref="FeedToken"/> from a previously serialized instance.

@@ -1120,6 +1120,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A new instance of <see cref="TransactionalBatch"/>.</returns>
         public abstract TransactionalBatch CreateTransactionalBatch(PartitionKey partitionKey);
 
+#if PREVIEW
         /// <summary>
         /// Obtains a list of <see cref="FeedToken"/> that can be used to parallelize Read Feed operations.
         /// </summary>
@@ -1330,5 +1331,6 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
             FeedToken feedToken,
             CancellationToken cancellationToken = default(CancellationToken));
+#endif
     }
 }
