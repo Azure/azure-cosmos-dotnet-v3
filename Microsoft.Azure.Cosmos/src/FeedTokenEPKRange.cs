@@ -203,6 +203,20 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        public static bool TryParseInstance(string toStringValue, out FeedToken feedToken)
+        {
+            try
+            {
+                feedToken = JsonConvert.DeserializeObject<FeedTokenEPKRange>(toStringValue);
+                return true;
+            }
+            catch
+            {
+                feedToken = null;
+                return false;
+            }
+        }
+
         internal static CompositeContinuationToken CreateCompositeContinuationTokenForRange(
             string minInclusive,
             string maxExclusive,
