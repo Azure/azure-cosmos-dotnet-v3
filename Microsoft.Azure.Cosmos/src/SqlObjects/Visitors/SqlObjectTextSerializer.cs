@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Sql
     using System.Globalization;
     using System.IO;
     using System.Linq;
+    using System.Runtime.CompilerServices;
     using System.Text;
     using Newtonsoft.Json;
 
@@ -17,6 +18,11 @@ namespace Microsoft.Azure.Cosmos.Sql
         // When the tests are converted over to baseline files we can just bulk update them and remove this flag.
         private const bool MongoDoesNotUseBaselineFiles = true;
         private static readonly string Tab = "    ";
+        private static readonly char[] CharactersThatNeedEscaping = Enumerable
+            .Range(0, ' ')
+            .Select(x => (char)x)
+            .Concat(new char[] { '"', '\\' })
+            .ToArray();
         private readonly StringWriter writer;
         private readonly bool prettyPrint;
         private int indentLevel;
@@ -576,7 +582,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         public override void Visit(SqlStringLiteral sqlStringLiteral)
         {
             this.writer.Write("\"");
-            this.writer.Write(SqlObjectTextSerializer.GetEscapedString(sqlStringLiteral.Value));
+            SqlObjectTextSerializer.WriteEscapedString(sqlStringLiteral.Value.AsSpan());
             this.writer.Write("\"");
         }
 
@@ -680,121 +686,107 @@ namespace Microsoft.Azure.Cosmos.Sql
             }
         }
 
-        private static string GetEscapedString(string value)
+        unsafe private static void WriteEscapedString(StringBuilder stringBuilder, ReadOnlySpan<char> unescapedString)
         {
-            if (value == null)
+            while (!unescapedString.IsEmpty)
             {
-                throw new ArgumentNullException("value");
-            }
-
-            if (value.All(c => !IsEscapedCharacter(c)))
-            {
-                return value;
-            }
-
-            StringBuilder stringBuilder = new StringBuilder(value.Length);
-
-            foreach (char c in value)
-            {
-                switch (c)
+                int? indexOfFirstCharacterThatNeedsEscaping = SqlObjectTextSerializer.IndexOfCharacterThatNeedsEscaping(unescapedString);
+                if (!indexOfFirstCharacterThatNeedsEscaping.HasValue)
                 {
-                    case '"':
-                        stringBuilder.Append("\\\"");
-                        break;
-                    case '\\':
-                        stringBuilder.Append("\\\\");
-                        break;
-                    case '\b':
-                        stringBuilder.Append("\\b");
-                        break;
-                    case '\f':
-                        stringBuilder.Append("\\f");
-                        break;
-                    case '\n':
-                        stringBuilder.Append("\\n");
-                        break;
-                    case '\r':
-                        stringBuilder.Append("\\r");
-                        break;
-                    case '\t':
-                        stringBuilder.Append("\\t");
-                        break;
-                    default:
-                        switch (CharUnicodeInfo.GetUnicodeCategory(c))
-                        {
-                            case UnicodeCategory.UppercaseLetter:
-                            case UnicodeCategory.LowercaseLetter:
-                            case UnicodeCategory.TitlecaseLetter:
-                            case UnicodeCategory.OtherLetter:
-                            case UnicodeCategory.DecimalDigitNumber:
-                            case UnicodeCategory.LetterNumber:
-                            case UnicodeCategory.OtherNumber:
-                            case UnicodeCategory.SpaceSeparator:
-                            case UnicodeCategory.ConnectorPunctuation:
-                            case UnicodeCategory.DashPunctuation:
-                            case UnicodeCategory.OpenPunctuation:
-                            case UnicodeCategory.ClosePunctuation:
-                            case UnicodeCategory.InitialQuotePunctuation:
-                            case UnicodeCategory.FinalQuotePunctuation:
-                            case UnicodeCategory.OtherPunctuation:
-                            case UnicodeCategory.MathSymbol:
-                            case UnicodeCategory.CurrencySymbol:
-                            case UnicodeCategory.ModifierSymbol:
-                            case UnicodeCategory.OtherSymbol:
-                                stringBuilder.Append(c);
-                                break;
-                            default:
-                                stringBuilder.AppendFormat("\\u{0:x4}", (int)c);
-                                break;
-                        }
-                        break;
+                    // No escaping needed;
+                    indexOfFirstCharacterThatNeedsEscaping = unescapedString.Length;
                 }
-            }
 
-            return stringBuilder.ToString();
-        }
+                // Write as much of the string as possible
+                ReadOnlySpan<char> noEscapeNeededPrefix = unescapedString.Slice(
+                    start: 0,
+                    length: indexOfFirstCharacterThatNeedsEscaping.Value);
 
-        private static bool IsEscapedCharacter(char c)
-        {
-            switch (c)
-            {
-                case '"':
-                case '\\':
-                case '\b':
-                case '\f':
-                case '\n':
-                case '\r':
-                case '\t':
-                    return true;
+                fixed (char* noEscapeNeedPrefixPointer = noEscapeNeededPrefix)
+                {
+                    stringBuilder.Append(noEscapeNeedPrefixPointer, noEscapeNeededPrefix.Length);
+                }
 
-                default:
-                    switch (CharUnicodeInfo.GetUnicodeCategory(c))
+                unescapedString = unescapedString.Slice(start: indexOfFirstCharacterThatNeedsEscaping.Value);
+
+                // Escape the next character if it exists
+                if (!unescapedString.IsEmpty)
+                {
+                    char character = unescapedString[0];
+                    unescapedString = unescapedString.Slice(start: 1);
+
+                    switch (character)
                     {
-                        case UnicodeCategory.UppercaseLetter:
-                        case UnicodeCategory.LowercaseLetter:
-                        case UnicodeCategory.TitlecaseLetter:
-                        case UnicodeCategory.OtherLetter:
-                        case UnicodeCategory.DecimalDigitNumber:
-                        case UnicodeCategory.LetterNumber:
-                        case UnicodeCategory.OtherNumber:
-                        case UnicodeCategory.SpaceSeparator:
-                        case UnicodeCategory.ConnectorPunctuation:
-                        case UnicodeCategory.DashPunctuation:
-                        case UnicodeCategory.OpenPunctuation:
-                        case UnicodeCategory.ClosePunctuation:
-                        case UnicodeCategory.InitialQuotePunctuation:
-                        case UnicodeCategory.FinalQuotePunctuation:
-                        case UnicodeCategory.OtherPunctuation:
-                        case UnicodeCategory.MathSymbol:
-                        case UnicodeCategory.CurrencySymbol:
-                        case UnicodeCategory.ModifierSymbol:
-                        case UnicodeCategory.OtherSymbol:
-                            return false;
+                        case '\\':
+                            stringBuilder.Append('\\');
+                            stringBuilder.Append('\\');
+                            break;
+
+                        case '"':
+                            stringBuilder.Append('\\');
+                            stringBuilder.Append('"');
+                            break;
+
+                        case '/':
+                            stringBuilder.Append('\\');
+                            stringBuilder.Append('/');
+                            break;
+
+                        case '\b':
+                            stringBuilder.Append('\\');
+                            stringBuilder.Append('b');
+                            break;
+
+                        case '\f':
+                            stringBuilder.Append('\\');
+                            stringBuilder.Append('f');
+                            break;
+
+                        case '\n':
+                            stringBuilder.Append('\\');
+                            stringBuilder.Append('n');
+                            break;
+
+                        case '\r':
+                            stringBuilder.Append('\\');
+                            stringBuilder.Append('r');
+                            break;
+
+                        case '\t':
+                            stringBuilder.Append('\\');
+                            stringBuilder.Append('t');
+                            break;
 
                         default:
-                            return true;
+                            char wideCharToEscape = (char)character;
+                            // We got a control character (U+0000 through U+001F).
+                            stringBuilder.Append((byte)'\\');
+                            stringBuilder.Append((byte)'u');
+                            stringBuilder.Append(SqlObjectTextSerializer.GetHexDigit((wideCharToEscape >> 12) & 0xF));
+                            stringBuilder.Append(SqlObjectTextSerializer.GetHexDigit((wideCharToEscape >> 8) & 0xF));
+                            stringBuilder.Append(SqlObjectTextSerializer.GetHexDigit((wideCharToEscape >> 4) & 0xF));
+                            stringBuilder.Append(SqlObjectTextSerializer.GetHexDigit((wideCharToEscape >> 0) & 0xF));
+                            break;
                     }
+                }
             }
+        }
+
+        private static int? IndexOfCharacterThatNeedsEscaping(ReadOnlySpan<char> unescapedString)
+        {
+            int? index = null;
+            int indexOfAny = unescapedString.IndexOfAny(unescapedString);
+            if (indexOfAny != -1)
+            {
+                index = indexOfAny;
+            }
+
+            return index;
+        }
+
+        private static byte GetHexDigit(int value)
+        {
+            return (byte)((value < 10) ? '0' + value : 'A' + value - 10);
         }
 
         private static string SqlUnaryScalarOperatorKindToString(SqlUnaryScalarOperatorKind kind)
