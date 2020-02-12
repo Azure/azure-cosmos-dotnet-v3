@@ -6,16 +6,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
-    using System.Globalization;
     using System.Linq;
-    using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Query;
-    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json;
 
     [TestClass]
     public class FeedTokenTests : BaseCosmosClientHelper
@@ -69,6 +63,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(originalToken.GetContinuation(), deserializedToken.GetContinuation());
                 Assert.AreEqual(originalToken.ContainerRid, deserializedToken.ContainerRid);
                 Assert.AreEqual(originalToken.CompositeContinuationTokens.Count, deserializedToken.CompositeContinuationTokens.Count);
+                Assert.AreEqual(originalToken.CompleteRange.Min, deserializedToken.CompleteRange.Min);
+                Assert.AreEqual(originalToken.CompleteRange.Max, deserializedToken.CompleteRange.Max);
                 Assert.AreEqual(originalToken.CompositeContinuationTokens.Peek().Token, deserializedToken.CompositeContinuationTokens.Peek().Token);
                 Assert.AreEqual(originalToken.CompositeContinuationTokens.Peek().Range.Min, deserializedToken.CompositeContinuationTokens.Peek().Range.Min);
                 Assert.AreEqual(originalToken.CompositeContinuationTokens.Peek().Range.Max, deserializedToken.CompositeContinuationTokens.Peek().Range.Max);
@@ -102,6 +98,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 FeedTokenEPKRange originalToken = tokens[i] as FeedTokenEPKRange;
                 FeedTokenEPKRange deserializedToken = deserialized[i] as FeedTokenEPKRange;
+                Assert.AreEqual(originalToken.CompleteRange.Min, deserializedToken.CompleteRange.Min);
+                Assert.AreEqual(originalToken.CompleteRange.Max, deserializedToken.CompleteRange.Max);
                 Assert.AreEqual(originalToken.ContainerRid, deserializedToken.ContainerRid);
                 CompositeContinuationToken[] originalTokenArray = originalToken.CompositeContinuationTokens.ToArray();
                 CompositeContinuationToken[] deserializedTokenArray = deserializedToken.CompositeContinuationTokens.ToArray();
@@ -147,6 +145,77 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             FeedTokenPartitionKeyRange deserializedFromBackwardcompatibleToken = deserializedFromBackwardcompatible as FeedTokenPartitionKeyRange;
             Assert.IsNotNull(deserializedFromBackwardcompatibleToken, "Error deserializing to FeedTokenPartitionKeyRange");
             Assert.AreEqual(deserializedFromBackwardcompatibleToken.PartitionKeyRangeId, deserializedFeedToken.PartitionKeyRangeId);
+        }
+
+        [TestMethod]
+        public async Task GetPartitionKeyRangesAsync_WithEPKToken()
+        {
+            DocumentFeedResponse<Documents.PartitionKeyRange> ranges = await this.Container.ClientContext.DocumentClient.ReadPartitionKeyRangeFeedAsync(this.Container.LinkUri);
+            int pkRangesCount = ranges.Count;
+            List<FeedToken> tokens = (await this.Container.GetFeedTokensAsync()).ToList();
+            List<string> resolvedRanges = new List<string>();
+            foreach(FeedToken token in tokens)
+            {
+                resolvedRanges.AddRange(await this.Container.GetPartitionKeyRangesAsync(token));
+            }
+
+            Assert.AreEqual(pkRangesCount, resolvedRanges.Count);
+            foreach (Documents.PartitionKeyRange range in ranges)
+            {
+                Assert.IsTrue(resolvedRanges.Contains(range.Id));
+            }
+
+            foreach (string id in resolvedRanges)
+            {
+                Assert.IsTrue(ranges.Any(range => range.Id == id));
+            }
+
+            // Now for a single token
+            tokens = (await this.Container.GetFeedTokensAsync(maxTokens: 1)).ToList();
+            resolvedRanges = (await this.Container.GetPartitionKeyRangesAsync(tokens[0])).ToList();
+
+            Assert.AreEqual(pkRangesCount, resolvedRanges.Count);
+            foreach (Documents.PartitionKeyRange range in ranges)
+            {
+                Assert.IsTrue(resolvedRanges.Contains(range.Id));
+            }
+
+            foreach (string id in resolvedRanges)
+            {
+                Assert.IsTrue(ranges.Any(range => range.Id == id));
+            }
+        }
+
+        [TestMethod]
+        public async Task GetPartitionKeyRangesAsync_WithPKToken()
+        {
+            DocumentFeedResponse<Documents.PartitionKeyRange> ranges = await this.Container.ClientContext.DocumentClient.ReadPartitionKeyRangeFeedAsync(this.Container.LinkUri);
+
+            FeedToken feedToken = new FeedTokenPartitionKey(new PartitionKey("TBD"));
+            List<string> resolvedRanges = (await this.Container.GetPartitionKeyRangesAsync(feedToken)).ToList();
+
+            Assert.AreEqual(1, resolvedRanges.Count, "PK value should resolve to a single range");
+
+            foreach (string id in resolvedRanges)
+            {
+                Assert.IsTrue(ranges.Any(range => range.Id == id));
+            }
+        }
+
+        [TestMethod]
+        public async Task GetPartitionKeyRangesAsync_WithPKRangeIdToken()
+        {
+            DocumentFeedResponse<Documents.PartitionKeyRange> ranges = await this.Container.ClientContext.DocumentClient.ReadPartitionKeyRangeFeedAsync(this.Container.LinkUri);
+
+            FeedToken feedToken = new FeedTokenPartitionKeyRange(ranges.First().Id);
+            List<string> resolvedRanges = (await this.Container.GetPartitionKeyRangesAsync(feedToken)).ToList();
+
+            Assert.AreEqual(1, resolvedRanges.Count);
+
+            foreach (string id in resolvedRanges)
+            {
+                Assert.IsTrue(ranges.Any(range => range.Id == id));
+            }
         }
 
         private void FeedToken_PartitionKey_Validate(PartitionKey partitionKey)
