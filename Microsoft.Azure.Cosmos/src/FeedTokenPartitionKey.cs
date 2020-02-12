@@ -36,5 +36,19 @@ namespace Microsoft.Azure.Cosmos
         {
             this.continuationToken = continuationToken;
         }
+
+        public static bool TryParseInstance(string toStringValue, out FeedToken feedToken)
+        {
+            try
+            {
+                feedToken = JsonConvert.DeserializeObject<FeedTokenPartitionKey>(toStringValue);
+                return true;
+            }
+            catch
+            {
+                feedToken = null;
+                return false;
+            }
+        }
     }
 }

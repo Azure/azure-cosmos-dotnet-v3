@@ -36,6 +36,21 @@ namespace Microsoft.Azure.Cosmos
             string toStringValue,
             out FeedToken parsedToken)
         {
+            if (FeedTokenEPKRange.TryParseInstance(toStringValue, out parsedToken))
+            {
+                return true;
+            }
+
+            if (FeedTokenPartitionKey.TryParseInstance(toStringValue, out parsedToken))
+            {
+                return true;
+            }
+
+            if (FeedTokenPartitionKeyRange.TryParseInstance(toStringValue, out parsedToken))
+            {
+                return true;
+            }
+
             parsedToken = null;
             return false;
         }
