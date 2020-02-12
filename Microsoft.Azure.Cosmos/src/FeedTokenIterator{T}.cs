@@ -14,26 +14,23 @@ namespace Microsoft.Azure.Cosmos
     /// Example on how to fully drain the query results.
     /// <code language="c#">
     /// <![CDATA[
-    /// FeedTokenIterator feedIterator = this.Container.GetChangeFeedStreamIterator();
+    /// FeedTokenIterator<MyItem> feedIterator = this.Container.GetChangeFeedIterator<MyItem>();
     /// FeedToken lastFeedTokenState;
     /// while (feedIterator.HasMoreResults)
     /// {
-    ///     // Stream iterator returns a response with status code
-    ///     using(ResponseMessage response = await feedIterator.ReadNextAsync())
+    ///     FeedResponse<MyItem> response = await feedIterator.ReadNextAsync();
+    ///     foreach (var item in response)
     ///     {
-    ///         if(response.IsSuccessStatusCode)
-    ///         {
-    ///             // Consume response.Content stream
-    ///         }
-    ///
-    ///         // if saving state is needed, the FeedToken can be saved and stored
-    ///         lastFeedTokenState = feedIterator.FeedToken;
+    ///         Console.WriteLine(item);
     ///     }
+    ///     
+    ///     // if saving state is needed, the FeedToken can be saved and stored
+    ///     lastFeedTokenState = feedIterator.FeedToken;
     /// }
     /// ]]>
     /// </code>
     /// </example>
-    public abstract class FeedTokenIterator
+    public abstract class FeedTokenIterator<T>
     {
         /// <summary>
         /// Tells if there is more results that need to be retrieved from the service
@@ -42,16 +39,13 @@ namespace Microsoft.Azure.Cosmos
         /// Example on how to fully drain the query results.
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator feedIterator = this.Container.GetChangeFeedStreamIterator();
+        /// FeedTokenIterator<MyItem> feedIterator = this.Container.GetChangeFeedIterator<MyItem>();
         /// while (feedIterator.HasMoreResults)
         /// {
-        ///     // Stream iterator returns a response with status code
-        ///     using(ResponseMessage response = await feedIterator.ReadNextAsync())
+        ///     FeedResponse<MyItem> response = await feedIterator.ReadNextAsync();
+        ///     foreach (var item in response)
         ///     {
-        ///         if(response.IsSuccessStatusCode)
-        ///         {
-        ///             // Consume response.Content stream
-        ///         }
+        ///         Console.WriteLine(item);
         ///     }
         /// }
         /// ]]>
@@ -84,21 +78,18 @@ namespace Microsoft.Azure.Cosmos
         /// Example on how to fully drain the query results.
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedTokenIterator feedIterator = this.Container.GetChangeFeedStreamIterator();
+        /// FeedTokenIterator<MyItem> feedIterator = this.Container.GetChangeFeedIterator<MyItem>();
         /// while (feedIterator.HasMoreResults)
         /// {
-        ///     // Stream iterator returns a response with status code
-        ///     using(ResponseMessage response = await feedIterator.ReadNextAsync())
+        ///     FeedResponse<MyItem> response = await feedIterator.ReadNextAsync();
+        ///     foreach (var item in response)
         ///     {
-        ///         if(response.IsSuccessStatusCode)
-        ///         {
-        ///             // Consume response.Content stream
-        ///         }
+        ///         Console.WriteLine(item);
         ///     }
         /// }
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default);
+        public abstract Task<FeedResponse<T>> ReadNextAsync(CancellationToken cancellationToken = default);
     }
 }

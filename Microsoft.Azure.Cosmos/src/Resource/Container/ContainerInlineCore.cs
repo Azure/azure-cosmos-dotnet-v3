@@ -287,6 +287,18 @@ namespace Microsoft.Azure.Cosmos
             return this.container.GetChangeFeedStreamIterator(feedToken, changeFeedRequestOptions);
         }
 
+        public override FeedTokenIterator<T> GetChangeFeedIterator<T>(ChangeFeedRequestOptions changeFeedRequestOptions = null)
+        {
+            return this.container.GetChangeFeedIterator<T>(changeFeedRequestOptions);
+        }
+
+        public override FeedTokenIterator<T> GetChangeFeedIterator<T>(
+            FeedToken feedToken,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null)
+        {
+            return this.container.GetChangeFeedIterator<T>(feedToken, changeFeedRequestOptions);
+        }
+
         public static implicit operator ContainerCore(ContainerInlineCore containerInlineCore) => containerInlineCore.container;
     }
 }

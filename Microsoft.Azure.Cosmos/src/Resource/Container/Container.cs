@@ -1174,8 +1174,89 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="feedToken">A FeedToken obtained from <see cref="Container.GetFeedTokensAsync(CancellationToken)"/> or from a previous FeedTokenIterator</param>
         /// <param name="changeFeedRequestOptions">(Optional) The options for the Change Feed consumption.</param>
         /// <seealso cref="Container.GetFeedTokensAsync(CancellationToken)"/>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// IEnumerable<FeedToken> feedTokens = await this.Container.GetFeedTokensAsync();
+        /// // Distribute feedTokens across multiple compute units and pass each one to a different iterator
+        /// FeedTokenIterator feedIterator = this.Container.GetChangeFeedStreamIterator(feedToken.First());
+        ///
+        /// while (feedIterator.HasMoreResults)
+        /// {
+        ///     using (ResponseMessage response = await feedIterator.ReadNextAsync())
+        ///     {
+        ///         using (StreamReader sr = new StreamReader(response.Content))
+        ///         using (JsonTextReader jtr = new JsonTextReader(sr))
+        ///         {
+        ///             JObject result = JObject.Load(jtr);
+        ///         }
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
         /// <returns>An iterator to go through the Change Feed for a particular FeedToken.</returns>
         public abstract FeedTokenIterator GetChangeFeedStreamIterator(
+            FeedToken feedToken,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null);
+
+        /// <summary>
+        ///  This method creates an iterator to consume the container's Change Feed.
+        ///  The iterator exposes mechanisms to save and resume state through <see cref="FeedTokenIterator.FeedToken"/>.
+        /// </summary>
+        /// <param name="changeFeedRequestOptions">(Optional) The options for the Change Feed consumption.</param>
+        /// <returns>An iterator to go through the Change Feed.</returns>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// FeedTokenIterator<MyItem> feedIterator = this.Container.GetChangeFeedIterator<MyItem>();
+        /// FeedToken lastFeedTokenState;
+        /// while (feedIterator.HasMoreResults)
+        /// {
+        ///     FeedResponse<MyItem> response = await feedIterator.ReadNextAsync();
+        ///     foreach (var item in response)
+        ///     {
+        ///         Console.WriteLine(item);
+        ///     }
+        ///     
+        ///     // if saving state is needed, the FeedToken can be saved and stored
+        ///     lastFeedTokenState = feedIterator.FeedToken;
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract FeedTokenIterator<T> GetChangeFeedIterator<T>(ChangeFeedRequestOptions changeFeedRequestOptions = null);
+
+        /// <summary>
+        ///  This method creates an iterator to consume a FeedToken's Change Feed.
+        ///  The iterator exposes mechanisms to save and resume state through <see cref="FeedTokenIterator.FeedToken"/>.
+        /// </summary>
+        /// <param name="feedToken">A FeedToken obtained from <see cref="Container.GetFeedTokensAsync(CancellationToken)"/> or from a previous FeedTokenIterator</param>
+        /// <param name="changeFeedRequestOptions">(Optional) The options for the Change Feed consumption.</param>
+        /// <seealso cref="Container.GetFeedTokensAsync(CancellationToken)"/>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// IEnumerable<FeedToken> feedTokens = await this.Container.GetFeedTokensAsync();
+        /// // Distribute feedTokens across multiple compute units and pass each one to a different iterator
+        /// FeedTokenIterator<MyItem> feedIterator = this.Container.GetChangeFeedIterator<MyItem>(feedToken.First());
+        /// FeedToken lastFeedTokenState;
+        /// while (feedIterator.HasMoreResults)
+        /// {
+        ///     FeedResponse<MyItem> response = await feedIterator.ReadNextAsync();
+        ///     foreach (var item in response)
+        ///     {
+        ///         Console.WriteLine(item);
+        ///     }
+        ///     
+        ///     // if saving state is needed, the FeedToken can be saved and stored
+        ///     lastFeedTokenState = feedIterator.FeedToken;
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <returns>An iterator to go through the Change Feed for a particular FeedToken.</returns>
+        public abstract FeedTokenIterator<T> GetChangeFeedIterator<T>(
             FeedToken feedToken,
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
     }

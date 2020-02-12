@@ -13,12 +13,9 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
 
     /// <summary>
-    /// Cosmos Stand-By Feed iterator implementing Composite Continuation Token
+    /// Cosmos Change Feed iterator using FeedToken
     /// </summary>
-    /// <remarks>
-    /// Legacy.
-    /// </remarks>
-    internal class ChangeFeedIteratorCore : FeedTokenIterator
+    internal sealed class ChangeFeedIteratorCore : FeedTokenIterator
     {
         private readonly ChangeFeedRequestOptions changeFeedOptions;
         private readonly CosmosClientContext clientContext;
@@ -123,6 +120,43 @@ namespace Microsoft.Azure.Cosmos
         {
             state = this.feedTokenInternal.GetContinuation();
             return true;
+        }
+    }
+
+    /// <summary>
+    /// Cosmos Change Feed iterator using FeedToken
+    /// </summary>
+    internal sealed class ChangeFeedIteratorCore<T> : FeedTokenIterator<T>
+    {
+        private readonly FeedTokenIterator feedIterator;
+        private readonly Func<ResponseMessage, FeedResponse<T>> responseCreator;
+
+        internal ChangeFeedIteratorCore(
+            FeedTokenIterator feedIterator,
+            Func<ResponseMessage, FeedResponse<T>> responseCreator)
+        {
+            this.responseCreator = responseCreator;
+            this.feedIterator = feedIterator;
+        }
+
+        public override bool HasMoreResults => this.feedIterator.HasMoreResults;
+
+        public override FeedToken FeedToken => this.feedIterator.FeedToken;
+
+        /// <summary>
+        /// Get the next set of results from the cosmos service
+        /// </summary>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>A query response from cosmos service</returns>
+        public override async Task<FeedResponse<T>> ReadNextAsync(CancellationToken cancellationToken = default)
+        {
+            ResponseMessage response = await this.feedIterator.ReadNextAsync(cancellationToken);
+            return this.responseCreator(response);
+        }
+
+        public override bool TryGetContinuationToken(out string continuationToken)
+        {
+            return this.feedIterator.TryGetContinuationToken(out continuationToken);
         }
     }
 }
