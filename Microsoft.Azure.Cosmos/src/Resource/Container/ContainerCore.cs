@@ -364,6 +364,26 @@ namespace Microsoft.Azure.Cosmos
             throw new ArgumentException(nameof(feedToken), ClientResources.FeedToken_UnrecognizedFeedToken);
         }
 
+        public override FeedTokenIterator GetChangeFeedStreamIterator(ChangeFeedRequestOptions changeFeedRequestOptions = null)
+        {
+            return new ChangeFeedIteratorCore(
+                this.ClientContext,
+                this,
+                changeFeedRequestOptions);
+        }
+
+        public override FeedTokenIterator GetChangeFeedStreamIterator(
+            FeedToken feedToken,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null)
+        {
+            FeedTokenInternal feedTokenInternal = feedToken as FeedTokenInternal;
+            return new ChangeFeedIteratorCore(
+                this.ClientContext,
+                this,
+                feedTokenInternal,
+                changeFeedRequestOptions);
+        }
+
         /// <summary>
         /// Gets the container's Properties by using the internal cache.
         /// In case the cache does not have information about this container, it may end up making a server call to fetch the data.
