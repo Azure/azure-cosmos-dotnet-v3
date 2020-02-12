@@ -118,6 +118,22 @@ namespace Microsoft.Azure.Cosmos
                         feedTokenPartitionKey.UpdateContinuation(continuationJToken.Value<string>());
                         return feedTokenPartitionKey;
                     }
+                case FeedTokenType.PartitionKeyRangeId:
+                    {
+                        if (!jObject.TryGetValue(FeedTokenInternalConverter.ContinuationPropertyName, out JToken continuationJToken))
+                        {
+                            throw new JsonSerializationException(ClientResources.FeedToken_UnknownFormat);
+                        }
+
+                        if (!jObject.TryGetValue(FeedTokenInternalConverter.PartitionKeyRangeIdPropertyName, out JToken pkJToken))
+                        {
+                            throw new JsonSerializationException(ClientResources.FeedToken_UnknownFormat);
+                        }
+
+                        FeedTokenPartitionKeyRange feedTokenPartitionKeyRange = new FeedTokenPartitionKeyRange(pkJToken.Value<string>());
+                        feedTokenPartitionKeyRange.UpdateContinuation(continuationJToken.Value<string>());
+                        return feedTokenPartitionKeyRange;
+                    }
             }
 
             throw new JsonSerializationException(ClientResources.FeedToken_UnknownFormat);
