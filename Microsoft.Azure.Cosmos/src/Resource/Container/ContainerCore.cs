@@ -384,6 +384,30 @@ namespace Microsoft.Azure.Cosmos
                 changeFeedRequestOptions);
         }
 
+        public override FeedTokenIterator<T> GetChangeFeedIterator<T>(ChangeFeedRequestOptions changeFeedRequestOptions = null)
+        {
+            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
+                this.ClientContext,
+                this,
+                changeFeedRequestOptions);
+
+            return new ChangeFeedIteratorCore<T>(changeFeedIteratorCore, responseCreator: this.ClientContext.ResponseFactory.CreateChangeFeedUserTypeResponse<T>);
+        }
+
+        public override FeedTokenIterator<T> GetChangeFeedIterator<T>(
+            FeedToken feedToken,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null)
+        {
+            FeedTokenInternal feedTokenInternal = feedToken as FeedTokenInternal;
+            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
+                this.ClientContext,
+                this,
+                feedTokenInternal,
+                changeFeedRequestOptions);
+
+            return new ChangeFeedIteratorCore<T>(changeFeedIteratorCore, responseCreator: this.ClientContext.ResponseFactory.CreateChangeFeedUserTypeResponse<T>);
+        }
+
         /// <summary>
         /// Gets the container's Properties by using the internal cache.
         /// In case the cache does not have information about this container, it may end up making a server call to fetch the data.
