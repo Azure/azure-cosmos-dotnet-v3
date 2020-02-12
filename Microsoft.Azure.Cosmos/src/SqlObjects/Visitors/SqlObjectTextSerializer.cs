@@ -4,25 +4,25 @@
 namespace Microsoft.Azure.Cosmos.Sql
 {
     using System;
+    using System.Buffers;
+    using System.Buffers.Text;
     using System.Globalization;
     using System.IO;
     using System.Linq;
     using System.Runtime.CompilerServices;
+    using System.ServiceModel.Channels;
     using System.Text;
     using Newtonsoft.Json;
 
     internal sealed class SqlObjectTextSerializer : SqlObjectVisitor
     {
-        // Mongo's query translation tests do not use baseline files,
-        // so changing whitespaces involve manually updating the expected output for each test.
-        // When the tests are converted over to baseline files we can just bulk update them and remove this flag.
-        private const bool MongoDoesNotUseBaselineFiles = true;
-        private static readonly string Tab = "    ";
+        private const string Tab = "    ";
         private static readonly char[] CharactersThatNeedEscaping = Enumerable
             .Range(0, ' ')
             .Select(x => (char)x)
             .Concat(new char[] { '"', '\\' })
             .ToArray();
+        private static readonly StandardFormat G17 = new StandardFormat(symbol: 'G', precision: 17);
         private readonly StringWriter writer;
         private readonly bool prettyPrint;
         private int indentLevel;
@@ -322,26 +322,7 @@ namespace Microsoft.Azure.Cosmos.Sql
 
         public override void Visit(SqlNumberLiteral sqlNumberLiteral)
         {
-            // We have to use InvariantCulture due to number formatting.
-            // "1234.1234" is correct while "1234,1234" is incorrect.
-            if (sqlNumberLiteral.Value.IsDouble)
-            {
-                string literalString = sqlNumberLiteral.Value.ToString(CultureInfo.InvariantCulture);
-                double literalValue = 0.0;
-                if (!sqlNumberLiteral.Value.IsNaN &&
-                    !sqlNumberLiteral.Value.IsInfinity &&
-                    (!double.TryParse(literalString, NumberStyles.Number, CultureInfo.InvariantCulture, out literalValue) ||
-                    !Number64.ToDouble(sqlNumberLiteral.Value).Equals(literalValue)))
-                {
-                    literalString = sqlNumberLiteral.Value.ToString("G17", CultureInfo.InvariantCulture);
-                }
-
-                this.writer.Write(literalString);
-            }
-            else
-            {
-                this.writer.Write(sqlNumberLiteral.Value.ToString(CultureInfo.InvariantCulture));
-            }
+            SqlObjectTextSerializer.WriteNumber64(this.writer.GetStringBuilder(), sqlNumberLiteral.Value);
         }
 
         public override void Visit(SqlNumberPathExpression sqlNumberPathExpression)
@@ -500,11 +481,6 @@ namespace Microsoft.Azure.Cosmos.Sql
                 this.WriteDelimiter(string.Empty);
                 sqlQuery.OffsetLimitClause.Accept(this);
             }
-
-            if (MongoDoesNotUseBaselineFiles)
-            {
-                this.writer.Write(" ");
-            }
         }
 
         public override void Visit(SqlSelectClause sqlSelectClause)
@@ -582,7 +558,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         public override void Visit(SqlStringLiteral sqlStringLiteral)
         {
             this.writer.Write("\"");
-            SqlObjectTextSerializer.WriteEscapedString(sqlStringLiteral.Value.AsSpan());
+            SqlObjectTextSerializer.WriteEscapedString(this.writer.GetStringBuilder(), sqlStringLiteral.Value.AsSpan());
             this.writer.Write("\"");
         }
 
@@ -683,6 +659,41 @@ namespace Microsoft.Azure.Cosmos.Sql
                 {
                     this.writer.Write(Tab);
                 }
+            }
+        }
+
+        unsafe private static void WriteNumber64(StringBuilder stringBuilder, Number64 value)
+        {
+            const int MaxNumberLength = 32;
+
+            Span<byte> buffer = stackalloc byte[MaxNumberLength];
+            int bytesWritten;
+
+            if (value.IsInteger)
+            {
+                if (!Utf8Formatter.TryFormat(
+                    value: Number64.ToLong(value),
+                    destination: buffer,
+                    bytesWritten: out bytesWritten))
+                {
+                    throw new InvalidOperationException($"Failed to write a long.");
+                }
+            }
+            else
+            {
+                if (!Utf8Formatter.TryFormat(
+                    value: Number64.ToDouble(value),
+                    destination: buffer,
+                    bytesWritten: out bytesWritten,
+                    format: G17))
+                {
+                    throw new InvalidOperationException($"Failed to write a double.");
+                }
+            }
+
+            for (int i = 0; i < buffer.Length; i++)
+            {
+                stringBuilder.Append((char)buffer[i]);
             }
         }
 
