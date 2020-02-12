@@ -720,6 +720,99 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(totalDocuments, documentsRead);
         }
 
+        /// <summary>
+        /// Verify that backward compatibility is enabled through PKRangeId
+        /// </summary>
+        [TestMethod]
+        public async Task ChangeFeedIteratorCore_PartitionKeyRangeId_ReadAll()
+        {
+            int totalDocuments = 200;
+            await this.CreateRandomItems(this.LargerContainer, totalDocuments, randomPartitionKey: true);
+            DocumentFeedResponse<Documents.PartitionKeyRange> ranges = await this.LargerContainer.ClientContext.DocumentClient.ReadPartitionKeyRangeFeedAsync(this.LargerContainer.LinkUri);
+            List<FeedToken> tokens = new List<FeedToken>(ranges.Count);
+            foreach(Documents.PartitionKeyRange range in ranges)
+            {
+                tokens.Add(new FeedTokenPartitionKeyRange(range.Id));
+            }
+
+            ContainerCore itemsCore = this.LargerContainer;
+            List<Task<int>> tasks = tokens.Select(token => Task.Run(async () =>
+            {
+                int count = 0;
+                FeedTokenIterator iteratorForToken =
+                    itemsCore.GetChangeFeedStreamIterator(token, changeFeedRequestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue.ToUniversalTime() });
+                while (iteratorForToken.HasMoreResults)
+                {
+                    using (ResponseMessage responseMessage =
+                    await iteratorForToken.ReadNextAsync(this.cancellationToken))
+                    {
+                        if (responseMessage.Content != null)
+                        {
+                            Collection<ToDoActivity> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
+                            count += response.Count;
+                        }
+                    }
+                }
+
+                return count;
+
+            })).ToList();
+
+            await Task.WhenAll(tasks);
+
+            int documentsRead = 0;
+            foreach (Task<int> task in tasks)
+            {
+                documentsRead += task.Result;
+            }
+
+            Assert.AreEqual(totalDocuments, documentsRead);
+        }
+
+        /// <summary>
+        /// Verify that backward compatibility is enabled through PKRangeId
+        /// </summary>
+        [TestMethod]
+        public async Task ChangeFeedIteratorCore_PartitionKeyRangeId_OfT_ReadAll()
+        {
+            int totalDocuments = 200;
+            await this.CreateRandomItems(this.LargerContainer, totalDocuments, randomPartitionKey: true);
+            DocumentFeedResponse<Documents.PartitionKeyRange> ranges = await this.LargerContainer.ClientContext.DocumentClient.ReadPartitionKeyRangeFeedAsync(this.LargerContainer.LinkUri);
+            List<FeedToken> tokens = new List<FeedToken>(ranges.Count);
+            foreach (Documents.PartitionKeyRange range in ranges)
+            {
+                tokens.Add(new FeedTokenPartitionKeyRange(range.Id));
+            }
+
+            ContainerCore itemsCore = this.LargerContainer;
+            List<Task<int>> tasks = tokens.Select(token => Task.Run(async () =>
+            {
+                int count = 0;
+                FeedTokenIterator<ToDoActivity> iteratorForToken =
+                    itemsCore.GetChangeFeedIterator<ToDoActivity>(token, changeFeedRequestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue.ToUniversalTime() });
+                while (iteratorForToken.HasMoreResults)
+                {
+                    FeedResponse<ToDoActivity> feedResponse = await iteratorForToken.ReadNextAsync(this.cancellationToken);
+                    Assert.IsNotNull(iteratorForToken.FeedToken);
+                    Assert.IsTrue(iteratorForToken.TryGetContinuationToken(out string continuationToken));
+                    count += feedResponse.Count;
+                }
+
+                return count;
+
+            })).ToList();
+
+            await Task.WhenAll(tasks);
+
+            int documentsRead = 0;
+            foreach (Task<int> task in tasks)
+            {
+                documentsRead += task.Result;
+            }
+
+            Assert.AreEqual(totalDocuments, documentsRead);
+        }
+
         private async Task<IList<ToDoActivity>> CreateRandomItems(ContainerCore container, int pkCount, int perPKItemCount = 1, bool randomPartitionKey = true)
         {
             Assert.IsFalse(!randomPartitionKey && perPKItemCount > 1);
