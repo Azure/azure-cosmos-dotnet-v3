@@ -202,8 +202,8 @@ namespace Microsoft.Azure.Cosmos
         public override async Task<IEnumerable<FeedToken>> GetFeedTokensAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             PartitionKeyRangeCache partitionKeyRangeCache = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
-            IReadOnlyList<PartitionKeyRange> partitionKeyRanges = await this.GetCurrentPartitionKeyRangesAsync(partitionKeyRangeCache);
             string containerRId = await this.GetRIDAsync(cancellationToken);
+            IReadOnlyList<PartitionKeyRange> partitionKeyRanges = await ContainerCore.GetCurrentPartitionKeyRangesAsync(containerRId, partitionKeyRangeCache);            
             return ContainerCore.CreateFeedTokensPerRange(containerRId, partitionKeyRanges);
         }
 
@@ -217,15 +217,29 @@ namespace Microsoft.Azure.Cosmos
             }
 
             PartitionKeyRangeCache partitionKeyRangeCache = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
-            IReadOnlyList<PartitionKeyRange> partitionKeyRanges = await this.GetCurrentPartitionKeyRangesAsync(partitionKeyRangeCache);
             string containerRId = await this.GetRIDAsync(cancellationToken);
+            IReadOnlyList<PartitionKeyRange> partitionKeyRanges = await ContainerCore.GetCurrentPartitionKeyRangesAsync(containerRId, partitionKeyRangeCache);
+
+            // If the number of ranges is less than the max
             if (partitionKeyRanges.Count <= maxTokens)
             {
                 return ContainerCore.CreateFeedTokensPerRange(containerRId, partitionKeyRanges);
             }
 
-            // TODO: bucketize
-            return ContainerCore.CreateFeedTokensPerRange(containerRId, partitionKeyRanges);
+            // Optimization for 1
+            if (maxTokens == 1)
+            {
+                return new List<FeedToken>(1) { new FeedTokenEPKRange(containerRId, partitionKeyRanges) };
+            }
+
+            int bucketSize = (int)Math.Ceiling((double)partitionKeyRanges.Count / maxTokens);
+            List<FeedTokenEPKRange> feedTokens = new List<FeedTokenEPKRange>(maxTokens);
+            foreach (IReadOnlyList<PartitionKeyRange> bucketPartitionKeyRanges in partitionKeyRanges.Bucket(bucketSize))
+            {
+                feedTokens.Add(new FeedTokenEPKRange(containerRId, bucketPartitionKeyRanges));
+            }
+
+            return feedTokens;
         }
 
         public override FeedTokenIterator GetChangeFeedStreamIterator(ChangeFeedRequestOptions changeFeedRequestOptions = null)
@@ -397,10 +411,12 @@ namespace Microsoft.Azure.Cosmos
               cancellationToken: cancellationToken);
         }
 
-        private async Task<IReadOnlyList<PartitionKeyRange>> GetCurrentPartitionKeyRangesAsync(PartitionKeyRangeCache partitionKeyRangeCache)
+        private static async Task<IReadOnlyList<PartitionKeyRange>> GetCurrentPartitionKeyRangesAsync(
+            string containerRid,
+            PartitionKeyRangeCache partitionKeyRangeCache)
         {
             return await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
-                        this.Id,
+                        containerRid,
                         new Range<string>(
                             PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
                             PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
