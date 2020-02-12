@@ -287,6 +287,13 @@ namespace Microsoft.Azure.Cosmos
             return this.container.GetChangeFeedStreamIterator(feedToken, changeFeedRequestOptions);
         }
 
+        public override FeedTokenIterator GetChangeFeedStreamIterator(
+            PartitionKey partitionKey,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null)
+        {
+            return this.container.GetChangeFeedStreamIterator(partitionKey, changeFeedRequestOptions);
+        }
+
         public override FeedTokenIterator<T> GetChangeFeedIterator<T>(ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
             return this.container.GetChangeFeedIterator<T>(changeFeedRequestOptions);
@@ -297,6 +304,13 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
             return this.container.GetChangeFeedIterator<T>(feedToken, changeFeedRequestOptions);
+        }
+
+        public override FeedTokenIterator<T> GetChangeFeedIterator<T>(
+            PartitionKey partitionKey,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null)
+        {
+            return this.container.GetChangeFeedIterator<T>(partitionKey, changeFeedRequestOptions);
         }
 
         public static implicit operator ContainerCore(ContainerInlineCore containerInlineCore) => containerInlineCore.container;

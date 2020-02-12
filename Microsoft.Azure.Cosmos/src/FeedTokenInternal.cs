@@ -11,6 +11,11 @@ namespace Microsoft.Azure.Cosmos
     internal abstract class FeedTokenInternal : FeedToken
     {
         public string ContainerRid { get; }
+
+        public FeedTokenInternal()
+        {
+        }
+
         public FeedTokenInternal(string containerRid)
         {
             if (string.IsNullOrEmpty(containerRid))
