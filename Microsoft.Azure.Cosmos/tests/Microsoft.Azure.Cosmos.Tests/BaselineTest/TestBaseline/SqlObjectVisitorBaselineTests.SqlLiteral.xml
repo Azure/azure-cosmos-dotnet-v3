@@ -380,12 +380,12 @@ NaN
 }]]></SqlObject>
     </Input>
     <Output>
-      <TextOutput><![CDATA[4.9406564584124654E-324]]></TextOutput>
+      <TextOutput><![CDATA[4.94065645841247E-324]]></TextOutput>
       <PrettyPrint><![CDATA[
-4.9406564584124654E-324
+4.94065645841247E-324
 ]]></PrettyPrint>
       <HashCode>198553994</HashCode>
-      <ObfusctedQuery><![CDATA[4.9406564584124654E-324]]></ObfusctedQuery>
+      <ObfusctedQuery><![CDATA[4.94065645841247E-324]]></ObfusctedQuery>
     </Output>
   </Result>
   <Result>

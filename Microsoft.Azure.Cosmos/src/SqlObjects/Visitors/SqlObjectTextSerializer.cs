@@ -22,7 +22,6 @@ namespace Microsoft.Azure.Cosmos.Sql
             .Select(x => (char)x)
             .Concat(new char[] { '"', '\\' })
             .ToArray();
-        private static readonly StandardFormat G17 = new StandardFormat(symbol: 'G', precision: 17);
         private readonly StringWriter writer;
         private readonly bool prettyPrint;
         private int indentLevel;
@@ -678,22 +677,19 @@ namespace Microsoft.Azure.Cosmos.Sql
                 {
                     throw new InvalidOperationException($"Failed to write a long.");
                 }
+
+                buffer = buffer.Slice(start: 0, length: bytesWritten);
+
+                for (int i = 0; i < buffer.Length; i++)
+                {
+                    stringBuilder.Append((char)buffer[i]);
+                }
             }
             else
             {
-                if (!Utf8Formatter.TryFormat(
-                    value: Number64.ToDouble(value),
-                    destination: buffer,
-                    bytesWritten: out bytesWritten,
-                    format: G17))
-                {
-                    throw new InvalidOperationException($"Failed to write a double.");
-                }
-            }
-
-            for (int i = 0; i < buffer.Length; i++)
-            {
-                stringBuilder.Append((char)buffer[i]);
+                // Until we move to Core 3.0 we have to call ToString(),
+                // since neither G with precision nor R are supported for Utf8Formatter.
+                stringBuilder.Append(value.ToString("R", CultureInfo.InvariantCulture));
             }
         }
 
@@ -786,7 +782,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         private static int? IndexOfCharacterThatNeedsEscaping(ReadOnlySpan<char> unescapedString)
         {
             int? index = null;
-            int indexOfAny = unescapedString.IndexOfAny(unescapedString);
+            int indexOfAny = unescapedString.IndexOfAny(SqlObjectTextSerializer.CharactersThatNeedEscaping);
             if (indexOfAny != -1)
             {
                 index = indexOfAny;
