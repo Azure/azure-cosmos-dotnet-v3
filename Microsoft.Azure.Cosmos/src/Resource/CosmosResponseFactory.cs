@@ -22,6 +22,23 @@ namespace Microsoft.Azure.Cosmos
             this.serializerCore = jsonSerializerCore;
         }
 
+        internal FeedResponse<T> CreateChangeFeedUserTypeResponse<T>(
+            ResponseMessage responseMessage)
+        {
+            return this.CreateChangeFeedResponseHelper<T>(
+                responseMessage,
+                Documents.ResourceType.Document);
+        }
+
+        internal FeedResponse<T> CreateChangeFeedUserTypeResponse<T>(
+            ResponseMessage responseMessage,
+            Documents.ResourceType resourceType)
+        {
+            return this.CreateChangeFeedResponseHelper<T>(
+                responseMessage,
+                resourceType);
+        }
+
         internal FeedResponse<T> CreateQueryFeedUserTypeResponse<T>(
             ResponseMessage responseMessage)
         {
@@ -54,6 +71,16 @@ namespace Microsoft.Azure.Cosmos
                     serializerCore: this.serializerCore);
             }
 
+            return ReadFeedResponse<T>.CreateResponse<T>(
+                       cosmosResponseMessage,
+                       this.serializerCore,
+                       resourceType);
+        }
+
+        private FeedResponse<T> CreateChangeFeedResponseHelper<T>(
+            ResponseMessage cosmosResponseMessage,
+            Documents.ResourceType resourceType)
+        {
             return ReadFeedResponse<T>.CreateResponse<T>(
                        cosmosResponseMessage,
                        this.serializerCore,
