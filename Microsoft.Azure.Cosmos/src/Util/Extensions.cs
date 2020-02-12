@@ -156,6 +156,11 @@ namespace Microsoft.Azure.Cosmos
             this IReadOnlyList<T> originalList,
             int bucketSize)
         {
+            if (bucketSize <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(bucketSize));
+            }
+
             List<T> bucket = new List<T>(bucketSize);
             foreach (T item in originalList)
             {
@@ -165,6 +170,11 @@ namespace Microsoft.Azure.Cosmos
                     yield return bucket;
                     bucket = new List<T>(bucketSize);
                 }
+            }
+
+            if (bucket.Count == 0)
+            {
+                yield break;
             }
 
             yield return bucket;
