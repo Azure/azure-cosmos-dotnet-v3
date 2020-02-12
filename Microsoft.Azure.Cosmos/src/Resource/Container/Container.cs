@@ -1139,5 +1139,44 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<IEnumerable<FeedToken>> GetFeedTokensAsync(
             int maxTokens,
             CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
+        ///  This method creates an iterator to consume the container's Change Feed.
+        ///  The iterator exposes mechanisms to save and resume state through <see cref="FeedTokenIterator.FeedToken"/>.
+        /// </summary>
+        /// <param name="changeFeedRequestOptions">(Optional) The options for the Change Feed consumption.</param>
+        /// <returns>An iterator to go through the Change Feed.</returns>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// FeedTokenIterator feedIterator = this.Container.GetChangeFeedStreamIterator();
+        ///
+        /// while (feedIterator.HasMoreResults)
+        /// {
+        ///     using (ResponseMessage response = await feedIterator.ReadNextAsync())
+        ///     {
+        ///         using (StreamReader sr = new StreamReader(response.Content))
+        ///         using (JsonTextReader jtr = new JsonTextReader(sr))
+        ///         {
+        ///             JObject result = JObject.Load(jtr);
+        ///         }
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract FeedTokenIterator GetChangeFeedStreamIterator(ChangeFeedRequestOptions changeFeedRequestOptions = null);
+
+        /// <summary>
+        ///  This method creates an iterator to consume a FeedToken's Change Feed.
+        ///  The iterator exposes mechanisms to save and resume state through <see cref="FeedTokenIterator.FeedToken"/>.
+        /// </summary>
+        /// <param name="feedToken">A FeedToken obtained from <see cref="Container.GetFeedTokensAsync(CancellationToken)"/> or from a previous FeedTokenIterator</param>
+        /// <param name="changeFeedRequestOptions">(Optional) The options for the Change Feed consumption.</param>
+        /// <seealso cref="Container.GetFeedTokensAsync(CancellationToken)"/>
+        /// <returns>An iterator to go through the Change Feed for a particular FeedToken.</returns>
+        public abstract FeedTokenIterator GetChangeFeedStreamIterator(
+            FeedToken feedToken,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null);
     }
 }

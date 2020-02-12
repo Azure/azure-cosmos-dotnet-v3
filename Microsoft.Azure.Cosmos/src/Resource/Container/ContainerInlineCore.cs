@@ -275,6 +275,18 @@ namespace Microsoft.Azure.Cosmos
             return TaskHelper.RunInlineIfNeededAsync(() => this.container.GetFeedTokensAsync(maxTokens, cancellationToken));
         }
 
+        public override FeedTokenIterator GetChangeFeedStreamIterator(ChangeFeedRequestOptions changeFeedRequestOptions = null)
+        {
+            return this.container.GetChangeFeedStreamIterator(changeFeedRequestOptions);
+        }
+
+        public override FeedTokenIterator GetChangeFeedStreamIterator(
+            FeedToken feedToken,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null)
+        {
+            return this.container.GetChangeFeedStreamIterator(feedToken, changeFeedRequestOptions);
+        }
+
         public static implicit operator ContainerCore(ContainerInlineCore containerInlineCore) => containerInlineCore.container;
     }
 }
