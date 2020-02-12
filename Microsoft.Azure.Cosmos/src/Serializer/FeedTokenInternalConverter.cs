@@ -114,6 +114,12 @@ namespace Microsoft.Azure.Cosmos
                     }
             }
 
+                        FeedTokenPartitionKey feedTokenPartitionKey = new FeedTokenPartitionKey(partitionKey);
+                        feedTokenPartitionKey.UpdateContinuation(continuationJToken.Value<string>());
+                        return feedTokenPartitionKey;
+                    }
+            }
+
             throw new JsonSerializationException(ClientResources.FeedToken_UnknownFormat);
         }
 
