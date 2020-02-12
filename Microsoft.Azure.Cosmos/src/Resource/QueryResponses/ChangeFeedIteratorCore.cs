@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.clientContext = clientContext;
             this.container = container;
-            this.changeFeedOptions = changeFeedRequestOptions;
+            this.changeFeedOptions = changeFeedRequestOptions ?? new ChangeFeedRequestOptions();
         }
 
         public override bool HasMoreResults => this.hasMoreResults;
@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos
                 cosmosContainerCore: this.container,
                 requestEnricher: request =>
                 {
-                    ChangeFeedRequestOptions.FillMaxItemCount(request, this.changeFeedOptions?.MaxItemCount);
+                    ChangeFeedRequestOptions.FillMaxItemCount(request, this.changeFeedOptions.MaxItemCount);
                     this.feedTokenInternal.FillHeaders(this.clientContext, request);
                 },
                 responseCreator: response => response,
