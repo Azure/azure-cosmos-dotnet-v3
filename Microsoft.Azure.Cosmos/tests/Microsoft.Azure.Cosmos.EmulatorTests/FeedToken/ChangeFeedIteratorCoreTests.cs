@@ -245,6 +245,151 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         /// <summary>
+        /// Verify that we can read the Change Feed for a Partition Key and that does not read other items.
+        /// </summary>
+        /// <returns></returns>
+        [TestMethod]
+        public async Task ChangeFeedIteratorCore_PartitionKey_ReadAll()
+        {
+            int totalCount = 0;
+            int firstRunTotal = 25;
+            int batchSize = 25;
+
+            string pkToRead = "pkToRead";
+            string otherPK = "otherPK";
+
+            for (int i = 0; i < batchSize; i++)
+            {
+                await this.Container.CreateItemAsync(this.CreateRandomToDoActivity(pkToRead));
+            }
+
+            for (int i = 0; i < batchSize; i++)
+            {
+                await this.Container.CreateItemAsync(this.CreateRandomToDoActivity(otherPK));
+            }
+
+            ContainerCore itemsCore = this.Container;
+            FeedTokenIterator feedIterator = itemsCore.GetChangeFeedStreamIterator(new PartitionKey(pkToRead), changeFeedRequestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue.ToUniversalTime() });
+            while (feedIterator.HasMoreResults)
+            {
+                using (ResponseMessage responseMessage =
+                    await feedIterator.ReadNextAsync(this.cancellationToken))
+                {
+                    Assert.IsNotNull(feedIterator.FeedToken);
+                    Assert.IsTrue(feedIterator.TryGetContinuationToken(out string continuationToken));
+
+                    if (responseMessage.IsSuccessStatusCode)
+                    {
+                        Collection<ToDoActivity> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
+                        totalCount += response.Count;
+                        foreach(ToDoActivity toDoActivity in response)
+                        {
+                            Assert.AreEqual(pkToRead, toDoActivity.status);
+                        }
+                    }
+                }
+            }
+
+            Assert.AreEqual(firstRunTotal, totalCount);
+
+            int expectedFinalCount = 50;
+
+            // Insert another batch of 25 and use the last FeedToken from the first cycle
+            for (int i = 0; i < batchSize; i++)
+            {
+                await this.Container.CreateItemAsync(this.CreateRandomToDoActivity(pkToRead));
+            }
+
+            FeedTokenIterator setIteratorNew = itemsCore.GetChangeFeedStreamIterator(feedToken: feedIterator.FeedToken, changeFeedRequestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue.ToUniversalTime() });
+
+            while (setIteratorNew.HasMoreResults)
+            {
+                using (ResponseMessage responseMessage =
+                    await setIteratorNew.ReadNextAsync(this.cancellationToken))
+                {
+                    Assert.IsNotNull(setIteratorNew.FeedToken);
+                    Assert.IsTrue(setIteratorNew.TryGetContinuationToken(out string continuationToken));
+                    if (responseMessage.IsSuccessStatusCode)
+                    {
+                        Collection<ToDoActivity> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
+                        totalCount += response.Count;
+                        foreach (ToDoActivity toDoActivity in response)
+                        {
+                            Assert.AreEqual(pkToRead, toDoActivity.status);
+                        }
+                    }
+                }
+            }
+
+            Assert.AreEqual(expectedFinalCount, totalCount);
+        }
+
+        /// <summary>
+        /// Verify that we can read the Change Feed for a Partition Key and that does not read other items.
+        /// </summary>
+        /// <returns></returns>
+        [TestMethod]
+        public async Task ChangeFeedIteratorCore_PartitionKey_OfT_ReadAll()
+        {
+            int totalCount = 0;
+            int firstRunTotal = 25;
+            int batchSize = 25;
+
+            string pkToRead = "pkToRead";
+            string otherPK = "otherPK";
+
+            for (int i = 0; i < batchSize; i++)
+            {
+                await this.Container.CreateItemAsync(this.CreateRandomToDoActivity(pkToRead));
+            }
+
+            for (int i = 0; i < batchSize; i++)
+            {
+                await this.Container.CreateItemAsync(this.CreateRandomToDoActivity(otherPK));
+            }
+
+            ContainerCore itemsCore = this.Container;
+            FeedTokenIterator<ToDoActivity> feedIterator = itemsCore.GetChangeFeedIterator<ToDoActivity>(new PartitionKey(pkToRead), changeFeedRequestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue.ToUniversalTime() });
+            while (feedIterator.HasMoreResults)
+            {
+                FeedResponse<ToDoActivity> feedResponse = await feedIterator.ReadNextAsync(this.cancellationToken);
+                Assert.IsNotNull(feedIterator.FeedToken);
+                Assert.IsTrue(feedIterator.TryGetContinuationToken(out string continuationToken));
+                totalCount += feedResponse.Count;
+                foreach (ToDoActivity toDoActivity in feedResponse)
+                {
+                    Assert.AreEqual(pkToRead, toDoActivity.status);
+                }
+            }
+        
+            Assert.AreEqual(firstRunTotal, totalCount);
+
+            int expectedFinalCount = 50;
+
+            // Insert another batch of 25 and use the last FeedToken from the first cycle
+            for (int i = 0; i < batchSize; i++)
+            {
+                await this.Container.CreateItemAsync(this.CreateRandomToDoActivity(pkToRead));
+            }
+
+            FeedTokenIterator<ToDoActivity> setIteratorNew = itemsCore.GetChangeFeedIterator<ToDoActivity>(feedToken: feedIterator.FeedToken, changeFeedRequestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue.ToUniversalTime() });
+
+            while (setIteratorNew.HasMoreResults)
+            {
+                FeedResponse<ToDoActivity> feedResponse = await setIteratorNew.ReadNextAsync(this.cancellationToken);
+                Assert.IsNotNull(setIteratorNew.FeedToken);
+                Assert.IsTrue(setIteratorNew.TryGetContinuationToken(out string continuationToken));
+                totalCount += feedResponse.Count;
+                foreach (ToDoActivity toDoActivity in feedResponse)
+                {
+                    Assert.AreEqual(pkToRead, toDoActivity.status);
+                }
+            }
+
+            Assert.AreEqual(expectedFinalCount, totalCount);
+        }
+
+        /// <summary>
         /// Test to verify that StartFromBeginning works as expected by inserting 25 items, reading them all, then taking the last continuationtoken, 
         /// inserting another 25, and verifying that the iterator continues from the saved token and reads the second 25 for a total of 50 documents.
         /// </summary>
