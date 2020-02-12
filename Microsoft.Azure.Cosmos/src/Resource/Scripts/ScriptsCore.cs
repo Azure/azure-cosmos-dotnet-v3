@@ -170,7 +170,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             return this.clientContext.ResponseFactory.CreateStoredProcedureExecuteResponseAsync<TOutput>(response);
         }
 
-        public override Task<ResponseMessage> ExecuteStoredProcedureStreamAsync(
+        public override async Task<ResponseMessage> ExecuteStoredProcedureStreamAsync(
             string storedProcedureId,
             Cosmos.PartitionKey partitionKey,
             dynamic[] parameters,
@@ -180,10 +180,10 @@ namespace Microsoft.Azure.Cosmos.Scripts
             Stream streamPayload = null;
             if (parameters != null)
             {
-                streamPayload = this.clientContext.SerializerCore.ToStream<dynamic[]>(parameters);
+                streamPayload = await this.clientContext.SerializerCore.ToStreamAsync<dynamic[]>(parameters, this.container, requestOptions, cancellationToken);
             }
             
-            return this.ExecuteStoredProcedureStreamAsync(
+            return await this.ExecuteStoredProcedureStreamAsync(
                 storedProcedureId: storedProcedureId,
                 partitionKey: partitionKey,
                 streamPayload: streamPayload,

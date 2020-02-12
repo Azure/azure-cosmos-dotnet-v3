@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Fluent;
+    using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
 
@@ -181,13 +182,58 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 expectedDoc);
             await this.ValidateQueryResultsAsync("SELECT c.id, c.PK, c.Sensitive, c.NonSensitive FROM c", expectedDoc);
             await this.ValidateQueryResultsAsync("SELECT c.id, c.PK, c.NonSensitive FROM c", expectedDoc);
-            await this.ValidateQueryResultsAsync(string.Format("SELECT * FROM c where c.Sensitive = '{0}'", testDoc.Sensitive), null);
+            await this.ValidateQueryResultsAsync(string.Format("SELECT * FROM c where c.Sensitive = '{0}'", testDoc.Sensitive), expectedDoc: null);
+
+            QueryDefinition queryDefinition = new QueryDefinition(
+            "select * from c where c.id = @theId and c.PK = @thePK")
+                 .WithParameter("@theId", expectedDoc.Id)
+                 .WithParameter("@thePK", expectedDoc.PK);
+            await this.ValidateQueryResultsAsync(queryDefinition: queryDefinition, expectedDoc: expectedDoc);
+
+            await this.ValidateSprocResultsAsync(expectedDoc);
         }
 
-        private async Task ValidateQueryResultsAsync(string query, TestDoc expectedDoc)
+        private async Task ValidateSprocResultsAsync(TestDoc expectedDoc)
+        {
+            string sprocId = Guid.NewGuid().ToString();
+            string sprocBody = @"function(docId) {
+                var context = getContext();
+                var collection = context.getCollection();
+                var docUri =  collection.getAltLink() + '/docs/' + docId;
+                var response = context.getResponse();
+
+                collection.readDocument(docUri, { },
+                    function(error, resource, options) {
+                        response.setBody(resource);
+                    });
+            }";
+
+            StoredProcedureResponse storedProcedureResponse =
+                await this.container.Scripts.CreateStoredProcedureAsync(new StoredProcedureProperties(sprocId, sprocBody));
+            Assert.AreEqual(HttpStatusCode.Created, storedProcedureResponse.StatusCode);
+
+            StoredProcedureExecuteResponse<TestDoc> sprocResponse = await this.container.Scripts.ExecuteStoredProcedureAsync<TestDoc>(
+                sprocId,
+                new PartitionKey(expectedDoc.PK),
+                parameters: new dynamic[] { expectedDoc.Id });
+
+            Assert.AreEqual(expectedDoc, sprocResponse.Resource);
+        }
+
+        // One of query or queryDefinition is to be passed in non-null
+        private async Task ValidateQueryResultsAsync(string query = null, TestDoc expectedDoc = null, QueryDefinition queryDefinition = null)
         {
             QueryRequestOptions requestOptions = expectedDoc != null ? new QueryRequestOptions() { PartitionKey = new PartitionKey(expectedDoc.PK) } : null;
-            FeedIterator <TestDoc> queryResponseIterator = this.container.GetItemQueryIterator<TestDoc>(query, requestOptions: requestOptions);
+            FeedIterator<TestDoc> queryResponseIterator;
+            if (query != null)
+            {
+                queryResponseIterator = this.container.GetItemQueryIterator<TestDoc>(query, requestOptions: requestOptions);
+            }
+            else
+            {
+                queryResponseIterator = this.container.GetItemQueryIterator<TestDoc>(queryDefinition, requestOptions: requestOptions);
+            }
+
             FeedResponse<TestDoc> readDocs = await queryResponseIterator.ReadNextAsync();
             Assert.AreEqual(null, readDocs.ContinuationToken);
 

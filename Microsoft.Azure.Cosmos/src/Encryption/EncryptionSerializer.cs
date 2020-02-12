@@ -116,6 +116,12 @@ namespace Microsoft.Azure.Cosmos
         /// <inheritdoc />
         internal override async Task<T> FromStreamAsync<T>(Stream stream, Container container, RequestOptions requestOptions, CancellationToken cancellationToken)
         {
+            // Container is null for stored procedure response
+            if (container == null)
+            {
+                return this.baseSerializer.FromStream<T>(stream);
+            }
+
             JObject itemJObj = null;
             using (StreamReader streamReader = new StreamReader(stream))
             using (JsonTextReader jsonTextReader = new JsonTextReader(streamReader))
@@ -166,14 +172,15 @@ namespace Microsoft.Azure.Cosmos
         /// <inheritdoc/>
         public override T FromStream<T>(Stream stream)
         {
-            // Will be called in query paths
+            // Will be called in query response paths
             return this.baseSerializer.FromStream<T>(stream);
         }
 
         /// <inheritdoc/>
         public override Stream ToStream<T>(T input)
         {
-            throw new NotImplementedException("Method should not have been called");
+            // Will be called in parameterized query request paths
+            return this.baseSerializer.ToStream<T>(input);
         }
     }
 }
