@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             Uri resourceUri = this.container.LinkUri;
-            ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationAsync<ResponseMessage>(
+            ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: resourceUri,
                 resourceType: Documents.ResourceType.Document,
                 operationType: Documents.OperationType.ReadFeed,
@@ -86,7 +86,6 @@ namespace Microsoft.Azure.Cosmos
                     ChangeFeedRequestOptions.FillMaxItemCount(request, this.changeFeedOptions.MaxItemCount);
                     this.feedTokenInternal.FillHeaders(this.clientContext, request);
                 },
-                responseCreator: response => response,
                 partitionKey: null,
                 streamPayload: null,
                 diagnosticsScope: null,
