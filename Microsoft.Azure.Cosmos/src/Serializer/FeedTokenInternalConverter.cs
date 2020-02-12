@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos
     {
         private static string TypePropertyName = "T";
         private static string VersionPropertyName = "V";
+        private static string RangePropertyName = "Range";
         private static string RidPropertyName = "Rid";
         private static string ContinuationPropertyName = "Continuation";
         private static string PartitionKeyPropertyName = "PK";
@@ -65,8 +66,14 @@ namespace Microsoft.Azure.Cosmos
                             throw new JsonSerializationException(ClientResources.FeedToken_UnknownFormat);
                         }
 
+                        if (!jObject.TryGetValue(FeedTokenInternalConverter.RangePropertyName, out JToken rangeJToken))
+                        {
+                            throw new JsonSerializationException(ClientResources.FeedToken_UnknownFormat);
+                        }
+
                         List<CompositeContinuationToken> ranges = serializer.Deserialize<List<CompositeContinuationToken>>(continuationJToken.CreateReader());
-                        return new FeedTokenEPKRange(ridJToken.Value<string>(), ranges);
+                        Documents.Routing.Range<string> completeRange = serializer.Deserialize<Documents.Routing.Range<string>>(rangeJToken.CreateReader());
+                        return new FeedTokenEPKRange(ridJToken.Value<string>(), completeRange, ranges);
                     }
                 case FeedTokenType.PartitionKeyValue:
                     {
@@ -123,6 +130,8 @@ namespace Microsoft.Azure.Cosmos
                 writer.WriteValue(feedTokenEPKRange.ContainerRid);
                 writer.WritePropertyName(FeedTokenInternalConverter.ContinuationPropertyName);
                 serializer.Serialize(writer, feedTokenEPKRange.CompositeContinuationTokens.ToArray());
+                writer.WritePropertyName(FeedTokenInternalConverter.RangePropertyName);
+                serializer.Serialize(writer, feedTokenEPKRange.CompleteRange);
                 writer.WriteEndObject();
             }
 

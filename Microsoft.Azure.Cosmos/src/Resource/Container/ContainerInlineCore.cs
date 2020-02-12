@@ -313,6 +313,13 @@ namespace Microsoft.Azure.Cosmos
             return this.container.GetChangeFeedIterator<T>(partitionKey, changeFeedRequestOptions);
         }
 
+        public override Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
+            FeedToken feedToken,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return TaskHelper.RunInlineIfNeededAsync(() => this.container.GetPartitionKeyRangesAsync(feedToken, cancellationToken));
+        }
+
         public static implicit operator ContainerCore(ContainerInlineCore containerInlineCore) => containerInlineCore.container;
     }
 }

@@ -1319,5 +1319,16 @@ namespace Microsoft.Azure.Cosmos
         public abstract FeedTokenIterator<T> GetChangeFeedIterator<T>(
             PartitionKey partitionKey,
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
+
+        /// <summary>
+        /// Gets the list of Partition Key Range identifiers for a <see cref="FeedToken"/>.
+        /// </summary>
+        /// <param name="feedToken">A <see cref="FeedToken"/></param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>The list of Partition Key Range identifiers affected by a particular FeedToken.</returns>
+        /// <seealso cref="Container.GetFeedTokensAsync(CancellationToken)"/>
+        public abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
+            FeedToken feedToken,
+            CancellationToken cancellationToken = default(CancellationToken));
     }
 }

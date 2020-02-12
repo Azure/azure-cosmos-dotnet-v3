@@ -16,7 +16,8 @@ namespace Microsoft.Azure.Cosmos
     [JsonConverter(typeof(FeedTokenInternalConverter))]
     internal sealed class FeedTokenEPKRange : FeedTokenInternal
     {
-        internal Queue<CompositeContinuationToken> CompositeContinuationTokens;
+        internal readonly Queue<CompositeContinuationToken> CompositeContinuationTokens;
+        internal readonly Documents.Routing.Range<string> CompleteRange;
         private CompositeContinuationToken currentToken;
         private string initialNotModifiedRange;
 
@@ -37,6 +38,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(compositeContinuationTokenByPartitionKeyRangeId));
             }
 
+            this.CompleteRange = compositeContinuationTokenByPartitionKeyRangeId.Range;
             this.CompositeContinuationTokens.Enqueue(compositeContinuationTokenByPartitionKeyRangeId);
 
             this.currentToken = this.CompositeContinuationTokens.Peek();
@@ -57,6 +59,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentOutOfRangeException(nameof(keyRanges));
             }
 
+            this.CompleteRange = new Documents.Routing.Range<string>(keyRanges[0].MinInclusive, keyRanges[keyRanges.Count - 1].MaxExclusive, true, false);
             foreach (Documents.PartitionKeyRange keyRange in keyRanges)
             {
                 this.CompositeContinuationTokens.Enqueue(FeedTokenEPKRange.CreateCompositeContinuationTokenForRange(keyRange.MinInclusive, keyRange.MaxExclusive, null));
@@ -75,6 +78,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(keyRange));
             }
 
+            this.CompleteRange = new Documents.Routing.Range<string>(keyRange.MinInclusive, keyRange.MaxExclusive, true, false);
             this.CompositeContinuationTokens.Enqueue(FeedTokenEPKRange.CreateCompositeContinuationTokenForRange(keyRange.MinInclusive, keyRange.MaxExclusive, null));
 
             this.currentToken = this.CompositeContinuationTokens.Peek();
@@ -82,6 +86,7 @@ namespace Microsoft.Azure.Cosmos
 
         public FeedTokenEPKRange(
             string containerRid,
+            Documents.Routing.Range<string> completeRange,
             IReadOnlyList<CompositeContinuationToken> deserializedTokens)
             : this(containerRid)
         {
@@ -90,10 +95,17 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(deserializedTokens));
             }
 
+            if (completeRange == null)
+            {
+                throw new ArgumentNullException(nameof(completeRange));
+            }
+
             if (deserializedTokens.Count == 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(deserializedTokens));
             }
+
+            this.CompleteRange = completeRange;
 
             foreach (CompositeContinuationToken token in deserializedTokens)
             {

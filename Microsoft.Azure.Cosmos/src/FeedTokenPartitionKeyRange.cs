@@ -140,7 +140,9 @@ namespace Microsoft.Azure.Cosmos
                     return false;
                 }
 
-                this.FeedTokenEPKRange = new FeedTokenEPKRange(containerRid, addedRanges.Select(range => FeedTokenEPKRange.CreateCompositeContinuationTokenForRange(range.MinInclusive, range.MaxExclusive, this.continuationToken)).ToList());
+                this.FeedTokenEPKRange = new FeedTokenEPKRange(containerRid,
+                    new Documents.Routing.Range<string>(addedRanges[0].MinInclusive, addedRanges[addedRanges.Count - 1].MaxExclusive, true, false),
+                    addedRanges.Select(range => FeedTokenEPKRange.CreateCompositeContinuationTokenForRange(range.MinInclusive, range.MaxExclusive, this.continuationToken)).ToList());
                 return true;
             }
 

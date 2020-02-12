@@ -322,6 +322,15 @@ namespace Microsoft.Azure.Cosmos {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Unrecognized Feed Token type..
+        /// </summary>
+        internal static string FeedToken_UnrecognizedFeedToken {
+            get {
+                return ResourceManager.GetString("FeedToken_UnrecognizedFeedToken", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Input is not of type IDocumentQuery..
         /// </summary>
         internal static string InputIsNotIDocumentQuery {

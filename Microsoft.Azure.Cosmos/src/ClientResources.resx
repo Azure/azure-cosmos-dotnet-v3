@@ -300,4 +300,7 @@
   <data name="FeedToken_MaxTokensOutOfRange" xml:space="preserve">
     <value>Provide a value greater than zero.</value>
   </data>
+  <data name="FeedToken_UnrecognizedFeedToken" xml:space="preserve">
+    <value>Unrecognized Feed Token type.</value>
+  </data>
 </root>
