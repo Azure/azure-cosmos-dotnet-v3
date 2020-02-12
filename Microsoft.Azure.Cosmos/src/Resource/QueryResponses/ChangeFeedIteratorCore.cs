@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
@@ -15,33 +16,47 @@ namespace Microsoft.Azure.Cosmos
     /// <remarks>
     /// Legacy.
     /// </remarks>
-    internal class ChangeFeedIteratorCore : FeedIteratorInternal
+    internal class ChangeFeedIteratorCore : FeedTokenIterator
     {
         private readonly ChangeFeedRequestOptions changeFeedOptions;
         private readonly CosmosClientContext clientContext;
         private readonly ContainerCore container;
-        private readonly FeedTokenInternal feedTokenInternal;
-        private readonly int? maxItemCount;
+        private FeedTokenInternal feedTokenInternal;
+        private bool hasMoreResults = true;
 
         internal ChangeFeedIteratorCore(
             CosmosClientContext clientContext,
             ContainerCore container,
             FeedTokenInternal feedTokenInternal,
-            int? maxItemCount,
-            ChangeFeedRequestOptions options)
+            ChangeFeedRequestOptions changeFeedRequestOptions)
+            : this(clientContext, container, changeFeedRequestOptions)
         {
-            if (clientContext == null) throw new ArgumentNullException(nameof(clientContext));
-            if (container == null) throw new ArgumentNullException(nameof(container));
             if (feedTokenInternal == null) throw new ArgumentNullException(nameof(feedTokenInternal));
-
-            this.clientContext = clientContext;
-            this.container = container;
-            this.changeFeedOptions = options;
-            this.maxItemCount = maxItemCount;
             this.feedTokenInternal = feedTokenInternal;
         }
 
-        public override bool HasMoreResults => true;
+        internal ChangeFeedIteratorCore(
+            CosmosClientContext clientContext,
+            ContainerCore container,
+            ChangeFeedRequestOptions changeFeedRequestOptions)
+        {
+            if (clientContext == null) throw new ArgumentNullException(nameof(clientContext));
+            if (container == null) throw new ArgumentNullException(nameof(container));
+            if (changeFeedRequestOptions != null
+                && changeFeedRequestOptions.MaxItemCount.HasValue
+                && changeFeedRequestOptions.MaxItemCount.Value <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(changeFeedRequestOptions.MaxItemCount));
+            }
+
+            this.clientContext = clientContext;
+            this.container = container;
+            this.changeFeedOptions = changeFeedRequestOptions;
+        }
+
+        public override bool HasMoreResults => this.hasMoreResults;
+
+        public override FeedToken FeedToken => this.feedTokenInternal; 
 
         /// <summary>
         /// Get the next set of results from the cosmos service
@@ -52,6 +67,13 @@ namespace Microsoft.Azure.Cosmos
         {
             cancellationToken.ThrowIfCancellationRequested();
 
+            if (this.feedTokenInternal == null)
+            {
+                // ReadAll scenario, initialize with one token for all
+                IEnumerable<FeedToken> tokens = await this.container.GetFeedTokensAsync(1, cancellationToken);
+                this.feedTokenInternal = tokens.GetEnumerator().Current as FeedTokenInternal;
+            }
+
             Uri resourceUri = this.container.LinkUri;
             ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationAsync<ResponseMessage>(
                 resourceUri: resourceUri,
@@ -61,7 +83,7 @@ namespace Microsoft.Azure.Cosmos
                 cosmosContainerCore: this.container,
                 requestEnricher: request =>
                 {
-                    ChangeFeedRequestOptions.FillMaxItemCount(request, this.maxItemCount);
+                    ChangeFeedRequestOptions.FillMaxItemCount(request, this.changeFeedOptions?.MaxItemCount);
                     this.feedTokenInternal.FillHeaders(this.clientContext, request);
                 },
                 responseCreator: response => response,
@@ -90,6 +112,7 @@ namespace Microsoft.Azure.Cosmos
                 this.feedTokenInternal.UpdateContinuation(responseMessage.Headers.ETag);
             }
 
+            this.hasMoreResults = responseMessage.IsSuccessStatusCode;
             return responseMessage;
         }
 
