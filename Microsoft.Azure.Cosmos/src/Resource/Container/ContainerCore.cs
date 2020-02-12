@@ -330,7 +330,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         // Name based look-up, needs re-computation and can't be cached
-        internal async Task<string> GetRIDAsync(CancellationToken cancellationToken)
+        internal virtual async Task<string> GetRIDAsync(CancellationToken cancellationToken)
         {
             ContainerProperties containerProperties = await this.GetCachedContainerPropertiesAsync(cancellationToken);
             return containerProperties?.ResourceId;

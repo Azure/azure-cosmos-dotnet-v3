@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public virtual Task<bool> ShouldRetryAsync(
-            CosmosClientContext cosmosClientContext,
+            ContainerCore containerCore,
             ResponseMessage responseMessage,
             CancellationToken cancellationToken = default(CancellationToken)) => Task.FromResult(false);
     }

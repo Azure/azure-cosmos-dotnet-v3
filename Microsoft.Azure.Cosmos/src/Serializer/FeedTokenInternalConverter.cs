@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
-    using System.Text;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -18,10 +17,13 @@ namespace Microsoft.Azure.Cosmos
         private static string RidPropertyName = "Rid";
         private static string ContinuationPropertyName = "Continuation";
         private static string PartitionKeyPropertyName = "PK";
+        private static string PartitionKeyRangeIdPropertyName = "PKRangeId";
 
         public override bool CanConvert(Type objectType)
         {
-            return objectType == typeof(FeedTokenEPKRange);
+            return objectType == typeof(FeedTokenEPKRange)
+                || objectType == typeof(FeedTokenPartitionKey)
+                || objectType == typeof(FeedTokenPartitionKeyRange);
         }
 
         public override object ReadJson(
@@ -87,6 +89,22 @@ namespace Microsoft.Azure.Cosmos
                         feedTokenPartitionKey.UpdateContinuation(continuationJToken.Value<string>());
                         return feedTokenPartitionKey;
                     }
+                case FeedTokenType.PartitionKeyRangeId:
+                    {
+                        if (!jObject.TryGetValue(FeedTokenInternalConverter.ContinuationPropertyName, out JToken continuationJToken))
+                        {
+                            throw new JsonSerializationException(ClientResources.FeedToken_UnknownFormat);
+                        }
+
+                        if (!jObject.TryGetValue(FeedTokenInternalConverter.PartitionKeyRangeIdPropertyName, out JToken pkJToken))
+                        {
+                            throw new JsonSerializationException(ClientResources.FeedToken_UnknownFormat);
+                        }
+
+                        FeedTokenPartitionKeyRange feedTokenPartitionKeyRange = new FeedTokenPartitionKeyRange(pkJToken.Value<string>());
+                        feedTokenPartitionKeyRange.UpdateContinuation(continuationJToken.Value<string>());
+                        return feedTokenPartitionKeyRange;
+                    }
             }
 
             throw new JsonSerializationException(ClientResources.FeedToken_UnknownFormat);
@@ -115,12 +133,24 @@ namespace Microsoft.Azure.Cosmos
                 writer.WriteValue(FeedTokenType.PartitionKeyValue);
                 writer.WritePropertyName(FeedTokenInternalConverter.VersionPropertyName);
                 writer.WriteValue(FeedTokenVersion.V1);
-                writer.WritePropertyName(FeedTokenInternalConverter.RidPropertyName);
-                writer.WriteValue(feedTokenPartitionKey.ContainerRid);
                 writer.WritePropertyName(FeedTokenInternalConverter.PartitionKeyPropertyName);
                 writer.WriteValue(feedTokenPartitionKey.PartitionKey.ToJsonString());
                 writer.WritePropertyName(FeedTokenInternalConverter.ContinuationPropertyName);
                 serializer.Serialize(writer, feedTokenPartitionKey.GetContinuation());
+                writer.WriteEndObject();
+            }
+
+            if (value is FeedTokenPartitionKeyRange feedTokenPartitionKeyRange)
+            {
+                writer.WriteStartObject();
+                writer.WritePropertyName(FeedTokenInternalConverter.TypePropertyName);
+                writer.WriteValue(FeedTokenType.PartitionKeyRangeId);
+                writer.WritePropertyName(FeedTokenInternalConverter.VersionPropertyName);
+                writer.WriteValue(FeedTokenVersion.V1);
+                writer.WritePropertyName(FeedTokenInternalConverter.PartitionKeyRangeIdPropertyName);
+                serializer.Serialize(writer, feedTokenPartitionKeyRange.PartitionKeyRangeId);
+                writer.WritePropertyName(FeedTokenInternalConverter.ContinuationPropertyName);
+                serializer.Serialize(writer, feedTokenPartitionKeyRange.GetContinuation());
                 writer.WriteEndObject();
             }
         }

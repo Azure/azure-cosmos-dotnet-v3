@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
 
             // Retry in case of splits or other scenarios
-            if (await this.feedTokenInternal.ShouldRetryAsync(this.clientContext, responseMessage, cancellationToken))
+            if (await this.feedTokenInternal.ShouldRetryAsync(this.container, responseMessage, cancellationToken))
             {
                 if (responseMessage.IsSuccessStatusCode
                     || responseMessage.StatusCode == HttpStatusCode.NotModified)

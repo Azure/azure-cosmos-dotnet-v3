@@ -129,7 +129,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override async Task<bool> ShouldRetryAsync(
-            CosmosClientContext cosmosClientContext,
+            ContainerCore containerCore,
             ResponseMessage responseMessage,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -155,7 +155,7 @@ namespace Microsoft.Azure.Cosmos
                 && (responseMessage.Headers.SubStatusCode == Documents.SubStatusCodes.PartitionKeyRangeGone || responseMessage.Headers.SubStatusCode == Documents.SubStatusCodes.CompletingSplit);
             if (partitionSplit)
             {
-                Routing.PartitionKeyRangeCache partitionKeyRangeCache = await cosmosClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
+                Routing.PartitionKeyRangeCache partitionKeyRangeCache = await containerCore.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
                 IReadOnlyList<Documents.PartitionKeyRange> resolvedRanges = await this.TryGetOverlappingRangesAsync(partitionKeyRangeCache, this.currentToken.Range.Min, this.currentToken.Range.Max, forceRefresh: true);
                 if (resolvedRanges.Count > 1)
                 {
@@ -180,7 +180,7 @@ namespace Microsoft.Azure.Cosmos
             return true;
         }
 
-        private static CompositeContinuationToken CreateCompositeContinuationTokenForRange(
+        internal static CompositeContinuationToken CreateCompositeContinuationTokenForRange(
             string minInclusive,
             string maxExclusive,
             string token)
