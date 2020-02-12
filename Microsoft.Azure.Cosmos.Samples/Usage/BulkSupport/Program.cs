@@ -74,7 +74,7 @@
 
         private static async Task CreateItemsConcurrentlyAsync(Container container)
         {
-            Console.WriteLine($"Initiating creation of {itemsToCreate} items of about {itemSize} bytes each in a limit of {runtimeInSeconds} seconds using {numWorkers} workers.");
+            Console.WriteLine($"Starting creation of {itemsToCreate} items of about {itemSize} bytes each in a limit of {runtimeInSeconds} seconds using {numWorkers} workers.");
 
             ConcurrentDictionary<HttpStatusCode, int> countsByStatus = new ConcurrentDictionary<HttpStatusCode, int>();
             int taskCompleteCounter = 0;

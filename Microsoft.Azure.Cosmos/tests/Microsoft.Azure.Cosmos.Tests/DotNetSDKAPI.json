@@ -1380,15 +1380,22 @@
     "CosmosClientOptions": {
       "Subclasses": {},
       "Members": {
+        "Boolean AdaptiveBulkExecution": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
         "Boolean AllowBulkExecution": {
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": null
         },
-        "Boolean EnableAdaptiveBulkExecution": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": null
+        "Boolean get_AdaptiveBulkExecution()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Boolean get_AdaptiveBulkExecution()"
         },
         "Boolean get_AllowBulkExecution()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -1396,13 +1403,6 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Boolean get_AllowBulkExecution()"
-        },
-        "Boolean get_EnableAdaptiveBulkExecution()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Boolean get_EnableAdaptiveBulkExecution()"
         },
         "Boolean get_LimitToEndpoint()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -1611,6 +1611,13 @@
           "Attributes": [],
           "MethodInfo": "Void .ctor()"
         },
+        "Void set_AdaptiveBulkExecution(Boolean)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_AdaptiveBulkExecution(Boolean)"
+        },
         "Void set_AllowBulkExecution(Boolean)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -1643,13 +1650,6 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_ConsistencyLevel(System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel])"
-        },
-        "Void set_EnableAdaptiveBulkExecution(Boolean)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Void set_EnableAdaptiveBulkExecution(Boolean)"
         },
         "Void set_GatewayModeMaxConnectionLimit(Int32)": {
           "Type": "Method",
@@ -2575,11 +2575,6 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder AddCustomHandlers(Microsoft.Azure.Cosmos.RequestHandler[])"
         },
-        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithAdaptiveBulkExecutionEnabled()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithAdaptiveBulkExecutionEnabled()"
-        },
         "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithApplicationName(System.String)": {
           "Type": "Method",
           "Attributes": [],
@@ -2590,10 +2585,10 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithApplicationRegion(System.String)"
         },
-        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithBulkExecution(Boolean)": {
+        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithBulkExecution(Boolean, Boolean)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithBulkExecution(Boolean)"
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithBulkExecution(Boolean, Boolean)"
         },
         "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithConnectionModeDirect()": {
           "Type": "Method",
