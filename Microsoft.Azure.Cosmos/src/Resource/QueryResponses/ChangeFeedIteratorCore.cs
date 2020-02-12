@@ -6,6 +6,8 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.Linq;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
@@ -71,7 +73,8 @@ namespace Microsoft.Azure.Cosmos
             {
                 // ReadAll scenario, initialize with one token for all
                 IEnumerable<FeedToken> tokens = await this.container.GetFeedTokensAsync(1, cancellationToken);
-                this.feedTokenInternal = tokens.GetEnumerator().Current as FeedTokenInternal;
+                Debug.Assert(tokens.Count() > 0, "FeedToken count should be more than 0.");
+                this.feedTokenInternal = tokens.First() as FeedTokenInternal;
             }
 
             Uri resourceUri = this.container.LinkUri;
