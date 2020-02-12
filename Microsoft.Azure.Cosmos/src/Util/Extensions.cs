@@ -5,6 +5,8 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Net;
     using System.Net.Sockets;
@@ -148,6 +150,24 @@ namespace Microsoft.Azure.Cosmos
         {
             await semaphoreSlim.WaitAsync(cancellationToken).ConfigureAwait(false);
             return new UsableSemaphoreWrapper(semaphoreSlim);
+        }
+
+        public static IEnumerable<IReadOnlyList<T>> Bucket<T>(
+            this IReadOnlyList<T> originalList,
+            int bucketSize)
+        {
+            List<T> bucket = new List<T>(bucketSize);
+            foreach (T item in originalList)
+            {
+                bucket.Add(item);
+                if (bucket.Count == bucketSize)
+                {
+                    yield return bucket;
+                    bucket = new List<T>(bucketSize);
+                }
+            }
+
+            yield return bucket;
         }
 
         private static void TraceExceptionInternal(Exception exception)
