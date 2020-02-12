@@ -129,6 +129,27 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        public static bool TryParseInstance(string toStringValue, out FeedToken feedToken)
+        {
+            try
+            {
+                feedToken = JsonConvert.DeserializeObject<FeedTokenPartitionKeyRange>(toStringValue);
+                return true;
+            }
+            catch
+            {
+                // Special case, for backward compatibility, if the string represents a PKRangeId
+                if (int.TryParse(toStringValue, out int pkRangeId))
+                {
+                    feedToken = new FeedTokenPartitionKeyRange(pkRangeId.ToString());
+                    return true;
+                }
+
+                feedToken = null;
+                return false;
+            }
+        }
+
         public override async Task<bool> ShouldRetryAsync(
             ContainerCore containerCore,
             ResponseMessage responseMessage,
