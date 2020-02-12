@@ -426,6 +426,41 @@ namespace Microsoft.Azure.Cosmos
             return new ChangeFeedIteratorCore<T>(changeFeedIteratorCore, responseCreator: this.ClientContext.ResponseFactory.CreateChangeFeedUserTypeResponse<T>);
         }
 
+        public override async Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
+            FeedToken feedToken,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (feedToken is FeedTokenEPKRange feedTokenEPKRange)
+            {
+                PartitionKeyRangeCache partitionKeyRangeCache = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
+                string containerRId = await this.GetRIDAsync(cancellationToken);
+                IReadOnlyList<Documents.PartitionKeyRange> partitionKeyRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(containerRId, feedTokenEPKRange.CompleteRange, forceRefresh: false);
+                return partitionKeyRanges.Select(partitionKeyRange => partitionKeyRange.Id);
+            }
+
+            if (feedToken is FeedTokenPartitionKeyRange feedTokenPartitionKeyRange)
+            {
+                if (feedTokenPartitionKeyRange.FeedTokenEPKRange != null)
+                {
+                    return await this.GetPartitionKeyRangesAsync(feedTokenPartitionKeyRange.FeedTokenEPKRange, cancellationToken);
+                }
+
+                return new List<string>() { feedTokenPartitionKeyRange.PartitionKeyRangeId };
+            }
+
+            if (feedToken is FeedTokenPartitionKey feedTokenPartitionKey)
+            {
+                CollectionRoutingMap collectionRoutingMap = await this.GetRoutingMapAsync(cancellationToken);
+                PartitionKeyDefinition partitionKeyDefinition = await this.GetPartitionKeyDefinitionAsync(cancellationToken);
+                PartitionKeyInternal partitionKeyInternal = feedTokenPartitionKey.PartitionKey.InternalKey;
+                string effectivePartitionKeyString = partitionKeyInternal.GetEffectivePartitionKeyString(partitionKeyDefinition);
+                string partitionKeyRangeId = collectionRoutingMap.GetRangeByEffectivePartitionKey(effectivePartitionKeyString).Id;
+                return new List<string>() { partitionKeyRangeId };
+            }
+
+            throw new ArgumentException(nameof(feedToken), ClientResources.FeedToken_UnrecognizedFeedToken);
+        }
+
         /// <summary>
         /// Gets the container's Properties by using the internal cache.
         /// In case the cache does not have information about this container, it may end up making a server call to fetch the data.
