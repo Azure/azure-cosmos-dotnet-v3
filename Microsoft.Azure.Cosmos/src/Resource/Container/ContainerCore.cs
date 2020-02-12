@@ -527,10 +527,12 @@ namespace Microsoft.Azure.Cosmos
               cancellationToken: cancellationToken);
         }
 
-        private async Task<IReadOnlyList<PartitionKeyRange>> GetCurrentPartitionKeyRangesAsync(PartitionKeyRangeCache partitionKeyRangeCache)
+        private static async Task<IReadOnlyList<PartitionKeyRange>> GetCurrentPartitionKeyRangesAsync(
+            string containerRid,
+            PartitionKeyRangeCache partitionKeyRangeCache)
         {
             return await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
-                        this.Id,
+                        containerRid,
                         new Range<string>(
                             PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
                             PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
