@@ -108,41 +108,26 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
                         CosmosNumber number2 = element2 as CosmosNumber;
                         if (number1.NumberType == CosmosNumberType.Number64)
                         {
-                            double double1;
-                            if (number1.IsFloatingPoint)
-                            {
-                                double1 = number1.AsFloatingPoint().Value;
-                            }
-                            else
-                            {
-                                double1 = number1.AsInteger().Value;
-                            }
-
-                            double double2;
-                            if (number2.IsFloatingPoint)
-                            {
-                                double2 = number2.AsFloatingPoint().Value;
-                            }
-                            else
-                            {
-                                double2 = number2.AsInteger().Value;
-                            }
-
-                            cmp = Comparer<double>.Default.Compare(
-                                double1,
-                                double2);
-                        }
-                        else if (number1.IsFloatingPoint)
-                        {
-                            double double1 = number1.AsFloatingPoint().Value;
-                            double double2 = number2.AsFloatingPoint().Value;
-                            cmp = Comparer<double>.Default.Compare(double1, double2);
+                            // Both are Number64, so compare as Number64
+                            cmp = number1.Value.CompareTo(number2.Value);
                         }
                         else
                         {
-                            long integer1 = number1.AsInteger().Value;
-                            long integer2 = number2.AsInteger().Value;
-                            cmp = Comparer<long>.Default.Compare(integer1, integer2);
+                            // We have a number with precision
+                            if (number2.Value.IsInteger)
+                            {
+                                // compare as longs, since all types have an implicit conversion with full fidelity.
+                                long integer1 = Number64.ToLong(number1.Value);
+                                long integer2 = Number64.ToLong(number2.Value);
+                                cmp = Comparer<long>.Default.Compare(integer1, integer2);
+                            }
+                            else
+                            {
+                                // compare as doubles, since all types have an implicit conversion with full fidelity.
+                                double double1 = Number64.ToDouble(number1.Value);
+                                double double2 = Number64.ToDouble(number2.Value);
+                                cmp = Comparer<double>.Default.Compare(double1, double2);
+                            }
                         }
 
                         break;

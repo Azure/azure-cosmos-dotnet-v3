@@ -131,17 +131,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
                 get
                 {
                     CosmosNumber cosmosNumber = this.cosmosObject[nameof(Person.Age)] as CosmosNumber;
-
-                    int age;
-                    if (cosmosNumber.IsFloatingPoint)
-                    {
-                        age = (int)cosmosNumber.AsFloatingPoint().Value;
-                    }
-                    else
-                    {
-                        age = (int)cosmosNumber.AsInteger().Value;
-                    }
-
+                    int age = (int)Number64.ToLong(cosmosNumber.Value);
                     return age;
                 }
             }
@@ -441,14 +431,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
 
         private static void VisitCosmosNumber(CosmosNumber cosmosNumber, IJsonWriter jsonWriter)
         {
-            if (cosmosNumber.IsFloatingPoint)
-            {
-                jsonWriter.WriteNumberValue(cosmosNumber.AsFloatingPoint().Value);
-            }
-            else
-            {
-                jsonWriter.WriteNumberValue(cosmosNumber.AsInteger().Value);
-            }
+            jsonWriter.WriteNumberValue(cosmosNumber.Value);
         }
 
         private static void VisitCosmosObjectIndexer(CosmosObject cosmosObject, IJsonWriter jsonWriter)

@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Json
         public abstract Number64 GetNumberValue(IJsonNavigatorNode numberNode);
 
         /// <inheritdoc />
-        public abstract bool TryGetBufferedStringValue(
+        public abstract bool TryGetBufferedUtf8StringValue(
             IJsonNavigatorNode stringNode,
             out ReadOnlyMemory<byte> bufferedStringValue);
 

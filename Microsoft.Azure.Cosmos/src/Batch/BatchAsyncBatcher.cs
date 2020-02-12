@@ -177,7 +177,7 @@ namespace Microsoft.Azure.Cosmos
                             if (itemBatchOperation.DiagnosticsContext != null)
                             {
                                 response.DiagnosticsContext = itemBatchOperation.DiagnosticsContext;
-                                response.DiagnosticsContext.Append(batchResponse.DiagnosticsContext);
+                                response.DiagnosticsContext.AddDiagnosticsInternal(batchResponse.DiagnosticsContext);
                             }
                             else
                             {

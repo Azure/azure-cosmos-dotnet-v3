@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Routing
 {
+    using System;
     using System.IO;
     using System.Text;
     using Microsoft.Azure.Documents.Routing;
@@ -22,20 +23,17 @@ namespace Microsoft.Azure.Cosmos.Routing
         [TestMethod]
         public void TestDoubleHash()
         {
-            using (MemoryStream ms = new MemoryStream(new byte[8]))
-            {
-                using (BinaryWriter writer = new BinaryWriter(ms))
-                {
-                    writer.Write(374.0);
+            byte[] bytes = BitConverter.GetBytes(374.0);
+            Assert.AreEqual(3717946798U, MurmurHash3.Hash32(bytes, bytes.Length));
 
-                    ms.Seek(0, SeekOrigin.Begin);
-                    using (BinaryReader reader = new BinaryReader(ms))
-                    {
-                        byte[] bytes = reader.ReadBytes(8);
-                        Assert.AreEqual(3717946798U, MurmurHash3.Hash32(bytes, bytes.Length));
-                    }
-                }
-            }
+
+            Assert.AreEqual(
+                MurmurHash3.Hash128(bytes, bytes.Length, seed: 0).GetHigh(),
+                Query.Core.MurmurHash3.Hash128((ReadOnlySpan<byte>)bytes.AsSpan(), seed: 0).GetHigh());
+
+            Assert.AreEqual(
+                MurmurHash3.Hash128(bytes, bytes.Length, seed: 0).GetLow(),
+                Query.Core.MurmurHash3.Hash128((ReadOnlySpan<byte>)bytes.AsSpan(), seed: 0).GetLow());
         }
 
         /// <summary>
@@ -47,6 +45,14 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             byte[] bytes = Encoding.UTF8.GetBytes("afdgdd");
             Assert.AreEqual(1099701186U, MurmurHash3.Hash32(bytes, bytes.Length));
+
+            Assert.AreEqual(
+                MurmurHash3.Hash128(bytes, bytes.Length, seed: 0).GetHigh(),
+                Query.Core.MurmurHash3.Hash128((ReadOnlySpan<byte>)bytes.AsSpan(), seed: 0).GetHigh());
+
+            Assert.AreEqual(
+                MurmurHash3.Hash128(bytes, bytes.Length, seed: 0).GetLow(),
+                Query.Core.MurmurHash3.Hash128((ReadOnlySpan<byte>)bytes.AsSpan(), seed: 0).GetLow());
         }
     }
 }

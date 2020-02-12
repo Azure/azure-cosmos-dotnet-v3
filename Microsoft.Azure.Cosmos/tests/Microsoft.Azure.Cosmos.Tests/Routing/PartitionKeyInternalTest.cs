@@ -529,7 +529,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 partitionKeyDefinition.Paths.Add("/path" + i);
             }
 
-            var hexEncodedEffectivePartitionKey = partitionKey.GetEffectivePartitionKeyString(partitionKeyDefinition);
+            string hexEncodedEffectivePartitionKey = partitionKey.GetEffectivePartitionKeyString(partitionKeyDefinition);
 
             Assert.AreEqual(expectedHexEncoding, hexEncodedEffectivePartitionKey);
         }
@@ -545,7 +545,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 partitionKeyDefinition.Paths.Add("/path" + i);
             }
 
-            var hexEncodedEffectivePartitionKey = partitionKey.GetEffectivePartitionKeyString(partitionKeyDefinition);
+            string hexEncodedEffectivePartitionKey = partitionKey.GetEffectivePartitionKeyString(partitionKeyDefinition);
 
 #pragma warning disable 0612
             PartitionKeyInternal partitionKeyRoundTrip = PartitionKeyInternal.FromHexEncodedBinaryString(hexEncodedEffectivePartitionKey);

@@ -6,7 +6,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
     using System;
 
     [Flags]
-    internal enum QueryFeatures : ulong
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+#pragma warning disable SA1602 // Enumeration items should be documented
+    public
+#else
+    internal
+#endif
+    enum QueryFeatures : ulong
     {
         None = 0,
         Aggregate = 1 << 0,

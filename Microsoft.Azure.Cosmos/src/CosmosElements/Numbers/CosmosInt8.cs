@@ -21,31 +21,9 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
         {
         }
 
-        public override bool IsFloatingPoint => false;
+        public override Number64 Value => this.GetValue();
 
-        public override bool IsInteger => true;
-
-        public static CosmosInt8 Create(
-            IJsonNavigator jsonNavigator,
-            IJsonNavigatorNode jsonNavigatorNode)
-        {
-            return new LazyCosmosInt8(jsonNavigator, jsonNavigatorNode);
-        }
-
-        public static CosmosInt8 Create(sbyte number)
-        {
-            return new EagerCosmosInt8(number);
-        }
-
-        public override double? AsFloatingPoint()
-        {
-            return (double)this.GetValue();
-        }
-
-        public override long? AsInteger()
-        {
-            return this.GetValue();
-        }
+        public abstract sbyte GetValue();
 
         public override void Accept(ICosmosNumberVisitor cosmosNumberVisitor)
         {
@@ -77,7 +55,17 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
             jsonWriter.WriteInt8Value(this.GetValue());
         }
 
-        public abstract sbyte GetValue();
+        public static CosmosInt8 Create(
+            IJsonNavigator jsonNavigator,
+            IJsonNavigatorNode jsonNavigatorNode)
+        {
+            return new LazyCosmosInt8(jsonNavigator, jsonNavigatorNode);
+        }
+
+        public static CosmosInt8 Create(sbyte number)
+        {
+            return new EagerCosmosInt8(number);
+        }
     }
 #if INTERNAL
 #pragma warning restore SA1601 // Partial elements should be documented

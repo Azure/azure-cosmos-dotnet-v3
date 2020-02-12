@@ -5,7 +5,10 @@
 //-----------------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Tests.Json
 {
-    using System.IO;
+    using System;
+    using System.Diagnostics;
+    using System.Text;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -184,6 +187,90 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             if (runPerformanceTests)
             {
                 this.PerformanceBenchmarkCuratedJson("XpertEvents");
+            }
+        }
+
+        [TestMethod]
+        [Owner("brchon")]
+        public void Utf8VsUtf16StringWrite()
+        {
+            void RunPerf(string utf16String, JsonSerializationFormat jsonSerializationFormat, bool useUtf8)
+            {
+                ReadOnlySpan<byte> utf8String = Encoding.UTF8.GetBytes(utf16String);
+
+                Stopwatch stopWatch = new Stopwatch();
+                for (int i = 0; i < 1000000; i++)
+                {
+                    IJsonWriter writer = JsonWriter.Create(jsonSerializationFormat);
+                    stopWatch.Start();
+                    if (useUtf8)
+                    {
+                        writer.WriteStringValue(utf8String);
+                    }
+                    else
+                    {
+                        writer.WriteStringValue(utf16String);
+                    }
+                    stopWatch.Stop();
+                }
+
+                Console.WriteLine($"UTF {(useUtf8 ? 8 : 16)} {jsonSerializationFormat} writer + string length: {utf16String.Length} = {stopWatch.ElapsedMilliseconds} ms");
+            }
+
+            foreach (int stringLength in new int[] { 8, 32, 256, 1024, 4096 })
+            {
+                foreach (JsonSerializationFormat jsonSerializationFormat in new JsonSerializationFormat[] { JsonSerializationFormat.Text, JsonSerializationFormat.Binary })
+                {
+                    foreach (bool useUtf8 in new bool[] { false, true })
+                    {
+                        RunPerf(
+                            utf16String: new string('a', stringLength),
+                            jsonSerializationFormat: jsonSerializationFormat,
+                            useUtf8: useUtf8);
+                    }
+                }
+            }
+        }
+
+        [TestMethod]
+        [Owner("brchon")]
+        public void Utf8VsUtf16StringRead()
+        {
+            void RunPerf(string utf16String, JsonSerializationFormat jsonSerializationFormat, bool useUtf8)
+            {
+                Stopwatch stopWatch = new Stopwatch();
+                byte[] payload = JsonTestUtils.ConvertTextToBinary("\"" + utf16String + "\"");
+                for (int i = 0; i < 1000000; i++)
+                {
+                    IJsonReader reader = JsonReader.Create(payload);
+                    reader.Read();
+                    stopWatch.Start();
+                    if (useUtf8)
+                    {
+                        reader.TryGetBufferedUtf8StringValue(out ReadOnlyMemory<byte> bufferedUtf8StringValue);
+                    }
+                    else
+                    {
+                        string value = reader.GetStringValue();
+                    }
+                    stopWatch.Stop();
+                }
+
+                Console.WriteLine($"UTF {(useUtf8 ? 8 : 16)} {jsonSerializationFormat} reader + string length: {utf16String.Length} = {stopWatch.ElapsedMilliseconds} ms");
+            }
+
+            foreach (int stringLength in new int[] { 8, 32, 256, 1024, 4096 })
+            {
+                foreach (JsonSerializationFormat jsonSerializationFormat in new JsonSerializationFormat[] { JsonSerializationFormat.Text, JsonSerializationFormat.Binary })
+                {
+                    foreach (bool useUtf8 in new bool[] { false, true })
+                    {
+                        RunPerf(
+                            utf16String: new string('a', stringLength),
+                            jsonSerializationFormat: jsonSerializationFormat,
+                            useUtf8: useUtf8);
+                    }
+                }
             }
         }
 

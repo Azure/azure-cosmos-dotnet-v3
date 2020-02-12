@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.Collections.Generic;
     using System.IO;
     using System.Runtime.InteropServices;
+    using System.Text;
 
     /// <summary>
     /// Partial class that wraps the private JsonTextNavigator
@@ -106,13 +107,15 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            public override bool TryGetBufferedStringValue(
+            public override bool TryGetBufferedUtf8StringValue(
                 IJsonNavigatorNode stringNode,
-                out ReadOnlyMemory<byte> bufferedStringValue)
+                out ReadOnlyMemory<byte> bufferedUtf8StringValue)
             {
-                //TODO (brchon): implement this when optimizing code.
-                bufferedStringValue = null;
-                return false;
+                ReadOnlyMemory<byte> buffer = JsonBinaryNavigator.GetNodeOfType(
+                    JsonNodeType.String,
+                    stringNode);
+
+                return JsonBinaryEncoding.TryGetBufferedUtf8StringValue(buffer, this.jsonStringDictionary, out bufferedUtf8StringValue);
             }
 
             /// <inheritdoc />
@@ -121,7 +124,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 ReadOnlyMemory<byte> buffer = JsonBinaryNavigator.GetNodeOfType(
                     JsonNodeType.String,
                     stringNode);
-                return JsonBinaryEncoding.GetStringValue(buffer.Span, this.jsonStringDictionary);
+                return JsonBinaryEncoding.GetStringValue(buffer, this.jsonStringDictionary);
             }
 
             /// <inheritdoc />
@@ -399,12 +402,25 @@ namespace Microsoft.Azure.Cosmos.Json
                     JsonNodeType.Object,
                     objectNode);
 
+                ReadOnlySpan<byte> utf8StringPropertyName = Encoding.UTF8.GetBytes(propertyName);
                 foreach (ObjectProperty objectPropertyNode in this.GetObjectProperties(objectNode))
                 {
-                    if (this.GetStringValue(objectPropertyNode.NameNode) == propertyName)
+                    if (this.TryGetBufferedUtf8StringValue(objectPropertyNode.NameNode, out ReadOnlyMemory<byte> bufferedUtf8StringValue))
                     {
-                        objectProperty = objectPropertyNode;
-                        return true;
+                        // First try and see if we can avoid materializing the UTF16 string.
+                        if (utf8StringPropertyName.SequenceEqual(bufferedUtf8StringValue.Span))
+                        {
+                            objectProperty = objectPropertyNode;
+                            return true;
+                        }
+                    }
+                    else
+                    {
+                        if (this.GetStringValue(objectPropertyNode.NameNode) == propertyName)
+                        {
+                            objectProperty = objectPropertyNode;
+                            return true;
+                        }
                     }
                 }
 
@@ -462,6 +478,13 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new ArgumentException($"{nameof(jsonNode)} must be a {nameof(BinaryNavigatorNode)}");
                 }
 
+                if ((this.jsonStringDictionary != null) && JsonBinaryNavigator.IsStringOrNested(binaryNavigatorNode))
+                {
+                    // Force a rewrite for dictionary encoding.
+                    bufferedRawJson = default;
+                    return false;
+                }
+
                 ReadOnlyMemory<byte> buffer = binaryNavigatorNode.Buffer;
 
                 if (buffer.Length == 0)
@@ -471,6 +494,20 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 bufferedRawJson = buffer;
                 return true;
+            }
+
+            private static bool IsStringOrNested(BinaryNavigatorNode binaryNavigatorNode)
+            {
+                switch (binaryNavigatorNode.JsonNodeType)
+                {
+                    case JsonNodeType.String:
+                    case JsonNodeType.FieldName:
+                    case JsonNodeType.Array:
+                    case JsonNodeType.Object:
+                        return true; 
+                    default:
+                        return false;
+                }
             }
 
             private static int GetValueCount(ReadOnlySpan<byte> node)

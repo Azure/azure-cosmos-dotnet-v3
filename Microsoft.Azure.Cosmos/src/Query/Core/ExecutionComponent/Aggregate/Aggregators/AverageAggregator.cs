@@ -114,39 +114,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
                         throw new ArgumentException($"value for the {SumName} field was not a number");
                     }
 
-                    if (cosmosSum.IsFloatingPoint)
-                    {
-                        sum = cosmosSum.AsFloatingPoint().Value;
-                    }
-                    else
-                    {
-                        sum = cosmosSum.AsInteger().Value;
-                    }
+                    sum = Number64.ToDouble(cosmosSum.Value);
                 }
                 else
                 {
                     sum = null;
                 }
 
-                long count;
-                if (!cosmosObject.TryGetValue(CountName, out CosmosElement countPropertyValue))
-                {
-                    throw new ArgumentException($"object did not have property name {CountName}");
-                }
-
-                if (!(countPropertyValue is CosmosNumber cosmosCount))
+                if (!cosmosObject.TryGetValue(CountName, out CosmosNumber cosmosCount))
                 {
                     throw new ArgumentException($"value for the {CountName} field was not a number");
                 }
 
-                if (cosmosCount.IsFloatingPoint)
-                {
-                    count = (long)cosmosCount.AsFloatingPoint().Value;
-                }
-                else
-                {
-                    count = cosmosCount.AsInteger().Value;
-                }
+                long count = Number64.ToLong(cosmosCount.Value);
 
                 return new AverageInfo(sum, count);
             }

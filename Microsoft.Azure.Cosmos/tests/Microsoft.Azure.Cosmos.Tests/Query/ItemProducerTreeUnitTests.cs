@@ -180,7 +180,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new Mock<CosmosElement>(CosmosElementType.Object).Object
             };
 
-            CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContext();
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create();
             diagnosticsContext.AddDiagnosticsInternal(new PointOperationStatistics(
                 Guid.NewGuid().ToString(),
                 System.Net.HttpStatusCode.OK,
@@ -236,7 +236,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             await itemProducerTree.BufferMoreDocumentsAsync(cancellationTokenSource.Token);
             await itemProducerTree.BufferMoreDocumentsAsync(cancellationTokenSource.Token);
 
-            CosmosDiagnosticsContext diagnosticsContextInternalServerError = new CosmosDiagnosticsContext();
+            CosmosDiagnosticsContext diagnosticsContextInternalServerError = CosmosDiagnosticsContext.Create();
             diagnosticsContextInternalServerError.AddDiagnosticsInternal(new PointOperationStatistics(
                 Guid.NewGuid().ToString(),
                 System.Net.HttpStatusCode.InternalServerError,

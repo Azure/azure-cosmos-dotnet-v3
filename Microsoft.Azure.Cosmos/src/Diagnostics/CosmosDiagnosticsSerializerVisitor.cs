@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Diagnostics
 {
     using System;
+    using System.Globalization;
     using System.IO;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Newtonsoft.Json;
@@ -65,10 +66,41 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             this.jsonWriter.WriteStartObject();
 
             this.jsonWriter.WritePropertyName("Summary");
-            cosmosDiagnosticsContext.Summary.WriteJsonProperty(this.jsonWriter);
+            this.jsonWriter.WriteStartObject();
+            this.jsonWriter.WritePropertyName("StartUtc");
+            this.jsonWriter.WriteValue(cosmosDiagnosticsContext.StartUtc.ToString("o", CultureInfo.InvariantCulture));
+
+            this.jsonWriter.WritePropertyName("ElapsedTime");
+            
+            if (cosmosDiagnosticsContext.TotalElapsedTime.HasValue)
+            {
+                this.jsonWriter.WriteValue(cosmosDiagnosticsContext.TotalElapsedTime.Value);
+            }
+            else
+            {
+                this.jsonWriter.WriteValue("Timer Never Stopped.");
+            }
+
+            this.jsonWriter.WritePropertyName("UserAgent");
+            this.jsonWriter.WriteValue(cosmosDiagnosticsContext.UserAgent);
+            
+            this.jsonWriter.WritePropertyName("TotalRequestCount");
+            this.jsonWriter.WriteValue(cosmosDiagnosticsContext.TotalRequestCount);
+
+            this.jsonWriter.WritePropertyName("FailedRequestCount");
+            this.jsonWriter.WriteValue(cosmosDiagnosticsContext.FailedRequestCount);
+
+            this.jsonWriter.WriteEndObject();
 
             this.jsonWriter.WritePropertyName("Context");
-            cosmosDiagnosticsContext.ContextList.Accept(this);
+            this.jsonWriter.WriteStartArray();
+
+            foreach (CosmosDiagnosticsInternal cosmosDiagnosticsInternal in cosmosDiagnosticsContext)
+            {
+                cosmosDiagnosticsInternal.Accept(this);
+            }
+
+            this.jsonWriter.WriteEndArray();
 
             this.jsonWriter.WriteEndObject();
         }
@@ -93,18 +125,6 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             this.jsonWriter.WriteEndObject();
         }
 
-        public override void Visit(CosmosDiagnosticsContextList cosmosDiagnosticsContextList)
-        {
-            this.jsonWriter.WriteStartArray();
-
-            foreach (CosmosDiagnosticsInternal cosmosDiagnosticsInternal in cosmosDiagnosticsContextList)
-            {
-                cosmosDiagnosticsInternal.Accept(this);
-            }
-
-            this.jsonWriter.WriteEndArray();
-        }
-
         public override void Visit(QueryPageDiagnostics queryPageDiagnostics)
         {
             this.jsonWriter.WriteStartObject();
@@ -122,7 +142,14 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             queryPageDiagnostics.SchedulingTimeSpan.WriteJsonObject(this.jsonWriter);
 
             this.jsonWriter.WritePropertyName("Context");
-            queryPageDiagnostics.DiagnosticsContext.ContextList.Accept(this);
+            this.jsonWriter.WriteStartArray();
+
+            foreach (CosmosDiagnosticsInternal cosmosDiagnosticsInternal in queryPageDiagnostics.DiagnosticsContext)
+            {
+                cosmosDiagnosticsInternal.Accept(this);
+            }
+
+            this.jsonWriter.WriteEndArray();
 
             this.jsonWriter.WriteEndObject();
         }

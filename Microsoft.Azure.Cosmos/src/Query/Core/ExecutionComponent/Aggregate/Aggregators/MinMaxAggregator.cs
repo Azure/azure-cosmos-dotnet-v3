@@ -60,16 +60,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
                 if (cosmosObject.TryGetValue("count", out CosmosNumber countToken))
                 {
                     // We know the object looks like: {"min": MIN(c.blah), "count": COUNT(c.blah)}
-                    long count;
-                    if (countToken.IsFloatingPoint)
-                    {
-                        count = (long)countToken.AsFloatingPoint().Value;
-                    }
-                    else
-                    {
-                        count = countToken.AsInteger().Value;
-                    }
-
+                    long count = Number64.ToLong(countToken.Value);
                     if (count == 0)
                     {
                         // Ignore the value since the continuation / partition had no results that matched the filter so min is undefined.

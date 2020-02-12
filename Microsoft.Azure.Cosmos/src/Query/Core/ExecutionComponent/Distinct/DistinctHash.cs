@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
             public UInt128 Visit(CosmosArray cosmosArray, UInt128 seed)
             {
                 // Start the array with a distinct hash, so that empty array doesn't hash to another value.
-                UInt128 hash = CosmosElementHasher.GetHash(CosmosElementHasher.ArrayHashSeed, seed);
+                UInt128 hash = MurmurHash3.Hash128(CosmosElementHasher.ArrayHashSeed, seed);
 
                 // Incorporate all the array items into the hash.
                 for (int index = 0; index < cosmosArray.Count; index++)
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                     // due to the way the seed works.
                     // But we add the index just incase that property does not hold in the future.
                     UInt128 arrayItemSeed = CosmosElementHasher.ArrayIndexHashSeed + index;
-                    hash = CosmosElementHasher.GetHash(hash, arrayItem.Accept(this, arrayItemSeed));
+                    hash = MurmurHash3.Hash128(hash, arrayItem.Accept(this, arrayItemSeed));
                 }
 
                 return hash;
@@ -89,30 +89,30 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
             public UInt128 Visit(CosmosBinary cosmosBinary, UInt128 seed)
             {
                 // Hash with binary seed to differntiate between empty binary and no binary.
-                UInt128 hash = CosmosElementHasher.GetHash(CosmosElementHasher.BinaryHashSeed, seed);
+                UInt128 hash = MurmurHash3.Hash128(CosmosElementHasher.BinaryHashSeed, seed);
 
                 // TODO: replace this with Span based hashing.
-                hash = CosmosElementHasher.GetHash(cosmosBinary.Value.ToArray(), seed);
+                hash = MurmurHash3.Hash128(cosmosBinary.Value.Span, seed);
                 return hash;
             }
 
             public UInt128 Visit(CosmosBoolean cosmosBoolean, UInt128 seed)
             {
-                return CosmosElementHasher.GetHash(
+                return MurmurHash3.Hash128(
                     cosmosBoolean.Value ? CosmosElementHasher.TrueHashSeed : CosmosElementHasher.FalseHashSeed,
                     seed);
             }
 
             public UInt128 Visit(CosmosGuid cosmosGuid, UInt128 seed)
             {
-                UInt128 hash = CosmosElementHasher.GetHash(CosmosElementHasher.GuidHashSeed, seed);
-                hash = CosmosElementHasher.GetHash(cosmosGuid.Value.ToByteArray(), seed);
+                UInt128 hash = MurmurHash3.Hash128(CosmosElementHasher.GuidHashSeed, seed);
+                hash = MurmurHash3.Hash128(cosmosGuid.Value.ToByteArray(), seed);
                 return hash;
             }
 
             public UInt128 Visit(CosmosNull cosmosNull, UInt128 seed)
             {
-                return CosmosElementHasher.GetHash(CosmosElementHasher.NullHashSeed, seed);
+                return MurmurHash3.Hash128(CosmosElementHasher.NullHashSeed, seed);
             }
 
             public UInt128 Visit(CosmosNumber cosmosNumber, UInt128 seed)
@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
             public UInt128 Visit(CosmosObject cosmosObject, UInt128 seed)
             {
                 // Start the object with a distinct hash, so that empty object doesn't hash to another value.
-                UInt128 hash = CosmosElementHasher.GetHash(CosmosElementHasher.ObjectHashSeed, seed);
+                UInt128 hash = MurmurHash3.Hash128(CosmosElementHasher.ObjectHashSeed, seed);
 
                 //// Intermediate hashes of all the properties, which we don't want to xor with the final hash
                 //// otherwise the following will collide:
@@ -172,7 +172,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                 // Only if the object was not empty do we want to bring in the intermediate hash.
                 if (intermediateHash > 0)
                 {
-                    hash = CosmosElementHasher.GetHash(intermediateHash, hash);
+                    hash = MurmurHash3.Hash128(intermediateHash, hash);
                 }
 
                 return hash;
@@ -180,25 +180,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
 
             public UInt128 Visit(CosmosString cosmosString, UInt128 seed)
             {
-                // TODO: replace this with span based hashing and try get buffered string value.
-                UInt128 hash = CosmosElementHasher.GetHash(CosmosElementHasher.StringHashSeed, seed);
-                byte[] stringBytes = Encoding.UTF8.GetBytes(cosmosString.Value);
-                return CosmosElementHasher.GetHash(stringBytes, hash);
-            }
+                UInt128 hash = MurmurHash3.Hash128(CosmosElementHasher.StringHashSeed, seed);
+                if (cosmosString.TryGetBufferedUtf8Value(out ReadOnlyMemory<byte> bufferedUtf8Value))
+                {
+                    hash = MurmurHash3.Hash128(bufferedUtf8Value.Span, hash);
+                }
+                else
+                {
+                    hash = MurmurHash3.Hash128(cosmosString.Value, hash);
+                }
 
-            private static UInt128 GetHash(UInt128 value, UInt128 seed)
-            {
-                return CosmosElementHasher.GetHash(UInt128.ToByteArray(value), seed);
-            }
-
-            private static UInt128 GetHash(byte[] bytes, UInt128 seed)
-            {
-                // TODO: Have MurmurHash3 work on Span<T> instead.
-                Microsoft.Azure.Documents.UInt128 hash128 = Microsoft.Azure.Documents.Routing.MurmurHash3.Hash128(
-                    bytes,
-                    bytes.Length,
-                    Microsoft.Azure.Documents.UInt128.Create(seed.GetLow(), seed.GetHigh()));
-                return UInt128.Create(hash128.GetLow(), hash128.GetHigh());
+                return hash;
             }
         }
 
@@ -222,7 +214,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
 
             public UInt128 Visit(CosmosFloat32 cosmosFloat32, UInt128 seed)
             {
-                UInt128 hash = CosmosNumberHasher.GetHash(CosmosNumberHasher.Float32HashSeed, seed);
+                UInt128 hash = MurmurHash3.Hash128(CosmosNumberHasher.Float32HashSeed, seed);
                 float value = cosmosFloat32.GetValue();
 
                 // Normalize 0.0f and -0.0f value
@@ -232,13 +224,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                     value = 0;
                 }
 
-                hash = CosmosNumberHasher.GetHash((UInt128)BitConverter.DoubleToInt64Bits(value), hash);
+                hash = MurmurHash3.Hash128((UInt128)BitConverter.DoubleToInt64Bits(value), hash);
                 return hash;
             }
 
             public UInt128 Visit(CosmosFloat64 cosmosFloat64, UInt128 seed)
             {
-                UInt128 hash = CosmosNumberHasher.GetHash(CosmosNumberHasher.Float64HashSeed, seed);
+                UInt128 hash = MurmurHash3.Hash128(CosmosNumberHasher.Float64HashSeed, seed);
                 double value = cosmosFloat64.GetValue();
 
                 // Normalize 0.0 and -0.0 value
@@ -248,72 +240,57 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                     value = 0;
                 }
 
-                hash = CosmosNumberHasher.GetHash((UInt128)BitConverter.DoubleToInt64Bits(value), hash);
+                hash = MurmurHash3.Hash128((UInt128)BitConverter.DoubleToInt64Bits(value), hash);
                 return hash;
             }
 
             public UInt128 Visit(CosmosInt16 cosmosInt16, UInt128 seed)
             {
-                UInt128 hash = CosmosNumberHasher.GetHash(CosmosNumberHasher.Int16HashSeed, seed);
+                UInt128 hash = MurmurHash3.Hash128(CosmosNumberHasher.Int16HashSeed, seed);
                 short value = cosmosInt16.GetValue();
-                hash = CosmosNumberHasher.GetHash(value, hash);
+                hash = MurmurHash3.Hash128(value, hash);
                 return hash;
             }
 
             public UInt128 Visit(CosmosInt32 cosmosInt32, UInt128 seed)
             {
-                UInt128 hash = CosmosNumberHasher.GetHash(CosmosNumberHasher.Int32HashSeed, seed);
+                UInt128 hash = MurmurHash3.Hash128(CosmosNumberHasher.Int32HashSeed, seed);
                 int value = cosmosInt32.GetValue();
-                hash = CosmosNumberHasher.GetHash(value, hash);
+                hash = MurmurHash3.Hash128(value, hash);
                 return hash;
             }
 
             public UInt128 Visit(CosmosInt64 cosmosInt64, UInt128 seed)
             {
-                UInt128 hash = CosmosNumberHasher.GetHash(CosmosNumberHasher.Int64HashSeed, seed);
+                UInt128 hash = MurmurHash3.Hash128(CosmosNumberHasher.Int64HashSeed, seed);
                 long value = cosmosInt64.GetValue();
-                hash = CosmosNumberHasher.GetHash(value, hash);
+                hash = MurmurHash3.Hash128(value, hash);
                 return hash;
             }
 
             public UInt128 Visit(CosmosInt8 cosmosInt8, UInt128 seed)
             {
-                UInt128 hash = CosmosNumberHasher.GetHash(CosmosNumberHasher.Int8HashSeed, seed);
+                UInt128 hash = MurmurHash3.Hash128(CosmosNumberHasher.Int8HashSeed, seed);
                 sbyte value = cosmosInt8.GetValue();
-                hash = CosmosNumberHasher.GetHash(value, hash);
+                hash = MurmurHash3.Hash128(value, hash);
                 return hash;
             }
 
             public UInt128 Visit(CosmosNumber64 cosmosNumber64, UInt128 seed)
             {
-                UInt128 hash = CosmosNumberHasher.GetHash(CosmosNumberHasher.Number64HashSeed, seed);
+                UInt128 hash = MurmurHash3.Hash128(CosmosNumberHasher.Number64HashSeed, seed);
                 Number64 value = cosmosNumber64.GetValue();
                 Span<byte> buffer = stackalloc byte[Number64.SizeOf];
                 value.CopyTo(buffer);
-                return CosmosNumberHasher.GetHash(buffer.ToArray(), hash);
+                return MurmurHash3.Hash128(buffer, hash);
             }
 
             public UInt128 Visit(CosmosUInt32 cosmosUInt32, UInt128 seed)
             {
-                UInt128 hash = CosmosNumberHasher.GetHash(CosmosNumberHasher.UInt32HashSeed, seed);
+                UInt128 hash = MurmurHash3.Hash128(CosmosNumberHasher.UInt32HashSeed, seed);
                 uint value = cosmosUInt32.GetValue();
-                hash = CosmosNumberHasher.GetHash(value, hash);
+                hash = MurmurHash3.Hash128(value, hash);
                 return hash;
-            }
-
-            private static UInt128 GetHash(UInt128 value, UInt128 seed)
-            {
-                return CosmosNumberHasher.GetHash(UInt128.ToByteArray(value), seed);
-            }
-
-            private static UInt128 GetHash(byte[] bytes, UInt128 seed)
-            {
-                // TODO: Have MurmurHash3 work on Span<T> instead.
-                Microsoft.Azure.Documents.UInt128 hash128 = Microsoft.Azure.Documents.Routing.MurmurHash3.Hash128(
-                    bytes,
-                    bytes.Length,
-                    Microsoft.Azure.Documents.UInt128.Create(seed.GetLow(), seed.GetHigh()));
-                return UInt128.Create(hash128.GetLow(), hash128.GetHigh());
             }
         }
     }

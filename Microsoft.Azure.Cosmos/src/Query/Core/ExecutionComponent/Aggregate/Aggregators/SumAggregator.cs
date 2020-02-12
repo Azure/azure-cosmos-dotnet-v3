@@ -45,14 +45,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
                     throw new ArgumentException("localSum must be a number.");
                 }
 
-                if (cosmosNumber.IsFloatingPoint)
-                {
-                    this.globalSum += cosmosNumber.AsFloatingPoint().Value;
-                }
-                else
-                {
-                    this.globalSum += cosmosNumber.AsInteger().Value;
-                }
+                this.globalSum += Number64.ToDouble(cosmosNumber.Value);
             }
         }
 

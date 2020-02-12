@@ -524,7 +524,7 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
-            CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContext();
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
             using (diagnosticsContext.CreateOverallScope("ItemStream"))
             {
                 Stream itemStream;
@@ -672,17 +672,7 @@ namespace Microsoft.Azure.Cosmos
 
                 case CosmosElementType.Number:
                     CosmosNumber cosmosNumber = cosmosElement as CosmosNumber;
-
-                    double value;
-                    if (cosmosNumber.IsFloatingPoint)
-                    {
-                        value = cosmosNumber.AsFloatingPoint().Value;
-                    }
-                    else
-                    {
-                        value = cosmosNumber.AsInteger().Value;
-                    }
-
+                    double value = Number64.ToDouble(cosmosNumber.Value);
                     return new PartitionKey(value);
 
                 case CosmosElementType.Boolean:

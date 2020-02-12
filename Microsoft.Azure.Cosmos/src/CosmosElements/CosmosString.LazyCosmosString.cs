@@ -55,6 +55,11 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 }
             }
 
+            public override bool TryGetBufferedUtf8Value(out ReadOnlyMemory<byte> bufferedUtf8Value)
+            {
+                return this.jsonNavigator.TryGetBufferedUtf8StringValue(this.jsonNavigatorNode, out bufferedUtf8Value);
+            }
+
             public override void WriteTo(IJsonWriter jsonWriter)
             {
                 if (jsonWriter == null)

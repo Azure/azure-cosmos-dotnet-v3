@@ -54,10 +54,22 @@ namespace Microsoft.Azure.Cosmos.Json
         void WriteFieldName(string fieldName);
 
         /// <summary>
+        /// Writes a UTF-8 field name to the internal buffer.
+        /// </summary>
+        /// <param name="utf8FieldName"></param>
+        void WriteFieldName(ReadOnlySpan<byte> utf8FieldName);
+
+        /// <summary>
         /// Writes a string to the internal buffer.
         /// </summary>
         /// <param name="value">The value of the string to write.</param>
         void WriteStringValue(string value);
+
+        /// <summary>
+        /// Writes a UTF-8 string value to the internal buffer.
+        /// </summary>
+        /// <param name="utf8StringValue"></param>
+        void WriteStringValue(ReadOnlySpan<byte> utf8StringValue);
 
         /// <summary>
         /// Writes a number to the internal buffer.

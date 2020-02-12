@@ -27,9 +27,13 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 this.Value = value;
             }
 
-            public override string Value
+            public override string Value { get; }
+
+            public override bool TryGetBufferedUtf8Value(out ReadOnlyMemory<byte> bufferedUtf8Value)
             {
-                get;
+                // Eager string only has the materialized value, so this method will always return false.
+                bufferedUtf8Value = default;
+                return false;
             }
 
             public override void WriteTo(IJsonWriter jsonWriter)

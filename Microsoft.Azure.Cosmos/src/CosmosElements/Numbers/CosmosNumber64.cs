@@ -21,51 +21,9 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
         {
         }
 
-        public override bool IsFloatingPoint
-        {
-            get
-            {
-                return this.GetValue().IsDouble;
-            }
-        }
+        public override Number64 Value => this.GetValue();
 
-        public override bool IsInteger
-        {
-            get
-            {
-                return this.GetValue().IsInteger;
-            }
-        }
-
-        public override double? AsFloatingPoint()
-        {
-            double? value;
-            if (this.IsFloatingPoint)
-            {
-                value = Number64.ToDouble(this.GetValue());
-            }
-            else
-            {
-                value = null;
-            }
-
-            return value;
-        }
-
-        public override long? AsInteger()
-        {
-            long? value;
-            if (this.IsInteger)
-            {
-                value = Number64.ToLong(this.GetValue());
-            }
-            else
-            {
-                value = null;
-            }
-
-            return value;
-        }
+        public abstract Number64 GetValue();
 
         public override void Accept(ICosmosNumberVisitor cosmosNumberVisitor)
         {
@@ -98,8 +56,6 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
         {
             return new EagerCosmosNumber64(number);
         }
-
-        public abstract Number64 GetValue();
     }
 #if INTERNAL
 #pragma warning restore SA1601 // Partial elements should be documented

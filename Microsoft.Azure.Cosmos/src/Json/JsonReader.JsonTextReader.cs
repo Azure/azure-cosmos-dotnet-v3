@@ -146,9 +146,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 Binary = JsonTokenType.Binary,
             }
 
-            /// <summary>
-            /// Gets the SerializationFormat for the JsonReader
-            /// </summary>
+            /// <inheritdoc />
             public override JsonSerializationFormat SerializationFormat
             {
                 get
@@ -157,10 +155,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
             }
 
-            /// <summary>
-            /// Advances the JsonReader by one token.
-            /// </summary>
-            /// <returns>Whether the reader successfully read a token.</returns>
+            /// <inheritdoc />
             public override bool Read()
             {
                 // Skip past whitespace to the start of the next token
@@ -291,20 +286,14 @@ namespace Microsoft.Azure.Cosmos.Json
                 return true;
             }
 
-            /// <summary>
-            /// Gets the next JSON token from the JsonReader as a double.
-            /// </summary>
-            /// <returns>The next JSON token from the JsonReader as a double.</returns>
+            /// <inheritdoc />
             public override Number64 GetNumberValue()
             {
                 ReadOnlySpan<byte> numberToken = this.jsonTextBuffer.GetBufferedRawJsonToken(this.token.Start, this.token.End).Span;
                 return JsonTextParser.GetNumberValue(numberToken);
             }
 
-            /// <summary>
-            /// Gets the next JSON token from the JsonReader as a string.
-            /// </summary>
-            /// <returns>The next JSON token from the JsonReader as a string.</returns>
+            /// <inheritdoc />
             public override string GetStringValue()
             {
                 ReadOnlySpan<byte> stringToken = this.jsonTextBuffer.GetBufferedRawJsonToken(
@@ -313,6 +302,22 @@ namespace Microsoft.Azure.Cosmos.Json
                 return JsonTextParser.GetStringValue(stringToken);
             }
 
+            /// <inheritdoc />
+            public override bool TryGetBufferedUtf8StringValue(out ReadOnlyMemory<byte> bufferedUtf8StringValue)
+            {
+                if (this.token.JsonTextTokenType.HasFlag(JsonTextTokenType.EscapedFlag))
+                {
+                    bufferedUtf8StringValue = default;
+                    return false;
+                }
+
+                bufferedUtf8StringValue = this.jsonTextBuffer.GetBufferedRawJsonToken(
+                    this.token.Start,
+                    this.token.End);
+                return true;
+            }
+
+            /// <inheritdoc />
             public override sbyte GetInt8Value()
             {
                 ReadOnlySpan<byte> numberToken = this.jsonTextBuffer.GetBufferedRawJsonToken(
@@ -321,6 +326,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 return JsonTextParser.GetInt8Value(numberToken);
             }
 
+            /// <inheritdoc />
             public override short GetInt16Value()
             {
                 ReadOnlySpan<byte> numberToken = this.jsonTextBuffer.GetBufferedRawJsonToken(
@@ -329,6 +335,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 return JsonTextParser.GetInt16Value(numberToken);
             }
 
+            /// <inheritdoc />
             public override int GetInt32Value()
             {
                 ReadOnlySpan<byte> numberToken = this.jsonTextBuffer.GetBufferedRawJsonToken(
@@ -337,6 +344,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 return JsonTextParser.GetInt32Value(numberToken);
             }
 
+            /// <inheritdoc />
             public override long GetInt64Value()
             {
                 ReadOnlySpan<byte> numberToken = this.jsonTextBuffer.GetBufferedRawJsonToken(
@@ -345,6 +353,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 return JsonTextParser.GetInt64Value(numberToken);
             }
 
+            /// <inheritdoc />
             public override uint GetUInt32Value()
             {
                 ReadOnlySpan<byte> numberToken = this.jsonTextBuffer.GetBufferedRawJsonToken(
@@ -353,6 +362,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 return JsonTextParser.GetUInt32Value(numberToken);
             }
 
+            /// <inheritdoc />
             public override float GetFloat32Value()
             {
                 ReadOnlySpan<byte> numberToken = this.jsonTextBuffer.GetBufferedRawJsonToken(
@@ -361,6 +371,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 return JsonTextParser.GetFloat32Value(numberToken);
             }
 
+            /// <inheritdoc />
             public override double GetFloat64Value()
             {
                 ReadOnlySpan<byte> numberToken = this.jsonTextBuffer.GetBufferedRawJsonToken(
@@ -369,6 +380,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 return JsonTextParser.GetFloat64Value(numberToken);
             }
 
+            /// <inheritdoc />
             public override Guid GetGuidValue()
             {
                 ReadOnlySpan<byte> guidToken = this.jsonTextBuffer.GetBufferedRawJsonToken(
@@ -377,6 +389,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 return JsonTextParser.GetGuidValue(guidToken);
             }
 
+            /// <inheritdoc />
             public override ReadOnlyMemory<byte> GetBinaryValue()
             {
                 ReadOnlySpan<byte> binaryToken = this.jsonTextBuffer.GetBufferedRawJsonToken(
@@ -385,15 +398,13 @@ namespace Microsoft.Azure.Cosmos.Json
                 return JsonTextParser.GetBinaryValue(binaryToken);
             }
 
-            /// <summary>
-            /// Gets the next JSON token from the JsonReader as a buffered list of bytes
-            /// </summary>
-            /// <returns>the next JSON token from the JsonReader as a buffered list of bytes</returns>
-            public override ReadOnlyMemory<byte> GetBufferedRawJsonToken()
+            /// <inheritdoc />
+            public override bool TryGetBufferedRawJsonToken(out ReadOnlyMemory<byte> bufferedRawJsonToken)
             {
-                return this.jsonTextBuffer.GetBufferedRawJsonToken(
+                bufferedRawJsonToken = this.jsonTextBuffer.GetBufferedRawJsonToken(
                     this.token.Start,
                     this.token.End);
+                return true;
             }
 
             private static JsonTokenType JsonTextToJsonTokenType(JsonTextTokenType jsonTextTokenType)
@@ -438,7 +449,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 {
                     throw new JsonInvalidTokenException();
                 }
-                
+
                 this.RegisterToken();
             }
 

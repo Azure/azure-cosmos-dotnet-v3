@@ -399,6 +399,16 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
+        /// Sets the ambient Session Container to use for this CosmosClient.
+        /// This is used to track session tokens per client for requests made to the store.
+        /// </summary>
+        internal CosmosClientBuilder WithSessionContainer(ISessionContainer sessionContainer)
+        {
+            this.clientOptions.SessionContainer = sessionContainer;
+            return this;
+        }
+
+        /// <summary>
         /// (Optional) transport interceptor factory
         /// </summary>
         internal CosmosClientBuilder WithTransportClientHandlerFactory(Func<TransportClient, TransportClient> transportClientHandlerFactory)

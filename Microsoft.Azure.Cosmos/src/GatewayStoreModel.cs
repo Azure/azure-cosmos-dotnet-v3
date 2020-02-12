@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -224,6 +224,19 @@ namespace Microsoft.Azure.Cosmos
                     request.Headers.Remove(HttpConstants.HttpHeaders.SessionToken);
                 }
                 return; //User is explicitly controlling the session.
+            }
+
+            if (request.Headers != null &&
+                 request.OperationType == OperationType.QueryPlan)
+            {
+                {
+                    string isPlanOnlyString = request.Headers[HttpConstants.HttpHeaders.IsQueryPlanRequest];
+                    bool isPlanOnly = false;
+                    if (bool.TryParse(isPlanOnlyString, out isPlanOnly) && isPlanOnly)
+                    {
+                        return; // for query plan session token is not needed
+                    }
+                }
             }
 
             string requestConsistencyLevel = request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel];
