@@ -664,16 +664,13 @@ namespace Microsoft.Azure.Cosmos.Sql
         unsafe private static void WriteNumber64(StringBuilder stringBuilder, Number64 value)
         {
             const int MaxNumberLength = 32;
-
             Span<byte> buffer = stackalloc byte[MaxNumberLength];
-            int bytesWritten;
-
             if (value.IsInteger)
             {
                 if (!Utf8Formatter.TryFormat(
                     value: Number64.ToLong(value),
                     destination: buffer,
-                    bytesWritten: out bytesWritten))
+                    bytesWritten: out int bytesWritten))
                 {
                     throw new InvalidOperationException($"Failed to write a long.");
                 }
@@ -767,8 +764,8 @@ namespace Microsoft.Azure.Cosmos.Sql
                         default:
                             char wideCharToEscape = (char)character;
                             // We got a control character (U+0000 through U+001F).
-                            stringBuilder.Append((byte)'\\');
-                            stringBuilder.Append((byte)'u');
+                            stringBuilder.Append('\\');
+                            stringBuilder.Append('u');
                             stringBuilder.Append(SqlObjectTextSerializer.GetHexDigit((wideCharToEscape >> 12) & 0xF));
                             stringBuilder.Append(SqlObjectTextSerializer.GetHexDigit((wideCharToEscape >> 8) & 0xF));
                             stringBuilder.Append(SqlObjectTextSerializer.GetHexDigit((wideCharToEscape >> 4) & 0xF));
@@ -791,9 +788,9 @@ namespace Microsoft.Azure.Cosmos.Sql
             return index;
         }
 
-        private static byte GetHexDigit(int value)
+        private static char GetHexDigit(int value)
         {
-            return (byte)((value < 10) ? '0' + value : 'A' + value - 10);
+            return (char)((value < 10) ? '0' + value : 'A' + value - 10);
         }
 
         private static string SqlUnaryScalarOperatorKindToString(SqlUnaryScalarOperatorKind kind)
