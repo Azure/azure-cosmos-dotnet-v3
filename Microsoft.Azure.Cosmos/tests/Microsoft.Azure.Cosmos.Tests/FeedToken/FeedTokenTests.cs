@@ -81,6 +81,65 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void FeedToken_EPK_FillHeaders()
+        {
+            const string containerRid = "containerRid";
+            FeedTokenEPKRange token = new FeedTokenEPKRange(containerRid, new Documents.PartitionKeyRange() { MinInclusive = "A", MaxExclusive = "B" });
+            string continuation = Guid.NewGuid().ToString();
+            token.UpdateContinuation(continuation);
+            RequestMessage requestMessage = new RequestMessage();
+            Mock<CosmosClientContext> cosmosClientContext = new Mock<CosmosClientContext>();
+            MultiRangeMockDocumentClient mockDocumentClient = new MultiRangeMockDocumentClient();
+            cosmosClientContext.Setup(c => c.DocumentClient).Returns(new MultiRangeMockDocumentClient());
+            token.FillHeaders(cosmosClientContext.Object, requestMessage);
+            Assert.AreEqual(continuation, requestMessage.Headers.IfNoneMatch);
+            Assert.AreEqual(mockDocumentClient.AvailablePartitionKeyRanges[0].Id, requestMessage.PartitionKeyRangeId.PartitionKeyRangeId);
+        }
+
+        [TestMethod]
+        public void FeedToken_PartitionKey_TryParse()
+        {
+            FeedTokenPartitionKey token = new FeedTokenPartitionKey(new PartitionKey("test"));
+            Assert.IsTrue(FeedTokenPartitionKey.TryParseInstance(token.ToString(), out FeedToken parsed));
+            Assert.IsFalse(FeedTokenPartitionKey.TryParseInstance("whatever", out FeedToken _));
+        }
+
+        [TestMethod]
+        public void FeedToken_PartitionKeyRange_TryParse()
+        {
+            FeedTokenPartitionKeyRange token = new FeedTokenPartitionKeyRange("0");
+            Assert.IsTrue(FeedTokenPartitionKeyRange.TryParseInstance(token.ToString(), out FeedToken parsed));
+            Assert.IsTrue(FeedTokenPartitionKeyRange.TryParseInstance("1", out FeedToken _));
+            Assert.IsFalse(FeedTokenPartitionKey.TryParseInstance("whatever", out FeedToken _));
+        }
+
+        [TestMethod]
+        public void FeedToken_PartitionKey_FillHeader()
+        {
+            PartitionKey pk = new PartitionKey("test");
+            FeedTokenPartitionKey token = new FeedTokenPartitionKey(pk);
+            RequestMessage requestMessage = new RequestMessage();
+            string continuation = Guid.NewGuid().ToString();
+            token.UpdateContinuation(continuation);
+            token.FillHeaders(Mock.Of<CosmosClientContext>(), requestMessage);
+            Assert.AreEqual(continuation, requestMessage.Headers.IfNoneMatch);
+            Assert.AreEqual(pk.ToJsonString(), requestMessage.Headers.PartitionKey);
+        }
+
+        [TestMethod]
+        public void FeedToken_PartitionKeyRange_FillHeader()
+        {
+            string pkrangeId = "0";
+            FeedTokenPartitionKeyRange token = new FeedTokenPartitionKeyRange(pkrangeId);
+            RequestMessage requestMessage = new RequestMessage();
+            string continuation = Guid.NewGuid().ToString();
+            token.UpdateContinuation(continuation);
+            token.FillHeaders(Mock.Of<CosmosClientContext>(), requestMessage);
+            Assert.AreEqual(continuation, requestMessage.Headers.IfNoneMatch);
+            Assert.AreEqual(pkrangeId, requestMessage.PartitionKeyRangeId.PartitionKeyRangeId);
+        }
+
+        [TestMethod]
         public void FeedToken_EPK_CompleteRange()
         {
             const string containerRid = "containerRid";
@@ -143,7 +202,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             MultiRangeMockDocumentClient documentClient = new MultiRangeMockDocumentClient();
 
             Mock<CosmosClientContext> cosmosClientContext = new Mock<CosmosClientContext>();
-            cosmosClientContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions()); ;
+            cosmosClientContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
             cosmosClientContext.Setup(c => c.DocumentClient).Returns(documentClient);
 
             Mock<ContainerCore> containerCore = new Mock<ContainerCore>();
@@ -191,9 +250,9 @@ namespace Microsoft.Azure.Cosmos.Tests
         private class MultiRangeMockDocumentClient : MockDocumentClient
         {
             public List<Documents.PartitionKeyRange> AvailablePartitionKeyRanges = new List<Documents.PartitionKeyRange>() {
-                new Documents.PartitionKeyRange() { MinInclusive = "A", MaxExclusive ="B" },
-                new Documents.PartitionKeyRange() { MinInclusive = "B", MaxExclusive ="C" },
-                new Documents.PartitionKeyRange() { MinInclusive = "C", MaxExclusive ="F" },
+                new Documents.PartitionKeyRange() { MinInclusive = "A", MaxExclusive ="B", Id = "0" },
+                new Documents.PartitionKeyRange() { MinInclusive = "B", MaxExclusive ="C", Id = "0" },
+                new Documents.PartitionKeyRange() { MinInclusive = "C", MaxExclusive ="F", Id = "0" },
             };
 
             internal override IReadOnlyList<Documents.PartitionKeyRange> ResolveOverlapingPartitionKeyRanges(string collectionRid, Documents.Routing.Range<string> range, bool forceRefresh)
