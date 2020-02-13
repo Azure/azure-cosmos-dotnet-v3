@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary> 
         /// Should the caller retry the operation.
         /// </summary>
-        /// <param name="exception">Exception that occured when the operation was tried</param>
+        /// <param name="exception">Exception that occurred when the operation was tried</param>
         /// <param name="cancellationToken"></param>
         /// <returns>True indicates caller should retry, False otherwise</returns>
         public async Task<ShouldRetryResult> ShouldRetryAsync(

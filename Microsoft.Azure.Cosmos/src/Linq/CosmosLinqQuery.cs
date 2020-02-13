@@ -192,7 +192,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     }
                     else
                     {
-                        diagnosticsContext.Append(responseDiagnosticContext);
+                        diagnosticsContext.AddDiagnosticsInternal(responseDiagnosticContext);
                     }
                     
                 }
