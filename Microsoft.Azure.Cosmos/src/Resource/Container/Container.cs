@@ -1126,7 +1126,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A list of <see cref="FeedToken"/>.</returns>
-        public abstract Task<IEnumerable<FeedToken>> GetFeedTokensAsync(CancellationToken cancellationToken = default(CancellationToken));
+        public abstract Task<IReadOnlyList<FeedToken>> GetFeedTokensAsync(CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Obtains a list of <see cref="FeedToken"/> that can be used to parallelize Read Feed operations.
@@ -1137,7 +1137,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="maxTokens">Defines a maximum amount of tokens to be returned.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A list of <see cref="FeedToken"/>.</returns>
-        public abstract Task<IEnumerable<FeedToken>> GetFeedTokensAsync(
+        public abstract Task<IReadOnlyList<FeedToken>> GetFeedTokensAsync(
             int maxTokens,
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -1178,7 +1178,7 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// IEnumerable<FeedToken> feedTokens = await this.Container.GetFeedTokensAsync();
+        /// IReadOnlyList<FeedToken> feedTokens = await this.Container.GetFeedTokensAsync();
         /// // Distribute feedTokens across multiple compute units and pass each one to a different iterator
         /// FeedTokenIterator feedIterator = this.Container.GetChangeFeedStreamIterator(feedToken.First());
         ///
@@ -1268,9 +1268,9 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// IEnumerable<FeedToken> feedTokens = await this.Container.GetFeedTokensAsync();
+        /// IReadOnlyList<FeedToken> feedTokens = await this.Container.GetFeedTokensAsync();
         /// // Distribute feedTokens across multiple compute units and pass each one to a different iterator
-        /// FeedTokenIterator<MyItem> feedIterator = this.Container.GetChangeFeedIterator<MyItem>(feedToken.First());
+        /// FeedTokenIterator<MyItem> feedIterator = this.Container.GetChangeFeedIterator<MyItem>(feedToken[0]);
         /// FeedToken lastFeedTokenState;
         /// while (feedIterator.HasMoreResults)
         /// {

@@ -205,7 +205,7 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        async Task<IEnumerable<FeedToken>> GetFeedTokensAsync(CancellationToken cancellationToken = default(CancellationToken))
+        async Task<IReadOnlyList<FeedToken>> GetFeedTokensAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             PartitionKeyRangeCache partitionKeyRangeCache = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
             string containerRId = await this.GetRIDAsync(cancellationToken);
@@ -218,7 +218,7 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        async Task<IEnumerable<FeedToken>> GetFeedTokensAsync(
+        async Task<IReadOnlyList<FeedToken>> GetFeedTokensAsync(
             int maxTokens,
             CancellationToken cancellationToken = default(CancellationToken))
         {

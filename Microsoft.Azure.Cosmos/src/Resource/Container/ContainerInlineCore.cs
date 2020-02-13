@@ -263,12 +263,12 @@ namespace Microsoft.Azure.Cosmos
             return this.container.CreateTransactionalBatch(partitionKey);
         }
 #if PREVIEW
-        public override Task<IEnumerable<FeedToken>> GetFeedTokensAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public override Task<IReadOnlyList<FeedToken>> GetFeedTokensAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             return TaskHelper.RunInlineIfNeededAsync(() => this.container.GetFeedTokensAsync(cancellationToken));
         }
 
-        public override Task<IEnumerable<FeedToken>> GetFeedTokensAsync(
+        public override Task<IReadOnlyList<FeedToken>> GetFeedTokensAsync(
             int maxTokens,
             CancellationToken cancellationToken = default(CancellationToken))
         {
