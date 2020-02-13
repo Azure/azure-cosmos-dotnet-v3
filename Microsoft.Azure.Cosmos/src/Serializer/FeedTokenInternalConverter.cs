@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
-    internal class FeedTokenInternalConverter : JsonConverter
+    internal sealed class FeedTokenInternalConverter : JsonConverter
     {
         private static string TypePropertyName = "T";
         private static string VersionPropertyName = "V";
@@ -162,6 +162,8 @@ namespace Microsoft.Azure.Cosmos
                 serializer.Serialize(writer, feedTokenPartitionKeyRange.GetContinuation());
                 writer.WriteEndObject();
             }
+
+            throw new JsonSerializationException(ClientResources.FeedToken_UnrecognizedFeedToken);
         }
     }
 }
