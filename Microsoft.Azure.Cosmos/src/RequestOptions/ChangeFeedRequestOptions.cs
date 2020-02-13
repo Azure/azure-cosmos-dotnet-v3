@@ -58,6 +58,7 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
+            ChangeFeedRequestOptions.FillMaxItemCount(request, this.MaxItemCount);
             request.Headers.Add(HttpConstants.HttpHeaders.A_IM, HttpConstants.A_IMHeaderValues.IncrementalFeed);
 
             base.PopulateRequestOptions(request);

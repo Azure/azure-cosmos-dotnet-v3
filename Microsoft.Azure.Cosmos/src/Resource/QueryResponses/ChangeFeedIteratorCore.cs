@@ -83,7 +83,6 @@ namespace Microsoft.Azure.Cosmos
                 cosmosContainerCore: this.container,
                 requestEnricher: request =>
                 {
-                    ChangeFeedRequestOptions.FillMaxItemCount(request, this.changeFeedOptions.MaxItemCount);
                     this.feedTokenInternal.FillHeaders(this.clientContext, request);
                 },
                 partitionKey: null,
