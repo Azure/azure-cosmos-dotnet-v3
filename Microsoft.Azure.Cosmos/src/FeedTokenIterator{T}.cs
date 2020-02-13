@@ -35,29 +35,8 @@ namespace Microsoft.Azure.Cosmos
 #else
     internal
 #endif
-    abstract class FeedTokenIterator<T>
+    abstract class FeedTokenIterator<T> : FeedIterator<T>
     {
-        /// <summary>
-        /// Tells if there is more results that need to be retrieved from the service
-        /// </summary>
-        /// <example>
-        /// Example on how to fully drain the query results.
-        /// <code language="c#">
-        /// <![CDATA[
-        /// FeedTokenIterator<MyItem> feedIterator = this.Container.GetChangeFeedIterator<MyItem>();
-        /// while (feedIterator.HasMoreResults)
-        /// {
-        ///     FeedResponse<MyItem> response = await feedIterator.ReadNextAsync();
-        ///     foreach (var item in response)
-        ///     {
-        ///         Console.WriteLine(item);
-        ///     }
-        /// }
-        /// ]]>
-        /// </code>
-        /// </example>
-        public abstract bool HasMoreResults { get; }
-
         /// <summary>
         /// Current FeedToken for the iterator.
         /// </summary>
@@ -73,28 +52,5 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="continuationToken">Obtained continuation token</param>
         /// <returns>Whether or not it was possible to obtain the continuation token.</returns>
         public abstract bool TryGetContinuationToken(out string continuationToken);
-
-        /// <summary>
-        /// Get the next set of results from the Cosmos service
-        /// </summary>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>A query response from cosmos service</returns>
-        /// <example>
-        /// Example on how to fully drain the query results.
-        /// <code language="c#">
-        /// <![CDATA[
-        /// FeedTokenIterator<MyItem> feedIterator = this.Container.GetChangeFeedIterator<MyItem>();
-        /// while (feedIterator.HasMoreResults)
-        /// {
-        ///     FeedResponse<MyItem> response = await feedIterator.ReadNextAsync();
-        ///     foreach (var item in response)
-        ///     {
-        ///         Console.WriteLine(item);
-        ///     }
-        /// }
-        /// ]]>
-        /// </code>
-        /// </example>
-        public abstract Task<FeedResponse<T>> ReadNextAsync(CancellationToken cancellationToken = default);
     }
 }

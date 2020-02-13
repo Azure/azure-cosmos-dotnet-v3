@@ -100,4 +100,5 @@ namespace Microsoft.Azure.Cosmos
         public abstract FeedToken FeedToken { get; }
 #endif
     }
+
 }
