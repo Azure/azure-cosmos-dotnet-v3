@@ -342,7 +342,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private (Func<RequestContinuationToken, Task<TryCatch<IDocumentQueryExecutionComponent>>>, QueryResponseCore) SetupBaseContextToVerifyFailureScenario()
         {
-            CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContext();
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create();
             diagnosticsContext.AddDiagnosticsInternal( new PointOperationStatistics(
                     Guid.NewGuid().ToString(),
                     System.Net.HttpStatusCode.Unauthorized,

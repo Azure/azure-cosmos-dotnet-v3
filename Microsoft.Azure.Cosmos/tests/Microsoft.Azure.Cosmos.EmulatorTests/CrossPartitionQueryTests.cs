@@ -603,54 +603,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        private static async Task<List<T>> QueryWithTryGetContinuationTokens<T>(
-            Container container,
-            string query,
-            QueryRequestOptions queryRequestOptions = null)
-        {
-            if (queryRequestOptions == null)
-            {
-                queryRequestOptions = new QueryRequestOptions();
-            }
-
-            List<T> resultsFromTryGetContinuationToken = new List<T>();
-            string continuationToken = null;
-            do
-            {
-                QueryRequestOptions computeRequestOptions = queryRequestOptions.Clone();
-                computeRequestOptions.ExecutionEnvironment = Cosmos.Query.Core.ExecutionContext.ExecutionEnvironment.Compute;
-
-                FeedIteratorInternal<T> itemQuery = (FeedIteratorInternal<T>)container.GetItemQueryIterator<T>(
-                   queryText: query,
-                   requestOptions: computeRequestOptions,
-                   continuationToken: continuationToken);
-                try
-                {
-                    FeedResponse<T> cosmosQueryResponse = await itemQuery.ReadNextAsync();
-                    if (queryRequestOptions.MaxItemCount.HasValue)
-                    {
-                        Assert.IsTrue(
-                            cosmosQueryResponse.Count <= queryRequestOptions.MaxItemCount.Value,
-                            "Max Item Count is not being honored");
-                    }
-
-                    resultsFromTryGetContinuationToken.AddRange(cosmosQueryResponse);
-                    Assert.IsTrue(
-                        itemQuery.TryGetContinuationToken(out continuationToken),
-                        "Failed to get state for query");
-                }
-                catch (CosmosException cosmosException) when (cosmosException.StatusCode == (HttpStatusCode)429)
-                {
-                    itemQuery = (FeedIteratorInternal<T>)container.GetItemQueryIterator<T>(
-                            queryText: query,
-                            requestOptions: queryRequestOptions,
-                            continuationToken: continuationToken);
-                }
-            } while (continuationToken != null);
-
-            return resultsFromTryGetContinuationToken;
-        }
-
         private static async Task<List<T>> QueryWithSerializeState<T>(
             Container container,
             string query,
@@ -1460,7 +1412,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                             await ValidateNonDeterministicQuery(CrossPartitionQueryTests.QueryWithoutContinuationTokens<JToken>, useOrderBy);
                             await ValidateNonDeterministicQuery(CrossPartitionQueryTests.QueryWithContinuationTokens<JToken>, useOrderBy);
-                            await ValidateNonDeterministicQuery(CrossPartitionQueryTests.QueryWithTryGetContinuationTokens<JToken>, useOrderBy);
+                            await ValidateNonDeterministicQuery(CrossPartitionQueryTests.QueryWithSerializeState<JToken>, useOrderBy);
                         }
                     }
                 }
@@ -2733,7 +2685,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         MaxConcurrency = 10,
                         MaxItemCount = 100,
                     },
-                    QueryDrainingMode.TryGetContinuationTokens | QueryDrainingMode.HoldState | QueryDrainingMode.SerializeState);
+                    QueryDrainingMode.HoldState | QueryDrainingMode.SerializeState);
                 documentsFromWithoutDistinct = documentsFromWithoutDistinct
                     .Where(document => documentsSeen.Add(document, out UInt128 hash))
                     .ToList();
@@ -2749,7 +2701,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             MaxConcurrency = 10,
                             MaxItemCount = pageSize
                         },
-                        QueryDrainingMode.TryGetContinuationTokens | QueryDrainingMode.HoldState | QueryDrainingMode.SerializeState);
+                        QueryDrainingMode.HoldState | QueryDrainingMode.SerializeState);
 
                     Assert.IsTrue(
                         documentsFromWithDistinct.SequenceEqual(documentsFromWithoutDistinct, JsonTokenEqualityComparer.Value),
@@ -4341,7 +4293,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         });
                     HashSet<JToken> actualWithoutContinuationTokensSet = new HashSet<JToken>(actualWithoutContinuationTokens, JsonTokenEqualityComparer.Value);
 
-                    List<JToken> actualWithTryGetContinuationTokens = await CrossPartitionQueryTests.QueryWithTryGetContinuationTokens<JToken>(
+                    List<JToken> actualWithTryGetContinuationTokens = await CrossPartitionQueryTests.QueryWithSerializeState<JToken>(
                         container,
                         query,
                         new QueryRequestOptions()
@@ -4684,7 +4636,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 container,
                 query,
                 queryRequestOptions,
-                QueryDrainingMode.ContinuationToken | QueryDrainingMode.HoldState | QueryDrainingMode.TryGetContinuationTokens | QueryDrainingMode.SerializeState);
+                QueryDrainingMode.ContinuationToken | QueryDrainingMode.HoldState | QueryDrainingMode.SerializeState);
         }
 
         [Flags]
@@ -4693,8 +4645,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             None = 0,
             HoldState = 1,
             ContinuationToken = 2,
-            TryGetContinuationTokens = 4,
-            SerializeState = 8,
+            SerializeState = 4,
         }
 
         private static async Task<List<T>> RunQueryCombinations<T>(
@@ -4728,16 +4679,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     queryRequestOptions);
 
                 queryExecutionResults[QueryDrainingMode.ContinuationToken] = queryResultsWithContinuationTokens;
-            }
-
-            if (queryDrainingMode.HasFlag(QueryDrainingMode.TryGetContinuationTokens))
-            {
-                List<T> queryResultsWithTryGetContinuationToken = await QueryWithTryGetContinuationTokens<T>(
-                    container,
-                    query,
-                    queryRequestOptions);
-
-                queryExecutionResults[QueryDrainingMode.TryGetContinuationTokens] = queryResultsWithTryGetContinuationToken;
             }
 
             if (queryDrainingMode.HasFlag(QueryDrainingMode.SerializeState))

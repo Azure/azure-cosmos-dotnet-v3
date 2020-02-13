@@ -81,12 +81,6 @@ namespace Microsoft.Azure.Cosmos
             throw new NotImplementedException();
         }
 
-        public override bool TryGetContinuationToken(out string continuationToken)
-        {
-            continuationToken = this.continuationToken;
-            return true;
-        }
-
         private Task<ResponseMessage> NextResultSetDelegateAsync(
             string continuationToken,
             string partitionKeyRangeId,

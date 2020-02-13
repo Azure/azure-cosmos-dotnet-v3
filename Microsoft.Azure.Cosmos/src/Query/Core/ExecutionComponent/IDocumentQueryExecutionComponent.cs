@@ -33,8 +33,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
         /// </summary>
         void Stop();
 
-        bool TryGetContinuationToken(out string state);
-
         void SerializeState(IJsonWriter jsonWriter);
     }
 }

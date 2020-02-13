@@ -43,11 +43,6 @@ namespace Microsoft.Azure.Cosmos
         {
             this.feedIteratorInternal.SerializeState(jsonWriter);
         }
-
-        public override bool TryGetContinuationToken(out string continuationToken)
-        {
-            return this.feedIteratorInternal.TryGetContinuationToken(out continuationToken);
-        }
     }
 
     internal class FeedIteratorInlineCore<T> : FeedIteratorInternal<T>
@@ -78,11 +73,6 @@ namespace Microsoft.Azure.Cosmos
         public override Task<FeedResponse<T>> ReadNextAsync(CancellationToken cancellationToken = default)
         {
             return TaskHelper.RunInlineIfNeededAsync(() => this.feedIteratorInternal.ReadNextAsync(cancellationToken));
-        }
-
-        public override bool TryGetContinuationToken(out string continuationToken)
-        {
-            return this.feedIteratorInternal.TryGetContinuationToken(out continuationToken);
         }
 
         public override void SerializeState(IJsonWriter jsonWriter)

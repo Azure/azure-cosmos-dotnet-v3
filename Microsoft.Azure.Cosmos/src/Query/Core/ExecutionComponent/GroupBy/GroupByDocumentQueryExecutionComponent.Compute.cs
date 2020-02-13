@@ -258,12 +258,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                 public void Stop()
                 {
                 }
-
-                public bool TryGetContinuationToken(out string state)
-                {
-                    state = null;
-                    return true;
-                }
             }
         }
     }

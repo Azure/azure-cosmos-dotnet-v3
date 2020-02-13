@@ -147,11 +147,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
 
         private QueryResponseCore GetEmptyPage(QueryResponseCore sourceResponse)
         {
-            if (!this.TryGetContinuationToken(out string updatedContinuationToken))
-            {
-                throw new InvalidOperationException("Failed to get source continuation token.");
-            }
-
             // We need to give empty pages until the results are fully drained.
             QueryResponseCore response = QueryResponseCore.CreateSuccess(
                 result: EmptyResults,
@@ -159,7 +154,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
                 activityId: sourceResponse.ActivityId,
                 responseLengthBytes: sourceResponse.ResponseLengthBytes,
                 disallowContinuationTokenMessage: null,
-                continuationToken: updatedContinuationToken,
+                continuationToken: sourceResponse.ContinuationToken,
                 diagnostics: sourceResponse.Diagnostics);
 
             return response;

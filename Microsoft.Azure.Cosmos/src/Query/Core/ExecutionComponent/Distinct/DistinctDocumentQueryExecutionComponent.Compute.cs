@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
         /// </summary>
         private sealed class ComputeDistinctDocumentQueryExecutionComponent : DistinctDocumentQueryExecutionComponent
         {
-            private static readonly string UseTryGetContinuationTokenMessage = $"Use {nameof(ComputeDistinctDocumentQueryExecutionComponent.TryGetContinuationToken)}";
+            private static readonly string UseTryGetContinuationTokenMessage = $"Use TryGetContinuationToken";
 
             private ComputeDistinctDocumentQueryExecutionComponent(
                 DistinctQueryType distinctQueryType,

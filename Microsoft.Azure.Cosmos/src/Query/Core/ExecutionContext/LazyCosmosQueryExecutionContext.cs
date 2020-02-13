@@ -76,24 +76,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             return queryResponseCore;
         }
 
-        public override bool TryGetContinuationToken(out string state)
-        {
-            if (!this.lazyTryCreateCosmosQueryExecutionContext.ValueInitialized)
-            {
-                state = null;
-                return false;
-            }
-
-            TryCatch<CosmosQueryExecutionContext> tryCreateCosmosQueryExecutionContext = this.lazyTryCreateCosmosQueryExecutionContext.Result;
-            if (!tryCreateCosmosQueryExecutionContext.Succeeded)
-            {
-                state = null;
-                return false;
-            }
-
-            return tryCreateCosmosQueryExecutionContext.Result.TryGetContinuationToken(out state);
-        }
-
         public override void SerializeState(IJsonWriter jsonWriter)
         {
             if (jsonWriter == null)

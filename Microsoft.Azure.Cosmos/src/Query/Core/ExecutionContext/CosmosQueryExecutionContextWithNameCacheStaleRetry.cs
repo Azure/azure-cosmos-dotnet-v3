@@ -60,11 +60,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             return queryResponse;
         }
 
-        public override bool TryGetContinuationToken(out string continuationToken)
-        {
-            return this.currentCosmosQueryExecutionContext.TryGetContinuationToken(out continuationToken);
-        }
-
         public override void SerializeState(IJsonWriter jsonWriter)
         {
             if (jsonWriter == null)

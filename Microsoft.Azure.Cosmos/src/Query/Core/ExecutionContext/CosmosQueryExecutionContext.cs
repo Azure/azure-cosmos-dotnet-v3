@@ -31,8 +31,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         /// <returns>A task to await on, which in return provides a DoucmentFeedResponse of documents.</returns>
         public abstract Task<QueryResponseCore> ExecuteNextAsync(CancellationToken cancellationToken);
 
-        public abstract bool TryGetContinuationToken(out string continuationToken);
-
         public abstract void SerializeState(IJsonWriter jsonWriter);
     }
 }

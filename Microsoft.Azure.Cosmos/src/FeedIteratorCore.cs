@@ -98,12 +98,6 @@ namespace Microsoft.Azure.Cosmos
             return response;
         }
 
-        public override bool TryGetContinuationToken(out string continuationToken)
-        {
-            continuationToken = this.continuationToken;
-            return true;
-        }
-
         internal static string GetContinuationToken(ResponseMessage httpResponseMessage)
         {
             return httpResponseMessage.Headers.ContinuationToken;
@@ -153,11 +147,6 @@ namespace Microsoft.Azure.Cosmos
 
             ResponseMessage response = await this.feedIterator.ReadNextAsync(cancellationToken);
             return this.responseCreator(response);
-        }
-
-        public override bool TryGetContinuationToken(out string continuationToken)
-        {
-            return this.feedIterator.TryGetContinuationToken(out continuationToken);
         }
 
         public override void SerializeState(IJsonWriter jsonWriter)

@@ -662,12 +662,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             }
         }
 
-        public bool TryGetContinuationToken(out string state)
-        {
-            state = this.ContinuationToken;
-            return true;
-        }
-
         public abstract void SerializeState(IJsonWriter jsonWriter);
 
         public readonly struct InitInfo<TContinuationToken>

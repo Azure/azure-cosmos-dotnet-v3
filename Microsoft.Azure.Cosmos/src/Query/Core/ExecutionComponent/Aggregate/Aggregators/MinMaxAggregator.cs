@@ -91,8 +91,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
                 }
             }
 
-            if (!ItemComparer.IsMinOrMax(this.globalMinMax)
-                && (!CosmosElementIsPrimitive(localMinMax) || !CosmosElementIsPrimitive(this.globalMinMax)))
+            if (!ItemComparer.IsMinOrMax(this.globalMinMax) && (!IsPrimitve(localMinMax) || !IsPrimitve(this.globalMinMax)))
             {
                 // This means we are comparing non primitives which is undefined
                 this.globalMinMax = Undefined;
@@ -230,6 +229,65 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
 
             return TryCatch<IAggregator>.FromResult(
                 new MinMaxAggregator(isMinAggregation: isMinAggregation, globalMinMax: globalMinMax));
+        }
+
+        private static bool IsPrimitve(CosmosElement cosmosElement)
+        {
+            if (cosmosElement == Undefined)
+            {
+                return false;
+            }
+
+            return cosmosElement.Accept(IsPrimitiveCosmosElementVisitor.Singleton);
+        }
+
+        private sealed class IsPrimitiveCosmosElementVisitor : ICosmosElementVisitor<bool>
+        {
+            public static readonly IsPrimitiveCosmosElementVisitor Singleton = new IsPrimitiveCosmosElementVisitor();
+
+            private IsPrimitiveCosmosElementVisitor()
+            {
+            }
+
+            public bool Visit(CosmosArray cosmosArray)
+            {
+                return false;
+            }
+
+            public bool Visit(CosmosBinary cosmosBinary)
+            {
+                return true;
+            }
+
+            public bool Visit(CosmosBoolean cosmosBoolean)
+            {
+                return true;
+            }
+
+            public bool Visit(CosmosGuid cosmosGuid)
+            {
+                return true;
+            }
+
+            public bool Visit(CosmosNull cosmosNull)
+            {
+                return true;
+            }
+
+            public bool Visit(CosmosNumber cosmosNumber)
+            {
+                return true;
+            }
+
+            public bool Visit(CosmosObject cosmosObject)
+            {
+                return false;
+            }
+
+            public bool Visit(CosmosString cosmosString)
+            {
+                return true;
+            }
         }
     }
 }

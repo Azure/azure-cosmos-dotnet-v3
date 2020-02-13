@@ -164,11 +164,6 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        public override bool TryGetContinuationToken(out string continuationToken)
-        {
-            return this.cosmosQueryExecutionContext.TryGetContinuationToken(out continuationToken);
-        }
-
         public override void SerializeState(IJsonWriter jsonWriter)
         {
             this.cosmosQueryExecutionContext.SerializeState(jsonWriter);

@@ -18,7 +18,6 @@ namespace Microsoft.Azure.Cosmos
 #endif
     abstract class FeedIteratorInternal<T> : FeedIterator<T>
     {
-        public abstract bool TryGetContinuationToken(out string continuationToken);
         public abstract void SerializeState(IJsonWriter jsonWriter);
     }
 }
