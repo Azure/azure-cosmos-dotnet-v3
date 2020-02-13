@@ -100,7 +100,6 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Options to encrypt / decrypt properties of the item.
         /// Only valid when used with <see cref="Container.CreateItemAsync{T}"/>, <see cref="Container.ReplaceItemAsync{T}"/> and <see cref="Container.UpsertItemAsync{T}"/>.
-        /// See <see href="tbd"/> for more information on client-side encryption support in Azure Cosmos DB.
         /// </summary>
 #if PREVIEW
         public

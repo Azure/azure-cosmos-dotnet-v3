@@ -7,8 +7,6 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.IO;
-    using System.Threading;
-    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
@@ -63,16 +61,6 @@ namespace Microsoft.Azure.Cosmos
         {
             CosmosSerializer serializer = this.GetSerializer<T>();
             return serializer.FromStream<T>(stream);
-        }
-
-        internal Task<T> FromStreamAsync<T>(Stream stream, Container container, RequestOptions requestOptions, CancellationToken cancellationToken)
-        {
-            return this.GetSerializer<T>().FromStreamAsync<T>(stream, container, requestOptions, cancellationToken);
-        }
-
-        internal Task<Stream> ToStreamAsync<T>(T input, Container container, RequestOptions requestOptions, CancellationToken cancellationToken)
-        {
-            return this.GetSerializer<T>().ToStreamAsync<T>(input, container, requestOptions, cancellationToken);
         }
 
         internal Stream ToStream<T>(T input)
@@ -152,7 +140,7 @@ namespace Microsoft.Azure.Cosmos
             string directAssemblyName = typeof(Documents.PartitionKeyRange).Assembly.GetName().Name;
             string inputAssemblyName = inputType.Assembly.GetName().Name;
             if (string.Equals(inputAssemblyName, clientAssemblyName) ||
-                string.Equals(inputAssemblyName, directAssemblyName)) 
+                string.Equals(inputAssemblyName, directAssemblyName))
             {
                 throw new ArgumentException($"User serializer is being used for internal type:{inputType.FullName}.");
             }

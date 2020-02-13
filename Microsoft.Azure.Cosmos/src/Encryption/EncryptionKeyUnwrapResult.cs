@@ -26,7 +26,13 @@ namespace Microsoft.Azure.Cosmos
         /// </param>
         public EncryptionKeyUnwrapResult(byte[] dataEncryptionKey, TimeSpan clientCacheTimeToLive)
         {
-            this.DataEncryptionKey = dataEncryptionKey;
+            this.DataEncryptionKey = dataEncryptionKey ?? throw new ArgumentNullException(nameof(dataEncryptionKey));
+
+            if (clientCacheTimeToLive < TimeSpan.Zero)
+            {
+                throw new ArgumentException("Expected non-negative timespan", nameof(clientCacheTimeToLive));
+            }
+
             this.ClientCacheTimeToLive = clientCacheTimeToLive;
         }
 

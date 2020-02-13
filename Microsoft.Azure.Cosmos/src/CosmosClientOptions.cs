@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Data.Common;
     using System.Linq;
     using System.Net;
-    using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -373,6 +372,18 @@ namespace Microsoft.Azure.Cosmos
                 this.serializer = value;
             }
         }
+
+        /// <summary>
+        /// Settings to allow client side encryption.
+        /// See https://tbd for more information on client-side encryption support in Azure Cosmos DB.
+        /// </summary>
+        [JsonIgnore]
+#if PREVIEW
+    public
+#else
+        internal
+#endif
+        EncryptionSettings EncryptionSettings { get; set; }
 
         /// <summary>
         /// Limits the operations to the provided endpoint on the CosmosClient.

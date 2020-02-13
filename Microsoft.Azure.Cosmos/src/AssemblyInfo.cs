@@ -30,5 +30,3 @@ using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("Cosmos.Samples.Encryption" + AssemblyKeys.ProductPublicKey)]
 [assembly: InternalsVisibleTo("Cosmos.Samples.Encryption" + AssemblyKeys.TestPublicKey)]
-[assembly: InternalsVisibleTo("Shared" + AssemblyKeys.ProductPublicKey)]
-[assembly: InternalsVisibleTo("Shared" + AssemblyKeys.TestPublicKey)]

@@ -173,14 +173,13 @@ namespace Microsoft.Azure.Cosmos
             EncryptionKeyWrapMetadata metadata,
             CancellationToken cancellationToken)
         {
-            EncryptionSerializer encryptionSerializer = this.ClientContext.ClientOptions.Serializer as EncryptionSerializer;
-            if (encryptionSerializer == null)
+            EncryptionSettings encryptionSettings = this.ClientContext.ClientOptions.EncryptionSettings;
+            if (encryptionSettings == null)
             {
-                throw new ArgumentException(ClientResources.EncryptionSerializerNotConfigured);
+                throw new ArgumentException(ClientResources.EncryptionSettingsNotConfigured);
             }
 
-            EncryptionKeyWrapProvider keyWrapProvider = encryptionSerializer.EncryptionKeyWrapProvider;
-            EncryptionKeyWrapResult keyWrapResponse = await keyWrapProvider.WrapKeyAsync(key, metadata, cancellationToken);
+            EncryptionKeyWrapResult keyWrapResponse = await encryptionSettings.EncryptionKeyWrapProvider.WrapKeyAsync(key, metadata, cancellationToken);
 
             // Verify
             DataEncryptionKeyProperties tempDekProperties = new DataEncryptionKeyProperties(this.Id, encryptionAlgorithmId, keyWrapResponse.WrappedDataEncryptionKey, keyWrapResponse.EncryptionKeyWrapMetadata);
@@ -197,13 +196,13 @@ namespace Microsoft.Azure.Cosmos
             DataEncryptionKeyProperties dekProperties,
             CancellationToken cancellationToken)
         {
-            EncryptionSerializer encryptionSerializer = this.ClientContext.ClientOptions.Serializer as EncryptionSerializer;
-            if (encryptionSerializer == null)
+            EncryptionSettings encryptionSettings = this.ClientContext.ClientOptions.EncryptionSettings;
+            if (encryptionSettings == null)
             {
-                throw new ArgumentException(ClientResources.EncryptionSerializerNotConfigured);
+                throw new ArgumentException(ClientResources.EncryptionSettingsNotConfigured);
             }
 
-            EncryptionKeyUnwrapResult unwrapResult = await encryptionSerializer.EncryptionKeyWrapProvider.UnwrapKeyAsync(
+            EncryptionKeyUnwrapResult unwrapResult = await encryptionSettings.EncryptionKeyWrapProvider.UnwrapKeyAsync(
                     dekProperties.WrappedDataEncryptionKey,
                     dekProperties.EncryptionKeyWrapMetadata,
                     cancellationToken);

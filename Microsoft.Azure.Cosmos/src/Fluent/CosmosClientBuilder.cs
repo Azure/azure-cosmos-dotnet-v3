@@ -383,6 +383,22 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
+        /// Allows specifying settings relating to client side encryption.
+        /// </summary>
+        /// <param name="encryptionSettings">Settings relating to encryption</param>
+        /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
+#if PREVIEW
+    public
+#else
+        internal
+#endif
+        CosmosClientBuilder WithEncryptionSettings(EncryptionSettings encryptionSettings)
+        {
+            this.clientOptions.EncryptionSettings = encryptionSettings;
+            return this;
+        }
+
+        /// <summary>
         /// The event handler to be invoked before the request is sent.
         /// </summary>
         internal CosmosClientBuilder WithSendingRequestEventArgs(EventHandler<SendingRequestEventArgs> sendingRequestEventArgs)

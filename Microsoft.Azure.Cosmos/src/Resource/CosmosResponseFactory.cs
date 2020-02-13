@@ -5,6 +5,8 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Diagnostics;
+    using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Scripts;
@@ -68,7 +70,13 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.ProcessMessageAsync(cosmosResponseMessageTask, async (cosmosResponseMessage) =>
             {
-                T item = await this.ToObjectInternalAsync<T>(cosmosResponseMessage, container, requestOptions, cancellationToken);
+                T item = await this.ToObjectInternalAsync<T>(
+                    cosmosResponseMessage,
+                    shouldPerformDecryption: true,
+                    container,
+                    requestOptions,
+                    cancellationToken);
+
                 return new ItemResponse<T>(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
@@ -236,18 +244,28 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private Task<T> ToObjectInternalAsync<T>(
+        private async Task<T> ToObjectInternalAsync<T>(
             ResponseMessage responseMessage,
+            bool shouldPerformDecryption = false,
             Container container = null,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             if (responseMessage.Content == null)
             {
-                return Task.FromResult(default(T));
+                return default(T);
             }
 
-            return this.serializerCore.FromStreamAsync<T>(responseMessage.Content, container, requestOptions, cancellationToken);
+            Stream streamToDeserialize = responseMessage.Content;
+            if (shouldPerformDecryption == true)
+            {
+                Debug.Assert(container != null);
+                Debug.Assert(container is ContainerCore);
+
+                streamToDeserialize = await ((ContainerCore)container).ClientContext.EncryptionProcessor.DecryptAsync(responseMessage.Content, container, cancellationToken);
+            }
+
+            return this.serializerCore.FromStream<T>(streamToDeserialize);
         }
     }
 }

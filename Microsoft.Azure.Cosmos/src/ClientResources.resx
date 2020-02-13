@@ -300,7 +300,10 @@
   <data name="DataEncryptionKeyNotFound" xml:space="preserve">
     <value>A data encryption key with the provided name was not found - please ensure it has been created.</value>
   </data>
-  <data name="EncryptionSerializerNotConfigured" xml:space="preserve">
-    <value>The client was not configured to use the EncryptionSerializer. Initialize the client by providing an instance of EncryptionSerializer to cosmosClientBuilder.WithCustomSerializer.</value>
+  <data name="EncryptionSettingsNotConfigured" xml:space="preserve">
+    <value>The client was not configured to allow for encryption. Create the client by using cosmosClientBuilder.WithEncryptionSettings.</value>
+  </data>
+  <data name="InvalidRequestWithEncryptionOptions" xml:space="preserve">
+    <value>Encryption options may not be specified on this request.</value>
   </data>
 </root>

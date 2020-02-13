@@ -45,11 +45,18 @@ namespace Microsoft.Azure.Cosmos
             this.Value = source.Value;
         }
 
+        internal EncryptionKeyWrapMetadata(string type, string value, string algorithm)
+        {
+            this.Type = type;
+            this.Value = value;
+            this.Algorithm = algorithm;
+        }
+
         [JsonProperty(PropertyName = "type", NullValueHandling = NullValueHandling.Ignore)]
-        internal string Type { get; set; }
+        internal string Type { get; private set; }
 
         [JsonProperty(PropertyName = "algorithm", NullValueHandling = NullValueHandling.Ignore)]
-        internal string Algorithm { get; set; }
+        internal string Algorithm { get; private set; }
 
         /// <summary>
         /// Serialized form of metadata.

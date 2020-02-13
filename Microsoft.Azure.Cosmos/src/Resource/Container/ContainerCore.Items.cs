@@ -530,7 +530,7 @@ namespace Microsoft.Azure.Cosmos
                 Stream itemStream;
                 using (diagnosticsContext.CreateScope("ItemSerialize"))
                 {
-                    itemStream = await this.ClientContext.SerializerCore.ToStreamAsync<T>(item, this, requestOptions, cancellationToken);
+                    itemStream = this.ClientContext.SerializerCore.ToStream<T>(item);
                 }
 
                 // User specified PK value, no need to extract it
@@ -587,7 +587,7 @@ namespace Microsoft.Azure.Cosmos
             string itemId,
             Stream streamPayload,
             OperationType operationType,
-            RequestOptions requestOptions,
+            ItemRequestOptions requestOptions,
             CosmosDiagnosticsContext diagnosticsScope,
             CancellationToken cancellationToken)
         {
@@ -598,6 +598,16 @@ namespace Microsoft.Azure.Cosmos
 
             ContainerCore.ValidatePartitionKey(partitionKey, requestOptions);
             Uri resourceUri = this.GetResourceUri(requestOptions, operationType, itemId);
+
+            if (requestOptions != null && requestOptions.EncryptionOptions != null)
+            {
+                if (streamPayload == null)
+                {
+                    throw new ArgumentException(ClientResources.InvalidRequestWithEncryptionOptions);
+                }
+
+                streamPayload = await this.ClientContext.EncryptionProcessor.EncryptAsync(streamPayload, requestOptions.EncryptionOptions, this, cancellationToken);
+            }
 
             return await this.ClientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: resourceUri,

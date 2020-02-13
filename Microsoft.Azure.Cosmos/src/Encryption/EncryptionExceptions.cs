@@ -11,31 +11,21 @@ namespace Microsoft.Azure.Cosmos
         internal static Exception InvalidKeySize(string algorithmName, int actualKeylength, int expectedLength)
         {
             return new ArgumentException(
-                string.Format(
-                    "Invalid key size for {0}; actual: {1}, expected: {2}",
-                    algorithmName,
-                    actualKeylength,
-                    expectedLength),
+                $"Invalid key size for {algorithmName}; actual: {actualKeylength}, expected: {expectedLength}",
                 "dataEncryptionKey");
         }
 
         internal static Exception InvalidCipherTextSize(int actualSize, int minimumSize)
         {
             return new ArgumentException(
-                string.Format(
-                    "Invalid cipher text size; actual: {0}, minimum expected: {1}.",
-                    actualSize,
-                    minimumSize),
+                $"Invalid cipher text size; actual: {actualSize}, minimum expected: {minimumSize}.",
                 "cipherText");
         }
 
         internal static Exception InvalidAlgorithmVersion(byte actual, byte expected)
         {
             return new ArgumentException(
-                string.Format(
-                    "Invalid encryption algorithm version; actual: {0}, expected: {1}.",
-                    actual.ToString(@"X2"),
-                    expected.ToString(@"X2")),
+                $"Invalid encryption algorithm version; actual: {actual.ToString(@"X2")}, expected: {expected.ToString(@"X2")}.",
                 "cipherText");
         }
 
