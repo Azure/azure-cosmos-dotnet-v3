@@ -4,6 +4,8 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggregators
 {
     using System;
+    using System.Collections.Generic;
+    using System.Runtime.CompilerServices;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
@@ -18,10 +20,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
     /// </summary>
     internal sealed class MinMaxAggregator : IAggregator
     {
-        private const string MinValueContinuationToken = "MIN_VALUE";
-        private const string MaxValueContinuationToken = "MAX_VALUE";
-        private const string UndefinedContinuationToken = "UNDEFINED";
-
         private static readonly CosmosElement Undefined = null;
         /// <summary>
         /// Whether or not the aggregation is a min or a max.
@@ -121,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
         public CosmosElement GetResult()
         {
             CosmosElement result;
-            if (this.globalMinMax == ItemComparer.MinValue || this.globalMinMax == ItemComparer.MaxValue)
+            if ((this.globalMinMax == ItemComparer.MinValue) || (this.globalMinMax == ItemComparer.MaxValue))
             {
                 // The filter did not match any documents.
                 result = Undefined;
@@ -148,22 +146,27 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
                 throw new ArgumentNullException(nameof(jsonWriter));
             }
 
+            jsonWriter.WriteObjectStart();
+
+            MinMaxContinuationToken minMaxContinuationToken;
             if (this.globalMinMax == ItemComparer.MinValue)
             {
-                jsonWriter.WriteStringValue(MinMaxAggregator.MinValueContinuationToken);
+                minMaxContinuationToken = MinMaxContinuationToken.CreateMinValueContinuationToken();
             }
             else if (this.globalMinMax == ItemComparer.MaxValue)
             {
-                jsonWriter.WriteStringValue(MinMaxAggregator.MaxValueContinuationToken);
+                minMaxContinuationToken = MinMaxContinuationToken.CreateMaxValueContinuationToken();
             }
             else if (this.globalMinMax == Undefined)
             {
-                jsonWriter.WriteStringValue(MinMaxAggregator.UndefinedContinuationToken);
+                minMaxContinuationToken = MinMaxContinuationToken.CreateUndefinedValueContinuationToken();
             }
             else
             {
-                this.globalMinMax.WriteTo(jsonWriter);
+                minMaxContinuationToken = MinMaxContinuationToken.CreateValueContinuationToken(this.globalMinMax);
             }
+
+            MinMaxContinuationToken.ToCosmosElement(minMaxContinuationToken).WriteTo(jsonWriter);
         }
 
         public static TryCatch<IAggregator> TryCreateMinAggregator(RequestContinuationToken continuationToken)
@@ -186,29 +189,38 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
             CosmosElement globalMinMax;
             if (!continuationToken.IsNull)
             {
-                if (!continuationToken.TryConvertToCosmosElement(out CosmosElement globalMinMax))
+                if (!continuationToken.TryConvertToCosmosElement(out CosmosElement cosmosElementContinuationToken))
                 {
                     return TryCatch<IAggregator>.FromException(
-                            new MalformedContinuationTokenException($"Malformed continuation token: {continuationToken}"));
+                        new MalformedContinuationTokenException($"Malformed continuation token: {continuationToken}"));
                 }
-                if (continuationToken == MinMaxAggregator.MaxValueContinuationToken)
+
+                TryCatch<MinMaxContinuationToken> tryCreateMinMaxContinuationToken = MinMaxContinuationToken.TryCreateFromCosmosElement(cosmosElementContinuationToken);
+                if (!tryCreateMinMaxContinuationToken.Succeeded)
                 {
-                    globalMinMax = ItemComparer.MaxValue;
+                    return TryCatch<IAggregator>.FromException(tryCreateMinMaxContinuationToken.Exception);
                 }
-                else if (continuationToken == MinMaxAggregator.MinValueContinuationToken)
+
+                switch (tryCreateMinMaxContinuationToken.Result.Type)
                 {
-                    globalMinMax = ItemComparer.MinValue;
-                }
-                else if (continuationToken == MinMaxAggregator.UndefinedContinuationToken)
-                {
-                    globalMinMax = MinMaxAggregator.Undefined;
-                }
-                else
-                {
-                    if (!CosmosElement.TryParse(continuationToken, out globalMinMax))
-                    {
-                        
-                    }
+                    case MinMaxContinuationToken.MinMaxContinuationTokenType.MinValue:
+                        globalMinMax = ItemComparer.MinValue;
+                        break;
+
+                    case MinMaxContinuationToken.MinMaxContinuationTokenType.MaxValue:
+                        globalMinMax = ItemComparer.MaxValue;
+                        break;
+
+                    case MinMaxContinuationToken.MinMaxContinuationTokenType.Undefined:
+                        globalMinMax = MinMaxAggregator.Undefined;
+                        break;
+
+                    case MinMaxContinuationToken.MinMaxContinuationTokenType.Value:
+                        globalMinMax = tryCreateMinMaxContinuationToken.Result.Value;
+                        break;
+
+                    default:
+                        throw new ArgumentOutOfRangeException($"Unknown {nameof(MinMaxContinuationToken.MinMaxContinuationTokenType)}: {tryCreateMinMaxContinuationToken.Result.Type}");
                 }
             }
             else
@@ -218,45 +230,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
 
             return TryCatch<IAggregator>.FromResult(
                 new MinMaxAggregator(isMinAggregation: isMinAggregation, globalMinMax: globalMinMax));
-        }
-
-        private static bool CosmosElementIsPrimitive(CosmosElement cosmosElement)
-        {
-            if (cosmosElement == null)
-            {
-                return false;
-            }
-
-            CosmosElementType cosmosElementType = cosmosElement.Type;
-            switch (cosmosElementType)
-            {
-                case CosmosElementType.Array:
-                    return false;
-
-                case CosmosElementType.Boolean:
-                    return true;
-
-                case CosmosElementType.Null:
-                    return true;
-
-                case CosmosElementType.Number:
-                    return true;
-
-                case CosmosElementType.Object:
-                    return false;
-
-                case CosmosElementType.String:
-                    return true;
-
-                case CosmosElementType.Guid:
-                    return true;
-
-                case CosmosElementType.Binary:
-                    return true;
-
-                default:
-                    throw new ArgumentException($"Unknown {nameof(CosmosElementType)} : {cosmosElementType}.");
-            }
         }
     }
 }
