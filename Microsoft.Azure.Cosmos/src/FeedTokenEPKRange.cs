@@ -160,7 +160,7 @@ namespace Microsoft.Azure.Cosmos
                     return true;
                 }
 
-                return this.initialNotModifiedRange.Equals(this.currentToken.Range.Min, StringComparison.OrdinalIgnoreCase);
+                return !this.initialNotModifiedRange.Equals(this.currentToken.Range.Min, StringComparison.OrdinalIgnoreCase);
             }
 
             bool partitionSplit = responseMessage.StatusCode == HttpStatusCode.Gone
@@ -169,7 +169,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 Routing.PartitionKeyRangeCache partitionKeyRangeCache = await containerCore.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
                 IReadOnlyList<Documents.PartitionKeyRange> resolvedRanges = await this.TryGetOverlappingRangesAsync(partitionKeyRangeCache, this.currentToken.Range.Min, this.currentToken.Range.Max, forceRefresh: true);
-                if (resolvedRanges.Count > 1)
+                if (resolvedRanges.Count > 0)
                 {
                     this.HandleSplit(resolvedRanges);
                 }

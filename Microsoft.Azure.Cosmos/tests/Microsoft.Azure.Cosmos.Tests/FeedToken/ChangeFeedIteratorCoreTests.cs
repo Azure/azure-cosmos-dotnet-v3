@@ -5,14 +5,10 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
-    using System.Collections.Generic;
-    using System.Diagnostics;
     using System.IO;
-    using System.Linq;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Common;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
