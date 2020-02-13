@@ -8,24 +8,24 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
     using System.Diagnostics;
     using System.Net;
 
-    internal sealed class InternalServerErrorException : CosmosHttpException
+    internal sealed class CosmosRequestTimeoutException : CosmosHttpException
     {
-        public InternalServerErrorException()
-            : base(statusCode: HttpStatusCode.InternalServerError, message: null)
+        public CosmosRequestTimeoutException()
+            : base(statusCode: HttpStatusCode.RequestTimeout, message: null)
         {
         }
 
-        public InternalServerErrorException(string message)
-            : base(statusCode: HttpStatusCode.InternalServerError, message: message)
+        public CosmosRequestTimeoutException(string message)
+            : base(statusCode: HttpStatusCode.RequestTimeout, message: message)
         {
         }
 
-        public InternalServerErrorException(string message, Exception innerException)
-            : base(statusCode: HttpStatusCode.InternalServerError, message: message, innerException: innerException)
+        public CosmosRequestTimeoutException(string message, Exception innerException)
+            : base(statusCode: HttpStatusCode.RequestTimeout, message: message, innerException: innerException)
         {
         }
 
-        internal InternalServerErrorException(
+        internal CosmosRequestTimeoutException(
             int subStatusCode,
             string message,
             StackTrace stackTrace,
@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
             Headers headers,
             CosmosDiagnosticsContext diagnosticsContext,
             Exception innerException)
-            : base(HttpStatusCode.InternalServerError,
+            : base(HttpStatusCode.RequestTimeout,
              subStatusCode,
              message,
              stackTrace,

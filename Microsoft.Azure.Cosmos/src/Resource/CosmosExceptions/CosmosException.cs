@@ -5,17 +5,19 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Diagnostics;
     using System.IO;
     using System.Net;
+    using System.Runtime.CompilerServices;
     using System.Text;
-    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// The Cosmos Client exception
     /// </summary>
     public class CosmosException : Exception
     {
-        private static readonly string FullName = typeof(CosmosException).FullName;
+        private readonly StackTrace stackTrace;
+
         internal CosmosException(
             HttpStatusCode statusCode,
             string message,
@@ -53,6 +55,29 @@ namespace Microsoft.Azure.Cosmos
                     }
                 }
             }
+        }
+
+        internal CosmosException(
+            HttpStatusCode statusCodes,
+            int subStatusCode,
+            string message,
+            StackTrace stackTrace,
+            string activityId,
+            double requestCharge,
+            TimeSpan? retryAfter,
+            Headers headers,
+            CosmosDiagnosticsContext diagnosticsContext,
+            Exception innerException)
+            : base(message, innerException)
+        {
+            this.stackTrace = stackTrace;
+            this.ActivityId = activityId;
+            this.StatusCode = statusCodes;
+            this.SubStatusCode = subStatusCode;
+            this.RetryAfter = retryAfter;
+            this.RequestCharge = requestCharge;
+            this.Diagnostics = diagnosticsContext ?? CosmosDiagnosticsContext.Create();
+            this.Headers = headers;
         }
 
         /// <summary>
@@ -143,6 +168,9 @@ namespace Microsoft.Azure.Cosmos
             return this.Headers.TryGetValue(headerName, out value);
         }
 
+        /// <inheritdoc/>
+        public override string StackTrace => this.stackTrace.ToString();
+
         /// <summary>
         /// Create a custom string with all the relevant exception information
         /// </summary>
@@ -150,7 +178,7 @@ namespace Microsoft.Azure.Cosmos
         public override string ToString()
         {
             StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.Append(CosmosException.FullName);
+            stringBuilder.Append(this.GetType().FullName);
             if (this.Message != null)
             {
                 stringBuilder.Append(" : ");

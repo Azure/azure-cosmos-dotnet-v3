@@ -15,6 +15,8 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     public class ResponseMessage : IDisposable
     {
+        private readonly CosmosException exception;
+
         /// <summary>
         /// Create a <see cref="ResponseMessage"/>
         /// </summary>
