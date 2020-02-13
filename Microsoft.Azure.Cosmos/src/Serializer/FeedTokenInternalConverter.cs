@@ -133,6 +133,7 @@ namespace Microsoft.Azure.Cosmos
                 writer.WritePropertyName(FeedTokenInternalConverter.RangePropertyName);
                 serializer.Serialize(writer, feedTokenEPKRange.CompleteRange);
                 writer.WriteEndObject();
+                return;
             }
 
             if (value is FeedTokenPartitionKey feedTokenPartitionKey)
@@ -147,6 +148,7 @@ namespace Microsoft.Azure.Cosmos
                 writer.WritePropertyName(FeedTokenInternalConverter.ContinuationPropertyName);
                 serializer.Serialize(writer, feedTokenPartitionKey.GetContinuation());
                 writer.WriteEndObject();
+                return;
             }
 
             if (value is FeedTokenPartitionKeyRange feedTokenPartitionKeyRange)
@@ -161,6 +163,7 @@ namespace Microsoft.Azure.Cosmos
                 writer.WritePropertyName(FeedTokenInternalConverter.ContinuationPropertyName);
                 serializer.Serialize(writer, feedTokenPartitionKeyRange.GetContinuation());
                 writer.WriteEndObject();
+                return;
             }
 
             throw new JsonSerializationException(ClientResources.FeedToken_UnrecognizedFeedToken);
