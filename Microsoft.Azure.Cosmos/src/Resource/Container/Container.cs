@@ -1180,7 +1180,7 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         /// IReadOnlyList<FeedToken> feedTokens = await this.Container.GetFeedTokensAsync();
         /// // Distribute feedTokens across multiple compute units and pass each one to a different iterator
-        /// FeedTokenIterator feedIterator = this.Container.GetChangeFeedStreamIterator(feedToken.First());
+        /// FeedTokenIterator feedIterator = this.Container.GetChangeFeedStreamIterator(feedToken[0]);
         ///
         /// while (feedIterator.HasMoreResults)
         /// {
