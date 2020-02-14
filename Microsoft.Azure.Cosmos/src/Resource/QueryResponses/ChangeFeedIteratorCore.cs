@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Linq;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
@@ -69,9 +68,9 @@ namespace Microsoft.Azure.Cosmos
             if (this.feedTokenInternal == null)
             {
                 // ReadAll scenario, initialize with one token for all
-                IEnumerable<FeedToken> tokens = await this.container.GetFeedTokensAsync(1, cancellationToken);
-                Debug.Assert(tokens.Count() > 0, "FeedToken count should be more than 0.");
-                this.feedTokenInternal = tokens.First() as FeedTokenInternal;
+                IReadOnlyList<FeedToken> tokens = await this.container.GetFeedTokensAsync(1, cancellationToken);
+                Debug.Assert(tokens.Count > 0, "FeedToken count should be more than 0.");
+                this.feedTokenInternal = tokens[0] as FeedTokenInternal;
             }
 
             Uri resourceUri = this.container.LinkUri;
@@ -83,7 +82,8 @@ namespace Microsoft.Azure.Cosmos
                 cosmosContainerCore: this.container,
                 requestEnricher: request =>
                 {
-                    this.feedTokenInternal.FillHeaders(this.clientContext, request);
+                    ChangeFeedRequestOptions.FillContinuationToken(request, this.feedTokenInternal.GetContinuation());
+                    this.feedTokenInternal.EnrichRequest(request);
                 },
                 partitionKey: null,
                 streamPayload: null,

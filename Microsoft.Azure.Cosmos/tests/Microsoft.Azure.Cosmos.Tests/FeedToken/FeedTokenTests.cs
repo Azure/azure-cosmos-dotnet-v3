@@ -81,19 +81,14 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public void FeedToken_EPK_FillHeaders()
+        public void FeedToken_EPK_EnrichRequest()
         {
             const string containerRid = "containerRid";
             FeedTokenEPKRange token = new FeedTokenEPKRange(containerRid, new Documents.PartitionKeyRange() { MinInclusive = "A", MaxExclusive = "B" });
-            string continuation = Guid.NewGuid().ToString();
-            token.UpdateContinuation(continuation);
             RequestMessage requestMessage = new RequestMessage();
-            Mock<CosmosClientContext> cosmosClientContext = new Mock<CosmosClientContext>();
-            MultiRangeMockDocumentClient mockDocumentClient = new MultiRangeMockDocumentClient();
-            cosmosClientContext.Setup(c => c.DocumentClient).Returns(new MultiRangeMockDocumentClient());
-            token.FillHeaders(cosmosClientContext.Object, requestMessage);
-            Assert.AreEqual(continuation, requestMessage.Headers.IfNoneMatch);
-            Assert.AreEqual(mockDocumentClient.AvailablePartitionKeyRanges[0].Id, requestMessage.PartitionKeyRangeId.PartitionKeyRangeId);
+            token.EnrichRequest(requestMessage);
+            Assert.AreEqual(token.CompleteRange.Min, requestMessage.Properties[HandlerConstants.StartEpkString]);
+            Assert.AreEqual(token.CompleteRange.Max, requestMessage.Properties[HandlerConstants.EndEpkString]);
         }
 
         [TestMethod]
@@ -114,28 +109,22 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public void FeedToken_PartitionKey_FillHeader()
+        public void FeedToken_PartitionKey_EnrichRequest()
         {
             PartitionKey pk = new PartitionKey("test");
             FeedTokenPartitionKey token = new FeedTokenPartitionKey(pk);
             RequestMessage requestMessage = new RequestMessage();
-            string continuation = Guid.NewGuid().ToString();
-            token.UpdateContinuation(continuation);
-            token.FillHeaders(Mock.Of<CosmosClientContext>(), requestMessage);
-            Assert.AreEqual(continuation, requestMessage.Headers.IfNoneMatch);
+            token.EnrichRequest(requestMessage);
             Assert.AreEqual(pk.ToJsonString(), requestMessage.Headers.PartitionKey);
         }
 
         [TestMethod]
-        public void FeedToken_PartitionKeyRange_FillHeader()
+        public void FeedToken_PartitionKeyRange_EnrichRequest()
         {
             string pkrangeId = "0";
             FeedTokenPartitionKeyRange token = new FeedTokenPartitionKeyRange(pkrangeId);
             RequestMessage requestMessage = new RequestMessage();
-            string continuation = Guid.NewGuid().ToString();
-            token.UpdateContinuation(continuation);
-            token.FillHeaders(Mock.Of<CosmosClientContext>(), requestMessage);
-            Assert.AreEqual(continuation, requestMessage.Headers.IfNoneMatch);
+            token.EnrichRequest(requestMessage);
             Assert.AreEqual(pkrangeId, requestMessage.PartitionKeyRangeId.PartitionKeyRangeId);
         }
 

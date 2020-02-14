@@ -26,9 +26,7 @@ namespace Microsoft.Azure.Cosmos
             this.ContainerRid = containerRid;
         }
 
-        public abstract void FillHeaders(
-            CosmosClientContext cosmosClientContext,
-            RequestMessage request);
+        public abstract void EnrichRequest(RequestMessage request);
 
         public abstract string GetContinuation();
 

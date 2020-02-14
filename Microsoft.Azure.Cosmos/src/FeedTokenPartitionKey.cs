@@ -17,11 +17,8 @@ namespace Microsoft.Azure.Cosmos
             this.PartitionKey = partitionKey;
         }
 
-        public override void FillHeaders(
-            CosmosClientContext cosmosClientContext,
-            RequestMessage request)
+        public override void EnrichRequest(RequestMessage request)
         {
-            ChangeFeedRequestOptions.FillContinuationToken(request, this.continuationToken);
             request.Headers.PartitionKey = this.PartitionKey.ToJsonString();
         }
 

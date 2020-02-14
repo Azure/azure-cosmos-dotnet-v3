@@ -115,16 +115,10 @@ namespace Microsoft.Azure.Cosmos
             this.currentToken = this.CompositeContinuationTokens.Peek();
         }
 
-        public override void FillHeaders(
-            CosmosClientContext cosmosClientContext,
-            RequestMessage request)
+        public override void EnrichRequest(RequestMessage request)
         {
-            ChangeFeedRequestOptions.FillContinuationToken(request, this.currentToken.Token);
-#pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
-            Routing.PartitionKeyRangeCache partitionKeyRangeCache = cosmosClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync().GetAwaiter().GetResult();
-            IReadOnlyList<Documents.PartitionKeyRange> currentRange = this.TryGetOverlappingRangesAsync(partitionKeyRangeCache, this.currentToken.Range.Min, this.currentToken.Range.Max, forceRefresh: false).GetAwaiter().GetResult();
-            ChangeFeedRequestOptions.FillPartitionKeyRangeId(request, currentRange[0].Id);
-#pragma warning restore VSTHRD002 // Avoid problematic synchronous waits
+            request.Properties[HandlerConstants.StartEpkString] = this.currentToken.Range.Min;
+            request.Properties[HandlerConstants.EndEpkString] = this.currentToken.Range.Max;
         }
 
         public override string GetContinuation() => this.currentToken.Token;

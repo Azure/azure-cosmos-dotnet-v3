@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ContainerCore containerCore = Mock.Of<ContainerCore>();
             FeedTokenInternal feedToken = Mock.Of<FeedTokenInternal>();
             Mock.Get(feedToken)
-                .Setup(f => f.FillHeaders(It.Is<CosmosClientContext>(c => c == cosmosClientContext.Object), It.IsAny<RequestMessage>()));
+                .Setup(f => f.EnrichRequest(It.IsAny<RequestMessage>()));
             Mock.Get(feedToken)
                 .Setup(f => f.ShouldRetryAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(false));
@@ -140,7 +140,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ContainerCore containerCore = Mock.Of<ContainerCore>();
             FeedTokenInternal feedToken = Mock.Of<FeedTokenInternal>();
             Mock.Get(feedToken)
-                .Setup(f => f.FillHeaders(It.Is<CosmosClientContext>(c => c == cosmosClientContext.Object), It.IsAny<RequestMessage>()));
+                .Setup(f => f.EnrichRequest(It.IsAny<RequestMessage>()));
             Mock.Get(feedToken)
                 .Setup(f => f.ShouldRetryAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(false));
@@ -193,7 +193,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ContainerCore containerCore = Mock.Of<ContainerCore>();
             FeedTokenInternal feedToken = Mock.Of<FeedTokenInternal>();
             Mock.Get(feedToken)
-                .Setup(f => f.FillHeaders(It.Is<CosmosClientContext>(c => c == cosmosClientContext.Object), It.IsAny<RequestMessage>()));
+                .Setup(f => f.EnrichRequest(It.IsAny<RequestMessage>()));
             Mock.Get(feedToken)
                 .Setup(f => f.ShouldRetryAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(false));
@@ -234,7 +234,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ContainerCore containerCore = Mock.Of<ContainerCore>();
             FeedTokenInternal feedToken = Mock.Of<FeedTokenInternal>();
             Mock.Get(feedToken)
-                .Setup(f => f.FillHeaders(It.Is<CosmosClientContext>(c => c == cosmosClientContext.Object), It.IsAny<RequestMessage>()));
+                .Setup(f => f.EnrichRequest(It.IsAny<RequestMessage>()));
             Mock.Get(feedToken)
                 .Setup(f => f.ShouldRetryAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(false));
@@ -277,7 +277,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ContainerCore containerCore = Mock.Of<ContainerCore>();
             FeedTokenInternal feedToken = Mock.Of<FeedTokenInternal>();
             Mock.Get(feedToken)
-                .Setup(f => f.FillHeaders(It.Is<CosmosClientContext>(c => c == cosmosClientContext.Object), It.IsAny<RequestMessage>()));
+                .Setup(f => f.EnrichRequest(It.IsAny<RequestMessage>()));
             Mock.Get(feedToken)
                 .SetupSequence(f => f.ShouldRetryAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(true))

@@ -30,18 +30,15 @@ namespace Microsoft.Azure.Cosmos
             this.PartitionKeyRangeId = partitionKeyRangeId;
         }
 
-        public override void FillHeaders(
-            CosmosClientContext cosmosClientContext,
-            RequestMessage request)
+        public override void EnrichRequest(RequestMessage request)
         {
             if (this.FeedTokenEPKRange == null)
             {
-                ChangeFeedRequestOptions.FillContinuationToken(request, this.continuationToken);
                 ChangeFeedRequestOptions.FillPartitionKeyRangeId(request, this.PartitionKeyRangeId);
             }
             else
             {
-                this.FeedTokenEPKRange.FillHeaders(cosmosClientContext, request);
+                this.FeedTokenEPKRange.EnrichRequest(request);
             }
         }
 
