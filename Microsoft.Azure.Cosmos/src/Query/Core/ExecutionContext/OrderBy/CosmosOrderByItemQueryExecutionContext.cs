@@ -184,10 +184,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
 
                 jsonWriter.WriteArrayEnd();
             }
-            else
-            {
-                jsonWriter.WriteNullValue();
-            }
         }
 
         public static async Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(

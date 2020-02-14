@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Json
         {
             if (buffer.IsEmpty)
             {
-                throw new ArgumentOutOfRangeException($"{nameof(buffer)} buffer can not be empty.");
+                throw new ArgumentOutOfRangeException($"{nameof(buffer)} can not be empty.");
             }
 
             // Examine the first buffer byte to determine the serialization format

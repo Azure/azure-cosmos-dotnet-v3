@@ -145,8 +145,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
                 throw new ArgumentNullException(nameof(jsonWriter));
             }
 
-            jsonWriter.WriteObjectStart();
-
             MinMaxContinuationToken minMaxContinuationToken;
             if (this.globalMinMax == ItemComparer.MinValue)
             {
@@ -165,7 +163,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
                 minMaxContinuationToken = MinMaxContinuationToken.CreateValueContinuationToken(this.globalMinMax);
             }
 
-            MinMaxContinuationToken.ToCosmosElement(minMaxContinuationToken).WriteTo(jsonWriter);
+            CosmosElement minMaxContinuationTokenAsCosmosElement = MinMaxContinuationToken.ToCosmosElement(minMaxContinuationToken);
+            minMaxContinuationTokenAsCosmosElement.WriteTo(jsonWriter);
         }
 
         public static TryCatch<IAggregator> TryCreateMinAggregator(RequestContinuationToken continuationToken)

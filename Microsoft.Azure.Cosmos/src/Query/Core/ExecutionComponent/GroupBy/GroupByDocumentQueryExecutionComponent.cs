@@ -208,7 +208,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                         this.groupByAliasToAggregateType,
                         this.orderedAliases,
                         this.hasSelectValue,
-                        continuationToken: StringRequestContinuationToken.Null).Result;
+                        continuationToken: CosmosElementRequestContinuationToken.Null).Result;
                     this.table[groupByKeysHash] = singleGroupAggregator;
                 }
 
@@ -264,7 +264,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                 foreach (KeyValuePair<UInt128, SingleGroupAggregator> kvp in this.table)
                 {
                     jsonWriter.WriteFieldName(kvp.Key.ToString());
-                    jsonWriter.WriteStringValue(kvp.Value.GetContinuationToken());
+                    kvp.Value.SerializeState(jsonWriter);
                 }
                 jsonWriter.WriteObjectEnd();
             }
@@ -301,18 +301,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                                 new MalformedContinuationTokenException($"Invalid GroupingTableContinuationToken"));
                         }
 
-                        if (!(value is CosmosString singleGroupAggregatorContinuationToken))
-                        {
-                            return TryCatch<GroupingTable>.FromException(
-                                new MalformedContinuationTokenException($"Invalid GroupingTableContinuationToken"));
-                        }
-
                         TryCatch<SingleGroupAggregator> tryCreateSingleGroupAggregator = SingleGroupAggregator.TryCreate(
                             EmptyAggregateOperators,
                             groupByAliasToAggregateType,
                             orderedAliases,
                             hasSelectValue,
-                            RequestContinuationToken.Create(singleGroupAggregatorContinuationToken.Value));
+                            RequestContinuationToken.Create(value));
 
                         if (tryCreateSingleGroupAggregator.Succeeded)
                         {

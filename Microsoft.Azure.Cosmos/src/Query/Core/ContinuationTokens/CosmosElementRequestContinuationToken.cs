@@ -8,6 +8,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
 
     internal sealed class CosmosElementRequestContinuationToken : RequestContinuationToken
     {
+        public static readonly CosmosElementRequestContinuationToken Null = new CosmosElementRequestContinuationToken(null);
+
         public CosmosElementRequestContinuationToken(CosmosElement continuationToken)
         {
             this.Value = continuationToken;

@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggregators;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
@@ -114,6 +115,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
                     requestCharge: requestCharge,
                     diagnostics: diagnosticsPages,
                     responseLengthBytes: responseLengthBytes);
+            }
+
+            public override void SerializeState(IJsonWriter jsonWriter)
+            {
+                throw new NotImplementedException();
             }
         }
     }

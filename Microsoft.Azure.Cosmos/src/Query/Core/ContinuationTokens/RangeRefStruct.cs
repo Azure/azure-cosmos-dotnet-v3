@@ -39,10 +39,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
             }
 
             jsonWriter.WriteObjectStart();
+
             jsonWriter.WriteFieldName(RangeRefStruct.MinPropertyName);
             jsonWriter.WriteStringValue(this.Min);
+
             jsonWriter.WriteFieldName(RangeRefStruct.MaxPropertyName);
             jsonWriter.WriteStringValue(this.Max);
+
             jsonWriter.WriteObjectEnd();
         }
     }

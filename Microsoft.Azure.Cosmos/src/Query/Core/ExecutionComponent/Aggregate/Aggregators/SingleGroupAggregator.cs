@@ -234,7 +234,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
                     }
                     else
                     {
-                        aliasContinuationToken = RequestContinuationToken.Create((CosmosElement)null);
+                        aliasContinuationToken = CosmosElementRequestContinuationToken.Null;
                     }
 
                     TryCatch<AggregateValue> tryCreateAggregateValue = AggregateValue.TryCreate(
@@ -417,13 +417,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
                     }
 
                     jsonWriter.WriteObjectStart();
+
                     jsonWriter.WriteFieldName(nameof(this.initialized));
                     jsonWriter.WriteBoolValue(this.initialized);
+
                     if (this.value != null)
                     {
                         jsonWriter.WriteFieldName(nameof(this.value));
                         this.value.WriteTo(jsonWriter);
                     }
+
                     jsonWriter.WriteObjectEnd();
                 }
 
@@ -436,7 +439,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
 
                     CosmosElement value;
                     bool initialized;
-                    if (continuationToken.IsNull)
+                    if (!continuationToken.IsNull)
                     {
                         if (!continuationToken.TryConvertToCosmosElement(out CosmosObject rawContinuationToken))
                         {

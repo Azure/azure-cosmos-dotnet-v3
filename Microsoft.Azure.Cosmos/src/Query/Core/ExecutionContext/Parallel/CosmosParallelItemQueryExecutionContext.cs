@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
                 foreach (ItemProducer activeItemProducer in activeItemProducers)
                 {
                     CompositeContinuationTokenRefStruct compositeToken = new CompositeContinuationTokenRefStruct(
-                        backendContinuationToken: activeItemProducer.BackendContinuationToken,
+                        backendContinuationToken: activeItemProducer.CurrentContinuationToken,
                         range: new RangeRefStruct(
                             min: activeItemProducer.PartitionKeyRange.MinInclusive,
                             max: activeItemProducer.PartitionKeyRange.MaxExclusive));
@@ -131,10 +131,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
                 }
 
                 jsonWriter.WriteArrayEnd();
-            }
-            else
-            {
-                jsonWriter.WriteNullValue();
             }
         }
 

@@ -135,11 +135,14 @@ namespace Microsoft.Azure.Cosmos
             }
 
 #if DEBUG
+            // This check is used to stop internal developers from deserializing an internal with the user's serialier that doesn't know how to materialize said type.
             string clientAssemblyName = typeof(DatabaseProperties).Assembly.GetName().Name;
             string directAssemblyName = typeof(Documents.PartitionKeyRange).Assembly.GetName().Name;
             string inputAssemblyName = inputType.Assembly.GetName().Name;
-            if (string.Equals(inputAssemblyName, clientAssemblyName) ||
-                string.Equals(inputAssemblyName, directAssemblyName)) 
+            bool inputIsClientOrDirect = string.Equals(inputAssemblyName, clientAssemblyName) || string.Equals(inputAssemblyName, directAssemblyName);
+            bool typeIsWhiteListed = inputType == typeof(Document);
+
+            if (!typeIsWhiteListed && inputIsClientOrDirect)
             {
                 throw new ArgumentException($"User serializer is being used for internal type:{inputType.FullName}.");
             }

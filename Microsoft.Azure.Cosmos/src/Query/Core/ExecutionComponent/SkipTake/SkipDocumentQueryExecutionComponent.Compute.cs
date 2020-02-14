@@ -22,13 +22,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
             private const string SkipCountPropertyName = "SkipCount";
             private const string SourceTokenPropertyName = "SourceToken";
 
-            public ComputeSkipDocumentQueryExecutionComponent(IDocumentQueryExecutionComponent source, long skipCount)
+            private ComputeSkipDocumentQueryExecutionComponent(IDocumentQueryExecutionComponent source, long skipCount)
                 : base(source, skipCount)
             {
                 // Work is done in base constructor.
             }
 
-            public static async Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateComputeAsync(
+            public static async Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
                 int offsetCount,
                 RequestContinuationToken continuationToken,
                 Func<RequestContinuationToken, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync)
@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                 }
 
                 return (await tryCreateSourceAsync(RequestContinuationToken.Create(offsetContinuationToken.SourceToken)))
-                    .Try<IDocumentQueryExecutionComponent>((source) => new ClientSkipDocumentQueryExecutionComponent(
+                    .Try<IDocumentQueryExecutionComponent>((source) => new ComputeSkipDocumentQueryExecutionComponent(
                     source,
                     offsetContinuationToken.Offset));
             }

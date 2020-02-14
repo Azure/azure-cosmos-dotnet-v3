@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
     {
         private sealed class ClientSkipDocumentQueryExecutionComponent : SkipDocumentQueryExecutionComponent
         {
-            public ClientSkipDocumentQueryExecutionComponent(IDocumentQueryExecutionComponent source, long skipCount)
+            private ClientSkipDocumentQueryExecutionComponent(IDocumentQueryExecutionComponent source, long skipCount)
                 : base(source, skipCount)
             {
                 // Work is done in base constructor.

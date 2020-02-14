@@ -197,16 +197,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                     }
 
                     if (!groupByContinuationTokenObject.TryGetValue(
-                        nameof(GroupByContinuationToken.GroupingTableContinuationToken),
-                        out CosmosString groupingTableContinuationToken))
+                        ComputeGroupByDocumentQueryExecutionComponent.GroupingTableContinuationTokenName,
+                        out CosmosElement groupingTableContinuationToken))
                     {
                         groupByContinuationToken = default;
                         return false;
                     }
 
                     if (!groupByContinuationTokenObject.TryGetValue(
-                        nameof(GroupByContinuationToken.SourceContinuationToken),
-                        out CosmosString sourceContinuationToken))
+                        ComputeGroupByDocumentQueryExecutionComponent.SourceTokenName,
+                        out CosmosElement sourceContinuationToken))
                     {
                         groupByContinuationToken = default;
                         return false;

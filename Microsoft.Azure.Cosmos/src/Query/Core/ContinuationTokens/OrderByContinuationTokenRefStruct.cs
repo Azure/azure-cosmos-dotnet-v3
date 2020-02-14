@@ -46,8 +46,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
             }
 
             jsonWriter.WriteObjectStart();
+
             jsonWriter.WriteFieldName(OrderByContinuationTokenRefStruct.CompositeTokenPropertyName);
             this.CompositeContinuationToken.WriteTo(jsonWriter);
+
             jsonWriter.WriteFieldName(OrderByContinuationTokenRefStruct.OrderByItemsPropertyName);
             jsonWriter.WriteArrayStart();
 
@@ -65,10 +67,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
             }
 
             jsonWriter.WriteArrayEnd();
+
             jsonWriter.WriteFieldName(OrderByContinuationTokenRefStruct.RidPropertyName);
             jsonWriter.WriteStringValue(this.Rid);
+
             jsonWriter.WriteFieldName(OrderByContinuationTokenRefStruct.SkipCountPropertyName);
-            jsonWriter.WriteInt32Value(this.SkipCount);
+            jsonWriter.WriteNumberValue(this.SkipCount);
+
             jsonWriter.WriteFieldName(OrderByContinuationTokenRefStruct.FilterPropertyName);
             if (this.Filter != null)
             {
@@ -78,6 +83,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
             {
                 jsonWriter.WriteNullValue();
             }
+
+            jsonWriter.WriteObjectEnd();
         }
     }
 }

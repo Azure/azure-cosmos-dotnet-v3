@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
             }
 
             long partialCount;
-            if (continuationToken != null)
+            if (!continuationToken.IsNull)
             {
                 if (!continuationToken.TryConvertToCosmosElement<CosmosInt64>(out CosmosInt64 cosmosPartialCount))
                 {

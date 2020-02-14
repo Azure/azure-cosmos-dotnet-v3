@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
 
         public static MinMaxContinuationToken CreateUndefinedValueContinuationToken()
         {
-            return new MinMaxContinuationToken(type: MinMaxContinuationTokenType.MaxValue, value: null);
+            return new MinMaxContinuationToken(type: MinMaxContinuationTokenType.Undefined, value: null);
         }
 
         public static MinMaxContinuationToken CreateValueContinuationToken(CosmosElement value)

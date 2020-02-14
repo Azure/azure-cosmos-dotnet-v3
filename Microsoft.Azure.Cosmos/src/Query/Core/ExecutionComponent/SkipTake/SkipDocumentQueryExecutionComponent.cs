@@ -1,19 +1,14 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
+
 namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
 {
     using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
 
     internal abstract partial class SkipDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase
     {
@@ -47,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                     break;
 
                 case ExecutionEnvironment.Compute:
-                    tryCreate = ComputeSkipDocumentQueryExecutionComponent.TryCreateComputeAsync(
+                    tryCreate = ComputeSkipDocumentQueryExecutionComponent.TryCreateAsync(
                         offsetCount,
                         continuationToken,
                         tryCreateSourceAsync);

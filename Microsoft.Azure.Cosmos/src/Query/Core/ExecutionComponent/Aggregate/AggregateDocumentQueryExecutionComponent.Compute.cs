@@ -17,13 +17,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
 
     internal abstract partial class AggregateDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase
     {
-        private const string SourceTokenName = "SourceToken";
-        private const string AggregationTokenName = "AggregationToken";
-
-        private static readonly IReadOnlyList<CosmosElement> EmptyResults = new List<CosmosElement>().AsReadOnly();
-
         private sealed class ComputeAggregateDocumentQueryExecutionComponent : AggregateDocumentQueryExecutionComponent
         {
+            private const string SourceTokenName = "SourceToken";
+            private const string AggregationTokenName = "AggregationToken";
+
+            private static readonly IReadOnlyList<CosmosElement> EmptyResults = new List<CosmosElement>().AsReadOnly();
+
             private ComputeAggregateDocumentQueryExecutionComponent(
                 IDocumentQueryExecutionComponent source,
                 SingleGroupAggregator singleGroupAggregator,
@@ -122,119 +122,116 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
 
                 return response;
             }
-        }
 
-        private QueryResponseCore GetFinalResponse()
-        {
-            List<CosmosElement> finalResult = new List<CosmosElement>();
-            CosmosElement aggregationResult = this.singleGroupAggregator.GetResult();
-            if (aggregationResult != null)
+            private QueryResponseCore GetFinalResponse()
             {
-                finalResult.Add(aggregationResult);
+                List<CosmosElement> finalResult = new List<CosmosElement>();
+                CosmosElement aggregationResult = this.singleGroupAggregator.GetResult();
+                if (aggregationResult != null)
+                {
+                    finalResult.Add(aggregationResult);
+                }
+
+                QueryResponseCore response = QueryResponseCore.CreateSuccess(
+                    result: finalResult,
+                    requestCharge: 0,
+                    activityId: null,
+                    responseLengthBytes: 0,
+                    disallowContinuationTokenMessage: null,
+                    continuationToken: null,
+                    diagnostics: QueryResponseCore.EmptyDiagnostics);
+
+                return response;
             }
 
-            QueryResponseCore response = QueryResponseCore.CreateSuccess(
-                result: finalResult,
-                requestCharge: 0,
-                activityId: null,
-                responseLengthBytes: 0,
-                disallowContinuationTokenMessage: null,
-                continuationToken: null,
-                diagnostics: QueryResponseCore.EmptyDiagnostics);
-
-            return response;
-        }
-
-        private QueryResponseCore GetEmptyPage(QueryResponseCore sourceResponse)
-        {
-            // We need to give empty pages until the results are fully drained.
-            QueryResponseCore response = QueryResponseCore.CreateSuccess(
-                result: EmptyResults,
-                requestCharge: sourceResponse.RequestCharge,
-                activityId: sourceResponse.ActivityId,
-                responseLengthBytes: sourceResponse.ResponseLengthBytes,
-                disallowContinuationTokenMessage: null,
-                continuationToken: sourceResponse.ContinuationToken,
-                diagnostics: sourceResponse.Diagnostics);
-
-            return response;
-        }
-
-        public override void SerializeState(IJsonWriter jsonWriter)
-        {
-            if (jsonWriter == null)
+            private QueryResponseCore GetEmptyPage(QueryResponseCore sourceResponse)
             {
-                throw new ArgumentNullException(nameof(jsonWriter));
+                // We need to give empty pages until the results are fully drained.
+                QueryResponseCore response = QueryResponseCore.CreateSuccess(
+                    result: EmptyResults,
+                    requestCharge: sourceResponse.RequestCharge,
+                    activityId: sourceResponse.ActivityId,
+                    responseLengthBytes: sourceResponse.ResponseLengthBytes,
+                    disallowContinuationTokenMessage: null,
+                    continuationToken: sourceResponse.ContinuationToken,
+                    diagnostics: sourceResponse.Diagnostics);
+
+                return response;
             }
 
-            if (!this.IsDone)
+            public override void SerializeState(IJsonWriter jsonWriter)
             {
-                jsonWriter.WriteObjectStart();
-                jsonWriter.WriteFieldName(ComputeAggregateDocumentQueryExecutionComponent.SourceTokenName);
-                this.Source.SerializeState(jsonWriter);
-                jsonWriter.WriteFieldName(ComputeAggregateDocumentQueryExecutionComponent.AggregationTokenName);
-                this.singleGroupAggregator.SerializeState(jsonWriter);
-                jsonWriter.WriteObjectEnd();
-            }
-        }
+                if (jsonWriter == null)
+                {
+                    throw new ArgumentNullException(nameof(jsonWriter));
+                }
 
-        private readonly struct AggregateContinuationToken
-        {
-            private const string SingleGroupAggregatorContinuationTokenName = "SingleGroupAggregatorContinuationToken";
-            private const string SourceContinuationTokenName = "SourceContinuationToken";
-
-            public AggregateContinuationToken(
-                CosmosElement singleGroupAggregatorContinuationToken,
-                CosmosElement sourceContinuationToken)
-            {
-                this.SingleGroupAggregatorContinuationToken = singleGroupAggregatorContinuationToken;
-                this.SourceContinuationToken = sourceContinuationToken;
+                if (!this.IsDone)
+                {
+                    jsonWriter.WriteObjectStart();
+                    jsonWriter.WriteFieldName(ComputeAggregateDocumentQueryExecutionComponent.SourceTokenName);
+                    this.Source.SerializeState(jsonWriter);
+                    jsonWriter.WriteFieldName(ComputeAggregateDocumentQueryExecutionComponent.AggregationTokenName);
+                    this.singleGroupAggregator.SerializeState(jsonWriter);
+                    jsonWriter.WriteObjectEnd();
+                }
             }
 
-            public CosmosElement SingleGroupAggregatorContinuationToken { get; }
-
-            public CosmosElement SourceContinuationToken { get; }
-
-            public static bool TryParse(
-                RequestContinuationToken continuationToken,
-                out AggregateContinuationToken aggregateContinuationToken)
+            private readonly struct AggregateContinuationToken
             {
-                if (continuationToken == null)
+                public AggregateContinuationToken(
+                    CosmosElement singleGroupAggregatorContinuationToken,
+                    CosmosElement sourceContinuationToken)
                 {
-                    throw new ArgumentNullException(nameof(continuationToken));
+                    this.SingleGroupAggregatorContinuationToken = singleGroupAggregatorContinuationToken;
+                    this.SourceContinuationToken = sourceContinuationToken;
                 }
 
-                if (!(continuationToken is CosmosElementRequestContinuationToken cosmosElementRequestContinuationToken))
-                {
-                    throw new ArgumentException($"Expected {nameof(CosmosElementRequestContinuationToken)} instead of: {continuationToken.GetType()}");
-                }
+                public CosmosElement SingleGroupAggregatorContinuationToken { get; }
 
-                if (!(cosmosElementRequestContinuationToken.Value is CosmosObject rawAggregateContinuationToken))
-                {
-                    aggregateContinuationToken = default;
-                    return false;
-                }
+                public CosmosElement SourceContinuationToken { get; }
 
-                if (!rawAggregateContinuationToken.TryGetValue(
-                    AggregateContinuationToken.SingleGroupAggregatorContinuationTokenName,
-                    out CosmosElement singleGroupAggregatorContinuationToken))
+                public static bool TryParse(
+                    RequestContinuationToken continuationToken,
+                    out AggregateContinuationToken aggregateContinuationToken)
                 {
-                    aggregateContinuationToken = default;
-                    return false;
-                }
+                    if (continuationToken == null)
+                    {
+                        throw new ArgumentNullException(nameof(continuationToken));
+                    }
 
-                if (!rawAggregateContinuationToken.TryGetValue(
-                    AggregateContinuationToken.SourceContinuationTokenName,
-                    out CosmosElement sourceContinuationToken))
-                {
-                    aggregateContinuationToken = default;
-                    return false;
-                }
+                    if (!(continuationToken is CosmosElementRequestContinuationToken cosmosElementRequestContinuationToken))
+                    {
+                        throw new ArgumentException($"Expected {nameof(CosmosElementRequestContinuationToken)} instead of: {continuationToken.GetType()}");
+                    }
 
-                aggregateContinuationToken = new AggregateContinuationToken(
-                    singleGroupAggregatorContinuationToken: singleGroupAggregatorContinuationToken,
-                    sourceContinuationToken: sourceContinuationToken);
-                return true;
+                    if (!(cosmosElementRequestContinuationToken.Value is CosmosObject rawAggregateContinuationToken))
+                    {
+                        aggregateContinuationToken = default;
+                        return false;
+                    }
+
+                    if (!rawAggregateContinuationToken.TryGetValue(
+                        ComputeAggregateDocumentQueryExecutionComponent.AggregationTokenName,
+                        out CosmosElement singleGroupAggregatorContinuationToken))
+                    {
+                        aggregateContinuationToken = default;
+                        return false;
+                    }
+
+                    if (!rawAggregateContinuationToken.TryGetValue(
+                        ComputeAggregateDocumentQueryExecutionComponent.SourceTokenName,
+                        out CosmosElement sourceContinuationToken))
+                    {
+                        aggregateContinuationToken = default;
+                        return false;
+                    }
+
+                    aggregateContinuationToken = new AggregateContinuationToken(
+                        singleGroupAggregatorContinuationToken: singleGroupAggregatorContinuationToken,
+                        sourceContinuationToken: sourceContinuationToken);
+                    return true;
+                }
             }
         }
     }

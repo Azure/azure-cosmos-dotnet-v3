@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Runtime.ExceptionServices;
     using System.Text;
     using System.Text.RegularExpressions;
     using System.Threading;
@@ -21,9 +22,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers;
-    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
@@ -31,12 +30,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Moq;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
     using Newtonsoft.Json.Linq;
-    using Query;
-    using UInt128 = Query.Core.UInt128;
+    using UInt128 = Microsoft.Azure.Cosmos.Query.Core.UInt128;
 
     /// <summary>
     /// Tests for CrossPartitionQueryTests.
@@ -457,103 +454,90 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
            string partitionKey = "/id",
            Cosmos.IndexingPolicy indexingPolicy = null)
         {
-            int retryCount = 1;
-            AggregateException exceptionHistory = new AggregateException();
-            while (retryCount-- > 0)
+            try
             {
-                try
+                List<Tuple<Container, List<Document>>> collectionsAndDocuments = new List<Tuple<Container, List<Document>>>();
+                foreach (CollectionTypes collectionType in Enum.GetValues(collectionTypes.GetType()).Cast<Enum>().Where(collectionTypes.HasFlag))
                 {
-                    List<Tuple<Container, List<Document>>> collectionsAndDocuments = new List<Tuple<Container, List<Document>>>();
-                    foreach (CollectionTypes collectionType in Enum.GetValues(collectionTypes.GetType()).Cast<Enum>().Where(collectionTypes.HasFlag))
+                    if (collectionType == CollectionTypes.None)
                     {
-                        if (collectionType == CollectionTypes.None)
-                        {
-                            continue;
-                        }
-
-                        Task<Tuple<Container, List<Document>>> createContainerTask;
-                        switch (collectionType)
-                        {
-                            case CollectionTypes.NonPartitioned:
-                                createContainerTask = this.CreateNonPartitionedContainerAndIngestDocuments(
-                                    documents,
-                                    indexingPolicy);
-                                break;
-
-                            case CollectionTypes.SinglePartition:
-                                createContainerTask = this.CreateSinglePartitionContainerAndIngestDocuments(
-                                    documents,
-                                    partitionKey,
-                                    indexingPolicy);
-                                break;
-
-                            case CollectionTypes.MultiPartition:
-                                createContainerTask = this.CreateMultiPartitionContainerAndIngestDocuments(
-                                    documents,
-                                    partitionKey,
-                                    indexingPolicy);
-                                break;
-
-                            default:
-                                throw new ArgumentException($"Unknown {nameof(CollectionTypes)} : {collectionType}");
-                        }
-
-                        collectionsAndDocuments.Add(await createContainerTask);
+                        continue;
                     }
 
-                    List<CosmosClient> cosmosClients = new List<CosmosClient>();
-                    foreach (ConnectionModes connectionMode in Enum.GetValues(connectionModes.GetType()).Cast<Enum>().Where(connectionModes.HasFlag))
+                    Task<Tuple<Container, List<Document>>> createContainerTask;
+                    switch (collectionType)
                     {
-                        if (connectionMode == ConnectionModes.None)
-                        {
-                            continue;
-                        }
+                        case CollectionTypes.NonPartitioned:
+                            createContainerTask = this.CreateNonPartitionedContainerAndIngestDocuments(
+                                documents,
+                                indexingPolicy);
+                            break;
 
-                        ConnectionMode targetConnectionMode = GetTargetConnectionMode(connectionMode);
-                        CosmosClient cosmosClient = cosmosClientFactory(targetConnectionMode);
+                        case CollectionTypes.SinglePartition:
+                            createContainerTask = this.CreateSinglePartitionContainerAndIngestDocuments(
+                                documents,
+                                partitionKey,
+                                indexingPolicy);
+                            break;
 
-                        Assert.AreEqual(
-                            targetConnectionMode,
-                            cosmosClient.ClientOptions.ConnectionMode,
-                            "Test setup: Invalid connection policy applied to CosmosClient");
-                        cosmosClients.Add(cosmosClient);
+                        case CollectionTypes.MultiPartition:
+                            createContainerTask = this.CreateMultiPartitionContainerAndIngestDocuments(
+                                documents,
+                                partitionKey,
+                                indexingPolicy);
+                            break;
+
+                        default:
+                            throw new ArgumentException($"Unknown {nameof(CollectionTypes)} : {collectionType}");
                     }
 
-                    List<Task> queryTasks = new List<Task>();
-                    foreach (CosmosClient cosmosClient in cosmosClients)
-                    {
-                        foreach (Tuple<Container, List<Document>> containerAndDocuments in collectionsAndDocuments)
-                        {
-                            Container container = cosmosClient.GetContainer(((ContainerCore)(ContainerInlineCore)containerAndDocuments.Item1).Database.Id, containerAndDocuments.Item1.Id);
-                            Task queryTask = Task.Run(() => query(container, containerAndDocuments.Item2, testArgs));
-                            queryTasks.Add(queryTask);
-                        }
-                    }
-
-                    await Task.WhenAll(queryTasks);
-
-                    List<Task<ContainerResponse>> deleteContainerTasks = new List<Task<ContainerResponse>>();
-                    foreach (Container container in collectionsAndDocuments.Select(tuple => tuple.Item1))
-                    {
-                        deleteContainerTasks.Add(container.DeleteContainerAsync());
-                    }
-
-                    await Task.WhenAll(deleteContainerTasks);
-
-                    // If you made it here then it's all good
-                    break;
+                    collectionsAndDocuments.Add(await createContainerTask);
                 }
-                catch (Exception ex) when (ex.GetType() != typeof(AssertFailedException))
+
+                List<CosmosClient> cosmosClients = new List<CosmosClient>();
+                foreach (ConnectionModes connectionMode in Enum.GetValues(connectionModes.GetType()).Cast<Enum>().Where(connectionModes.HasFlag))
                 {
-                    List<Exception> previousExceptions = exceptionHistory.InnerExceptions.ToList();
-                    previousExceptions.Add(ex);
-                    exceptionHistory = new AggregateException(previousExceptions);
+                    if (connectionMode == ConnectionModes.None)
+                    {
+                        continue;
+                    }
+
+                    ConnectionMode targetConnectionMode = GetTargetConnectionMode(connectionMode);
+                    CosmosClient cosmosClient = cosmosClientFactory(targetConnectionMode);
+
+                    Assert.AreEqual(
+                        targetConnectionMode,
+                        cosmosClient.ClientOptions.ConnectionMode,
+                        "Test setup: Invalid connection policy applied to CosmosClient");
+                    cosmosClients.Add(cosmosClient);
                 }
+
+                List<Task> queryTasks = new List<Task>();
+                foreach (CosmosClient cosmosClient in cosmosClients)
+                {
+                    foreach (Tuple<Container, List<Document>> containerAndDocuments in collectionsAndDocuments)
+                    {
+                        Container container = cosmosClient.GetContainer(((ContainerCore)(ContainerInlineCore)containerAndDocuments.Item1).Database.Id, containerAndDocuments.Item1.Id);
+                        Task queryTask = Task.Run(() => query(container, containerAndDocuments.Item2, testArgs));
+                        queryTasks.Add(queryTask);
+                    }
+                }
+
+                await Task.WhenAll(queryTasks);
+
+                List<Task<ContainerResponse>> deleteContainerTasks = new List<Task<ContainerResponse>>();
+                foreach (Container container in collectionsAndDocuments.Select(tuple => tuple.Item1))
+                {
+                    deleteContainerTasks.Add(container.DeleteContainerAsync());
+                }
+
+                await Task.WhenAll(deleteContainerTasks);
             }
-
-            if (exceptionHistory.InnerExceptions.Count > 0)
+            catch (Exception ex) when (ex.GetType() != typeof(AssertFailedException))
             {
-                throw exceptionHistory;
+                while (ex.InnerException != null) ex = ex.InnerException;
+
+                ExceptionDispatchInfo.Capture(ex).Throw();
             }
         }
 
@@ -638,6 +622,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Json.IJsonWriter jsonWriter = Json.JsonWriter.Create(Json.JsonSerializationFormat.Binary);
                     itemQuery.SerializeState(jsonWriter);
                     continuationToken = jsonWriter.GetResult();
+
+                    if (!continuationToken.IsEmpty)
+                    {
+                        string stringContinuationToken = CosmosElement.CreateFromBuffer(continuationToken).ToString();
+                    }
                 }
                 catch (CosmosException cosmosException) when (cosmosException.StatusCode == (HttpStatusCode)429)
                 {
@@ -1933,7 +1922,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        [TestCategory("Quarantine")]
         [TestMethod]
         public async Task TestQueryCrossPartitionAggregateFunctionsWithMixedTypes()
         {
@@ -2100,15 +2088,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             string filename = $"CrossPartitionQueryTests.AggregateMixedTypes";
-            string outputPath = $"{filename}_output.xml";
             string baselinePath = $"{filename}_baseline.xml";
+
             XmlWriterSettings settings = new XmlWriterSettings()
             {
                 OmitXmlDeclaration = true,
                 Indent = true,
                 NewLineOnAttributes = true,
             };
-            using (XmlWriter writer = XmlWriter.Create(outputPath, settings))
+
+            StringBuilder builder = new StringBuilder();
+            using (XmlWriter writer = XmlWriter.Create(builder, settings))
             {
                 writer.WriteStartDocument();
                 writer.WriteStartElement("Results");
@@ -2147,7 +2137,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Regex r = new Regex(">\\s+");
             string normalizedBaseline = r.Replace(File.ReadAllText(baselinePath), ">");
-            string normalizedOutput = r.Replace(File.ReadAllText(outputPath), ">");
+            string normalizedOutput = r.Replace(builder.ToString(), ">");
 
             Assert.AreEqual(normalizedBaseline, normalizedOutput);
         }

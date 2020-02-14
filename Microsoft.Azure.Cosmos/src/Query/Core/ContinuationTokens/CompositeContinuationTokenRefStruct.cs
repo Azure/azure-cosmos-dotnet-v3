@@ -30,10 +30,20 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
             }
 
             jsonWriter.WriteObjectStart();
+
             jsonWriter.WriteFieldName(CompositeContinuationTokenRefStruct.TokenProperytName);
-            jsonWriter.WriteStringValue(this.BackendContinuationToken);
+            if (this.BackendContinuationToken != null)
+            {
+                jsonWriter.WriteStringValue(this.BackendContinuationToken);
+            }
+            else
+            {
+                jsonWriter.WriteNullValue();
+            }
+
             jsonWriter.WriteFieldName(CompositeContinuationTokenRefStruct.RangePropertyName);
             this.Range.WriteTo(jsonWriter);
+
             jsonWriter.WriteObjectEnd();
         }
     }

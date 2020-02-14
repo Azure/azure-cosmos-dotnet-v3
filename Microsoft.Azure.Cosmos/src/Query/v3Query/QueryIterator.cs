@@ -72,7 +72,17 @@ namespace Microsoft.Azure.Cosmos.Query
                         break;
 
                     case ExecutionEnvironment.Compute:
-                        requestContinuationToken = RequestContinuationToken.Create(CosmosElement.CreateFromBuffer(queryRequestOptions.BinaryContinuationToken));
+                        CosmosElement cosmosElement;
+                        if (queryRequestOptions.BinaryContinuationToken.IsEmpty)
+                        {
+                            cosmosElement = null;
+                        }
+                        else
+                        {
+                            cosmosElement = CosmosElement.CreateFromBuffer(queryRequestOptions.BinaryContinuationToken);
+                        }
+
+                        requestContinuationToken = RequestContinuationToken.Create(cosmosElement);
                         break;
 
                     default:

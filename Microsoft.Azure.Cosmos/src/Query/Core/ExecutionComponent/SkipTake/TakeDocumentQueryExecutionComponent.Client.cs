@@ -145,11 +145,25 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                 this.takeCount -= takedDocuments.Count;
 
                 string updatedContinuationToken;
-                if (sourcePage.DisallowContinuationTokenMessage == null)
+                if (!this.IsDone && (sourcePage.DisallowContinuationTokenMessage == null))
                 {
-                    updatedContinuationToken = new LimitContinuationToken(
-                        limit: this.takeCount,
-                        sourceToken: sourcePage.ContinuationToken).ToString();
+                    switch (this.takeEnum)
+                    {
+                        case TakeEnum.Limit:
+                            updatedContinuationToken = new LimitContinuationToken(
+                                limit: this.takeCount,
+                                sourceToken: sourcePage.ContinuationToken).ToString();
+                            break;
+
+                        case TakeEnum.Top:
+                            updatedContinuationToken = new TopContinuationToken(
+                                top: this.takeCount,
+                                sourceToken: sourcePage.ContinuationToken).ToString();
+                            break;
+
+                        default:
+                            throw new ArgumentOutOfRangeException($"Unknown {nameof(TakeEnum)}: {this.takeEnum}.");
+                    }
                 }
                 else
                 {
@@ -157,13 +171,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                 }
 
                 return QueryResponseCore.CreateSuccess(
-                        result: takedDocuments,
-                        continuationToken: updatedContinuationToken,
-                        disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,
-                        activityId: sourcePage.ActivityId,
-                        requestCharge: sourcePage.RequestCharge,
-                        diagnostics: sourcePage.Diagnostics,
-                        responseLengthBytes: sourcePage.ResponseLengthBytes);
+                    result: takedDocuments,
+                    continuationToken: updatedContinuationToken,
+                    disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,
+                    activityId: sourcePage.ActivityId,
+                    requestCharge: sourcePage.RequestCharge,
+                    diagnostics: sourcePage.Diagnostics,
+                    responseLengthBytes: sourcePage.ResponseLengthBytes);
             }
 
             public override void SerializeState(IJsonWriter jsonWriter)

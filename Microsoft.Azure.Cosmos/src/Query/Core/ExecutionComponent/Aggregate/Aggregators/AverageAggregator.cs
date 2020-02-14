@@ -204,10 +204,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
                 }
 
                 jsonWriter.WriteObjectStart();
-                jsonWriter.WriteFieldName(AverageInfo.SumName);
-                jsonWriter.WriteFloat64Value(this.Sum.Value);
+
+                if (this.Sum.HasValue)
+                {
+                    jsonWriter.WriteFieldName(AverageInfo.SumName);
+                    jsonWriter.WriteFloat64Value(this.Sum.Value);
+                }
+                
                 jsonWriter.WriteFieldName(AverageInfo.CountName);
                 jsonWriter.WriteInt64Value(this.Count);
+
                 jsonWriter.WriteObjectEnd();
             }
 
