@@ -39,9 +39,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly ConcurrentDictionary<string, SemaphoreSlim> limitersByPartitionkeyRange = new ConcurrentDictionary<string, SemaphoreSlim>();
         private readonly TimerPool timerPool;
         private readonly RetryOptions retryOptions;
-
         private readonly int defaultMaxDegreeOfConcurrency = 50;
-        private readonly bool adaptiveBulkExecution;
 
         /// <summary>
         /// For unit testing.
@@ -84,7 +82,6 @@ namespace Microsoft.Azure.Cosmos
             this.dispatchTimerInSeconds = dispatchTimerInSeconds;
             this.timerPool = new TimerPool(BatchAsyncContainerExecutor.MinimumDispatchTimerInSeconds);
             this.retryOptions = cosmosClientContext.ClientOptions.GetConnectionPolicy().RetryOptions;
-            this.adaptiveBulkExecution = cosmosClientContext.ClientOptions.AdaptiveBulkExecution;
         }
 
         public virtual async Task<TransactionalBatchOperationResult> AddAsync(
@@ -271,7 +268,6 @@ namespace Microsoft.Azure.Cosmos
                 this.dispatchTimerInSeconds,
                 this.timerPool,
                 limiter,
-                this.adaptiveBulkExecution,
                 this.defaultMaxDegreeOfConcurrency,
                 this.cosmosClientContext.SerializerCore,
                 this.ExecuteAsync,

@@ -373,19 +373,12 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <summary>
         /// Allows optimistic batching of requests to service. Setting this option might impact the latency of the operations. Hence this option is recommended for non-latency sensitive scenarios only.
         /// </summary>
-        /// <param name="enableBulk">Whether <see cref="CosmosClientOptions.AllowBulkExecution"/> is enabled.</param>
-        /// <param name="adaptiveBulkExecution">Whether <see cref="CosmosClientOptions.AdaptiveBulkExecution"/> is enabled.</param>
+        /// <param name="enabled">Whether <see cref="CosmosClientOptions.AllowBulkExecution"/> is enabled.</param>
         /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
         /// <seealso cref="CosmosClientOptions.AllowBulkExecution"/>
-        public CosmosClientBuilder WithBulkExecution(bool enableBulk, bool adaptiveBulkExecution = true)
+        public CosmosClientBuilder WithBulkExecution(bool enabled)
         {
-            this.clientOptions.AllowBulkExecution = enableBulk;
-
-            if (enableBulk)
-            {
-                this.clientOptions.AdaptiveBulkExecution = adaptiveBulkExecution;
-            }
-
+            this.clientOptions.AllowBulkExecution = enabled;
             return this;
         }
 

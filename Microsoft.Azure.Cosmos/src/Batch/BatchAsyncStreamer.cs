@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -55,7 +54,6 @@ namespace Microsoft.Azure.Cosmos
             int dispatchTimerInSeconds,
             TimerPool timerPool,
             SemaphoreSlim limiter,
-            bool adaptiveBulkExecution,
             int maxDegreeOfConcurrency,
             CosmosSerializerCore serializerCore,
             BatchAsyncBatcherExecuteDelegate executor,
@@ -106,10 +104,7 @@ namespace Microsoft.Azure.Cosmos
             this.partitionMetric = new BatchPartitionMetric();
             this.maxDegreeOfConcurrency = maxDegreeOfConcurrency;
 
-            if (adaptiveBulkExecution)
-            {
-                this.StartCongestionControlTimer();
-            }
+            this.StartCongestionControlTimer();
         }
 
         public void Add(ItemBatchOperation operation)

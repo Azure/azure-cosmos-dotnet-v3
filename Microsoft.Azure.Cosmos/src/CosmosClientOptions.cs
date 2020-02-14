@@ -394,11 +394,6 @@ namespace Microsoft.Azure.Cosmos
         public bool AllowBulkExecution { get; set; }
 
         /// <summary>
-        /// This can lead to some level of rate limiting.
-        /// </summary>
-        public bool AdaptiveBulkExecution { get; set; } = true;
-
-        /// <summary>
         /// Gets or sets the connection protocol when connecting to the Azure Cosmos service.
         /// </summary>
         /// <value>
