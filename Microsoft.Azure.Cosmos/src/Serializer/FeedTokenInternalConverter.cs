@@ -12,13 +12,13 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class FeedTokenInternalConverter : JsonConverter
     {
-        private static readonly string TypePropertyName = "T";
-        private static readonly string VersionPropertyName = "V";
-        private static readonly string RangePropertyName = "Range";
-        private static readonly string RidPropertyName = "Rid";
-        private static readonly string ContinuationPropertyName = "Continuation";
-        private static readonly string PartitionKeyPropertyName = "PK";
-        private static readonly string PartitionKeyRangeIdPropertyName = "PKRangeId";
+        private const string TypePropertyName = "T";
+        private const string VersionPropertyName = "V";
+        private const string RangePropertyName = "Range";
+        private const string RidPropertyName = "Rid";
+        private const string ContinuationPropertyName = "Continuation";
+        private const string PartitionKeyPropertyName = "PK";
+        private const string PartitionKeyRangeIdPropertyName = "PKRangeId";
 
         public override bool CanConvert(Type objectType)
         {
