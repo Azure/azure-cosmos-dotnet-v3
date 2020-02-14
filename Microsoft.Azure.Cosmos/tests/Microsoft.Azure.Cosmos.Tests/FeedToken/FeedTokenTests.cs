@@ -224,6 +224,53 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(documentClient.AvailablePartitionKeyRanges[1].MaxExclusive, continuationTokens[2].Range.Max);
         }
 
+        [TestMethod]
+        public async Task FeedToken_PartitionKeyRange_HandleSplits()
+        {
+            string containerRid = Guid.NewGuid().ToString();
+            string continuation = Guid.NewGuid().ToString();
+
+            FeedTokenPartitionKeyRange feedTokenPartitionKeyRange = new FeedTokenPartitionKeyRange("0");
+            feedTokenPartitionKeyRange.UpdateContinuation(continuation);
+            PKRangeSplitMockDocumentClient documentClient = new PKRangeSplitMockDocumentClient();
+
+            Mock<CosmosClientContext> cosmosClientContext = new Mock<CosmosClientContext>();
+            cosmosClientContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
+            cosmosClientContext.Setup(c => c.DocumentClient).Returns(documentClient);
+
+            Mock<ContainerCore> containerCore = new Mock<ContainerCore>();
+            containerCore
+                .Setup(c => c.ClientContext).Returns(cosmosClientContext.Object);
+
+            containerCore
+                .Setup(c => c.GetRIDAsync(It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(containerRid));
+
+            ResponseMessage split = new ResponseMessage(HttpStatusCode.Gone);
+            split.Headers.SubStatusCode = Documents.SubStatusCodes.PartitionKeyRangeGone;
+            Assert.IsTrue(await feedTokenPartitionKeyRange.ShouldRetryAsync(containerCore.Object, split));
+
+            // FeedToken should have converted to EPKRange token
+
+            string serialization = feedTokenPartitionKeyRange.ToString();
+            FeedTokenEPKRange feedTokenEPKRange = FeedToken.FromString(serialization) as FeedTokenEPKRange;
+            Assert.IsNotNull(feedTokenEPKRange, "FeedTokenPartitionKeyRange did not convert to FeedTokenEPKRange after split");
+            Assert.AreEqual(containerRid, feedTokenEPKRange.ContainerRid);
+
+            // Split should only capture the sons of the original PKRangeId
+            Assert.AreEqual(2, feedTokenEPKRange.CompositeContinuationTokens.Count);
+            CompositeContinuationToken[] continuationTokens = feedTokenEPKRange.CompositeContinuationTokens.ToArray();
+            // First token is split
+            Assert.AreEqual(continuation, continuationTokens[0].Token);
+            Assert.AreEqual(documentClient.AvailablePartitionKeyRanges[0].MinInclusive, continuationTokens[0].Range.Min);
+            Assert.AreEqual(documentClient.AvailablePartitionKeyRanges[0].MaxExclusive, continuationTokens[0].Range.Max);
+
+            // Second token remains the same
+            Assert.AreEqual(continuation, continuationTokens[1].Token);
+            Assert.AreEqual(documentClient.AvailablePartitionKeyRanges[1].MinInclusive, continuationTokens[1].Range.Min);
+            Assert.AreEqual(documentClient.AvailablePartitionKeyRanges[1].MaxExclusive, continuationTokens[1].Range.Max);
+        }
+
         private static CompositeContinuationToken BuildTokenForRange(
             string min,
             string max,
@@ -247,6 +294,20 @@ namespace Microsoft.Azure.Cosmos.Tests
             internal override IReadOnlyList<Documents.PartitionKeyRange> ResolveOverlapingPartitionKeyRanges(string collectionRid, Documents.Routing.Range<string> range, bool forceRefresh)
             {
                 return new List<Documents.PartitionKeyRange>() { this.AvailablePartitionKeyRanges[0], this.AvailablePartitionKeyRanges[1] };
+            }
+        }
+
+        private class PKRangeSplitMockDocumentClient : MockDocumentClient
+        {
+            public List<Documents.PartitionKeyRange> AvailablePartitionKeyRanges = new List<Documents.PartitionKeyRange>() {
+                new Documents.PartitionKeyRange() { MinInclusive = "A", MaxExclusive ="B", Id = "1", Parents = new System.Collections.ObjectModel.Collection<string>(){ "0" } },
+                new Documents.PartitionKeyRange() { MinInclusive = "B", MaxExclusive ="C", Id = "2", Parents = new System.Collections.ObjectModel.Collection<string>(){ "0" } },
+                new Documents.PartitionKeyRange() { MinInclusive = "C", MaxExclusive ="F", Id = "3", Parents = new System.Collections.ObjectModel.Collection<string>() },
+            };
+
+            internal override IReadOnlyList<Documents.PartitionKeyRange> ResolveOverlapingPartitionKeyRanges(string collectionRid, Documents.Routing.Range<string> range, bool forceRefresh)
+            {
+                return this.AvailablePartitionKeyRanges;
             }
         }
     }
