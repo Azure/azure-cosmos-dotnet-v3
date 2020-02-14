@@ -126,12 +126,21 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                 QueryResponseCore queryResponseCore;
                 if (this.distinctQueryType == DistinctQueryType.Ordered)
                 {
-                    DistinctContinuationToken distinctContinuationToken = new DistinctContinuationToken(
-                        sourceToken: sourceResponse.ContinuationToken,
-                        distinctMapToken: this.distinctMap.GetContinuationToken());
+                    string updatedContinuationToken;
+                    if (this.IsDone)
+                    {
+                        updatedContinuationToken = null;
+                    }
+                    else
+                    {
+                        updatedContinuationToken = new DistinctContinuationToken(
+                            sourceToken: sourceResponse.ContinuationToken,
+                            distinctMapToken: this.distinctMap.GetContinuationToken()).ToString();
+                    }
+
                     queryResponseCore = QueryResponseCore.CreateSuccess(
                         result: distinctResults,
-                        continuationToken: distinctContinuationToken.ToString(),
+                        continuationToken: updatedContinuationToken,
                         disallowContinuationTokenMessage: null,
                         activityId: sourceResponse.ActivityId,
                         requestCharge: sourceResponse.RequestCharge,

@@ -256,7 +256,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             CosmosQueryExecutionContextFactory.InputParameters inputParameters = new CosmosQueryExecutionContextFactory.InputParameters(
                 sqlQuerySpec: sqlQuerySpec,
-                initialUserContinuationToken: null,
+                initialUserContinuationToken: StringRequestContinuationToken.Null,
                 maxConcurrency: queryRequestOptions?.MaxConcurrency,
                 maxItemCount: queryRequestOptions?.MaxItemCount,
                 maxBufferedItemCount: queryRequestOptions?.MaxBufferedItemCount,
@@ -310,31 +310,31 @@ namespace Microsoft.Azure.Cosmos.Tests
                 },
                 new List<string>() { "test" },
                 false,
-                null,
+                StringRequestContinuationToken.Null,
                 func)).Result);
 
             components.Add((await DistinctDocumentQueryExecutionComponent.TryCreateAsync(
                 ExecutionEnvironment.Client,
-                null,
+                StringRequestContinuationToken.Null,
                 func,
                 DistinctQueryType.Ordered)).Result);
 
             components.Add((await SkipDocumentQueryExecutionComponent.TryCreateAsync(
                 ExecutionEnvironment.Client,
                 5,
-                null,
+                StringRequestContinuationToken.Null,
                 func)).Result);
 
             components.Add((await TakeDocumentQueryExecutionComponent.TryCreateLimitDocumentQueryExecutionComponentAsync(
                 ExecutionEnvironment.Client,
                 5,
-                null,
+                StringRequestContinuationToken.Null,
                 func)).Result);
 
             components.Add((await TakeDocumentQueryExecutionComponent.TryCreateTopDocumentQueryExecutionComponentAsync(
                 ExecutionEnvironment.Client,
                 5,
-                null,
+                StringRequestContinuationToken.Null,
                 func)).Result);
 
             return (components, response);

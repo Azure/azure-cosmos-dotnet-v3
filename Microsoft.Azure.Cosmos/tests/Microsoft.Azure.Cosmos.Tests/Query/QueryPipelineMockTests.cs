@@ -523,7 +523,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             TryCatch<IDocumentQueryExecutionComponent> tryCreateWhenSourceFails = await DistinctDocumentQueryExecutionComponent.TryCreateAsync(
                 ExecutionEnvironment.Client,
-                null,
+                StringRequestContinuationToken.Null,
                 FailToCreateSource,
                 DistinctQueryType.Ordered);
 
