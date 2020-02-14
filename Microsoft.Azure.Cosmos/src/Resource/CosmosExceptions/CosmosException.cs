@@ -6,9 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Diagnostics;
-    using System.IO;
     using System.Net;
-    using System.Runtime.CompilerServices;
     using System.Text;
 
     /// <summary>
@@ -17,50 +15,12 @@ namespace Microsoft.Azure.Cosmos
     public class CosmosException : Exception
     {
         private readonly StackTrace stackTrace;
-
-        internal CosmosException(
-            HttpStatusCode statusCode,
-            string message,
-            Exception inner = null)
-            : base(message, inner)
-        {
-            this.StatusCode = statusCode;
-            this.Headers = new Headers();
-        }
-
-        internal CosmosException(
-            ResponseMessage cosmosResponseMessage,
-            string message)
-            : base(message)
-        {
-            if (cosmosResponseMessage != null)
-            {
-                this.StatusCode = cosmosResponseMessage.StatusCode;
-                this.Headers = cosmosResponseMessage.Headers;
-                if (this.Headers == null)
-                {
-                    this.Headers = new Headers();
-                }
-
-                this.ActivityId = this.Headers.ActivityId;
-                this.RequestCharge = this.Headers.RequestCharge;
-                this.RetryAfter = this.Headers.RetryAfter;
-                this.SubStatusCode = (int)this.Headers.SubStatusCode;
-                this.Diagnostics = cosmosResponseMessage.Diagnostics;
-                if (this.Headers.ContentLengthAsLong > 0)
-                {
-                    using (StreamReader responseReader = new StreamReader(cosmosResponseMessage.Content))
-                    {
-                        this.ResponseBody = responseReader.ReadToEnd();
-                    }
-                }
-            }
-        }
+        private readonly CosmosDiagnosticsContext diagnosticsContext;
 
         internal CosmosException(
             HttpStatusCode statusCodes,
-            int subStatusCode,
             string message,
+            int subStatusCode,
             StackTrace stackTrace,
             string activityId,
             double requestCharge,
@@ -76,8 +36,10 @@ namespace Microsoft.Azure.Cosmos
             this.SubStatusCode = subStatusCode;
             this.RetryAfter = retryAfter;
             this.RequestCharge = requestCharge;
-            this.Diagnostics = diagnosticsContext ?? CosmosDiagnosticsContext.Create();
             this.Headers = headers;
+
+            // Always have a diagnostic context. A new diagnostic will have useful info like user agent
+            this.diagnosticsContext = diagnosticsContext ?? CosmosDiagnosticsContext.Create();
         }
 
         /// <summary>
@@ -96,6 +58,7 @@ namespace Microsoft.Azure.Cosmos
             double requestCharge)
             : base(message)
         {
+            this.stackTrace = new StackTrace(-1);
             this.SubStatusCode = subStatusCode;
             this.StatusCode = statusCode;
             this.RequestCharge = requestCharge;
@@ -149,7 +112,23 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the diagnostics for the request
         /// </summary>
-        public virtual CosmosDiagnostics Diagnostics { get; }
+        public virtual CosmosDiagnostics Diagnostics => this.diagnosticsContext;
+
+        /// <inheritdoc/>
+        public override string StackTrace
+        {
+            get
+            {
+                if (this.stackTrace != null)
+                {
+                    return this.stackTrace.ToString();
+                }
+                else
+                {
+                    return base.StackTrace;
+                }
+            }
+        }
 
         /// <summary>
         /// Try to get a header from the cosmos response message
@@ -167,9 +146,6 @@ namespace Microsoft.Azure.Cosmos
 
             return this.Headers.TryGetValue(headerName, out value);
         }
-
-        /// <inheritdoc/>
-        public override string StackTrace => this.stackTrace.ToString();
 
         /// <summary>
         /// Create a custom string with all the relevant exception information
@@ -224,9 +200,9 @@ namespace Microsoft.Azure.Cosmos
             return new ResponseMessage(
                  headers: this.Headers,
                  requestMessage: request,
-                 errorMessage: this.Message,
+                 cosmosException: this,
                  statusCode: this.StatusCode,
-                 diagnostics: request.DiagnosticsContext);
+                 diagnostics: this.diagnosticsContext);
         }
     }
 }

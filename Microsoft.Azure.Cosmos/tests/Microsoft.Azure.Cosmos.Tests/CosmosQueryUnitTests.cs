@@ -38,13 +38,12 @@ namespace Microsoft.Azure.Cosmos.Tests
             string errorMessage = "TestErrorMessage";
             string activityId = "TestActivityId";
             double requestCharge = 42.42;
-
+            CosmosException cosmosException = new Cosmos.Resource.CosmosExceptions.BadRequestException(errorMessage);
             CosmosDiagnosticsContext diagnostics = CosmosDiagnosticsContext.Create();
             QueryResponse queryResponse = QueryResponse.CreateFailure(
                         statusCode: HttpStatusCode.NotFound,
-                        errorMessage: errorMessage,
+                        cosmosException: cosmosException,
                         requestMessage: null,
-                        error: null,
                         responseHeaders: new CosmosQueryResponseMessageHeaders(
                             null,
                             null,
@@ -57,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         diagnostics: diagnostics);
 
             Assert.AreEqual(HttpStatusCode.NotFound, queryResponse.StatusCode);
-            Assert.AreEqual(errorMessage, queryResponse.ErrorMessage);
+            Assert.AreEqual(cosmosException.ToString(), queryResponse.ErrorMessage);
             Assert.AreEqual(requestCharge, queryResponse.Headers.RequestCharge);
             Assert.AreEqual(activityId, queryResponse.Headers.ActivityId);
             Assert.AreEqual(diagnostics, queryResponse.Diagnostics);
@@ -283,7 +282,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             QueryResponseCore queryResponse = await context.ExecuteNextAsync(cancellationtoken);
             Assert.AreEqual(HttpStatusCode.BadRequest, queryResponse.StatusCode);
-            Assert.IsTrue(queryResponse.ErrorMessage.Contains(exceptionMessage), "response error message did not contain the proper substring.");
+            Assert.IsTrue(queryResponse.CosmosException.ToString().Contains(exceptionMessage), "response error message did not contain the proper substring.");
         }
 
         private async Task<(IList<IDocumentQueryExecutionComponent> components, QueryResponseCore response)> GetAllExecutionComponents()
@@ -363,7 +362,17 @@ namespace Microsoft.Azure.Cosmos.Tests
             QueryResponseCore failure = QueryResponseCore.CreateFailure(
                 System.Net.HttpStatusCode.Unauthorized,
                 SubStatusCodes.PartitionKeyMismatch,
-                "Random error message",
+                new CosmosException(
+                    HttpStatusCode.Unauthorized,
+                    "Random error message",
+                    default,
+                    default,
+                    "TestActivityId",
+                    42.89,
+                    default,
+                    default,
+                    default,
+                    default),
                 42.89,
                 "TestActivityId",
                 diagnostics);

@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -18,12 +19,11 @@ namespace Microsoft.Azure.Cosmos.Query
         [TestMethod]
         public void CosmosException()
         {
-            CosmosException cosmosException = new CosmosException(
-                statusCode: HttpStatusCode.BadRequest,
+            CosmosException cosmosException = new BadRequestException(
                 message: "asdf");
             QueryResponseCore queryResponse = QueryResponseFactory.CreateFromException(cosmosException);
             Assert.AreEqual(HttpStatusCode.BadRequest, queryResponse.StatusCode);
-            Assert.IsNotNull(queryResponse.ErrorMessage);
+            Assert.IsNotNull(queryResponse.CosmosException);
         }
 
         [TestMethod]
@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Query
             Documents.DocumentClientException documentClientException = new Documents.RequestRateTooLargeException("asdf");
             QueryResponseCore queryResponse = QueryResponseFactory.CreateFromException(documentClientException);
             Assert.AreEqual((HttpStatusCode)429, queryResponse.StatusCode);
-            Assert.IsNotNull(queryResponse.ErrorMessage);
+            Assert.IsNotNull(queryResponse.CosmosException);
         }
 
         [TestMethod]
@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.Query
             QueryException queryException = new MalformedContinuationTokenException();
             QueryResponseCore queryResponse = QueryResponseFactory.CreateFromException(queryException);
             Assert.AreEqual(HttpStatusCode.BadRequest, queryResponse.StatusCode);
-            Assert.IsNotNull(queryResponse.ErrorMessage);
+            Assert.IsNotNull(queryResponse.CosmosException);
         }
 
         [TestMethod]
@@ -58,8 +58,8 @@ namespace Microsoft.Azure.Cosmos.Query
             TryCatch<object>  tryCatch = TryCatch<object>.FromException(queryException);
             QueryResponseCore queryResponse = QueryResponseFactory.CreateFromException(tryCatch.Exception);
             Assert.AreEqual(HttpStatusCode.BadRequest, queryResponse.StatusCode);
-            Assert.IsNotNull(queryResponse.ErrorMessage);
-            Assert.IsTrue(queryResponse.ErrorMessage.Contains(nameof(ExceptionFromTryCatch)));
+            Assert.IsNotNull(queryResponse.CosmosException);
+            Assert.IsTrue(queryResponse.CosmosException.ToString().Contains(nameof(ExceptionFromTryCatch)));
         }
     }
 }

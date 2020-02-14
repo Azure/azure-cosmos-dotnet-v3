@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
 
@@ -191,17 +192,21 @@ namespace Microsoft.Azure.Cosmos
             string containerUri,
             CancellationToken cancellationToken = default(CancellationToken))
         {
+            CosmosDiagnosticsContextCore diagnosticsContext = new CosmosDiagnosticsContextCore();
             ClientCollectionCache collectionCache = await this.DocumentClient.GetCollectionCacheAsync();
             try
             {
-                return await collectionCache.ResolveByNameAsync(
-                    HttpConstants.Versions.CurrentVersion,
-                    containerUri,
-                    cancellationToken);
+                using (diagnosticsContext.CreateScope("ContainerCache.ResolveByNameAsync"))
+                {
+                    return await collectionCache.ResolveByNameAsync(
+                        HttpConstants.Versions.CurrentVersion,
+                        containerUri,
+                        cancellationToken);
+                }
             }
             catch (DocumentClientException ex)
             {
-                throw new CosmosException(ex.ToCosmosResponseMessage(null), ex.Message);
+                throw CosmosExceptionFactory.Create(ex, diagnosticsContext);
             }
         }
 

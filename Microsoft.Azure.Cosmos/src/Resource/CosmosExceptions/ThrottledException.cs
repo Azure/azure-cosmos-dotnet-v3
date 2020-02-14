@@ -8,10 +8,9 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
     using System.Diagnostics;
     using System.Net;
 
-    internal abstract class CosmosHttpException : CosmosException
+    internal sealed class ThrottledException : CosmosHttpException
     {
-        internal CosmosHttpException(
-            HttpStatusCode statusCode,
+        internal ThrottledException(
             string message,
             int subStatusCode = default,
             StackTrace stackTrace = default,
@@ -21,7 +20,8 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
             Headers headers = default,
             CosmosDiagnosticsContext diagnosticsContext = default,
             Exception innerException = default)
-            : base(statusCode,
+            : base(
+                (HttpStatusCode)429,
                 message,
                 subStatusCode,
                 stackTrace,

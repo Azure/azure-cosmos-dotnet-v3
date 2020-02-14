@@ -146,9 +146,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             SubStatusCodes subStatusCodes,
             string errorMessage)
         {
+            string acitivityId = Guid.NewGuid().ToString();
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create();
             diagnosticsContext.AddDiagnosticsInternal(new PointOperationStatistics(
-                Guid.NewGuid().ToString(),
+                acitivityId,
                 System.Net.HttpStatusCode.Gone,
                 subStatusCode: SubStatusCodes.PartitionKeyRangeGone,
                 requestCharge: 10.4,
@@ -170,9 +171,19 @@ namespace Microsoft.Azure.Cosmos.Tests
             QueryResponseCore splitResponse = QueryResponseCore.CreateFailure(
                statusCode: httpStatusCode,
                subStatusCodes: subStatusCodes,
-               errorMessage: errorMessage,
+               cosmosException: new CosmosException(
+                   httpStatusCode,
+                   errorMessage,
+                   (int)subStatusCodes,
+                   new System.Diagnostics.StackTrace(),
+                   acitivityId,
+                   10.4,
+                   default,
+                   default,
+                   diagnosticsContext: diagnosticsContext,
+                   default),
                requestCharge: 10.4,
-               activityId: Guid.NewGuid().ToString(),
+               activityId: acitivityId,
                diagnostics: diagnostics);
 
             return splitResponse;

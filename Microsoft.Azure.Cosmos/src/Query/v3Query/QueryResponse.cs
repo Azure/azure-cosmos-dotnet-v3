@@ -41,13 +41,13 @@ namespace Microsoft.Azure.Cosmos
             HttpStatusCode statusCode,
             RequestMessage requestMessage,
             CosmosDiagnosticsContext diagnostics,
-            string errorMessage,
+            CosmosException cosmosException,
             Lazy<MemoryStream> memoryStream,
             CosmosSerializationFormatOptions serializationOptions)
             : base(
                 statusCode: statusCode,
                 requestMessage: requestMessage,
-                errorMessage: errorMessage,
+                cosmosException: cosmosException,
                 headers: responseHeaders,
                 diagnostics: diagnostics)
         {
@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos
                responseHeaders: responseHeaders,
                diagnostics: diagnostics,
                statusCode: HttpStatusCode.OK,
-               errorMessage: null,
+               cosmosException: null,
                requestMessage: null,
                memoryStream: memoryStream,
                serializationOptions: serializationOptions);
@@ -130,8 +130,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosQueryResponseMessageHeaders responseHeaders,
             HttpStatusCode statusCode,
             RequestMessage requestMessage,
-            string errorMessage,
-            Error error,
+            CosmosException cosmosException,
             CosmosDiagnosticsContext diagnostics)
         {
             QueryResponse cosmosQueryResponse = new QueryResponse(
@@ -141,7 +140,7 @@ namespace Microsoft.Azure.Cosmos
                     responseHeaders: responseHeaders,
                     diagnostics: diagnostics,
                     statusCode: statusCode,
-                    errorMessage: errorMessage,
+                    cosmosException: cosmosException,
                     requestMessage: requestMessage,
                     memoryStream: null,
                     serializationOptions: null);

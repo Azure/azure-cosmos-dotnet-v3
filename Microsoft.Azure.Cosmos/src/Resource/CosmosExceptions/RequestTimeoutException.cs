@@ -8,10 +8,14 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
     using System.Diagnostics;
     using System.Net;
 
-    internal abstract class CosmosHttpException : CosmosException
+    internal sealed class RequestTimeoutException : CosmosHttpException
     {
-        internal CosmosHttpException(
-            HttpStatusCode statusCode,
+        public RequestTimeoutException(string message)
+            : base(statusCode: HttpStatusCode.RequestTimeout, message: message)
+        {
+        }
+
+        internal RequestTimeoutException(
             string message,
             int subStatusCode = default,
             StackTrace stackTrace = default,
@@ -21,7 +25,8 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
             Headers headers = default,
             CosmosDiagnosticsContext diagnosticsContext = default,
             Exception innerException = default)
-            : base(statusCode,
+            : base(
+                HttpStatusCode.RequestTimeout,
                 message,
                 subStatusCode,
                 stackTrace,

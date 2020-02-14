@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using OperationType = Documents.OperationType;
     using PartitionKeyDefinition = Documents.PartitionKeyDefinition;
     using ResourceType = Documents.ResourceType;
@@ -62,9 +63,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
             if (!tryGetQueryPlan.Succeeded)
             {
-                throw new CosmosException(
-                    System.Net.HttpStatusCode.BadRequest,
-                    tryGetQueryPlan.Exception.ToString());
+                if (tryGetQueryPlan.Exception is CosmosException)
+                {
+                    throw tryGetQueryPlan.Exception;
+                }
+
+                throw CosmosExceptionFactory.Create(
+                    statusCode: System.Net.HttpStatusCode.BadRequest,
+                    subStatusCode: default,
+                    message: tryGetQueryPlan.Exception.Message,
+                    stackTrace: default,
+                    activityId: default,
+                    requestCharge: default,
+                    retryAfter: default,
+                    headers: default,
+                    diagnosticsContext: default,
+                    innerException: tryGetQueryPlan.Exception);
             }
 
             return tryGetQueryPlan.Result;

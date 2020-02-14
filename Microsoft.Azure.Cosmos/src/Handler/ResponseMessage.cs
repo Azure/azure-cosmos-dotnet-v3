@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics;
     using System.IO;
     using System.Net;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -15,8 +16,6 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     public class ResponseMessage : IDisposable
     {
-        private readonly CosmosException exception;
-
         /// <summary>
         /// Create a <see cref="ResponseMessage"/>
         /// </summary>
@@ -24,6 +23,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.Headers = new Headers();
             this.DiagnosticsContext = CosmosDiagnosticsContext.Create();
+            this.CosmosException = null;
         }
 
         /// <summary>
@@ -44,9 +44,16 @@ namespace Microsoft.Azure.Cosmos
 
             this.StatusCode = statusCode;
             this.RequestMessage = requestMessage;
-            this.ErrorMessage = errorMessage;
             this.Headers = new Headers();
             this.DiagnosticsContext = requestMessage?.DiagnosticsContext ?? CosmosDiagnosticsContext.Create();
+
+            if (!string.IsNullOrEmpty(errorMessage))
+            {
+                this.CosmosException = CosmosExceptionFactory.Create(
+                    statusCode,
+                    requestMessage,
+                    errorMessage);
+            }
         }
 
         /// <summary>
@@ -54,19 +61,19 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="statusCode">The HttpStatusCode of the response</param>
         /// <param name="requestMessage">The <see cref="Cosmos.RequestMessage"/> object</param>
-        /// <param name="errorMessage">The reason for failures if any.</param>
         /// <param name="headers">The headers for the response.</param>
+        /// <param name="cosmosException">The exception if the response is from an error.</param>
         /// <param name="diagnostics">The diagnostics for the request</param>
         internal ResponseMessage(
             HttpStatusCode statusCode,
             RequestMessage requestMessage,
-            string errorMessage,
             Headers headers,
+            CosmosException cosmosException,
             CosmosDiagnosticsContext diagnostics)
         {
             this.StatusCode = statusCode;
             this.RequestMessage = requestMessage;
-            this.ErrorMessage = errorMessage;
+            this.CosmosException = cosmosException;
             this.Headers = headers ?? new Headers();
             this.DiagnosticsContext = diagnostics ?? throw new ArgumentNullException(nameof(diagnostics));
         }
@@ -92,7 +99,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the reason for a failure in the current response.
         /// </summary>
-        public virtual string ErrorMessage { get; internal set; }
+        public virtual string ErrorMessage => this.CosmosException?.ToString();
 
         /// <summary>
         /// Gets the current <see cref="ResponseMessage"/> HTTP headers.
@@ -119,6 +126,8 @@ namespace Microsoft.Azure.Cosmos
 
         internal CosmosDiagnosticsContext DiagnosticsContext { get; }
 
+        internal CosmosException CosmosException { get; }
+
         private bool disposed;
 
         private Stream content;
@@ -131,18 +140,13 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Checks if the current <see cref="ResponseMessage"/> has a successful status code, otherwise, throws.
         /// </summary>
-        /// <exception cref="CosmosException">An instance of <see cref="CosmosException"/> representing the error state.</exception>
+        /// <exception cref="Cosmos.CosmosException">An instance of <see cref="Cosmos.CosmosException"/> representing the error state.</exception>
         /// <returns>The current <see cref="ResponseMessage"/>.</returns>
         public virtual ResponseMessage EnsureSuccessStatusCode()
         {
             if (!this.IsSuccessStatusCode)
             {
-                this.EnsureErrorMessage();
-                string message = $"Response status code does not indicate success: {(int)this.StatusCode} Substatus: {(int)this.Headers.SubStatusCode} Reason: ({this.ErrorMessage}).";
-
-                throw new CosmosException(
-                        this,
-                        message);
+                throw CosmosExceptionFactory.Create(this);
             }
 
             return this;
@@ -201,44 +205,6 @@ namespace Microsoft.Azure.Cosmos
             if (this.disposed)
             {
                 throw new ObjectDisposedException(this.GetType().ToString());
-            }
-        }
-
-        private void EnsureErrorMessage()
-        {
-            if (!string.IsNullOrEmpty(this.ErrorMessage))
-            {
-                return;
-            }
-
-            if (this.content != null
-                && this.content.CanRead)
-            {
-                try
-                {
-                    Error error = Documents.Resource.LoadFrom<Error>(this.content);
-                    if (error != null)
-                    {
-                        // Error format is not consistent across modes
-                        if (!string.IsNullOrEmpty(error.Message))
-                        {
-                            this.ErrorMessage = error.Message;
-                        }
-                        else
-                        {
-                            this.ErrorMessage = error.ToString();
-                        }
-                    }
-                }
-                catch (Newtonsoft.Json.JsonReaderException)
-                {
-                    // Content is not Json
-                    this.content.Position = 0;
-                    using (StreamReader streamReader = new StreamReader(this.content))
-                    {
-                        this.ErrorMessage = streamReader.ReadToEnd();
-                    }
-                }
             }
         }
     }

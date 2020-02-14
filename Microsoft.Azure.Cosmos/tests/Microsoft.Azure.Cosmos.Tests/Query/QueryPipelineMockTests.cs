@@ -212,7 +212,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                 Assert.IsNotNull(failure);
                 Assert.AreEqual((HttpStatusCode)429, failure.Value.StatusCode);
-                Assert.IsNull(failure.Value.ErrorMessage);
+                Assert.IsNull(failure.Value.CosmosException);
 
                 Assert.AreEqual(allItems.Count, itemsRead.Count);
                 List<ToDoItem> exepected = allItems.OrderBy(x => x.id).ToList();
@@ -478,7 +478,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                     Assert.IsNotNull(failure);
                     Assert.AreEqual((HttpStatusCode)429, failure.Value.StatusCode);
-                    Assert.IsNull(failure.Value.ErrorMessage);
+                    Assert.IsNull(failure.Value.CosmosException);
 
                     Assert.AreEqual(0 /*We don't get any items, since we don't buffer the failure anymore*/, itemsRead.Count);
 
