@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
     using System.Collections.Generic;
-    
+
     /// <summary>
     /// Tag matching for LINQ
     /// </summary>
@@ -15,16 +15,33 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <summary>
         /// Tag matching for LINQ
         /// </summary>
-        /// <param name="dataTags"></param>
-        /// <param name="queryTags"></param>
+        /// <param name="dataTags">The data tags</param>
+        /// <param name="queryTags">An XTags instance</param>
+        /// <returns>throws Exception</returns>
+        public static bool Match(object dataTags, object queryTags) => throw new Exception("Tags.Match is only for linq expressions");
+
+        /// <summary>
+        /// Tag matching for LINQ
+        /// </summary>
+        /// <param name="dataTags">The data tags</param>
+        /// <param name="queryTags">An XTags instance</param>
+        /// <param name="supportDocumentRequiredTags"></param>
+        /// <returns>throws Exception</returns>
+        public static bool Match(object dataTags, object queryTags, bool supportDocumentRequiredTags) => throw new Exception("Tags.Match is only for linq expressions");
+
+        /// <summary>
+        /// Tag matching for LINQ
+        /// </summary>
+        /// <param name="dataTags">The data tags</param>
+        /// <param name="queryTags">A collection of tags</param>
         /// <returns>throws Exception</returns>
         public static bool Match(object dataTags, IEnumerable<string> queryTags) => throw new Exception("Tags.Match is only for linq expressions");
 
         /// <summary>
         /// Tag matching for LINQ
         /// </summary>
-        /// <param name="dataTags"></param>
-        /// <param name="queryTags"></param>
+        /// <param name="dataTags">The data tags</param>
+        /// <param name="queryTags">A collection of tags</param>
         /// <param name="supportDocumentRequiredTags"></param>
         /// <returns>throws Exception</returns>
         public static bool Match(object dataTags, IEnumerable<string> queryTags, bool supportDocumentRequiredTags) => throw new Exception("Tags.Match is only for linq expressions");

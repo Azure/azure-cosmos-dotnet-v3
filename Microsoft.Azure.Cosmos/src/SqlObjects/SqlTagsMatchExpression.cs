@@ -10,20 +10,20 @@ namespace Microsoft.Azure.Cosmos.Sql
         private SqlTagsMatchExpression(string tagsProperty, IEnumerable<string> tags, bool supportDocumentRequiredTags)
             : base(SqlObjectKind.TagsMatch)
         {
-            TagsProperty = tagsProperty;
-            Tags = tags;
-            SupportDocumentRequiredTags = supportDocumentRequiredTags;
+            this.TagsProperty = tagsProperty;
+            this.Tags = tags;
+            this.SupportDocumentRequiredTags = supportDocumentRequiredTags;
         }
 
         public string TagsProperty { get; }
         public IEnumerable<string> Tags { get; }
         public bool SupportDocumentRequiredTags { get; }
-        
+
         public static SqlTagsMatchExpression Create(string memberAccess, IEnumerable<string> tags, bool supportDocumentRequiredTags)
         {
             return new SqlTagsMatchExpression(memberAccess, tags, supportDocumentRequiredTags);
         }
-        
+
         public override void Accept(SqlObjectVisitor visitor)
         {
             visitor.Visit(this);

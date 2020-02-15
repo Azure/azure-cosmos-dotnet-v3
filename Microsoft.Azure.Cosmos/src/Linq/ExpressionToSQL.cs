@@ -171,7 +171,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         /// <summary>
         /// Get a paramter name to be binded to the a collection from the next lambda.
-        /// It's merely for readability purpose. If that is not possible, use a default 
+        /// It's merely for readability purpose. If that is not possible, use a default
         /// parameter name.
         /// </summary>
         /// <param name="context">The translation context</param>
@@ -319,12 +319,19 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
             if (methodCallExpression.Method.DeclaringType == typeof(Tags) && methodCallExpression.Method.Name == "Match")
             {
-                var memberExpression = VisitMemberAccess((MemberExpression)methodCallExpression.Arguments[0], context);
-                var queryTags = (IEnumerable<string>)((ConstantExpression)methodCallExpression.Arguments[1]).Value;
-                var supportDocumentRequiredTags = false;
+                SqlScalarExpression memberExpression = VisitMemberAccess((MemberExpression)methodCallExpression.Arguments[0], context);
+                object queryTags = ((ConstantExpression)methodCallExpression.Arguments[1]).Value;
+                IEnumerable<string> enumerableTags = queryTags as IEnumerable<string>;
+                enumerableTags = enumerableTags ?? (IEnumerable<string>)queryTags.GetType()
+                    .GetProperty("RawTags", BindingFlags.Instance | BindingFlags.Public)?
+                    .GetMethod
+                    .Invoke(queryTags, Array.Empty<object>());
+                if (enumerableTags == null)
+                    throw new DocumentQueryException("Unsupported tags constant expression.");
+                bool supportDocumentRequiredTags = false;
                 if (methodCallExpression.Arguments.Count == 3)
                     supportDocumentRequiredTags = (bool)((ConstantExpression)methodCallExpression.Arguments[2]).Value;
-                return SqlTagsMatchExpression.Create(memberExpression.ToString(), queryTags, supportDocumentRequiredTags);
+                return SqlTagsMatchExpression.Create(memberExpression.ToString(), enumerableTags, supportDocumentRequiredTags);
             }
             else
             {
@@ -694,7 +701,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     SqlStringLiteral literal = SqlStringLiteral.Create(guidValue.ToString());
                     return SqlLiteralScalarExpression.Create(literal);
                 }
-                
+
                 //!HACK START
                 if (constantType == typeof(DateTimeOffset))
                 {
@@ -760,7 +767,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             // if expression is nullable
             if (inputExpression.Expression.Type.IsNullable())
             {
-                // ignore .Value 
+                // ignore .Value
                 if (memberName == "Value")
                 {
                     return memberExpression;
@@ -957,7 +964,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// by wrapping it as following: SELECT VALUE COUNT(v0) > 0 FROM (current query) AS v0.
         /// This is used in cases where LINQ expression ends with Any() which is a boolean scalar.
         /// Normally Any would translate to SELECT VALUE EXISTS() subquery. However that wouldn't work
-        /// for these cases because it would result in a boolean value for each row instead of 
+        /// for these cases because it would result in a boolean value for each row instead of
         /// one single "aggregated" boolean value.
         /// </summary>
         /// <param name="context">The translation context</param>
@@ -1354,9 +1361,9 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         /// <summary>
         /// Visit an lambda expression which is in side a lambda and translate it to a scalar expression or a collection scalar expression.
-        /// If it is a collection scalar expression, e.g. should be translated to subquery such as SELECT VALUE ARRAY, SELECT VALUE EXISTS, 
-        /// SELECT VALUE [aggregate], the subquery will be aliased to a new binding for the FROM clause. E.g. consider 
-        /// Select(family => family.Children.Select(child => child.Grade)). Since the inner Select corresponds to a subquery, this method would 
+        /// If it is a collection scalar expression, e.g. should be translated to subquery such as SELECT VALUE ARRAY, SELECT VALUE EXISTS,
+        /// SELECT VALUE [aggregate], the subquery will be aliased to a new binding for the FROM clause. E.g. consider
+        /// Select(family => family.Children.Select(child => child.Grade)). Since the inner Select corresponds to a subquery, this method would
         /// create a new binding of v0 to the subquery SELECT VALUE ARRAY(), and the inner expression will be just SELECT v0.
         /// </summary>
         /// <param name="expression">The input expression</param>
@@ -1646,8 +1653,8 @@ namespace Microsoft.Azure.Cosmos.Linq
                 if (literalScalarExpression.Literal is SqlNumberLiteral numberLiteral)
                 {
                     // After a member access in SelectMany's lambda, if there is only Top/Skip/Take then
-                    // it is necessary to trigger the binding because Skip is just a spec with no binding on its own. 
-                    // This can be done by pushing and popping a temporary parameter. E.g. In SelectMany(f => f.Children.Skip(1)), 
+                    // it is necessary to trigger the binding because Skip is just a spec with no binding on its own.
+                    // This can be done by pushing and popping a temporary parameter. E.g. In SelectMany(f => f.Children.Skip(1)),
                     // it's necessary to consider Skip as Skip(x => x, 1) to bind x to f.Children. Similarly for Top and Limit.
                     ParameterExpression parameter = context.GenFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
                     context.PushParameter(parameter, context.CurrentSubqueryBinding.ShouldBeOnNewQuery);
