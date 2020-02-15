@@ -1,7 +1,7 @@
 ﻿// ------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Query.Core
+namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Linq;
@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
     /// <summary>
     /// Struct that represents a 128 bit unsigned integer.
     /// </summary>
-    internal struct UInt128 : IComparable, IComparable<UInt128>, IEquatable<UInt128>
+    internal readonly struct UInt128 : IComparable, IComparable<UInt128>, IEquatable<UInt128>
     {
         /// <summary>
         /// Maximum UInt128.

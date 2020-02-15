@@ -38,7 +38,12 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public static unsafe int GetBytes(this Encoding encoding, string src, Span<byte> dest)
+        public static int GetBytes(this Encoding encoding, string src, Span<byte> dest)
+        {
+            return encoding.GetBytes(src, src.Length, dest, dest.Length);
+        }
+
+        public static unsafe int GetBytes(this Encoding encoding, string src, int charCount, Span<byte> dest, int byteCount)
         {
             if (src.Length == 0)
             {
@@ -49,12 +54,17 @@ namespace Microsoft.Azure.Cosmos
             {
                 fixed (byte* spanPointer = dest)
                 {
-                    return encoding.GetBytes(chars: charPointer, charCount: src.Length, bytes: spanPointer, byteCount: dest.Length);
+                    return encoding.GetBytes(chars: charPointer, charCount: charCount, bytes: spanPointer, byteCount: byteCount);
                 }
             }
         }
 
-        public static unsafe int GetByteCount(this Encoding encoding, ReadOnlySpan<char> src)
+        public static int GetByteCount(this Encoding encoding, ReadOnlySpan<char> src)
+        {
+            return encoding.GetByteCount(src, src.Length);
+        }
+
+        public static unsafe int GetByteCount(this Encoding encoding, ReadOnlySpan<char> src, int count)
         {
             if (src.Length == 0)
             {
@@ -63,7 +73,7 @@ namespace Microsoft.Azure.Cosmos
 
             fixed (char* charPointer = src)
             {
-                return encoding.GetByteCount(chars: charPointer, src.Length);
+                return encoding.GetByteCount(chars: charPointer, count);
             }
         }
     }
