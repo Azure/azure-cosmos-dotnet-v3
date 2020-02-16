@@ -1,6 +1,7 @@
 //------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
+
 namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
@@ -317,7 +318,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
                 return SqlFunctionCallScalarExpression.Create(methodName, true, arguments.ToImmutableArray());
             }
-            if (methodCallExpression.Method.DeclaringType == typeof(Tags) && methodCallExpression.Method.Name == "Match")
+            if (methodCallExpression.Method.DeclaringType == typeof(CosmosTags) && methodCallExpression.Method.Name == "Match")
             {
                 SqlScalarExpression memberExpression = VisitMemberAccess((MemberExpression)methodCallExpression.Arguments[0], context);
                 object queryTags = ((ConstantExpression)methodCallExpression.Arguments[1]).Value;
@@ -328,10 +329,11 @@ namespace Microsoft.Azure.Cosmos.Linq
                     .Invoke(queryTags, Array.Empty<object>());
                 if (enumerableTags == null)
                     throw new DocumentQueryException("Unsupported tags constant expression.");
-                bool supportDocumentRequiredTags = false;
-                if (methodCallExpression.Arguments.Count == 3)
-                    supportDocumentRequiredTags = (bool)((ConstantExpression)methodCallExpression.Arguments[2]).Value;
-                return SqlTagsMatchExpression.Create(memberExpression.ToString(), enumerableTags, supportDocumentRequiredTags);
+                TagsQueryOptions queryOptions = (TagsQueryOptions)((ConstantExpression)methodCallExpression.Arguments[2]).Value;
+                string udfName = "TagsMatch";
+                if (methodCallExpression.Arguments.Count == 4)
+                    udfName = (string)((ConstantExpression)methodCallExpression.Arguments[3]).Value;
+                return SqlTagsMatchExpression.Create(memberExpression.ToString(), enumerableTags, queryOptions, udfName);
             }
             else
             {

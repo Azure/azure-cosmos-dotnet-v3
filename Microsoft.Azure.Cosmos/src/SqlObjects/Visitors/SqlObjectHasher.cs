@@ -592,8 +592,9 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
         {
             int hashCode = SqlTagsMatchExpressionHashCode;
             hashCode = CombineHashes(hashCode, sqlTagsMatchExpression.TagsProperty.GetHashCode());
-            foreach (var tag in sqlTagsMatchExpression.Tags)
+            foreach (string tag in sqlTagsMatchExpression.Tags)
                 hashCode = CombineHashes(hashCode, tag.GetHashCode());
+            hashCode = CombineHashes(hashCode, sqlTagsMatchExpression.QueryOptions.GetHashCode());
             return hashCode;
         }
 

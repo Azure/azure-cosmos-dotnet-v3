@@ -595,109 +595,12 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
 
         public override void Visit(SqlTagsMatchExpression sqlObject)
         {
-            const char nullOperator = '\0';
-            const char requiredOperator = '*';
-            const char notOperator = '!';
-            
-            (char Operator, string Namespace, string Name, string Value, string Tag, bool IsNot, bool IsRequired, bool IsWildcard) Parse(string tag)
-            {
-                var indexOfColon = tag.IndexOf(':');
-                var indexOfEquals = tag.IndexOf('=');
+            string tagsProp = sqlObject.TagsProperty;
+            string[] tags = sqlObject.Tags.ToArray();
+            TagsQueryOptions queryOptions = sqlObject.QueryOptions;
+            string udfName = sqlObject.UdfName;
 
-                if (indexOfColon < 1 || indexOfEquals < 3 || indexOfColon > indexOfEquals)
-                    throw new ArgumentException("Tag is not a machine tag");
-
-                var op = tag[0] == notOperator || tag[0] == requiredOperator ? tag[0] : nullOperator;
-                var ns = tag.Substring(op == nullOperator ? 0 : 1, op == nullOperator ? indexOfColon : indexOfColon - 1);
-                var name = tag.Substring(indexOfColon + 1, indexOfEquals - (indexOfColon + 1));
-                var value = tag.Substring(indexOfEquals + 1);
-
-                return (op, ns, name, value, tag, op == '!', op == '*', value.Length == 0);
-            }
-
-            this.writer.Write("(");
-
-            var supportDocumentRequiredTags = sqlObject.SupportDocumentRequiredTags;
-            var tags = sqlObject.Tags;
-            var tagsProp = sqlObject.TagsProperty;
-            var tagProp = $"{tagsProp}[\"tag\"]";
-
-            if (tags.Any())
-            {
-                var machineTags = tags.Select(x => Parse(x));
-                var tagsByGroup = machineTags.GroupBy(x => x.Namespace + ":" + x.Name);
-                foreach (var grouping in tagsByGroup)
-                {
-                    var tagName = grouping.Key;
-                    var regulars = grouping.Where(x => x.Operator == '\0');
-                    var nots = grouping.Where(x => x.IsNot);
-                    var requireds = grouping.Where(x => x.IsRequired);
-                    var wildcardTag = grouping.Key + "=";
-                    var regularProp = $"{tagsProp}[\"tags\"][\"{tagName}\"]";
-                    var notProp = $"{tagsProp}[\"tags\"][\"!{tagName}\"]";
-
-                    if (nots.Any())
-                    {
-                        if (nots.Any(x => x.IsWildcard))
-                        {
-                            this.writer.Write($"NOT(IS_DEFINED({regularProp}))");
-                        }
-                        else if (nots.Any(x => !x.IsWildcard))
-                        {
-                            this.writer.Write($"NOT(ARRAY_CONTAINS({tagProp}, \"{wildcardTag}\"))");
-                            foreach (var not in nots)
-                                this.writer.Write($" AND NOT(ARRAY_CONTAINS({tagProp}, \"{not.Tag.Substring(1)}\"))");
-                        }
-                    }
-                    if (regulars.Any())
-                    {
-                        if (nots.Any())
-                            this.writer.Write(" AND ");
-
-                        if (regulars.Any(x => x.IsWildcard))
-                        {
-                            this.writer.Write($"NOT(IS_DEFINED({notProp}))");
-                        }
-                        else if (regulars.Any(x => !x.IsWildcard))
-                        {
-                            this.writer.Write($"(NOT(IS_DEFINED({notProp})) OR NOT(ARRAY_CONTAINS({tagProp}, \"!{wildcardTag}\"))");
-                            foreach (var regular in regulars)
-                                this.writer.Write($" AND NOT(ARRAY_CONTAINS({tagProp}, \"!{regular.Tag}\"))");
-                            this.writer.Write($") AND (NOT(IS_DEFINED({regularProp})) OR ARRAY_CONTAINS({tagProp}, \"{wildcardTag}\")");
-                            foreach (var regular in regulars)
-                                this.writer.Write($" OR ARRAY_CONTAINS({tagProp}, \"{regular.Tag}\")");
-                            this.writer.Write(")");
-                        }
-                    }
-                    if (requireds.Any())
-                    {
-                        if (nots.Any() || regulars.Any())
-                            this.writer.Write(" AND ");
-                        this.writer.Write($"ARRAY_CONTAINS({tagProp}, \"{wildcardTag}\") OR (");
-                        foreach (var (value, index) in requireds.Select((v, i) => (v, i)))
-                        {
-                            if (index > 0)
-                                this.writer.Write(" AND ");
-                            this.writer.Write($"ARRAY_CONTAINS({tagProp}, \"{value.Tag.Substring(1)}\")");
-                        }
-                        this.writer.Write(")");
-                    }
-
-                    this.writer.Write(" AND ");
-                }
-            }
-
-            if (supportDocumentRequiredTags)
-            {
-                var tagsExpression = $"[{string.Join(",", tags.Select(x => $"\"{x}\""))}]";
-                this.writer.Write($"udf.TagsMatch({tagProp}, {tagsExpression})");
-            }
-            else
-            {
-                this.writer.Write("1 = 1");
-            }
-
-            this.writer.Write(")");
+            this.writer.Write(CosmosTags.Condition(tagsProp, tags, queryOptions, udfName));
         }
 
         public override void Visit(SqlTopSpec sqlTopSpec)
