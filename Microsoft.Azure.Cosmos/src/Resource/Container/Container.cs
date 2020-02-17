@@ -1119,5 +1119,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="partitionKey">The partition key for all items in the batch.</param>
         /// <returns>A new instance of <see cref="TransactionalBatch"/>.</returns>
         public abstract TransactionalBatch CreateTransactionalBatch(PartitionKey partitionKey);
+
+        public abstract 
     }
 }

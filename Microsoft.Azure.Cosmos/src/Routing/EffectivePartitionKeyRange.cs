@@ -4,15 +4,57 @@
 
 namespace Microsoft.Azure.Cosmos.Routing
 {
-    internal readonly struct EffectivePartitionKeyRange<T>
+    using System;
+
+    internal readonly struct EffectivePartitionKeyRange : IComparable<EffectivePartitionKeyRange>, IEquatable<EffectivePartitionKeyRange>
     {
         public EffectivePartitionKeyRange(EffectivePartitionKey start, EffectivePartitionKey end)
         {
+            if (end.CompareTo(start) < 0)
+            {
+                throw new ArgumentOutOfRangeException($"{nameof(start)} must be less than {nameof(end)}.");
+            }
+
             this.Start = start;
             this.End = end;
         }
 
         public EffectivePartitionKey Start { get; }
+
         public EffectivePartitionKey End { get; }
+
+        public UInt128 Width => this.End.Value - this.Start.Value;
+
+        public int CompareTo(EffectivePartitionKeyRange other)
+        {
+            return this.Start.CompareTo(other.Start);
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (!(obj is EffectivePartitionKeyRange effectivePartitionKeyRange))
+            {
+                return false;
+            }
+
+            if (object.ReferenceEquals(this, obj))
+            {
+                return true;
+            }
+
+            return this.Equals(effectivePartitionKeyRange);
+        }
+
+        public bool Equals(EffectivePartitionKeyRange other)
+        {
+            return this.Start.Equals(other.Start) && this.End.Equals(other.End);
+        }
+
+        public override int GetHashCode()
+        {
+            int startHashCode = this.Start.GetHashCode();
+            int endHashCode = this.End.GetHashCode();
+            return startHashCode ^ endHashCode;
+        }
     }
 }

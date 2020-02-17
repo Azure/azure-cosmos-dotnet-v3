@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     ///     "partitionKey" : {"paths":["/address/country", "address/zipcode"], "kind" : "Range"}
     /// partition key ["USA", 98052] corresponds to effective partition key binaryencode(["USA", 98052]).
     /// </example>
-    internal readonly struct EffectivePartitionKey
+    internal readonly struct EffectivePartitionKey : IComparable<EffectivePartitionKey>, IEquatable<EffectivePartitionKey>
     {
         private const int HashV1MaxStringLength = 100;
 
@@ -43,12 +43,12 @@ namespace Microsoft.Azure.Cosmos.Routing
         private static readonly EffectivePartitionKey NullV2 = EffectivePartitionKey.HashV2(new byte[] { (byte)PartitionKeyComponentType.Null });
         private static readonly EffectivePartitionKey UndefinedV2 = EffectivePartitionKey.HashV2(new byte[] { (byte)PartitionKeyComponentType.Undefined });
 
-        private EffectivePartitionKey(UInt128 bits)
+        public EffectivePartitionKey(UInt128 value)
         {
-            this.Bits = bits;
+            this.Value = value;
         }
 
-        private UInt128 Bits { get; }
+        public UInt128 Value { get; }
 
         #region HashV1
         public static EffectivePartitionKey HashV1(bool boolean)
@@ -136,5 +136,35 @@ namespace Microsoft.Azure.Cosmos.Routing
             return new EffectivePartitionKey(hash);
         }
         #endregion
+
+        public int CompareTo(EffectivePartitionKey other)
+        {
+            return this.Value.CompareTo(other.Value);
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (!(obj is EffectivePartitionKey effectivePartitionKey))
+            {
+                return false;
+            }
+
+            if (object.ReferenceEquals(this, obj))
+            {
+                return true;
+            }
+
+            return this.Equals(effectivePartitionKey);
+        }
+
+        public bool Equals(EffectivePartitionKey other)
+        {
+            return this.Value.Equals(other.Value);
+        }
+
+        public override int GetHashCode()
+        {
+            return this.Value.GetHashCode();
+        }
     }
 }
