@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            DataEncryptionKeyResponse response = await this.ReadInternalAsync(requestOptions, cancellationToken);
+            DataEncryptionKeyResponse response = await this.ReadInternalAsync(requestOptions, diagnosticsContext: null, cancellationToken: cancellationToken);
             this.ClientContext.DekCache.Set(this.Database.Id, this.LinkUri, response.Resource);
             return response;
         }
@@ -71,10 +71,18 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(newWrapMetadata));
             }
 
-            (DataEncryptionKeyProperties dekProperties, InMemoryRawDek inMemoryRawDek) = await this.FetchUnwrappedAsync(cancellationToken);
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
 
-            (byte[] wrappedDek, EncryptionKeyWrapMetadata updatedMetadata, InMemoryRawDek updatedRawDek) =
-                await this.WrapAsync(inMemoryRawDek.RawDek, dekProperties.EncryptionAlgorithmId, newWrapMetadata, cancellationToken);
+            (DataEncryptionKeyProperties dekProperties, InMemoryRawDek inMemoryRawDek) = await this.FetchUnwrappedAsync(
+                diagnosticsContext,
+                cancellationToken);
+
+            (byte[] wrappedDek, EncryptionKeyWrapMetadata updatedMetadata, InMemoryRawDek updatedRawDek) = await this.WrapAsync(
+                    inMemoryRawDek.RawDek,
+                    dekProperties.EncryptionAlgorithmId,
+                    newWrapMetadata,
+                    diagnosticsContext,
+                    cancellationToken);
 
             if (requestOptions == null)
             {
@@ -91,6 +99,7 @@ namespace Microsoft.Azure.Cosmos
                 this.ClientContext.SerializerCore.ToStream(newDekProperties),
                 OperationType.Replace,
                 requestOptions,
+                diagnosticsContext,
                 cancellationToken);
 
             DataEncryptionKeyResponse response = await this.ClientContext.ResponseFactory.CreateDataEncryptionKeyResponseAsync(this, responseMessage);
@@ -107,24 +116,39 @@ namespace Microsoft.Azure.Cosmos
                 id: keyId);
         }
 
-        internal async Task<(DataEncryptionKeyProperties, InMemoryRawDek)> FetchUnwrappedAsync(CancellationToken cancellationToken)
+        internal async Task<(DataEncryptionKeyProperties, InMemoryRawDek)> FetchUnwrappedAsync(
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
         {
             DataEncryptionKeyProperties dekProperties = null;
 
             try
             {
-                dekProperties = await this.ClientContext.DekCache.GetOrAddByNameLinkUriAsync(this.LinkUri, this.Database.Id, this.ReadResourceAsync, cancellationToken);
+                dekProperties = await this.ClientContext.DekCache.GetOrAddByNameLinkUriAsync(
+                    this.LinkUri,
+                    this.Database.Id,
+                    this.ReadResourceAsync,
+                    diagnosticsContext,
+                    cancellationToken);
             }
             catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
             {
                 throw new CosmosException(HttpStatusCode.NotFound, ClientResources.DataEncryptionKeyNotFound, inner: ex);
             }
 
-            InMemoryRawDek inMemoryRawDek = await this.ClientContext.DekCache.GetOrAddRawDekAsync(dekProperties, this.UnwrapAsync, cancellationToken);
+            InMemoryRawDek inMemoryRawDek = await this.ClientContext.DekCache.GetOrAddRawDekAsync(
+                dekProperties,
+                this.UnwrapAsync,
+                diagnosticsContext,
+                cancellationToken);
+
             return (dekProperties, inMemoryRawDek);
         }
 
-        internal async Task<(DataEncryptionKeyProperties, InMemoryRawDek)> FetchUnwrappedByRidAsync(string rid, CancellationToken cancellationToken)
+        internal async Task<(DataEncryptionKeyProperties, InMemoryRawDek)> FetchUnwrappedByRidAsync(
+            string rid,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
         {
             string dekRidSelfLink = PathsHelper.GeneratePath(ResourceType.ClientEncryptionKey, rid, isFeed: false);
             // Server self links end with / but client generate links don't - match them.
@@ -141,6 +165,7 @@ namespace Microsoft.Azure.Cosmos
                     this.Database.Id,
                     this.ReadResourceByRidSelfLinkAsync,
                     this.LinkUri,
+                    diagnosticsContext,
                     cancellationToken);
             }
             catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
@@ -148,7 +173,12 @@ namespace Microsoft.Azure.Cosmos
                 throw new CosmosException(HttpStatusCode.NotFound, ClientResources.DataEncryptionKeyNotFound, inner: ex);
             }
 
-            InMemoryRawDek inMemoryRawDek = await this.ClientContext.DekCache.GetOrAddRawDekAsync(dekProperties, this.UnwrapAsync, cancellationToken);
+            InMemoryRawDek inMemoryRawDek = await this.ClientContext.DekCache.GetOrAddRawDekAsync(
+                dekProperties,
+                this.UnwrapAsync,
+                diagnosticsContext,
+                cancellationToken);
+
             return (dekProperties, inMemoryRawDek);
         }
 
@@ -171,6 +201,7 @@ namespace Microsoft.Azure.Cosmos
             byte[] key,
             CosmosEncryptionAlgorithm encryptionAlgorithmId,
             EncryptionKeyWrapMetadata metadata,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             EncryptionSettings encryptionSettings = this.ClientContext.ClientOptions.EncryptionSettings;
@@ -179,11 +210,15 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentException(ClientResources.EncryptionSettingsNotConfigured);
             }
 
-            EncryptionKeyWrapResult keyWrapResponse = await encryptionSettings.EncryptionKeyWrapProvider.WrapKeyAsync(key, metadata, cancellationToken);
+            EncryptionKeyWrapResult keyWrapResponse = null;
+            using (diagnosticsContext.CreateScope("WrapDataEncryptionKey"))
+            {
+                keyWrapResponse = await encryptionSettings.EncryptionKeyWrapProvider.WrapKeyAsync(key, metadata, cancellationToken);
+            }
 
             // Verify
             DataEncryptionKeyProperties tempDekProperties = new DataEncryptionKeyProperties(this.Id, encryptionAlgorithmId, keyWrapResponse.WrappedDataEncryptionKey, keyWrapResponse.EncryptionKeyWrapMetadata);
-            InMemoryRawDek roundTripResponse = await this.UnwrapAsync(tempDekProperties, cancellationToken);
+            InMemoryRawDek roundTripResponse = await this.UnwrapAsync(tempDekProperties, diagnosticsContext, cancellationToken);
             if (!roundTripResponse.RawDek.SequenceEqual(key))
             {
                 throw new CosmosException(HttpStatusCode.BadRequest, ClientResources.KeyWrappingDidNotRoundtrip);
@@ -194,6 +229,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal async Task<InMemoryRawDek> UnwrapAsync(
             DataEncryptionKeyProperties dekProperties,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             EncryptionSettings encryptionSettings = this.ClientContext.ClientOptions.EncryptionSettings;
@@ -202,10 +238,14 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentException(ClientResources.EncryptionSettingsNotConfigured);
             }
 
-            EncryptionKeyUnwrapResult unwrapResult = await encryptionSettings.EncryptionKeyWrapProvider.UnwrapKeyAsync(
-                    dekProperties.WrappedDataEncryptionKey,
-                    dekProperties.EncryptionKeyWrapMetadata,
-                    cancellationToken);
+            EncryptionKeyUnwrapResult unwrapResult = null;
+            using (diagnosticsContext.CreateScope("UnwrapDataEncryptionKey"))
+            {
+                unwrapResult = await encryptionSettings.EncryptionKeyWrapProvider.UnwrapKeyAsync(
+                        dekProperties.WrappedDataEncryptionKey,
+                        dekProperties.EncryptionKeyWrapMetadata,
+                        cancellationToken);
+            }
 
             EncryptionAlgorithm encryptionAlgorithm = this.GetEncryptionAlgorithm(unwrapResult.DataEncryptionKey, dekProperties.EncryptionAlgorithmId);
 
@@ -214,6 +254,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<DataEncryptionKeyProperties> ReadResourceByRidSelfLinkAsync(
             string ridSelfLink,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             Task<ResponseMessage> responseMessage = this.ClientContext.ProcessResourceOperationStreamAsync(
@@ -225,26 +266,36 @@ namespace Microsoft.Azure.Cosmos
              streamPayload: null,
              requestOptions: null,
              requestEnricher: null,
-             diagnosticsScope: null,
+             diagnosticsScope: diagnosticsContext,
              cancellationToken: cancellationToken);
 
             DataEncryptionKeyResponse response = await this.ClientContext.ResponseFactory.CreateDataEncryptionKeyResponseAsync(this, responseMessage);
             return response;
         }
 
-        private async Task<DataEncryptionKeyProperties> ReadResourceAsync(CancellationToken cancellationToken)
+        private async Task<DataEncryptionKeyProperties> ReadResourceAsync(
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
         {
-            return (await this.ReadInternalAsync(null, cancellationToken)).Resource;
+            using (diagnosticsContext.CreateScope("ReadDataEncryptionKey"))
+            {
+                return await this.ReadInternalAsync(
+                    requestOptions: null,
+                    diagnosticsContext: diagnosticsContext,
+                    cancellationToken: cancellationToken);
+            }
         }
 
         private async Task<DataEncryptionKeyResponse> ReadInternalAsync(
             RequestOptions requestOptions,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             Task<ResponseMessage> responseMessage = this.ProcessStreamAsync(
                 streamPayload: null,
                 operationType: OperationType.Read,
                 requestOptions: requestOptions,
+                diagnosticsContext: diagnosticsContext,
                 cancellationToken: cancellationToken);
 
             DataEncryptionKeyResponse response = await this.ClientContext.ResponseFactory.CreateDataEncryptionKeyResponseAsync(this, responseMessage);
@@ -254,7 +305,8 @@ namespace Microsoft.Azure.Cosmos
         private Task<ResponseMessage> ProcessStreamAsync(
             Stream streamPayload,
             OperationType operationType,
-            RequestOptions requestOptions = null,
+            RequestOptions requestOptions,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ClientContext.ProcessResourceOperationStreamAsync(
@@ -266,7 +318,7 @@ namespace Microsoft.Azure.Cosmos
              streamPayload: streamPayload,
              requestOptions: requestOptions,
              requestEnricher: null,
-             diagnosticsScope: null,
+             diagnosticsScope: diagnosticsContext,
              cancellationToken: cancellationToken);
         }
     }

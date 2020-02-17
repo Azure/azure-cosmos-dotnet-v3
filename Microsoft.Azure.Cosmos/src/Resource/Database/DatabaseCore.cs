@@ -626,9 +626,16 @@ namespace Microsoft.Azure.Cosmos
 
             DataEncryptionKeyCore newDek = (DataEncryptionKeyInlineCore)this.GetDataEncryptionKey(id);
 
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
+
             byte[] rawDek = newDek.GenerateKey(encryptionAlgorithmId);
 
-            (byte[] wrappedDek, EncryptionKeyWrapMetadata updatedMetadata, InMemoryRawDek inMemoryRawDek) = await newDek.WrapAsync(rawDek, encryptionAlgorithmId, encryptionKeyWrapMetadata, cancellationToken);
+            (byte[] wrappedDek, EncryptionKeyWrapMetadata updatedMetadata, InMemoryRawDek inMemoryRawDek) = await newDek.WrapAsync(
+                rawDek,
+                encryptionAlgorithmId,
+                encryptionKeyWrapMetadata,
+                diagnosticsContext,
+                cancellationToken);
 
             DataEncryptionKeyProperties dekProperties = new DataEncryptionKeyProperties(id, encryptionAlgorithmId, wrappedDek, updatedMetadata);
             Stream streamPayload = this.ClientContext.SerializerCore.ToStream(dekProperties);

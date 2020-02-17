@@ -31,14 +31,15 @@ namespace Microsoft.Azure.Cosmos
         public async Task<DataEncryptionKeyProperties> GetOrAddByRidSelfLinkAsync(
             string dekRidSelfLink,
             string databaseId,
-            Func<string, CancellationToken, Task<DataEncryptionKeyProperties>> fetcher,
+            Func<string, CosmosDiagnosticsContext, CancellationToken, Task<DataEncryptionKeyProperties>> fetcher,
             Uri dekNameLinkUri,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             CachedDekProperties cachedDekProperties = await this.DekPropertiesByRidSelfLinkCache.GetAsync(
                     dekRidSelfLink,
                     null,
-                    () => this.FetchAsync(fetcher, dekRidSelfLink, databaseId, cancellationToken),
+                    () => this.FetchAsync(fetcher, dekRidSelfLink, databaseId, diagnosticsContext, cancellationToken),
                     cancellationToken);
 
             if (cachedDekProperties.ServerPropertiesExpiryUtc <= DateTime.UtcNow)
@@ -46,7 +47,7 @@ namespace Microsoft.Azure.Cosmos
                 cachedDekProperties = await this.DekPropertiesByRidSelfLinkCache.GetAsync(
                     dekRidSelfLink,
                     null,
-                    () => this.FetchAsync(fetcher, dekRidSelfLink, databaseId, cancellationToken),
+                    () => this.FetchAsync(fetcher, dekRidSelfLink, databaseId, diagnosticsContext, cancellationToken),
                     cancellationToken,
                     forceRefresh: true);
             }
@@ -58,13 +59,14 @@ namespace Microsoft.Azure.Cosmos
         public async Task<DataEncryptionKeyProperties> GetOrAddByNameLinkUriAsync(
             Uri dekNameLinkUri,
             string databaseId,
-            Func<CancellationToken, Task<DataEncryptionKeyProperties>> fetcher,
+            Func<CosmosDiagnosticsContext, CancellationToken, Task<DataEncryptionKeyProperties>> fetcher,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         { 
             CachedDekProperties cachedDekProperties = await this.DekPropertiesByNameLinkUriCache.GetAsync(
                     dekNameLinkUri,
                     null,
-                    () => this.FetchAsync(fetcher, databaseId, cancellationToken),
+                    () => this.FetchAsync(fetcher, databaseId, diagnosticsContext, cancellationToken),
                     cancellationToken);
 
             if (cachedDekProperties.ServerPropertiesExpiryUtc <= DateTime.UtcNow)
@@ -72,7 +74,7 @@ namespace Microsoft.Azure.Cosmos
                 cachedDekProperties = await this.DekPropertiesByNameLinkUriCache.GetAsync(
                     dekNameLinkUri,
                     null,
-                    () => this.FetchAsync(fetcher, databaseId, cancellationToken),
+                    () => this.FetchAsync(fetcher, databaseId, diagnosticsContext, cancellationToken),
                     cancellationToken,
                     forceRefresh: true);
             }
@@ -83,13 +85,14 @@ namespace Microsoft.Azure.Cosmos
 
         public async Task<InMemoryRawDek> GetOrAddRawDekAsync(
             DataEncryptionKeyProperties dekProperties,
-            Func<DataEncryptionKeyProperties, CancellationToken, Task<InMemoryRawDek>> unwrapper,
+            Func<DataEncryptionKeyProperties, CosmosDiagnosticsContext, CancellationToken, Task<InMemoryRawDek>> unwrapper,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             InMemoryRawDek inMemoryRawDek = await this.RawDekByRidSelfLinkCache.GetAsync(
                    dekProperties.SelfLink,
                    null,
-                   () => unwrapper(dekProperties, cancellationToken),
+                   () => unwrapper(dekProperties, diagnosticsContext, cancellationToken),
                    cancellationToken);
 
             if (inMemoryRawDek.RawDekExpiry <= DateTime.UtcNow)
@@ -97,7 +100,7 @@ namespace Microsoft.Azure.Cosmos
                 inMemoryRawDek = await this.RawDekByRidSelfLinkCache.GetAsync(
                    dekProperties.SelfLink,
                    null,
-                   () => unwrapper(dekProperties, cancellationToken),
+                   () => unwrapper(dekProperties, diagnosticsContext, cancellationToken),
                    cancellationToken,
                    forceRefresh: true);
             }
@@ -128,21 +131,23 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private async Task<CachedDekProperties> FetchAsync(
-            Func<string, CancellationToken, Task<DataEncryptionKeyProperties>> fetcher,
+            Func<string, CosmosDiagnosticsContext, CancellationToken, Task<DataEncryptionKeyProperties>> fetcher,
             string dekRidSelfLink,
             string databaseId,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            DataEncryptionKeyProperties serverProperties = await fetcher(dekRidSelfLink, cancellationToken);
+            DataEncryptionKeyProperties serverProperties = await fetcher(dekRidSelfLink, diagnosticsContext, cancellationToken);
             return new CachedDekProperties(databaseId, serverProperties, DateTime.UtcNow + this.dekPropertiesTimeToLive);
         }
 
         private async Task<CachedDekProperties> FetchAsync(
-            Func<CancellationToken, Task<DataEncryptionKeyProperties>> fetcher,
+            Func<CosmosDiagnosticsContext, CancellationToken, Task<DataEncryptionKeyProperties>> fetcher,
             string databaseId,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            DataEncryptionKeyProperties serverProperties = await fetcher(cancellationToken);
+            DataEncryptionKeyProperties serverProperties = await fetcher(diagnosticsContext, cancellationToken);
             return new CachedDekProperties(databaseId, serverProperties, DateTime.UtcNow + this.dekPropertiesTimeToLive);
         }
     }

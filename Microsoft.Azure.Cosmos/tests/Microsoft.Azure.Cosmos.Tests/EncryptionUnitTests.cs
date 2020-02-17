@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;

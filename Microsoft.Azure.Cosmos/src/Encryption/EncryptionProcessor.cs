@@ -24,11 +24,13 @@ namespace Microsoft.Azure.Cosmos
             Stream input,
             EncryptionOptions encryptionOptions,
             ContainerCore container,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             Debug.Assert(input != null);
             Debug.Assert(encryptionOptions != null);
             Debug.Assert(container != null);
+            Debug.Assert(diagnosticsContext != null);
 
             if (encryptionOptions.EncryptedPaths == null)
             {
@@ -61,7 +63,9 @@ namespace Microsoft.Azure.Cosmos
             DataEncryptionKey dek = ((DatabaseCore)container.Database).GetDataEncryptionKey(encryptionOptions.DataEncryptionKey.Id);
 
             DataEncryptionKeyCore dekCore = (DataEncryptionKeyInlineCore)dek;
-            (DataEncryptionKeyProperties dekProperties, InMemoryRawDek inMemoryRawDek) = await dekCore.FetchUnwrappedAsync(cancellationToken);
+            (DataEncryptionKeyProperties dekProperties, InMemoryRawDek inMemoryRawDek) = await dekCore.FetchUnwrappedAsync(
+                diagnosticsContext,
+                cancellationToken);
 
             JObject itemJObj = this.baseSerializer.FromStream<JObject>(input);
 
@@ -95,11 +99,13 @@ namespace Microsoft.Azure.Cosmos
         public async Task<Stream> DecryptAsync(
             Stream input,
             ContainerCore container,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             Contract.Assert(input != null);
             Debug.Assert(container != null);
             Debug.Assert(input.CanSeek);
+            Debug.Assert(diagnosticsContext != null);
 
             if (container.ClientContext.ClientOptions.EncryptionSettings == null)
             {
@@ -128,7 +134,11 @@ namespace Microsoft.Azure.Cosmos
             }
 
             DataEncryptionKeyCore tempDek = (DataEncryptionKeyInlineCore)((DatabaseCore)container.Database).GetDataEncryptionKey(id: "unknown");
-            (DataEncryptionKeyProperties _, InMemoryRawDek inMemoryRawDek) = await tempDek.FetchUnwrappedByRidAsync(encryptionProperties.DataEncryptionKeyRid, cancellationToken);
+            (DataEncryptionKeyProperties _, InMemoryRawDek inMemoryRawDek) = await tempDek.FetchUnwrappedByRidAsync(
+                encryptionProperties.DataEncryptionKeyRid,
+                diagnosticsContext,
+                cancellationToken);
+
             byte[] plainText = inMemoryRawDek.AlgorithmUsingRawDek.DecryptData(encryptionProperties.EncryptedData);
 
             JObject plainTextJObj = null;
