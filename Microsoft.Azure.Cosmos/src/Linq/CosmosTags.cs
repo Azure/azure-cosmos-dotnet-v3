@@ -214,7 +214,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
             else
             {
-                sb.Append("(1 = 1)");
+                sb.Append("true");
             }
 
             return sb.ToString();

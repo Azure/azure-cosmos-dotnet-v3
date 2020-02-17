@@ -323,17 +323,22 @@ namespace Microsoft.Azure.Cosmos.Linq
                 SqlScalarExpression memberExpression = VisitMemberAccess((MemberExpression)methodCallExpression.Arguments[0], context);
                 object queryTags = ((ConstantExpression)methodCallExpression.Arguments[1]).Value;
                 IEnumerable<string> enumerableTags = queryTags as IEnumerable<string>;
-                enumerableTags = enumerableTags ?? (IEnumerable<string>)queryTags.GetType()
-                    .GetProperty("RawTags", BindingFlags.Instance | BindingFlags.Public)?
-                    .GetMethod
-                    .Invoke(queryTags, Array.Empty<object>());
-                if (enumerableTags == null)
-                    throw new DocumentQueryException("Unsupported tags constant expression.");
+
+                if (queryTags != null)
+                {
+                    enumerableTags = enumerableTags ?? (IEnumerable<string>)queryTags.GetType()
+                        .GetProperty("RawTags", BindingFlags.Instance | BindingFlags.Public)?
+                        .GetMethod
+                        .Invoke(queryTags, Array.Empty<object>());
+                    if (enumerableTags == null)
+                        throw new DocumentQueryException("Unsupported tags constant expression.");
+                }
+
                 TagsQueryOptions queryOptions = (TagsQueryOptions)((ConstantExpression)methodCallExpression.Arguments[2]).Value;
                 string udfName = "TagsMatch";
                 if (methodCallExpression.Arguments.Count == 4)
                     udfName = (string)((ConstantExpression)methodCallExpression.Arguments[3]).Value;
-                return SqlTagsMatchExpression.Create(memberExpression.ToString(), enumerableTags, queryOptions, udfName);
+                return SqlTagsMatchExpression.Create(memberExpression.ToString(), enumerableTags ?? Enumerable.Empty<string>(), queryOptions, udfName);
             }
             else
             {
