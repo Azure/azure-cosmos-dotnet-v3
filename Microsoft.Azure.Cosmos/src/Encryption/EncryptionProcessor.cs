@@ -106,11 +106,6 @@ namespace Microsoft.Azure.Cosmos
                 return input;
             }
 
-            if (container.ClientContext.ClientOptions.EncryptionSettings == null)
-            {
-                throw new ArgumentException(ClientResources.EncryptionSettingsNotConfigured);
-            }
-
             JObject itemJObj = this.baseSerializer.FromStream<JObject>(input);
 
             JProperty encryptionPropertiesJProp = itemJObj.Property(Constants.Properties.EncryptedInfo);
