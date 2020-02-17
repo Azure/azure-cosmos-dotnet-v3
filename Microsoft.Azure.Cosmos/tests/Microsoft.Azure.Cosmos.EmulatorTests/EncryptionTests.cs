@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Newtonsoft.Json;
 
     [TestClass]
-    [Ignore]
+    // [Ignore]
     public class EncryptionTests
     {
         private static EncryptionKeyWrapMetadata metadata1 = new EncryptionKeyWrapMetadata("metadata1");
@@ -281,7 +281,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task EncryptionResourceTokenAuth()
         {
-           DataEncryptionKeyProperties dekProperties = await this.CreateDekAsync(EncryptionTests.dekId);
+            DataEncryptionKeyProperties dekProperties = await this.CreateDekAsync(EncryptionTests.dekId);
 
             User user = this.database.GetUser(Guid.NewGuid().ToString());
             await this.database.CreateUserAsync(user.Id);
@@ -296,18 +296,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .WithEncryptionSettings(new EncryptionSettings(new TestKeyWrapProvider()))
                 .Build();
 
-            Container containerForTokenClient = resourceTokenBasedClient.GetDatabase(this.database.Id).GetContainer(this.container.Id);
+            DatabaseCore databaseForTokenClient = (DatabaseInlineCore)resourceTokenBasedClient.GetDatabase(this.database.Id);
+            Container containerForTokenClient = databaseForTokenClient.GetContainer(this.container.Id);
 
-            try
-            {
-                TestDoc readDoc = await containerForTokenClient.ReadItemAsync<TestDoc>(testDoc.Id, new PartitionKey(testDoc.PK));
-                Assert.Fail("Expected resource token based client to not be able to decrypt data");
-            }
-            catch(CosmosException ex) when (ex.StatusCode == HttpStatusCode.Forbidden)
-            {
-            }
-
-            await this.VerifyItemByReadStreamAsync(containerForTokenClient, testDoc);
+            await this.PerformForbiddenOperationAsync(() => databaseForTokenClient.GetDataEncryptionKey(EncryptionTests.dekId).ReadAsync(), "DEK.ReadAsync");
+            await this.PerformForbiddenOperationAsync(() => containerForTokenClient.ReadItemAsync<TestDoc>(testDoc.Id, new PartitionKey(testDoc.PK)), "ReadItemAsync");
+            await this.PerformForbiddenOperationAsync(() => containerForTokenClient.ReadItemStreamAsync(testDoc.Id, new PartitionKey(testDoc.PK)), "ReadItemStreamAsync");
         }
 
         [TestMethod]
@@ -420,7 +414,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                      EncryptionOptions = new EncryptionOptions
                      {
                          DataEncryptionKey = this.database.GetDataEncryptionKey(dekId),
-                         PathsToEncrypt = pathsToEncrypt
+                         EncryptedPaths = pathsToEncrypt
                      }
                  });
             Assert.AreEqual(expectedStatusCode, upsertResponse.StatusCode);
@@ -439,7 +433,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                      EncryptionOptions = new EncryptionOptions
                      {
                          DataEncryptionKey = this.database.GetDataEncryptionKey(dekId),
-                         PathsToEncrypt = pathsToEncrypt
+                         EncryptedPaths = pathsToEncrypt
                      }
                  });
             Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
@@ -458,7 +452,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                      EncryptionOptions = new EncryptionOptions
                      {
                          DataEncryptionKey = this.database.GetDataEncryptionKey(dekId),
-                         PathsToEncrypt = pathsToEncrypt
+                         EncryptedPaths = pathsToEncrypt
                      },
                      IfMatchEtag = etag
                  });
@@ -469,20 +463,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task VerifyItemByReadStreamAsync(Container container, TestDoc testDoc)
         {
-            // ReadItemStream should not decrypt
             ResponseMessage readResponseMessage = await container.ReadItemStreamAsync(testDoc.Id, new PartitionKey(testDoc.PK));
             Assert.AreEqual(HttpStatusCode.OK, readResponseMessage.StatusCode);
             Assert.IsNotNull(readResponseMessage.Content);
-            TestDoc readDocEncrypted = TestCommon.SerializerCore.FromStream<TestDoc>(readResponseMessage.Content);
-            Assert.AreEqual(testDoc.Id, readDocEncrypted.Id);
-            Assert.AreEqual(testDoc.PK, readDocEncrypted.PK);
-            Assert.AreEqual(testDoc.NonSensitive, readDocEncrypted.NonSensitive);
-            Assert.IsNull(readDocEncrypted.Sensitive);
+            TestDoc readDoc = TestCommon.SerializerCore.FromStream<TestDoc>(readResponseMessage.Content);
+            Assert.AreEqual(testDoc, readDoc);
         }
 
         private async Task VerifyItemByReadAsync(TestDoc testDoc)
         {
-            // Read should decrypt properly
             ItemResponse<TestDoc> readResponse = await this.container.ReadItemAsync<TestDoc>(testDoc.Id, new PartitionKey(testDoc.PK));
             Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
             Assert.AreEqual(testDoc, readResponse.Resource);
@@ -503,6 +492,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(dekResponse.ETag, dekProperties.ETag);
             Assert.AreEqual(dekId, dekProperties.Id);
             return dekProperties;
+        }
+
+        private async Task PerformForbiddenOperationAsync<T>(Func<Task<T>> func, string operationName)
+        {
+            try
+            {
+                await func();
+                Assert.Fail($"Expected resource token based client to not be able to perform {operationName}");
+            }
+            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.Forbidden)
+            {
+            }
         }
 
         public class TestDoc

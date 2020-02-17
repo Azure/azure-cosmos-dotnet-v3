@@ -23,29 +23,28 @@ namespace Microsoft.Azure.Cosmos
         public async Task<Stream> EncryptAsync(
             Stream input,
             EncryptionOptions encryptionOptions,
-            Container container,
+            ContainerCore container,
             CancellationToken cancellationToken)
         {
             Debug.Assert(input != null);
             Debug.Assert(encryptionOptions != null);
             Debug.Assert(container != null);
-            Debug.Assert(container is ContainerCore);
 
-            if (encryptionOptions.PathsToEncrypt == null)
+            if (encryptionOptions.EncryptedPaths == null)
             {
-                throw new ArgumentNullException(nameof(encryptionOptions.PathsToEncrypt));
+                throw new ArgumentNullException(nameof(encryptionOptions.EncryptedPaths));
             }
 
-            if (encryptionOptions.PathsToEncrypt.Count == 0)
+            if (encryptionOptions.EncryptedPaths.Count == 0)
             {
                 return input;
             }
 
-            foreach (string path in encryptionOptions.PathsToEncrypt)
+            foreach (string path in encryptionOptions.EncryptedPaths)
             {
                 if (string.IsNullOrEmpty(path) || path[0] != '/' || path.LastIndexOf('/') != 0)
                 {
-                    throw new ArgumentException($"Invalid path {path ?? string.Empty}", nameof(encryptionOptions.PathsToEncrypt));
+                    throw new ArgumentException($"Invalid path {path ?? string.Empty}", nameof(encryptionOptions.EncryptedPaths));
                 }
             }
 
@@ -54,13 +53,12 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentException("Invalid encryption options", nameof(encryptionOptions.DataEncryptionKey));
             }
 
-            ContainerCore containerCore = (ContainerCore)container;
-            if (containerCore.ClientContext.ClientOptions.EncryptionSettings == null)
+            if (container.ClientContext.ClientOptions.EncryptionSettings == null)
             {
                 throw new ArgumentException(ClientResources.EncryptionSettingsNotConfigured);
             }
 
-            DataEncryptionKey dek = ((DatabaseCore)containerCore.Database).GetDataEncryptionKey(encryptionOptions.DataEncryptionKey.Id);
+            DataEncryptionKey dek = ((DatabaseCore)container.Database).GetDataEncryptionKey(encryptionOptions.DataEncryptionKey.Id);
 
             DataEncryptionKeyCore dekCore = (DataEncryptionKeyInlineCore)dek;
             (DataEncryptionKeyProperties dekProperties, InMemoryRawDek inMemoryRawDek) = await dekCore.FetchUnwrappedAsync(cancellationToken);
@@ -69,7 +67,7 @@ namespace Microsoft.Azure.Cosmos
 
             JObject toEncryptJObj = new JObject();
 
-            foreach (string pathToEncrypt in encryptionOptions.PathsToEncrypt)
+            foreach (string pathToEncrypt in encryptionOptions.EncryptedPaths)
             {
                 string propertyName = pathToEncrypt.Substring(1);
                 JToken propertyValueHolder = itemJObj.Property(propertyName).Value;
@@ -96,19 +94,21 @@ namespace Microsoft.Azure.Cosmos
 
         public async Task<Stream> DecryptAsync(
             Stream input,
-            Container container,
+            ContainerCore container,
             CancellationToken cancellationToken)
         {
             Contract.Assert(input != null);
             Debug.Assert(container != null);
-            Debug.Assert(container is ContainerCore);
             Debug.Assert(input.CanSeek);
 
-            ContainerCore containerCore = (ContainerCore)container;
-
-            if (containerCore.ClientContext.ClientOptions.EncryptionSettings == null)
+            if (container.ClientContext.ClientOptions.EncryptionSettings == null)
             {
                 return input;
+            }
+
+            if (container.ClientContext.ClientOptions.EncryptionSettings == null)
+            {
+                throw new ArgumentException(ClientResources.EncryptionSettingsNotConfigured);
             }
 
             JObject itemJObj = this.baseSerializer.FromStream<JObject>(input);
@@ -132,7 +132,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new CosmosException(HttpStatusCode.InternalServerError, $"Unknown encryption format version: {encryptionProperties.EncryptionFormatVersion}. Please upgrade your SDK to the latest version.");
             }
 
-            DataEncryptionKeyCore tempDek = (DataEncryptionKeyInlineCore)((DatabaseCore)containerCore.Database).GetDataEncryptionKey(id: "unknown");
+            DataEncryptionKeyCore tempDek = (DataEncryptionKeyInlineCore)((DatabaseCore)container.Database).GetDataEncryptionKey(id: "unknown");
             (DataEncryptionKeyProperties _, InMemoryRawDek inMemoryRawDek) = await tempDek.FetchUnwrappedByRidAsync(encryptionProperties.DataEncryptionKeyRid, cancellationToken);
             byte[] plainText = inMemoryRawDek.AlgorithmUsingRawDek.DecryptData(encryptionProperties.EncryptedData);
 

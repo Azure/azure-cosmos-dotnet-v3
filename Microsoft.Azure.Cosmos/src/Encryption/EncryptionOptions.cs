@@ -17,16 +17,17 @@ namespace Microsoft.Azure.Cosmos
         class EncryptionOptions
     {
         /// <summary>
-        /// Reference to encryption key to be used for encryption of data.
+        /// Reference to encryption key to be used for encryption of data in the request payload.
         /// The key must already be created using Database.CreateDataEncryptionKeyAsync
         /// before using it in encryption options.
         /// </summary>
         public DataEncryptionKey DataEncryptionKey { get; set; }
 
         /// <summary>
-        /// List of JSON paths to encrypt. Only top level paths are supported.
+        /// For the request payload, list of JSON paths to encrypt.
+        /// Only top level paths are supported.
         /// Example of a path specification: /sensitive
         /// </summary>
-        public List<string> PathsToEncrypt { get; set; }
+        public List<string> EncryptedPaths { get; set; }
     }
 }

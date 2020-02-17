@@ -98,8 +98,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Options to encrypt / decrypt properties of the item.
-        /// Only valid when used with <see cref="Container.CreateItemAsync{T}"/>, <see cref="Container.ReplaceItemAsync{T}"/> and <see cref="Container.UpsertItemAsync{T}"/>.
+        /// Options to encrypt properties of the item.
         /// </summary>
 #if PREVIEW
         public

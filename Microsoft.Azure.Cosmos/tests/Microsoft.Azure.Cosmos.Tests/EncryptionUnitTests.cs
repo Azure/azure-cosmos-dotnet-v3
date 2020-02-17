@@ -202,7 +202,7 @@ namespace Microsoft.Azure.Cosmos
                         EncryptionOptions = new EncryptionOptions
                         {
                             DataEncryptionKey = database.GetDataEncryptionKey("random"),
-                            PathsToEncrypt = MyItem.PathsToEncrypt
+                            EncryptedPaths = MyItem.PathsToEncrypt
                         }
                     });
 
@@ -278,7 +278,7 @@ namespace Microsoft.Azure.Cosmos
                     EncryptionOptions = new EncryptionOptions
                     {
                         DataEncryptionKey = database.GetDataEncryptionKey(dekId),
-                        PathsToEncrypt = pathsToEncrypt
+                        EncryptedPaths = pathsToEncrypt
                     }
                 });
 
