@@ -27,7 +27,14 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public int CompareTo(EffectivePartitionKeyRange other)
         {
-            return this.Start.CompareTo(other.Start);
+            // Provide a total sort order by first comparing on the start and then going to the end.
+            int cmp = this.Start.CompareTo(other.Start);
+            if (cmp != 0)
+            {
+                return cmp;
+            }
+
+            return this.End.CompareTo(other.End);
         }
 
         public override bool Equals(object obj)

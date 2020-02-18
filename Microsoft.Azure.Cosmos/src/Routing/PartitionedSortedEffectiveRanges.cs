@@ -15,14 +15,74 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         private PartitionedSortedEffectiveRanges(SortedSet<EffectivePartitionKeyRange> effectivePartitionKeyRanges)
         {
+            // All invariants are checked by the static constructor
+            this.effectivePartitionKeyRanges = effectivePartitionKeyRanges;
+        }
+
+        public static PartitionedSortedEffectiveRanges Create(IEnumerable<EffectivePartitionKeyRange> effectivePartitionKeyRanges)
+        {
+            CreateStatus createStatus = PartitionedSortedEffectiveRanges.TryCreate(
+                effectivePartitionKeyRanges,
+                out PartitionedSortedEffectiveRanges partitionedSortedEffectiveRanges);
+
+            switch (createStatus)
+            {
+                case CreateStatus.DuplicatePartitionKeyRange:
+                    throw new ArgumentException($"{nameof(effectivePartitionKeyRanges)} must not have duplicate values.");
+
+                case CreateStatus.EmptyPartitionKeyRange:
+                    throw new ArgumentException($"{nameof(effectivePartitionKeyRanges)} must not have an empty range.");
+
+                case CreateStatus.NoPartitionKeyRanges:
+                    throw new ArgumentException($"{nameof(effectivePartitionKeyRanges)} must not be empty.");
+
+                case CreateStatus.NullPartitionKeyRanges:
+                    throw new ArgumentNullException(nameof(effectivePartitionKeyRanges));
+
+                case CreateStatus.RangesAreNotContiguous:
+                    throw new ArgumentException($"{nameof(effectivePartitionKeyRanges)} must have contiguous ranges.");
+
+                case CreateStatus.RangesOverlap:
+                    throw new ArgumentException($"{nameof(effectivePartitionKeyRanges)} must not overlapping ranges.");
+
+                case CreateStatus.Success:
+                    return partitionedSortedEffectiveRanges;
+
+                default:
+                    throw new ArgumentOutOfRangeException($"Unknown {nameof(CreateStatus)}: {createStatus}.");
+            }
+        }
+
+        public static CreateStatus TryCreate(
+            IEnumerable<EffectivePartitionKeyRange> effectivePartitionKeyRanges,
+            out PartitionedSortedEffectiveRanges partitionedSortedEffectiveRanges)
+        {
             if (effectivePartitionKeyRanges == null)
             {
-                throw new ArgumentNullException(nameof(effectivePartitionKeyRanges));
+                partitionedSortedEffectiveRanges = default;
+                return CreateStatus.NullPartitionKeyRanges;
             }
 
-            if (effectivePartitionKeyRanges.Count == 0)
+            if (effectivePartitionKeyRanges.Count() == 0)
             {
-                throw new ArgumentException($"{nameof(effectivePartitionKeyRanges)} must not be empty.");
+                partitionedSortedEffectiveRanges = default;
+                return CreateStatus.NoPartitionKeyRanges;
+            }
+
+            SortedSet<EffectivePartitionKeyRange> sortedSet = new SortedSet<EffectivePartitionKeyRange>();
+            foreach (EffectivePartitionKeyRange effectivePartitionKeyRange in effectivePartitionKeyRanges)
+            {
+                if (effectivePartitionKeyRange.Width == 0)
+                {
+                    partitionedSortedEffectiveRanges = default;
+                    return CreateStatus.EmptyPartitionKeyRange;
+                }
+
+                if (!sortedSet.Add(effectivePartitionKeyRange))
+                {
+                    partitionedSortedEffectiveRanges = default;
+                    return CreateStatus.DuplicatePartitionKeyRange;
+                }
             }
 
             // Need to check if the ranges overlap
@@ -33,13 +93,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             UInt128 maxEnd = UInt128.MinValue;
             UInt128 sumOfWidth = 0;
 
-            foreach (EffectivePartitionKeyRange effectivePartitionKeyRange in effectivePartitionKeyRanges)
+            foreach (EffectivePartitionKeyRange effectivePartitionKeyRange in sortedSet)
             {
-                if (effectivePartitionKeyRange.Width == 0)
-                {
-                    throw new ArgumentException($"{nameof(effectivePartitionKeyRanges)} must not have empty ranges");
-                }
-
                 if (effectivePartitionKeyRange.Start.Value < minStart)
                 {
                     minStart = effectivePartitionKeyRange.Start.Value;
@@ -56,35 +111,19 @@ namespace Microsoft.Azure.Cosmos.Routing
             UInt128 rangeCoverage = maxEnd - minStart;
             if (rangeCoverage < sumOfWidth)
             {
-                throw new ArgumentException($"{nameof(effectivePartitionKeyRanges)} has overlap.");
+                partitionedSortedEffectiveRanges = default;
+                return CreateStatus.RangesOverlap;
             }
             else if (rangeCoverage > sumOfWidth)
             {
-                throw new ArgumentException($"{nameof(effectivePartitionKeyRanges)} are not contigious.");
+                partitionedSortedEffectiveRanges = default;
+                return CreateStatus.RangesAreNotContiguous;
             }
             else
             {
-                this.effectivePartitionKeyRanges = effectivePartitionKeyRanges;
+                partitionedSortedEffectiveRanges = new PartitionedSortedEffectiveRanges(sortedSet);
+                return CreateStatus.Success;
             }
-        }
-
-        public static PartitionedSortedEffectiveRanges Create(IEnumerable<EffectivePartitionKeyRange> effectivePartitionKeyRanges)
-        {
-            if (effectivePartitionKeyRanges == null)
-            {
-                throw new ArgumentNullException(nameof(effectivePartitionKeyRanges));
-            }
-
-            SortedSet<EffectivePartitionKeyRange> sortedSet = new SortedSet<EffectivePartitionKeyRange>();
-            foreach (EffectivePartitionKeyRange effectivePartitionKeyRange in effectivePartitionKeyRanges)
-            {
-                if (!sortedSet.Add(effectivePartitionKeyRange))
-                {
-                    throw new ArgumentException($"Duplicate effective partition key added: {effectivePartitionKeyRange}.");
-                }
-            }
-
-            return new PartitionedSortedEffectiveRanges(sortedSet);
         }
 
         public IOrderedEnumerable<EffectivePartitionKeyRange> CreateOrderedEnumerable<TKey>(
@@ -117,6 +156,17 @@ namespace Microsoft.Azure.Cosmos.Routing
         IEnumerator IEnumerable.GetEnumerator()
         {
             return this.effectivePartitionKeyRanges.GetEnumerator();
+        }
+
+        public enum CreateStatus
+        {
+            DuplicatePartitionKeyRange,
+            EmptyPartitionKeyRange,
+            NoPartitionKeyRanges,
+            NullPartitionKeyRanges,
+            RangesAreNotContiguous,
+            RangesOverlap,
+            Success,
         }
     }
 }
