@@ -270,7 +270,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Task.FromResult(QueryResponseCore.CreateFailure(
                     statusCode: HttpStatusCode.InternalServerError,
                     subStatusCodes: null,
-                    cosmosException: new Cosmos.Resource.CosmosExceptions.InternalServerErrorException(
+                    cosmosException: new Cosmos.Resource.CosmosExceptions.CosmosInternalServerErrorException(
                         "Error message"),
                     requestCharge: 10.2,
                     activityId: Guid.NewGuid().ToString(),

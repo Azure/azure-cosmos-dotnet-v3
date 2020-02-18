@@ -182,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
             switch (statusCode)
             {
                 case HttpStatusCode.InternalServerError:
-                    return new InternalServerErrorException(
+                    return new CosmosInternalServerErrorException(
                         message,
                         subStatusCode,
                         stackTrace,
@@ -193,7 +193,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                         diagnosticsContext,
                         innerException);
                 case HttpStatusCode.BadRequest:
-                    return new BadRequestException(
+                    return new CosmosBadRequestException(
                         message,
                         subStatusCode,
                         stackTrace,
@@ -204,7 +204,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                         diagnosticsContext,
                         innerException);
                 case HttpStatusCode.RequestTimeout:
-                    return new RequestTimeoutException(
+                    return new CosmosRequestTimeoutException(
                         message,
                         subStatusCode,
                         stackTrace,
@@ -215,7 +215,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                         diagnosticsContext,
                         innerException);
                 case (HttpStatusCode)429:
-                    return new ThrottledException(
+                    return new CosmosThrottledException(
                         message,
                         subStatusCode,
                         stackTrace,

@@ -8,14 +8,9 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
     using System.Diagnostics;
     using System.Net;
 
-    internal sealed class NotFoundException : CosmosHttpException
+    internal sealed class CosmosBadRequestException : CosmosHttpException
     {
-        public NotFoundException(string message)
-            : base(statusCode: HttpStatusCode.NotFound, message: message)
-        {
-        }
-
-        internal NotFoundException(
+        internal CosmosBadRequestException(
             string message,
             int subStatusCode = default,
             StackTrace stackTrace = default,
@@ -26,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
             CosmosDiagnosticsContext diagnosticsContext = default,
             Exception innerException = default)
             : base(
-                HttpStatusCode.NotFound,
+                HttpStatusCode.BadRequest,
                 message,
                 subStatusCode,
                 stackTrace,

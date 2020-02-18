@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Query
         [TestMethod]
         public void CosmosException()
         {
-            CosmosException cosmosException = new BadRequestException(
+            CosmosException cosmosException = new CosmosBadRequestException(
                 message: "asdf");
             QueryResponseCore queryResponse = QueryResponseFactory.CreateFromException(cosmosException);
             Assert.AreEqual(HttpStatusCode.BadRequest, queryResponse.StatusCode);

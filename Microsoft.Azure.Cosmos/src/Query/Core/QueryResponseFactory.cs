@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
             public override CosmosException Visit(MalformedContinuationTokenException malformedContinuationTokenException)
             {
-                return new BadRequestException(
+                return new CosmosBadRequestException(
                     message: malformedContinuationTokenException.Message,
                     stackTrace: new StackTrace(malformedContinuationTokenException),
                     innerException: malformedContinuationTokenException);
@@ -118,14 +118,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
             public override CosmosException Visit(UnexpectedQueryPartitionProviderException unexpectedQueryPartitionProviderException)
             {
-                return new InternalServerErrorException(
-                    message: $"{nameof(InternalServerErrorException)} due to {nameof(UnexpectedQueryPartitionProviderException)}",
+                return new CosmosInternalServerErrorException(
+                    message: $"{nameof(CosmosInternalServerErrorException)} due to {nameof(UnexpectedQueryPartitionProviderException)}",
                     innerException: unexpectedQueryPartitionProviderException);
             }
 
             public override CosmosException Visit(ExpectedQueryPartitionProviderException expectedQueryPartitionProviderException)
             {
-                return new BadRequestException(
+                return new CosmosBadRequestException(
                     message: expectedQueryPartitionProviderException.Message,
                     stackTrace: new StackTrace(expectedQueryPartitionProviderException),
                     innerException: expectedQueryPartitionProviderException);

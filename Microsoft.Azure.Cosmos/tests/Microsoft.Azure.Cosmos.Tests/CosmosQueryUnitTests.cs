@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             string errorMessage = "TestErrorMessage";
             string activityId = "TestActivityId";
             double requestCharge = 42.42;
-            CosmosException cosmosException = new Cosmos.Resource.CosmosExceptions.BadRequestException(errorMessage);
+            CosmosException cosmosException = new Cosmos.Resource.CosmosExceptions.CosmosBadRequestException(errorMessage);
             CosmosDiagnosticsContext diagnostics = CosmosDiagnosticsContext.Create();
             QueryResponse queryResponse = QueryResponse.CreateFailure(
                         statusCode: HttpStatusCode.NotFound,

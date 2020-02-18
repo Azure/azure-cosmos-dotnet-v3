@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Handlers;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Documents;
 
     internal class CosmosOffers
@@ -145,7 +146,7 @@ namespace Microsoft.Azure.Cosmos
             if (offerV2 == null &&
                 failIfNotConfigured)
             {
-                throw new NotFoundException(
+                throw (CosmosException)new CosmosNotFoundException(
                     $"Throughput is not configured for {targetRID}");
             }
 
