@@ -612,7 +612,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(id));
             }
 
-            if (encryptionAlgorithmId != CosmosEncryptionAlgorithm.AEAD_AES_256_CBC_HMAC_SHA_256_RANDOMIZED)
+            if (encryptionAlgorithmId != CosmosEncryptionAlgorithm.AE_AES_256_CBC_HMAC_SHA_256_RANDOMIZED)
             {
                 throw new ArgumentException(string.Format("Unsupported Encryption Algorithm {0}", encryptionAlgorithmId), nameof(encryptionAlgorithmId));
             }

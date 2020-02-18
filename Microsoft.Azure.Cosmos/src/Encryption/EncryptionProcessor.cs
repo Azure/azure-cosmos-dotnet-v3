@@ -11,25 +11,26 @@ namespace Microsoft.Azure.Cosmos
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Core;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
     internal class EncryptionProcessor
     {
-        private readonly CosmosSerializer baseSerializer = new CosmosJsonSerializerWrapper(new CosmosJsonDotNetSerializer());
+        private static readonly CosmosSerializer baseSerializer = new CosmosJsonSerializerWrapper(new CosmosJsonDotNetSerializer());
 
         public async Task<Stream> EncryptAsync(
             Stream input,
             EncryptionOptions encryptionOptions,
-            ContainerCore container,
+            DatabaseCore database,
+            CosmosClientContext clientContext,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             Debug.Assert(input != null);
             Debug.Assert(encryptionOptions != null);
-            Debug.Assert(container != null);
+            Debug.Assert(database != null);
+            Debug.Assert(clientContext != null);
             Debug.Assert(diagnosticsContext != null);
 
             if (encryptionOptions.EncryptedPaths == null)
@@ -55,19 +56,19 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentException("Invalid encryption options", nameof(encryptionOptions.DataEncryptionKey));
             }
 
-            if (container.ClientContext.ClientOptions.EncryptionSettings == null)
+            if (clientContext.ClientOptions.EncryptionSettings == null)
             {
                 throw new ArgumentException(ClientResources.EncryptionSettingsNotConfigured);
             }
 
-            DataEncryptionKey dek = ((DatabaseCore)container.Database).GetDataEncryptionKey(encryptionOptions.DataEncryptionKey.Id);
+            DataEncryptionKey dek = database.GetDataEncryptionKey(encryptionOptions.DataEncryptionKey.Id);
 
             DataEncryptionKeyCore dekCore = (DataEncryptionKeyInlineCore)dek;
             (DataEncryptionKeyProperties dekProperties, InMemoryRawDek inMemoryRawDek) = await dekCore.FetchUnwrappedAsync(
                 diagnosticsContext,
                 cancellationToken);
 
-            JObject itemJObj = this.baseSerializer.FromStream<JObject>(input);
+            JObject itemJObj = EncryptionProcessor.baseSerializer.FromStream<JObject>(input);
 
             JObject toEncryptJObj = new JObject();
 
@@ -93,26 +94,28 @@ namespace Microsoft.Azure.Cosmos
                 encryptedData: inMemoryRawDek.AlgorithmUsingRawDek.EncryptData(plainText));
 
             itemJObj.Add(Constants.Properties.EncryptedInfo, JObject.FromObject(encryptionProperties));
-            return this.baseSerializer.ToStream(itemJObj);
+            return EncryptionProcessor.baseSerializer.ToStream(itemJObj);
         }
 
         public async Task<Stream> DecryptAsync(
             Stream input,
-            ContainerCore container,
+            DatabaseCore database,
+            CosmosClientContext clientContext,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            Contract.Assert(input != null);
-            Debug.Assert(container != null);
+            Debug.Assert(input != null);
+            Debug.Assert(database != null);
             Debug.Assert(input.CanSeek);
+            Debug.Assert(clientContext != null);
             Debug.Assert(diagnosticsContext != null);
 
-            if (container.ClientContext.ClientOptions.EncryptionSettings == null)
+            if (clientContext.ClientOptions.EncryptionSettings == null)
             {
                 return input;
             }
 
-            JObject itemJObj = this.baseSerializer.FromStream<JObject>(input);
+            JObject itemJObj = EncryptionProcessor.baseSerializer.FromStream<JObject>(input);
 
             JProperty encryptionPropertiesJProp = itemJObj.Property(Constants.Properties.EncryptedInfo);
             JObject encryptionPropertiesJObj = null;
@@ -133,7 +136,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new CosmosException(HttpStatusCode.InternalServerError, $"Unknown encryption format version: {encryptionProperties.EncryptionFormatVersion}. Please upgrade your SDK to the latest version.");
             }
 
-            DataEncryptionKeyCore tempDek = (DataEncryptionKeyInlineCore)((DatabaseCore)container.Database).GetDataEncryptionKey(id: "unknown");
+            DataEncryptionKeyCore tempDek = (DataEncryptionKeyInlineCore)database.GetDataEncryptionKey(id: "unknown");
             (DataEncryptionKeyProperties _, InMemoryRawDek inMemoryRawDek) = await tempDek.FetchUnwrappedByRidAsync(
                 encryptionProperties.DataEncryptionKeyRid,
                 diagnosticsContext,
@@ -155,7 +158,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             itemJObj.Remove(Constants.Properties.EncryptedInfo);
-            return this.baseSerializer.ToStream(itemJObj);
+            return EncryptionProcessor.baseSerializer.ToStream(itemJObj);
         }
     }
 }

@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos
         private const string DatabaseId = "mockDatabase";
         private const string ContainerId = "mockContainer";
         private const double requestCharge = 0.6;
-        private const CosmosEncryptionAlgorithm Algo = CosmosEncryptionAlgorithm.AEAD_AES_256_CBC_HMAC_SHA_256_RANDOMIZED;
+        private const CosmosEncryptionAlgorithm Algo = CosmosEncryptionAlgorithm.AE_AES_256_CBC_HMAC_SHA_256_RANDOMIZED;
 
         private TimeSpan cacheTTL = TimeSpan.FromDays(1);
         private byte[] dek = new byte[] { 1, 2, 3, 4 };

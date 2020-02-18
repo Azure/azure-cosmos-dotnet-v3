@@ -184,14 +184,14 @@ namespace Microsoft.Azure.Cosmos
 
         internal virtual EncryptionAlgorithm GetEncryptionAlgorithm(byte[] rawDek, CosmosEncryptionAlgorithm encryptionAlgorithmId)
         {
-            Debug.Assert(encryptionAlgorithmId == CosmosEncryptionAlgorithm.AEAD_AES_256_CBC_HMAC_SHA_256_RANDOMIZED, "Unexpected encryption algorithm id");
+            Debug.Assert(encryptionAlgorithmId == CosmosEncryptionAlgorithm.AE_AES_256_CBC_HMAC_SHA_256_RANDOMIZED, "Unexpected encryption algorithm id");
             AeadAes256CbcHmac256EncryptionKey key = new AeadAes256CbcHmac256EncryptionKey(rawDek, AeadAes256CbcHmac256Algorithm.AlgorithmNameConstant);
             return new AeadAes256CbcHmac256Algorithm(key, EncryptionType.Randomized, algorithmVersion: 1);
         }
 
         internal virtual byte[] GenerateKey(CosmosEncryptionAlgorithm encryptionAlgorithmId)
         {
-            Debug.Assert(encryptionAlgorithmId == CosmosEncryptionAlgorithm.AEAD_AES_256_CBC_HMAC_SHA_256_RANDOMIZED, "Unexpected encryption algorithm id");
+            Debug.Assert(encryptionAlgorithmId == CosmosEncryptionAlgorithm.AE_AES_256_CBC_HMAC_SHA_256_RANDOMIZED, "Unexpected encryption algorithm id");
             byte[] rawDek = new byte[32];
             SecurityUtility.GenerateRandomBytes(rawDek);
             return rawDek;

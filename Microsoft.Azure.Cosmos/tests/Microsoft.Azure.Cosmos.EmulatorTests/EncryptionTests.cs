@@ -10,13 +10,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
 
     [TestClass]
-    // [Ignore]
     public class EncryptionTests
     {
         private static EncryptionKeyWrapMetadata metadata1 = new EncryptionKeyWrapMetadata("metadata1");
@@ -501,14 +501,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ItemResponse<TestDoc> upsertResponse = await containerCore.UpsertItemAsync(
                 testDoc,
                 new PartitionKey(testDoc.PK),
-                 requestOptions: new ItemRequestOptions
-                 {
-                     EncryptionOptions = new EncryptionOptions
-                     {
-                         DataEncryptionKey = ((DatabaseCore)containerCore.Database).GetDataEncryptionKey(dekId),
-                         EncryptedPaths = pathsToEncrypt
-                     }
-                 });
+                EncryptionTests.GetRequestOptions(containerCore, dekId, pathsToEncrypt));
             Assert.AreEqual(expectedStatusCode, upsertResponse.StatusCode);
             Assert.AreEqual(testDoc, upsertResponse.Resource);
             return upsertResponse;
@@ -523,14 +516,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ItemResponse<TestDoc> createResponse = await containerCore.CreateItemAsync(
                 testDoc,
                 new PartitionKey(testDoc.PK),
-                 requestOptions: new ItemRequestOptions
-                 {
-                     EncryptionOptions = new EncryptionOptions
-                     {
-                         DataEncryptionKey = ((DatabaseCore)containerCore.Database).GetDataEncryptionKey(dekId),
-                         EncryptedPaths = pathsToEncrypt
-                     }
-                 });
+                EncryptionTests.GetRequestOptions(containerCore, dekId, pathsToEncrypt));
             Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
             Assert.AreEqual(testDoc, createResponse.Resource);
             return createResponse;
@@ -547,15 +533,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 testDoc,
                 testDoc.Id,
                 new PartitionKey(testDoc.PK),
-                 requestOptions: new ItemRequestOptions
-                 {
-                     EncryptionOptions = new EncryptionOptions
-                     {
-                         DataEncryptionKey = ((DatabaseCore)containerCore.Database).GetDataEncryptionKey(dekId),
-                         EncryptedPaths = pathsToEncrypt
-                     },
-                     IfMatchEtag = etag
-                 });
+                EncryptionTests.GetRequestOptions(containerCore, dekId, pathsToEncrypt, etag));
+
             Assert.AreEqual(HttpStatusCode.OK, replaceResponse.StatusCode);
             Assert.AreEqual(testDoc, replaceResponse.Resource);
             return replaceResponse;
@@ -572,6 +551,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.NoContent, deleteResponse.StatusCode);
             Assert.IsNull(deleteResponse.Resource);
             return deleteResponse;
+        }
+
+        private static ItemRequestOptions GetRequestOptions(
+            ContainerCore containerCore,
+            string dekId,
+            List<string> pathsToEncrypt,
+            string ifMatchEtag = null)
+        {
+            return new ItemRequestOptions
+            {
+                EncryptionOptions = new EncryptionOptions
+                {
+                    DataEncryptionKey = ((DatabaseCore)containerCore.Database).GetDataEncryptionKey(dekId),
+                    EncryptedPaths = pathsToEncrypt
+                },
+                IfMatchEtag = ifMatchEtag
+            };
         }
 
         private static async Task VerifyItemByReadStreamAsync(Container container, TestDoc testDoc)
@@ -594,7 +590,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             DataEncryptionKeyResponse dekResponse = await databaseCore.CreateDataEncryptionKeyAsync(
                 dekId,
-                CosmosEncryptionAlgorithm.AEAD_AES_256_CBC_HMAC_SHA_256_RANDOMIZED,
+                CosmosEncryptionAlgorithm.AE_AES_256_CBC_HMAC_SHA_256_RANDOMIZED,
                 EncryptionTests.metadata1);
 
             Assert.AreEqual(HttpStatusCode.Created, dekResponse.StatusCode);
