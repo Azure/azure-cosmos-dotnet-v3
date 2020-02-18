@@ -53,10 +53,14 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <remarks>
         /// It is not possible to split all tokens, it depends on the state of the current token itself.
+        /// The amount of tokens returned is up to <paramref name="maxTokens"/>, but it could be less.
         /// </remarks>
         /// <param name="splitFeedTokens">The resulting list of individual <see cref="FeedToken"/> instances.</param>
+        /// <param name="maxTokens">Defines a maximum amount of tokens to be returned.</param>
         /// <returns>A boolean indicating if split was possible</returns>
-        public virtual bool TrySplit(out IEnumerable<FeedToken> splitFeedTokens)
+        public virtual bool TrySplit(
+            out IReadOnlyList<FeedToken> splitFeedTokens,
+            int? maxTokens = null)
         {
             splitFeedTokens = null;
             return false;

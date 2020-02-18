@@ -146,7 +146,9 @@ namespace Microsoft.Azure.Cosmos
             return false;
         }
 
-        public override bool TrySplit(out IEnumerable<FeedToken> splitFeedTokens)
+        public override bool TrySplit(
+            out IReadOnlyList<FeedToken> splitFeedTokens,
+            int? maxTokens = null)
         {
             if (this.FeedTokenEPKRange == null)
             {
@@ -154,7 +156,7 @@ namespace Microsoft.Azure.Cosmos
                 return false;
             }
 
-            return this.FeedTokenEPKRange.TrySplit(out splitFeedTokens);
+            return this.FeedTokenEPKRange.TrySplit(out splitFeedTokens, maxTokens);
         }
     }
 }

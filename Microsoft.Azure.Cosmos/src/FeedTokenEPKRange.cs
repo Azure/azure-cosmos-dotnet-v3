@@ -174,7 +174,9 @@ namespace Microsoft.Azure.Cosmos
             return false;
         }
 
-        public override bool TrySplit(out IEnumerable<FeedToken> splitFeedTokens)
+        public override bool TrySplit(
+            out IReadOnlyList<FeedToken> splitFeedTokens,
+            int? maxTokens = null)
         {
             if (this.CompositeContinuationTokens.Count <= 1)
             {
@@ -182,7 +184,26 @@ namespace Microsoft.Azure.Cosmos
                 return false;
             }
 
-            splitFeedTokens = this.CompositeContinuationTokens.Select(token => new FeedTokenEPKRange(this.ContainerRid, token));
+            if (!maxTokens.HasValue
+                || maxTokens.Value >= this.CompositeContinuationTokens.Count)
+            {
+                splitFeedTokens = this.CompositeContinuationTokens.Select(token => new FeedTokenEPKRange(this.ContainerRid, token)).ToList();
+                return true;
+            }
+
+            int bucketSize = (int)Math.Ceiling((double)this.CompositeContinuationTokens.Count / maxTokens.Value);
+            List<FeedTokenEPKRange> feedTokens = new List<FeedTokenEPKRange>(maxTokens.Value);
+            foreach (IReadOnlyList<CompositeContinuationToken> bucketCompositeContinuationTokens in this.CompositeContinuationTokens.ToList().Bucket(bucketSize))
+            {
+                Documents.Routing.Range<string> completeRange = new Documents.Routing.Range<string>(
+                    bucketCompositeContinuationTokens[0].Range.Min,
+                    bucketCompositeContinuationTokens[bucketCompositeContinuationTokens.Count - 1].Range.Max,
+                    true,
+                    false);
+                feedTokens.Add(new FeedTokenEPKRange(this.ContainerRid, completeRange, bucketCompositeContinuationTokens));
+            }
+            
+            splitFeedTokens = feedTokens;
             return true;
         }
 
