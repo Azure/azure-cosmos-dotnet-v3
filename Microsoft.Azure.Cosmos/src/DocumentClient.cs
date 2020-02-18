@@ -1538,7 +1538,7 @@ namespace Microsoft.Azure.Cosmos
                         if (this.authKeyHashFunction?.Key != null)
                         {
                             byte[] bytes = Encoding.UTF8.GetBytes(this.authKeyHashFunction?.Key?.ToString());
-                            authHash = MurmurHash3.Hash64(bytes, bytes.Length);
+                            authHash = Documents.Routing.MurmurHash3.Hash64(bytes, bytes.Length);
                         }
                         DefaultTrace.TraceError("Un-expected authorization payload mis-match. Actual payload={0}, token={1}..., hash={2:X}..., error={3}",
                             normalizedPayload, tokenFirst5, authHash, dce.Message);

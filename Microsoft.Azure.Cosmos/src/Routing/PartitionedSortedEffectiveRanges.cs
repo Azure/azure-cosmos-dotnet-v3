@@ -35,6 +35,11 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             foreach (EffectivePartitionKeyRange effectivePartitionKeyRange in effectivePartitionKeyRanges)
             {
+                if (effectivePartitionKeyRange.Width == 0)
+                {
+                    throw new ArgumentException($"{nameof(effectivePartitionKeyRanges)} must not have empty ranges");
+                }
+
                 if (effectivePartitionKeyRange.Start.Value < minStart)
                 {
                     minStart = effectivePartitionKeyRange.Start.Value;
@@ -65,6 +70,11 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public static PartitionedSortedEffectiveRanges Create(IEnumerable<EffectivePartitionKeyRange> effectivePartitionKeyRanges)
         {
+            if (effectivePartitionKeyRanges == null)
+            {
+                throw new ArgumentNullException(nameof(effectivePartitionKeyRanges));
+            }
+
             SortedSet<EffectivePartitionKeyRange> sortedSet = new SortedSet<EffectivePartitionKeyRange>();
             foreach (EffectivePartitionKeyRange effectivePartitionKeyRange in effectivePartitionKeyRanges)
             {

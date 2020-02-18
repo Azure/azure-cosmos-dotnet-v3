@@ -6,22 +6,48 @@ namespace Microsoft.Azure.Cosmos.Routing
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
 
     internal abstract class EffectivePartitionKeyRangeFactory
     {
         public abstract EffectivePartitionKeyRange FullRange { get; }
 
-        public PartitionedSortedEffectiveRanges SplitRange(EffectivePartitionKeyRange effectivePartitionKeyRange, int numRanges)
+        public static PartitionedSortedEffectiveRanges SplitRange(EffectivePartitionKeyRange effectivePartitionKeyRange, int numRanges)
+        {
+            SplitOutcome splitOutcome = EffectivePartitionKeyRangeFactory.TrySplitRange(
+                effectivePartitionKeyRange,
+                numRanges,
+                out PartitionedSortedEffectiveRanges splitRanges);
+
+            switch (splitOutcome)
+            {
+                case SplitOutcome.Success:
+                    return splitRanges;
+
+                case SplitOutcome.NumRangesNeedsToBePositive:
+                    throw new ArgumentOutOfRangeException($"{nameof(numRanges)} must be a positive integer");
+
+                case SplitOutcome.RangeNotWideEnough:
+                    throw new ArgumentOutOfRangeException($"{nameof(effectivePartitionKeyRange)} is not wide enough to split into {numRanges} ranges.");
+
+                default:
+                    throw new ArgumentOutOfRangeException($"Unknown {nameof(SplitOutcome)}: {splitOutcome}.");
+            }
+        }
+
+        public static SplitOutcome TrySplitRange(EffectivePartitionKeyRange effectivePartitionKeyRange, int numRanges, out PartitionedSortedEffectiveRanges splitRanges)
         {
             if (numRanges < 1)
             {
-                throw new ArgumentOutOfRangeException($"{nameof(numRanges)} must be a positive integer.");
+                splitRanges = default;
+                return SplitOutcome.NumRangesNeedsToBePositive;
             }
 
             if (effectivePartitionKeyRange.Width < numRanges)
             {
-                throw new ArgumentOutOfRangeException($"Can not split {effectivePartitionKeyRange} into {numRanges}, since {effectivePartitionKeyRange} is not wide enough.");
+                splitRanges = default;
+                return SplitOutcome.RangeNotWideEnough;
             }
 
             List<EffectivePartitionKeyRange> childrenRanges = new List<EffectivePartitionKeyRange>();
@@ -40,10 +66,11 @@ namespace Microsoft.Azure.Cosmos.Routing
                 childrenRanges.Add(new EffectivePartitionKeyRange(offset, count));
             }
 
-            return PartitionedSortedEffectiveRanges.Create(childrenRanges);
+            splitRanges = PartitionedSortedEffectiveRanges.Create(childrenRanges);
+            return SplitOutcome.Success;
         }
 
-        public EffectivePartitionKeyRange MergeRanges(PartitionedSortedEffectiveRanges partitionedSortedEffectiveRanges)
+        public static EffectivePartitionKeyRange MergeRanges(PartitionedSortedEffectiveRanges partitionedSortedEffectiveRanges)
         {
             if (partitionedSortedEffectiveRanges == null)
             {
@@ -71,6 +98,14 @@ namespace Microsoft.Azure.Cosmos.Routing
                 end: new EffectivePartitionKey(UInt128.FromByteArray(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x3F })));
 
             public override EffectivePartitionKeyRange FullRange => EffectivePartitionKeyRangeFactoryV2.fullRange;
+        }
+
+        public enum SplitOutcome
+        {
+            Success,
+            NumRangesNeedsToBePositive,
+            RangeNotWideEnough,
+
         }
     }
 }
