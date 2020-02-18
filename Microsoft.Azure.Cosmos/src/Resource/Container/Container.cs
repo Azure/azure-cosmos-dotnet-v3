@@ -1318,6 +1318,54 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
             FeedToken feedToken,
             CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
+        ///  This method creates a query for items under a container in an Azure Cosmos database using a SQL statement with parameterized values. It returns a FeedIterator.
+        ///  For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/>.
+        /// </summary>
+        /// <param name="queryDefinition">The Cosmos SQL query definition.</param>
+        /// <param name="feedToken">A FeedToken obtained from <see cref="Container.GetFeedTokensAsync(CancellationToken)"/> or from a previous FeedTokenIterator</param>
+        /// <param name="requestOptions">(Optional) The options for the item query request.</param>
+        /// <returns>An iterator to go through the items.</returns>
+        /// <remarks>
+        /// Query as a stream only supports single partition queries 
+        /// </remarks>
+        /// <example>
+        /// Create a query to get all the ToDoActivity that have a cost greater than 9000 for the specified partition
+        /// <code language="c#">
+        /// <![CDATA[
+        /// public class ToDoActivity{
+        ///     public string id {get; set;}
+        ///     public string status {get; set;}
+        ///     public int cost {get; set;}
+        /// }
+        /// IReadOnlyList<FeedToken> feedTokens = await this.Container.GetFeedTokensAsync();
+        /// // Distribute feedTokens across multiple compute units and pass each one to a different iterator
+        /// QueryDefinition queryDefinition = new QueryDefinition("select * from ToDos t where t.cost > @expensive")
+        ///     .WithParameter("@expensive", 9000);
+        /// FeedTokenIterator feedIterator = this.Container.GetItemQueryStreamIterator(
+        ///     queryDefinition,
+        ///     feedTokens[0],
+        ///     new QueryRequestOptions() { });
+        ///
+        /// while (feedIterator.HasMoreResults)
+        /// {
+        ///     using (ResponseMessage response = await feedIterator.ReadNextAsync())
+        ///     {
+        ///         using (StreamReader sr = new StreamReader(response.Content))
+        ///         using (JsonTextReader jtr = new JsonTextReader(sr))
+        ///         {
+        ///             JObject result = JObject.Load(jtr);
+        ///         }
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract FeedTokenIterator GetItemQueryStreamIterator(
+            QueryDefinition queryDefinition,
+            FeedToken feedToken,
+            QueryRequestOptions requestOptions = null);
 #endif
     }
 }

@@ -390,6 +390,26 @@ namespace Microsoft.Azure.Cosmos
                 this.ClientContext.ClientOptions.SerializerOptions);
         }
 
+#if PREVIEW
+        public override
+#else
+        internal
+#endif
+        FeedTokenIterator GetItemQueryStreamIterator(
+            QueryDefinition queryDefinition,
+            FeedToken feedToken,
+            QueryRequestOptions requestOptions = null)
+        {
+            requestOptions = requestOptions ?? new QueryRequestOptions();
+            if (requestOptions.IsEffectivePartitionKeyRouting)
+            {
+                requestOptions.PartitionKey = null;
+            }
+
+            FeedTokenInternal feedTokenInternal = feedToken as FeedTokenInternal;
+            
+        }
+
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
             string processorName,
             ChangesHandler<T> onChangesDelegate)
