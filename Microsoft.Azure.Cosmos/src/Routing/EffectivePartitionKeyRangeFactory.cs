@@ -6,12 +6,13 @@ namespace Microsoft.Azure.Cosmos.Routing
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
 
     internal abstract class EffectivePartitionKeyRangeFactory
     {
         public abstract EffectivePartitionKeyRange FullRange { get; }
 
-        public IEnumerable<EffectivePartitionKeyRange> SplitRange(EffectivePartitionKeyRange effectivePartitionKeyRange, int numRanges)
+        public PartitionedSortedEffectiveRanges SplitRange(EffectivePartitionKeyRange effectivePartitionKeyRange, int numRanges)
         {
             if (numRanges < 1)
             {
@@ -23,64 +24,35 @@ namespace Microsoft.Azure.Cosmos.Routing
                 throw new ArgumentOutOfRangeException($"Can not split {effectivePartitionKeyRange} into {numRanges}, since {effectivePartitionKeyRange} is not wide enough.");
             }
 
+            List<EffectivePartitionKeyRange> childrenRanges = new List<EffectivePartitionKeyRange>();
             UInt128 subrangeWidth = effectivePartitionKeyRange.Width / numRanges;
             for (int i = 0; i < numRanges - 1; i++)
             {
                 EffectivePartitionKey offset = new EffectivePartitionKey(effectivePartitionKeyRange.Start.Value + (subrangeWidth * i));
                 EffectivePartitionKey count = new EffectivePartitionKey(subrangeWidth);
-                yield return new EffectivePartitionKeyRange(offset, count);
+                childrenRanges.Add(new EffectivePartitionKeyRange(offset, count));
             }
 
             // Last range will have remaining EPKs, since the range might not be divisible.
             {
                 EffectivePartitionKey offset = new EffectivePartitionKey(effectivePartitionKeyRange.Start.Value + (subrangeWidth * (numRanges - 1)));
                 EffectivePartitionKey count = new EffectivePartitionKey(effectivePartitionKeyRange.Width - effectivePartitionKeyRange.Start.Value);
-                yield return new EffectivePartitionKeyRange(offset, count);
+                childrenRanges.Add(new EffectivePartitionKeyRange(offset, count));
             }
+
+            return PartitionedSortedEffectiveRanges.Create(childrenRanges);
         }
 
-        public EffectivePartitionKeyRange MergeRanges(IEnumerable<EffectivePartitionKeyRange> effectivePartitionKeyRanges)
+        public EffectivePartitionKeyRange MergeRanges(PartitionedSortedEffectiveRanges partitionedSortedEffectiveRanges)
         {
-            if (effectivePartitionKeyRanges == null)
+            if (partitionedSortedEffectiveRanges == null)
             {
-                throw new ArgumentNullException(nameof(effectivePartitionKeyRanges));
+                throw new ArgumentNullException(nameof(partitionedSortedEffectiveRanges));
             }
 
-            // Need to check if the ranges overlap
-            // This can be done by checking the overall range that the ranges cover
-            // and comparing it to the width of al the ranges.
-            // https://stackoverflow.com/questions/3269434/whats-the-most-efficient-way-to-test-two-integer-ranges-for-overlap
-            UInt128 minStart = UInt128.MaxValue;
-            UInt128 maxEnd = UInt128.MinValue;
-            UInt128 sumOfWidth = 0;
-            foreach (EffectivePartitionKeyRange effectivePartitionKeyRange in effectivePartitionKeyRanges)
-            {
-                if (effectivePartitionKeyRange.Start.Value < minStart)
-                {
-                    minStart = effectivePartitionKeyRange.Start.Value;
-                }
-
-                if (effectivePartitionKeyRange.End.Value > maxEnd)
-                {
-                    maxEnd = effectivePartitionKeyRange.End.Value;
-                }
-
-                sumOfWidth += effectivePartitionKeyRange.Width;
-            }
-
-            UInt128 rangeCoverage = maxEnd - minStart;
-            if (rangeCoverage < sumOfWidth)
-            {
-                throw new ArgumentException($"{nameof(effectivePartitionKeyRanges)} has overlap.");
-            }
-            else if (rangeCoverage > sumOfWidth)
-            {
-                throw new ArgumentException($"{nameof(effectivePartitionKeyRanges)} are not contigious.");
-            }
-            else
-            {
-                return new EffectivePartitionKeyRange(start: new EffectivePartitionKey(minStart), end: new EffectivePartitionKey(maxEnd));
-            }
+            return new EffectivePartitionKeyRange(
+                start: partitionedSortedEffectiveRanges.First().Start,
+                end: partitionedSortedEffectiveRanges.Last().End);
         }
 
         private sealed class EffectivePartitionKeyRangeFactoryV1 : EffectivePartitionKeyRangeFactory
