@@ -61,7 +61,24 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A query response from cosmos service</returns>
-        public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken))
+        {
+            CosmosDiagnosticsContext diagnostics = CosmosDiagnosticsContext.Create(this.changeFeedOptions);
+            using (diagnostics.CreateScope("ChangeFeedReadNextAsync"))
+            {
+                return this.ReadNextInternalAsync(diagnostics, cancellationToken);
+            }
+        }
+
+        public override bool TryGetContinuationToken(out string state)
+        {
+            state = this.feedTokenInternal.GetContinuation();
+            return true;
+        }
+
+        private async Task<ResponseMessage> ReadNextInternalAsync(
+            CosmosDiagnosticsContext diagnosticsScope,
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -87,7 +104,7 @@ namespace Microsoft.Azure.Cosmos
                 },
                 partitionKey: null,
                 streamPayload: null,
-                diagnosticsScope: null,
+                diagnosticsScope: diagnosticsScope,
                 cancellationToken: cancellationToken);
 
             // Retry in case of splits or other scenarios
@@ -100,7 +117,7 @@ namespace Microsoft.Azure.Cosmos
                     this.feedTokenInternal.UpdateContinuation(responseMessage.Headers.ETag);
                 }
 
-                return await this.ReadNextAsync(cancellationToken);
+                return await this.ReadNextInternalAsync(diagnosticsScope, cancellationToken);
             }
 
             if (responseMessage.IsSuccessStatusCode
@@ -112,12 +129,6 @@ namespace Microsoft.Azure.Cosmos
 
             this.hasMoreResults = responseMessage.IsSuccessStatusCode;
             return responseMessage;
-        }
-
-        public override bool TryGetContinuationToken(out string state)
-        {
-            state = this.feedTokenInternal.GetContinuation();
-            return true;
         }
     }
 
