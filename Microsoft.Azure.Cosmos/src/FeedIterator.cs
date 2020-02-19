@@ -93,5 +93,4 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public abstract Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default);
     }
-
 }

@@ -29,6 +29,7 @@ namespace Microsoft.Azure.Cosmos
         /// The maximum number of items to be returned in the enumeration operation.
         /// </value> 
         public int? MaxItemCount { get; set; }
+
         /// <summary>
         /// Gets or sets a particular point in time to start to read the change feed.
         /// </summary>
