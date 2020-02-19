@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -32,7 +33,7 @@ namespace Microsoft.Azure.Cosmos
         public void EnsureSuccessStatusCode_ThrowsOnFailure()
         {
             ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.NotFound);
-            Assert.ThrowsException<CosmosException>(() => responseMessage.EnsureSuccessStatusCode());
+            Assert.ThrowsException<CosmosNotFoundException>(() => responseMessage.EnsureSuccessStatusCode());
         }
 
         [TestMethod]
@@ -110,6 +111,39 @@ namespace Microsoft.Azure.Cosmos
             Assert.AreEqual(SubStatusCodes.WriteForbidden, responseMessage.Headers.SubStatusCode);
             Assert.IsTrue(responseMessage.ErrorMessage.Contains(errorMessage));
             Assert.IsTrue(responseMessage.ErrorMessage.Contains("VerifyDocumentClientExceptionToResponseMessage"), $"Message should have method name for the stack trace {responseMessage.ErrorMessage}");
+        }
+
+        [TestMethod]
+        public void VerifyTransportExceptionToResponseMessage()
+        {
+            string errorMessage = "Test Exception!";
+            DocumentClientException dce = null;
+            TransportException transportException = new TransportException(
+                errorCode: TransportErrorCode.ConnectionBroken,
+                innerException: null,
+                activityId: Guid.NewGuid(),
+                requestUri: new Uri("https://localhost"),
+                sourceDescription: "The SourceDescription",
+                userPayload: true,
+                payloadSent: true);
+
+            try
+            {
+                throw new ServiceUnavailableException(
+                    message: errorMessage,
+                    innerException: transportException);
+            }
+            catch (DocumentClientException exception)
+            {
+                dce = exception;
+            }
+
+            ResponseMessage responseMessage = dce.ToCosmosResponseMessage(null);
+            Assert.IsFalse(responseMessage.IsSuccessStatusCode);
+            Assert.AreEqual(HttpStatusCode.ServiceUnavailable, responseMessage.StatusCode);
+            Assert.IsTrue(responseMessage.ErrorMessage.Contains(errorMessage));
+            Assert.IsTrue(responseMessage.ErrorMessage.Contains(transportException.ToString()));
+            Assert.IsTrue(responseMessage.ErrorMessage.Contains("VerifyTransportExceptionToResponseMessage"), $"Message should have method name for the stack trace {responseMessage.ErrorMessage}");
         }
     }
 }

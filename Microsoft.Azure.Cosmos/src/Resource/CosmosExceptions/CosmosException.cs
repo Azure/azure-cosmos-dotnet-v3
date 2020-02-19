@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos
             Headers headers,
             CosmosDiagnosticsContext diagnosticsContext,
             Exception innerException)
-            : base(message)
+            : base(message, innerException)
         {
             this.stackTrace = stackTrace;
             this.ActivityId = activityId;

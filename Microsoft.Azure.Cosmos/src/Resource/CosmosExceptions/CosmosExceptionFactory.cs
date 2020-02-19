@@ -73,29 +73,51 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
         internal static CosmosException Create(
             ResponseMessage responseMessage)
         {
-            string errorMessage = responseMessage.ErrorMessage;
-            if (string.IsNullOrEmpty(errorMessage))
+            // If there is no content and there is cosmos exception
+            // then use the existing exception
+            if (responseMessage.Content == null
+                && responseMessage.CosmosException != null)
             {
-                if (responseMessage.Headers.ContentLengthAsLong > 0)
+                return responseMessage.CosmosException;
+            }
+
+            // If content was added after the response message
+            // creation the exception should be updated.
+            string errorMessage = responseMessage.ErrorMessage;
+            string contentMessage = GetErrorMessageFromStream(responseMessage.Content);
+            if (!string.IsNullOrEmpty(contentMessage))
+            {
+                if (string.IsNullOrEmpty(errorMessage))
                 {
-                    using (StreamReader responseReader = new StreamReader(responseMessage.Content))
-                    {
-                        errorMessage = responseReader.ReadToEnd();
-                    }
+                    errorMessage = contentMessage;
                 }
+                else
+                {
+                    errorMessage = $"Error Message: {errorMessage}; Content {contentMessage};";
+                }
+            }
+
+            StackTrace stackTrace;
+            if (responseMessage.CosmosException != null)
+            {
+                stackTrace = new StackTrace(responseMessage.CosmosException);
+            }
+            else
+            {
+                stackTrace = new StackTrace(1);
             }
 
             return CosmosExceptionFactory.Create(
                 responseMessage.StatusCode,
                 (int)responseMessage.Headers.SubStatusCode,
                 errorMessage,
-                new StackTrace(1),
+                stackTrace,
                 responseMessage.Headers.ActivityId,
                 responseMessage.Headers.RequestCharge,
                 responseMessage.Headers.RetryAfter,
                 responseMessage.Headers,
                 responseMessage.DiagnosticsContext,
-                null);
+                responseMessage.CosmosException?.InnerException);
         }
 
         internal static CosmosException Create(
@@ -181,6 +203,17 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
         {
             switch (statusCode)
             {
+                case HttpStatusCode.NotFound:
+                    return new CosmosNotFoundException(
+                        message,
+                        subStatusCode,
+                        stackTrace,
+                        activityId,
+                        requestCharge,
+                        retryAfter,
+                        headers,
+                        diagnosticsContext,
+                        innerException);
                 case HttpStatusCode.InternalServerError:
                     return new CosmosInternalServerErrorException(
                         message,

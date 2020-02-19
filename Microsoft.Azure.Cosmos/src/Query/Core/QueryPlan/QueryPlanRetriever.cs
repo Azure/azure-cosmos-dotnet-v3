@@ -71,14 +71,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                 throw CosmosExceptionFactory.Create(
                     statusCode: System.Net.HttpStatusCode.BadRequest,
                     subStatusCode: default,
-                    message: tryGetQueryPlan.Exception.Message,
-                    stackTrace: default,
+                    message: tryGetQueryPlan.Exception.ToString(),
+                    stackTrace: new System.Diagnostics.StackTrace(tryGetQueryPlan.Exception),
                     activityId: default,
                     requestCharge: default,
                     retryAfter: default,
                     headers: default,
                     diagnosticsContext: default,
-                    innerException: tryGetQueryPlan.Exception);
+                    innerException: default);
             }
 
             return tryGetQueryPlan.Result;

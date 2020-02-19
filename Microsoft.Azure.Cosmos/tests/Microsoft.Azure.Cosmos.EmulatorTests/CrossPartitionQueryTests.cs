@@ -27,6 +27,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
@@ -794,9 +795,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 Assert.Fail($"Expected {nameof(CosmosException)}");
             }
-            catch (CosmosException exception) when (exception.StatusCode == HttpStatusCode.BadRequest)
+            catch (CosmosBadRequestException exception) when (exception.StatusCode == HttpStatusCode.BadRequest)
             {
-                Assert.IsTrue(exception.Message.Contains(@"{""errors"":[{""severity"":""Error"",""location"":{""start"":27,""end"":28},""code"":""SC2001"",""message"":""Identifier 'a' could not be resolved.""}]}"),
+                Assert.IsTrue(exception.Message.Contains(@"Identifier 'a' could not be resolved."),
                     exception.Message);
             }
         }
