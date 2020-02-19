@@ -619,7 +619,7 @@ namespace Microsoft.Azure.Cosmos
                             streamPayload,
                             requestOptions.EncryptionOptions,
                             (DatabaseCore)this.Database,
-                            this.ClientContext,
+                            this.ClientContext.ClientOptions.EncryptionSettings,
                             diagnosticsContext,
                             cancellationToken);
                     }
@@ -645,7 +645,7 @@ namespace Microsoft.Azure.Cosmos
                         responseMessage.Content = await this.ClientContext.EncryptionProcessor.DecryptAsync(
                             responseMessage.Content,
                             (DatabaseCore)this.Database,
-                            this.ClientContext,
+                            this.ClientContext.ClientOptions.EncryptionSettings,
                             diagnosticsContext,
                             cancellationToken);
                     }

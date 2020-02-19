@@ -23,14 +23,13 @@ namespace Microsoft.Azure.Cosmos
             Stream input,
             EncryptionOptions encryptionOptions,
             DatabaseCore database,
-            CosmosClientContext clientContext,
+            EncryptionSettings encryptionSettings,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             Debug.Assert(input != null);
             Debug.Assert(encryptionOptions != null);
             Debug.Assert(database != null);
-            Debug.Assert(clientContext != null);
             Debug.Assert(diagnosticsContext != null);
 
             if (encryptionOptions.EncryptedPaths == null)
@@ -56,7 +55,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentException("Invalid encryption options", nameof(encryptionOptions.DataEncryptionKey));
             }
 
-            if (clientContext.ClientOptions.EncryptionSettings == null)
+            if (encryptionSettings == null)
             {
                 throw new ArgumentException(ClientResources.EncryptionSettingsNotConfigured);
             }
@@ -100,17 +99,16 @@ namespace Microsoft.Azure.Cosmos
         public async Task<Stream> DecryptAsync(
             Stream input,
             DatabaseCore database,
-            CosmosClientContext clientContext,
+            EncryptionSettings encryptionSettings,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             Debug.Assert(input != null);
             Debug.Assert(database != null);
             Debug.Assert(input.CanSeek);
-            Debug.Assert(clientContext != null);
             Debug.Assert(diagnosticsContext != null);
 
-            if (clientContext.ClientOptions.EncryptionSettings == null)
+            if (encryptionSettings == null)
             {
                 return input;
             }
