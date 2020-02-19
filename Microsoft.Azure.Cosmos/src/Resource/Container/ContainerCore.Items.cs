@@ -400,14 +400,12 @@ namespace Microsoft.Azure.Cosmos
             FeedToken feedToken,
             QueryRequestOptions requestOptions = null)
         {
-            requestOptions = requestOptions ?? new QueryRequestOptions();
-            if (requestOptions.IsEffectivePartitionKeyRouting)
-            {
-                requestOptions.PartitionKey = null;
-            }
-
             FeedTokenInternal feedTokenInternal = feedToken as FeedTokenInternal;
-            
+            return this.GetItemQueryStreamIteratorInternal(
+                sqlQuerySpec: queryDefinition?.ToSqlQuerySpec(),
+                isContinuationExcpected: true,
+                feedToken: feedTokenInternal,
+                requestOptions: requestOptions);
         }
 
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
@@ -526,6 +524,41 @@ namespace Microsoft.Azure.Cosmos
                 client: this.queryClient,
                 sqlQuerySpec: sqlQuerySpec,
                 continuationToken: continuationToken,
+                queryRequestOptions: requestOptions,
+                resourceLink: this.LinkUri,
+                isContinuationExpected: isContinuationExcpected,
+                allowNonValueAggregateQuery: true,
+                partitionedQueryExecutionInfo: null);
+        }
+
+        internal FeedTokenIterator GetItemQueryStreamIteratorInternal(
+            SqlQuerySpec sqlQuerySpec,
+            bool isContinuationExcpected,
+            FeedTokenInternal feedToken,
+            QueryRequestOptions requestOptions)
+        {
+            requestOptions = requestOptions ?? new QueryRequestOptions();
+
+            if (requestOptions.IsEffectivePartitionKeyRouting)
+            {
+                requestOptions.PartitionKey = null;
+            }
+
+            if (sqlQuerySpec == null)
+            {
+                return new FeedTokenIteratorCore(
+                    this,
+                    this.LinkUri,
+                    resourceType: ResourceType.Document,
+                    queryDefinition: null,
+                    feedTokenInternal: feedToken,
+                    options: requestOptions);
+            }
+
+            return QueryIterator.Create(
+                client: this.queryClient,
+                sqlQuerySpec: sqlQuerySpec,
+                feedTokenInternal: feedToken,
                 queryRequestOptions: requestOptions,
                 resourceLink: this.LinkUri,
                 isContinuationExpected: isContinuationExcpected,
