@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public void FeedToken_EPK_TrySplit()
+        public void FeedToken_EPK_Scale()
         {
             const string containerRid = "containerRid";
             List<Documents.PartitionKeyRange> keyRanges = new List<Documents.PartitionKeyRange>()
@@ -49,8 +49,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new Documents.PartitionKeyRange() { MinInclusive = "D", MaxExclusive ="E" },
             };
             FeedTokenEPKRange token = new FeedTokenEPKRange(containerRid, keyRanges);
-            Assert.IsTrue(token.TrySplit(out IReadOnlyList<FeedToken> splitTokens));
-            Assert.AreEqual(keyRanges.Count, splitTokens.Count());
+            IReadOnlyList<FeedToken> splitTokens = token.Scale();
+            Assert.AreEqual(keyRanges.Count, splitTokens.Count);
 
             List<FeedTokenEPKRange> feedTokenEPKRanges = splitTokens.Select(t => t as FeedTokenEPKRange).ToList();
             Assert.AreEqual(keyRanges[0].MinInclusive, feedTokenEPKRanges[0].CompositeContinuationTokens.Peek().Range.Min);
@@ -63,11 +63,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(keyRanges[1].MaxExclusive, feedTokenEPKRanges[1].CompleteRange.Max);
 
             FeedTokenEPKRange singleToken = new FeedTokenEPKRange(containerRid, new Documents.PartitionKeyRange() { MinInclusive = "A", MaxExclusive = "B" });
-            Assert.IsFalse(singleToken.TrySplit(out IReadOnlyList<FeedToken> _));
+            Assert.AreEqual(0, singleToken.Scale().Count);
         }
 
         [TestMethod]
-        public void FeedToken_EPK_TrySplit_WithMax()
+        public void FeedToken_EPK_Scale_WithMax()
         {
             const string containerRid = "containerRid";
             List<Documents.PartitionKeyRange> keyRanges = new List<Documents.PartitionKeyRange>()
@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
             FeedTokenEPKRange token = new FeedTokenEPKRange(containerRid, keyRanges);
             // With maxTokens less than total
-            Assert.IsTrue(token.TrySplit(out IReadOnlyList<FeedToken> splitTokens, 1));
+            IReadOnlyList<FeedToken> splitTokens = token.Scale(maxTokens: 1);
             Assert.AreEqual(1, splitTokens.Count);
 
             List<FeedTokenEPKRange> feedTokenEPKRanges = splitTokens.Select(t => t as FeedTokenEPKRange).ToList();
@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(keyRanges[1].MaxExclusive, feedTokenEPKRanges[0].CompleteRange.Max);
 
             // With maxTokens more than tokens
-            Assert.IsTrue(token.TrySplit(out IReadOnlyList<FeedToken> splitTokens2, 3));
+            IReadOnlyList<FeedToken> splitTokens2 = token.Scale(maxTokens: 3);
             Assert.AreEqual(keyRanges.Count, splitTokens2.Count);
 
             feedTokenEPKRanges = splitTokens2.Select(t => t as FeedTokenEPKRange).ToList();

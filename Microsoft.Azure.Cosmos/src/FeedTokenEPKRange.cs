@@ -174,21 +174,17 @@ namespace Microsoft.Azure.Cosmos
             return false;
         }
 
-        public override bool TrySplit(
-            out IReadOnlyList<FeedToken> splitFeedTokens,
-            int? maxTokens = null)
+        public override IReadOnlyList<FeedToken> Scale(int? maxTokens = null)
         {
             if (this.CompositeContinuationTokens.Count <= 1)
             {
-                splitFeedTokens = null;
-                return false;
+                return new List<FeedToken>();
             }
 
             if (!maxTokens.HasValue
                 || maxTokens.Value >= this.CompositeContinuationTokens.Count)
             {
-                splitFeedTokens = this.CompositeContinuationTokens.Select(token => new FeedTokenEPKRange(this.ContainerRid, token)).ToList();
-                return true;
+                return this.CompositeContinuationTokens.Select(token => new FeedTokenEPKRange(this.ContainerRid, token)).ToList();
             }
 
             int bucketSize = (int)Math.Ceiling((double)this.CompositeContinuationTokens.Count / maxTokens.Value);
@@ -203,8 +199,7 @@ namespace Microsoft.Azure.Cosmos
                 feedTokens.Add(new FeedTokenEPKRange(this.ContainerRid, completeRange, bucketCompositeContinuationTokens));
             }
             
-            splitFeedTokens = feedTokens;
-            return true;
+            return feedTokens;
         }
 
         public static bool TryParseInstance(string toStringValue, out FeedToken feedToken)

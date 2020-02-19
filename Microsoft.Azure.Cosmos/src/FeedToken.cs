@@ -49,21 +49,15 @@ namespace Microsoft.Azure.Cosmos
         public abstract void UpdateContinuation(string continuationToken);
 
         /// <summary>
-        /// Attempts to split an existing <see cref="FeedToken"/> into individual instances.
+        /// Attempts to scale an existing <see cref="FeedToken"/>.
         /// </summary>
         /// <remarks>
-        /// It is not possible to split all tokens, it depends on the state of the current token itself.
+        /// It is not always possible to scale a token, but when it is, the list of resulting tokens is returned.
+        /// Each token then can be used to start its own read process in parallel and the current token that origincated the scale can be discarded.
         /// The amount of tokens returned is up to <paramref name="maxTokens"/>, but it could be less.
         /// </remarks>
-        /// <param name="splitFeedTokens">The resulting list of individual <see cref="FeedToken"/> instances.</param>
         /// <param name="maxTokens">Defines a maximum amount of tokens to be returned.</param>
-        /// <returns>A boolean indicating if split was possible</returns>
-        public virtual bool TrySplit(
-            out IReadOnlyList<FeedToken> splitFeedTokens,
-            int? maxTokens = null)
-        {
-            splitFeedTokens = null;
-            return false;
-        }
+        /// <returns>The resulting list of individual <see cref="FeedToken"/> instances.</returns>
+        public virtual IReadOnlyList<FeedToken> Scale(int? maxTokens = null) => new List<FeedToken>();
     }
 }

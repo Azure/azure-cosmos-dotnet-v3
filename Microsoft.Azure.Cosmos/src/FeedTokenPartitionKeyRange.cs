@@ -146,17 +146,14 @@ namespace Microsoft.Azure.Cosmos
             return false;
         }
 
-        public override bool TrySplit(
-            out IReadOnlyList<FeedToken> splitFeedTokens,
-            int? maxTokens = null)
+        public override IReadOnlyList<FeedToken> Scale(int? maxTokens = null)
         {
             if (this.FeedTokenEPKRange == null)
             {
-                splitFeedTokens = null;
-                return false;
+                return base.Scale(maxTokens);
             }
 
-            return this.FeedTokenEPKRange.TrySplit(out splitFeedTokens, maxTokens);
+            return this.FeedTokenEPKRange.Scale(maxTokens);
         }
     }
 }
