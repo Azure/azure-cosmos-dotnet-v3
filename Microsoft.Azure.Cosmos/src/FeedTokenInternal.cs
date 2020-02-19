@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -57,5 +58,7 @@ namespace Microsoft.Azure.Cosmos
             ContainerCore containerCore,
             ResponseMessage responseMessage,
             CancellationToken cancellationToken = default(CancellationToken)) => Task.FromResult(false);
+
+        public override IReadOnlyList<FeedToken> Scale(int? maxTokens = null) => new List<FeedToken>();
     }
 }

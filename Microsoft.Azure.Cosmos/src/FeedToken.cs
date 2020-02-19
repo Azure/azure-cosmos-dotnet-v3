@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract void UpdateContinuation(string continuationToken);
 
         /// <summary>
-        /// Attempts to scale an existing <see cref="FeedToken"/>.
+        /// Attempts to scale an existing <see cref="FeedToken"/> into more granular FeedTokens if-possible
         /// </summary>
         /// <remarks>
         /// It is not always possible to scale a token, but when it is, the list of resulting tokens is returned.
@@ -58,6 +58,6 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         /// <param name="maxTokens">Defines a maximum amount of tokens to be returned.</param>
         /// <returns>The resulting list of individual <see cref="FeedToken"/> instances.</returns>
-        public virtual IReadOnlyList<FeedToken> Scale(int? maxTokens = null) => new List<FeedToken>();
+        public abstract IReadOnlyList<FeedToken> Scale(int? maxTokens = null);
     }
 }
