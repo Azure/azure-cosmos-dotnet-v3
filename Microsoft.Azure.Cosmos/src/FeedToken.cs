@@ -40,15 +40,6 @@ namespace Microsoft.Azure.Cosmos
         public abstract override string ToString();
 
         /// <summary>
-        /// Overrides the Continuation for an existing FeedToken
-        /// </summary>
-        /// <remarks>
-        /// There is no validation on the format of the Continuation being passed.
-        /// </remarks>
-        /// <param name="continuationToken">Continuation to be used to update.</param>
-        public abstract void UpdateContinuation(string continuationToken);
-
-        /// <summary>
         /// Attempts to scale an existing <see cref="FeedToken"/> into more granular FeedTokens if-possible
         /// </summary>
         /// <remarks>

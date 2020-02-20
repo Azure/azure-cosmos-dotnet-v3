@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<string> serializations = new List<string>();
             foreach(FeedToken token in tokens)
             {
-                token.UpdateContinuation(continuation);
+                (token as FeedTokenInternal).UpdateContinuation(continuation);
                 serializations.Add(token.ToString());
             }
 
@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<string> serializations = new List<string>();
             foreach (FeedToken token in tokens)
             {
-                token.UpdateContinuation(continuation);
+                (token as FeedTokenInternal).UpdateContinuation(continuation);
                 serializations.Add(token.ToString());
             }
 
