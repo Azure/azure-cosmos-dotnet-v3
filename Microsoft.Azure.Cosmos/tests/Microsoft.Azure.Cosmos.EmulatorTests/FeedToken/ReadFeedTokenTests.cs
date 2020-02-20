@@ -57,31 +57,45 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ReadFeedIteratorCore_ReadAll()
         {
-            int totalCount = 0;
-            int firstRunTotal = 25;
             int batchSize = 100;
 
             await this.CreateRandomItems(this.LargerContainer, batchSize, randomPartitionKey: true);
             ContainerCore itemsCore = this.LargerContainer;
-            IReadOnlyList<FeedToken> tokens = await itemsCore.GetFeedTokensAsync(1);
-            FeedTokenIterator feedIterator = itemsCore.GetItemQueryStreamIterator(null, tokens[0]);
-            while (feedIterator.HasMoreResults)
-            {
-                using (ResponseMessage responseMessage =
-                    await feedIterator.ReadNextAsync(this.cancellationToken))
-                {
-                    Assert.IsNotNull(feedIterator.FeedToken);
-                    Assert.IsTrue(feedIterator.TryGetContinuationToken(out string continuationToken));
+            IReadOnlyList<FeedToken> tokens = await itemsCore.GetFeedTokensAsync();
 
-                    if (responseMessage.IsSuccessStatusCode)
+            List<Task<int>> tasks = tokens.Select(token => Task.Run(async () =>
+            {
+                int count = 0;
+                FeedTokenIterator feedIterator = itemsCore.GetItemQueryStreamIterator(null, token);
+                while (feedIterator.HasMoreResults)
+                {
+                    using (ResponseMessage responseMessage =
+                        await feedIterator.ReadNextAsync(this.cancellationToken))
                     {
-                        Collection<ToDoActivity> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
-                        totalCount += response.Count;
+                        Assert.IsNotNull(feedIterator.FeedToken);
+                        Assert.IsTrue(feedIterator.TryGetContinuationToken(out string continuationToken));
+
+                        if (responseMessage.IsSuccessStatusCode)
+                        {
+                            Collection<ToDoActivity> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
+                            count += response.Count;
+                        }
                     }
                 }
+
+                return count;
+
+            })).ToList();
+
+            await Task.WhenAll(tasks);
+
+            int documentsRead = 0;
+            foreach (Task<int> task in tasks)
+            {
+                documentsRead += task.Result;
             }
 
-            Assert.AreEqual(firstRunTotal, totalCount);
+            Assert.AreEqual(batchSize, documentsRead);
         }
 
         private async Task<IList<ToDoActivity>> CreateRandomItems(ContainerCore container, int pkCount, int perPKItemCount = 1, bool randomPartitionKey = true)
