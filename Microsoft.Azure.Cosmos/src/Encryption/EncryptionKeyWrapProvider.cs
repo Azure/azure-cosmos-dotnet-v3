@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Interface for interacting with a provider that can be used to wrap (encrypt) and unwrap (decrypt) data encryption keys for envelope based encryption.
     /// Implementations are expected to ensure that master keys are highly available and protected against accidental deletion.
-    /// See https://tbd for more information on client-side encryption support in Azure Cosmos DB.
+    /// See https://aka.ms/CosmosClientEncryption for more information on client-side encryption support in Azure Cosmos DB.
     /// </summary>
 #if PREVIEW
     public

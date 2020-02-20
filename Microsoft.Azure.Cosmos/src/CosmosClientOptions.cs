@@ -374,8 +374,8 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Settings to allow client side encryption.
-        /// See https://tbd for more information on client-side encryption support in Azure Cosmos DB.
+        /// Provider to wrap/unwrap data encryption keys for client side encryption.
+        /// See https://aka.ms/CosmosClientEncryption for more information on client-side encryption support in Azure Cosmos DB.
         /// </summary>
         [JsonIgnore]
 #if PREVIEW
@@ -383,7 +383,7 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        EncryptionSettings EncryptionSettings { get; set; }
+        EncryptionKeyWrapProvider EncryptionKeyWrapProvider { get; set; }
 
         /// <summary>
         /// Limits the operations to the provided endpoint on the CosmosClient.

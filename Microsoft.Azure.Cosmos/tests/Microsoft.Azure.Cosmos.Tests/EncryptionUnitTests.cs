@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos
             }
             catch (ArgumentException ex)
             {
-                Assert.AreEqual(ClientResources.EncryptionSettingsNotConfigured, ex.Message);
+                Assert.AreEqual(ClientResources.EncryptionKeyWrapProviderNotConfigured, ex.Message);
             }
 
         }
@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos
             }
             catch (ArgumentException ex)
             {
-                Assert.AreEqual(ClientResources.EncryptionSettingsNotConfigured, ex.Message);
+                Assert.AreEqual(ClientResources.EncryptionKeyWrapProviderNotConfigured, ex.Message);
             }
         }
 
@@ -200,7 +200,7 @@ namespace Microsoft.Azure.Cosmos
                         EncryptionOptions = new EncryptionOptions
                         {
                             DataEncryptionKey = database.GetDataEncryptionKey("random"),
-                            EncryptedPaths = MyItem.PathsToEncrypt
+                            PathsToEncrypt = MyItem.PathsToEncrypt
                         }
                     });
 
@@ -276,7 +276,7 @@ namespace Microsoft.Azure.Cosmos
                     EncryptionOptions = new EncryptionOptions
                     {
                         DataEncryptionKey = database.GetDataEncryptionKey(dekId),
-                        EncryptedPaths = pathsToEncrypt
+                        PathsToEncrypt = pathsToEncrypt
                     }
                 });
 
@@ -372,7 +372,7 @@ namespace Microsoft.Azure.Cosmos
 
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient((builder) => builder
                 .AddCustomHandlers(this.testHandler)
-                .WithEncryptionSettings(new EncryptionSettings(this.mockKeyWrapProvider.Object)));
+                .WithEncryptionKeyWrapProvider(this.mockKeyWrapProvider.Object));
 
             this.mockEncryptionAlgorithm = new Mock<EncryptionAlgorithm>();
             this.mockEncryptionAlgorithm.Setup(m => m.EncryptData(It.IsAny<byte[]>()))

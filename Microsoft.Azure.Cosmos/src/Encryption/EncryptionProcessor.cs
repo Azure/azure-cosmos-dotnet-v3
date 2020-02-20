@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos
             Stream input,
             EncryptionOptions encryptionOptions,
             DatabaseCore database,
-            EncryptionSettings encryptionSettings,
+            EncryptionKeyWrapProvider encryptionKeyWrapProvider,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
@@ -32,21 +32,21 @@ namespace Microsoft.Azure.Cosmos
             Debug.Assert(database != null);
             Debug.Assert(diagnosticsContext != null);
 
-            if (encryptionOptions.EncryptedPaths == null)
+            if (encryptionOptions.PathsToEncrypt == null)
             {
-                throw new ArgumentNullException(nameof(encryptionOptions.EncryptedPaths));
+                throw new ArgumentNullException(nameof(encryptionOptions.PathsToEncrypt));
             }
 
-            if (encryptionOptions.EncryptedPaths.Count == 0)
+            if (encryptionOptions.PathsToEncrypt.Count == 0)
             {
                 return input;
             }
 
-            foreach (string path in encryptionOptions.EncryptedPaths)
+            foreach (string path in encryptionOptions.PathsToEncrypt)
             {
                 if (string.IsNullOrEmpty(path) || path[0] != '/' || path.LastIndexOf('/') != 0)
                 {
-                    throw new ArgumentException($"Invalid path {path ?? string.Empty}", nameof(encryptionOptions.EncryptedPaths));
+                    throw new ArgumentException($"Invalid path {path ?? string.Empty}", nameof(encryptionOptions.PathsToEncrypt));
                 }
             }
 
@@ -55,9 +55,9 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentException("Invalid encryption options", nameof(encryptionOptions.DataEncryptionKey));
             }
 
-            if (encryptionSettings == null)
+            if (encryptionKeyWrapProvider == null)
             {
-                throw new ArgumentException(ClientResources.EncryptionSettingsNotConfigured);
+                throw new ArgumentException(ClientResources.EncryptionKeyWrapProviderNotConfigured);
             }
 
             DataEncryptionKey dek = database.GetDataEncryptionKey(encryptionOptions.DataEncryptionKey.Id);
@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos
 
             JObject toEncryptJObj = new JObject();
 
-            foreach (string pathToEncrypt in encryptionOptions.EncryptedPaths)
+            foreach (string pathToEncrypt in encryptionOptions.PathsToEncrypt)
             {
                 string propertyName = pathToEncrypt.Substring(1);
                 JToken propertyValueHolder = itemJObj.Property(propertyName).Value;
@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos
         public async Task<Stream> DecryptAsync(
             Stream input,
             DatabaseCore database,
-            EncryptionSettings encryptionSettings,
+            EncryptionKeyWrapProvider encryptionKeyWrapProvider,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
@@ -111,7 +111,7 @@ namespace Microsoft.Azure.Cosmos
             Debug.Assert(input.CanSeek);
             Debug.Assert(diagnosticsContext != null);
 
-            if (encryptionSettings == null)
+            if (encryptionKeyWrapProvider == null)
             {
                 return input;
             }

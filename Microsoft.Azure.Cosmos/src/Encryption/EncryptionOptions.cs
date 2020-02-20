@@ -28,6 +28,6 @@ namespace Microsoft.Azure.Cosmos
         /// Only top level paths are supported.
         /// Example of a path specification: /sensitive
         /// </summary>
-        public List<string> EncryptedPaths { get; set; }
+        public List<string> PathsToEncrypt { get; set; }
     }
 }

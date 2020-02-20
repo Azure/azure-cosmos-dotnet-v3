@@ -27,6 +27,3 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.EmulatorTests" + AssemblyKeys.TestPublicKey)]
 [assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.NetFramework.Tests" + AssemblyKeys.ProductPublicKey)]
 [assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.NetFramework.Tests" + AssemblyKeys.TestPublicKey)]
-
-[assembly: InternalsVisibleTo("Cosmos.Samples.Encryption" + AssemblyKeys.ProductPublicKey)]
-[assembly: InternalsVisibleTo("Cosmos.Samples.Encryption" + AssemblyKeys.TestPublicKey)]

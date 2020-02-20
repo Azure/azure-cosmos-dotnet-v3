@@ -284,7 +284,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             (string endpoint, string _) = TestCommon.GetAccountInfo();
             CosmosClient resourceTokenBasedClient = new CosmosClientBuilder(endpoint, permission.Token)
-                .WithEncryptionSettings(new EncryptionSettings(new TestKeyWrapProvider()))
+                .WithEncryptionKeyWrapProvider(new TestKeyWrapProvider())
                 .Build();
 
             DatabaseCore databaseForTokenClient = (DatabaseInlineCore)resourceTokenBasedClient.GetDatabase(EncryptionTests.databaseCore.Id);
@@ -339,7 +339,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             (string endpoint, string authKey) = TestCommon.GetAccountInfo();
             CosmosClient clientWithBulk = new CosmosClientBuilder(endpoint, authKey)
-                .WithEncryptionSettings(new EncryptionSettings(new TestKeyWrapProvider()))
+                .WithEncryptionKeyWrapProvider(new TestKeyWrapProvider())
                 .WithBulkExecution(true)
                 .Build();
 
@@ -419,7 +419,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             (string endpoint, string authKey) = TestCommon.GetAccountInfo();
             return new CosmosClientBuilder(endpoint, authKey)
-                .WithEncryptionSettings(new EncryptionSettings(new TestKeyWrapProvider()))
+                .WithEncryptionKeyWrapProvider(new TestKeyWrapProvider())
                 .Build();
         }
 
@@ -564,7 +564,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 EncryptionOptions = new EncryptionOptions
                 {
                     DataEncryptionKey = ((DatabaseCore)containerCore.Database).GetDataEncryptionKey(dekId),
-                    EncryptedPaths = pathsToEncrypt
+                    PathsToEncrypt = pathsToEncrypt
                 },
                 IfMatchEtag = ifMatchEtag
             };

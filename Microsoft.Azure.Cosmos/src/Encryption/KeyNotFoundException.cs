@@ -20,12 +20,12 @@ namespace Microsoft.Azure.Cosmos
 #else
     internal
 #endif
-    class MasterKeyNotFoundException : Exception
+    class KeyNotFoundException : Exception
     {
         /// <summary>
         /// Creates a new instance of master key not found exception.
         /// </summary>
-        public MasterKeyNotFoundException()
+        public KeyNotFoundException()
         {
         }
 
@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos
         /// Creates a new instance of master key not found exception with provided message.
         /// </summary>
         /// <param name="message">Message for the exception.</param>
-        public MasterKeyNotFoundException(string message)
+        public KeyNotFoundException(string message)
             : base(message)
         {
         }
@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="message">Message for the exception.</param>
         /// <param name="innerException">Internal exception.</param>
-        public MasterKeyNotFoundException(string message, Exception innerException)
+        public KeyNotFoundException(string message, Exception innerException)
             : base(message, innerException)
         {
         }
@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="info"></param>
         /// <param name="context"></param>
-        protected MasterKeyNotFoundException(SerializationInfo info, StreamingContext context)
+        protected KeyNotFoundException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
         }
