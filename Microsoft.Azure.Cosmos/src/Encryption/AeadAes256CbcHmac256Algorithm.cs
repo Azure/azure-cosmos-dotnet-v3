@@ -105,6 +105,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.dataEncryptionKey = encryptionKey;
             this.algorithmVersion = algorithmVersion;
+
             version[0] = algorithmVersion;
 
             Debug.Assert(encryptionKey != null, "Null encryption key detected in AeadAes256CbcHmac256 algorithm");
@@ -277,7 +278,7 @@ namespace Microsoft.Azure.Cosmos
             int minimumCipherTextLength = hasAuthenticationTag ? MinimumCipherTextLengthInBytesWithAuthenticationTag : MinimumCipherTextLengthInBytesNoAuthenticationTag;
             if (cipherText.Length < minimumCipherTextLength)
             {
-                throw EncryptionExceptions.InvalidCipherTextSize(cipherText.Length, minimumCipherTextLength);
+                throw EncryptionExceptionFactory.InvalidCipherTextSize(cipherText.Length, minimumCipherTextLength);
             }
 
             // Validate the version byte
@@ -285,7 +286,7 @@ namespace Microsoft.Azure.Cosmos
             if (cipherText[startIndex] != this.algorithmVersion)
             {
                 // Cipher text was computed with a different algorithm version than this.
-                throw EncryptionExceptions.InvalidAlgorithmVersion(cipherText[startIndex], this.algorithmVersion);
+                throw EncryptionExceptionFactory.InvalidAlgorithmVersion(cipherText[startIndex], this.algorithmVersion);
             }
 
             startIndex += 1;
@@ -313,7 +314,7 @@ namespace Microsoft.Azure.Cosmos
                 if (!SecurityUtility.CompareBytes(authenticationTag, cipherText, authenticationTagOffset, authenticationTag.Length))
                 {
                     // Potentially tampered data, throw an exception
-                    throw EncryptionExceptions.InvalidAuthenticationTag();
+                    throw EncryptionExceptionFactory.InvalidAuthenticationTag();
                 }
             }
 

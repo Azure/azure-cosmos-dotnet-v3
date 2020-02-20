@@ -5,8 +5,9 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Diagnostics;
 
-    internal class CachedDekProperties
+    internal sealed class CachedDekProperties
     {
         public string DatabaseId { get; }
 
@@ -19,6 +20,9 @@ namespace Microsoft.Azure.Cosmos
             DataEncryptionKeyProperties serverProperties,
             DateTime serverPropertiesExpiryUtc)
         {
+            Debug.Assert(databaseId != null);
+            Debug.Assert(serverProperties != null);
+
             this.DatabaseId = databaseId;
             this.ServerProperties = serverProperties;
             this.ServerPropertiesExpiryUtc = serverPropertiesExpiryUtc;

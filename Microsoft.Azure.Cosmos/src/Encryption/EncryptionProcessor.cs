@@ -84,9 +84,12 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            byte[] plainText = Encoding.UTF8.GetBytes(toEncryptJObj.ToString(Formatting.None));
+            MemoryStream memoryStream = EncryptionProcessor.baseSerializer.ToStream<JObject>(toEncryptJObj) as MemoryStream;
+            Debug.Assert(memoryStream != null);
+            Debug.Assert(memoryStream.TryGetBuffer(out _));
 
-            Debug.Assert(inMemoryRawDek.AlgorithmUsingRawDek.AlgorithmName == AeadAes256CbcHmac256Algorithm.AlgorithmNameConstant);
+            byte[] plainText = memoryStream.GetBuffer();
+
             EncryptionProperties encryptionProperties = new EncryptionProperties(
                 dataEncryptionKeyRid: dekProperties.ResourceId,
                 encryptionFormatVersion: 1,

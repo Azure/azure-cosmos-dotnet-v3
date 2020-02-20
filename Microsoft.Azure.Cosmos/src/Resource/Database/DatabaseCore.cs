@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Diagnostics;
     using System.IO;
     using System.Net;
     using System.Threading;
@@ -645,6 +646,8 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken);
 
             DataEncryptionKeyResponse dekResponse = await this.ClientContext.ResponseFactory.CreateDataEncryptionKeyResponseAsync(newDek, responseMessage);
+            Debug.Assert(dekResponse.Resource != null);
+
             this.ClientContext.DekCache.Set(this.Id, newDek.LinkUri, dekResponse.Resource);
             this.ClientContext.DekCache.SetRawDek(dekResponse.Resource.SelfLink, inMemoryRawDek);
             return dekResponse;

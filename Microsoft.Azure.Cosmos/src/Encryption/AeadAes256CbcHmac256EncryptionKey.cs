@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos
     /// 3) mac_key - A derived key that is used to compute HMAC of the cipher text
     /// 4) iv_key - A derived key that is used to generate a synthetic IV from plain text data.
     /// </summary>
-    internal class AeadAes256CbcHmac256EncryptionKey : SymmetricKey
+    internal sealed class AeadAes256CbcHmac256EncryptionKey : SymmetricKey
     {
         /// <summary>
         /// Key size in bits
@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos
             // Key validation
             if (rootKey.Length != keySizeInBytes)
             {
-                throw EncryptionExceptions.InvalidKeySize(
+                throw EncryptionExceptionFactory.InvalidKeySize(
                     this.algorithmName,
                     rootKey.Length,
                     keySizeInBytes);

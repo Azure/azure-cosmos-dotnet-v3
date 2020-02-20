@@ -103,6 +103,8 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken);
 
             DataEncryptionKeyResponse response = await this.ClientContext.ResponseFactory.CreateDataEncryptionKeyResponseAsync(this, responseMessage);
+            Debug.Assert(response.Resource != null);
+
             this.ClientContext.DekCache.Set(this.Database.Id, this.LinkUri, response.Resource);
             this.ClientContext.DekCache.SetRawDek(response.Resource.ResourceId, updatedRawDek);
             return response;
@@ -210,21 +212,21 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentException(ClientResources.EncryptionSettingsNotConfigured);
             }
 
-            EncryptionKeyWrapResult keyWrapResponse = null;
+            EncryptionKeyWrapResult keyWrapResponse;
             using (diagnosticsContext.CreateScope("WrapDataEncryptionKey"))
             {
                 keyWrapResponse = await encryptionSettings.EncryptionKeyWrapProvider.WrapKeyAsync(key, metadata, cancellationToken);
             }
 
             // Verify
-            DataEncryptionKeyProperties tempDekProperties = new DataEncryptionKeyProperties(this.Id, encryptionAlgorithmId, keyWrapResponse.WrappedDataEncryptionKey, keyWrapResponse.EncryptionKeyWrapMetadata);
+            DataEncryptionKeyProperties tempDekProperties = new DataEncryptionKeyProperties(this.Id, encryptionAlgorithmId, keyWrapResponse.WrappedDataEncryptionKeyBytes, keyWrapResponse.EncryptionKeyWrapMetadata);
             InMemoryRawDek roundTripResponse = await this.UnwrapAsync(tempDekProperties, diagnosticsContext, cancellationToken);
             if (!roundTripResponse.RawDek.SequenceEqual(key))
             {
                 throw new CosmosException(HttpStatusCode.BadRequest, ClientResources.KeyWrappingDidNotRoundtrip);
             }
 
-            return (keyWrapResponse.WrappedDataEncryptionKey, keyWrapResponse.EncryptionKeyWrapMetadata, roundTripResponse);
+            return (keyWrapResponse.WrappedDataEncryptionKeyBytes, keyWrapResponse.EncryptionKeyWrapMetadata, roundTripResponse);
         }
 
         internal async Task<InMemoryRawDek> UnwrapAsync(
@@ -247,9 +249,9 @@ namespace Microsoft.Azure.Cosmos
                         cancellationToken);
             }
 
-            EncryptionAlgorithm encryptionAlgorithm = this.GetEncryptionAlgorithm(unwrapResult.DataEncryptionKey, dekProperties.EncryptionAlgorithmId);
+            EncryptionAlgorithm encryptionAlgorithm = this.GetEncryptionAlgorithm(unwrapResult.DataEncryptionKeyBytes, dekProperties.EncryptionAlgorithmId);
 
-            return new InMemoryRawDek(unwrapResult.DataEncryptionKey, encryptionAlgorithm, unwrapResult.ClientCacheTimeToLive);
+            return new InMemoryRawDek(unwrapResult.DataEncryptionKeyBytes, encryptionAlgorithm, unwrapResult.ClientCacheTimeToLive);
         }
 
         private async Task<DataEncryptionKeyProperties> ReadResourceByRidSelfLinkAsync(
@@ -270,6 +272,7 @@ namespace Microsoft.Azure.Cosmos
              cancellationToken: cancellationToken);
 
             DataEncryptionKeyResponse response = await this.ClientContext.ResponseFactory.CreateDataEncryptionKeyResponseAsync(this, responseMessage);
+            Debug.Assert(response.Resource != null);
             return response;
         }
 
@@ -299,6 +302,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
 
             DataEncryptionKeyResponse response = await this.ClientContext.ResponseFactory.CreateDataEncryptionKeyResponseAsync(this, responseMessage);
+            Debug.Assert(response.Resource != null);
             return response;
         }
 

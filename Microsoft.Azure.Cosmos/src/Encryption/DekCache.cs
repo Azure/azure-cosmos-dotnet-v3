@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos
 
     internal class DekCache
     {
-        private readonly TimeSpan dekPropertiesTimeToLive = TimeSpan.FromMinutes(30);
+        private readonly TimeSpan dekPropertiesTimeToLive;
 
         // Internal for unit testing
         internal AsyncCache<Uri, CachedDekProperties> DekPropertiesByNameLinkUriCache { get; } = new AsyncCache<Uri, CachedDekProperties>();
@@ -25,6 +25,10 @@ namespace Microsoft.Azure.Cosmos
             if (dekPropertiesTimeToLive.HasValue)
             {
                 this.dekPropertiesTimeToLive = dekPropertiesTimeToLive.Value;
+            }
+            else
+            {
+                this.dekPropertiesTimeToLive = TimeSpan.FromMinutes(30);
             }
         }
 
@@ -46,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 cachedDekProperties = await this.DekPropertiesByRidSelfLinkCache.GetAsync(
                     dekRidSelfLink,
-                    null,
+                    obsoleteValue: null,
                     () => this.FetchAsync(fetcher, dekRidSelfLink, databaseId, diagnosticsContext, cancellationToken),
                     cancellationToken,
                     forceRefresh: true);

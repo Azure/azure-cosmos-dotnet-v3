@@ -673,17 +673,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private class TestKeyWrapProvider : EncryptionKeyWrapProvider
         {
-            public override Task<EncryptionKeyUnwrapResult> UnwrapKeyAsync(byte[] wrappedKey, EncryptionKeyWrapMetadata metadata, CancellationToken cancellationToken)
+            public override Task<EncryptionKeyUnwrapResult> UnwrapKeyAsync(ReadOnlySpan<byte> wrappedKey, EncryptionKeyWrapMetadata metadata, CancellationToken cancellationToken)
             {
                 int moveBy = metadata.Value == EncryptionTests.metadata1.Value + EncryptionTests.metadataUpdateSuffix ? 1 : 2;
-                return Task.FromResult(new EncryptionKeyUnwrapResult(wrappedKey.Select(b => (byte)(b - moveBy)).ToArray(), EncryptionTests.cacheTTL));
+                return Task.FromResult(new EncryptionKeyUnwrapResult(wrappedKey.ToArray().Select(b => (byte)(b - moveBy)).ToArray(), EncryptionTests.cacheTTL));
             }
 
-            public override Task<EncryptionKeyWrapResult> WrapKeyAsync(byte[] key, EncryptionKeyWrapMetadata metadata, CancellationToken cancellationToken)
+            public override Task<EncryptionKeyWrapResult> WrapKeyAsync(ReadOnlySpan<byte> key, EncryptionKeyWrapMetadata metadata, CancellationToken cancellationToken)
             {
                 EncryptionKeyWrapMetadata responseMetadata = new EncryptionKeyWrapMetadata(metadata.Value + EncryptionTests.metadataUpdateSuffix);
                 int moveBy = metadata.Value == EncryptionTests.metadata1.Value ? 1 : 2;
-                return Task.FromResult(new EncryptionKeyWrapResult(key.Select(b => (byte)(b + moveBy)).ToArray(), responseMetadata));
+                return Task.FromResult(new EncryptionKeyWrapResult(key.ToArray().Select(b => (byte)(b + moveBy)).ToArray(), responseMetadata));
             }
         }
     }

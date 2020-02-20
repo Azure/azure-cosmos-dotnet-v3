@@ -29,9 +29,8 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="value">Value of the metadata.</param>
         public EncryptionKeyWrapMetadata(string value)
+            : this(type: "custom", value: value, algorithm: null)
         {
-            this.Type = "custom";
-            this.Value = value;
         }
 
         /// <summary>
@@ -39,16 +38,14 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="source">Existing instance from which to initialize.</param>
         public EncryptionKeyWrapMetadata(EncryptionKeyWrapMetadata source)
+            : this(source?.Type, source?.Value, source?.Algorithm)
         {
-            this.Type = source.Type;
-            this.Algorithm = source.Algorithm;
-            this.Value = source.Value;
         }
 
         internal EncryptionKeyWrapMetadata(string type, string value, string algorithm)
         {
-            this.Type = type;
-            this.Value = value;
+            this.Type = type ?? throw new ArgumentNullException(nameof(type));
+            this.Value = value ?? throw new ArgumentNullException(nameof(value));
             this.Algorithm = algorithm;
         }
 

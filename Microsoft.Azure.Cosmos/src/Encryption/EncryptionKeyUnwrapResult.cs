@@ -24,9 +24,9 @@ namespace Microsoft.Azure.Cosmos
         /// Amount of time after which the raw data encryption key must not be used
         /// without invoking the <see cref="EncryptionKeyWrapProvider.UnwrapKeyAsync"/> again.
         /// </param>
-        public EncryptionKeyUnwrapResult(byte[] dataEncryptionKey, TimeSpan clientCacheTimeToLive)
+        public EncryptionKeyUnwrapResult(ReadOnlySpan<byte> dataEncryptionKey, TimeSpan clientCacheTimeToLive)
         {
-            this.DataEncryptionKey = dataEncryptionKey ?? throw new ArgumentNullException(nameof(dataEncryptionKey));
+            this.DataEncryptionKeyBytes = dataEncryptionKey.ToArray();
 
             if (clientCacheTimeToLive < TimeSpan.Zero)
             {
@@ -39,12 +39,14 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Raw form of the data encryption key.
         /// </summary>
-        public byte[] DataEncryptionKey { get; }
+        public ReadOnlySpan<byte> DataEncryptionKey => this.DataEncryptionKeyBytes;
 
         /// <summary>
         /// Amount of time after which the raw data encryption key must not be used
         /// without invoking the <see cref="EncryptionKeyWrapProvider.UnwrapKeyAsync"/> again.
         /// </summary>
         public TimeSpan ClientCacheTimeToLive { get; }
+
+        internal byte[] DataEncryptionKeyBytes { get; }
     }
 }

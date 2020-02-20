@@ -161,7 +161,6 @@ namespace Microsoft.Azure.Cosmos
             Assert.AreEqual(dekId, rewrappedProperties.Id);
             Assert.AreEqual(createdProperties.CreatedTime, rewrappedProperties.CreatedTime);
             Assert.IsNotNull(rewrappedProperties.LastModified);
-            Assert.AreNotEqual(createdProperties.LastModified, rewrappedProperties.LastModified);
             Assert.AreEqual(createdProperties.ResourceId, rewrappedProperties.ResourceId);
             Assert.AreEqual(createdProperties.SelfLink, rewrappedProperties.SelfLink);
 
@@ -498,7 +497,7 @@ namespace Microsoft.Azure.Cosmos
                         dekProperties = this.serializer.FromStream<DataEncryptionKeyProperties>(request.Content);
                         string databaseRid = ResourceId.NewDatabaseId(1).ToString();
                         dekProperties.ResourceId = ResourceId.NewClientEncryptionKeyId(databaseRid, (uint)this.Received.Count).ToString();
-                        dekProperties.CreatedTime = DateTime.UtcNow;
+                        dekProperties.CreatedTime = EncryptionTestHandler.ReducePrecisionToSeconds(DateTime.UtcNow);
                         dekProperties.LastModified = dekProperties.CreatedTime;
                         dekProperties.ETag = Guid.NewGuid().ToString();
                         dekProperties.SelfLink = string.Format(
@@ -526,7 +525,7 @@ namespace Microsoft.Azure.Cosmos
                     {
                         string dekId = EncryptionTestHandler.ParseDekUri(request.RequestUri);
                         dekProperties = this.serializer.FromStream<DataEncryptionKeyProperties>(request.Content);
-                        dekProperties.LastModified = DateTime.UtcNow + TimeSpan.FromSeconds(1);
+                        dekProperties.LastModified = EncryptionTestHandler.ReducePrecisionToSeconds(DateTime.UtcNow);
                         dekProperties.ETag = Guid.NewGuid().ToString();
 
                         httpStatusCode = HttpStatusCode.OK;
@@ -662,6 +661,11 @@ namespace Microsoft.Azure.Cosmos
                 Assert.AreEqual(EncryptionUnitTests.DatabaseId, segments[1]);
                 Assert.AreEqual(Paths.ClientEncryptionKeysPathSegment, segments[2]);
                 return segments[3];
+            }
+
+            private static DateTime ReducePrecisionToSeconds(DateTime input)
+            {
+                return new DateTime(input.Year, input.Month, input.Day, input.Hour, input.Minute, input.Second, DateTimeKind.Utc);
             }
         }
     }
