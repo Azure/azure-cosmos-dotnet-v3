@@ -2,10 +2,11 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Routing
+namespace Microsoft.Azure.Cosmos.Tests.Routing
 {
     using System.Collections.Generic;
     using System.Linq;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]

@@ -105,10 +105,15 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public static EffectivePartitionKey HashV2(string value)
         {
-            Span<byte> bytesForHashing = stackalloc byte[sizeof(byte) + Encoding.UTF8.GetByteCount(value.AsSpan(), count: 100)];
+            if (value.Length > (2 * 1024))
+            {
+                throw new ArgumentOutOfRangeException($"{nameof(value)} is too long.");
+            }
+
+            Span<byte> bytesForHashing = stackalloc byte[sizeof(byte) + Encoding.UTF8.GetByteCount(value.AsSpan())];
             bytesForHashing[0] = (byte)PartitionKeyComponentType.String;
             Span<byte> bytesForHashingSuffix = bytesForHashing.Slice(start: 1);
-            Encoding.UTF8.GetBytes(value, HashV1MaxStringLength, bytesForHashingSuffix, bytesForHashingSuffix.Length);
+            Encoding.UTF8.GetBytes(value, bytesForHashingSuffix);
             return EffectivePartitionKey.HashV2(bytesForHashing);
         }
 

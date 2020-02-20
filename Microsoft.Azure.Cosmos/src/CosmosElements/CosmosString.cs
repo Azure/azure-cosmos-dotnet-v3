@@ -64,6 +64,11 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public static CosmosString Create(string value)
         {
+            if (value.Length == 0)
+            {
+                return EagerCosmosString.Empty;
+            }
+
             return new EagerCosmosString(value);
         }
     }

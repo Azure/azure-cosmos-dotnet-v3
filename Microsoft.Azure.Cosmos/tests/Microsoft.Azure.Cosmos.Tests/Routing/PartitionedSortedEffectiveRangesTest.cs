@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Routing
+namespace Microsoft.Azure.Cosmos.Tests.Routing
 {
     using System;
     using System.Collections.Generic;
@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Linq;
     using System.Runtime.ExceptionServices;
     using System.Text;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
