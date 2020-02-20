@@ -146,14 +146,14 @@ namespace Microsoft.Azure.Cosmos
             return false;
         }
 
-        public override IReadOnlyList<FeedToken> Scale(int? maxTokens = null)
+        public override IReadOnlyList<FeedToken> Scale()
         {
             if (this.FeedTokenEPKRange == null)
             {
-                return base.Scale(maxTokens);
+                return base.Scale();
             }
 
-            return this.FeedTokenEPKRange.Scale(maxTokens);
+            return this.FeedTokenEPKRange.Scale();
         }
     }
 }

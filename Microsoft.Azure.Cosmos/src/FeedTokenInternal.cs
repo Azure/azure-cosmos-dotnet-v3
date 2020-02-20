@@ -61,6 +61,6 @@ namespace Microsoft.Azure.Cosmos
             ResponseMessage responseMessage,
             CancellationToken cancellationToken = default(CancellationToken)) => Task.FromResult(false);
 
-        public override IReadOnlyList<FeedToken> Scale(int? maxTokens = null) => new List<FeedToken>();
+        public override IReadOnlyList<FeedToken> Scale() => new List<FeedToken>();
     }
 }

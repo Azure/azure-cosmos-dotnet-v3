@@ -44,11 +44,9 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <remarks>
         /// It is not always possible to scale a token, but when it is, the list of resulting tokens is returned.
-        /// Each token then can be used to start its own read process in parallel and the current token that origincated the scale can be discarded.
-        /// The amount of tokens returned is up to <paramref name="maxTokens"/>, but it could be less.
+        /// Each token then can be used to start its own read process in parallel and the current token that originated the scale can be discarded.
         /// </remarks>
-        /// <param name="maxTokens">Defines a maximum amount of tokens to be returned.</param>
         /// <returns>The resulting list of individual <see cref="FeedToken"/> instances.</returns>
-        public abstract IReadOnlyList<FeedToken> Scale(int? maxTokens = null);
+        public abstract IReadOnlyList<FeedToken> Scale();
     }
 }

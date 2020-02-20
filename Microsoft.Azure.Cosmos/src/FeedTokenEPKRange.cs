@@ -174,32 +174,14 @@ namespace Microsoft.Azure.Cosmos
             return false;
         }
 
-        public override IReadOnlyList<FeedToken> Scale(int? maxTokens = null)
+        public override IReadOnlyList<FeedToken> Scale()
         {
             if (this.CompositeContinuationTokens.Count <= 1)
             {
                 return new List<FeedToken>();
             }
 
-            if (!maxTokens.HasValue
-                || maxTokens.Value >= this.CompositeContinuationTokens.Count)
-            {
-                return this.CompositeContinuationTokens.Select(token => new FeedTokenEPKRange(this.ContainerRid, token)).ToList();
-            }
-
-            int bucketSize = (int)Math.Ceiling((double)this.CompositeContinuationTokens.Count / maxTokens.Value);
-            List<FeedTokenEPKRange> feedTokens = new List<FeedTokenEPKRange>(maxTokens.Value);
-            foreach (IReadOnlyList<CompositeContinuationToken> bucketCompositeContinuationTokens in this.CompositeContinuationTokens.ToList().Bucket(bucketSize))
-            {
-                Documents.Routing.Range<string> completeRange = new Documents.Routing.Range<string>(
-                    bucketCompositeContinuationTokens[0].Range.Min,
-                    bucketCompositeContinuationTokens[bucketCompositeContinuationTokens.Count - 1].Range.Max,
-                    true,
-                    false);
-                feedTokens.Add(new FeedTokenEPKRange(this.ContainerRid, completeRange, bucketCompositeContinuationTokens));
-            }
-            
-            return feedTokens;
+            return this.CompositeContinuationTokens.Select(token => new FeedTokenEPKRange(this.ContainerRid, token)).ToList();
         }
 
         public static bool TryParseInstance(string toStringValue, out FeedToken feedToken)

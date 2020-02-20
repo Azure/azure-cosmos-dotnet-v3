@@ -67,44 +67,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public void FeedToken_EPK_Scale_WithMax()
-        {
-            const string containerRid = "containerRid";
-            List<Documents.PartitionKeyRange> keyRanges = new List<Documents.PartitionKeyRange>()
-            {
-                new Documents.PartitionKeyRange() { MinInclusive = "A", MaxExclusive ="B" },
-                new Documents.PartitionKeyRange() { MinInclusive = "D", MaxExclusive ="E" },
-            };
-            FeedTokenEPKRange token = new FeedTokenEPKRange(containerRid, keyRanges);
-            // With maxTokens less than total
-            IReadOnlyList<FeedToken> splitTokens = token.Scale(maxTokens: 1);
-            Assert.AreEqual(1, splitTokens.Count);
-
-            List<FeedTokenEPKRange> feedTokenEPKRanges = splitTokens.Select(t => t as FeedTokenEPKRange).ToList();
-            List<CompositeContinuationToken> internalTokens = feedTokenEPKRanges[0].CompositeContinuationTokens.ToList();
-            Assert.AreEqual(keyRanges[0].MinInclusive, internalTokens[0].Range.Min);
-            Assert.AreEqual(keyRanges[0].MaxExclusive, internalTokens[0].Range.Max);
-            Assert.AreEqual(keyRanges[1].MinInclusive, internalTokens[1].Range.Min);
-            Assert.AreEqual(keyRanges[1].MaxExclusive, internalTokens[1].Range.Max);
-            Assert.AreEqual(keyRanges[0].MinInclusive, feedTokenEPKRanges[0].CompleteRange.Min);
-            Assert.AreEqual(keyRanges[1].MaxExclusive, feedTokenEPKRanges[0].CompleteRange.Max);
-
-            // With maxTokens more than tokens
-            IReadOnlyList<FeedToken> splitTokens2 = token.Scale(maxTokens: 3);
-            Assert.AreEqual(keyRanges.Count, splitTokens2.Count);
-
-            feedTokenEPKRanges = splitTokens2.Select(t => t as FeedTokenEPKRange).ToList();
-            Assert.AreEqual(keyRanges[0].MinInclusive, feedTokenEPKRanges[0].CompositeContinuationTokens.Peek().Range.Min);
-            Assert.AreEqual(keyRanges[0].MaxExclusive, feedTokenEPKRanges[0].CompositeContinuationTokens.Peek().Range.Max);
-            Assert.AreEqual(keyRanges[1].MinInclusive, feedTokenEPKRanges[1].CompositeContinuationTokens.Peek().Range.Min);
-            Assert.AreEqual(keyRanges[1].MaxExclusive, feedTokenEPKRanges[1].CompositeContinuationTokens.Peek().Range.Max);
-            Assert.AreEqual(keyRanges[0].MinInclusive, feedTokenEPKRanges[0].CompleteRange.Min);
-            Assert.AreEqual(keyRanges[0].MaxExclusive, feedTokenEPKRanges[0].CompleteRange.Max);
-            Assert.AreEqual(keyRanges[1].MinInclusive, feedTokenEPKRanges[1].CompleteRange.Min);
-            Assert.AreEqual(keyRanges[1].MaxExclusive, feedTokenEPKRanges[1].CompleteRange.Max);
-        }
-
-        [TestMethod]
         public void FeedToken_EPK_TryParse()
         {
             const string containerRid = "containerRid";
