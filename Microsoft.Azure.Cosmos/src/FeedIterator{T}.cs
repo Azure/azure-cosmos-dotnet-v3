@@ -29,9 +29,7 @@ namespace Microsoft.Azure.Cosmos
     /// ]]>
     /// </code>
     /// </example>
-#pragma warning disable SA1649 // SA1649FileNameMustMatchTypeName
     public abstract class FeedIterator<T>
-#pragma warning restore SA1649
     {
         /// <summary>
         /// Tells if there is more results that need to be retrieved from the service

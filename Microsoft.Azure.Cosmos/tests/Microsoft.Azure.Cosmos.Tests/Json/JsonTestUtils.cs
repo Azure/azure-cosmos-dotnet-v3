@@ -16,9 +16,9 @@
             return binaryWriter.GetResult().ToArray();
         }
 
-        public static string ConvertBinaryToText(byte[] binary)
+        public static string ConvertBinaryToText(byte[] binary, JsonStringDictionary jsonStringDictionary = null)
         {
-            IJsonReader binaryReader = JsonReader.Create(binary);
+            IJsonReader binaryReader = JsonReader.Create(binary, jsonStringDictionary);
             IJsonWriter textWriter = JsonWriter.Create(JsonSerializationFormat.Text);
             textWriter.WriteAll(binaryReader);
             return Encoding.UTF8.GetString(textWriter.GetResult().ToArray());

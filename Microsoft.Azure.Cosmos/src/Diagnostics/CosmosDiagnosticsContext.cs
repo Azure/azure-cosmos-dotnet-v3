@@ -4,93 +4,52 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.IO;
-    using System.Text;
+    using System.Collections;
+    using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Diagnostics;
-    using Newtonsoft.Json;
 
     /// <summary>
-    /// This represents the core diagnostics object used in the SDK.
-    /// This object gets created on the initial request and passed down
-    /// through the pipeline appending information as it goes into a list
-    /// where it is lazily converted to a JSON string.
+    /// This represents the diagnostics interface used in the SDK.
     /// </summary>
-    internal sealed class CosmosDiagnosticsContext : CosmosDiagnosticsInternal
+    internal abstract class CosmosDiagnosticsContext : CosmosDiagnosticsInternal, IEnumerable<CosmosDiagnosticsInternal>
     {
-        private bool isOverallScopeSet;
+        public abstract DateTime StartUtc { get; }
 
-        public CosmosDiagnosticsContext()
+        public abstract int TotalRequestCount { get; protected set; }
+
+        public abstract int FailedRequestCount { get; protected set; }
+
+        public abstract TimeSpan? TotalElapsedTime { get; protected set; }
+
+        public abstract string UserAgent { get; protected set; }
+
+        internal abstract CosmosDiagnosticScope CreateOverallScope(string name);
+
+        internal abstract CosmosDiagnosticScope CreateScope(string name);
+
+        internal abstract void AddDiagnosticsInternal(PointOperationStatistics pointOperationStatistics);
+
+        internal abstract void AddDiagnosticsInternal(QueryPageDiagnostics queryPageDiagnostics);
+
+        internal abstract void AddDiagnosticsInternal(CosmosDiagnosticsContext newContext);
+
+        internal abstract void SetSdkUserAgent(string userAgent);
+
+        public abstract IEnumerator<CosmosDiagnosticsInternal> GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator()
         {
-            this.Summary = new CosmosDiagnosticSummary(DateTime.UtcNow);
-            this.ContextList = new CosmosDiagnosticsContextList();
+            return this.GetEnumerator();
         }
 
-        /// <summary>
-        /// Contains the high level overview of operations like start time, retries, and other aggregated information
-        /// </summary>
-        public CosmosDiagnosticSummary Summary { get; }
-
-        /// <summary>
-        /// Detailed view of all the operations.
-        /// </summary>
-        public CosmosDiagnosticsContextList ContextList { get; }
-
-        public CosmosDiagnosticScope CreateOverallScope(string name)
+        internal static CosmosDiagnosticsContext Create(RequestOptions requestOptions)
         {
-            CosmosDiagnosticScope scope;
-            // If overall is already set then let the original set the elapsed time.
-            if (this.isOverallScopeSet)
-            {
-                scope = new CosmosDiagnosticScope(name);
-            }
-            else
-            {
-                scope = new CosmosDiagnosticScope(name, this.Summary.SetElapsedTime);
-                this.isOverallScopeSet = true;
-            }
-
-            this.ContextList.AddDiagnostics(scope);
-            return scope;
+            return requestOptions?.DiagnosticContext ?? CosmosDiagnosticsContext.Create();
         }
 
-        internal CosmosDiagnosticScope CreateScope(string name)
+        internal static CosmosDiagnosticsContext Create()
         {
-            CosmosDiagnosticScope scope = new CosmosDiagnosticScope(name);
-
-            this.ContextList.AddDiagnostics(scope);
-            return scope;
-        }
-
-        internal void AddDiagnosticsInternal(CosmosDiagnosticsInternal diagnosticsInternal)
-        {
-            if (diagnosticsInternal == null)
-            {
-                throw new ArgumentNullException(nameof(diagnosticsInternal));
-            }
-
-            this.ContextList.AddDiagnostics(diagnosticsInternal);
-        }
-
-        internal void Append(CosmosDiagnosticsContext newContext)
-        {
-            if (Object.ReferenceEquals(this, newContext))
-            {
-                return;
-            }
-
-            this.Summary.Append(newContext.Summary);
-
-            this.ContextList.Append(newContext.ContextList);
-        }
-
-        public override void Accept(CosmosDiagnosticsInternalVisitor cosmosDiagnosticsInternalVisitor)
-        {
-            cosmosDiagnosticsInternalVisitor.Visit(this);
-        }
-
-        public override TResult Accept<TResult>(CosmosDiagnosticsInternalVisitor<TResult> visitor)
-        {
-            return visitor.Visit(this);
+            return new CosmosDiagnosticsContextCore();
         }
     }
 }

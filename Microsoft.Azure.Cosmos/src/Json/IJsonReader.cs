@@ -57,10 +57,10 @@ namespace Microsoft.Azure.Cosmos.Json
         bool TryGetBufferedUtf8StringValue(out ReadOnlyMemory<byte> bufferedUtf8StringValue);
 
         /// <summary>
-        /// Gets current JSON token from the JsonReader as a raw series of bytes that is buffered.
+        /// Tries to get the current JSON token from the JsonReader as a raw series of bytes that is buffered.
         /// </summary>
-        /// <returns>The current JSON token from the JsonReader as a raw series of bytes that is buffered.</returns>
-        ReadOnlyMemory<byte> GetBufferedRawJsonToken();
+        /// <returns>true if the current JSON token was retrieved; false otherwise.</returns>
+        bool TryGetBufferedRawJsonToken(out ReadOnlyMemory<byte> bufferedRawJsonToken);
 
         /// <summary>
         /// Gets the next JSON token from the JsonReader as a 1 byte signed integer.

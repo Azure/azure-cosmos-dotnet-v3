@@ -222,7 +222,7 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            public override ReadOnlyMemory<byte> GetBufferedRawJsonToken()
+            public override bool TryGetBufferedRawJsonToken(out ReadOnlyMemory<byte> bufferedRawJsonToken)
             {
                 if (!JsonBinaryEncoding.TryGetValueLength(
                     this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition).Span,
@@ -231,7 +231,33 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new InvalidOperationException();
                 }
 
-                return this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition, this.currentTokenPosition + length);
+                ReadOnlyMemory<byte> candidate = this.jsonBinaryBuffer.GetBufferedRawJsonToken(
+                    this.currentTokenPosition,
+                    this.currentTokenPosition + length);
+
+                if ((this.jsonStringDictionary != null) && JsonBinaryReader.IsStringOrNested(this.CurrentTokenType))
+                {
+                    // If there is dictionary encoding, then we need to force a rewrite.
+                    bufferedRawJsonToken = default;
+                    return false;
+                }
+
+                bufferedRawJsonToken = candidate;
+                return true;
+            }
+
+            private static bool IsStringOrNested(JsonTokenType type)
+            {
+                switch (type)
+                {
+                    case JsonTokenType.BeginArray:
+                    case JsonTokenType.BeginObject:
+                    case JsonTokenType.String:
+                    case JsonTokenType.FieldName:
+                        return true;
+                    default:
+                        return false;
+                }
             }
 
             /// <inheritdoc />

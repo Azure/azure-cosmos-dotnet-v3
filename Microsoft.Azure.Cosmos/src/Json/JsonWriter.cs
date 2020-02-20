@@ -146,9 +146,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 throw new ArgumentNullException("jsonReader can not be null");
             }
 
-            // For now we don't optimize for text, since the reader could be UTF-8 and the writer could be UTF-16.
-            // We need to add more enums for the different serialization formats.
-            bool sameFormat = jsonReader.SerializationFormat == this.SerializationFormat && (this.SerializationFormat == JsonSerializationFormat.Binary || this.SerializationFormat == JsonSerializationFormat.HybridRow);
+            bool sameFormat = jsonReader.SerializationFormat == this.SerializationFormat;
 
             JsonTokenType jsonTokenType = jsonReader.CurrentTokenType;
             switch (jsonTokenType)
@@ -186,10 +184,9 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 default:
                     {
-                        if (sameFormat)
+                        if (sameFormat && jsonReader.TryGetBufferedRawJsonToken(out ReadOnlyMemory<byte> bufferedRawJsonToken))
                         {
-                            ReadOnlySpan<byte> bufferedRawJson = jsonReader.GetBufferedRawJsonToken().Span;
-                            this.WriteRawJsonToken(jsonTokenType, bufferedRawJson);
+                            this.WriteRawJsonToken(jsonTokenType, bufferedRawJsonToken.Span);
                         }
                         else
                         {
@@ -334,8 +331,6 @@ namespace Microsoft.Azure.Cosmos.Json
                 throw new ArgumentNullException($"{nameof(jsonNavigatorNode)} can not be null");
             }
 
-            bool sameFormat = jsonNavigator.SerializationFormat == this.SerializationFormat;
-
             JsonNodeType jsonNodeType = jsonNavigator.GetNodeType(jsonNavigatorNode);
 
             // See if we can write the node without looking at it's value
@@ -351,6 +346,8 @@ namespace Microsoft.Azure.Cosmos.Json
                     this.WriteBoolValue(true);
                     return;
             }
+
+            bool sameFormat = jsonNavigator.SerializationFormat == this.SerializationFormat;
 
             // If the navigator has the same format as this writer then we try to retrieve the node raw JSON
             if (sameFormat && jsonNavigator.TryGetBufferedRawJson(jsonNavigatorNode, out ReadOnlyMemory<byte> bufferedRawJson))

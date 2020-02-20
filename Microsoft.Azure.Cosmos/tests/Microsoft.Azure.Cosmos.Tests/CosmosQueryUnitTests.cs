@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             string activityId = "TestActivityId";
             double requestCharge = 42.42;
 
-            CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContext();
+            CosmosDiagnosticsContext diagnostics = CosmosDiagnosticsContext.Create();
             QueryResponse queryResponse = QueryResponse.CreateFailure(
                         statusCode: HttpStatusCode.NotFound,
                         errorMessage: errorMessage,
@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                             RequestCharge = responseCore.RequestCharge,
                             ActivityId = responseCore.ActivityId
                         },
-                        diagnostics: new CosmosDiagnosticsContext());
+                        diagnostics: CosmosDiagnosticsContext.Create());
 
             using (Stream stream = queryResponse.Content)
             {
@@ -128,7 +128,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                             RequestCharge = responseCore.RequestCharge,
                             ActivityId = responseCore.ActivityId
                         },
-                        diagnostics: new CosmosDiagnosticsContext());
+                        diagnostics: CosmosDiagnosticsContext.Create());
 
             QueryResponse<ToDoItem> itemQueryResponse = QueryResponseMessageFactory.CreateQueryResponse<ToDoItem>(queryResponse);
             List<ToDoItem> resultItems = new List<ToDoItem>(itemQueryResponse.Resource);
@@ -169,7 +169,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                             RequestCharge = responseCore.RequestCharge,
                             ActivityId = responseCore.ActivityId
                         },
-                        diagnostics: new CosmosDiagnosticsContext());
+                        diagnostics: CosmosDiagnosticsContext.Create());
 
             QueryResponse<CosmosElement> itemQueryResponse = QueryResponseMessageFactory.CreateQueryResponse<CosmosElement>(queryResponse);
             List<CosmosElement> resultItems = new List<CosmosElement>(itemQueryResponse.Resource);
@@ -338,7 +338,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private (Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>>, QueryResponseCore) SetupBaseContextToVerifyFailureScenario()
         { 
-            CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContext();
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create();
             diagnosticsContext.AddDiagnosticsInternal( new PointOperationStatistics(
                     Guid.NewGuid().ToString(),
                     System.Net.HttpStatusCode.Unauthorized,

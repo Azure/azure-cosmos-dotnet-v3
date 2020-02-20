@@ -429,7 +429,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 partitionKey: new Cosmos.PartitionKey(id),
                 id: id,
                 resourceStream: MockCosmosUtil.Serializer.ToStream(myDocument),
-                diagnosticsContext: new CosmosDiagnosticsContext());
+                diagnosticsContext: CosmosDiagnosticsContext.Create());
         }
 
         private class MyDocument
