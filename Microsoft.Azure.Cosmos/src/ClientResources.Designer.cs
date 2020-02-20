@@ -268,6 +268,24 @@ namespace Microsoft.Azure.Cosmos {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to A data encryption key with the provided name was not found - please ensure it has been created..
+        /// </summary>
+        internal static string DataEncryptionKeyNotFound {
+            get {
+                return ResourceManager.GetString("DataEncryptionKeyNotFound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The client was not configured to allow for encryption. Create the client by using cosmosClientBuilder.WithEncryptionKeyWrapProvider..
+        /// </summary>
+        internal static string EncryptionKeyWrapProviderNotConfigured {
+            get {
+                return ResourceManager.GetString("EncryptionKeyWrapProviderNotConfigured", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Expected valid byte[] value for {0} and string value for {1} when either property is set..
         /// </summary>
         internal static string EpkPropertiesPairingExpected {
@@ -367,6 +385,15 @@ namespace Microsoft.Azure.Cosmos {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Encryption options may not be specified on this request..
+        /// </summary>
+        internal static string InvalidRequestWithEncryptionOptions {
+            get {
+                return ResourceManager.GetString("InvalidRequestWithEncryptionOptions", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Received an invalid response from the server..
         /// </summary>
         internal static string InvalidServerResponse {
@@ -399,6 +426,15 @@ namespace Microsoft.Azure.Cosmos {
         internal static string InvalidTypesForMethod {
             get {
                 return ResourceManager.GetString("InvalidTypesForMethod", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The key wrapping provider configured was unable to unwrap the wrapped key correctly..
+        /// </summary>
+        internal static string KeyWrappingDidNotRoundtrip {
+            get {
+                return ResourceManager.GetString("KeyWrappingDidNotRoundtrip", resourceCulture);
             }
         }
         

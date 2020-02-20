@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Globalization;
+    using System.Text;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Documents;
@@ -141,6 +142,12 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         public string SessionToken { get; set; }
 
+        internal string StartId { get; set; }
+
+        internal string EndId { get; set; }
+
+        internal EnumerationDirection? EnumerationDirection { get; set; }
+
         internal CosmosSerializationFormatOptions CosmosSerializationFormatOptions { get; set; }
 
         internal ExecutionEnvironment? ExecutionEnvironment { get; set; }
@@ -197,6 +204,26 @@ namespace Microsoft.Azure.Cosmos
             if (this.CosmosSerializationFormatOptions != null)
             {
                 request.Headers.Add(HttpConstants.HttpHeaders.ContentSerializationFormat, this.CosmosSerializationFormatOptions.ContentSerializationFormat);
+            }
+
+            if (this.StartId != null)
+            {
+                request.Headers.Set(HttpConstants.HttpHeaders.StartId, Convert.ToBase64String(Encoding.UTF8.GetBytes(this.StartId)));
+            }
+
+            if (this.EndId != null)
+            {
+                request.Headers.Set(HttpConstants.HttpHeaders.EndId, Convert.ToBase64String(Encoding.UTF8.GetBytes(this.EndId)));
+            }
+
+            if (this.StartId != null || this.EndId != null)
+            {
+                request.Headers.Set(HttpConstants.HttpHeaders.ReadFeedKeyType, ReadFeedKeyType.ResourceId.ToString());
+            }
+
+            if (this.EnumerationDirection.HasValue)
+            {
+                request.Headers.Set(HttpConstants.HttpHeaders.EnumerationDirection, this.EnumerationDirection.Value.ToString());
             }
 
             request.Headers.Add(HttpConstants.HttpHeaders.PopulateQueryMetrics, bool.TrueString);

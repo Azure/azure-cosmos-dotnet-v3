@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos
@@ -65,6 +65,24 @@ namespace Microsoft.Azure.Cosmos
         {
             return new Uri(string.Format(CultureInfo.InvariantCulture, "{0}/{1}/{2}/{3}", Paths.DatabasesPathSegment, Uri.EscapeUriString(databaseId),
                 Paths.CollectionsPathSegment, Uri.EscapeUriString(collectionId)), UriKind.Relative);
+        }
+
+        /// <summary>
+        /// Given a database and client encryption key id, this creates a client encryption key link.
+        /// </summary>
+        /// <param name="databaseId">The database id</param>
+        /// <param name="clientEncryptionKeyId">The data encryption key id</param>
+        /// <returns>
+        /// A data encryption key link in the format of /dbs/{0}/clientEncryptionkeys/{1}/ with {0} being a Uri escaped version of the <paramref name="databaseId"/> and {1} being <paramref name="clientEncryptionKeyId"/>
+        /// </returns>
+        /// <remarks>
+        /// Would be used when updating or deleting a <see cref="ClientEncryptionKey"/>
+        /// </remarks>
+        /// <seealso cref="Uri.EscapeUriString"/>
+        static internal Uri CreateClientEncryptionKeyUri(string databaseId, string clientEncryptionKeyId)
+        {
+            return new Uri(string.Format(CultureInfo.InvariantCulture, "{0}/{1}/{2}/{3}", Paths.DatabasesPathSegment, Uri.EscapeUriString(databaseId),
+                Paths.ClientEncryptionKeysPathSegment, Uri.EscapeUriString(clientEncryptionKeyId)), UriKind.Relative);
         }
 
         /// <summary>
