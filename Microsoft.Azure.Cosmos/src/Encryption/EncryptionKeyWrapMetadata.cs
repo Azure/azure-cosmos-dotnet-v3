@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="value">Value of the metadata.</param>
         public EncryptionKeyWrapMetadata(string value)
-            : this(type: "custom", value: value, algorithm: null)
+            : this(type: "custom", value: value)
         {
         }
 
@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos
         {
         }
 
-        internal EncryptionKeyWrapMetadata(string type, string value, string algorithm)
+        internal EncryptionKeyWrapMetadata(string type, string value, string algorithm = null)
         {
             this.Type = type ?? throw new ArgumentNullException(nameof(type));
             this.Value = value ?? throw new ArgumentNullException(nameof(value));

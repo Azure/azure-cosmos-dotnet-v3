@@ -388,7 +388,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <param name="encryptionSettings">Settings relating to encryption</param>
         /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
 #if PREVIEW
-    public
+        public
 #else
         internal
 #endif

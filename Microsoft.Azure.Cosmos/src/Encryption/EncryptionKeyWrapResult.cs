@@ -19,24 +19,25 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Initializes a new instance of the result of wrapping a data encryption key.
         /// </summary>
-        /// <param name="wrappedDataEncryptionKey">Wrapped form of data encryption key.</param>
+        /// <param name="wrappedDataEncryptionKey">
+        /// Wrapped form of data encryption key.
+        /// The byte array passed in must not be modified after this call by the <see cref="EncryptionKeyWrapProvider"/>.
+        /// </param>
         /// <param name="encryptionKeyWrapMetadata">Metadata that can be used by the wrap provider to unwrap the data encryption key.</param>
-        public EncryptionKeyWrapResult(ReadOnlySpan<byte> wrappedDataEncryptionKey, EncryptionKeyWrapMetadata encryptionKeyWrapMetadata)
+        public EncryptionKeyWrapResult(byte[] wrappedDataEncryptionKey, EncryptionKeyWrapMetadata encryptionKeyWrapMetadata)
         {
-            this.WrappedDataEncryptionKeyBytes = wrappedDataEncryptionKey.ToArray();
+            this.WrappedDataEncryptionKey = wrappedDataEncryptionKey ?? throw new ArgumentNullException(nameof(wrappedDataEncryptionKey));
             this.EncryptionKeyWrapMetadata = encryptionKeyWrapMetadata ?? throw new ArgumentNullException(nameof(encryptionKeyWrapMetadata));
         }
 
         /// <summary>
         /// Wrapped form of the data encryption key.
         /// </summary>
-        public ReadOnlySpan<byte> WrappedDataEncryptionKey => this.WrappedDataEncryptionKeyBytes;
+        internal byte[] WrappedDataEncryptionKey { get; }
 
         /// <summary>
         /// Metadata that can be used by the wrap provider to unwrap the key.
         /// </summary>
-        public EncryptionKeyWrapMetadata EncryptionKeyWrapMetadata { get; }
-
-        internal byte[] WrappedDataEncryptionKeyBytes { get; }
+        internal EncryptionKeyWrapMetadata EncryptionKeyWrapMetadata { get; }
     }
 }

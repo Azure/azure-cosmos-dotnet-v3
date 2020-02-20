@@ -379,7 +379,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         [JsonIgnore]
 #if PREVIEW
-    public
+        public
 #else
         internal
 #endif

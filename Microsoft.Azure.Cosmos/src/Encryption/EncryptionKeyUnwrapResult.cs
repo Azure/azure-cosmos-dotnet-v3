@@ -19,14 +19,17 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Initializes a new instance of the result of unwrapping a wrapped data encryption key.
         /// </summary>
-        /// <param name="dataEncryptionKey">Raw form of data encryption key.</param>
+        /// <param name="dataEncryptionKey">
+        /// Raw form of data encryption key.
+        /// The byte array passed in must not be modified after this call by the <see cref="EncryptionKeyWrapProvider"/>.
+        /// </param>
         /// <param name="clientCacheTimeToLive">
         /// Amount of time after which the raw data encryption key must not be used
         /// without invoking the <see cref="EncryptionKeyWrapProvider.UnwrapKeyAsync"/> again.
         /// </param>
-        public EncryptionKeyUnwrapResult(ReadOnlySpan<byte> dataEncryptionKey, TimeSpan clientCacheTimeToLive)
+        public EncryptionKeyUnwrapResult(byte[] dataEncryptionKey, TimeSpan clientCacheTimeToLive)
         {
-            this.DataEncryptionKeyBytes = dataEncryptionKey.ToArray();
+            this.DataEncryptionKey = dataEncryptionKey ?? throw new ArgumentNullException(nameof(dataEncryptionKey));
 
             if (clientCacheTimeToLive < TimeSpan.Zero)
             {
@@ -39,14 +42,12 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Raw form of the data encryption key.
         /// </summary>
-        public ReadOnlySpan<byte> DataEncryptionKey => this.DataEncryptionKeyBytes;
+        internal byte[] DataEncryptionKey { get; }
 
         /// <summary>
         /// Amount of time after which the raw data encryption key must not be used
         /// without invoking the <see cref="EncryptionKeyWrapProvider.UnwrapKeyAsync"/> again.
         /// </summary>
-        public TimeSpan ClientCacheTimeToLive { get; }
-
-        internal byte[] DataEncryptionKeyBytes { get; }
+        internal TimeSpan ClientCacheTimeToLive { get; }
     }
 }
