@@ -136,7 +136,10 @@ namespace Microsoft.Azure.Cosmos
             }
             catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
             {
-                throw new CosmosNotFoundException(ClientResources.DataEncryptionKeyNotFound, innerException: ex);
+                throw new CosmosNotFoundException(
+                    ClientResources.DataEncryptionKeyNotFound,
+                    diagnosticsContext: diagnosticsContext,
+                    innerException: ex);
             }
 
             InMemoryRawDek inMemoryRawDek = await this.ClientContext.DekCache.GetOrAddRawDekAsync(
@@ -173,7 +176,10 @@ namespace Microsoft.Azure.Cosmos
             }
             catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
             {
-                throw new CosmosNotFoundException(ClientResources.DataEncryptionKeyNotFound, innerException: ex);
+                throw new CosmosNotFoundException(
+                    ClientResources.DataEncryptionKeyNotFound,
+                    diagnosticsContext: diagnosticsContext,
+                    innerException: ex);
             }
 
             InMemoryRawDek inMemoryRawDek = await this.ClientContext.DekCache.GetOrAddRawDekAsync(
@@ -224,7 +230,8 @@ namespace Microsoft.Azure.Cosmos
             InMemoryRawDek roundTripResponse = await this.UnwrapAsync(tempDekProperties, diagnosticsContext, cancellationToken);
             if (!roundTripResponse.RawDek.SequenceEqual(key))
             {
-                throw new CosmosBadRequestException(ClientResources.KeyWrappingDidNotRoundtrip);
+                throw new CosmosBadRequestException(ClientResources.KeyWrappingDidNotRoundtrip,
+                    diagnosticsContext: diagnosticsContext);
             }
 
             return (keyWrapResponse.WrappedDataEncryptionKey, keyWrapResponse.EncryptionKeyWrapMetadata, roundTripResponse);
