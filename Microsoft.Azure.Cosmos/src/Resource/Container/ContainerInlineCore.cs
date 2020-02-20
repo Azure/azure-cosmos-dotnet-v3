@@ -268,13 +268,6 @@ namespace Microsoft.Azure.Cosmos
             return TaskHelper.RunInlineIfNeededAsync(() => this.container.GetFeedTokensAsync(cancellationToken));
         }
 
-        public override Task<IReadOnlyList<FeedToken>> GetFeedTokensAsync(
-            int maxTokens,
-            CancellationToken cancellationToken = default(CancellationToken))
-        {
-            return TaskHelper.RunInlineIfNeededAsync(() => this.container.GetFeedTokensAsync(maxTokens, cancellationToken));
-        }
-
         public override FeedTokenIterator GetChangeFeedStreamIterator(ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
             return this.container.GetChangeFeedStreamIterator(changeFeedRequestOptions);

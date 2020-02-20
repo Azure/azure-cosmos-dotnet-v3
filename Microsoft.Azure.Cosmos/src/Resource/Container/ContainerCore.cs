@@ -213,12 +213,7 @@ namespace Microsoft.Azure.Cosmos
             return ContainerCore.CreateFeedTokensPerRange(containerRId, partitionKeyRanges);
         }
 
-#if PREVIEW
-        public override
-#else
-        internal
-#endif
-        async Task<IReadOnlyList<FeedToken>> GetFeedTokensAsync(
+        internal async Task<IReadOnlyList<FeedToken>> GetFeedTokensAsync(
             int maxTokens,
             CancellationToken cancellationToken = default(CancellationToken))
         {

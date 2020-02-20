@@ -1129,19 +1129,6 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<IReadOnlyList<FeedToken>> GetFeedTokensAsync(CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// Obtains a list of <see cref="FeedToken"/> that can be used to parallelize Read Feed operations.
-        /// </summary>
-        /// <remarks>
-        /// The amount of tokens returned is up to <paramref name="maxTokens"/>, but it could be less.
-        /// </remarks>
-        /// <param name="maxTokens">Defines a maximum amount of tokens to be returned.</param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>A list of <see cref="FeedToken"/>.</returns>
-        public abstract Task<IReadOnlyList<FeedToken>> GetFeedTokensAsync(
-            int maxTokens,
-            CancellationToken cancellationToken = default(CancellationToken));
-
-        /// <summary>
         ///  This method creates an iterator to consume the container's Change Feed.
         ///  The iterator exposes mechanisms to save and resume state through <see cref="FeedTokenIterator.FeedToken"/>.
         /// </summary>
