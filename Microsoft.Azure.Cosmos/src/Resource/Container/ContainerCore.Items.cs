@@ -555,7 +555,7 @@ namespace Microsoft.Azure.Cosmos
                     options: requestOptions);
             }
 
-            return QueryIterator.Create(
+            return QueryFeedTokenIterator.Create(
                 client: this.queryClient,
                 sqlQuerySpec: sqlQuerySpec,
                 feedTokenInternal: feedToken,
