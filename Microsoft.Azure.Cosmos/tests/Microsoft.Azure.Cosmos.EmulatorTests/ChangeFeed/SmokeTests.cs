@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -75,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                 .WithInstanceName("random")
                 .WithLeaseContainer(notFoundContainer).Build();
 
-            CosmosException exception = await Assert.ThrowsExceptionAsync<CosmosException>(() => processor.StartAsync());
+            CosmosException exception = await Assert.ThrowsExceptionAsync<CosmosNotFoundException>(() => processor.StartAsync());
             Assert.AreEqual(HttpStatusCode.NotFound, exception.StatusCode);
         }
 
