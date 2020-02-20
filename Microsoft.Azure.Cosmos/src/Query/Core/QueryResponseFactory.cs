@@ -6,10 +6,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 {
     using System;
     using System.Diagnostics;
+    using System.Runtime.CompilerServices;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Documents;
 
     internal static class QueryResponseFactory
     {
@@ -33,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             }
             else if (exception is ExceptionWithStackTraceException exceptionWithStackTrace)
             {
-                return QueryResponseFactory.CreateFromException(exceptionWithStackTrace.InnerException);
+                queryResponseCore = QueryResponseFactory.CreateFromExceptionWithStackTrace(exceptionWithStackTrace);
             }
             else
             {
@@ -96,6 +98,39 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                 requestCharge: 0,
                 activityId: documentClientException.ActivityId,
                 diagnostics: QueryResponseCore.EmptyDiagnostics);
+
+            return queryResponseCore;
+        }
+
+        private static QueryResponseCore CreateFromExceptionWithStackTrace(ExceptionWithStackTraceException exceptionWithStackTrace)
+        {
+            // Use the original stack trace from the inner exception.
+            if (exceptionWithStackTrace.InnerException is DocumentClientException
+                || exceptionWithStackTrace.InnerException is CosmosException)
+            {
+                return QueryResponseFactory.CreateFromException(exceptionWithStackTrace.InnerException);
+            }
+
+            QueryResponseCore queryResponseCore = QueryResponseFactory.CreateFromException(exceptionWithStackTrace.InnerException);
+            CosmosException cosmosException = queryResponseCore.CosmosException;
+
+            queryResponseCore = QueryResponseCore.CreateFailure(
+                statusCode: queryResponseCore.StatusCode,
+                subStatusCodes: queryResponseCore.SubStatusCode,
+                cosmosException: CosmosExceptionFactory.Create(
+                    cosmosException.StatusCode,
+                    cosmosException.SubStatusCode,
+                    cosmosException.Message,
+                    exceptionWithStackTrace.GetStackTrace(),
+                    cosmosException.ActivityId,
+                    cosmosException.RequestCharge,
+                    cosmosException.RetryAfter,
+                    cosmosException.Headers,
+                    cosmosException.DiagnosticsContext,
+                    cosmosException.InnerException),
+                requestCharge: queryResponseCore.RequestCharge,
+                activityId: queryResponseCore.ActivityId,
+                diagnostics: queryResponseCore.Diagnostics);
 
             return queryResponseCore;
         }

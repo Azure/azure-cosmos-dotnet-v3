@@ -15,7 +15,6 @@ namespace Microsoft.Azure.Cosmos
     public class CosmosException : Exception
     {
         private readonly StackTrace stackTrace;
-        private readonly CosmosDiagnosticsContext diagnosticsContext;
 
         internal CosmosException(
             HttpStatusCode statusCodes,
@@ -39,7 +38,7 @@ namespace Microsoft.Azure.Cosmos
             this.Headers = headers;
 
             // Always have a diagnostic context. A new diagnostic will have useful info like user agent
-            this.diagnosticsContext = diagnosticsContext ?? CosmosDiagnosticsContext.Create();
+            this.DiagnosticsContext = diagnosticsContext ?? CosmosDiagnosticsContext.Create();
         }
 
         /// <summary>
@@ -64,6 +63,7 @@ namespace Microsoft.Azure.Cosmos
             this.RequestCharge = requestCharge;
             this.ActivityId = activityId;
             this.Headers = new Headers();
+            this.DiagnosticsContext = CosmosDiagnosticsContext.Create();
         }
 
         /// <summary>
@@ -112,7 +112,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the diagnostics for the request
         /// </summary>
-        public virtual CosmosDiagnostics Diagnostics => this.diagnosticsContext;
+        public virtual CosmosDiagnostics Diagnostics => this.DiagnosticsContext;
 
         /// <inheritdoc/>
         public override string StackTrace
@@ -129,6 +129,8 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
         }
+
+        internal virtual CosmosDiagnosticsContext DiagnosticsContext { get; }
 
         /// <summary>
         /// Try to get a header from the cosmos response message
@@ -202,7 +204,7 @@ namespace Microsoft.Azure.Cosmos
                  requestMessage: request,
                  cosmosException: this,
                  statusCode: this.StatusCode,
-                 diagnostics: this.diagnosticsContext);
+                 diagnostics: this.DiagnosticsContext);
         }
     }
 }

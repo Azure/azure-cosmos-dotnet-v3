@@ -54,12 +54,38 @@ namespace Microsoft.Azure.Cosmos.Query
         [TestMethod]
         public void ExceptionFromTryCatch()
         {
-            QueryException queryException = new MalformedContinuationTokenException();
-            TryCatch<object>  tryCatch = TryCatch<object>.FromException(queryException);
+            TryCatch<object> tryCatch = this.QueryExceptionHelper(new MalformedContinuationTokenException());
             QueryResponseCore queryResponse = QueryResponseFactory.CreateFromException(tryCatch.Exception);
             Assert.AreEqual(HttpStatusCode.BadRequest, queryResponse.StatusCode);
             Assert.IsNotNull(queryResponse.CosmosException);
-            Assert.IsTrue(queryResponse.CosmosException.ToString().Contains(nameof(ExceptionFromTryCatch)));
+            Assert.IsTrue(queryResponse.CosmosException.ToString().Contains(nameof(QueryExceptionHelper)));
+        }
+
+        [TestMethod]
+        public void ExceptionFromTryCatchWithCosmosException()
+        {
+            CosmosException cosmosException;
+            try
+            {
+                throw new CosmosBadRequestException("InternalServerTestMessage");
+            }
+            catch (CosmosException ce)
+            {
+                cosmosException = ce;
+            }
+
+            TryCatch<object> tryCatch = this.QueryExceptionHelper(cosmosException);
+            QueryResponseCore queryResponse = QueryResponseFactory.CreateFromException(tryCatch.Exception);
+            Assert.AreEqual(HttpStatusCode.BadRequest, queryResponse.StatusCode);
+            Assert.IsNotNull(queryResponse.CosmosException);
+
+            // Should preserve the original stack trace.
+            Assert.IsFalse(queryResponse.CosmosException.ToString().Contains(nameof(QueryExceptionHelper)));
+        }
+
+        private TryCatch<object> QueryExceptionHelper(Exception exception)
+        {
+            return TryCatch<object>.FromException(exception);
         }
     }
 }
