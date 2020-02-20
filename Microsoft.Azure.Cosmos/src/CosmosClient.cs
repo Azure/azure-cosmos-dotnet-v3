@@ -865,7 +865,6 @@ namespace Microsoft.Azure.Cosmos
         public void Dispose()
         {
             this.Dispose(true);
-            GC.SuppressFinalize(this);
         }
 
         /// <summary>
@@ -890,7 +889,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (this.disposed)
             {
-                throw new InvalidOperationException($"Accessing {nameof(CosmosClient)} after it is disposed is invalid.");
+                throw new ObjectDisposedException($"Accessing {nameof(CosmosClient)} after it is disposed is invalid.");
             }
         }
     }
