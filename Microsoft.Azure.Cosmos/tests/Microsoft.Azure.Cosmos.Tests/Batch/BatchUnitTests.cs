@@ -45,9 +45,9 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             foreach (RequestOptions batchOptions in badBatchOptionsList)
             {
-                BatchCore batch = (BatchCore)(
+                BatchCore batch = (BatchCore)
                         new BatchCore((ContainerCore)container, new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1))
-                            .ReadItem("someId"));
+                            .ReadItem("someId");
 
                 await BatchUnitTests.VerifyExceptionThrownOnExecuteAsync(
                     batch, 
