@@ -40,11 +40,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
 
         public override string StackTrace => this.stackTrace.ToString();
 
-        public StackTrace GetStackTrace()
-        {
-            return this.stackTrace;
-        }
-
         public override string ToString()
         {
             // core2.x does not honor the StackTrace property in .ToString() (it uses the private internal stack trace).

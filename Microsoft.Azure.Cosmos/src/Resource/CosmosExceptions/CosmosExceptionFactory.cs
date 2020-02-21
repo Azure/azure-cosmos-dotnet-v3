@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 httpStatusCode,
                 (int)dce.GetSubStatus(),
                 dce.Message,
-                new StackTrace(dce),
+                dce.StackTrace,
                 dce.ActivityId,
                 dce.RequestCharge,
                 dce.RetryAfter,
@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 statusCode: statusCode,
                 subStatusCode: default,
                 message: errorMessage,
-                stackTrace: new StackTrace(1),
+                stackTrace: null,
                 activityId: requestMessage?.Headers?.ActivityId,
                 requestCharge: 0,
                 retryAfter: default,
@@ -97,14 +97,14 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 }
             }
 
-            StackTrace stackTrace;
+            string stackTrace;
             if (responseMessage.CosmosException != null)
             {
-                stackTrace = new StackTrace(responseMessage.CosmosException);
+               stackTrace = responseMessage.CosmosException.StackTrace;
             }
             else
             {
-                stackTrace = new StackTrace(1);
+                stackTrace = null;
             }
 
             return CosmosExceptionFactory.Create(
@@ -141,7 +141,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 storeResponse.StatusCode,
                 (int)headers.SubStatusCode,
                 errorMessage,
-                new StackTrace(-1),
+                null,
                 headers.ActivityId,
                 headers.RequestCharge,
                 headers.RetryAfter,
@@ -193,7 +193,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
             HttpStatusCode statusCode,
             int subStatusCode,
             string message,
-            StackTrace stackTrace,
+            string stackTrace,
             string activityId,
             double requestCharge,
             TimeSpan? retryAfter,

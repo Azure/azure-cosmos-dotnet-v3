@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Diagnostics;
     using System.Net;
     using System.Text;
 
@@ -14,13 +13,13 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     public class CosmosException : Exception
     {
-        private readonly StackTrace stackTrace;
+        private readonly string stackTrace;
 
         internal CosmosException(
             HttpStatusCode statusCodes,
             string message,
             int subStatusCode,
-            StackTrace stackTrace,
+            string stackTrace,
             string activityId,
             double requestCharge,
             TimeSpan? retryAfter,
@@ -57,7 +56,7 @@ namespace Microsoft.Azure.Cosmos
             double requestCharge)
             : base(message)
         {
-            this.stackTrace = new StackTrace(-1);
+            this.stackTrace = null;
             this.SubStatusCode = subStatusCode;
             this.StatusCode = statusCode;
             this.RequestCharge = requestCharge;
@@ -121,7 +120,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (this.stackTrace != null)
                 {
-                    return this.stackTrace.ToString();
+                    return this.stackTrace;
                 }
                 else
                 {

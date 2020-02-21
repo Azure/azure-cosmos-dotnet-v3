@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             if (isOrderByQuery)
             {
                 memoryStream = SerializeForOrderByQuery(items);
-                using(StreamReader sr = new StreamReader(SerializeForOrderByQuery(items)))
+                using (StreamReader sr = new StreamReader(SerializeForOrderByQuery(items)))
                 {
                     json = sr.ReadToEnd();
                 }
@@ -175,7 +175,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                    httpStatusCode,
                    errorMessage,
                    (int)subStatusCodes,
-                   new System.Diagnostics.StackTrace(),
+                   new System.Diagnostics.StackTrace().ToString(),
                    acitivityId,
                    10.4,
                    default,

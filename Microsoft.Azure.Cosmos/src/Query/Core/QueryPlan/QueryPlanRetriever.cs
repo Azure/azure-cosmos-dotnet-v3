@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                     statusCode: System.Net.HttpStatusCode.BadRequest,
                     subStatusCode: default,
                     message: tryGetQueryPlan.Exception.ToString(),
-                    stackTrace: new System.Diagnostics.StackTrace(tryGetQueryPlan.Exception),
+                    stackTrace: tryGetQueryPlan.Exception.StackTrace,
                     activityId: default,
                     requestCharge: default,
                     retryAfter: default,

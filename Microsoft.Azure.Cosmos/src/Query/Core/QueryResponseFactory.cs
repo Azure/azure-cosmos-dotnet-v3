@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                         statusCode: System.Net.HttpStatusCode.InternalServerError,
                         subStatusCode: default,
                         message: exception.Message,
-                        stackTrace: new System.Diagnostics.StackTrace(exception),
+                        stackTrace: exception.StackTrace,
                         activityId: QueryResponseCore.EmptyGuidString,
                         requestCharge: 0,
                         retryAfter: null,
@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                     cosmosException.StatusCode,
                     cosmosException.SubStatusCode,
                     cosmosException.Message,
-                    exceptionWithStackTrace.GetStackTrace(),
+                    exceptionWithStackTrace.StackTrace,
                     cosmosException.ActivityId,
                     cosmosException.RequestCharge,
                     cosmosException.RetryAfter,
@@ -147,7 +147,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             {
                 return new CosmosBadRequestException(
                     message: malformedContinuationTokenException.Message,
-                    stackTrace: new StackTrace(malformedContinuationTokenException),
+                    stackTrace: malformedContinuationTokenException.StackTrace,
                     innerException: malformedContinuationTokenException);
             }
 
@@ -162,7 +162,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             {
                 return new CosmosBadRequestException(
                     message: expectedQueryPartitionProviderException.Message,
-                    stackTrace: new StackTrace(expectedQueryPartitionProviderException),
+                    stackTrace: expectedQueryPartitionProviderException.StackTrace,
                     innerException: expectedQueryPartitionProviderException);
             }
         }

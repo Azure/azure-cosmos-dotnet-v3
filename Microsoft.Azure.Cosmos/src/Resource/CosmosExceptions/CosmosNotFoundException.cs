@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
         internal CosmosNotFoundException(
             string message,
             int subStatusCode = default,
-            StackTrace stackTrace = default,
+            string stackTrace = default,
             string activityId = default,
             double requestCharge = default,
             TimeSpan? retryAfter = default,

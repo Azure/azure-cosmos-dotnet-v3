@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
     using System.Net;
     using System.Net.Http;
@@ -144,6 +145,61 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsTrue(responseMessage.ErrorMessage.Contains(errorMessage));
             Assert.IsTrue(responseMessage.ErrorMessage.Contains(transportException.ToString()));
             Assert.IsTrue(responseMessage.ErrorMessage.Contains("VerifyTransportExceptionToResponseMessage"), $"Message should have method name for the stack trace {responseMessage.ErrorMessage}");
+        }
+
+        [TestMethod]
+        public void EnsureCorrectStatusCode()
+        {
+            string testMessage = "Test" + Guid.NewGuid().ToString();
+
+            List<(HttpStatusCode statusCode, CosmosException exception)> exceptionsToStatusCodes = new List<(HttpStatusCode, CosmosException)>()
+            {
+                (HttpStatusCode.NotFound, new CosmosNotFoundException(testMessage)),
+                (HttpStatusCode.InternalServerError, new CosmosInternalServerErrorException(testMessage)),
+                (HttpStatusCode.BadRequest, new CosmosBadRequestException(testMessage)),
+                (HttpStatusCode.RequestTimeout, new CosmosRequestTimeoutException(testMessage)),
+                ((HttpStatusCode)429, new CosmosThrottledException(testMessage)),
+            };
+
+            foreach((HttpStatusCode statusCode, CosmosException exception) item in exceptionsToStatusCodes)
+            {
+                this.ValidateExceptionInfo(item.exception, item.statusCode, testMessage);
+            }
+        }
+
+        [TestMethod]
+        public void ValidateExceptionStackTraceHandling()
+        {
+            CosmosException cosmosException = new CosmosNotFoundException("TestMessage");
+            Assert.AreEqual(null, cosmosException.StackTrace);
+            Assert.IsFalse(cosmosException.ToString().Contains(nameof(ValidateExceptionStackTraceHandling)));
+            try
+            {
+                throw cosmosException;
+            }
+            catch(CosmosException ce)
+            {
+                Assert.IsTrue(ce.StackTrace.Contains(nameof(ValidateExceptionStackTraceHandling)), ce.StackTrace);
+            }
+
+            string stackTrace = "OriginalDocumentClientExceptionStackTrace";
+            try
+            {
+                throw new CosmosNotFoundException("TestMessage", stackTrace: stackTrace);
+            }
+            catch (CosmosException ce)
+            {
+                Assert.AreEqual(stackTrace, ce.StackTrace);
+            }
+        }
+
+        private void ValidateExceptionInfo(
+            CosmosException exception,
+            HttpStatusCode httpStatusCode,
+            string message)
+        {
+            Assert.AreEqual(httpStatusCode, exception.StatusCode);
+            Assert.IsTrue(exception.ToString().Contains(message));
         }
     }
 }
