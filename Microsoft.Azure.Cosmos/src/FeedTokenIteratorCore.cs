@@ -88,20 +88,28 @@ namespace Microsoft.Azure.Cosmos
                diagnosticsScope: null,
                cancellationToken: cancellationToken);
 
+            string responseContinuation = response.Headers.ContinuationToken;
             // Retry in case of splits or other scenarios
             if (await this.feedTokenInternal.ShouldRetryAsync(this.containerCore, response, cancellationToken))
             {
-                if (response.IsSuccessStatusCode
-                    || response.StatusCode == HttpStatusCode.NotModified)
+                if (response.IsSuccessStatusCode)
                 {
-                    this.feedTokenInternal.UpdateContinuation(response.Headers.ContinuationToken);
+                    this.feedTokenInternal.UpdateContinuation(responseContinuation);
                 }
 
                 return await this.ReadNextAsync(cancellationToken);
             }
 
-            this.feedTokenInternal.UpdateContinuation(response.Headers.ContinuationToken);
-            this.hasMoreResultsInternal = GetHasMoreResults(response.Headers.ContinuationToken, response.StatusCode);
+            bool hasResults = false;
+            if (response.Headers.TryGetValue(HttpConstants.HttpHeaders.ItemCount, out string itemCount))
+            {
+                hasResults = int.TryParse(itemCount, out int itemCountAsInt)
+                    && itemCountAsInt > 0;
+            }
+
+            this.feedTokenInternal.UpdateContinuation(responseContinuation);
+            // TODO: How to make this work
+            this.hasMoreResultsInternal = hasResults;
             return response;
         }
 
@@ -109,14 +117,6 @@ namespace Microsoft.Azure.Cosmos
         {
             continuationToken = this.feedTokenInternal.GetContinuation();
             return true;
-        }
-
-        internal static bool GetHasMoreResults(string continuationToken, HttpStatusCode statusCode)
-        {
-            // this logic might not be sufficient composite continuation token https://msdata.visualstudio.com/CosmosDB/SDK/_workitems/edit/269099
-            // in the case where this is a result set iterator for a change feed, not modified indicates that
-            // the enumeration is done for now.
-            return continuationToken != null && statusCode != HttpStatusCode.NotModified;
         }
     }
 

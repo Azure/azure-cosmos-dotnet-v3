@@ -144,13 +144,24 @@ namespace Microsoft.Azure.Cosmos
             ResponseMessage responseMessage,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (responseMessage.IsSuccessStatusCode)
+            bool isSuccessfullResponse = responseMessage.IsSuccessStatusCode
+                || responseMessage.StatusCode == HttpStatusCode.NotModified;
+            bool hasResults = false;
+            if (isSuccessfullResponse
+                && responseMessage.Headers.TryGetValue(Documents.HttpConstants.HttpHeaders.ItemCount, out string itemCount))
+            {
+                hasResults = int.TryParse(itemCount, out int itemCountAsInt)
+                    && itemCountAsInt > 0;
+            }
+
+            if (hasResults)
             {
                 this.initialNotModifiedRange = null;
                 return false;
             }
 
-            if (responseMessage.StatusCode == HttpStatusCode.NotModified
+            if (isSuccessfullResponse
+                && !hasResults
                 && this.CompositeContinuationTokens.Count > 1)
             {
                 if (this.initialNotModifiedRange == null)

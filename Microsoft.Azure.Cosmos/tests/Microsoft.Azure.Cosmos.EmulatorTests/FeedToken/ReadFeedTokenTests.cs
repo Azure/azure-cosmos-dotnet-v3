@@ -50,12 +50,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await base.TestCleanup();
         }
 
-        /// <summary>
-        /// Test to verify that StartFromBeginning works as expected by inserting 25 items, reading them all, then taking the last continuationtoken, 
-        /// inserting another 25, and verifying that the iterator continues from the saved token and reads the second 25 for a total of 50 documents.
-        /// </summary>
         [TestMethod]
-        public async Task ReadFeedIteratorCore_ReadAll()
+        public async Task ReadFeedIteratorCore_AllowsParallelProcessing()
         {
             int batchSize = 100;
 
@@ -96,6 +92,36 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             Assert.AreEqual(batchSize, documentsRead);
+        }
+
+        [TestMethod]
+        public async Task ReadFeedIteratorCore_ReadAll()
+        {
+            int totalCount = 0;
+            int batchSize = 1000;
+
+            await this.CreateRandomItems(this.LargerContainer, batchSize, randomPartitionKey: true);
+            ContainerCore itemsCore = this.LargerContainer;
+            IReadOnlyList<FeedToken> tokens = await itemsCore.GetFeedTokensAsync(maxTokens: 1);
+
+            FeedTokenIterator feedIterator = itemsCore.GetItemQueryStreamIterator(null, tokens[0]);
+            while (feedIterator.HasMoreResults)
+            {
+                using (ResponseMessage responseMessage =
+                    await feedIterator.ReadNextAsync(this.cancellationToken))
+                {
+                    Assert.IsNotNull(feedIterator.FeedToken);
+                    Assert.IsTrue(feedIterator.TryGetContinuationToken(out string continuationToken));
+
+                    if (responseMessage.IsSuccessStatusCode)
+                    {
+                        Collection<ToDoActivity> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
+                        totalCount += response.Count;
+                    }
+                }
+            }
+
+            Assert.AreEqual(batchSize, totalCount);
         }
 
         private async Task<IList<ToDoActivity>> CreateRandomItems(ContainerCore container, int pkCount, int perPKItemCount = 1, bool randomPartitionKey = true)

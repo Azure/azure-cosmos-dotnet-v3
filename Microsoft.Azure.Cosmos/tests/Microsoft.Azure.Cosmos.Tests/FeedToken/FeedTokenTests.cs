@@ -172,8 +172,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             FeedTokenEPKRange feedTokenEPKRange = new FeedTokenEPKRange(Guid.NewGuid().ToString(), new Documents.Routing.Range<string>(compositeContinuationTokens[0].Range.Min, compositeContinuationTokens[1].Range.Min, true, false), compositeContinuationTokens);
 
             ContainerCore containerCore = Mock.Of<ContainerCore>();
-
-            Assert.IsFalse(await feedTokenEPKRange.ShouldRetryAsync(containerCore, new ResponseMessage(HttpStatusCode.OK)));
+            ResponseMessage okResponse = new ResponseMessage(HttpStatusCode.OK);
+            okResponse.Headers[Documents.HttpConstants.HttpHeaders.ItemCount] = "1";
+            Assert.IsFalse(await feedTokenEPKRange.ShouldRetryAsync(containerCore, okResponse));
 
             // A 304 on a multi Range token should cycle on all available ranges before stopping retrying
             Assert.IsTrue(await feedTokenEPKRange.ShouldRetryAsync(containerCore, new ResponseMessage(HttpStatusCode.NotModified)));

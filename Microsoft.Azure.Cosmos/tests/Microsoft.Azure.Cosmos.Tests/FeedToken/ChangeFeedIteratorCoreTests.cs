@@ -78,6 +78,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             string continuation = "TBD";
             ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.OK);
             responseMessage.Headers.ETag = continuation;
+            responseMessage.Headers[Documents.HttpConstants.HttpHeaders.ItemCount] = "1";
 
             Mock<CosmosClientContext> cosmosClientContext = new Mock<CosmosClientContext>();
             cosmosClientContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
@@ -120,6 +121,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             string continuation = "TBD";
             ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.OK);
             responseMessage.Headers.ETag = continuation;
+            responseMessage.Headers[Documents.HttpConstants.HttpHeaders.ItemCount] = "1";
 
             Mock<CosmosClientContext> cosmosClientContext = new Mock<CosmosClientContext>();
             cosmosClientContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
@@ -256,6 +258,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             string continuation = "TBD";
             ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.OK);
             responseMessage.Headers.ETag = continuation;
+            responseMessage.Headers[Documents.HttpConstants.HttpHeaders.ItemCount] = "1";
 
             Mock<CosmosClientContext> cosmosClientContext = new Mock<CosmosClientContext>();
             cosmosClientContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
