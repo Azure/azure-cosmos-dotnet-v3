@@ -268,38 +268,38 @@ namespace Microsoft.Azure.Cosmos
             return TaskHelper.RunInlineIfNeededAsync(() => this.container.GetFeedTokensAsync(cancellationToken));
         }
 
-        public override FeedTokenIterator GetChangeFeedStreamIterator(ChangeFeedRequestOptions changeFeedRequestOptions = null)
+        public override FeedIterator GetChangeFeedStreamIterator(ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
             return this.container.GetChangeFeedStreamIterator(changeFeedRequestOptions);
         }
 
-        public override FeedTokenIterator GetChangeFeedStreamIterator(
+        public override FeedIterator GetChangeFeedStreamIterator(
             FeedToken feedToken,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
             return this.container.GetChangeFeedStreamIterator(feedToken, changeFeedRequestOptions);
         }
 
-        public override FeedTokenIterator GetChangeFeedStreamIterator(
+        public override FeedIterator GetChangeFeedStreamIterator(
             PartitionKey partitionKey,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
             return this.container.GetChangeFeedStreamIterator(partitionKey, changeFeedRequestOptions);
         }
 
-        public override FeedTokenIterator<T> GetChangeFeedIterator<T>(ChangeFeedRequestOptions changeFeedRequestOptions = null)
+        public override FeedIterator<T> GetChangeFeedIterator<T>(ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
             return this.container.GetChangeFeedIterator<T>(changeFeedRequestOptions);
         }
 
-        public override FeedTokenIterator<T> GetChangeFeedIterator<T>(
+        public override FeedIterator<T> GetChangeFeedIterator<T>(
             FeedToken feedToken,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
             return this.container.GetChangeFeedIterator<T>(feedToken, changeFeedRequestOptions);
         }
 
-        public override FeedTokenIterator<T> GetChangeFeedIterator<T>(
+        public override FeedIterator<T> GetChangeFeedIterator<T>(
             PartitionKey partitionKey,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
