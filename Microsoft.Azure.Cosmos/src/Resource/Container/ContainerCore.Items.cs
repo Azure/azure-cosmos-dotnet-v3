@@ -395,7 +395,7 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        FeedTokenIterator GetItemQueryStreamIterator(
+        FeedIterator GetItemQueryStreamIterator(
             QueryDefinition queryDefinition,
             FeedToken feedToken,
             QueryRequestOptions requestOptions = null)
@@ -531,7 +531,7 @@ namespace Microsoft.Azure.Cosmos
                 partitionedQueryExecutionInfo: null);
         }
 
-        internal FeedTokenIterator GetItemQueryStreamIteratorInternal(
+        internal FeedIterator GetItemQueryStreamIteratorInternal(
             SqlQuerySpec sqlQuerySpec,
             bool isContinuationExcpected,
             FeedTokenInternal feedToken,
