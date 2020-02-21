@@ -100,16 +100,9 @@ namespace Microsoft.Azure.Cosmos
                 return await this.ReadNextAsync(cancellationToken);
             }
 
-            bool hasResults = false;
-            if (response.Headers.TryGetValue(HttpConstants.HttpHeaders.ItemCount, out string itemCount))
-            {
-                hasResults = int.TryParse(itemCount, out int itemCountAsInt)
-                    && itemCountAsInt > 0;
-            }
-
             this.feedTokenInternal.UpdateContinuation(responseContinuation);
             // TODO: How to make this work
-            this.hasMoreResultsInternal = hasResults;
+            this.hasMoreResultsInternal = this.feedTokenInternal.IsDone();
             return response;
         }
 

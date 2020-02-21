@@ -33,6 +33,8 @@ namespace Microsoft.Azure.Cosmos
 
         public abstract void UpdateContinuation(string continuationToken);
 
+        public abstract bool IsDone();
+
         public static bool TryParse(
             string toStringValue,
             out FeedToken parsedToken)
