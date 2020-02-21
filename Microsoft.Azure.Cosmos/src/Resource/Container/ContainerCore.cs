@@ -644,32 +644,5 @@ namespace Microsoft.Azure.Cosmos
               diagnosticsScope: null,
               cancellationToken: cancellationToken);
         }
-
-        private static async Task<IReadOnlyList<PartitionKeyRange>> GetCurrentPartitionKeyRangesAsync(
-            string containerRid,
-            PartitionKeyRangeCache partitionKeyRangeCache)
-        {
-            return await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
-                        containerRid,
-                        new Range<string>(
-                            PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
-                            PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
-                            isMinInclusive: true,
-                            isMaxInclusive: false),
-                        forceRefresh: true);
-        }
-
-        private static List<FeedTokenEPKRange> CreateFeedTokensPerRange(
-            string containerRid,
-            IReadOnlyList<PartitionKeyRange> partitionKeyRanges)
-        {
-            List<FeedTokenEPKRange> feedTokens = new List<FeedTokenEPKRange>(partitionKeyRanges.Count);
-            foreach (PartitionKeyRange partitionKeyRange in partitionKeyRanges)
-            {
-                feedTokens.Add(new FeedTokenEPKRange(containerRid, partitionKeyRange));
-            }
-
-            return feedTokens;
-        }
     }
 }
