@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos
         internal readonly Documents.Routing.Range<string> CompleteRange;
         private CompositeContinuationToken currentToken;
         private string initialNotModifiedRange;
-        private int doneRanges = 0;
+        private HashSet<string> doneRanges = new HashSet<string>();
 
         private FeedTokenEPKRange(
             string containerRid)
@@ -142,14 +142,14 @@ namespace Microsoft.Azure.Cosmos
                 // Change Feed never lands here, as it always provides a CT
 
                 // Consider current range done, if this FeedToken contains multiple ranges due to splits, all of them need to be considered done
-                this.doneRanges++;
+                this.doneRanges.Add(this.currentToken.Range.Min);
             }
 
             this.currentToken.Token = continuationToken;
             this.MoveToNextToken();
         }
 
-        public override bool IsDone() => this.doneRanges == this.CompositeContinuationTokens.Count;
+        public override bool IsDone() => this.doneRanges.Count == this.CompositeContinuationTokens.Count;
 
         public override async Task<bool> ShouldRetryAsync(
             ContainerCore containerCore,

@@ -278,6 +278,82 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(documentClient.AvailablePartitionKeyRanges[1].MaxExclusive, continuationTokens[1].Range.Max);
         }
 
+        [TestMethod]
+        public void FeedToken_PartitionKey_IsDone()
+        {
+            PartitionKey pk = new PartitionKey("test");
+            FeedTokenPartitionKey token = new FeedTokenPartitionKey(pk);
+            token.UpdateContinuation(Guid.NewGuid().ToString());
+            Assert.IsFalse(token.IsDone());
+            token.UpdateContinuation(null);
+            Assert.IsTrue(token.IsDone());
+        }
+
+        [TestMethod]
+        public void FeedToken_PartitionKeyRange_IsDone()
+        {
+            string pkrangeId = "0";
+            FeedTokenPartitionKeyRange token = new FeedTokenPartitionKeyRange(pkrangeId);
+            token.UpdateContinuation(Guid.NewGuid().ToString());
+            Assert.IsFalse(token.IsDone());
+            token.UpdateContinuation(null);
+            Assert.IsTrue(token.IsDone());
+        }
+
+        [TestMethod]
+        public void FeedToken_EPK_IsDone()
+        {
+            const string containerRid = "containerRid";
+            FeedTokenEPKRange token = new FeedTokenEPKRange(containerRid,
+                new Documents.PartitionKeyRange() { MinInclusive = "A", MaxExclusive = "B" });
+
+            token.UpdateContinuation(Guid.NewGuid().ToString());
+            Assert.IsFalse(token.IsDone());
+
+            token.UpdateContinuation(null);
+            Assert.IsTrue(token.IsDone());
+        }
+
+        [TestMethod]
+        public void FeedToken_EPK_IsDone_MultipleRanges()
+        {
+            const string containerRid = "containerRid";
+            FeedTokenEPKRange token = new FeedTokenEPKRange(containerRid,
+                new List<Documents.PartitionKeyRange>() {
+                    new Documents.PartitionKeyRange() { MinInclusive = "A", MaxExclusive = "B" },
+                    new Documents.PartitionKeyRange() { MinInclusive = "B", MaxExclusive = "C" },
+                    new Documents.PartitionKeyRange() { MinInclusive = "C", MaxExclusive = "D" }
+                });
+
+            // First range has continuation
+            token.UpdateContinuation(Guid.NewGuid().ToString());
+            Assert.IsFalse(token.IsDone());
+
+            // Second range is done
+            token.UpdateContinuation(null);
+            Assert.IsFalse(token.IsDone());
+
+            // Third range is done
+            token.UpdateContinuation(null);
+            Assert.IsFalse(token.IsDone());
+
+            // First range has continuation
+            token.UpdateContinuation(Guid.NewGuid().ToString());
+            Assert.IsFalse(token.IsDone());
+
+            // Second range is done
+            token.UpdateContinuation(null);
+            Assert.IsFalse(token.IsDone());
+
+            // Third range is done
+            token.UpdateContinuation(null);
+            Assert.IsFalse(token.IsDone());
+
+            // First range is done
+            token.UpdateContinuation(null);
+            Assert.IsTrue(token.IsDone());
+        }
+
         private static CompositeContinuationToken BuildTokenForRange(
             string min,
             string max,
