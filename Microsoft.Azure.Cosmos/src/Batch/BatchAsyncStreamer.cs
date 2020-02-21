@@ -89,6 +89,16 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(serializerCore));
             }
 
+            if (limiter == null)
+            {
+                throw new ArgumentNullException(nameof(limiter));
+            }
+
+            if (maxDegreeOfConcurrency < 1)
+            {
+                throw new ArgumentNullException(nameof(maxDegreeOfConcurrency));
+            }
+
             this.maxBatchOperationCount = maxBatchOperationCount;
             this.maxBatchByteSize = maxBatchByteSize;
             this.executor = executor;
@@ -209,8 +219,8 @@ namespace Microsoft.Azure.Cosmos
                 if (elapsedTimeInMilliseconds >= this.congestionWaitTimeInMilliseconds)
                 {
                     long diffThrottle = this.partitionMetric.NumberOfThrottles - this.oldPartitionMetric.NumberOfThrottles;
-                    long changeDocCount = this.partitionMetric.NumberOfDocumentsOperatedOn - this.oldPartitionMetric.NumberOfDocumentsOperatedOn;
-                    this.oldPartitionMetric.Add(changeDocCount, elapsedTimeInMilliseconds, diffThrottle);
+                    long changeItemsCount = this.partitionMetric.NumberOfItemsOperatedOn - this.oldPartitionMetric.NumberOfItemsOperatedOn;
+                    this.oldPartitionMetric.Add(changeItemsCount, elapsedTimeInMilliseconds, diffThrottle);
 
                     if (diffThrottle > 0)
                     {
@@ -229,7 +239,7 @@ namespace Microsoft.Azure.Cosmos
                         this.congestionWaitTimeInMilliseconds += 1000;
                     }
 
-                    if (changeDocCount > 0 && diffThrottle == 0)
+                    if (changeItemsCount > 0 && diffThrottle == 0)
                     {
                         if (this.congestionDegreeOfConcurrency + this.congestionIncreaseFactor <= this.maxDegreeOfConcurrency)
                         {

@@ -16,14 +16,14 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Initializes a new instance of the OperationMetrics class (instance constructor).
         /// </summary>
-        /// <param name="numberOfDocumentsOperatedOn">Number of documents operated on.</param>
+        /// <param name="numberOfItemsOperatedOn">Number of documents operated on.</param>
         /// <param name="timeTakenInMilliseconds">Amount of time taken to insert the documents.</param>
         /// <param name="numberOfThrottles">The number of throttles encountered to insert the documents.</param>
-        public BatchPartitionMetric(long numberOfDocumentsOperatedOn, long timeTakenInMilliseconds, long numberOfThrottles)
+        public BatchPartitionMetric(long numberOfItemsOperatedOn, long timeTakenInMilliseconds, long numberOfThrottles)
         {
-            if (numberOfDocumentsOperatedOn < 0)
+            if (numberOfItemsOperatedOn < 0)
             {
-                throw new ArgumentException("numberOfDocumentsOperatedOn must be non negative");
+                throw new ArgumentException("numberOfItemsOperatedOn must be non negative");
             }
 
             if (timeTakenInMilliseconds < 0)
@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentException("numberOfThrottles must be non negative");
             }
 
-            this.NumberOfDocumentsOperatedOn = numberOfDocumentsOperatedOn;
+            this.NumberOfItemsOperatedOn = numberOfItemsOperatedOn;
             this.TimeTakenInMilliseconds = timeTakenInMilliseconds;
             this.NumberOfThrottles = numberOfThrottles;
         }
@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the number of documents operated on.
         /// </summary>
-        public long NumberOfDocumentsOperatedOn
+        public long NumberOfItemsOperatedOn
         {
             get; private set;
         }
@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentException("numberOfThrottles must be non negative");
             }
 
-            this.NumberOfDocumentsOperatedOn += numberOfDocumentsOperatedOn;
+            this.NumberOfItemsOperatedOn += numberOfDocumentsOperatedOn;
             this.TimeTakenInMilliseconds += timeTakenInMilliseconds;
             this.NumberOfThrottles += numberOfThrottles;
         }
