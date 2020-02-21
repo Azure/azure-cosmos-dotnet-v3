@@ -415,7 +415,7 @@ FROM (
 ) AS r1 
 ORDER BY r1["FamilyId"] ASC, r1["FamilyNumber"] ASC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: InternalServerError]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Underlying object does not have an '_rid' field.]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -467,7 +467,7 @@ FROM (
 ) AS r0 
 ORDER BY r0["FamilyId"] ASC, r0["FamilyNumber"] ASC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: InternalServerError]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Underlying object does not have an '_rid' field.]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
