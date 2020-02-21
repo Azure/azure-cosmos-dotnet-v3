@@ -276,7 +276,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     await feedIterator.ReadNextAsync(this.cancellationToken))
                 {
                     Assert.IsNotNull(feedIterator.FeedToken);
-                    Assert.IsTrue(feedIterator.TryGetContinuationToken(out string continuationToken));
 
                     if (responseMessage.IsSuccessStatusCode)
                     {
@@ -300,7 +299,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await this.Container.CreateItemAsync(this.CreateRandomToDoActivity(pkToRead));
             }
 
-            FeedTokenIterator setIteratorNew = itemsCore.GetChangeFeedStreamIterator(feedToken: feedIterator.FeedToken, changeFeedRequestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue.ToUniversalTime() });
+            FeedIterator setIteratorNew = itemsCore.GetChangeFeedStreamIterator(feedToken: feedIterator.FeedToken, changeFeedRequestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue.ToUniversalTime() });
 
             while (setIteratorNew.HasMoreResults)
             {
@@ -308,7 +307,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     await setIteratorNew.ReadNextAsync(this.cancellationToken))
                 {
                     Assert.IsNotNull(setIteratorNew.FeedToken);
-                    Assert.IsTrue(setIteratorNew.TryGetContinuationToken(out string continuationToken));
                     if (responseMessage.IsSuccessStatusCode)
                     {
                         Collection<ToDoActivity> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
@@ -349,12 +347,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             ContainerCore itemsCore = this.Container;
-            FeedTokenIterator<ToDoActivity> feedIterator = itemsCore.GetChangeFeedIterator<ToDoActivity>(new PartitionKey(pkToRead), changeFeedRequestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue.ToUniversalTime() });
+            FeedIterator<ToDoActivity> feedIterator = itemsCore.GetChangeFeedIterator<ToDoActivity>(new PartitionKey(pkToRead), changeFeedRequestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue.ToUniversalTime() });
             while (feedIterator.HasMoreResults)
             {
                 FeedResponse<ToDoActivity> feedResponse = await feedIterator.ReadNextAsync(this.cancellationToken);
                 Assert.IsNotNull(feedIterator.FeedToken);
-                Assert.IsTrue(feedIterator.TryGetContinuationToken(out string continuationToken));
                 totalCount += feedResponse.Count;
                 foreach (ToDoActivity toDoActivity in feedResponse)
                 {
@@ -372,13 +369,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await this.Container.CreateItemAsync(this.CreateRandomToDoActivity(pkToRead));
             }
 
-            FeedTokenIterator<ToDoActivity> setIteratorNew = itemsCore.GetChangeFeedIterator<ToDoActivity>(feedToken: feedIterator.FeedToken, changeFeedRequestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue.ToUniversalTime() });
+            FeedIterator<ToDoActivity> setIteratorNew = itemsCore.GetChangeFeedIterator<ToDoActivity>(feedToken: feedIterator.FeedToken, changeFeedRequestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue.ToUniversalTime() });
 
             while (setIteratorNew.HasMoreResults)
             {
                 FeedResponse<ToDoActivity> feedResponse = await setIteratorNew.ReadNextAsync(this.cancellationToken);
                 Assert.IsNotNull(setIteratorNew.FeedToken);
-                Assert.IsTrue(setIteratorNew.TryGetContinuationToken(out string continuationToken));
                 totalCount += feedResponse.Count;
                 foreach (ToDoActivity toDoActivity in feedResponse)
                 {
@@ -739,7 +735,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<Task<int>> tasks = tokens.Select(token => Task.Run(async () =>
             {
                 int count = 0;
-                FeedTokenIterator iteratorForToken =
+                FeedIterator iteratorForToken =
                     itemsCore.GetChangeFeedStreamIterator(token, changeFeedRequestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue.ToUniversalTime() });
                 while (iteratorForToken.HasMoreResults)
                 {
@@ -788,13 +784,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<Task<int>> tasks = tokens.Select(token => Task.Run(async () =>
             {
                 int count = 0;
-                FeedTokenIterator<ToDoActivity> iteratorForToken =
+                FeedIterator<ToDoActivity> iteratorForToken =
                     itemsCore.GetChangeFeedIterator<ToDoActivity>(token, changeFeedRequestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue.ToUniversalTime() });
                 while (iteratorForToken.HasMoreResults)
                 {
                     FeedResponse<ToDoActivity> feedResponse = await iteratorForToken.ReadNextAsync(this.cancellationToken);
                     Assert.IsNotNull(iteratorForToken.FeedToken);
-                    Assert.IsTrue(iteratorForToken.TryGetContinuationToken(out string continuationToken));
                     count += feedResponse.Count;
                 }
 
