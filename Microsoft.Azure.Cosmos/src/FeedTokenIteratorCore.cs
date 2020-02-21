@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos
                operationType: operation,
                requestOptions: this.requestOptions,
                cosmosContainerCore: null,
-               partitionKey: this.requestOptions?.PartitionKey,
+               partitionKey: null,
                streamPayload: stream,
                requestEnricher: request =>
                {
@@ -100,8 +100,11 @@ namespace Microsoft.Azure.Cosmos
                 return await this.ReadNextAsync(cancellationToken);
             }
 
-            this.feedTokenInternal.UpdateContinuation(responseContinuation);
-            // TODO: How to make this work
+            if (response.IsSuccessStatusCode)
+            {
+                this.feedTokenInternal.UpdateContinuation(responseContinuation);
+            }
+
             this.hasMoreResultsInternal = !this.feedTokenInternal.IsDone();
             return response;
         }
