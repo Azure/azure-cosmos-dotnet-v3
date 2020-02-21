@@ -85,7 +85,6 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Current FeedToken for the iterator.
         /// </summary>
-
         public abstract FeedToken FeedToken { get; }
 #endif
     }
