@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
                     streamPayload: streamPayload,
                     operationType: OperationType.Create,
                     requestOptions: requestOptions,
-                    diagnosticsScope: null,
+                    diagnosticsContext: null,
                     cancellationToken: cancellationToken);
         }
 
@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos
                     streamPayload: null,
                     operationType: OperationType.Read,
                     requestOptions: requestOptions,
-                    diagnosticsScope: null,
+                    diagnosticsContext: null,
                     cancellationToken: cancellationToken);
         }
 
@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Cosmos
                     streamPayload: streamPayload,
                     operationType: OperationType.Upsert,
                     requestOptions: requestOptions,
-                    diagnosticsScope: null,
+                    diagnosticsContext: null,
                     cancellationToken: cancellationToken);
         }
 
@@ -158,7 +158,7 @@ namespace Microsoft.Azure.Cosmos
                     streamPayload: streamPayload,
                     operationType: OperationType.Replace,
                     requestOptions: requestOptions,
-                    diagnosticsScope: null,
+                    diagnosticsContext: null,
                     cancellationToken: cancellationToken);
         }
 
@@ -202,7 +202,7 @@ namespace Microsoft.Azure.Cosmos
                     streamPayload: null,
                     operationType: OperationType.Delete,
                     requestOptions: requestOptions,
-                    diagnosticsScope: null,
+                    diagnosticsContext: null,
                     cancellationToken: cancellationToken);
         }
 
@@ -521,7 +521,7 @@ namespace Microsoft.Azure.Cosmos
             string itemId,
             T item,
             OperationType operationType,
-            RequestOptions requestOptions,
+            ItemRequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
@@ -542,7 +542,7 @@ namespace Microsoft.Azure.Cosmos
                             itemStream,
                             operationType,
                             requestOptions,
-                            diagnosticsScope: diagnosticsContext,
+                            diagnosticsContext: diagnosticsContext,
                             cancellationToken: cancellationToken);
                 }
 
@@ -560,7 +560,7 @@ namespace Microsoft.Azure.Cosmos
                         itemStream,
                         operationType,
                         requestOptions,
-                        diagnosticsScope: diagnosticsContext,
+                        diagnosticsContext: diagnosticsContext,
                         cancellationToken: cancellationToken);
 
                     if (responseMessage.IsSuccessStatusCode)
@@ -587,8 +587,8 @@ namespace Microsoft.Azure.Cosmos
             string itemId,
             Stream streamPayload,
             OperationType operationType,
-            RequestOptions requestOptions,
-            CosmosDiagnosticsContext diagnosticsScope,
+            ItemRequestOptions requestOptions,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             if (requestOptions != null && requestOptions.IsEffectivePartitionKeyRouting)
@@ -599,18 +599,60 @@ namespace Microsoft.Azure.Cosmos
             ContainerCore.ValidatePartitionKey(partitionKey, requestOptions);
             Uri resourceUri = this.GetResourceUri(requestOptions, operationType, itemId);
 
-            return await this.ClientContext.ProcessResourceOperationStreamAsync(
-                resourceUri: resourceUri,
-                resourceType: ResourceType.Document,
-                operationType: operationType,
-                requestOptions: requestOptions,
-                cosmosContainerCore: this,
-                partitionKey: partitionKey,
-                itemId: itemId,
-                streamPayload: streamPayload,
-                requestEnricher: null,
-                diagnosticsScope: diagnosticsScope,
-                cancellationToken: cancellationToken);
+            if (diagnosticsContext == null)
+            {
+                diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
+            }
+
+            using (diagnosticsContext.CreateOverallScope("ProcessItemStream"))
+            {
+                if (requestOptions != null && requestOptions.EncryptionOptions != null)
+                {
+                    if (streamPayload == null)
+                    {
+                        throw new ArgumentException(ClientResources.InvalidRequestWithEncryptionOptions);
+                    }
+
+                    using (diagnosticsContext.CreateScope("Encrypt"))
+                    {
+                        streamPayload = await this.ClientContext.EncryptionProcessor.EncryptAsync(
+                            streamPayload,
+                            requestOptions.EncryptionOptions,
+                            (DatabaseCore)this.Database,
+                            this.ClientContext.ClientOptions.EncryptionKeyWrapProvider,
+                            diagnosticsContext,
+                            cancellationToken);
+                    }
+                }
+
+                ResponseMessage responseMessage = await this.ClientContext.ProcessResourceOperationStreamAsync(
+                    resourceUri: resourceUri,
+                    resourceType: ResourceType.Document,
+                    operationType: operationType,
+                    requestOptions: requestOptions,
+                    cosmosContainerCore: this,
+                    partitionKey: partitionKey,
+                    itemId: itemId,
+                    streamPayload: streamPayload,
+                    requestEnricher: null,
+                    diagnosticsScope: diagnosticsContext,
+                    cancellationToken: cancellationToken);
+
+                if (responseMessage.Content != null && this.ClientContext.ClientOptions.EncryptionKeyWrapProvider != null)
+                {
+                    using (diagnosticsContext.CreateScope("Decrypt"))
+                    {
+                        responseMessage.Content = await this.ClientContext.EncryptionProcessor.DecryptAsync(
+                            responseMessage.Content,
+                            (DatabaseCore)this.Database,
+                            this.ClientContext.ClientOptions.EncryptionKeyWrapProvider,
+                            diagnosticsContext,
+                            cancellationToken);
+                    }
+                }
+
+                return responseMessage;
+            }
         }
 
         internal async Task<PartitionKey> GetPartitionKeyValueFromStreamAsync(
