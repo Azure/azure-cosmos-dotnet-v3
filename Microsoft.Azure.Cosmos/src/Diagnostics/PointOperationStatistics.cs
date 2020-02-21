@@ -31,11 +31,13 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             this.RequestUri = requestUri;
             this.RequestSessionToken = requestSessionToken;
             this.ResponseSessionToken = responseSessionToken;
+            this.ResponseTimeUtc = DateTime.UtcNow;
         }
 
         public string ActivityId { get; }
         public HttpStatusCode StatusCode { get; }
         public Documents.SubStatusCodes SubStatusCode { get; }
+        public DateTime ResponseTimeUtc { get; }
         public double RequestCharge { get; }
         public string ErrorMessage { get; }
         public HttpMethod Method { get; }

@@ -37,18 +37,26 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            PointOperationStatistics pointOperationStatistics = new PointOperationStatistics(
-                activityId: responseMessage.Headers.ActivityId,
-                statusCode: documentServiceResponse.StatusCode,
-                subStatusCode: documentServiceResponse.SubStatusCode,
-                requestCharge: responseMessage.Headers.RequestCharge,
-                errorMessage: responseMessage.ErrorMessage,
-                method: requestMessage?.Method,
-                requestUri: requestMessage?.RequestUri,
-                requestSessionToken: requestMessage?.Headers?.Session,
-                responseSessionToken: responseMessage.Headers.Session);
+            // Only record point operation stats if ClientSideRequestStats did not record the response.
+            CosmosClientSideRequestStatistics clientSideRequestStatistics = documentServiceResponse.RequestStats as CosmosClientSideRequestStatistics;
+            if (clientSideRequestStatistics != null &&
+                clientSideRequestStatistics.ContactedReplicas.Count == 0 &&
+                clientSideRequestStatistics.FailedReplicas.Count == 0)
+            {
+                PointOperationStatistics pointOperationStatistics = new PointOperationStatistics(
+                    activityId: responseMessage.Headers.ActivityId,
+                    statusCode: documentServiceResponse.StatusCode,
+                    subStatusCode: documentServiceResponse.SubStatusCode,
+                    requestCharge: responseMessage.Headers.RequestCharge,
+                    errorMessage: responseMessage.ErrorMessage,
+                    method: requestMessage?.Method,
+                    requestUri: requestMessage?.RequestUri,
+                    requestSessionToken: requestMessage?.Headers?.Session,
+                    responseSessionToken: responseMessage.Headers.Session);
 
-            requestMessage.DiagnosticsContext.AddDiagnosticsInternal(pointOperationStatistics);
+                requestMessage.DiagnosticsContext.AddDiagnosticsInternal(pointOperationStatistics);
+            }
+
             return responseMessage;
         }
 
@@ -90,13 +98,14 @@ namespace Microsoft.Azure.Cosmos
                 statusCode: documentClientException.StatusCode.Value,
                 subStatusCode: (int)SubStatusCodes.Unknown,
                 requestCharge: responseMessage.Headers.RequestCharge,
-                errorMessage: responseMessage.ErrorMessage,
+                errorMessage: documentClientException.RawErrorMessage,
                 method: requestMessage?.Method,
                 requestUri: requestMessage?.RequestUri,
                 requestSessionToken: requestMessage?.Headers?.Session,
                 responseSessionToken: responseMessage.Headers.Session);
 
             responseMessage.DiagnosticsContext.AddDiagnosticsInternal(pointOperationStatistics);
+
             if (requestMessage != null)
             {
                 requestMessage.Properties.Remove(nameof(DocumentClientException));

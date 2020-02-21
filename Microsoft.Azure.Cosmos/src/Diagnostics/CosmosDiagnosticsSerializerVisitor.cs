@@ -28,6 +28,9 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             this.jsonWriter.WritePropertyName("ActivityId");
             this.jsonWriter.WriteValue(pointOperationStatistics.ActivityId);
 
+            this.jsonWriter.WritePropertyName("ResponseTimeUtc");
+            this.jsonWriter.WriteValue(pointOperationStatistics.ResponseTimeUtc);
+
             this.jsonWriter.WritePropertyName("StatusCode");
             this.jsonWriter.WriteValue((int)pointOperationStatistics.StatusCode);
 
@@ -185,10 +188,10 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             this.jsonWriter.WriteValue(storeResponseStatistics.RequestResponseTime.ToString("o", CultureInfo.InvariantCulture));
 
             this.jsonWriter.WritePropertyName("ResourceType");
-            this.jsonWriter.WriteValue(storeResponseStatistics.RequestResourceType);
+            this.jsonWriter.WriteValue(storeResponseStatistics.RequestResourceType.ToString());
 
             this.jsonWriter.WritePropertyName("OperationType");
-            this.jsonWriter.WriteValue(storeResponseStatistics.RequestOperationType);
+            this.jsonWriter.WriteValue(storeResponseStatistics.RequestOperationType.ToString());
 
             this.jsonWriter.WritePropertyName("LocationEndpoint");
             this.jsonWriter.WriteValue(storeResponseStatistics.LocationEndpoint);

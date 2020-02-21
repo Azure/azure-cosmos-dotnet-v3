@@ -436,28 +436,22 @@ namespace Microsoft.Azure.Cosmos
 
             return TaskHelper.RunInlineIfNeededAsync(async () =>
             {
-                // Set a diagnostic context if one is not set.
-                // This will ensure that all diagnostics are recorded across the multiple requests.
-                if (requestOptions?.DiagnosticContext == null)
-                {
-                    if (requestOptions == null)
-                    {
-                        requestOptions = new RequestOptions();
-                    }
-
-                    requestOptions.DiagnosticContext = new CosmosDiagnosticsContextCore();
-                }
-
                 // Doing a Read before Create will give us better latency for existing databases
                 DatabaseProperties databaseProperties = this.PrepareDatabaseProperties(id);
                 Database database = this.GetDatabase(id);
-                ResponseMessage readResponse = await database.ReadStreamAsync(requestOptions: requestOptions, cancellationToken: cancellationToken);
+                ResponseMessage readResponse = await database.ReadStreamAsync(
+                    requestOptions: requestOptions,
+                    cancellationToken: cancellationToken);
+
                 if (readResponse.StatusCode != HttpStatusCode.NotFound)
                 {
                     return await this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(database, Task.FromResult(readResponse));
                 }
 
                 ResponseMessage createResponse = await this.CreateDatabaseStreamAsync(databaseProperties, throughput, requestOptions, cancellationToken);
+
+                // Merge the diagnostics with the first read request.
+                createResponse.DiagnosticsContext.AddDiagnosticsInternal(readResponse.DiagnosticsContext);
                 if (createResponse.StatusCode != HttpStatusCode.Conflict)
                 {
                     return await this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(this.GetDatabase(databaseProperties.Id), Task.FromResult(createResponse));
@@ -465,9 +459,11 @@ namespace Microsoft.Azure.Cosmos
 
                 // This second Read is to handle the race condition when 2 or more threads have Read the database and only one succeeds with Create
                 // so for the remaining ones we should do a Read instead of throwing Conflict exception
-                return await database.ReadAsync(
+                ResponseMessage readResponseAfterConflict = await database.ReadStreamAsync(
                     requestOptions: requestOptions,
                     cancellationToken: cancellationToken);
+                readResponseAfterConflict.DiagnosticsContext.AddDiagnosticsInternal(readResponse.DiagnosticsContext);
+                return await this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(this.GetDatabase(databaseProperties.Id), Task.FromResult(readResponseAfterConflict));
             });
         }
 

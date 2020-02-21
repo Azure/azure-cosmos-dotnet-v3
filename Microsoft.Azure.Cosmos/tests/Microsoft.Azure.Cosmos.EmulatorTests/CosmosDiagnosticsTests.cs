@@ -371,13 +371,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             JArray contextList = jObject["Context"].ToObject<JArray>();
             Assert.IsTrue(contextList.Count > 3);
 
-            // Find the PointOperationStatistics object
-            JObject pointStatistics = GetJObjectInContextList(
-                contextList,
-                "PointOperationStatistics");
-
-            int statusCode = ValidatePointOperation(pointStatistics);
-
             JObject addressResolutionStatistics = GetJObjectInContextList(
                 contextList,
                 "AddressResolutionStatistics");
@@ -388,12 +381,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ValidateAddressResolutionStatistics(addressResolutionStatistics);
             }
 
-            // No store response when request is to large to be sent
-            if(statusCode != (int)HttpStatusCode.RequestEntityTooLarge)
+            // Find the PointOperationStatistics object
+            JObject pointStatistics = GetJObjectInContextList(
+                contextList,
+                "PointOperationStatistics");
+
+            if(pointStatistics != null)
+            {
+                ValidatePointOperation(pointStatistics);
+            }
+            else
             {
                 JObject storeResponseStatistics = GetJObjectInContextList(
-                contextList,
-                "StoreResponseStatistics");
+                    contextList,
+                    "StoreResponseStatistics");
 
                 ValidateStoreResponseStatistics(storeResponseStatistics);
             }
@@ -414,7 +415,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private static void ValidateStoreResponseStatistics(JObject storeResponseStatistics)
         {
-            Assert.IsNotNull(storeResponseStatistics, $"Context list does not contain PointOperationStatistics.");
+            Assert.IsNotNull(storeResponseStatistics, $"Context list does not contain StoreResponseStatistics.");
             Assert.IsNotNull(storeResponseStatistics["ResponseTimeUtc"].ToString());
             Assert.IsNotNull(storeResponseStatistics["ResourceType"].ToString());
             Assert.IsNotNull(storeResponseStatistics["OperationType"].ToString());
@@ -424,7 +425,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private static void ValidateAddressResolutionStatistics(JObject addressResolutionStatistics)
         {
-            Assert.IsNotNull(addressResolutionStatistics, $"Context list does not contain PointOperationStatistics.");
+            Assert.IsNotNull(addressResolutionStatistics, $"Context list does not contain AddressResolutionStatistics.");
             Assert.IsNotNull(addressResolutionStatistics["StartTimeUtc"].ToString());
             Assert.IsNotNull(addressResolutionStatistics["EndTimeUtc"].ToString());
             Assert.IsNotNull(addressResolutionStatistics["TargetEndpoint"].ToString());

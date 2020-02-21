@@ -83,18 +83,18 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(pointOperationStatistics));
             }
 
-            this.TotalRequestCount++;
-            int statusCode = (int)pointOperationStatistics.StatusCode;
-            if (statusCode < 200 || statusCode > 299)
-            {
-                this.FailedRequestCount++;
-            }
+            this.AddRequestCount((int)pointOperationStatistics.StatusCode);
 
             this.ContextList.Add(pointOperationStatistics);
         }
 
         internal override void AddDiagnosticsInternal(StoreResponseStatistics storeResponseStatistics)
         {
+            if (storeResponseStatistics.StoreResult != null)
+            {
+                this.AddRequestCount((int)storeResponseStatistics.StoreResult.StatusCode);
+            }
+            
             this.ContextList.Add(storeResponseStatistics);
         }
 
@@ -148,6 +148,15 @@ namespace Microsoft.Azure.Cosmos
         public override IEnumerator<CosmosDiagnosticsInternal> GetEnumerator()
         {
             return this.ContextList.GetEnumerator();
+        }
+
+        private void AddRequestCount(int statusCode)
+        {
+            this.TotalRequestCount++;
+            if (statusCode < 200 || statusCode > 299)
+            {
+                this.FailedRequestCount++;
+            }
         }
 
         private void SetElapsedTime(TimeSpan totalElapsedTime)
