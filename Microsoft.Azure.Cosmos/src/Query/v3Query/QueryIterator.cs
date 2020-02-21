@@ -81,12 +81,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public override bool HasMoreResults => !this.cosmosQueryExecutionContext.IsDone;
 
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        override FeedToken FeedToken => throw new NotImplementedException();
+        public override FeedToken FeedToken => throw new NotImplementedException();
 
         public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {

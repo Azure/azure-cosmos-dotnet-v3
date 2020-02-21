@@ -52,12 +52,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override bool HasMoreResults => true;
 
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        override FeedToken FeedToken => throw new NotImplementedException();
+        public override FeedToken FeedToken => throw new NotImplementedException();
 
         /// <summary>
         /// Get the next set of results from the cosmos service

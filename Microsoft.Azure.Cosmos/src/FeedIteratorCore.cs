@@ -47,12 +47,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override bool HasMoreResults => this.hasMoreResultsInternal;
 
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        override FeedToken FeedToken => throw new NotImplementedException();
+        public override FeedToken FeedToken => throw new NotImplementedException();
 
         /// <summary>
         /// The query options for the result set
@@ -143,12 +138,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override bool HasMoreResults => this.feedIterator.HasMoreResults;
 
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        override FeedToken FeedToken => this.feedIterator.FeedToken;
+        public override FeedToken FeedToken => this.feedIterator.FeedToken;
 
         /// <summary>
         /// Get the next set of results from the cosmos service
