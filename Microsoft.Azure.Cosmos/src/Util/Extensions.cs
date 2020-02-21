@@ -152,34 +152,6 @@ namespace Microsoft.Azure.Cosmos
             return new UsableSemaphoreWrapper(semaphoreSlim);
         }
 
-        public static IEnumerable<IReadOnlyList<T>> Bucket<T>(
-            this IReadOnlyList<T> originalList,
-            int bucketSize)
-        {
-            if (bucketSize <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(bucketSize));
-            }
-
-            List<T> bucket = new List<T>(bucketSize);
-            foreach (T item in originalList)
-            {
-                bucket.Add(item);
-                if (bucket.Count == bucketSize)
-                {
-                    yield return bucket;
-                    bucket = new List<T>(bucketSize);
-                }
-            }
-
-            if (bucket.Count == 0)
-            {
-                yield break;
-            }
-
-            yield return bucket;
-        }
-
         private static void TraceExceptionInternal(Exception exception)
         {
             while (exception != null)
