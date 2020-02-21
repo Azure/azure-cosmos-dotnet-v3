@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.feedTokenInternal.UpdateContinuation(responseContinuation);
             // TODO: How to make this work
-            this.hasMoreResultsInternal = this.feedTokenInternal.IsDone();
+            this.hasMoreResultsInternal = !this.feedTokenInternal.IsDone();
             return response;
         }
 
