@@ -37,6 +37,10 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract string UserAgent { get; }
 
+        internal abstract EncryptionProcessor EncryptionProcessor { get; }
+
+        internal abstract DekCache DekCache { get; }
+
         /// <summary>
         /// Generates the URI link for the resource
         /// </summary>

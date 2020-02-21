@@ -23,7 +23,9 @@ namespace Microsoft.Azure.Cosmos
             CosmosResponseFactory cosmosResponseFactory,
             RequestInvokerHandler requestHandler,
             DocumentClient documentClient,
-            string userAgent)
+            string userAgent,
+            EncryptionProcessor encryptionProcessor = null,
+            DekCache dekCache = null)
         {
             this.Client = client;
             this.ClientOptions = clientOptions;
@@ -32,6 +34,8 @@ namespace Microsoft.Azure.Cosmos
             this.RequestHandler = requestHandler;
             this.DocumentClient = documentClient;
             this.UserAgent = userAgent;
+            this.EncryptionProcessor = encryptionProcessor;
+            this.DekCache = dekCache;
         }
 
         /// <summary>
@@ -50,6 +54,10 @@ namespace Microsoft.Azure.Cosmos
         internal override CosmosClientOptions ClientOptions { get; }
 
         internal override string UserAgent { get; }
+
+        internal override EncryptionProcessor EncryptionProcessor { get; }
+
+        internal override DekCache DekCache { get; }
 
         /// <summary>
         /// Generates the URI link for the resource
