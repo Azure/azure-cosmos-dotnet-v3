@@ -107,7 +107,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         [ExpectedException(typeof(ArgumentNullException))]
         public void ValidatesSerializer()
         {
-            SemaphoreSlim newLimiter = new SemaphoreSlim(1, defaultMaxDegreeOfConcurrency);
             BatchAsyncStreamer batchAsyncStreamer = new BatchAsyncStreamer(1, MaxBatchByteSize, DispatchTimerInSeconds, this.TimerPool, this.limiter, 1, null, this.Executor, this.Retrier);
         }
 
@@ -149,7 +148,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(newLimiter.CurrentCount, 1);
 
             List<Task<TransactionalBatchOperationResult>> contexts = new List<Task<TransactionalBatchOperationResult>>(100);
-            for (int i = 0; i < 400; i++)
+            for (int i = 0; i < 600; i++)
             {
                 ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, i, i.ToString());
                 ItemBatchOperationContext context = AttachContext(operation);
@@ -157,7 +156,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 contexts.Add(context.OperationTask);
             }
 
-            // 100 batch request should sum up to 1000 ms barrier with wait time of 10ms in executor
+            // 300 batch request should atleast sum up to 1000 ms barrier with wait time of 20ms in executor
             await Task.WhenAll(contexts);
 
             await Task.Delay(2000);
