@@ -209,40 +209,18 @@ namespace Microsoft.Azure.Cosmos
         {
             PartitionKeyRangeCache partitionKeyRangeCache = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
             string containerRId = await this.GetRIDAsync(cancellationToken);
-            IReadOnlyList<PartitionKeyRange> partitionKeyRanges = await ContainerCore.GetCurrentPartitionKeyRangesAsync(containerRId, partitionKeyRangeCache);            
-            return ContainerCore.CreateFeedTokensPerRange(containerRId, partitionKeyRanges);
-        }
-
-        internal async Task<IReadOnlyList<FeedToken>> GetFeedTokensAsync(
-            int maxTokens,
-            CancellationToken cancellationToken = default(CancellationToken))
-        {
-            if (maxTokens <= 0)
+            IReadOnlyList<PartitionKeyRange> partitionKeyRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
+                        containerRId,
+                        new Range<string>(
+                            PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
+                            PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
+                            isMinInclusive: true,
+                            isMaxInclusive: false),
+                        forceRefresh: true);
+            List<FeedTokenEPKRange> feedTokens = new List<FeedTokenEPKRange>(partitionKeyRanges.Count);
+            foreach (PartitionKeyRange partitionKeyRange in partitionKeyRanges)
             {
-                throw new ArgumentOutOfRangeException(nameof(maxTokens), ClientResources.FeedToken_MaxTokensOutOfRange);
-            }
-
-            PartitionKeyRangeCache partitionKeyRangeCache = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
-            string containerRId = await this.GetRIDAsync(cancellationToken);
-            IReadOnlyList<PartitionKeyRange> partitionKeyRanges = await ContainerCore.GetCurrentPartitionKeyRangesAsync(containerRId, partitionKeyRangeCache);
-
-            // If the number of ranges is less than the max
-            if (partitionKeyRanges.Count <= maxTokens)
-            {
-                return ContainerCore.CreateFeedTokensPerRange(containerRId, partitionKeyRanges);
-            }
-
-            // Optimization for 1
-            if (maxTokens == 1)
-            {
-                return new List<FeedToken>(1) { new FeedTokenEPKRange(containerRId, partitionKeyRanges) };
-            }
-
-            int bucketSize = (int)Math.Ceiling((double)partitionKeyRanges.Count / maxTokens);
-            List<FeedTokenEPKRange> feedTokens = new List<FeedTokenEPKRange>(maxTokens);
-            foreach (IReadOnlyList<PartitionKeyRange> bucketPartitionKeyRanges in partitionKeyRanges.Bucket(bucketSize))
-            {
-                feedTokens.Add(new FeedTokenEPKRange(containerRId, bucketPartitionKeyRanges));
+                feedTokens.Add(new FeedTokenEPKRange(containerRId, partitionKeyRange));
             }
 
             return feedTokens;
@@ -533,33 +511,6 @@ namespace Microsoft.Azure.Cosmos
               requestEnricher: null,
               diagnosticsScope: null,
               cancellationToken: cancellationToken);
-        }
-
-        private static async Task<IReadOnlyList<PartitionKeyRange>> GetCurrentPartitionKeyRangesAsync(
-            string containerRid,
-            PartitionKeyRangeCache partitionKeyRangeCache)
-        {
-            return await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
-                        containerRid,
-                        new Range<string>(
-                            PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
-                            PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
-                            isMinInclusive: true,
-                            isMaxInclusive: false),
-                        forceRefresh: true);
-        }
-
-        private static List<FeedTokenEPKRange> CreateFeedTokensPerRange(
-            string containerRid,
-            IReadOnlyList<PartitionKeyRange> partitionKeyRanges)
-        {
-            List<FeedTokenEPKRange> feedTokens = new List<FeedTokenEPKRange>(partitionKeyRanges.Count);
-            foreach (PartitionKeyRange partitionKeyRange in partitionKeyRanges)
-            {
-                feedTokens.Add(new FeedTokenEPKRange(containerRid, partitionKeyRange));
-            }
-
-            return feedTokens;
         }
     }
 }

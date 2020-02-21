@@ -89,10 +89,18 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.feedTokenInternal == null)
             {
+                Routing.PartitionKeyRangeCache partitionKeyRangeCache = await this.clientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
+                string containerRId = await this.container.GetRIDAsync(cancellationToken);
+                IReadOnlyList<Documents.PartitionKeyRange> partitionKeyRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
+                        containerRId,
+                        new Documents.Routing.Range<string>(
+                            Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
+                            Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
+                            isMinInclusive: true,
+                            isMaxInclusive: false),
+                        forceRefresh: true);
                 // ReadAll scenario, initialize with one token for all
-                IReadOnlyList<FeedToken> tokens = await this.container.GetFeedTokensAsync(1, cancellationToken);
-                Debug.Assert(tokens.Count > 0, "FeedToken count should be more than 0.");
-                this.feedTokenInternal = tokens[0] as FeedTokenInternal;
+                this.feedTokenInternal = new FeedTokenEPKRange(containerRId, partitionKeyRanges);
             }
 
             Uri resourceUri = this.container.LinkUri;

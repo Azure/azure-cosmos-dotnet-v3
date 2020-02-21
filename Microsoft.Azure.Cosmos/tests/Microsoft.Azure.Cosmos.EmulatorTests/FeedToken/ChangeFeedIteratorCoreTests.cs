@@ -439,57 +439,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ContainerCore itemsCore = this.LargerContainer;
             IEnumerable<FeedToken> tokens = await itemsCore.GetFeedTokensAsync();
             Assert.AreEqual(pkRangesCount, tokens.Count());
-
-            IEnumerable<FeedToken> tokensWithMax = await itemsCore.GetFeedTokensAsync(maxTokens: 1);
-            Assert.AreEqual(1, tokensWithMax.Count());
-            FeedTokenEPKRange feedTokenEPKRange = tokensWithMax.First() as FeedTokenEPKRange;
-            Assert.AreEqual(pkRangesCount, feedTokenEPKRange.CompositeContinuationTokens.Count);
-        }
-
-        [TestMethod]
-        public async Task GetFeedTokensAsync_WithMax()
-        {
-            DocumentFeedResponse<Documents.PartitionKeyRange> ranges = await this.LargerContainer.ClientContext.DocumentClient.ReadPartitionKeyRangeFeedAsync(this.LargerContainer.LinkUri);
-            int pkRangesCount = ranges.Count;
-
-            ContainerCore itemsCore = this.LargerContainer;
-            IEnumerable<FeedToken> tokens = await itemsCore.GetFeedTokensAsync(maxTokens: pkRangesCount);
-            Assert.AreEqual(pkRangesCount, tokens.Count());
-
-            // Validate that the obtained tokens contain all the ranges, no repeats
-            Func<IEnumerable<FeedToken>, bool> validateRanges = (IEnumerable<FeedToken> obtainedTokens) =>
-            {
-                List<Documents.Routing.Range<string>> tokenRanges = new List<Documents.Routing.Range<string>>();
-                foreach(FeedToken feedToken in obtainedTokens)
-                {
-                    FeedTokenEPKRange feedTokenEPKRange = feedToken as FeedTokenEPKRange;
-                    foreach(CompositeContinuationToken compositeContinuationToken in feedTokenEPKRange.CompositeContinuationTokens.ToList())
-                    {
-                        tokenRanges.Add(compositeContinuationToken.Range);
-                    }
-                }
-
-                Assert.AreEqual(pkRangesCount, tokenRanges.Count);
-                foreach (Documents.PartitionKeyRange partitionKeyRange in ranges)
-                {
-                    Assert.IsNotNull(tokenRanges.FirstOrDefault(r => r.Min == partitionKeyRange.MinInclusive && r.Max == partitionKeyRange.MaxExclusive));
-                }
-
-                foreach (Documents.Routing.Range<string> tokenRange in tokenRanges)
-                {
-                    Assert.IsNotNull(ranges.FirstOrDefault(r => tokenRange.Min == r.MinInclusive && tokenRange.Max == r.MaxExclusive));
-                }
-
-                return false;
-            };
-
-            // Try now with different maxes
-            int max = pkRangesCount - 1;
-            while(max > 0)
-            {
-                IEnumerable<FeedToken> newTokens = await itemsCore.GetFeedTokensAsync(maxTokens: max--);
-                validateRanges(newTokens);
-            }
         }
 
         [TestMethod]

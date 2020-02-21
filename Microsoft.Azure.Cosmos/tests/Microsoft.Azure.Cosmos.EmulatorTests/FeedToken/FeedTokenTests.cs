@@ -74,48 +74,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task FeedToken_EPKRange_SingleToken_Serialization()
-        {
-            string continuation = "TBD";
-            List<FeedToken> tokens = (await this.Container.GetFeedTokensAsync(maxTokens: 1)).ToList();
-            List<string> serializations = new List<string>();
-            foreach (FeedToken token in tokens)
-            {
-                (token as FeedTokenInternal).UpdateContinuation(continuation);
-                serializations.Add(token.ToString());
-            }
-
-            List<FeedToken> deserialized = new List<FeedToken>();
-            foreach (string serialized in serializations)
-            {
-                FeedToken token = FeedToken.FromString(serialized);
-                deserialized.Add(token);
-            }
-
-            Assert.AreEqual(tokens.Count, deserialized.Count);
-
-            for (int i = 0; i < tokens.Count; i++)
-            {
-                FeedTokenEPKRange originalToken = tokens[i] as FeedTokenEPKRange;
-                FeedTokenEPKRange deserializedToken = deserialized[i] as FeedTokenEPKRange;
-                Assert.AreEqual(originalToken.CompleteRange.Min, deserializedToken.CompleteRange.Min);
-                Assert.AreEqual(originalToken.CompleteRange.Max, deserializedToken.CompleteRange.Max);
-                Assert.AreEqual(originalToken.ContainerRid, deserializedToken.ContainerRid);
-                CompositeContinuationToken[] originalTokenArray = originalToken.CompositeContinuationTokens.ToArray();
-                CompositeContinuationToken[] deserializedTokenArray = deserializedToken.CompositeContinuationTokens.ToArray();
-                Assert.AreEqual(originalTokenArray.Length, deserializedTokenArray.Length);
-                for(int j = 0; j < originalTokenArray.Length; j++)
-                {
-                    Assert.AreEqual(originalTokenArray[j].Token, deserializedTokenArray[j].Token);
-                    Assert.AreEqual(originalTokenArray[j].Range.Min, deserializedTokenArray[j].Range.Min);
-                    Assert.AreEqual(originalTokenArray[j].Range.Max, deserializedTokenArray[j].Range.Max);
-                    Assert.AreEqual(originalTokenArray[j].Range.IsMinInclusive, deserializedTokenArray[j].Range.IsMinInclusive);
-                    Assert.AreEqual(originalTokenArray[j].Range.IsMaxInclusive, deserializedTokenArray[j].Range.IsMaxInclusive);
-                }
-            }
-        }
-
-        [TestMethod]
         public void FeedToken_PartitionKey_Serialization()
         {
             this.FeedToken_PartitionKey_Validate(new PartitionKey("TBD"));
@@ -158,21 +116,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 resolvedRanges.AddRange(await this.Container.GetPartitionKeyRangesAsync(token));
             }
-
-            Assert.AreEqual(pkRangesCount, resolvedRanges.Count);
-            foreach (Documents.PartitionKeyRange range in ranges)
-            {
-                Assert.IsTrue(resolvedRanges.Contains(range.Id));
-            }
-
-            foreach (string id in resolvedRanges)
-            {
-                Assert.IsTrue(ranges.Any(range => range.Id == id));
-            }
-
-            // Now for a single token
-            tokens = (await this.Container.GetFeedTokensAsync(maxTokens: 1)).ToList();
-            resolvedRanges = (await this.Container.GetPartitionKeyRangesAsync(tokens[0])).ToList();
 
             Assert.AreEqual(pkRangesCount, resolvedRanges.Count);
             foreach (Documents.PartitionKeyRange range in ranges)
