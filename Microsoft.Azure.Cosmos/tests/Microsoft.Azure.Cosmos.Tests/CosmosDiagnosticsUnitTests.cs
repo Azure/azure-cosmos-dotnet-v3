@@ -41,6 +41,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         new Guid("692ab2f2-41ba-486b-aad7-8c7c6c52379f").ToString(),
                         (HttpStatusCode)429,
                         Documents.SubStatusCodes.Unknown,
+                        DateTime.UtcNow,
                         42,
                         null,
                         HttpMethod.Get,
@@ -55,6 +56,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         new Guid("de09baab-71a4-4897-a163-470711c93ed3").ToString(),
                         HttpStatusCode.OK,
                         Documents.SubStatusCodes.Unknown,
+                        DateTime.UtcNow,
                         42,
                         null,
                         HttpMethod.Get,
@@ -68,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             string result = cosmosDiagnostics.ToString();
 
-            string regex = @"\{""Summary"":\{""StartUtc"":"".+Z"",""ElapsedTime"":""00:00:.+"",""UserAgent"":""MyCustomUserAgentString"",""TotalRequestCount"":2,""FailedRequestCount"":1\},""Context"":\[\{""Id"":""OverallScope"",""ElapsedTime"":""00:00:0.+""\},\{""Id"":""ValidateScope"",""ElapsedTime"":""00:00:0.+""\},\{""Id"":""PointOperationStatistics"",""ActivityId"":""692ab2f2-41ba-486b-aad7-8c7c6c52379f"",""StatusCode"":429,""SubStatusCode"":0,""RequestCharge"":42.0,""RequestUri"":""http://MockUri.com"",""RequestSessionToken"":null,""ResponseSessionToken"":null\},\{""Id"":""SuccessScope"",""ElapsedTime"":""00:00:.+""\},\{""Id"":""PointOperationStatistics"",""ActivityId"":""de09baab-71a4-4897-a163-470711c93ed3"",""StatusCode"":200,""SubStatusCode"":0,""RequestCharge"":42.0,""RequestUri"":""http://MockUri.com"",""RequestSessionToken"":null,""ResponseSessionToken"":null\}\]\}";
+            string regex = @"\{""Summary"":\{""StartUtc"":"".+Z"",""ElapsedTime"":""00:00:.+"",""UserAgent"":""MyCustomUserAgentString"",""TotalRequestCount"":2,""FailedRequestCount"":1\},""Context"":\[\{""Id"":""OverallScope"",""ElapsedTime"":""00:00:0.+""\},\{""Id"":""ValidateScope"",""ElapsedTime"":""00:00:0.+""\},\{""Id"":""PointOperationStatistics"",""ActivityId"":""692ab2f2-41ba-486b-aad7-8c7c6c52379f"",""ResponseTimeUtc"":"".+Z"",""StatusCode"":429,""SubStatusCode"":0,""RequestCharge"":42.0,""RequestUri"":""http://MockUri.com"",""RequestSessionToken"":null,""ResponseSessionToken"":null\},\{""Id"":""SuccessScope"",""ElapsedTime"":""00:00:.+""\},\{""Id"":""PointOperationStatistics"",""ActivityId"":""de09baab-71a4-4897-a163-470711c93ed3"",""ResponseTimeUtc"":"".+Z"",""StatusCode"":200,""SubStatusCode"":0,""RequestCharge"":42.0,""RequestUri"":""http://MockUri.com"",""RequestSessionToken"":null,""ResponseSessionToken"":null\}\]\}";
             Assert.IsTrue(Regex.IsMatch(result, regex), result);
 
             JToken jToken = JToken.Parse(result);

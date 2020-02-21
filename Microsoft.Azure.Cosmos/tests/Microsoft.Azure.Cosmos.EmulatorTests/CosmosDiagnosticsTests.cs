@@ -346,7 +346,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 contextList,
                 "PointOperationStatistics");
 
-            ValidatePointOperation(pointStatistics);
+            if (pointStatistics != null)
+            {
+                ValidatePointOperation(pointStatistics);
+            }
+            else
+            {
+                JObject storeResponseStatistics = GetJObjectInContextList(
+                    contextList,
+                    "StoreResponseStatistics");
+
+                ValidateStoreResponseStatistics(storeResponseStatistics);
+            }
         }
 
         public static void VerifyPointDiagnostics(CosmosDiagnostics diagnostics, bool disableDiagnostics)

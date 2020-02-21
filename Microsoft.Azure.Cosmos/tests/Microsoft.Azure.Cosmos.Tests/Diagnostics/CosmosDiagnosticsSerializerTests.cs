@@ -24,6 +24,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
                     description: nameof(PointOperationStatistics),
                     cosmosDiagnostics: new PointOperationStatistics(
                     activityId: Guid.Empty.ToString(),
+                    responseTimeUtc: new DateTime(2020, 1, 2, 3, 4, 5, 6),
                     statusCode: System.Net.HttpStatusCode.OK,
                     subStatusCode: Documents.SubStatusCodes.WriteForbidden,
                     requestCharge: 4,

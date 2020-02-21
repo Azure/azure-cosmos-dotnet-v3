@@ -77,6 +77,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 activityId: Guid.NewGuid().ToString(),
                 statusCode: HttpStatusCode.OK,
                 subStatusCode: SubStatusCodes.Unknown,
+                responseTimeUtc: DateTime.UtcNow,
                 requestCharge: 0,
                 errorMessage: string.Empty,
                 method: HttpMethod.Get,

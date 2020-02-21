@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             activityId: Guid.NewGuid().ToString(),
             statusCode: HttpStatusCode.OK,
             subStatusCode: Documents.SubStatusCodes.Unknown,
+            responseTimeUtc: DateTime.UtcNow,
             requestCharge: 0,
             errorMessage: string.Empty,
             method: HttpMethod.Get,

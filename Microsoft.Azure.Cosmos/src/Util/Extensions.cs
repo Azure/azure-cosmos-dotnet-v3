@@ -45,6 +45,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 PointOperationStatistics pointOperationStatistics = new PointOperationStatistics(
                     activityId: responseMessage.Headers.ActivityId,
+                    responseTimeUtc: DateTime.UtcNow,
                     statusCode: documentServiceResponse.StatusCode,
                     subStatusCode: documentServiceResponse.SubStatusCode,
                     requestCharge: responseMessage.Headers.RequestCharge,
@@ -95,6 +96,7 @@ namespace Microsoft.Azure.Cosmos
 
             PointOperationStatistics pointOperationStatistics = new PointOperationStatistics(
                 activityId: responseMessage.Headers.ActivityId,
+                responseTimeUtc: DateTime.UtcNow,
                 statusCode: documentClientException.StatusCode.Value,
                 subStatusCode: (int)SubStatusCodes.Unknown,
                 requestCharge: responseMessage.Headers.RequestCharge,

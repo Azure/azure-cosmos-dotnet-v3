@@ -343,6 +343,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     Guid.NewGuid().ToString(),
                     System.Net.HttpStatusCode.Unauthorized,
                     subStatusCode: SubStatusCodes.PartitionKeyMismatch,
+                    responseTimeUtc: DateTime.UtcNow,
                     requestCharge: 4,
                     errorMessage: null,
                     method: HttpMethod.Post,

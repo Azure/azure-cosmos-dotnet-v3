@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             string activityId,
             HttpStatusCode statusCode,
             SubStatusCodes subStatusCode,
+            DateTime responseTimeUtc,
             double requestCharge,
             string errorMessage,
             HttpMethod method,
@@ -31,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             this.RequestUri = requestUri;
             this.RequestSessionToken = requestSessionToken;
             this.ResponseSessionToken = responseSessionToken;
-            this.ResponseTimeUtc = DateTime.UtcNow;
+            this.ResponseTimeUtc = responseTimeUtc;
         }
 
         public string ActivityId { get; }
