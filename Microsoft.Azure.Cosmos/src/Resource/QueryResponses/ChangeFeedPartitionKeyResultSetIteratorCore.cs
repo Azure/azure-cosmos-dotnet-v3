@@ -57,7 +57,12 @@ namespace Microsoft.Azure.Cosmos
 
         public override bool HasMoreResults => this.hasMoreResultsInternal;
 
-        public override FeedToken FeedToken => this.feedToken;
+#if PREVIEW
+        public override
+#else
+        internal
+#endif
+        FeedToken FeedToken => this.feedToken;
 
         /// <summary>
         /// Get the next set of results from the cosmos service

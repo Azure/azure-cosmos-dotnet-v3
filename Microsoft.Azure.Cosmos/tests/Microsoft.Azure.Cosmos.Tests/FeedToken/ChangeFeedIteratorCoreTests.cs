@@ -163,7 +163,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock.Get(feedToken)
                 .Verify(f => f.ShouldRetryAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()), Times.Once);
 
-            Assert.AreEqual(feedToken, changeFeedIteratorCoreOfT.FeedToken);
             Assert.IsTrue(creatorCalled, "Response creator not called");
         }
 
