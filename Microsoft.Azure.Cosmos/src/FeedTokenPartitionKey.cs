@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
     using Newtonsoft.Json;
 
     [JsonConverter(typeof(FeedTokenInternalConverter))]
@@ -19,6 +20,11 @@ namespace Microsoft.Azure.Cosmos
 
         public override void EnrichRequest(RequestMessage request)
         {
+            if (request == null)
+            {
+                throw new ArgumentNullException(nameof(request));
+            }
+
             request.Headers.PartitionKey = this.PartitionKey.ToJsonString();
         }
 

@@ -89,6 +89,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             token.EnrichRequest(requestMessage);
             Assert.AreEqual(token.CompleteRange.Min, requestMessage.Properties[HandlerConstants.StartEpkString]);
             Assert.AreEqual(token.CompleteRange.Max, requestMessage.Properties[HandlerConstants.EndEpkString]);
+
+            Assert.ThrowsException<ArgumentNullException>(() => token.EnrichRequest(null));
         }
 
         [TestMethod]
@@ -116,6 +118,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             RequestMessage requestMessage = new RequestMessage();
             token.EnrichRequest(requestMessage);
             Assert.AreEqual(pk.ToJsonString(), requestMessage.Headers.PartitionKey);
+
+            Assert.ThrowsException<ArgumentNullException>(() => token.EnrichRequest(null));
         }
 
         [TestMethod]
@@ -126,6 +130,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             RequestMessage requestMessage = new RequestMessage();
             token.EnrichRequest(requestMessage);
             Assert.AreEqual(pkrangeId, requestMessage.PartitionKeyRangeId.PartitionKeyRangeId);
+
+            Assert.ThrowsException<ArgumentNullException>(() => token.EnrichRequest(null));
         }
 
         [TestMethod]

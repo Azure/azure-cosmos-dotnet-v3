@@ -117,6 +117,11 @@ namespace Microsoft.Azure.Cosmos
 
         public override void EnrichRequest(RequestMessage request)
         {
+            if (request == null)
+            {
+                throw new ArgumentNullException(nameof(request));
+            }
+
             request.Properties[HandlerConstants.StartEpkString] = this.currentToken.Range.Min;
             request.Properties[HandlerConstants.EndEpkString] = this.currentToken.Range.Max;
         }

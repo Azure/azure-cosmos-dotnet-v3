@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Net;
@@ -32,6 +33,11 @@ namespace Microsoft.Azure.Cosmos
 
         public override void EnrichRequest(RequestMessage request)
         {
+            if (request == null)
+            {
+                throw new ArgumentNullException(nameof(request));
+            }
+
             if (this.FeedTokenEPKRange == null)
             {
                 ChangeFeedRequestOptions.FillPartitionKeyRangeId(request, this.PartitionKeyRangeId);
