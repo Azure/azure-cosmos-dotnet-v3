@@ -16,10 +16,6 @@ namespace Microsoft.Azure.Cosmos
 #endif
     abstract class FeedIteratorInternal<T> : FeedIterator<T>
     {
-#if !PREVIEW
-        public abstract FeedToken FeedToken { get; }
-#endif
-
         public abstract bool TryGetContinuationToken(out string continuationToken);
     }
 }
