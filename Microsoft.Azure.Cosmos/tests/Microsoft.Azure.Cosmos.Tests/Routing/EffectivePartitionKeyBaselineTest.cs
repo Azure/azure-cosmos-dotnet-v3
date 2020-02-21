@@ -136,28 +136,28 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             switch (value)
             {
                 case null:
-                    effectivePartitionKeyV1 = EffectivePartitionKey.HashUndefinedV1();
-                    effectivePartitionKeyV2 = EffectivePartitionKey.HashUndefinedV2();
+                    effectivePartitionKeyV1 = EffectivePartitionKey.V1.HashUndefined();
+                    effectivePartitionKeyV2 = EffectivePartitionKey.V2.HashUndefined();
                     break;
 
                 case CosmosNull cosmosNull:
-                    effectivePartitionKeyV1 = EffectivePartitionKey.HashNullV1();
-                    effectivePartitionKeyV2 = EffectivePartitionKey.HashNullV2();
+                    effectivePartitionKeyV1 = EffectivePartitionKey.V1.HashNull();
+                    effectivePartitionKeyV2 = EffectivePartitionKey.V2.HashNull();
                     break;
 
                 case CosmosBoolean cosmosBoolean:
-                    effectivePartitionKeyV1 = EffectivePartitionKey.HashV1(cosmosBoolean.Value);
-                    effectivePartitionKeyV2 = EffectivePartitionKey.HashV2(cosmosBoolean.Value);
+                    effectivePartitionKeyV1 = EffectivePartitionKey.V1.Hash(cosmosBoolean.Value);
+                    effectivePartitionKeyV2 = EffectivePartitionKey.V2.Hash(cosmosBoolean.Value);
                     break;
 
                 case CosmosString cosmosString:
-                    effectivePartitionKeyV1 = EffectivePartitionKey.HashV1(cosmosString.Value);
-                    effectivePartitionKeyV2 = EffectivePartitionKey.HashV2(cosmosString.Value);
+                    effectivePartitionKeyV1 = EffectivePartitionKey.V1.Hash(cosmosString.Value);
+                    effectivePartitionKeyV2 = EffectivePartitionKey.V2.Hash(cosmosString.Value);
                     break;
 
                 case CosmosNumber cosmosNumber:
-                    effectivePartitionKeyV1 = EffectivePartitionKey.HashV1(Number64.ToDouble(cosmosNumber.Value));
-                    effectivePartitionKeyV2 = EffectivePartitionKey.HashV2(Number64.ToDouble(cosmosNumber.Value));
+                    effectivePartitionKeyV1 = EffectivePartitionKey.V1.Hash(Number64.ToDouble(cosmosNumber.Value));
+                    effectivePartitionKeyV2 = EffectivePartitionKey.V2.Hash(Number64.ToDouble(cosmosNumber.Value));
                     break;
 
                 default:

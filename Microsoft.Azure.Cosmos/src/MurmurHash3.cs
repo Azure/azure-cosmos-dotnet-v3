@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (!BitConverter.IsLittleEndian)
             {
-                throw new InvalidOperationException("Host machine needs to little endian.");
+                throw new InvalidOperationException("Host machine needs to be little endian.");
             }
 
             const uint c1 = 0xcc9e2d51;
@@ -150,7 +150,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (!BitConverter.IsLittleEndian)
             {
-                throw new InvalidOperationException("Host machine needs to little endian.");
+                throw new InvalidOperationException("Host machine needs to be little endian.");
             }
 
             const ulong c1 = 0x87c37b91114253d5;

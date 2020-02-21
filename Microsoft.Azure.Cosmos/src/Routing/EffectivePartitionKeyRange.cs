@@ -8,33 +8,31 @@ namespace Microsoft.Azure.Cosmos.Routing
 
     internal readonly struct EffectivePartitionKeyRange : IComparable<EffectivePartitionKeyRange>, IEquatable<EffectivePartitionKeyRange>
     {
-        public EffectivePartitionKeyRange(EffectivePartitionKey start, EffectivePartitionKey end)
+        public EffectivePartitionKeyRange(EffectivePartitionKey startInclusive, EffectivePartitionKey endExclusive)
         {
-            if (end.CompareTo(start) < 0)
+            if (endExclusive.CompareTo(startInclusive) < 0)
             {
-                throw new ArgumentOutOfRangeException($"{nameof(start)} must be less than {nameof(end)}.");
+                throw new ArgumentOutOfRangeException($"{nameof(startInclusive)} must be less than {nameof(endExclusive)}.");
             }
 
-            this.Start = start;
-            this.End = end;
+            this.StartInclusive = startInclusive;
+            this.EndExclusive = endExclusive;
         }
 
-        public EffectivePartitionKey Start { get; }
+        public EffectivePartitionKey StartInclusive { get; }
 
-        public EffectivePartitionKey End { get; }
-
-        public UInt128 Width => this.End.Value - this.Start.Value;
+        public EffectivePartitionKey EndExclusive { get; }
 
         public int CompareTo(EffectivePartitionKeyRange other)
         {
             // Provide a total sort order by first comparing on the start and then going to the end.
-            int cmp = this.Start.CompareTo(other.Start);
+            int cmp = this.StartInclusive.CompareTo(other.StartInclusive);
             if (cmp != 0)
             {
                 return cmp;
             }
 
-            return this.End.CompareTo(other.End);
+            return this.EndExclusive.CompareTo(other.EndExclusive);
         }
 
         public override bool Equals(object obj)
@@ -44,23 +42,18 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return false;
             }
 
-            if (object.ReferenceEquals(this, obj))
-            {
-                return true;
-            }
-
             return this.Equals(effectivePartitionKeyRange);
         }
 
         public bool Equals(EffectivePartitionKeyRange other)
         {
-            return this.Start.Equals(other.Start) && this.End.Equals(other.End);
+            return this.StartInclusive.Equals(other.StartInclusive) && this.EndExclusive.Equals(other.EndExclusive);
         }
 
         public override int GetHashCode()
         {
-            int startHashCode = this.Start.GetHashCode();
-            int endHashCode = this.End.GetHashCode();
+            int startHashCode = this.StartInclusive.GetHashCode();
+            int endHashCode = this.EndExclusive.GetHashCode();
             return startHashCode ^ endHashCode;
         }
     }

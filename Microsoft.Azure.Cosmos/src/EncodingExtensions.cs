@@ -40,31 +40,35 @@ namespace Microsoft.Azure.Cosmos
 
         public static int GetBytes(this Encoding encoding, string src, Span<byte> dest)
         {
-            return encoding.GetBytes(src, src.Length, dest, dest.Length);
+            return encoding.GetBytes(src.AsSpan(), dest);
         }
 
-        public static unsafe int GetBytes(this Encoding encoding, string src, int charCount, Span<byte> dest, int byteCount)
+        public static unsafe int GetBytes(this Encoding encoding, ReadOnlySpan<char> src, Span<byte> dest)
         {
             if (src.Length == 0)
             {
                 return 0;
             }
 
+            if (dest.Length == 0)
+            {
+                return 0;
+            }
+
             fixed (char* charPointer = src)
             {
-                fixed (byte* spanPointer = dest)
+                fixed (byte* bytePointer = dest)
                 {
-                    return encoding.GetBytes(chars: charPointer, charCount: charCount, bytes: spanPointer, byteCount: byteCount);
+                    return encoding.GetBytes(
+                        chars: charPointer,
+                        charCount: src.Length,
+                        bytes: bytePointer,
+                        byteCount: dest.Length);
                 }
             }
         }
 
-        public static int GetByteCount(this Encoding encoding, ReadOnlySpan<char> src)
-        {
-            return encoding.GetByteCount(src, src.Length);
-        }
-
-        public static unsafe int GetByteCount(this Encoding encoding, ReadOnlySpan<char> src, int count)
+        public static unsafe int GetByteCount(this Encoding encoding, ReadOnlySpan<char> src)
         {
             if (src.Length == 0)
             {
@@ -73,7 +77,7 @@ namespace Microsoft.Azure.Cosmos
 
             fixed (char* charPointer = src)
             {
-                return encoding.GetByteCount(chars: charPointer, count);
+                return encoding.GetByteCount(chars: charPointer, count: src.Length);
             }
         }
     }

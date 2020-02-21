@@ -122,7 +122,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 
         private static EffectivePartitionKeyRange CreateRange(UInt128 start, UInt128 end)
         {
-            return new EffectivePartitionKeyRange(start: new EffectivePartitionKey(start), end: new EffectivePartitionKey(end));
+            return new EffectivePartitionKeyRange(
+                startInclusive: new EffectivePartitionKey(start),
+                endExclusive: new EffectivePartitionKey(end));
         }
     }
 }

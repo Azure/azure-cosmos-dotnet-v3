@@ -44,25 +44,26 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return SplitOutcome.NumRangesNeedsToBePositive;
             }
 
-            if (effectivePartitionKeyRange.Width < numRanges)
+            UInt128 rangeLength = effectivePartitionKeyRange.EndExclusive.Value - effectivePartitionKeyRange.StartInclusive.Value;
+            if (rangeLength < numRanges)
             {
                 splitRanges = default;
                 return SplitOutcome.RangeNotWideEnough;
             }
 
             List<EffectivePartitionKeyRange> childrenRanges = new List<EffectivePartitionKeyRange>();
-            UInt128 subrangeWidth = effectivePartitionKeyRange.Width / numRanges;
+            UInt128 subrangeLength = rangeLength / numRanges;
             for (int i = 0; i < numRanges - 1; i++)
             {
-                EffectivePartitionKey offset = new EffectivePartitionKey(effectivePartitionKeyRange.Start.Value + (subrangeWidth * i));
-                EffectivePartitionKey count = new EffectivePartitionKey(subrangeWidth);
+                EffectivePartitionKey offset = new EffectivePartitionKey(effectivePartitionKeyRange.StartInclusive.Value + (subrangeLength * i));
+                EffectivePartitionKey count = new EffectivePartitionKey(subrangeLength);
                 childrenRanges.Add(new EffectivePartitionKeyRange(offset, count));
             }
 
             // Last range will have remaining EPKs, since the range might not be divisible.
             {
-                EffectivePartitionKey offset = new EffectivePartitionKey(effectivePartitionKeyRange.Start.Value + (subrangeWidth * (numRanges - 1)));
-                EffectivePartitionKey count = new EffectivePartitionKey(effectivePartitionKeyRange.Width - effectivePartitionKeyRange.Start.Value);
+                EffectivePartitionKey offset = new EffectivePartitionKey(effectivePartitionKeyRange.StartInclusive.Value + (subrangeLength * (numRanges - 1)));
+                EffectivePartitionKey count = new EffectivePartitionKey(rangeLength - effectivePartitionKeyRange.StartInclusive.Value);
                 childrenRanges.Add(new EffectivePartitionKeyRange(offset, count));
             }
 
@@ -78,15 +79,15 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
 
             return new EffectivePartitionKeyRange(
-                start: partitionedSortedEffectiveRanges.First().Start,
-                end: partitionedSortedEffectiveRanges.Last().End);
+                startInclusive: partitionedSortedEffectiveRanges.First().StartInclusive,
+                endExclusive: partitionedSortedEffectiveRanges.Last().EndExclusive);
         }
 
         private sealed class EffectivePartitionKeyRangeFactoryV1 : EffectivePartitionKeyRangeFactory
         {
             private static readonly EffectivePartitionKeyRange fullRange = new EffectivePartitionKeyRange(
-                start: new EffectivePartitionKey(0),
-                end: new EffectivePartitionKey(uint.MaxValue));
+                startInclusive: new EffectivePartitionKey(0),
+                endExclusive: new EffectivePartitionKey(uint.MaxValue));
 
             public override EffectivePartitionKeyRange FullRange => EffectivePartitionKeyRangeFactoryV1.fullRange;
         }
@@ -94,8 +95,8 @@ namespace Microsoft.Azure.Cosmos.Routing
         private sealed class EffectivePartitionKeyRangeFactoryV2 : EffectivePartitionKeyRangeFactory
         {
             private static readonly EffectivePartitionKeyRange fullRange = new EffectivePartitionKeyRange(
-                start: new EffectivePartitionKey(0),
-                end: new EffectivePartitionKey(UInt128.FromByteArray(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x3F })));
+                startInclusive: new EffectivePartitionKey(0),
+                endExclusive: new EffectivePartitionKey(UInt128.FromByteArray(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x3F })));
 
             public override EffectivePartitionKeyRange FullRange => EffectivePartitionKeyRangeFactoryV2.fullRange;
         }
@@ -105,7 +106,6 @@ namespace Microsoft.Azure.Cosmos.Routing
             Success,
             NumRangesNeedsToBePositive,
             RangeNotWideEnough,
-
         }
     }
 }
