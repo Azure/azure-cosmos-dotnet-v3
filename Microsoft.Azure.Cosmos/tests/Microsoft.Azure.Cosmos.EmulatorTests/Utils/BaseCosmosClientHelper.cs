@@ -23,9 +23,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.cosmosClient = TestCommon.CreateCosmosClient();
             this.database = await this.cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString(),
                 cancellationToken: this.cancellationToken);
-
-            await this.cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString(),
-                cancellationToken: this.cancellationToken);
         }
 
         public async Task TestCleanup()

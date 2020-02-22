@@ -102,7 +102,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.CreateRandomItems(this.LargerContainer, batchSize, randomPartitionKey: true);
             ContainerCore itemsCore = this.LargerContainer;
-            List<string> l = new List<string>();
             FeedTokenIteratorCore feedIterator = itemsCore.GetItemQueryStreamIterator(queryDefinition: null, requestOptions: new QueryRequestOptions() { MaxItemCount = 1 } ) as FeedTokenIteratorCore;
             while (feedIterator.HasMoreResults)
             {
@@ -111,7 +110,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     Assert.IsNotNull(feedIterator.FeedToken);
                     Assert.IsTrue(feedIterator.TryGetContinuationToken(out string continuationToken));
-                    l.Add(continuationToken);
                     if (responseMessage.IsSuccessStatusCode)
                     {
                         Collection<ToDoActivity> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;

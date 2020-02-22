@@ -21,7 +21,6 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class FeedTokenIteratorCore : FeedIteratorInternal
     {
-        private readonly PartitionRoutingHelper partitionRoutingHelper = new PartitionRoutingHelper();
         private readonly ContainerCore containerCore;
         private readonly Uri resourceLink;
         private readonly ResourceType resourceType;
@@ -84,18 +83,26 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.feedTokenInternal == null)
             {
-                Routing.PartitionKeyRangeCache partitionKeyRangeCache = await this.containerCore.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
-                string containerRId = await this.containerCore.GetRIDAsync(cancellationToken);
-                IReadOnlyList<PartitionKeyRange> partitionKeyRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
-                        containerRId,
-                        new Documents.Routing.Range<string>(
-                            Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
-                            Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
-                            isMinInclusive: true,
-                            isMaxInclusive: false),
-                        forceRefresh: true);
-                // ReadAll scenario, initialize with one token for all
-                this.feedTokenInternal = new FeedTokenEPKRange(containerRId, partitionKeyRanges);
+                if (this.requestOptions != null
+                    && this.requestOptions.PartitionKey.HasValue)
+                {
+                    this.feedTokenInternal = new FeedTokenPartitionKey(this.requestOptions.PartitionKey.Value);
+                }
+                else
+                {
+                    string containerRId = await this.containerCore.GetRIDAsync(cancellationToken);
+                    PartitionKeyRangeCache partitionKeyRangeCache = await this.containerCore.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
+                    IReadOnlyList<PartitionKeyRange> partitionKeyRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
+                            containerRId,
+                            new Documents.Routing.Range<string>(
+                                Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
+                                Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
+                                isMinInclusive: true,
+                                isMaxInclusive: false),
+                            forceRefresh: true);
+                    // ReadAll scenario, initialize with one token for all
+                    this.feedTokenInternal = new FeedTokenEPKRange(containerRId, partitionKeyRanges);
+                }
             }
 
             ResponseMessage response = await this.containerCore.ClientContext.ProcessResourceOperationStreamAsync(
@@ -104,7 +111,7 @@ namespace Microsoft.Azure.Cosmos
                operationType: operation,
                requestOptions: this.requestOptions,
                cosmosContainerCore: null,
-               partitionKey: this.requestOptions?.PartitionKey,
+               partitionKey: null,
                streamPayload: stream,
                requestEnricher: request =>
                {
