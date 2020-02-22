@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ReadFeedIteratorCore_AllowsParallelProcessing()
         {
-            int batchSize = 100;
+            int batchSize = 1000;
 
             await this.CreateRandomItems(this.LargerContainer, batchSize, randomPartitionKey: true);
             ContainerCore itemsCore = this.LargerContainer;
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<Task<int>> tasks = tokens.Select(token => Task.Run(async () =>
             {
                 int count = 0;
-                FeedTokenIterator feedIterator = itemsCore.GetItemQueryStreamIterator(null, token);
+                FeedTokenIteratorCore feedIterator = itemsCore.GetItemQueryStreamIterator(null, token) as FeedTokenIteratorCore;
                 while (feedIterator.HasMoreResults)
                 {
                     using (ResponseMessage responseMessage =
@@ -102,9 +102,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.CreateRandomItems(this.LargerContainer, batchSize, randomPartitionKey: true);
             ContainerCore itemsCore = this.LargerContainer;
-            IReadOnlyList<FeedToken> tokens = await itemsCore.GetFeedTokensAsync(maxTokens: 1);
-
-            FeedTokenIterator feedIterator = itemsCore.GetItemQueryStreamIterator(null, tokens[0]);
+            List<string> l = new List<string>();
+            FeedTokenIteratorCore feedIterator = itemsCore.GetItemQueryStreamIterator(queryDefinition: null, requestOptions: new QueryRequestOptions() { MaxItemCount = 1 } ) as FeedTokenIteratorCore;
             while (feedIterator.HasMoreResults)
             {
                 using (ResponseMessage responseMessage =
@@ -112,7 +111,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     Assert.IsNotNull(feedIterator.FeedToken);
                     Assert.IsTrue(feedIterator.TryGetContinuationToken(out string continuationToken));
-
+                    l.Add(continuationToken);
                     if (responseMessage.IsSuccessStatusCode)
                     {
                         Collection<ToDoActivity> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;

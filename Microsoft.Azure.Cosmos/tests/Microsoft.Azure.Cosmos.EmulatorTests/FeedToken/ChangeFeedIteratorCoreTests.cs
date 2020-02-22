@@ -118,15 +118,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await Task.Delay(1000);
             await this.CreateRandomItems(this.Container, batchSize, randomPartitionKey: true);
             ContainerCore itemsCore = this.Container;
-            FeedTokenIterator feedIterator = itemsCore.GetChangeFeedStreamIterator(changeFeedRequestOptions: new ChangeFeedRequestOptions() { StartTime = now });
+            FeedIterator feedIterator = itemsCore.GetChangeFeedStreamIterator(changeFeedRequestOptions: new ChangeFeedRequestOptions() { StartTime = now });
             while (feedIterator.HasMoreResults)
             {
                 using (ResponseMessage responseMessage =
                     await feedIterator.ReadNextAsync(this.cancellationToken))
                 {
-                    Assert.IsNotNull(feedIterator.FeedToken);
-                    Assert.IsTrue(feedIterator.TryGetContinuationToken(out string continuationToken));
-
                     if (responseMessage.IsSuccessStatusCode)
                     {
                         Collection<ToDoActivity> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;

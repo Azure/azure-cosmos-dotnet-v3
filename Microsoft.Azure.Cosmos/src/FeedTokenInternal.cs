@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos
 
         public abstract void UpdateContinuation(string continuationToken);
 
-        public abstract bool IsDone();
+        public abstract bool IsDone { get; }
 
         public static bool TryParse(
             string toStringValue,

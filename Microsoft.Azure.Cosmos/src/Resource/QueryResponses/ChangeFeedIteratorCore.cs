@@ -23,22 +23,19 @@ namespace Microsoft.Azure.Cosmos
         private bool hasMoreResults = true;
 
         internal ChangeFeedIteratorCore(
-            CosmosClientContext clientContext,
             ContainerCore container,
             FeedTokenInternal feedTokenInternal,
             ChangeFeedRequestOptions changeFeedRequestOptions)
-            : this(clientContext, container, changeFeedRequestOptions)
+            : this(container, changeFeedRequestOptions)
         {
             if (feedTokenInternal == null) throw new ArgumentNullException(nameof(feedTokenInternal));
             this.feedTokenInternal = feedTokenInternal;
         }
 
         internal ChangeFeedIteratorCore(
-            CosmosClientContext clientContext,
             ContainerCore container,
             ChangeFeedRequestOptions changeFeedRequestOptions)
         {
-            if (clientContext == null) throw new ArgumentNullException(nameof(clientContext));
             if (container == null) throw new ArgumentNullException(nameof(container));
             if (changeFeedRequestOptions != null
                 && changeFeedRequestOptions.MaxItemCount.HasValue
@@ -47,7 +44,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentOutOfRangeException(nameof(changeFeedRequestOptions.MaxItemCount));
             }
 
-            this.clientContext = clientContext;
+            this.clientContext = container.ClientContext;
             this.container = container;
             this.changeFeedOptions = changeFeedRequestOptions ?? new ChangeFeedRequestOptions();
         }

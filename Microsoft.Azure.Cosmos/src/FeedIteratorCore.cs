@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Documents;
     using static Microsoft.Azure.Documents.RuntimeConstants;
@@ -23,7 +22,6 @@ namespace Microsoft.Azure.Cosmos
         private readonly Uri resourceLink;
         private readonly ResourceType resourceType;
         private readonly SqlQuerySpec querySpec;
-        private readonly bool usePropertySerializer;
         private bool hasMoreResultsInternal;
 
         internal FeedIteratorCore(
@@ -32,8 +30,7 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             QueryDefinition queryDefinition,
             string continuationToken,
-            QueryRequestOptions options,
-            bool usePropertySerializer = false)
+            QueryRequestOptions options)
         {
             this.resourceLink = resourceLink;
             this.clientContext = clientContext;
@@ -41,7 +38,6 @@ namespace Microsoft.Azure.Cosmos
             this.querySpec = queryDefinition?.ToSqlQuerySpec();
             this.continuationToken = continuationToken;
             this.requestOptions = options;
-            this.usePropertySerializer = usePropertySerializer;
             this.hasMoreResultsInternal = true;
         }
 

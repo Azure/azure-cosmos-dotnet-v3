@@ -95,15 +95,16 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public override bool IsDone()
+        public override bool IsDone
         {
-            if (this.FeedTokenEPKRange == null)
+            get
             {
-                return this.isDone;
-            }
-            else
-            {
-                return this.FeedTokenEPKRange.IsDone();
+                if (this.FeedTokenEPKRange == null)
+                {
+                    return this.isDone;
+                }
+
+                return this.FeedTokenEPKRange.IsDone;
             }
         }
 

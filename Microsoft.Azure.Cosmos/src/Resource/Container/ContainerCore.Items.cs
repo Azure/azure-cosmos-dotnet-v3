@@ -511,12 +511,13 @@ namespace Microsoft.Azure.Cosmos
 
             if (sqlQuerySpec == null)
             {
-                return new FeedIteratorCore(
-                    this.ClientContext,
+                return new FeedTokenIteratorCore(
+                    this,
                     this.LinkUri,
                     resourceType: ResourceType.Document,
                     queryDefinition: null,
                     continuationToken: continuationToken,
+                    feedTokenInternal: null,
                     options: requestOptions);
             }
 
@@ -552,18 +553,11 @@ namespace Microsoft.Azure.Cosmos
                     resourceType: ResourceType.Document,
                     queryDefinition: null,
                     feedTokenInternal: feedToken,
+                    continuationToken: null,
                     options: requestOptions);
             }
 
-            return QueryFeedTokenIterator.Create(
-                client: this.queryClient,
-                sqlQuerySpec: sqlQuerySpec,
-                feedTokenInternal: feedToken,
-                queryRequestOptions: requestOptions,
-                resourceLink: this.LinkUri,
-                isContinuationExpected: isContinuationExcpected,
-                allowNonValueAggregateQuery: true,
-                partitionedQueryExecutionInfo: null);
+            return null;
         }
 
         // Extracted partition key might be invalid as CollectionCache might be stale.

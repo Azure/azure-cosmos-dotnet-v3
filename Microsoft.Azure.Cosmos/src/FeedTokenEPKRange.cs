@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos
         internal readonly Queue<CompositeContinuationToken> CompositeContinuationTokens;
         internal readonly Documents.Routing.Range<string> CompleteRange;
         private CompositeContinuationToken currentToken;
-        private string initialNotModifiedRange;
+        private string initialNoResultsRange;
         private HashSet<string> doneRanges = new HashSet<string>();
 
         private FeedTokenEPKRange(
@@ -140,7 +140,6 @@ namespace Microsoft.Azure.Cosmos
             {
                 // Queries and normal ReadFeed can signal termination by CT null, not NotModified
                 // Change Feed never lands here, as it always provides a CT
-
                 // Consider current range done, if this FeedToken contains multiple ranges due to splits, all of them need to be considered done
                 this.doneRanges.Add(this.currentToken.Range.Min);
             }
@@ -149,40 +148,33 @@ namespace Microsoft.Azure.Cosmos
             this.MoveToNextToken();
         }
 
-        public override bool IsDone() => this.doneRanges.Count == this.CompositeContinuationTokens.Count;
+        /// <summary>
+        /// The concept of Done is only for Query and ReadFeed. Change Feed is never done, it is an infinite stream.
+        /// </summary>
+        public override bool IsDone => this.doneRanges.Count == this.CompositeContinuationTokens.Count;
 
         public override async Task<bool> ShouldRetryAsync(
             ContainerCore containerCore,
             ResponseMessage responseMessage,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            bool isSuccessfullResponse = responseMessage.IsSuccessStatusCode
-                || responseMessage.StatusCode == HttpStatusCode.NotModified;
-            bool hasResults = false;
-            if (isSuccessfullResponse
-                && responseMessage.Headers.TryGetValue(Documents.HttpConstants.HttpHeaders.ItemCount, out string itemCount))
+            if (responseMessage.IsSuccessStatusCode)
             {
-                hasResults = int.TryParse(itemCount, out int itemCountAsInt)
-                    && itemCountAsInt > 0;
-            }
-
-            if (hasResults)
-            {
-                this.initialNotModifiedRange = null;
+                this.initialNoResultsRange = null;
                 return false;
             }
 
-            if (isSuccessfullResponse
-                && !hasResults
+            // If the current response is NotModified (ChangeFeed), try and skip to a next one
+            if (responseMessage.StatusCode == HttpStatusCode.NotModified
                 && this.CompositeContinuationTokens.Count > 1)
             {
-                if (this.initialNotModifiedRange == null)
+                if (this.initialNoResultsRange == null)
                 {
-                    this.initialNotModifiedRange = this.currentToken.Range.Min;
+                    this.initialNoResultsRange = this.currentToken.Range.Min;
                     return true;
                 }
 
-                return !this.initialNotModifiedRange.Equals(this.currentToken.Range.Min, StringComparison.OrdinalIgnoreCase);
+                return !this.initialNoResultsRange.Equals(this.currentToken.Range.Min, StringComparison.OrdinalIgnoreCase);
             }
 
             // Split handling
@@ -258,6 +250,13 @@ namespace Microsoft.Azure.Cosmos
             CompositeContinuationToken recentToken = this.CompositeContinuationTokens.Dequeue();
             this.CompositeContinuationTokens.Enqueue(recentToken);
             this.currentToken = this.CompositeContinuationTokens.Peek();
+
+            // In a Query / ReadFeed not Change Feed, skip ranges that are done to avoid requests
+            while (!this.IsDone &&
+                this.doneRanges.Contains(this.currentToken.Range.Min))
+            {
+                this.MoveToNextToken();
+            }
         }
 
         private void HandleSplit(IReadOnlyList<Documents.PartitionKeyRange> keyRanges)

@@ -284,9 +284,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             PartitionKey pk = new PartitionKey("test");
             FeedTokenPartitionKey token = new FeedTokenPartitionKey(pk);
             token.UpdateContinuation(Guid.NewGuid().ToString());
-            Assert.IsFalse(token.IsDone());
+            Assert.IsFalse(token.IsDone);
             token.UpdateContinuation(null);
-            Assert.IsTrue(token.IsDone());
+            Assert.IsTrue(token.IsDone);
         }
 
         [TestMethod]
@@ -295,9 +295,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             string pkrangeId = "0";
             FeedTokenPartitionKeyRange token = new FeedTokenPartitionKeyRange(pkrangeId);
             token.UpdateContinuation(Guid.NewGuid().ToString());
-            Assert.IsFalse(token.IsDone());
+            Assert.IsFalse(token.IsDone);
             token.UpdateContinuation(null);
-            Assert.IsTrue(token.IsDone());
+            Assert.IsTrue(token.IsDone);
         }
 
         [TestMethod]
@@ -308,10 +308,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new Documents.PartitionKeyRange() { MinInclusive = "A", MaxExclusive = "B" });
 
             token.UpdateContinuation(Guid.NewGuid().ToString());
-            Assert.IsFalse(token.IsDone());
+            Assert.IsFalse(token.IsDone);
 
             token.UpdateContinuation(null);
-            Assert.IsTrue(token.IsDone());
+            Assert.IsTrue(token.IsDone);
         }
 
         [TestMethod]
@@ -327,31 +327,24 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             // First range has continuation
             token.UpdateContinuation(Guid.NewGuid().ToString());
-            Assert.IsFalse(token.IsDone());
+            Assert.IsFalse(token.IsDone);
 
             // Second range is done
             token.UpdateContinuation(null);
-            Assert.IsFalse(token.IsDone());
+            Assert.IsFalse(token.IsDone);
 
             // Third range is done
             token.UpdateContinuation(null);
-            Assert.IsFalse(token.IsDone());
+            Assert.IsFalse(token.IsDone);
 
             // First range has continuation
             token.UpdateContinuation(Guid.NewGuid().ToString());
-            Assert.IsFalse(token.IsDone());
+            Assert.IsFalse(token.IsDone);
 
-            // Second range is done
+            // MoveNext should skip the second and third
+            // Finish first one
             token.UpdateContinuation(null);
-            Assert.IsFalse(token.IsDone());
-
-            // Third range is done
-            token.UpdateContinuation(null);
-            Assert.IsFalse(token.IsDone());
-
-            // First range is done
-            token.UpdateContinuation(null);
-            Assert.IsTrue(token.IsDone());
+            Assert.IsTrue(token.IsDone);
         }
 
         private static CompositeContinuationToken BuildTokenForRange(

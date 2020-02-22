@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override string GetContinuation() => this.continuationToken;
 
-        public override bool IsDone() => this.isDone;
+        public override bool IsDone => this.isDone;
 
         public override string ToString()
         {

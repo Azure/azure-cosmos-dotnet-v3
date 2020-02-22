@@ -185,8 +185,7 @@ namespace Microsoft.Azure.Cosmos
                resourceType: ResourceType.Offer,
                queryDefinition: queryDefinition,
                continuationToken: continuationToken,
-               options: requestOptions,
-               usePropertySerializer: true);
+               options: requestOptions);
         }
 
         private async Task<T> SingleOrDefaultAsync<T>(

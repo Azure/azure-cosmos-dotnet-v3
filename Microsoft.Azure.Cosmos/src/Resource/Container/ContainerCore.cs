@@ -234,7 +234,6 @@ namespace Microsoft.Azure.Cosmos
         FeedIterator GetChangeFeedStreamIterator(ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
             return new ChangeFeedIteratorCore(
-                this.ClientContext,
                 this,
                 changeFeedRequestOptions);
         }
@@ -250,7 +249,6 @@ namespace Microsoft.Azure.Cosmos
         {
             FeedTokenInternal feedTokenInternal = feedToken as FeedTokenInternal;
             return new ChangeFeedIteratorCore(
-                this.ClientContext,
                 this,
                 feedTokenInternal,
                 changeFeedRequestOptions);
@@ -266,7 +264,6 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
             return new ChangeFeedIteratorCore(
-                this.ClientContext,
                 this,
                 new FeedTokenPartitionKey(partitionKey),
                 changeFeedRequestOptions);
@@ -280,7 +277,6 @@ namespace Microsoft.Azure.Cosmos
         FeedIterator<T> GetChangeFeedIterator<T>(ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
             ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
-                this.ClientContext,
                 this,
                 changeFeedRequestOptions);
 
@@ -298,7 +294,6 @@ namespace Microsoft.Azure.Cosmos
         {
             FeedTokenInternal feedTokenInternal = feedToken as FeedTokenInternal;
             ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
-                this.ClientContext,
                 this,
                 feedTokenInternal,
                 changeFeedRequestOptions);
@@ -316,7 +311,6 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
             ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
-                this.ClientContext,
                 this,
                 new FeedTokenPartitionKey(partitionKey),
                 changeFeedRequestOptions);
