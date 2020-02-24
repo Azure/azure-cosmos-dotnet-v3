@@ -267,5 +267,86 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock.Get(feedToken)
                 .Verify(f => f.IsDone, Times.Once);
         }
+
+        [TestMethod]
+        public async Task ReadFeedIteratorCore_WithNoInitialState_ReadNextAsync()
+        {
+            string continuation = "TBD";
+            ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.OK);
+            responseMessage.Headers.ContinuationToken = continuation;
+            responseMessage.Headers[Documents.HttpConstants.HttpHeaders.ItemCount] = "1";
+
+            Mock<CosmosClientContext> cosmosClientContext = new Mock<CosmosClientContext>();
+            cosmosClientContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
+            cosmosClientContext
+                .Setup(c => c.ProcessResourceOperationStreamAsync(
+                    It.IsAny<Uri>(),
+                    It.IsAny<Documents.ResourceType>(),
+                    It.IsAny<Documents.OperationType>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<ContainerCore>(),
+                    It.IsAny<PartitionKey?>(),
+                    It.IsAny<Stream>(),
+                    It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<CosmosDiagnosticsContext>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(responseMessage));
+
+            ContainerCore containerCore = Mock.Of<ContainerCore>();
+            Mock.Get(containerCore)
+                .Setup(c => c.ClientContext)
+                .Returns(cosmosClientContext.Object);
+
+            FeedIteratorCore feedTokenIterator = new FeedIteratorCore(containerCore, new Uri("http://localhost"), Documents.ResourceType.Document, null, null, null, new QueryRequestOptions());
+            ResponseMessage response = await feedTokenIterator.ReadNextAsync();
+
+            FeedToken feedTokenOut = feedTokenIterator.FeedToken;
+            Assert.IsNotNull(feedTokenOut);
+
+            FeedTokenEPKRange feedTokenEPKRange = feedTokenOut as FeedTokenEPKRange;
+            // Assert that a FeedToken for the entire range is used
+            Assert.AreEqual(Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey, feedTokenEPKRange.CompleteRange.Min);
+            Assert.AreEqual(Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey, feedTokenEPKRange.CompleteRange.Max);
+            Assert.AreEqual(continuation, feedTokenEPKRange.CompositeContinuationTokens.Peek().Token);
+            Assert.IsFalse(feedTokenEPKRange.IsDone);
+        }
+
+        [TestMethod]
+        public async Task ReadFeedIteratorCore_ForNonPartitionedResource_WithNoInitialState_ReadNextAsync()
+        {
+            string continuation = "TBD";
+            ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.OK);
+            responseMessage.Headers.ContinuationToken = continuation;
+            responseMessage.Headers[Documents.HttpConstants.HttpHeaders.ItemCount] = "1";
+
+            Mock<CosmosClientContext> cosmosClientContext = new Mock<CosmosClientContext>();
+            cosmosClientContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
+            cosmosClientContext
+                .Setup(c => c.ProcessResourceOperationStreamAsync(
+                    It.IsAny<Uri>(),
+                    It.IsAny<Documents.ResourceType>(),
+                    It.IsAny<Documents.OperationType>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<ContainerCore>(),
+                    It.IsAny<PartitionKey?>(),
+                    It.IsAny<Stream>(),
+                    It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<CosmosDiagnosticsContext>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(responseMessage));
+
+            FeedIteratorCore feedTokenIterator = new FeedIteratorCore(cosmosClientContext.Object, new Uri("http://localhost"), Documents.ResourceType.Document, null, null, null, new QueryRequestOptions());
+            ResponseMessage response = await feedTokenIterator.ReadNextAsync();
+
+            FeedToken feedTokenOut = feedTokenIterator.FeedToken;
+            Assert.IsNotNull(feedTokenOut);
+
+            FeedTokenEPKRange feedTokenEPKRange = feedTokenOut as FeedTokenEPKRange;
+            // Assert that a FeedToken for the entire range is used
+            Assert.AreEqual(Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey, feedTokenEPKRange.CompleteRange.Min);
+            Assert.AreEqual(Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey, feedTokenEPKRange.CompleteRange.Max);
+            Assert.AreEqual(continuation, feedTokenEPKRange.CompositeContinuationTokens.Peek().Token);
+            Assert.IsFalse(feedTokenEPKRange.IsDone);
+        }
     }
 }
