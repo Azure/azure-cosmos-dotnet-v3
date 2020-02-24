@@ -48,7 +48,13 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        FeedToken FeedToken => throw new NotImplementedException();
+        FeedToken FeedToken => new FeedTokenEPKRange(
+                    string.Empty,
+                    new PartitionKeyRange()
+                    {
+                        MinInclusive = Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
+                        MaxExclusive = Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey
+                    });
 
         /// <summary>
         /// The query options for the result set

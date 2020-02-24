@@ -121,6 +121,58 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(batchSize, totalCount);
         }
 
+        /// <summary>
+        /// Check to see how the older continuation token approach works when mixed with FeedToken
+        /// </summary>
+        /// <returns></returns>
+        [TestMethod]
+        public async Task ReadFeedIteratorCore_ReadAll_MixContinuationToken()
+        {
+            int totalCount = 0;
+            int batchSize = 1000;
+
+            await this.CreateRandomItems(this.LargerContainer, batchSize, randomPartitionKey: true);
+            ContainerCore itemsCore = this.LargerContainer;
+
+            // Do a read without FeedToken and get the older CT from Header
+            string olderContinuationToken = null;
+            FeedTokenIteratorCore feedIterator = itemsCore.GetItemQueryStreamIterator(queryDefinition: null, requestOptions: new QueryRequestOptions() { MaxItemCount = 1 }) as FeedTokenIteratorCore;
+            while (feedIterator.HasMoreResults)
+            {
+                using (ResponseMessage responseMessage =
+                    await feedIterator.ReadNextAsync(this.cancellationToken))
+                {
+                    olderContinuationToken = responseMessage.Headers.ContinuationToken;
+                    if (responseMessage.IsSuccessStatusCode)
+                    {
+                        Collection<ToDoActivity> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
+                        totalCount += response.Count;
+                    }
+                    break;
+                }
+            }
+
+            // start a new iterator using the older CT and expect it to continue
+            feedIterator = itemsCore.GetItemQueryStreamIterator(queryDefinition: null, continuationToken: olderContinuationToken, requestOptions: new QueryRequestOptions() { MaxItemCount = 1 }) as FeedTokenIteratorCore;
+            while (feedIterator.HasMoreResults)
+            {
+                using (ResponseMessage responseMessage =
+                    await feedIterator.ReadNextAsync(this.cancellationToken))
+                {
+                    Assert.IsNotNull(feedIterator.FeedToken);
+                    Assert.IsTrue(feedIterator.TryGetContinuationToken(out string continuationToken));
+                    if (responseMessage.IsSuccessStatusCode)
+                    {
+                        Collection<ToDoActivity> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
+                        totalCount += response.Count;
+                    }
+                }
+            }
+
+            Assert.AreEqual(batchSize, totalCount);
+        }
+
+
         private async Task<IList<ToDoActivity>> CreateRandomItems(ContainerCore container, int pkCount, int perPKItemCount = 1, bool randomPartitionKey = true)
         {
             Assert.IsFalse(!randomPartitionKey && perPKItemCount > 1);
