@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
         public override (ParseFailureReason, BackendMetrics) Visit(QueryPipelineDiagnostics queryPipelineDiagnostics)
         {
-            throw new System.NotImplementedException();
+            return (ParseFailureReason.MetricsNotFound, default);
         }
 
         public enum ParseFailureReason

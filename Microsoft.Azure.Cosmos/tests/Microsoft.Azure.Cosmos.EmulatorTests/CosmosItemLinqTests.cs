@@ -752,7 +752,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(response.RequestCharge > 0);
             CosmosDiagnosticsTests.VerifyQueryDiagnostics(
                 diagnostics: response.Diagnostics,
-                isFirstPage: false,
+                isFirstPage: true,
                 disableDiagnostics: disableDiagnostics,
                 forceGatewayQueryPlan: false);
         }

@@ -9,7 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- [#1223](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1223) Add diagnostics for get query plan and query pipeline creation.
+
 ### Fixed
+
+- [#1223](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1223) Fixed query overall timestamp in diagnostic summary.
 
 ## <a name="3.6.0"/> [3.6.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.6.0) - 2020-01-23
 

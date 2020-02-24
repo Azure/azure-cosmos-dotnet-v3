@@ -201,10 +201,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [DataRow(true, true)]
+        //[DataRow(true, true)]
         [DataRow(false, true)]
-        [DataRow(true, false)]
-        [DataRow(false, false)]
+        //[DataRow(true, false)]
+        //[DataRow(false, false)]
         public async Task QueryOperationDiagnostic(
             bool disableDiagnostics,
             bool forceGatewayQueryPlan)
