@@ -615,13 +615,20 @@ namespace Microsoft.Azure.Cosmos
 
                     using (diagnosticsContext.CreateScope("Encrypt"))
                     {
+                        List<string> encryptedPaths = new List<string>();
                         streamPayload = await this.ClientContext.EncryptionProcessor.EncryptAsync(
                             streamPayload,
                             requestOptions.EncryptionOptions,
                             (DatabaseCore)this.Database,
                             this.ClientContext.ClientOptions.EncryptionKeyWrapProvider,
                             diagnosticsContext,
-                            cancellationToken);
+                            cancellationToken,
+                            encryptedPaths);
+
+                        if (encryptedPaths.Any())
+                        {
+                            requestOptions.IsItemEncrypted = true;
+                        }
                     }
                 }
 
@@ -642,12 +649,19 @@ namespace Microsoft.Azure.Cosmos
                 {
                     using (diagnosticsContext.CreateScope("Decrypt"))
                     {
+                        List<string> decryptedPaths = new List<string>();
                         responseMessage.Content = await this.ClientContext.EncryptionProcessor.DecryptAsync(
                             responseMessage.Content,
                             (DatabaseCore)this.Database,
                             this.ClientContext.ClientOptions.EncryptionKeyWrapProvider,
                             diagnosticsContext,
-                            cancellationToken);
+                            cancellationToken,
+                            decryptedPaths);
+
+                        if (decryptedPaths.Any())
+                        {
+                            responseMessage.Headers.Add(EncryptionProcessor.ClientDecryptedHeader, bool.TrueString);
+                        }
                     }
                 }
 

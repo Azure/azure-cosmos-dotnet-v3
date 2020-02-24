@@ -26,18 +26,20 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="encryptionKeyWrapMetadata">Metadata that can be used by the wrap provider to unwrap the data encryption key.</param>
         public EncryptionKeyWrapResult(byte[] wrappedDataEncryptionKey, EncryptionKeyWrapMetadata encryptionKeyWrapMetadata)
         {
-            this.WrappedDataEncryptionKey = wrappedDataEncryptionKey ?? throw new ArgumentNullException(nameof(wrappedDataEncryptionKey));
+            this.WrappedDataEncryptionKeyBytes = wrappedDataEncryptionKey ?? throw new ArgumentNullException(nameof(wrappedDataEncryptionKey));
             this.EncryptionKeyWrapMetadata = encryptionKeyWrapMetadata ?? throw new ArgumentNullException(nameof(encryptionKeyWrapMetadata));
         }
 
         /// <summary>
         /// Wrapped form of the data encryption key.
         /// </summary>
-        internal byte[] WrappedDataEncryptionKey { get; }
+        public ReadOnlyMemory<byte> WrappedDataEncryptionKey => this.WrappedDataEncryptionKeyBytes;
 
         /// <summary>
         /// Metadata that can be used by the wrap provider to unwrap the key.
         /// </summary>
-        internal EncryptionKeyWrapMetadata EncryptionKeyWrapMetadata { get; }
+        public EncryptionKeyWrapMetadata EncryptionKeyWrapMetadata { get; }
+
+        internal byte[] WrappedDataEncryptionKeyBytes { get; }
     }
 }

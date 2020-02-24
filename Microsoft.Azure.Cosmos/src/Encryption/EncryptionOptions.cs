@@ -25,9 +25,13 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// For the request payload, list of JSON paths to encrypt.
-        /// Only top level paths are supported.
         /// Example of a path specification: /sensitive
         /// </summary>
+        /// <remarks>
+        /// Paths that are not found in the item are ignored.
+        /// Paths should not overlap, eg. passing both /a and /a/b is not valid.
+        /// Array index specifications are not honored.
+        /// </remarks>
         public List<string> PathsToEncrypt { get; set; }
     }
 }
