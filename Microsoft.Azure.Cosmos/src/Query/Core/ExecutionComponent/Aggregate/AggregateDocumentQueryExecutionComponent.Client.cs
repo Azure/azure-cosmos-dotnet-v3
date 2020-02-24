@@ -113,6 +113,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
                     disallowContinuationTokenMessage: null,
                     requestCharge: requestCharge,
                     diagnostics: diagnosticsPages,
+                    pipelineDiagnostics: null,
                     responseLengthBytes: responseLengthBytes);
             }
 

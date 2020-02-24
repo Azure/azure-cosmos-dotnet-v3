@@ -66,6 +66,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                 double requestCharge = 0.0;
                 long responseLengthBytes = 0;
                 List<QueryPageDiagnostics> queryPageDiagnostics = new List<QueryPageDiagnostics>();
+                QueryPipelineDiagnostics pipelineDiagnostics = null;
                 while (!this.Source.IsDone)
                 {
                     // Stage 1: 
@@ -83,6 +84,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                         queryPageDiagnostics.AddRange(sourceResponse.Diagnostics);
                     }
 
+                    if (sourceResponse.PipelineDiagnostics != null)
+                    {
+                        pipelineDiagnostics = sourceResponse.PipelineDiagnostics;
+                    }
+
                     this.AggregateGroupings(sourceResponse.CosmosElements);
                 }
 
@@ -97,7 +103,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                    activityId: null,
                    requestCharge: requestCharge,
                    diagnostics: queryPageDiagnostics,
-                   responseLengthBytes: responseLengthBytes);
+                   responseLengthBytes: responseLengthBytes,
+                   pipelineDiagnostics: pipelineDiagnostics);
 
                 return response;
             }

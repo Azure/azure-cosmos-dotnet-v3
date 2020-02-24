@@ -101,7 +101,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                         activityId: sourceResponse.ActivityId,
                         requestCharge: sourceResponse.RequestCharge,
                         diagnostics: sourceResponse.Diagnostics,
-                        responseLengthBytes: sourceResponse.ResponseLengthBytes);
+                        responseLengthBytes: sourceResponse.ResponseLengthBytes,
+                        pipelineDiagnostics: sourceResponse.PipelineDiagnostics);
             }
 
             public override bool TryGetContinuationToken(out string continuationToken)

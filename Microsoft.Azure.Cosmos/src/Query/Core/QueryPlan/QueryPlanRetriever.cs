@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             return tryGetQueryPlan.Result;
         }
 
-        public static Task<PartitionedQueryExecutionInfo> GetQueryPlanThroughGatewayAsync(
+        public static Task<(PartitionedQueryExecutionInfo, CosmosDiagnosticsContext)> GetQueryPlanThroughGatewayAsync(
             CosmosQueryClient client,
             SqlQuerySpec sqlQuerySpec,
             Uri resourceLink,

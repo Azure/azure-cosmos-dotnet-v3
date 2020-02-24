@@ -39,7 +39,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                     errorMessage: exceptionWithStackTrace.ToString(),
                     requestCharge: innerExceptionResponse.RequestCharge,
                     activityId: innerExceptionResponse.ActivityId,
-                    diagnostics: innerExceptionResponse.Diagnostics);
+                    diagnostics: innerExceptionResponse.Diagnostics,
+                    pipelineDiagnostics: null);
             }
             else
             {
@@ -57,7 +58,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                         errorMessage: exception?.ToString(),
                         requestCharge: 0,
                         activityId: QueryResponseCore.EmptyGuidString,
-                        diagnostics: QueryResponseCore.EmptyDiagnostics);
+                        diagnostics: QueryResponseCore.EmptyDiagnostics,
+                        pipelineDiagnostics: null);
                 }
             }
 
@@ -72,7 +74,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                 errorMessage: cosmosException.ToString(),
                 requestCharge: 0,
                 activityId: cosmosException.ActivityId,
-                diagnostics: QueryResponseCore.EmptyDiagnostics);
+                diagnostics: QueryResponseCore.EmptyDiagnostics,
+                pipelineDiagnostics: null);
 
             return queryResponseCore;
         }
@@ -85,7 +88,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                 errorMessage: documentClientException.ToString(),
                 requestCharge: 0,
                 activityId: documentClientException.ActivityId,
-                diagnostics: QueryResponseCore.EmptyDiagnostics);
+                diagnostics: QueryResponseCore.EmptyDiagnostics,
+                pipelineDiagnostics: null);
 
             return queryResponseCore;
         }

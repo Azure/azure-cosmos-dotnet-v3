@@ -292,7 +292,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
                             errorMessage: "Request Rate Too Large",
                             requestCharge: 0,
                             activityId: QueryResponseCore.EmptyGuidString,
-                            diagnostics: QueryResponseCore.EmptyDiagnostics);
+                            diagnostics: QueryResponseCore.EmptyDiagnostics,
+                            pipelineDiagnostics: feedResponse.PipelineDiagnostics);
                     }
                 }
 
@@ -309,7 +310,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
                             responseLengthBytes: 0,
                             disallowContinuationTokenMessage: null,
                             continuationToken: this.BackendContinuationToken,
-                            diagnostics: QueryResponseCore.EmptyDiagnostics);
+                            diagnostics: QueryResponseCore.EmptyDiagnostics,
+                            pipelineDiagnostics: feedResponse.PipelineDiagnostics);
                     }
                 }
 

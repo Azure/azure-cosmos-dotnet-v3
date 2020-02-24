@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             SchedulingStopwatch schedulingStopwatch,
             CancellationToken cancellationToken);
 
-        internal abstract Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
+        internal abstract Task<(PartitionedQueryExecutionInfo, CosmosDiagnosticsContext)> ExecuteQueryPlanRequestAsync(
             Uri resourceUri,
             Documents.ResourceType resourceType,
             Documents.OperationType operationType,

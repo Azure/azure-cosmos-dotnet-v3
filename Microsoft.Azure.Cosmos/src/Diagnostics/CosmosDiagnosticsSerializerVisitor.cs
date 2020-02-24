@@ -153,5 +153,24 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
             this.jsonWriter.WriteEndObject();
         }
+
+        public override void Visit(QueryPipelineDiagnostics queryPipelineDiagnostics)
+        {
+            this.jsonWriter.WriteStartObject();
+
+            this.jsonWriter.WritePropertyName("Id");
+            this.jsonWriter.WriteValue("QueryPipelineDiagnostics");
+
+            this.jsonWriter.WritePropertyName("Context");
+            this.jsonWriter.WriteStartArray();
+
+            foreach (CosmosDiagnosticScope scope in queryPipelineDiagnostics.QueryPipelineCreationScopes)
+            {
+                scope.Accept(this);
+            }
+
+            this.jsonWriter.WriteEndArray();
+            this.jsonWriter.WriteEndObject();
+        }
     }
 }

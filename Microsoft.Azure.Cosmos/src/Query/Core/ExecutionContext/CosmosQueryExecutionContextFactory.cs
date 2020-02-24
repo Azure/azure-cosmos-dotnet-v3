@@ -9,12 +9,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using static Microsoft.Azure.Cosmos.Diagnostics.QueryPipelineDiagnostics;
 
     internal static class CosmosQueryExecutionContextFactory
     {
@@ -39,8 +41,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 cosmosQueryContext: cosmosQueryContext,
                 cosmosQueryExecutionContextFactory: () =>
                 {
-                    // Query Iterator requires that the creation of the query context is defered until the user calls ReadNextAsync
-                    AsyncLazy<TryCatch<CosmosQueryExecutionContext>> lazyTryCreateCosmosQueryExecutionContext = new AsyncLazy<TryCatch<CosmosQueryExecutionContext>>(valueFactory: (innerCancellationToken) =>
+                    // Query Iterator requires that the creation of the query context is deferred until the user calls ReadNextAsync
+                    AsyncLazy<(TryCatch<CosmosQueryExecutionContext>, QueryPipelineDiagnostics)> lazyTryCreateCosmosQueryExecutionContext = new AsyncLazy<(TryCatch<CosmosQueryExecutionContext>, QueryPipelineDiagnostics)>(valueFactory: (innerCancellationToken) =>
                     {
                         innerCancellationToken.ThrowIfCancellationRequested();
                         return CosmosQueryExecutionContextFactory.TryCreateCoreContextAsync(
@@ -57,123 +59,146 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             return catchAllCosmosQueryExecutionContext;
         }
 
-        private static async Task<TryCatch<CosmosQueryExecutionContext>> TryCreateCoreContextAsync(
+        private static async Task<(TryCatch<CosmosQueryExecutionContext>, QueryPipelineDiagnostics)> TryCreateCoreContextAsync(
             CosmosQueryContext cosmosQueryContext,
             InputParameters inputParameters,
             CancellationToken cancellationToken)
         {
-            // Try to parse the continuation token.
-            string continuationToken = inputParameters.InitialUserContinuationToken;
-            PartitionedQueryExecutionInfo queryPlanFromContinuationToken = inputParameters.PartitionedQueryExecutionInfo;
-            if (continuationToken != null)
+            QueryPipelineDiagnosticBuilder diagnosticBuilder = new QueryPipelineDiagnosticBuilder(5);
+            using (diagnosticBuilder.CreateScope("QueryPipelineCreation"))
             {
-                if (!PipelineContinuationToken.TryParse(
-                    continuationToken,
-                    out PipelineContinuationToken pipelineContinuationToken))
+                // Try to parse the continuation token.
+                string continuationToken = inputParameters.InitialUserContinuationToken;
+                PartitionedQueryExecutionInfo queryPlanFromContinuationToken = inputParameters.PartitionedQueryExecutionInfo;
+                if (continuationToken != null)
                 {
-                    return TryCatch<CosmosQueryExecutionContext>.FromException(
-                        new MalformedContinuationTokenException(
-                            $"Malformed {nameof(PipelineContinuationToken)}: {continuationToken}."));
+                    using (diagnosticBuilder.CreateScope("ParseContinuationToken"))
+                    {
+                        if (!PipelineContinuationToken.TryParse(
+                        continuationToken,
+                        out PipelineContinuationToken pipelineContinuationToken))
+                        {
+                            return (TryCatch<CosmosQueryExecutionContext>.FromException(
+                                new MalformedContinuationTokenException(
+                                    $"Malformed {nameof(PipelineContinuationToken)}: {continuationToken}.")), null);
+                        }
+
+                        if (PipelineContinuationToken.IsTokenFromTheFuture(pipelineContinuationToken))
+                        {
+                            return (TryCatch<CosmosQueryExecutionContext>.FromException(
+                                new MalformedContinuationTokenException(
+                                    $"{nameof(PipelineContinuationToken)} Continuation token is from a newer version of the SDK. " +
+                                    $"Upgrade the SDK to avoid this issue." +
+                                    $"{continuationToken}.")), null);
+                        }
+
+                        if (!PipelineContinuationToken.TryConvertToLatest(
+                            pipelineContinuationToken,
+                            out PipelineContinuationTokenV1_1 latestVersionPipelineContinuationToken))
+                        {
+                            return (TryCatch<CosmosQueryExecutionContext>.FromException(
+                                new MalformedContinuationTokenException(
+                                    $"{nameof(PipelineContinuationToken)}: '{continuationToken}' is no longer supported.")), null);
+                        }
+
+                        continuationToken = latestVersionPipelineContinuationToken.SourceContinuationToken;
+                        if (latestVersionPipelineContinuationToken.QueryPlan != null)
+                        {
+                            queryPlanFromContinuationToken = latestVersionPipelineContinuationToken.QueryPlan;
+                        }
+                    }
                 }
 
-                if (PipelineContinuationToken.IsTokenFromTheFuture(pipelineContinuationToken))
+                ContainerQueryProperties containerQueryProperties;
+                CosmosQueryClient cosmosQueryClient = cosmosQueryContext.QueryClient;
+                using (diagnosticBuilder.CreateScope("GetCachedContainerPropertiesAsync"))
                 {
-                    return TryCatch<CosmosQueryExecutionContext>.FromException(
-                        new MalformedContinuationTokenException(
-                            $"{nameof(PipelineContinuationToken)} Continuation token is from a newer version of the SDK. " +
-                            $"Upgrade the SDK to avoid this issue." +
-                            $"{continuationToken}."));
-                }
-
-                if (!PipelineContinuationToken.TryConvertToLatest(
-                    pipelineContinuationToken,
-                    out PipelineContinuationTokenV1_1 latestVersionPipelineContinuationToken))
-                {
-                    return TryCatch<CosmosQueryExecutionContext>.FromException(
-                        new MalformedContinuationTokenException(
-                            $"{nameof(PipelineContinuationToken)}: '{continuationToken}' is no longer supported."));
-                }
-
-                continuationToken = latestVersionPipelineContinuationToken.SourceContinuationToken;
-                if (latestVersionPipelineContinuationToken.QueryPlan != null)
-                {
-                    queryPlanFromContinuationToken = latestVersionPipelineContinuationToken.QueryPlan;
-                }
-            }
-
-            CosmosQueryClient cosmosQueryClient = cosmosQueryContext.QueryClient;
-            ContainerQueryProperties containerQueryProperties = await cosmosQueryClient.GetCachedContainerQueryPropertiesAsync(
-                cosmosQueryContext.ResourceLink,
-                inputParameters.PartitionKey,
-                cancellationToken);
-            cosmosQueryContext.ContainerResourceId = containerQueryProperties.ResourceId;
-
-            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
-            if (queryPlanFromContinuationToken != null)
-            {
-                partitionedQueryExecutionInfo = queryPlanFromContinuationToken;
-            }
-            else
-            {
-                if (cosmosQueryContext.QueryClient.ByPassQueryParsing())
-                {
-                    // For non-Windows platforms(like Linux and OSX) in .NET Core SDK, we cannot use ServiceInterop, so need to bypass in that case.
-                    // We are also now bypassing this for 32 bit host process running even on Windows as there are many 32 bit apps that will not work without this
-                    partitionedQueryExecutionInfo = await QueryPlanRetriever.GetQueryPlanThroughGatewayAsync(
-                        cosmosQueryContext.QueryClient,
-                        inputParameters.SqlQuerySpec,
+                    containerQueryProperties = await cosmosQueryClient.GetCachedContainerQueryPropertiesAsync(
                         cosmosQueryContext.ResourceLink,
                         inputParameters.PartitionKey,
                         cancellationToken);
+                    cosmosQueryContext.ContainerResourceId = containerQueryProperties.ResourceId;
+                }
+
+                PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
+
+                if (queryPlanFromContinuationToken != null)
+                {
+                    partitionedQueryExecutionInfo = queryPlanFromContinuationToken;
                 }
                 else
                 {
-                    //todo:elasticcollections this may rely on information from collection cache which is outdated
-                    //if collection is deleted/created with same name.
-                    //need to make it not rely on information from collection cache.
-                    Documents.PartitionKeyDefinition partitionKeyDefinition;
-                    if ((inputParameters.Properties != null)
-                        && inputParameters.Properties.TryGetValue(InternalPartitionKeyDefinitionProperty, out object partitionKeyDefinitionObject))
+                    if (cosmosQueryContext.QueryClient.ByPassQueryParsing())
                     {
-                        if (partitionKeyDefinitionObject is Documents.PartitionKeyDefinition definition)
+                        using (diagnosticBuilder.CreateScope("GetQueryPlanThroughGateway"))
                         {
-                            partitionKeyDefinition = definition;
-                        }
-                        else
-                        {
-                            throw new ArgumentException(
-                                "partitionkeydefinition has invalid type",
-                                nameof(partitionKeyDefinitionObject));
+                            // For non-Windows platforms(like Linux and OSX) in .NET Core SDK, we cannot use ServiceInterop, so need to bypass in that case.
+                            // We are also now bypassing this for 32 bit host process running even on Windows as there are many 32 bit apps that will not work without this
+                            (PartitionedQueryExecutionInfo executionInfo, CosmosDiagnosticsContext diagnosticsContext) result = await QueryPlanRetriever.GetQueryPlanThroughGatewayAsync(
+                                cosmosQueryContext.QueryClient,
+                                inputParameters.SqlQuerySpec,
+                                cosmosQueryContext.ResourceLink,
+                                inputParameters.PartitionKey,
+                                cancellationToken);
+
+                            partitionedQueryExecutionInfo = result.executionInfo;
+                            diagnosticBuilder.AddGatewayDiagnostics(result.diagnosticsContext);
                         }
                     }
                     else
                     {
-                        partitionKeyDefinition = containerQueryProperties.PartitionKeyDefinition;
+                        using (diagnosticBuilder.CreateScope("GetQueryPlanWithServiceInterop"))
+                        {
+                            //todo:elasticcollections this may rely on information from collection cache which is outdated
+                            //if collection is deleted/created with same name.
+                            //need to make it not rely on information from collection cache.
+                            Documents.PartitionKeyDefinition partitionKeyDefinition;
+                            if ((inputParameters.Properties != null)
+                                && inputParameters.Properties.TryGetValue(InternalPartitionKeyDefinitionProperty, out object partitionKeyDefinitionObject))
+                            {
+                                if (partitionKeyDefinitionObject is Documents.PartitionKeyDefinition definition)
+                                {
+                                    partitionKeyDefinition = definition;
+                                }
+                                else
+                                {
+                                    throw new ArgumentException(
+                                        "partitionkeydefinition has invalid type",
+                                        nameof(partitionKeyDefinitionObject));
+                                }
+                            }
+                            else
+                            {
+                                partitionKeyDefinition = containerQueryProperties.PartitionKeyDefinition;
+                            }
+
+                            partitionedQueryExecutionInfo = await QueryPlanRetriever.GetQueryPlanWithServiceInteropAsync(
+                                cosmosQueryContext.QueryClient,
+                                inputParameters.SqlQuerySpec,
+                                partitionKeyDefinition,
+                                inputParameters.PartitionKey != null,
+                                cancellationToken);
+                        }
                     }
-
-                    partitionedQueryExecutionInfo = await QueryPlanRetriever.GetQueryPlanWithServiceInteropAsync(
-                        cosmosQueryContext.QueryClient,
-                        inputParameters.SqlQuerySpec,
-                        partitionKeyDefinition,
-                        inputParameters.PartitionKey != null,
-                        cancellationToken);
                 }
-            }
 
-            return await TryCreateFromPartitionedQuerExecutionInfoAsync(
-                partitionedQueryExecutionInfo,
-                containerQueryProperties,
-                cosmosQueryContext,
-                inputParameters,
-                cancellationToken);
+                TryCatch<CosmosQueryExecutionContext> tryCreateExcutionInfo = await TryCreateFromPartitionedQueryExecutionInfoAsync(
+                    partitionedQueryExecutionInfo,
+                    containerQueryProperties,
+                    cosmosQueryContext,
+                    inputParameters,
+                    cancellationToken);
+
+                return (tryCreateExcutionInfo, diagnosticBuilder.Build());
+            }
         }
 
-        public static async Task<TryCatch<CosmosQueryExecutionContext>> TryCreateFromPartitionedQuerExecutionInfoAsync(
-        PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
-        ContainerQueryProperties containerQueryProperties,
-        CosmosQueryContext cosmosQueryContext,
-        InputParameters inputParameters,
-        CancellationToken cancellationToken)
+        public static async Task<TryCatch<CosmosQueryExecutionContext>> TryCreateFromPartitionedQueryExecutionInfoAsync(
+            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
+            ContainerQueryProperties containerQueryProperties,
+            CosmosQueryContext cosmosQueryContext,
+            InputParameters inputParameters,
+            CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 

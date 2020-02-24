@@ -116,7 +116,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                         activityId: sourceResponse.ActivityId,
                         requestCharge: sourceResponse.RequestCharge,
                         diagnostics: sourceResponse.Diagnostics,
-                        responseLengthBytes: sourceResponse.ResponseLengthBytes);
+                        responseLengthBytes: sourceResponse.ResponseLengthBytes,
+                        pipelineDiagnostics: sourceResponse.PipelineDiagnostics);
                 }
                 else
                 {
@@ -131,7 +132,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                        activityId: null,
                        requestCharge: 0,
                        diagnostics: QueryResponseCore.EmptyDiagnostics,
-                       responseLengthBytes: 0);
+                       responseLengthBytes: 0,
+                       pipelineDiagnostics: null);
                 }
 
                 return response;

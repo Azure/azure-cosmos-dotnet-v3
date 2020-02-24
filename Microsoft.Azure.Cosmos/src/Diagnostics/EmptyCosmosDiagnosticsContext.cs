@@ -49,6 +49,10 @@ namespace Microsoft.Azure.Cosmos
         {
         }
 
+        internal override void AddDiagnosticsInternal(QueryPipelineDiagnostics queryPipelineDiagnostics)
+        {
+        }
+
         internal override void AddDiagnosticsInternal(CosmosDiagnosticsContext newContext)
         {
         }

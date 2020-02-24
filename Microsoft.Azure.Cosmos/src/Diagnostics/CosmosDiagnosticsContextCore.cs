@@ -108,6 +108,16 @@ namespace Microsoft.Azure.Cosmos
             this.ContextList.Add(queryPageDiagnostics);
         }
 
+        internal override void AddDiagnosticsInternal(QueryPipelineDiagnostics queryPipelineDiagnostics)
+        {
+            if (queryPipelineDiagnostics == null)
+            {
+                throw new ArgumentNullException(nameof(queryPipelineDiagnostics));
+            }
+
+            this.ContextList.Add(queryPipelineDiagnostics);
+        }
+
         internal override void AddDiagnosticsInternal(CosmosDiagnosticsContext newContext)
         {
             this.AddSummaryInfo(newContext);

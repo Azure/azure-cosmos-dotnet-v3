@@ -153,7 +153,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                     activityId: results.ActivityId,
                     requestCharge: results.RequestCharge,
                     diagnostics: results.Diagnostics,
-                    responseLengthBytes: results.ResponseLengthBytes);
+                    responseLengthBytes: results.ResponseLengthBytes,
+                    pipelineDiagnostics: null);
         }
 
         public override bool TryGetContinuationToken(out string state)

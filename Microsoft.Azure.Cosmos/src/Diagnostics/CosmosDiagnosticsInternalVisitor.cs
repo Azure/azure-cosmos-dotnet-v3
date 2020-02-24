@@ -10,5 +10,6 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
         public abstract void Visit(CosmosDiagnosticsContext cosmosDiagnosticsContext);
         public abstract void Visit(CosmosDiagnosticScope cosmosDiagnosticScope);
         public abstract void Visit(QueryPageDiagnostics queryPageDiagnostics);
+        public abstract void Visit(QueryPipelineDiagnostics queryPipelineDiagnostics);
     }
 }

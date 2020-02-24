@@ -166,7 +166,7 @@ namespace Microsoft.Azure.Cosmos
                 schedulingStopwatch);
         }
 
-        internal override async Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
+        internal override async Task<(PartitionedQueryExecutionInfo, CosmosDiagnosticsContext)> ExecuteQueryPlanRequestAsync(
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
@@ -176,6 +176,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
+            CosmosDiagnosticsContext diagnosticsContext;
             using (ResponseMessage message = await this.clientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: resourceUri,
                 resourceType: resourceType,
@@ -198,9 +199,10 @@ namespace Microsoft.Azure.Cosmos
                 // Syntax exception are argument exceptions and thrown to the user.
                 message.EnsureSuccessStatusCode();
                 partitionedQueryExecutionInfo = this.clientContext.SerializerCore.FromStream<PartitionedQueryExecutionInfo>(message.Content);
+                diagnosticsContext = message.DiagnosticsContext;
             }
 
-            return partitionedQueryExecutionInfo;
+            return (partitionedQueryExecutionInfo, diagnosticsContext);
         }
 
         internal override Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesByEpkStringAsync(
@@ -292,7 +294,8 @@ namespace Microsoft.Azure.Cosmos
                         errorMessage: cosmosResponseMessage.ErrorMessage,
                         requestCharge: cosmosResponseMessage.Headers.RequestCharge,
                         activityId: cosmosResponseMessage.Headers.ActivityId,
-                        diagnostics: pageDiagnostics);
+                        diagnostics: pageDiagnostics,
+                        pipelineDiagnostics: null);
                 }
 
                 if (!(cosmosResponseMessage.Content is MemoryStream memoryStream))
@@ -315,7 +318,8 @@ namespace Microsoft.Azure.Cosmos
                     diagnostics: pageDiagnostics,
                     responseLengthBytes: responseLengthBytes,
                     disallowContinuationTokenMessage: null,
-                    continuationToken: cosmosResponseMessage.Headers.ContinuationToken);
+                    continuationToken: cosmosResponseMessage.Headers.ContinuationToken,
+                    pipelineDiagnostics: null);
             }
         }
 

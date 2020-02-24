@@ -215,6 +215,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     requestCharge: 42,
                     activityId: "AA470D71-6DEF-4D61-9A08-272D8C9ABCFE",
                     diagnostics: pageDiagnostics,
+                    pipelineDiagnostics: null,
                     responseLengthBytes: 500,
                     disallowContinuationTokenMessage: null,
                     continuationToken: "TestToken")));
@@ -272,7 +273,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     errorMessage: "Error message",
                     requestCharge: 10.2,
                     activityId: Guid.NewGuid().ToString(),
-                    diagnostics: pageDiagnostics)));
+                    diagnostics: pageDiagnostics,
+                    pipelineDiagnostics: null)));
 
             await itemProducerTree.BufferMoreDocumentsAsync(cancellationTokenSource.Token);
 

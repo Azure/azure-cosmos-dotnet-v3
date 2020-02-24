@@ -336,6 +336,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     activityId: queryResponse.ActivityId,
                     requestCharge: queryResponse.RequestCharge,
                     diagnostics: queryResponse.Diagnostics,
+                    pipelineDiagnostics: queryResponse.PipelineDiagnostics,
                     responseLengthBytes: queryResponse.ResponseLengthBytes);
             }
             catch (Exception)

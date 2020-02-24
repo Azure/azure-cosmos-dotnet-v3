@@ -29,6 +29,8 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract void AddDiagnosticsInternal(PointOperationStatistics pointOperationStatistics);
 
+        internal abstract void AddDiagnosticsInternal(QueryPipelineDiagnostics queryPipelineDiagnostics);
+
         internal abstract void AddDiagnosticsInternal(QueryPageDiagnostics queryPageDiagnostics);
 
         internal abstract void AddDiagnosticsInternal(CosmosDiagnosticsContext newContext);

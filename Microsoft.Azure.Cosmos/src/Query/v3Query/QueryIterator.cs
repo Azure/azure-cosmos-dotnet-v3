@@ -90,6 +90,16 @@ namespace Microsoft.Azure.Cosmos.Query
                 QueryResponseCore responseCore = await this.cosmosQueryExecutionContext.ExecuteNextAsync(cancellationToken);
                 CosmosQueryContext cosmosQueryContext = this.cosmosQueryContext;
 
+                if (responseCore.PipelineDiagnostics != null)
+                {
+                    if (responseCore.PipelineDiagnostics.QueryPlanFromGatewayDiagnostics != null)
+                    {
+                        diagnostics.AddDiagnosticsInternal(responseCore.PipelineDiagnostics.QueryPlanFromGatewayDiagnostics);
+                    }
+                    
+                    diagnostics.AddDiagnosticsInternal(responseCore.PipelineDiagnostics);
+                }
+
                 foreach (QueryPageDiagnostics queryPage in responseCore.Diagnostics)
                 {
                     diagnostics.AddDiagnosticsInternal(queryPage);

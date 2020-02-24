@@ -71,6 +71,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     activityId: activityId,
                     requestCharge: requestCharge,
                     diagnostics: diagnostics,
+                    pipelineDiagnostics: null,
                     responseLengthBytes: responseLengthBytes);
 
             return (message, items);
@@ -128,6 +129,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     requestCharge: 4,
                     activityId: Guid.NewGuid().ToString(),
                     diagnostics: diagnostics,
+                    pipelineDiagnostics: null,
                     responseLengthBytes: responseLengthBytes,
                     disallowContinuationTokenMessage: null,
                     continuationToken: continuationToken);
@@ -171,6 +173,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                statusCode: httpStatusCode,
                subStatusCodes: subStatusCodes,
                errorMessage: errorMessage,
+               pipelineDiagnostics: null,
                requestCharge: 10.4,
                activityId: Guid.NewGuid().ToString(),
                diagnostics: diagnostics);

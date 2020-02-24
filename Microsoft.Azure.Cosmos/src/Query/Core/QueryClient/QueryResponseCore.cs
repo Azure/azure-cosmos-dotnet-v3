@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
     using System.Net;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Diagnostics;
-    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using SubStatusCodes = Documents.SubStatusCodes;
 
 #if INTERNAL
@@ -32,6 +31,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             double requestCharge,
             string activityId,
             IReadOnlyCollection<QueryPageDiagnostics> diagnostics,
+            QueryPipelineDiagnostics pipelineDiagnostics,
             long responseLengthBytes,
             string disallowContinuationTokenMessage,
             string continuationToken,
@@ -43,6 +43,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             this.StatusCode = statusCode;
             this.ActivityId = activityId;
             this.Diagnostics = diagnostics ?? throw new ArgumentNullException(nameof(diagnostics));
+            this.PipelineDiagnostics = pipelineDiagnostics;
             this.ResponseLengthBytes = responseLengthBytes;
             this.RequestCharge = requestCharge;
             this.DisallowContinuationTokenMessage = disallowContinuationTokenMessage;
@@ -69,6 +70,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
 
         internal IReadOnlyCollection<QueryPageDiagnostics> Diagnostics { get; }
 
+        internal QueryPipelineDiagnostics PipelineDiagnostics { get; }
+
         internal long ResponseLengthBytes { get; }
 
         internal bool IsSuccess { get; }
@@ -80,7 +83,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             long responseLengthBytes,
             string disallowContinuationTokenMessage,
             string continuationToken,
-            IReadOnlyCollection<QueryPageDiagnostics> diagnostics)
+            IReadOnlyCollection<QueryPageDiagnostics> diagnostics,
+            QueryPipelineDiagnostics pipelineDiagnostics)
         {
             QueryResponseCore cosmosQueryResponse = new QueryResponseCore(
                result: result,
@@ -89,6 +93,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
                requestCharge: requestCharge,
                activityId: activityId,
                diagnostics: diagnostics,
+               pipelineDiagnostics: pipelineDiagnostics,
                responseLengthBytes: responseLengthBytes,
                disallowContinuationTokenMessage: disallowContinuationTokenMessage,
                continuationToken: continuationToken,
@@ -104,7 +109,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             string errorMessage,
             double requestCharge,
             string activityId,
-            IReadOnlyCollection<QueryPageDiagnostics> diagnostics)
+            IReadOnlyCollection<QueryPageDiagnostics> diagnostics,
+            QueryPipelineDiagnostics pipelineDiagnostics)
         {
             QueryResponseCore cosmosQueryResponse = new QueryResponseCore(
                 result: QueryResponseCore.EmptyList,
@@ -113,6 +119,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
                 requestCharge: requestCharge,
                 activityId: activityId,
                 diagnostics: diagnostics,
+                pipelineDiagnostics: pipelineDiagnostics,
                 responseLengthBytes: 0,
                 disallowContinuationTokenMessage: null,
                 continuationToken: null,
@@ -120,6 +127,26 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
                 subStatusCode: subStatusCodes);
 
             return cosmosQueryResponse;
+        }
+
+        internal static QueryResponseCore CreateWithDiagnostics(
+            QueryResponseCore queryResponse,
+            IReadOnlyCollection<QueryPageDiagnostics> queryPageDiagnostics,
+            QueryPipelineDiagnostics pipelineDiagnostics)
+        {
+            return new QueryResponseCore(
+                result: queryResponse.CosmosElements,
+                isSuccess: queryResponse.IsSuccess,
+                statusCode: queryResponse.StatusCode,
+                requestCharge: queryResponse.RequestCharge,
+                activityId: queryResponse.ActivityId,
+                diagnostics: queryPageDiagnostics,
+                pipelineDiagnostics: pipelineDiagnostics,
+                responseLengthBytes: queryResponse.ResponseLengthBytes,
+                disallowContinuationTokenMessage: queryResponse.DisallowContinuationTokenMessage,
+                continuationToken: queryResponse.ContinuationToken,
+                errorMessage: queryResponse.ErrorMessage,
+                subStatusCode: queryResponse.SubStatusCode);
         }
     }
 }

@@ -729,6 +729,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             "Max Item Count is not being honored");
                     }
 
+                    string diagnostics = page.Diagnostics.ToString();
+
                     try
                     {
                         continuationTokenForRetries = page.ContinuationToken;
@@ -5113,7 +5115,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 return this.forceQueryPlanGatewayElseServiceInterop;
             }
 
-            internal override Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
+            internal override Task<(PartitionedQueryExecutionInfo, CosmosDiagnosticsContext)> ExecuteQueryPlanRequestAsync(
                 Uri resourceUri,
                 ResourceType resourceType,
                 OperationType operationType,

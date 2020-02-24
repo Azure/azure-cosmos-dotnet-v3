@@ -304,7 +304,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
                 responseLengthBytes: this.GetAndResetResponseLengthBytes(),
                 disallowContinuationTokenMessage: null,
                 continuationToken: this.ContinuationToken,
-                diagnostics: this.GetAndResetDiagnostics());
+                diagnostics: this.GetAndResetDiagnostics(),
+                pipelineDiagnostics: null);
         }
 
         /// <summary>

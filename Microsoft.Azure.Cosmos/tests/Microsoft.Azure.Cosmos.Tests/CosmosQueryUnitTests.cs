@@ -361,12 +361,13 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
 
             QueryResponseCore failure = QueryResponseCore.CreateFailure(
-                System.Net.HttpStatusCode.Unauthorized,
-                SubStatusCodes.PartitionKeyMismatch,
-                "Random error message",
-                42.89,
-                "TestActivityId",
-                diagnostics);
+                statusCode: System.Net.HttpStatusCode.Unauthorized,
+                subStatusCodes: SubStatusCodes.PartitionKeyMismatch,
+                errorMessage: "Random error message",
+                requestCharge: 42.89,
+                activityId: "TestActivityId",
+                diagnostics: diagnostics,
+                pipelineDiagnostics: null);
 
             Mock<IDocumentQueryExecutionComponent> baseContext = new Mock<IDocumentQueryExecutionComponent>();
             baseContext.Setup(x => x.DrainAsync(It.IsAny<int>(), It.IsAny<CancellationToken>())).Returns(Task.FromResult<QueryResponseCore>(failure));
