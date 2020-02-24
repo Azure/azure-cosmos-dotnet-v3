@@ -13,37 +13,37 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Moq;
 
     [TestClass]
-    public class ReadFeedTokenIteratorCoreTests
+    public class ReadFeedIteratorCoreTests
     {
         [TestMethod]
-        public void ReadFeedTokenIteratorCore_HasMoreResultsDefault()
+        public void ReadFeedIteratorCore_HasMoreResultsDefault()
         {
-            FeedTokenIteratorCore feedTokenIterator = new FeedTokenIteratorCore(Mock.Of<ContainerCore>(), new Uri("http://localhost"), Documents.ResourceType.Document, null, null, null, new QueryRequestOptions());
+            FeedIteratorCore feedTokenIterator = new FeedIteratorCore(Mock.Of<ContainerCore>(), new Uri("http://localhost"), Documents.ResourceType.Document, null, null, null, new QueryRequestOptions());
             Assert.IsTrue(feedTokenIterator.HasMoreResults);
         }
 
         [TestMethod]
-        public void ReadFeedTokenIteratorCore_FeedToken()
+        public void ReadFeedIteratorCore_FeedToken()
         {
             FeedTokenInternal feedToken = Mock.Of<FeedTokenInternal>();
-            FeedTokenIteratorCore feedTokenIterator = new FeedTokenIteratorCore(Mock.Of<ContainerCore>(), new Uri("http://localhost"), Documents.ResourceType.Document, null, null, feedToken, new QueryRequestOptions());
+            FeedIteratorCore feedTokenIterator = new FeedIteratorCore(Mock.Of<ContainerCore>(), new Uri("http://localhost"), Documents.ResourceType.Document, null, null, feedToken, new QueryRequestOptions());
             Assert.AreEqual(feedToken, feedTokenIterator.FeedToken);
         }
 
         [TestMethod]
-        public void ReadFeedTokenIteratorCore_TryGetContinuation()
+        public void ReadFeedIteratorCore_TryGetContinuation()
         {
             string continuation = Guid.NewGuid().ToString();
             FeedTokenInternal feedToken = Mock.Of<FeedTokenInternal>();
             Mock.Get(feedToken)
                 .Setup(f => f.GetContinuation()).Returns(continuation);
-            FeedTokenIteratorCore feedTokenIterator = new FeedTokenIteratorCore(Mock.Of<ContainerCore>(), new Uri("http://localhost"), Documents.ResourceType.Document, null, null, feedToken, new QueryRequestOptions());
+            FeedIteratorCore feedTokenIterator = new FeedIteratorCore(Mock.Of<ContainerCore>(), new Uri("http://localhost"), Documents.ResourceType.Document, null, null, feedToken, new QueryRequestOptions());
             Assert.IsTrue(feedTokenIterator.TryGetContinuationToken(out string state));
             Assert.AreEqual(continuation, state);
         }
 
         [TestMethod]
-        public async Task ReadFeedTokenIteratorCore_ReadNextAsync()
+        public async Task ReadFeedIteratorCore_ReadNextAsync()
         {
             string continuation = "TBD";
             ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.OK);
@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .Setup(f => f.IsDone)
                 .Returns(true);
 
-            FeedTokenIteratorCore feedTokenIterator = new FeedTokenIteratorCore(containerCore, new Uri("http://localhost"), Documents.ResourceType.Document, null, null, feedToken, new QueryRequestOptions());
+            FeedIteratorCore feedTokenIterator = new FeedIteratorCore(containerCore, new Uri("http://localhost"), Documents.ResourceType.Document, null, null, feedToken, new QueryRequestOptions());
             ResponseMessage response = await feedTokenIterator.ReadNextAsync();
 
             Assert.AreEqual(feedToken, feedTokenIterator.FeedToken);
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public async Task ReadFeedTokenIteratorCore_OfT_ReadNextAsync()
+        public async Task ReadFeedIteratorCore_OfT_ReadNextAsync()
         {
             string continuation = "TBD";
             ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.OK);
@@ -138,7 +138,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .Setup(f => f.IsDone)
                 .Returns(true);
 
-            FeedTokenIteratorCore feedTokenIterator = new FeedTokenIteratorCore(containerCore, new Uri("http://localhost"), Documents.ResourceType.Document, null, null, feedToken, new QueryRequestOptions());
+            FeedIteratorCore feedTokenIterator = new FeedIteratorCore(containerCore, new Uri("http://localhost"), Documents.ResourceType.Document, null, null, feedToken, new QueryRequestOptions());
             bool creatorCalled = false;
             Func<ResponseMessage, FeedResponse<dynamic>> creator = (ResponseMessage r) =>
             {
@@ -161,7 +161,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public async Task ReadFeedTokenIteratorCore_UpdatesContinuation_OnOK()
+        public async Task ReadFeedIteratorCore_UpdatesContinuation_OnOK()
         {
             string continuation = "TBD";
             ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.OK);
@@ -201,7 +201,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .Setup(f => f.IsDone)
                 .Returns(true);
 
-            FeedIterator feedTokenIterator = new FeedTokenIteratorCore(containerCore, new Uri("http://localhost"), Documents.ResourceType.Document, null, null, feedToken, new QueryRequestOptions());
+            FeedIterator feedTokenIterator = new FeedIteratorCore(containerCore, new Uri("http://localhost"), Documents.ResourceType.Document, null, null, feedToken, new QueryRequestOptions());
             ResponseMessage response = await feedTokenIterator.ReadNextAsync();
 
             Mock.Get(feedToken)
@@ -215,7 +215,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public async Task ReadFeedTokenIteratorCore_DoesNotUpdateContinuation_OnError()
+        public async Task ReadFeedIteratorCore_DoesNotUpdateContinuation_OnError()
         {
             string continuation = "TBD";
             ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.Gone);
@@ -255,7 +255,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .Setup(f => f.IsDone)
                 .Returns(true);
 
-            FeedIterator feedTokenIterator = new FeedTokenIteratorCore(containerCore, new Uri("http://localhost"), Documents.ResourceType.Document, null, null, feedToken, new QueryRequestOptions());
+            FeedIterator feedTokenIterator = new FeedIteratorCore(containerCore, new Uri("http://localhost"), Documents.ResourceType.Document, null, null, feedToken, new QueryRequestOptions());
             ResponseMessage response = await feedTokenIterator.ReadNextAsync();
 
             Mock.Get(feedToken)

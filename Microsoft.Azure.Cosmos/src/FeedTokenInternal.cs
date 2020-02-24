@@ -19,11 +19,6 @@ namespace Microsoft.Azure.Cosmos
 
         public FeedTokenInternal(string containerRid)
         {
-            if (string.IsNullOrEmpty(containerRid))
-            {
-                throw new ArgumentNullException(nameof(containerRid));
-            }
-
             this.ContainerRid = containerRid;
         }
 

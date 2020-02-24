@@ -219,6 +219,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 sqlQuerySpec: querySpec,
                 isContinuationExcpected: isContinuationExcpected,
                 continuationToken: this.continuationToken,
+                feedTokenInternal: null,
                 requestOptions: this.cosmosQueryRequestOptions);
         }
 

@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.IO;
-    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core;
@@ -14,10 +13,11 @@ namespace Microsoft.Azure.Cosmos
     using static Microsoft.Azure.Documents.RuntimeConstants;
 
     /// <summary>
-    /// Cosmos feed stream iterator for non-partitioned resources
+    /// Cosmos feed stream iterator for ReadFeed operations
     /// </summary>
     internal class FeedIteratorCore : FeedIteratorInternal
     {
+        private readonly ContainerCore containerCore;
         private readonly CosmosClientContext clientContext;
         private readonly Uri resourceLink;
         private readonly ResourceType resourceType;
@@ -25,6 +25,9 @@ namespace Microsoft.Azure.Cosmos
         private bool hasMoreResultsInternal;
         private FeedTokenInternal feedTokenInternal;
 
+        /// <summary>
+        /// For non-partitioned resources
+        /// </summary>
         internal FeedIteratorCore(
             CosmosClientContext clientContext,
             Uri resourceLink,
@@ -36,6 +39,29 @@ namespace Microsoft.Azure.Cosmos
         {
             this.resourceLink = resourceLink;
             this.clientContext = clientContext;
+            this.resourceType = resourceType;
+            this.querySpec = queryDefinition?.ToSqlQuerySpec();
+            this.feedTokenInternal = feedTokenInternal;
+            this.continuationToken = continuationToken ?? this.feedTokenInternal?.GetContinuation();
+            this.requestOptions = options;
+            this.hasMoreResultsInternal = true;
+        }
+
+        /// <summary>
+        /// For partitioned resources
+        /// </summary>
+        internal FeedIteratorCore(
+            ContainerCore containerCore,
+            Uri resourceLink,
+            ResourceType resourceType,
+            QueryDefinition queryDefinition,
+            string continuationToken,
+            FeedTokenInternal feedTokenInternal,
+            QueryRequestOptions options)
+        {
+            this.resourceLink = resourceLink;
+            this.containerCore = containerCore;
+            this.clientContext = containerCore.ClientContext;
             this.resourceType = resourceType;
             this.querySpec = queryDefinition?.ToSqlQuerySpec();
             this.feedTokenInternal = feedTokenInternal;
@@ -80,9 +106,15 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.feedTokenInternal == null)
             {
+                string containerRId = string.Empty;
+                if (this.containerCore != null)
+                {
+                    containerRId = await this.containerCore.GetRIDAsync(cancellationToken);
+                }
+
                 // Create FeedToken for the full Range
                 this.feedTokenInternal = new FeedTokenEPKRange(
-                    string.Empty,
+                    containerRId,
                     new PartitionKeyRange()
                     {
                         MinInclusive = Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
@@ -118,6 +150,12 @@ namespace Microsoft.Azure.Cosmos
                cancellationToken: cancellationToken);
 
             // Cannot be split-proof as this Iterator is for non-partitioned resources
+            // Retry in case of splits or other scenarios
+            if (this.containerCore != null
+                && await this.feedTokenInternal.ShouldRetryAsync(this.containerCore, response, cancellationToken))
+            {
+                return await this.ReadNextAsync(cancellationToken);
+            }
 
             if (response.IsSuccessStatusCode)
             {

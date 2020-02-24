@@ -247,6 +247,7 @@ namespace Microsoft.Azure.Cosmos
                 sqlQuerySpec: queryDefinition?.ToSqlQuerySpec(),
                 isContinuationExcpected: true,
                 continuationToken: continuationToken,
+                feedTokenInternal: null,
                 requestOptions: requestOptions);
         }
 
@@ -404,7 +405,8 @@ namespace Microsoft.Azure.Cosmos
             return this.GetItemQueryStreamIteratorInternal(
                 sqlQuerySpec: queryDefinition?.ToSqlQuerySpec(),
                 isContinuationExcpected: true,
-                feedToken: feedTokenInternal,
+                continuationToken: null,
+                feedTokenInternal: feedTokenInternal,
                 requestOptions: requestOptions);
         }
 
@@ -500,6 +502,7 @@ namespace Microsoft.Azure.Cosmos
             SqlQuerySpec sqlQuerySpec,
             bool isContinuationExcpected,
             string continuationToken,
+            FeedTokenInternal feedTokenInternal,
             QueryRequestOptions requestOptions)
         {
             requestOptions = requestOptions ?? new QueryRequestOptions();
@@ -511,13 +514,13 @@ namespace Microsoft.Azure.Cosmos
 
             if (sqlQuerySpec == null)
             {
-                return new FeedTokenIteratorCore(
+                return new FeedIteratorCore(
                     this,
                     this.LinkUri,
                     resourceType: ResourceType.Document,
                     queryDefinition: null,
                     continuationToken: continuationToken,
-                    feedTokenInternal: null,
+                    feedTokenInternal: feedTokenInternal,
                     options: requestOptions);
             }
 
@@ -530,34 +533,6 @@ namespace Microsoft.Azure.Cosmos
                 isContinuationExpected: isContinuationExcpected,
                 allowNonValueAggregateQuery: true,
                 partitionedQueryExecutionInfo: null);
-        }
-
-        internal FeedIterator GetItemQueryStreamIteratorInternal(
-            SqlQuerySpec sqlQuerySpec,
-            bool isContinuationExcpected,
-            FeedTokenInternal feedToken,
-            QueryRequestOptions requestOptions)
-        {
-            requestOptions = requestOptions ?? new QueryRequestOptions();
-
-            if (requestOptions.IsEffectivePartitionKeyRouting)
-            {
-                requestOptions.PartitionKey = null;
-            }
-
-            if (sqlQuerySpec == null)
-            {
-                return new FeedTokenIteratorCore(
-                    this,
-                    this.LinkUri,
-                    resourceType: ResourceType.Document,
-                    queryDefinition: null,
-                    feedTokenInternal: feedToken,
-                    continuationToken: null,
-                    options: requestOptions);
-            }
-
-            return null;
         }
 
         // Extracted partition key might be invalid as CollectionCache might be stale.
