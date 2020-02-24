@@ -396,6 +396,36 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
+        FeedIterator<T> GetItemQueryIterator<T>(
+            QueryDefinition queryDefinition,
+            FeedToken feedToken,
+            QueryRequestOptions requestOptions = null)
+        {
+            requestOptions = requestOptions ?? new QueryRequestOptions();
+
+            if (requestOptions.IsEffectivePartitionKeyRouting)
+            {
+                requestOptions.PartitionKey = null;
+            }
+
+            if (!(this.GetItemQueryStreamIterator(
+                queryDefinition,
+                feedToken,
+                requestOptions) is FeedIteratorInternal feedIterator))
+            {
+                throw new InvalidOperationException($"Expected a FeedIteratorInternal.");
+            }
+
+            return new FeedIteratorCore<T>(
+                feedIterator: feedIterator,
+                responseCreator: this.ClientContext.ResponseFactory.CreateQueryFeedUserTypeResponse<T>);
+        }
+
+#if PREVIEW
+        public override
+#else
+        internal
+#endif
         FeedIterator GetItemQueryStreamIterator(
             QueryDefinition queryDefinition,
             FeedToken feedToken,
