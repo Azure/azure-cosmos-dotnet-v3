@@ -94,13 +94,24 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A query response from cosmos service</returns>
-        public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
+        public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
+        {
+            CosmosDiagnosticsContext diagnostics = CosmosDiagnosticsContext.Create(this.requestOptions);
+            using (diagnostics.CreateScope("QueryReadNextAsync"))
+            {
+                return this.ReadNextInternalAsync(diagnostics, cancellationToken);
+            }
+        }
+
+        private async Task<ResponseMessage> ReadNextInternalAsync(
+            CosmosDiagnosticsContext diagnostics,
+            CancellationToken cancellationToken = default)
         {
             Stream stream = null;
             OperationType operation = OperationType.ReadFeed;
             if (this.querySpec != null)
             {
-                stream = this.clientContext.SerializerCore.ToStreamSqlQuerySpec(this.querySpec, this.resourceType);    
+                stream = this.clientContext.SerializerCore.ToStreamSqlQuerySpec(this.querySpec, this.resourceType);
                 operation = OperationType.Query;
             }
 
@@ -146,7 +157,7 @@ namespace Microsoft.Azure.Cosmos
 
                    this.feedTokenInternal?.EnrichRequest(request);
                },
-               diagnosticsScope: null,
+               diagnosticsScope: diagnostics,
                cancellationToken: cancellationToken);
 
             // Cannot be split-proof as this Iterator is for non-partitioned resources
@@ -154,7 +165,7 @@ namespace Microsoft.Azure.Cosmos
             if (this.containerCore != null
                 && await this.feedTokenInternal.ShouldRetryAsync(this.containerCore, response, cancellationToken))
             {
-                return await this.ReadNextAsync(cancellationToken);
+                return await this.ReadNextInternalAsync(diagnostics, cancellationToken);
             }
 
             if (response.IsSuccessStatusCode)
