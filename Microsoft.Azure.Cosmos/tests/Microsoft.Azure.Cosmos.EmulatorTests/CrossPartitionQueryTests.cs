@@ -1539,16 +1539,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             foreach (bool isGatewayQueryPlan in new bool[] { true, false })
             {
-                MockCosmosQueryClient cosmosQueryClientCore = new MockCosmosQueryClient(
-                    containerCore.ClientContext,
-                    containerCore,
-                    isGatewayQueryPlan);
-
-                ContainerCore containerWithForcedPlan = new ContainerCore(
-                    containerCore.ClientContext,
-                    (DatabaseCore)containerCore.Database,
-                    containerCore.Id,
-                    cosmosQueryClientCore);
+                ContainerCore containerWithForcedPlan = QueryHelper.GetContainerWithForcedGatewayQueryPlan(containerCore);
 
                 int numOfQueries = 0;
                 foreach (int maxDegreeOfParallelism in new int[] { 1, 100 })
@@ -1570,15 +1561,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                         Assert.AreEqual(documents.Count(), queryResults.Count);
                     }
-                }
-
-                if (isGatewayQueryPlan)
-                {
-                    Assert.IsTrue(cosmosQueryClientCore.QueryPlanCalls > numOfQueries);
-                }
-                else
-                {
-                    Assert.AreEqual(0, cosmosQueryClientCore.QueryPlanCalls, "ServiceInterop mode should not be calling gateway plan retriever");
                 }
             }
         }
@@ -5084,83 +5066,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 this.Pet = pet;
                 this.Guid = guid;
                 this.MixedTypeField = mixedTypeField;
-            }
-        }
-
-        /// <summary>
-        /// A helper that forces the SDK to use the gateway or the service interop for the query plan
-        /// </summary>
-        internal class MockCosmosQueryClient : CosmosQueryClientCore
-        {
-            /// <summary>
-            /// True it will use the gateway query plan.
-            /// False it will use the service interop
-            /// </summary>
-            private readonly bool forceQueryPlanGatewayElseServiceInterop;
-
-            public MockCosmosQueryClient(
-                CosmosClientContext clientContext,
-                ContainerCore cosmosContainerCore,
-                bool forceQueryPlanGatewayElseServiceInterop) : base(
-                    clientContext,
-                    cosmosContainerCore)
-            {
-                this.forceQueryPlanGatewayElseServiceInterop = forceQueryPlanGatewayElseServiceInterop;
-            }
-
-            public int QueryPlanCalls { get; private set; }
-
-            internal override bool ByPassQueryParsing()
-            {
-                return this.forceQueryPlanGatewayElseServiceInterop;
-            }
-
-            internal override Task<(PartitionedQueryExecutionInfo, CosmosDiagnosticsContext)> ExecuteQueryPlanRequestAsync(
-                Uri resourceUri,
-                ResourceType resourceType,
-                OperationType operationType,
-                SqlQuerySpec sqlQuerySpec,
-                Cosmos.PartitionKey? partitionKey,
-                string supportedQueryFeatures,
-                CancellationToken cancellationToken)
-            {
-                this.QueryPlanCalls++;
-                return base.ExecuteQueryPlanRequestAsync(
-                    resourceUri,
-                    resourceType,
-                    operationType,
-                    sqlQuerySpec,
-                    partitionKey,
-                    supportedQueryFeatures,
-                    cancellationToken);
-            }
-
-            internal override Task<QueryResponseCore> ExecuteItemQueryAsync<RequestOptionType>(
-                Uri resourceUri,
-                ResourceType resourceType,
-                OperationType operationType,
-                RequestOptionType requestOptions,
-                SqlQuerySpec sqlQuerySpec,
-                string continuationToken,
-                PartitionKeyRangeIdentity partitionKeyRange,
-                bool isContinuationExpected,
-                int pageSize,
-                SchedulingStopwatch schedulingStopwatch,
-                CancellationToken cancellationToken)
-            {
-                Assert.IsFalse(this.forceQueryPlanGatewayElseServiceInterop && this.QueryPlanCalls == 0, "Query Plan is force gateway mode, but no ExecuteQueryPlanRequestAsync have been called");
-                return base.ExecuteItemQueryAsync(
-                    resourceUri: resourceUri,
-                    resourceType: resourceType,
-                    operationType: operationType,
-                    requestOptions: requestOptions,
-                    sqlQuerySpec: sqlQuerySpec,
-                    continuationToken: continuationToken,
-                    partitionKeyRange: partitionKeyRange,
-                    isContinuationExpected: isContinuationExpected,
-                    pageSize: pageSize,
-                    schedulingStopwatch: schedulingStopwatch,
-                    cancellationToken: cancellationToken);
             }
         }
     }

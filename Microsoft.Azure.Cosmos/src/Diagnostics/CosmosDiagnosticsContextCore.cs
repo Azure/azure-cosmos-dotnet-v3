@@ -115,6 +115,11 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(queryPipelineDiagnostics));
             }
 
+            if (queryPipelineDiagnostics.QueryPlanFromGatewayDiagnostics != null)
+            {
+                this.AddSummaryInfo(queryPipelineDiagnostics.QueryPlanFromGatewayDiagnostics);
+            }
+
             this.ContextList.Add(queryPipelineDiagnostics);
         }
 

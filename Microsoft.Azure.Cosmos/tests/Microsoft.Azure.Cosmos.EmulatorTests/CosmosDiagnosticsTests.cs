@@ -201,9 +201,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [DataRow(true)]
-        [DataRow(false)]
-        public async Task QueryOperationDiagnostic(bool disableDiagnostics)
+        [DataRow(true, true)]
+        [DataRow(false, true)]
+        [DataRow(true, false)]
+        [DataRow(false, false)]
+        public async Task QueryOperationDiagnostic(
+            bool disableDiagnostics,
+            bool forceGatewayQueryPlan)
         {
             int totalItems = 3;
             IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(
@@ -216,28 +220,32 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             long totalOutputDocumentCount = await this.ExecuteQueryAndReturnOutputDocumentCount(
                 queryText: "select * from ToDoActivity",
                 expectedItemCount: totalItems,
-                disableDiagnostics: disableDiagnostics);
+                disableDiagnostics: disableDiagnostics,
+                forceGatewayQueryPlan: forceGatewayQueryPlan);
 
             Assert.AreEqual(totalItems, totalOutputDocumentCount);
 
             totalOutputDocumentCount = await this.ExecuteQueryAndReturnOutputDocumentCount(
                 queryText: "select * from ToDoActivity t ORDER BY t.cost",
                 expectedItemCount: totalItems,
-                disableDiagnostics: disableDiagnostics);
+                disableDiagnostics: disableDiagnostics,
+                forceGatewayQueryPlan: forceGatewayQueryPlan);
 
             Assert.AreEqual(totalItems, totalOutputDocumentCount);
 
             totalOutputDocumentCount = await this.ExecuteQueryAndReturnOutputDocumentCount(
                 queryText: "select DISTINCT t.cost from ToDoActivity t",
                 expectedItemCount: 1,
-                disableDiagnostics: disableDiagnostics);
+                disableDiagnostics: disableDiagnostics,
+                forceGatewayQueryPlan: forceGatewayQueryPlan);
 
             Assert.IsTrue(totalOutputDocumentCount >= 1);
 
             totalOutputDocumentCount = await this.ExecuteQueryAndReturnOutputDocumentCount(
                 queryText: "select * from ToDoActivity OFFSET 1 LIMIT 1",
                 expectedItemCount: 1,
-                disableDiagnostics: disableDiagnostics);
+                disableDiagnostics: disableDiagnostics,
+                forceGatewayQueryPlan: forceGatewayQueryPlan);
 
             Assert.IsTrue(totalOutputDocumentCount >= 1);
         }
@@ -272,7 +280,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public static void VerifyQueryDiagnostics(
             CosmosDiagnostics diagnostics,
             bool isFirstPage,
-            bool disableDiagnostics)
+            bool disableDiagnostics,
+            bool forceGatewayQueryPlan)
         {
             string info = diagnostics.ToString();
             if (disableDiagnostics)
@@ -290,6 +299,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             JArray contextList = jObject["Context"].ToObject<JArray>();
             Assert.IsTrue(contextList.Count > 0);
 
+            // Find the QueryPipelineDiagnostics object
+            JObject queryPipelineDiagnostics = GetJObjectInContextList(
+                contextList,
+                "QueryPipelineDiagnostics");
+
+            if (isFirstPage)
+            {
+                VerifyQueryPipelineDiagnostics(queryPipelineDiagnostics, forceGatewayQueryPlan);
+            }
+            else
+            {
+                Assert.IsNull(queryPipelineDiagnostics, "QueryPipelineDiagnostics should only be on the first page");
+            }
+
             // Find the PointOperationStatistics object
             JObject page = GetJObjectInContextList(
                 contextList,
@@ -306,6 +329,49 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(page["PKRangeId"].ToString());
                 JArray requestDiagnostics = page["Context"].ToObject<JArray>();
                 Assert.IsNotNull(requestDiagnostics);
+            }
+        }
+
+        public static void VerifyQueryPipelineDiagnostics(
+            JObject queryDiagnostics,
+            bool forceGatewayQueryPlan)
+        {
+            Assert.IsNotNull(queryDiagnostics, $"Context list does not contain PointOperationStatistics.");
+            JArray contextList = queryDiagnostics["Context"].ToObject<JArray>();
+            Assert.IsNotNull(contextList);
+
+            JObject queryDiagnostic = GetJObjectInContextList(
+                contextList,
+                "QueryPipelineCreation");
+            Assert.IsNotNull(queryDiagnostic.ToString());
+
+            queryDiagnostic = GetJObjectInContextList(
+                contextList,
+                "GetCachedContainerPropertiesAsync");
+            Assert.IsNotNull(queryDiagnostic.ToString());
+
+            queryDiagnostic = GetJObjectInContextList(
+                contextList,
+                "GetTargetPartitionKeyRangesAsync");
+            Assert.IsNotNull(queryDiagnostic.ToString());
+
+            queryDiagnostic = GetJObjectInContextList(
+                contextList,
+                "CreateExecutionContext");
+
+            Assert.IsNotNull(queryDiagnostic.ToString());
+
+            if (forceGatewayQueryPlan)
+            {
+                Assert.IsNotNull(GetJObjectInContextList(
+                contextList,
+                "GetQueryPlanWithGateway").ToString());
+            }
+            else
+            {
+                Assert.IsNotNull(GetJObjectInContextList(
+                contextList,
+                "GetQueryPlanWithServiceInterop").ToString());
             }
         }
 
@@ -426,7 +492,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return jObject["Value"].ToObject<JObject>();
         }
 
-        private async Task<long> ExecuteQueryAndReturnOutputDocumentCount(string queryText, int expectedItemCount, bool disableDiagnostics)
+        private async Task<long> ExecuteQueryAndReturnOutputDocumentCount(
+            string queryText,
+            int expectedItemCount,
+            bool disableDiagnostics,
+            bool forceGatewayQueryPlan)
         {
             QueryDefinition sql = new QueryDefinition(queryText);
 
@@ -437,8 +507,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 DiagnosticContext = disableDiagnostics ? EmptyCosmosDiagnosticsContext.Singleton : null
             };
 
+            Container containerForQuery;
+            if (forceGatewayQueryPlan)
+            {
+                containerForQuery = QueryHelper.GetContainerWithForcedGatewayQueryPlan(
+                    (ContainerInlineCore)this.Container);
+            }
+            else
+            {
+                containerForQuery = this.Container;
+            }
+
             // Verify the typed query iterator
-            FeedIterator<ToDoActivity> feedIterator = this.Container.GetItemQueryIterator<ToDoActivity>(
+            FeedIterator<ToDoActivity> feedIterator = containerForQuery.GetItemQueryIterator<ToDoActivity>(
                     sql,
                     requestOptions: requestOptions);
 
@@ -449,14 +530,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 FeedResponse<ToDoActivity> response = await feedIterator.ReadNextAsync();
                 results.AddRange(response);
-                VerifyQueryDiagnostics(response.Diagnostics, isFirst, disableDiagnostics);
+                VerifyQueryDiagnostics(
+                    response.Diagnostics,
+                    isFirst,
+                    disableDiagnostics,
+                    forceGatewayQueryPlan);
+
                 isFirst = false;
             }
 
             Assert.AreEqual(expectedItemCount, results.Count);
 
             // Verify the stream query iterator
-            FeedIterator streamIterator = this.Container.GetItemQueryStreamIterator(
+            FeedIterator streamIterator = containerForQuery.GetItemQueryStreamIterator(
                    sql,
                    requestOptions: requestOptions);
 
@@ -468,7 +554,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ResponseMessage response = await streamIterator.ReadNextAsync();
                 Collection<ToDoActivity> result = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(response.Content).Data;
                 streamResults.AddRange(result);
-                VerifyQueryDiagnostics(response.Diagnostics, isFirst, disableDiagnostics);
+                VerifyQueryDiagnostics(
+                    response.Diagnostics,
+                    isFirst,
+                    disableDiagnostics,
+                    forceGatewayQueryPlan);
+
                 isFirst = false;
             }
 

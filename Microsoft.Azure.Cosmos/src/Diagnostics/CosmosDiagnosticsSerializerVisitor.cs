@@ -164,6 +164,11 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             this.jsonWriter.WritePropertyName("Context");
             this.jsonWriter.WriteStartArray();
 
+            if (queryPipelineDiagnostics.QueryPlanFromGatewayDiagnostics != null)
+            {
+                queryPipelineDiagnostics.QueryPlanFromGatewayDiagnostics.Accept(this);
+            }
+
             foreach (CosmosDiagnosticScope scope in queryPipelineDiagnostics.QueryPipelineCreationScopes)
             {
                 scope.Accept(this);

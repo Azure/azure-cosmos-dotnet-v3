@@ -130,7 +130,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 {
                     if (cosmosQueryContext.QueryClient.ByPassQueryParsing())
                     {
-                        using (diagnosticBuilder.CreateScope("GetQueryPlanThroughGateway"))
+                        using (diagnosticBuilder.CreateScope("GetQueryPlanWithGateway"))
                         {
                             // For non-Windows platforms(like Linux and OSX) in .NET Core SDK, we cannot use ServiceInterop, so need to bypass in that case.
                             // We are also now bypassing this for 32 bit host process running even on Windows as there are many 32 bit apps that will not work without this
@@ -182,14 +182,29 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     }
                 }
 
-                TryCatch<CosmosQueryExecutionContext> tryCreateExcutionInfo = await TryCreateFromPartitionedQueryExecutionInfoAsync(
-                    partitionedQueryExecutionInfo,
-                    containerQueryProperties,
-                    cosmosQueryContext,
-                    inputParameters,
-                    cancellationToken);
+                List<Documents.PartitionKeyRange> targetRanges;
+                using (diagnosticBuilder.CreateScope("GetTargetPartitionKeyRangesAsync"))
+                {
+                   targetRanges = await CosmosQueryExecutionContextFactory.GetTargetPartitionKeyRangesAsync(
+                       cosmosQueryContext.QueryClient,
+                       cosmosQueryContext.ResourceLink.OriginalString,
+                       partitionedQueryExecutionInfo,
+                       containerQueryProperties,
+                       inputParameters.Properties);
+                }
 
-                return (tryCreateExcutionInfo, diagnosticBuilder.Build());
+                using (diagnosticBuilder.CreateScope("CreateExecutionContext"))
+                {
+                    TryCatch<CosmosQueryExecutionContext> tryCreateExcutionInfo = await TryCreateFromPartitionedQueryExecutionInfoAsync(
+                        partitionedQueryExecutionInfo,
+                        containerQueryProperties,
+                        cosmosQueryContext,
+                        targetRanges,
+                        inputParameters,
+                        cancellationToken);
+
+                    return (tryCreateExcutionInfo, diagnosticBuilder.Build());
+                }
             }
         }
 
@@ -197,17 +212,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
             ContainerQueryProperties containerQueryProperties,
             CosmosQueryContext cosmosQueryContext,
+            List<Documents.PartitionKeyRange> targetRanges,
             InputParameters inputParameters,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-
-            List<Documents.PartitionKeyRange> targetRanges = await CosmosQueryExecutionContextFactory.GetTargetPartitionKeyRangesAsync(
-                   cosmosQueryContext.QueryClient,
-                   cosmosQueryContext.ResourceLink.OriginalString,
-                   partitionedQueryExecutionInfo,
-                   containerQueryProperties,
-                   inputParameters.Properties);
 
             if (!string.IsNullOrEmpty(partitionedQueryExecutionInfo.QueryInfo.RewrittenQuery))
             {

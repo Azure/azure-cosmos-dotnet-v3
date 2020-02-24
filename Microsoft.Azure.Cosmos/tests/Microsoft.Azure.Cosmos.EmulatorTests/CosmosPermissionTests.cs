@@ -258,16 +258,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 // Test query with no service interop via gateway query plan to replicate x32 app
                 ContainerCore containerCore = (ContainerInlineCore)tokenContainer;
-                CrossPartitionQueryTests.MockCosmosQueryClient mock = new CrossPartitionQueryTests.MockCosmosQueryClient(
-                    clientContext: containerCore.ClientContext,
-                    cosmosContainerCore: containerCore,
-                    forceQueryPlanGatewayElseServiceInterop: true);
-
-                Container tokenGatewayQueryPlan = new ContainerCore(
-                    containerCore.ClientContext,
-                    (DatabaseCore)containerCore.Database,
-                    containerCore.Id,
-                    mock);
+                Container tokenGatewayQueryPlan = QueryHelper.GetContainerWithForcedGatewayQueryPlan(containerCore);
 
                 FeedIterator<ToDoActivity> feedIteratorGateway = tokenGatewayQueryPlan.GetItemQueryIterator<ToDoActivity>(
                     queryText: "select * from T",
