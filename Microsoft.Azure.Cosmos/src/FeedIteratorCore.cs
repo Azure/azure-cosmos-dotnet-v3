@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos
     using static Microsoft.Azure.Documents.RuntimeConstants;
 
     /// <summary>
-    /// Cosmos feed stream iterator. This is used to get the query responses with a Stream content
+    /// Cosmos feed stream iterator for non-partitioned resources
     /// </summary>
     internal class FeedIteratorCore : FeedIteratorInternal
     {
@@ -23,6 +23,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly ResourceType resourceType;
         private readonly SqlQuerySpec querySpec;
         private bool hasMoreResultsInternal;
+        private FeedTokenInternal feedTokenInternal;
 
         internal FeedIteratorCore(
             CosmosClientContext clientContext,
@@ -30,13 +31,15 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             QueryDefinition queryDefinition,
             string continuationToken,
+            FeedTokenInternal feedTokenInternal,
             QueryRequestOptions options)
         {
             this.resourceLink = resourceLink;
             this.clientContext = clientContext;
             this.resourceType = resourceType;
             this.querySpec = queryDefinition?.ToSqlQuerySpec();
-            this.continuationToken = continuationToken;
+            this.feedTokenInternal = feedTokenInternal;
+            this.continuationToken = continuationToken ?? this.feedTokenInternal?.GetContinuation();
             this.requestOptions = options;
             this.hasMoreResultsInternal = true;
         }
@@ -48,13 +51,7 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        FeedToken FeedToken => new FeedTokenEPKRange(
-                    string.Empty,
-                    new PartitionKeyRange()
-                    {
-                        MinInclusive = Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
-                        MaxExclusive = Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey
-                    });
+        FeedToken FeedToken => this.feedTokenInternal;
 
         /// <summary>
         /// The query options for the result set
@@ -81,6 +78,23 @@ namespace Microsoft.Azure.Cosmos
                 operation = OperationType.Query;
             }
 
+            if (this.feedTokenInternal == null)
+            {
+                // Create FeedToken for the full Range
+                this.feedTokenInternal = new FeedTokenEPKRange(
+                    string.Empty,
+                    new PartitionKeyRange()
+                    {
+                        MinInclusive = Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
+                        MaxExclusive = Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey
+                    });
+                // Initialize with the ContinuationToken that the user passed, if any
+                if (this.continuationToken != null)
+                {
+                    this.feedTokenInternal.UpdateContinuation(this.continuationToken);
+                }
+            }
+
             ResponseMessage response = await this.clientContext.ProcessResourceOperationStreamAsync(
                resourceUri: this.resourceLink,
                resourceType: this.resourceType,
@@ -97,12 +111,21 @@ namespace Microsoft.Azure.Cosmos
                        request.Headers.Add(HttpConstants.HttpHeaders.ContentType, MediaTypes.QueryJson);
                        request.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
                    }
+
+                   this.feedTokenInternal?.EnrichRequest(request);
                },
                diagnosticsScope: null,
                cancellationToken: cancellationToken);
 
-            this.continuationToken = response.Headers.ContinuationToken;
-            this.hasMoreResultsInternal = GetHasMoreResults(this.continuationToken, response.StatusCode);
+            // Cannot be split-proof as this Iterator is for non-partitioned resources
+
+            if (response.IsSuccessStatusCode)
+            {
+                this.feedTokenInternal.UpdateContinuation(response.Headers.ContinuationToken);
+            }
+
+            this.continuationToken = this.feedTokenInternal.GetContinuation();
+            this.hasMoreResultsInternal = !this.feedTokenInternal.IsDone;
             return response;
         }
 
@@ -110,19 +133,6 @@ namespace Microsoft.Azure.Cosmos
         {
             continuationToken = this.continuationToken;
             return true;
-        }
-
-        internal static string GetContinuationToken(ResponseMessage httpResponseMessage)
-        {
-            return httpResponseMessage.Headers.ContinuationToken;
-        }
-
-        internal static bool GetHasMoreResults(string continuationToken, HttpStatusCode statusCode)
-        {
-            // this logic might not be sufficient composite continuation token https://msdata.visualstudio.com/CosmosDB/SDK/_workitems/edit/269099
-            // in the case where this is a result set iterator for a change feed, not modified indicates that
-            // the enumeration is done for now.
-            return continuationToken != null && statusCode != HttpStatusCode.NotModified;
         }
     }
 

@@ -830,12 +830,13 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions requestOptions = null)
         {
             return new FeedIteratorCore(
-               this.ClientContext,
-               this.DatabaseRootUri,
-               ResourceType.Database,
-               queryDefinition,
-               continuationToken,
-               requestOptions);
+               clientContext: this.ClientContext,
+               resourceLink: this.DatabaseRootUri,
+               resourceType: ResourceType.Database,
+               queryDefinition: queryDefinition,
+               continuationToken: continuationToken,
+               feedTokenInternal: null, // Add FeedToken input support
+               options: requestOptions);
         }
 
         /// <summary>

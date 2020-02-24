@@ -76,12 +76,13 @@ namespace Microsoft.Azure.Cosmos.Scripts
             QueryRequestOptions requestOptions = null)
         {
             return new FeedIteratorCore(
-               this.clientContext,
+               clientContext: this.clientContext,
                this.container.LinkUri,
-               ResourceType.StoredProcedure,
-               queryDefinition,
-               continuationToken,
-               requestOptions);
+               resourceType: ResourceType.StoredProcedure,
+               queryDefinition: queryDefinition,
+               continuationToken: continuationToken,
+               feedTokenInternal: null, // Add FeedToken input support
+               options: requestOptions);
         }
 
         public override FeedIterator<T> GetStoredProcedureQueryIterator<T>(
@@ -288,12 +289,13 @@ namespace Microsoft.Azure.Cosmos.Scripts
             QueryRequestOptions requestOptions = null)
         {
             return new FeedIteratorCore(
-               this.clientContext,
+               clientContext: this.clientContext,
                this.container.LinkUri,
-               ResourceType.Trigger,
-               queryDefinition,
-               continuationToken,
-               requestOptions);
+               resourceType: ResourceType.Trigger,
+               queryDefinition: queryDefinition,
+               continuationToken: continuationToken,
+               feedTokenInternal: null, // Add FeedToken input support
+               options: requestOptions);
         }
 
         public override FeedIterator<T> GetTriggerQueryIterator<T>(
@@ -448,12 +450,13 @@ namespace Microsoft.Azure.Cosmos.Scripts
             QueryRequestOptions requestOptions = null)
         {
             return new FeedIteratorCore(
-               this.clientContext,
+               clientContext: this.clientContext,
                this.container.LinkUri,
-               ResourceType.UserDefinedFunction,
-               queryDefinition,
-               continuationToken,
-               requestOptions);
+               resourceType: ResourceType.UserDefinedFunction,
+               queryDefinition: queryDefinition,
+               continuationToken: continuationToken,
+               feedTokenInternal: null, // Add FeedToken input support
+               options: requestOptions);
         }
 
         public override FeedIterator<T> GetUserDefinedFunctionQueryIterator<T>(

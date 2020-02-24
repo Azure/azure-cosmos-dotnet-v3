@@ -229,12 +229,13 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions requestOptions = null)
         {
             return new FeedIteratorCore(
-               this.ClientContext,
+               clientContext: this.ClientContext,
                this.LinkUri,
-               ResourceType.Permission,
-               queryDefinition,
-               continuationToken,
-               requestOptions);
+               resourceType: ResourceType.Permission,
+               queryDefinition: queryDefinition,
+               continuationToken: continuationToken,
+               feedTokenInternal: null, // Add FeedToken input support
+               options: requestOptions);
         }
 
         public override FeedIterator<T> GetPermissionQueryIterator<T>(string queryText = null,

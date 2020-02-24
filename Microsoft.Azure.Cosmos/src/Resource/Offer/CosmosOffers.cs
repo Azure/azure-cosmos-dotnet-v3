@@ -185,6 +185,7 @@ namespace Microsoft.Azure.Cosmos
                resourceType: ResourceType.Offer,
                queryDefinition: queryDefinition,
                continuationToken: continuationToken,
+               feedTokenInternal: null, // Add FeedToken input support
                options: requestOptions);
         }
 

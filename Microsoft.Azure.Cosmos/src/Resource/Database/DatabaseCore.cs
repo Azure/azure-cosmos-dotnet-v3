@@ -400,12 +400,13 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions requestOptions = null)
         {
             return new FeedIteratorCore(
-               this.ClientContext,
-               this.LinkUri,
-               ResourceType.Collection,
-               queryDefinition,
-               continuationToken,
-               requestOptions);
+               clientContext: this.ClientContext,
+               resourceLink: this.LinkUri,
+               resourceType: ResourceType.Collection,
+               queryDefinition: queryDefinition,
+               continuationToken: continuationToken,
+               feedTokenInternal: null, // Add FeedToken input support
+               options: requestOptions);
         }
 
         public override FeedIterator<T> GetContainerQueryIterator<T>(
@@ -454,12 +455,13 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions requestOptions = null)
         {
             return new FeedIteratorCore(
-               this.ClientContext,
-               this.LinkUri,
-               ResourceType.User,
-               queryDefinition,
-               continuationToken,
-               requestOptions);
+               clientContext: this.ClientContext,
+               resourceLink: this.LinkUri,
+               resourceType: ResourceType.User,
+               queryDefinition: queryDefinition,
+               continuationToken: continuationToken,
+               feedTokenInternal: null, // Add FeedToken input support
+               options: requestOptions);
         }
 
         public override FeedIterator<T> GetUserQueryIterator<T>(string queryText = null,
@@ -587,12 +589,13 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return new FeedIteratorCore(
-                clientContext: this.ClientContext,
-                resourceLink: this.LinkUri,
-                resourceType: ResourceType.ClientEncryptionKey,
-                queryDefinition: null,
-                continuationToken: continuationToken,
-                options: requestOptions);
+               clientContext: this.ClientContext,
+               resourceLink: this.LinkUri,
+               resourceType: ResourceType.ClientEncryptionKey,
+               queryDefinition: null,
+               continuationToken: continuationToken,
+               feedTokenInternal: null, // Add FeedToken input support
+               options: requestOptions);
         }
 
 #if PREVIEW
