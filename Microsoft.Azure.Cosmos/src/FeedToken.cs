@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos
                 return feedToken;
             }
 
-            throw new ArgumentOutOfRangeException(nameof(toStringValue), ClientResources.FeedToken_UnknownFormat);
+            throw new ArgumentOutOfRangeException(nameof(toStringValue), string.Format(ClientResources.FeedToken_CannotParse, toStringValue));
         }
 
         /// <summary>

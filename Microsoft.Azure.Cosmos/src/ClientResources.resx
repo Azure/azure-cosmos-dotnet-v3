@@ -315,4 +315,7 @@
   <data name="FeedToken_UnrecognizedFeedToken" xml:space="preserve">
     <value>Unrecognized Feed Token type.</value>
   </data>
+  <data name="FeedToken_CannotParse" xml:space="preserve">
+    <value>Cannot parse '{0}' as a valid FeedToken.</value>
+  </data>
 </root>

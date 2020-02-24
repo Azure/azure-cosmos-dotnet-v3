@@ -322,6 +322,15 @@ namespace Microsoft.Azure.Cosmos {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Cannot parse &apos;{0}&apos; as a valid FeedToken..
+        /// </summary>
+        internal static string FeedToken_CannotParse {
+            get {
+                return ResourceManager.GetString("FeedToken_CannotParse", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Provide a value greater than zero..
         /// </summary>
         internal static string FeedToken_MaxTokensOutOfRange {
