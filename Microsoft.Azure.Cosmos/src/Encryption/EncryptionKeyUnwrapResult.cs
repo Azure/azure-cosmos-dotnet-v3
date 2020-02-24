@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Raw form of the data encryption key.
         /// </summary>
-        internal ReadOnlyMemory<byte> DataEncryptionKey => this.DataEncryptionKeyBytes;
+        public ReadOnlyMemory<byte> DataEncryptionKey => this.DataEncryptionKeyBytes;
 
         /// <summary>
         /// Amount of time after which the raw data encryption key must not be used
