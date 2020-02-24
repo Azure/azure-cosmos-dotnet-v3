@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Added
+- [#1123](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1123) Client encryption support Part 1 (towards Preview) 
 
 ### Fixed
 
