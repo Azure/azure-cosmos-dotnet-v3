@@ -397,8 +397,8 @@ namespace Microsoft.Azure.Cosmos
         internal
 #endif
         FeedIterator<T> GetItemQueryIterator<T>(
-            QueryDefinition queryDefinition,
             FeedToken feedToken,
+            QueryDefinition queryDefinition,
             QueryRequestOptions requestOptions = null)
         {
             requestOptions = requestOptions ?? new QueryRequestOptions();
@@ -409,8 +409,8 @@ namespace Microsoft.Azure.Cosmos
             }
 
             if (!(this.GetItemQueryStreamIterator(
-                queryDefinition,
                 feedToken,
+                queryDefinition,
                 requestOptions) is FeedIteratorInternal feedIterator))
             {
                 throw new InvalidOperationException($"Expected a FeedIteratorInternal.");
@@ -427,8 +427,8 @@ namespace Microsoft.Azure.Cosmos
         internal
 #endif
         FeedIterator GetItemQueryStreamIterator(
-            QueryDefinition queryDefinition,
             FeedToken feedToken,
+            QueryDefinition queryDefinition,            
             QueryRequestOptions requestOptions = null)
         {
             FeedTokenInternal feedTokenInternal = feedToken as FeedTokenInternal;
@@ -438,6 +438,50 @@ namespace Microsoft.Azure.Cosmos
                 continuationToken: null,
                 feedTokenInternal: feedTokenInternal,
                 requestOptions: requestOptions);
+        }
+
+#if PREVIEW
+        public override
+#else
+        internal
+#endif
+        FeedIterator<T> GetItemQueryIterator<T>(
+            FeedToken feedToken,
+            string queryText = null,
+            QueryRequestOptions requestOptions = null)
+        {
+            QueryDefinition queryDefinition = null;
+            if (queryText != null)
+            {
+                queryDefinition = new QueryDefinition(queryText);
+            }
+
+            return this.GetItemQueryIterator<T>(
+                feedToken,
+                queryDefinition,
+                requestOptions);
+        }
+
+#if PREVIEW
+        public override
+#else
+        internal
+#endif
+        FeedIterator GetItemQueryStreamIterator(
+            FeedToken feedToken,
+            string queryText = null,
+            QueryRequestOptions requestOptions = null)
+        {
+            QueryDefinition queryDefinition = null;
+            if (queryText != null)
+            {
+                queryDefinition = new QueryDefinition(queryText);
+            }
+
+            return this.GetItemQueryStreamIterator(
+                feedToken,
+                queryDefinition,
+                requestOptions);
         }
 
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(

@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<Task<int>> tasks = tokens.Select(token => Task.Run(async () =>
             {
                 int count = 0;
-                FeedIteratorCore feedIterator = itemsCore.GetItemQueryStreamIterator(null, token) as FeedIteratorCore;
+                FeedIteratorCore feedIterator = itemsCore.GetItemQueryStreamIterator(token) as FeedIteratorCore;
                 while (feedIterator.HasMoreResults)
                 {
                     using (ResponseMessage responseMessage =
