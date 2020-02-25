@@ -568,7 +568,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [ExpectedException(typeof(CosmosBadRequestException))]
+        [ExpectedException(typeof(CosmosException))]
         public async Task NegativePartitionedCreateDelete()
         {
             string containerName = Guid.NewGuid().ToString();

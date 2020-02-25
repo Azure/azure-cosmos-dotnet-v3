@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos
         public void EnsureSuccessStatusCode_ThrowsOnFailure()
         {
             ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.NotFound);
-            Assert.ThrowsException<CosmosNotFoundException>(() => responseMessage.EnsureSuccessStatusCode());
+            Assert.ThrowsException<CosmosException>(() => responseMessage.EnsureSuccessStatusCode());
         }
 
         [TestMethod]
@@ -154,11 +154,11 @@ namespace Microsoft.Azure.Cosmos
 
             List<(HttpStatusCode statusCode, CosmosException exception)> exceptionsToStatusCodes = new List<(HttpStatusCode, CosmosException)>()
             {
-                (HttpStatusCode.NotFound, new CosmosNotFoundException(testMessage)),
-                (HttpStatusCode.InternalServerError, new CosmosInternalServerErrorException(testMessage)),
-                (HttpStatusCode.BadRequest, new CosmosBadRequestException(testMessage)),
-                (HttpStatusCode.RequestTimeout, new CosmosRequestTimeoutException(testMessage)),
-                ((HttpStatusCode)429, new CosmosThrottledException(testMessage)),
+                (HttpStatusCode.NotFound, CosmosExceptionFactory.CreateNotFoundException(testMessage)),
+                (HttpStatusCode.InternalServerError, CosmosExceptionFactory.CreateInternalServerErrorException(testMessage)),
+                (HttpStatusCode.BadRequest, CosmosExceptionFactory.CreateBadRequestException(testMessage)),
+                (HttpStatusCode.RequestTimeout,CosmosExceptionFactory.CreateRequestTimeoutException(testMessage)),
+                ((HttpStatusCode)429, CosmosExceptionFactory.CreateThrottledException(testMessage)),
             };
 
             foreach((HttpStatusCode statusCode, CosmosException exception) item in exceptionsToStatusCodes)
@@ -170,7 +170,7 @@ namespace Microsoft.Azure.Cosmos
         [TestMethod]
         public void ValidateExceptionStackTraceHandling()
         {
-            CosmosException cosmosException = new CosmosNotFoundException("TestMessage");
+            CosmosException cosmosException = CosmosExceptionFactory.CreateNotFoundException("TestMessage");
             Assert.AreEqual(null, cosmosException.StackTrace);
             Assert.IsFalse(cosmosException.ToString().Contains(nameof(ValidateExceptionStackTraceHandling)));
             try
@@ -185,7 +185,7 @@ namespace Microsoft.Azure.Cosmos
             string stackTrace = "OriginalDocumentClientExceptionStackTrace";
             try
             {
-                throw new CosmosNotFoundException("TestMessage", stackTrace: stackTrace);
+                throw CosmosExceptionFactory.CreateNotFoundException("TestMessage", stackTrace: stackTrace);
             }
             catch (CosmosException ce)
             {

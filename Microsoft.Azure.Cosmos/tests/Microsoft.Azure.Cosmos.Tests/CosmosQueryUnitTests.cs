@@ -24,6 +24,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -38,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             string errorMessage = "TestErrorMessage";
             string activityId = "TestActivityId";
             double requestCharge = 42.42;
-            CosmosException cosmosException = new Cosmos.Resource.CosmosExceptions.CosmosBadRequestException(errorMessage);
+            CosmosException cosmosException = CosmosExceptionFactory.CreateBadRequestException(errorMessage);
             CosmosDiagnosticsContext diagnostics = CosmosDiagnosticsContext.Create();
             QueryResponse queryResponse = QueryResponse.CreateFailure(
                         statusCode: HttpStatusCode.NotFound,

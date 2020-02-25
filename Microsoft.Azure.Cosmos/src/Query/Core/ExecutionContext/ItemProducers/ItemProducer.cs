@@ -291,7 +291,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
                         feedResponse = QueryResponseCore.CreateFailure(
                             statusCode: (System.Net.HttpStatusCode)429,
                             subStatusCodes: null,
-                            cosmosException: new CosmosThrottledException("Request Rate Too Large"),
+                            cosmosException: CosmosExceptionFactory.CreateThrottledException("Request Rate Too Large"),
                             requestCharge: 0,
                             activityId: QueryResponseCore.EmptyGuidString,
                             diagnostics: QueryResponseCore.EmptyDiagnostics);

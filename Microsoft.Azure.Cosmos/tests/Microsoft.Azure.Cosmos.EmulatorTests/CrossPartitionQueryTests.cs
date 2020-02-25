@@ -795,7 +795,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 Assert.Fail($"Expected {nameof(CosmosException)}");
             }
-            catch (CosmosBadRequestException exception) when (exception.StatusCode == HttpStatusCode.BadRequest)
+            catch (CosmosException exception) when (exception.StatusCode == HttpStatusCode.BadRequest)
             {
                 Assert.IsTrue(exception.Message.Contains(@"Identifier 'a' could not be resolved."),
                     exception.Message);

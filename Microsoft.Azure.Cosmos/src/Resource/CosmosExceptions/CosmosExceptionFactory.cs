@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
             string stackTrace;
             if (responseMessage.CosmosException != null)
             {
-               stackTrace = responseMessage.CosmosException.StackTrace;
+                stackTrace = responseMessage.CosmosException.StackTrace;
             }
             else
             {
@@ -189,6 +189,126 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
             }
         }
 
+        internal static CosmosException CreateRequestTimeoutException(
+            string message,
+            int subStatusCode = default,
+            string stackTrace = default,
+            string activityId = default,
+            double requestCharge = default,
+            TimeSpan? retryAfter = default,
+            Headers headers = default,
+            CosmosDiagnosticsContext diagnosticsContext = default,
+            Exception innerException = default)
+        {
+            return CosmosExceptionFactory.Create(
+                HttpStatusCode.RequestTimeout,
+                subStatusCode,
+                message,
+                stackTrace,
+                activityId,
+                requestCharge,
+                retryAfter,
+                headers,
+                diagnosticsContext,
+                innerException);
+        }
+
+        internal static CosmosException CreateThrottledException(
+            string message,
+            int subStatusCode = default,
+            string stackTrace = default,
+            string activityId = default,
+            double requestCharge = default,
+            TimeSpan? retryAfter = default,
+            Headers headers = default,
+            CosmosDiagnosticsContext diagnosticsContext = default,
+            Exception innerException = default)
+        {
+            return CosmosExceptionFactory.Create(
+                (HttpStatusCode)429,
+                subStatusCode,
+                message,
+                stackTrace,
+                activityId,
+                requestCharge,
+                retryAfter,
+                headers,
+                diagnosticsContext,
+                innerException);
+        }
+
+        internal static CosmosException CreateNotFoundException(
+            string message,
+            int subStatusCode = default,
+            string stackTrace = default,
+            string activityId = default,
+            double requestCharge = default,
+            TimeSpan? retryAfter = default,
+            Headers headers = default,
+            CosmosDiagnosticsContext diagnosticsContext = default,
+            Exception innerException = default)
+        {
+            return CosmosExceptionFactory.Create(
+                HttpStatusCode.NotFound,
+                subStatusCode,
+                message,
+                stackTrace,
+                activityId,
+                requestCharge,
+                retryAfter,
+                headers,
+                diagnosticsContext,
+                innerException);
+        }
+
+        internal static CosmosException CreateInternalServerErrorException(
+            string message,
+            int subStatusCode = default,
+            string stackTrace = default,
+            string activityId = default,
+            double requestCharge = default,
+            TimeSpan? retryAfter = default,
+            Headers headers = default,
+            CosmosDiagnosticsContext diagnosticsContext = default,
+            Exception innerException = default)
+        {
+            return CosmosExceptionFactory.Create(
+                HttpStatusCode.InternalServerError,
+                subStatusCode,
+                message,
+                stackTrace,
+                activityId,
+                requestCharge,
+                retryAfter,
+                headers,
+                diagnosticsContext,
+                innerException);
+        }
+
+        internal static CosmosException CreateBadRequestException(
+            string message,
+            int subStatusCode = default,
+            string stackTrace = default,
+            string activityId = default,
+            double requestCharge = default,
+            TimeSpan? retryAfter = default,
+            Headers headers = default,
+            CosmosDiagnosticsContext diagnosticsContext = default,
+            Exception innerException = default)
+        {
+            return CosmosExceptionFactory.Create(
+                HttpStatusCode.BadRequest,
+                subStatusCode,
+                message,
+                stackTrace,
+                activityId,
+                requestCharge,
+                retryAfter,
+                headers,
+                diagnosticsContext,
+                innerException);
+        }
+
         internal static CosmosException Create(
             HttpStatusCode statusCode,
             int subStatusCode,
@@ -201,76 +321,17 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
             CosmosDiagnosticsContext diagnosticsContext,
             Exception innerException)
         {
-            switch (statusCode)
-            {
-                case HttpStatusCode.NotFound:
-                    return new CosmosNotFoundException(
-                        message,
-                        subStatusCode,
-                        stackTrace,
-                        activityId,
-                        requestCharge,
-                        retryAfter,
-                        headers,
-                        diagnosticsContext,
-                        innerException);
-                case HttpStatusCode.InternalServerError:
-                    return new CosmosInternalServerErrorException(
-                        message,
-                        subStatusCode,
-                        stackTrace,
-                        activityId,
-                        requestCharge,
-                        retryAfter,
-                        headers,
-                        diagnosticsContext,
-                        innerException);
-                case HttpStatusCode.BadRequest:
-                    return new CosmosBadRequestException(
-                        message,
-                        subStatusCode,
-                        stackTrace,
-                        activityId,
-                        requestCharge,
-                        retryAfter,
-                        headers,
-                        diagnosticsContext,
-                        innerException);
-                case HttpStatusCode.RequestTimeout:
-                    return new CosmosRequestTimeoutException(
-                        message,
-                        subStatusCode,
-                        stackTrace,
-                        activityId,
-                        requestCharge,
-                        retryAfter,
-                        headers,
-                        diagnosticsContext,
-                        innerException);
-                case (HttpStatusCode)429:
-                    return new CosmosThrottledException(
-                        message,
-                        subStatusCode,
-                        stackTrace,
-                        activityId,
-                        requestCharge,
-                        retryAfter,
-                        headers,
-                        diagnosticsContext,
-                        innerException);
-                default:
-                    return new CosmosException(
-                        statusCode,
-                        message,
-                        subStatusCode,
-                        stackTrace,
-                        activityId,
-                        requestCharge,
-                        retryAfter,
-                        headers,
-                        diagnosticsContext,
-                        innerException);
-            }
+            return new CosmosException(
+                statusCode,
+                message,
+                subStatusCode,
+                stackTrace,
+                activityId,
+                requestCharge,
+                retryAfter,
+                headers,
+                diagnosticsContext,
+                innerException);
         }
     }
 }
