@@ -63,7 +63,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             CancellationToken cancellationToken)
         {
             // Try to parse the continuation token.
-            string continuationToken = inputParameters.InitialUserContinuationToken;
+            string continuationToken = inputParameters.InitialFeedToken?.GetContinuation()
+                ?? inputParameters.InitialUserContinuationToken;
             PartitionedQueryExecutionInfo queryPlanFromContinuationToken = inputParameters.PartitionedQueryExecutionInfo;
             if (continuationToken != null)
             {
@@ -182,7 +183,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                    cosmosQueryContext.ResourceLink.OriginalString,
                    partitionedQueryExecutionInfo,
                    containerQueryProperties,
-                   inputParameters.Properties);
+                   inputParameters.Properties,
+                   inputParameters.InitialFeedToken);
 
             if (!string.IsNullOrEmpty(partitionedQueryExecutionInfo.QueryInfo.RewrittenQuery))
             {
@@ -196,6 +198,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 inputParameters = new InputParameters(
                     rewrittenQuerySpec,
                     inputParameters.InitialUserContinuationToken,
+                    inputParameters.InitialFeedToken,
                     inputParameters.MaxConcurrency,
                     inputParameters.MaxItemCount,
                     inputParameters.MaxBufferedItemCount,
@@ -279,14 +282,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         /// 1. Check partition key range id
         /// 2. Check Partition key
         /// 3. Check the effective partition key
-        /// 4. Get the range from the PartitionedQueryExecutionInfo
+        /// 4. Get the range from the FeedToken
+        /// 5. Get the range from the PartitionedQueryExecutionInfo
         /// </summary>
         internal static async Task<List<Documents.PartitionKeyRange>> GetTargetPartitionKeyRangesAsync(
             CosmosQueryClient queryClient,
             string resourceLink,
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
             ContainerQueryProperties containerQueryProperties,
-            IReadOnlyDictionary<string, object> properties)
+            IReadOnlyDictionary<string, object> properties,
+            FeedTokenInternal feedTokenInternal)
         {
             List<Documents.PartitionKeyRange> targetRanges;
             if (containerQueryProperties.EffectivePartitionKeyString != null)
@@ -302,6 +307,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     resourceLink,
                     containerQueryProperties.ResourceId,
                     effectivePartitionKeyString);
+            }
+            else if (feedTokenInternal != null)
+            {
+                targetRanges = await queryClient.GetTargetPartitionKeyRangeByFeedTokenAsync(
+                    resourceLink,
+                    containerQueryProperties.ResourceId,
+                    containerQueryProperties.PartitionKeyDefinition,
+                    feedTokenInternal);
             }
             else
             {
@@ -347,6 +360,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             public InputParameters(
                 SqlQuerySpec sqlQuerySpec,
                 string initialUserContinuationToken,
+                FeedTokenInternal initialFeedToken,
                 int? maxConcurrency,
                 int? maxItemCount,
                 int? maxBufferedItemCount,
@@ -359,6 +373,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             {
                 this.SqlQuerySpec = sqlQuerySpec ?? throw new ArgumentNullException(nameof(sqlQuerySpec));
                 this.InitialUserContinuationToken = initialUserContinuationToken;
+                this.InitialFeedToken = initialFeedToken;
 
                 int resolvedMaxConcurrency = maxConcurrency.GetValueOrDefault(InputParameters.DefaultMaxConcurrency);
                 if (resolvedMaxConcurrency < 0)
@@ -391,6 +406,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
             public SqlQuerySpec SqlQuerySpec { get; }
             public string InitialUserContinuationToken { get; }
+            public FeedTokenInternal InitialFeedToken { get; }
             public int MaxConcurrency { get; }
             public int MaxItemCount { get; }
             public int MaxBufferedItemCount { get; }

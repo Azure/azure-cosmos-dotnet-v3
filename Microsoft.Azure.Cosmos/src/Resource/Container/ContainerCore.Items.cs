@@ -258,6 +258,7 @@ namespace Microsoft.Azure.Cosmos
             QueryFeatures supportedQueryFeatures,
             QueryDefinition queryDefinition,
             string continuationToken,
+            FeedTokenInternal feedTokenInternal,
             QueryRequestOptions requestOptions,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -318,6 +319,7 @@ namespace Microsoft.Azure.Cosmos
                     client: this.queryClient,
                     sqlQuerySpec: queryDefinition.ToSqlQuerySpec(),
                     continuationToken: continuationToken,
+                    feedTokenInternal: feedTokenInternal,
                     queryRequestOptions: requestOptions,
                     resourceLink: this.LinkUri,
                     isContinuationExpected: false,
@@ -426,25 +428,6 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        FeedIterator GetItemQueryStreamIterator(
-            FeedToken feedToken,
-            QueryDefinition queryDefinition,            
-            QueryRequestOptions requestOptions = null)
-        {
-            FeedTokenInternal feedTokenInternal = feedToken as FeedTokenInternal;
-            return this.GetItemQueryStreamIteratorInternal(
-                sqlQuerySpec: queryDefinition?.ToSqlQuerySpec(),
-                isContinuationExcpected: true,
-                continuationToken: null,
-                feedTokenInternal: feedTokenInternal,
-                requestOptions: requestOptions);
-        }
-
-#if PREVIEW
-        public override
-#else
-        internal
-#endif
         FeedIterator<T> GetItemQueryIterator<T>(
             FeedToken feedToken,
             string queryText = null,
@@ -460,6 +443,25 @@ namespace Microsoft.Azure.Cosmos
                 feedToken,
                 queryDefinition,
                 requestOptions);
+        }
+
+#if PREVIEW
+        public override
+#else
+        internal
+#endif
+        FeedIterator GetItemQueryStreamIterator(
+            FeedToken feedToken,
+            QueryDefinition queryDefinition,
+            QueryRequestOptions requestOptions = null)
+        {
+            FeedTokenInternal feedTokenInternal = feedToken as FeedTokenInternal;
+            return this.GetItemQueryStreamIteratorInternal(
+                sqlQuerySpec: queryDefinition?.ToSqlQuerySpec(),
+                isContinuationExcpected: true,
+                continuationToken: null,
+                feedTokenInternal: feedTokenInternal,
+                requestOptions: requestOptions);
         }
 
 #if PREVIEW
@@ -602,6 +604,7 @@ namespace Microsoft.Azure.Cosmos
                 client: this.queryClient,
                 sqlQuerySpec: sqlQuerySpec,
                 continuationToken: continuationToken,
+                feedTokenInternal: feedTokenInternal,
                 queryRequestOptions: requestOptions,
                 resourceLink: this.LinkUri,
                 isContinuationExpected: isContinuationExcpected,

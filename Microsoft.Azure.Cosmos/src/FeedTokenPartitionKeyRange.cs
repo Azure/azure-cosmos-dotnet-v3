@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Routing;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -93,6 +94,50 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.FeedTokenEPKRange.UpdateContinuation(continuationToken);
             }
+        }
+
+        public override async Task<List<Documents.Routing.Range<string>>> GetAffectedRangesAsync(
+            IRoutingMapProvider routingMapProvider,
+            string containerRid,
+            Documents.PartitionKeyDefinition partitionKeyDefinition)
+        {
+            if (this.FeedTokenEPKRange == null)
+            {
+                Documents.PartitionKeyRange pkRange = await routingMapProvider.TryGetPartitionKeyRangeByIdAsync(containerRid, this.PartitionKeyRangeId);
+                if (pkRange == null)
+                {
+                    throw new InvalidOperationException();
+                }
+
+                return new List<Documents.Routing.Range<string>>
+                {
+                    pkRange.ToRange()
+                };
+            }
+            else
+            {
+                return await this.FeedTokenEPKRange.GetAffectedRangesAsync(routingMapProvider, containerRid, partitionKeyDefinition);
+            }
+        }
+
+        public override Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
+            IRoutingMapProvider routingMapProvider,
+            string containerRid,
+            Documents.PartitionKeyDefinition partitionKeyDefinition,
+            CancellationToken cancellationToken)
+        {
+            if (this.FeedTokenEPKRange != null)
+            {
+                return this.FeedTokenEPKRange.GetPartitionKeyRangesAsync(routingMapProvider, containerRid, partitionKeyDefinition, cancellationToken);
+            }
+
+            IEnumerable<string> result = new List<string>() { this.PartitionKeyRangeId };
+            return Task.FromResult(result);
+        }
+
+        public override void ValidateContainer(string containerRid)
+        {
+            // Current implementation cannot validate ContainerRid
         }
 
         public override bool IsDone

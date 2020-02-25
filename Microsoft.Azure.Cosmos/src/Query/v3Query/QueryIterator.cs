@@ -37,6 +37,7 @@ namespace Microsoft.Azure.Cosmos.Query
             CosmosQueryClient client,
             SqlQuerySpec sqlQuerySpec,
             string continuationToken,
+            FeedTokenInternal feedTokenInternal,
             QueryRequestOptions queryRequestOptions,
             Uri resourceLink,
             bool isContinuationExpected,
@@ -62,6 +63,7 @@ namespace Microsoft.Azure.Cosmos.Query
             CosmosQueryExecutionContextFactory.InputParameters inputParameters = new CosmosQueryExecutionContextFactory.InputParameters(
                 sqlQuerySpec: sqlQuerySpec,
                 initialUserContinuationToken: continuationToken,
+                initialFeedToken: feedTokenInternal,
                 maxConcurrency: queryRequestOptions.MaxConcurrency,
                 maxItemCount: queryRequestOptions.MaxItemCount,
                 maxBufferedItemCount: queryRequestOptions.MaxBufferedItemCount,

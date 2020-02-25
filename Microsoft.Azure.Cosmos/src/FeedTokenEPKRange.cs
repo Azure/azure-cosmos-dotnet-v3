@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
+    using Microsoft.Azure.Cosmos.Routing;
     using Newtonsoft.Json;
 
     [JsonConverter(typeof(FeedTokenInternalConverter))]
@@ -146,6 +147,35 @@ namespace Microsoft.Azure.Cosmos
 
             this.currentToken.Token = continuationToken;
             this.MoveToNextToken();
+        }
+
+        public override Task<List<Documents.Routing.Range<string>>> GetAffectedRangesAsync(
+            IRoutingMapProvider routingMapProvider,
+            string containerRid,
+            Documents.PartitionKeyDefinition partitionKeyDefinition)
+        {
+            return Task.FromResult(new List<Documents.Routing.Range<string>>
+                {
+                    this.currentToken.Range
+                });
+        }
+
+        public override async Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
+            IRoutingMapProvider routingMapProvider,
+            string containerRid,
+            Documents.PartitionKeyDefinition partitionKeyDefinition,
+            CancellationToken cancellationToken)
+        {
+            IReadOnlyList<Documents.PartitionKeyRange> partitionKeyRanges = await routingMapProvider.TryGetOverlappingRangesAsync(containerRid, this.CompleteRange, forceRefresh: false);
+            return partitionKeyRanges.Select(partitionKeyRange => partitionKeyRange.Id);
+        }
+
+        public override void ValidateContainer(string containerRid)
+        {
+            if (this.ContainerRid != containerRid)
+            {
+                throw new ArgumentException(string.Format(ClientResources.FeedToken_InvalidFeedTokenForContainer, this.ContainerRid, containerRid));
+            }
         }
 
         /// <summary>

@@ -1056,7 +1056,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     properties: new Dictionary<string, object>()
                     {
                         {"x-ms-effective-partition-key-string", "AA" }
-                    });
+                    },
+                    feedTokenInternal: null);
 
                 Assert.IsTrue(partitionKeyRanges.Count == 1, "Only 1 partition key range should be selected since the EPK option is set.");
             }

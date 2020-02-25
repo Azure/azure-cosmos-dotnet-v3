@@ -4,10 +4,10 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Routing;
 
     internal abstract class FeedTokenInternal : FeedToken
     {
@@ -29,6 +29,19 @@ namespace Microsoft.Azure.Cosmos
         public abstract void UpdateContinuation(string continuationToken);
 
         public abstract bool IsDone { get; }
+
+        public abstract Task<List<Documents.Routing.Range<string>>> GetAffectedRangesAsync(
+            IRoutingMapProvider routingMapProvider,
+            string containerRid,
+            Documents.PartitionKeyDefinition partitionKeyDefinition);
+
+        public abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
+            IRoutingMapProvider routingMapProvider,
+            string containerRid,
+            Documents.PartitionKeyDefinition partitionKeyDefinition,
+            CancellationToken cancellationToken);
+
+        public abstract void ValidateContainer(string containerRid);
 
         public static bool TryParse(
             string toStringValue,
