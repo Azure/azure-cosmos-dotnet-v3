@@ -160,8 +160,7 @@ namespace Microsoft.Azure.Cosmos
                diagnosticsScope: diagnostics,
                cancellationToken: cancellationToken);
 
-            // Cannot be split-proof as this Iterator is for non-partitioned resources
-            // Retry in case of splits or other scenarios
+            // Retry in case of splits or other scenarios only on partitioned resources
             if (this.containerCore != null
                 && await this.feedTokenInternal.ShouldRetryAsync(this.containerCore, response, cancellationToken))
             {
