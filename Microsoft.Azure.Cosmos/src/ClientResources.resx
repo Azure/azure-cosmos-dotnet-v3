@@ -306,4 +306,16 @@
   <data name="InvalidRequestWithEncryptionOptions" xml:space="preserve">
     <value>Encryption options may not be specified on this request.</value>
   </data>
+  <data name="FeedToken_UnknownFormat" xml:space="preserve">
+    <value>The provided string does not represent any known FeedToken format.</value>
+  </data>
+  <data name="FeedToken_MaxTokensOutOfRange" xml:space="preserve">
+    <value>Provide a value greater than zero.</value>
+  </data>
+  <data name="FeedToken_UnrecognizedFeedToken" xml:space="preserve">
+    <value>Unrecognized Feed Token type.</value>
+  </data>
+  <data name="FeedToken_CannotParse" xml:space="preserve">
+    <value>Cannot parse '{0}' as a valid FeedToken.</value>
+  </data>
 </root>
