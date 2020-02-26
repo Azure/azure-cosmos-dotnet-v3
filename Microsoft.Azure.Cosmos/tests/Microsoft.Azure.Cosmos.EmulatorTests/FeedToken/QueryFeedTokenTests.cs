@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Globalization;
+    using System.IO;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
@@ -20,6 +21,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class QueryFeedTokenTests : BaseCosmosClientHelper
@@ -79,6 +81,86 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 await container?.DeleteContainerAsync();
             }
+        }
+
+        [TestMethod]
+        public async Task ParallelizeQueryThroughTokens()
+        {
+            ContainerCore container = null;
+            try
+            {
+                // Create a container large enough to have at least 2 partitions
+                ContainerResponse containerResponse = await this.database.CreateContainerAsync(
+                    id: Guid.NewGuid().ToString(),
+                    partitionKeyPath: "/id",
+                    throughput: 15000);
+                container = (ContainerInlineCore)containerResponse;
+
+                List<string> generatedIds = Enumerable.Range(0, 1000).Select(n => $"BasicItem{n}").ToList();
+                foreach (string id in generatedIds)
+                {
+                    string item = $@"
+                    {{    
+                        ""id"": ""{id}""
+                    }}";
+
+                    using (ResponseMessage createResponse = await container.CreateItemStreamAsync(
+                            QueryFeedTokenTests.GenerateStreamFromString(item),
+                            new Cosmos.PartitionKey(id)))
+                    {
+                        Assert.IsTrue(createResponse.IsSuccessStatusCode);
+                    }
+                }
+
+                IReadOnlyList<FeedToken> feedTokens = await container.GetFeedTokensAsync();
+
+                Assert.IsTrue(feedTokens.Count > 1, " RUs of the container needs to be increased to ensure at least 2 partitions.");
+
+                List<Task<List<string>>> tasks = feedTokens.Select(async feedToken =>
+                {
+                    List<string> results = new List<string>();
+                    FeedIterator feedIterator = container.GetItemQueryStreamIterator(queryText: "select * from T where STARTSWITH(T.id, \"BasicItem\")", feedToken: feedToken);
+                    while (feedIterator.HasMoreResults)
+                    {
+                        using (ResponseMessage responseMessage =
+                            await feedIterator.ReadNextAsync(this.cancellationToken))
+                        {
+                            if (responseMessage.IsSuccessStatusCode)
+                            {
+                                using (StreamReader reader = new StreamReader(responseMessage.Content))
+                                {
+                                    string json = await reader.ReadToEndAsync();
+                                    JArray documents = (JArray)JObject.Parse(json).SelectToken("Documents");
+                                    foreach(JObject document in documents)
+                                    {
+                                        results.Add(document.SelectToken("id").ToString());
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    return results;
+                }).ToList();
+
+                await Task.WhenAll(tasks);
+
+                CollectionAssert.AreEquivalent(generatedIds, tasks.SelectMany(t => t.Result).ToList());
+            }
+            finally
+            {
+                await container?.DeleteContainerAsync();
+            }
+        }
+
+        private static Stream GenerateStreamFromString(string s)
+        {
+            MemoryStream stream = new MemoryStream();
+            StreamWriter writer = new StreamWriter(stream);
+            writer.Write(s);
+            writer.Flush();
+            stream.Position = 0;
+            return stream;
         }
     }
 }
