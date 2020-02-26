@@ -125,6 +125,7 @@ namespace Microsoft.Azure.Cosmos
 
             request.Properties[HandlerConstants.StartEpkString] = this.currentToken.Range.Min;
             request.Properties[HandlerConstants.EndEpkString] = this.currentToken.Range.Max;
+            request.Properties[HandlerConstants.GonePassthrough] = true;
         }
 
         public override string GetContinuation() => this.currentToken.Token;
