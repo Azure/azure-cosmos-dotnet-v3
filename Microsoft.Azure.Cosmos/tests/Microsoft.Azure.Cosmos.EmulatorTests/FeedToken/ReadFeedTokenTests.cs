@@ -216,6 +216,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(batchSize, totalCount);
         }
 
+        [TestMethod]
+        public async Task CannotMixTokensFromOtherContainers()
+        {
+            IReadOnlyList<FeedToken> tokens = await this.LargerContainer.GetFeedTokensAsync();
+            FeedIterator iterator = this.Container.GetItemQueryStreamIterator(tokens[0]);
+            await Assert.ThrowsExceptionAsync<ArgumentException>(() => iterator.ReadNextAsync());
+        }
+
 
         private async Task<IList<ToDoActivity>> CreateRandomItems(ContainerCore container, int pkCount, int perPKItemCount = 1, bool randomPartitionKey = true)
         {

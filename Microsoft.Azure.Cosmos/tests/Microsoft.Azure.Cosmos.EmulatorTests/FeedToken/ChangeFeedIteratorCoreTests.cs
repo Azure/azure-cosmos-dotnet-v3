@@ -389,7 +389,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// Test that does not use FetchNextSetAsync but creates new iterators passing along the previous one's FeedToken.
         /// </summary>
         [TestMethod]
-        //[Timeout(30000)]
+        [Timeout(30000)]
         public async Task ChangeFeedIteratorCore_NoFetchNext()
         {
             int pkRangesCount = (await this.LargerContainer.ClientContext.DocumentClient.ReadPartitionKeyRangeFeedAsync(this.LargerContainer.LinkUri)).Count;
@@ -604,6 +604,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             Assert.AreEqual(totalDocuments, documentsRead);
+        }
+
+        [TestMethod]
+        public async Task CannotMixTokensFromOtherContainers()
+        {
+            IReadOnlyList<FeedToken> tokens = await this.LargerContainer.GetFeedTokensAsync();
+            FeedIterator iterator = this.Container.GetChangeFeedStreamIterator(tokens[0]);
+            await Assert.ThrowsExceptionAsync<ArgumentException>(() => iterator.ReadNextAsync());
         }
 
         private async Task<IList<ToDoActivity>> CreateRandomItems(ContainerCore container, int pkCount, int perPKItemCount = 1, bool randomPartitionKey = true)

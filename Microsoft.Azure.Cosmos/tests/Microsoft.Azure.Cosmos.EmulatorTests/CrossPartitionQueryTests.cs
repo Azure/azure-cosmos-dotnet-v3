@@ -4379,6 +4379,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                     MaxConcurrency = maxDegreeOfParallelism,
                                     MaxItemCount = maxItemCount,
                                 },
+                                feedTokenInternal: null,
                                 continuationToken: continuationToken);
 
                             Assert.AreEqual(canSupportExpected, canSupportActual);
@@ -4404,6 +4405,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                     MaxConcurrency = 1,
                                     MaxItemCount = 1,
                                 },
+                                feedTokenInternal: null,
                                 continuationToken: null);
 
                 Assert.IsNotNull(exception);
