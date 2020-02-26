@@ -122,7 +122,12 @@ namespace Microsoft.Azure.Cosmos
                 if (!tryCatchFeedTokeninternal.Succeeded)
                 {
                     CosmosException cosmosException = tryCatchFeedTokeninternal.Exception.InnerException as CosmosException;
-                    return cosmosException.ToCosmosResponseMessage(new RequestMessage(method: null, requestUri: null, diagnosticsContext: diagnostics));
+                    if (cosmosException != null)
+                    {
+                        return cosmosException.ToCosmosResponseMessage(new RequestMessage(method: null, requestUri: null, diagnosticsContext: diagnostics));
+                    }
+
+                    throw tryCatchFeedTokeninternal.Exception;
                 }
 
                 this.feedTokenInternal = tryCatchFeedTokeninternal.Result;
