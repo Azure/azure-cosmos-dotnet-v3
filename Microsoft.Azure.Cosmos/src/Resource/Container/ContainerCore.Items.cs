@@ -403,11 +403,6 @@ namespace Microsoft.Azure.Cosmos
         {
             requestOptions = requestOptions ?? new QueryRequestOptions();
 
-            if (requestOptions.IsEffectivePartitionKeyRouting)
-            {
-                requestOptions.PartitionKey = null;
-            }
-
             if (!(this.GetItemQueryStreamIterator(
                 feedToken,
                 queryDefinition,
