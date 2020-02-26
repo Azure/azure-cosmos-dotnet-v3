@@ -167,9 +167,17 @@ namespace Microsoft.Azure.Cosmos
                 return await this.ReadNextInternalAsync(diagnostics, cancellationToken);
             }
 
-            this.feedTokenInternal.UpdateContinuation(response.Headers.ContinuationToken);
-            this.continuationToken = this.feedTokenInternal.GetContinuation();
-            this.hasMoreResultsInternal = !this.feedTokenInternal.IsDone;
+            if (response.IsSuccessStatusCode)
+            {
+                this.feedTokenInternal.UpdateContinuation(response.Headers.ContinuationToken);
+                this.continuationToken = this.feedTokenInternal.GetContinuation();
+                this.hasMoreResultsInternal = !this.feedTokenInternal.IsDone;
+            }
+            else
+            {
+                this.hasMoreResultsInternal = false;
+            }
+
             return response;
         }
 

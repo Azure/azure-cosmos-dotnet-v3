@@ -161,7 +161,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public async Task ReadFeedIteratorCore_UpdatesContinuation()
+        public async Task ReadFeedIteratorCore_UpdatesContinuation_OnOK()
         {
             string continuation = "TBD";
             ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.OK);
@@ -212,6 +212,60 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Mock.Get(feedToken)
                 .Verify(f => f.IsDone, Times.Once);
+        }
+
+        [TestMethod]
+        public async Task ReadFeedIteratorCore_DoesNotUpdateContinuation_OnError()
+        {
+            string continuation = "TBD";
+            ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.Gone);
+            responseMessage.Headers.ContinuationToken = continuation;
+            responseMessage.Headers[Documents.HttpConstants.HttpHeaders.ItemCount] = "1";
+
+            Mock<CosmosClientContext> cosmosClientContext = new Mock<CosmosClientContext>();
+            cosmosClientContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
+            cosmosClientContext
+                .Setup(c => c.ProcessResourceOperationStreamAsync(
+                    It.IsAny<Uri>(),
+                    It.IsAny<Documents.ResourceType>(),
+                    It.IsAny<Documents.OperationType>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<ContainerCore>(),
+                    It.IsAny<PartitionKey?>(),
+                    It.IsAny<Stream>(),
+                    It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<CosmosDiagnosticsContext>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(responseMessage));
+
+            ContainerCore containerCore = Mock.Of<ContainerCore>();
+            Mock.Get(containerCore)
+                .Setup(c => c.ClientContext)
+                .Returns(cosmosClientContext.Object);
+            FeedTokenInternal feedToken = Mock.Of<FeedTokenInternal>();
+            Mock.Get(feedToken)
+                .Setup(f => f.EnrichRequest(It.IsAny<RequestMessage>()));
+            Mock.Get(feedToken)
+                .Setup(f => f.ShouldRetryAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(false));
+            Mock.Get(feedToken)
+                .Setup(f => f.GetContinuation())
+                .Returns(continuation);
+            Mock.Get(feedToken)
+                .Setup(f => f.IsDone)
+                .Returns(true);
+
+            FeedIterator feedTokenIterator = new FeedIteratorCore(containerCore, new Uri("http://localhost"), Documents.ResourceType.Document, null, null, feedToken, new QueryRequestOptions());
+            ResponseMessage response = await feedTokenIterator.ReadNextAsync();
+
+            Mock.Get(feedToken)
+                .Verify(f => f.UpdateContinuation(It.Is<string>(ct => ct == continuation)), Times.Never);
+
+            Mock.Get(feedToken)
+                .Verify(f => f.ShouldRetryAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()), Times.Once);
+
+            Mock.Get(feedToken)
+                .Verify(f => f.IsDone, Times.Never);
         }
 
         [TestMethod]
