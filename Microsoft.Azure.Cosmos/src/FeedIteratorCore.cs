@@ -167,11 +167,7 @@ namespace Microsoft.Azure.Cosmos
                 return await this.ReadNextInternalAsync(diagnostics, cancellationToken);
             }
 
-            if (response.IsSuccessStatusCode)
-            {
-                this.feedTokenInternal.UpdateContinuation(response.Headers.ContinuationToken);
-            }
-
+            this.feedTokenInternal.UpdateContinuation(response.Headers.ContinuationToken);
             this.continuationToken = this.feedTokenInternal.GetContinuation();
             this.hasMoreResultsInternal = !this.feedTokenInternal.IsDone;
             return response;
