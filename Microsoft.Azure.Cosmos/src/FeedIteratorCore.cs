@@ -25,6 +25,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly SqlQuerySpec querySpec;
         private bool hasMoreResultsInternal;
         private FeedTokenInternal feedTokenInternal;
+        private string containerRId = null;
 
         /// <summary>
         /// For non-partitioned resources
@@ -95,12 +96,31 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A query response from cosmos service</returns>
-        public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
+        public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
             CosmosDiagnosticsContext diagnostics = CosmosDiagnosticsContext.Create(this.requestOptions);
             using (diagnostics.CreateScope("QueryReadNextAsync"))
             {
-                return this.ReadNextInternalAsync(diagnostics, cancellationToken);
+                if (this.containerRId == null)
+                {
+                    TryCatch<string> tryInitializeContainerRId = await this.TryInitializeContainerRIdAsync(cancellationToken);
+                    if (!tryInitializeContainerRId.Succeeded)
+                    {
+                        CosmosException cosmosException = tryInitializeContainerRId.Exception.InnerException as CosmosException;
+                        return cosmosException.ToCosmosResponseMessage(new RequestMessage(method: null, requestUri: null, diagnosticsContext: diagnostics));
+                    }
+
+                    this.containerRId = tryInitializeContainerRId.Result;
+                    // If there is an initial FeedToken, validate Container
+                    this.feedTokenInternal?.ValidateContainer(this.containerRId);
+                }
+
+                if (this.feedTokenInternal == null)
+                {
+                    this.feedTokenInternal = this.InitializeFeedToken();
+                }
+
+                return await this.ReadNextInternalAsync(diagnostics, cancellationToken);
             }
         }
 
@@ -114,18 +134,6 @@ namespace Microsoft.Azure.Cosmos
             {
                 stream = this.clientContext.SerializerCore.ToStreamSqlQuerySpec(this.querySpec, this.resourceType);
                 operation = OperationType.Query;
-            }
-
-            if (this.feedTokenInternal == null)
-            {
-                TryCatch<FeedTokenInternal> tryCatchFeedTokeninternal = await this.TryInitializeFeedTokenAsync(cancellationToken);
-                if (!tryCatchFeedTokeninternal.Succeeded)
-                {
-                    CosmosException cosmosException = tryCatchFeedTokeninternal.Exception.InnerException as CosmosException;
-                    return cosmosException.ToCosmosResponseMessage(new RequestMessage(method: null, requestUri: null, diagnosticsContext: diagnostics));
-                }
-
-                this.feedTokenInternal = tryCatchFeedTokeninternal.Result;
             }
 
             ResponseMessage response = await this.clientContext.ProcessResourceOperationStreamAsync(
@@ -177,7 +185,7 @@ namespace Microsoft.Azure.Cosmos
             return true;
         }
 
-        private async Task<TryCatch<FeedTokenInternal>> TryInitializeFeedTokenAsync(CancellationToken cancellationToken)
+        private async Task<TryCatch<string>> TryInitializeContainerRIdAsync(CancellationToken cancellationToken)
         {
             string containerRId = string.Empty;
             if (this.containerCore != null)
@@ -188,25 +196,30 @@ namespace Microsoft.Azure.Cosmos
                 }
                 catch (CosmosException cosmosException)
                 {
-                    return TryCatch<FeedTokenInternal>.FromException(cosmosException);
+                    return TryCatch<string>.FromException(cosmosException);
                 }
             }
 
+            return TryCatch<string>.FromResult(containerRId);
+        }
+
+        private FeedTokenInternal InitializeFeedToken()
+        {
             // Create FeedToken for the full Range
             FeedTokenEPKRange feedTokenInternal = new FeedTokenEPKRange(
-                containerRId,
-                new PartitionKeyRange()
-                {
-                    MinInclusive = Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
-                    MaxExclusive = Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey
-                });
+                        this.containerRId,
+                        new PartitionKeyRange()
+                        {
+                            MinInclusive = Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
+                            MaxExclusive = Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey
+                        });
             // Initialize with the ContinuationToken that the user passed, if any
             if (this.continuationToken != null)
             {
                 feedTokenInternal.UpdateContinuation(this.continuationToken);
             }
 
-            return TryCatch<FeedTokenInternal>.FromResult(feedTokenInternal);
+            return feedTokenInternal;
         }
     }
 

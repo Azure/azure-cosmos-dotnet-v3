@@ -21,6 +21,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly ContainerCore container;
         private FeedTokenInternal feedTokenInternal;
         private bool hasMoreResults = true;
+        private string containerRId = null;
 
         internal ChangeFeedIteratorCore(
             ContainerCore container,
@@ -63,12 +64,31 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A query response from cosmos service</returns>
-        public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             CosmosDiagnosticsContext diagnostics = CosmosDiagnosticsContext.Create(this.changeFeedOptions);
             using (diagnostics.CreateScope("ChangeFeedReadNextAsync"))
             {
-                return this.ReadNextInternalAsync(diagnostics, cancellationToken);
+                if (this.containerRId == null)
+                {
+                    TryCatch<string> tryInitializeContainerRId = await this.TryInitializeContainerRIdAsync(cancellationToken);
+                    if (!tryInitializeContainerRId.Succeeded)
+                    {
+                        CosmosException cosmosException = tryInitializeContainerRId.Exception.InnerException as CosmosException;
+                        return cosmosException.ToCosmosResponseMessage(new RequestMessage(method: null, requestUri: null, diagnosticsContext: diagnostics));
+                    }
+
+                    this.containerRId = tryInitializeContainerRId.Result;
+                    // If there is an initial FeedToken, validate Container
+                    this.feedTokenInternal?.ValidateContainer(this.containerRId);
+                }
+
+                if (this.feedTokenInternal == null)
+                {
+                    this.feedTokenInternal = await this.InitializeFeedTokenAsync(cancellationToken);
+                }
+
+                return await this.ReadNextInternalAsync(diagnostics, cancellationToken);
             }
         }
 
@@ -83,18 +103,6 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken))
         {
             cancellationToken.ThrowIfCancellationRequested();
-
-            if (this.feedTokenInternal == null)
-            {
-                TryCatch<FeedTokenInternal> tryCatchFeedTokeninternal = await this.TryInitializeFeedTokenAsync(cancellationToken);
-                if (!tryCatchFeedTokeninternal.Succeeded)
-                {
-                    CosmosException cosmosException = tryCatchFeedTokeninternal.Exception.InnerException as CosmosException;
-                    return cosmosException.ToCosmosResponseMessage(new RequestMessage(method: null, requestUri: null, diagnosticsContext: diagnosticsScope));
-                }
-
-                this.feedTokenInternal = tryCatchFeedTokeninternal.Result;
-            }
 
             Uri resourceUri = this.container.LinkUri;
             ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
@@ -137,21 +145,24 @@ namespace Microsoft.Azure.Cosmos
             return responseMessage;
         }
 
-        private async Task<TryCatch<FeedTokenInternal>> TryInitializeFeedTokenAsync(CancellationToken cancellationToken)
+        private async Task<TryCatch<string>> TryInitializeContainerRIdAsync(CancellationToken cancellationToken)
         {
-            Routing.PartitionKeyRangeCache partitionKeyRangeCache = await this.clientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
-            string containerRId = string.Empty;
             try
             {
-                containerRId = await this.container.GetRIDAsync(cancellationToken);
+                string containerRId = await this.container.GetRIDAsync(cancellationToken);
+                return TryCatch<string>.FromResult(containerRId);
             }
             catch (CosmosException cosmosException)
             {
-                return TryCatch<FeedTokenInternal>.FromException(cosmosException);
+                return TryCatch<string>.FromException(cosmosException);
             }
+        }
 
+        private async Task<FeedTokenInternal> InitializeFeedTokenAsync(CancellationToken cancellationToken)
+        {
+            Routing.PartitionKeyRangeCache partitionKeyRangeCache = await this.clientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
             IReadOnlyList<Documents.PartitionKeyRange> partitionKeyRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
-                    containerRId,
+                    this.containerRId,
                     new Documents.Routing.Range<string>(
                         Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
                         Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
@@ -159,7 +170,7 @@ namespace Microsoft.Azure.Cosmos
                         isMaxInclusive: false),
                     forceRefresh: true);
             // ReadAll scenario, initialize with one token for all
-            return TryCatch<FeedTokenInternal>.FromResult(new FeedTokenEPKRange(containerRId, partitionKeyRanges));
+            return new FeedTokenEPKRange(this.containerRId, partitionKeyRanges);
         }
     }
 }
