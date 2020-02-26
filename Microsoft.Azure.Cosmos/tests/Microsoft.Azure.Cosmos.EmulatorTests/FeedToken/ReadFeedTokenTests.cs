@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Globalization;
+    using System.IO;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
@@ -16,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class ReadFeedTokenTests : BaseCosmosClientHelper
@@ -37,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             ContainerResponse largerContainer = await this.database.CreateContainerAsync(
                 new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
-                throughput: 20000,
+                throughput: 15000,
                 cancellationToken: this.cancellationToken);
 
             this.Container = (ContainerInlineCore)response;
@@ -224,6 +226,144 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await Assert.ThrowsExceptionAsync<ArgumentException>(() => iterator.ReadNextAsync());
         }
 
+        [DataRow(false)]
+        [DataRow(true)]
+        [DataTestMethod]
+        public async Task ReadFeedIteratorCore_CrossPartitionBiDirectional(bool useStatelessIteration)
+        {
+            ContainerCore container = null;
+
+            try
+            {
+                ContainerResponse containerResponse = await this.database.CreateContainerAsync(
+                        new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: "/id"),
+                        throughput: 50000,
+                        cancellationToken: this.cancellationToken);
+                container = (ContainerInlineCore)containerResponse;
+
+                //create items
+                const int total = 30;
+                QueryRequestOptions requestOptions = new QueryRequestOptions()
+                {
+                    MaxItemCount = 10
+                };
+
+                List<string> items = new List<string>();
+
+                for (int i = 0; i < total; i++)
+                {
+                    string item = $@"
+                    {{    
+                        ""id"": ""{i}""
+                    }}";
+
+                    using (ResponseMessage createResponse = await container.CreateItemStreamAsync(
+                            ReadFeedTokenTests.GenerateStreamFromString(item),
+                            new Cosmos.PartitionKey(i.ToString())))
+                    {
+                        Assert.IsTrue(createResponse.IsSuccessStatusCode);
+                    }
+                }
+
+                FeedToken lastKnownFeedToken = null;
+                FeedIteratorCore iter = container.GetItemQueryStreamIterator(
+                    feedToken: lastKnownFeedToken,
+                    requestOptions: requestOptions) as FeedIteratorCore;
+
+                int count = 0;
+                List<string> forwardOrder = new List<string>();
+                while (iter.HasMoreResults)
+                {
+                    if (useStatelessIteration)
+                    {
+                        iter = container.GetItemQueryStreamIterator(
+                            feedToken: lastKnownFeedToken,
+                            requestOptions: requestOptions) as FeedIteratorCore;
+                    }
+
+                    using (ResponseMessage response = await iter.ReadNextAsync())
+                    {
+                        Assert.IsNotNull(response);
+
+                        lastKnownFeedToken = iter.FeedToken;
+                        Assert.AreEqual(response.ContinuationToken, response.Headers.ContinuationToken);
+
+                        using (StreamReader reader = new StreamReader(response.Content))
+                        {
+                            string json = await reader.ReadToEndAsync();
+                            JArray documents = (JArray)JObject.Parse(json).SelectToken("Documents");
+                            count += documents.Count;
+                            if (documents.Any())
+                            {
+                                forwardOrder.Add(documents.First().SelectToken("id").ToString());
+                            }
+                        }
+                    }
+                }
+
+                Assert.IsNotNull(forwardOrder);
+                Assert.AreEqual(total, count);
+                Assert.IsFalse(forwardOrder.Where(x => string.IsNullOrEmpty(x)).Any());
+
+                requestOptions.Properties = requestOptions.Properties = new Dictionary<string, object>();
+                requestOptions.Properties.Add(Documents.HttpConstants.HttpHeaders.EnumerationDirection, (byte)BinaryScanDirection.Reverse);
+                count = 0;
+                List<string> reverseOrder = new List<string>();
+
+                lastKnownFeedToken = null;
+                iter = container
+                        .GetItemQueryStreamIterator(queryDefinition: null, feedToken: lastKnownFeedToken, requestOptions: requestOptions) as FeedIteratorCore;
+                while (iter.HasMoreResults)
+                {
+                    if (useStatelessIteration)
+                    {
+                        iter = container
+                                .GetItemQueryStreamIterator(queryDefinition: null, feedToken: lastKnownFeedToken, requestOptions: requestOptions) as FeedIteratorCore;
+                    }
+
+                    using (ResponseMessage response = await iter.ReadNextAsync())
+                    {
+                        lastKnownFeedToken = iter.FeedToken;
+                        Assert.AreEqual(response.ContinuationToken, response.Headers.ContinuationToken);
+
+                        Assert.IsNotNull(response);
+                        using (StreamReader reader = new StreamReader(response.Content))
+                        {
+                            string json = await reader.ReadToEndAsync();
+                            JArray documents = (JArray)JObject.Parse(json).SelectToken("Documents");
+                            count += documents.Count;
+                            if (documents.Any())
+                            {
+                                reverseOrder.Add(documents.First().SelectToken("id").ToString());
+                            }
+                        }
+                    }
+                }
+
+                Assert.IsNotNull(reverseOrder);
+
+                Assert.AreEqual(total, count);
+                forwardOrder.Reverse();
+
+                CollectionAssert.AreEqual(forwardOrder, reverseOrder);
+                Assert.IsFalse(reverseOrder.Where(x => string.IsNullOrEmpty(x)).Any());
+            }
+            finally
+            {
+                await container?.DeleteContainerAsync();
+            }
+        }
+
+        private static Stream GenerateStreamFromString(string s)
+        {
+            MemoryStream stream = new MemoryStream();
+            StreamWriter writer = new StreamWriter(stream);
+            writer.Write(s);
+            writer.Flush();
+            stream.Position = 0;
+            return stream;
+        }
+
 
         private async Task<IList<ToDoActivity>> CreateRandomItems(ContainerCore container, int pkCount, int perPKItemCount = 1, bool randomPartitionKey = true)
         {
@@ -268,6 +408,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
         }
 
+        // Copy of Friends
+        public enum BinaryScanDirection : byte
+        {
+            Invalid = 0x00,
+            Forward = 0x01,
+            Reverse = 0x02,
+        }
 
         public class ToDoActivity
         {
