@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Documents;
     using static Microsoft.Azure.Documents.RuntimeConstants;
 
@@ -117,25 +118,14 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.feedTokenInternal == null)
             {
-                string containerRId = string.Empty;
-                if (this.containerCore != null)
+                TryCatch<FeedTokenInternal> tryCatchFeedTokeninternal = await this.TryInitializeFeedTokenAsync(cancellationToken);
+                if (!tryCatchFeedTokeninternal.Succeeded)
                 {
-                    containerRId = await this.containerCore.GetRIDAsync(cancellationToken);
+                    CosmosException cosmosException = tryCatchFeedTokeninternal.Exception.InnerException as CosmosException;
+                    return cosmosException.ToCosmosResponseMessage(new RequestMessage(method: null, requestUri: null, diagnosticsContext: diagnostics));
                 }
 
-                // Create FeedToken for the full Range
-                this.feedTokenInternal = new FeedTokenEPKRange(
-                    containerRId,
-                    new PartitionKeyRange()
-                    {
-                        MinInclusive = Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
-                        MaxExclusive = Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey
-                    });
-                // Initialize with the ContinuationToken that the user passed, if any
-                if (this.continuationToken != null)
-                {
-                    this.feedTokenInternal.UpdateContinuation(this.continuationToken);
-                }
+                this.feedTokenInternal = tryCatchFeedTokeninternal.Result;
             }
 
             ResponseMessage response = await this.clientContext.ProcessResourceOperationStreamAsync(
@@ -185,6 +175,38 @@ namespace Microsoft.Azure.Cosmos
         {
             continuationToken = this.continuationToken;
             return true;
+        }
+
+        private async Task<TryCatch<FeedTokenInternal>> TryInitializeFeedTokenAsync(CancellationToken cancellationToken)
+        {
+            string containerRId = string.Empty;
+            if (this.containerCore != null)
+            {
+                try
+                {
+                    containerRId = await this.containerCore.GetRIDAsync(cancellationToken);
+                }
+                catch (CosmosException cosmosException)
+                {
+                    return TryCatch<FeedTokenInternal>.FromException(cosmosException);
+                }
+            }
+
+            // Create FeedToken for the full Range
+            FeedTokenEPKRange feedTokenInternal = new FeedTokenEPKRange(
+                containerRId,
+                new PartitionKeyRange()
+                {
+                    MinInclusive = Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
+                    MaxExclusive = Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey
+                });
+            // Initialize with the ContinuationToken that the user passed, if any
+            if (this.continuationToken != null)
+            {
+                feedTokenInternal.UpdateContinuation(this.continuationToken);
+            }
+
+            return TryCatch<FeedTokenInternal>.FromResult(feedTokenInternal);
         }
     }
 
