@@ -247,7 +247,7 @@ namespace Microsoft.Azure.Cosmos
                 sqlQuerySpec: queryDefinition?.ToSqlQuerySpec(),
                 isContinuationExcpected: true,
                 continuationToken: continuationToken,
-                feedTokenInternal: null,
+                feedToken: null,
                 requestOptions: requestOptions);
         }
 
@@ -436,7 +436,7 @@ namespace Microsoft.Azure.Cosmos
                 sqlQuerySpec: queryDefinition?.ToSqlQuerySpec(),
                 isContinuationExcpected: true,
                 continuationToken: null,
-                feedTokenInternal: feedTokenInternal,
+                feedToken: feedTokenInternal,
                 requestOptions: requestOptions);
         }
 
@@ -576,13 +576,18 @@ namespace Microsoft.Azure.Cosmos
             SqlQuerySpec sqlQuerySpec,
             bool isContinuationExcpected,
             string continuationToken,
-            FeedTokenInternal feedTokenInternal,
+            FeedTokenInternal feedToken,
             QueryRequestOptions requestOptions)
         {
             requestOptions = requestOptions ?? new QueryRequestOptions();
 
             if (requestOptions.IsEffectivePartitionKeyRouting)
             {
+                if (feedToken != null)
+                {
+                    throw new ArgumentException(nameof(feedToken), ClientResources.FeedToken_EffectivePartitionKeyRouting);
+                }
+
                 requestOptions.PartitionKey = null;
             }
 
@@ -594,7 +599,7 @@ namespace Microsoft.Azure.Cosmos
                     resourceType: ResourceType.Document,
                     queryDefinition: null,
                     continuationToken: continuationToken,
-                    feedTokenInternal: feedTokenInternal,
+                    feedTokenInternal: feedToken,
                     options: requestOptions);
             }
 
