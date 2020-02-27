@@ -124,8 +124,12 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(request));
             }
 
-            request.Properties[HandlerConstants.StartEpkString] = this.currentToken.Range.Min;
-            request.Properties[HandlerConstants.EndEpkString] = this.currentToken.Range.Max;
+            // in case EPK has already been set
+            if (!request.Properties.ContainsKey(HandlerConstants.StartEpkString))
+            {
+                request.Properties[HandlerConstants.StartEpkString] = this.currentToken.Range.Min;
+                request.Properties[HandlerConstants.EndEpkString] = this.currentToken.Range.Max;
+            }
         }
 
         public override string GetContinuation() => this.currentToken.Token;
