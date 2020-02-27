@@ -193,6 +193,46 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        [TestMethod]
+        public void ValidateErrorHandling()
+        {
+            Error error = new Error()
+            {
+                Code = System.Net.HttpStatusCode.BadRequest.ToString(),
+                Message = "Unsupported Query",
+                AdditionalErrorInfo = "Additional error info message"
+            };
+
+            CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContextCore();
+
+            CosmosException cosmosException = CosmosExceptionFactory.CreateBadRequestException(
+                null,
+                error: error,
+                diagnosticsContext: diagnostics);
+
+            ResponseMessage responseMessage = QueryResponse.CreateFailure(
+                statusCode: System.Net.HttpStatusCode.BadRequest,
+                cosmosException: cosmosException,
+                requestMessage: null,
+                diagnostics: diagnostics,
+                responseHeaders: null);
+
+            Assert.AreEqual(error, responseMessage.CosmosException.Error);
+            Assert.IsTrue(responseMessage.ErrorMessage.Contains(error.Message));
+            Assert.IsTrue(responseMessage.ErrorMessage.Contains(error.AdditionalErrorInfo));
+
+            try
+            {
+                responseMessage.EnsureSuccessStatusCode();
+                Assert.Fail("Should throw exception");
+            }catch(CosmosException ce ) when (ce.StatusCode == HttpStatusCode.BadRequest)
+            {
+                Assert.IsTrue(ce.Message.Contains(error.Message));
+                Assert.IsTrue(ce.ToString().Contains(error.Message));
+                Assert.IsTrue(ce.ToString().Contains(error.AdditionalErrorInfo));
+            }
+        }
+
         private void ValidateExceptionInfo(
             CosmosException exception,
             HttpStatusCode httpStatusCode,
