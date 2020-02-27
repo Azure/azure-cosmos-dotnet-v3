@@ -179,13 +179,12 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return new FeedIteratorCore(
+            return FeedIteratorCore.CreateForNonPartitionedResource(
                clientContext: this.ClientContext,
                resourceLink: this.OfferRootUri,
                resourceType: ResourceType.Offer,
                queryDefinition: queryDefinition,
                continuationToken: continuationToken,
-               feedTokenInternal: null, // Add FeedToken input support
                options: requestOptions);
         }
 

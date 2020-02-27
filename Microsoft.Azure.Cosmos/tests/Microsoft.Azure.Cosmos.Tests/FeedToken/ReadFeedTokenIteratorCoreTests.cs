@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void ReadFeedIteratorCore_HasMoreResultsDefault()
         {
-            FeedIteratorCore feedTokenIterator = new FeedIteratorCore(Mock.Of<ContainerCore>(), new Uri("http://localhost"), Documents.ResourceType.Document, null, null, null, new QueryRequestOptions());
+            FeedIteratorCore feedTokenIterator = FeedIteratorCore.CreateForPartitionedResource(Mock.Of<ContainerCore>(), new Uri("http://localhost"), Documents.ResourceType.Document, null, null, null, new QueryRequestOptions());
             Assert.IsTrue(feedTokenIterator.HasMoreResults);
         }
 
@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void ReadFeedIteratorCore_FeedToken()
         {
             FeedTokenInternal feedToken = Mock.Of<FeedTokenInternal>();
-            FeedIteratorCore feedTokenIterator = new FeedIteratorCore(Mock.Of<ContainerCore>(), new Uri("http://localhost"), Documents.ResourceType.Document, null, null, feedToken, new QueryRequestOptions());
+            FeedIteratorCore feedTokenIterator = FeedIteratorCore.CreateForPartitionedResource(Mock.Of<ContainerCore>(), new Uri("http://localhost"), Documents.ResourceType.Document, null, null, feedToken, new QueryRequestOptions());
             Assert.AreEqual(feedToken, feedTokenIterator.FeedToken);
         }
 
@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             FeedTokenInternal feedToken = Mock.Of<FeedTokenInternal>();
             Mock.Get(feedToken)
                 .Setup(f => f.GetContinuation()).Returns(continuation);
-            FeedIteratorCore feedTokenIterator = new FeedIteratorCore(Mock.Of<ContainerCore>(), new Uri("http://localhost"), Documents.ResourceType.Document, null, null, feedToken, new QueryRequestOptions());
+            FeedIteratorCore feedTokenIterator = FeedIteratorCore.CreateForPartitionedResource(Mock.Of<ContainerCore>(), new Uri("http://localhost"), Documents.ResourceType.Document, null, null, feedToken, new QueryRequestOptions());
             Assert.IsTrue(feedTokenIterator.TryGetContinuationToken(out string state));
             Assert.AreEqual(continuation, state);
         }
@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .Setup(f => f.IsDone)
                 .Returns(true);
 
-            FeedIteratorCore feedTokenIterator = new FeedIteratorCore(containerCore, new Uri("http://localhost"), Documents.ResourceType.Document, null, null, feedToken, new QueryRequestOptions());
+            FeedIteratorCore feedTokenIterator = FeedIteratorCore.CreateForPartitionedResource(containerCore, new Uri("http://localhost"), Documents.ResourceType.Document, null, null, feedToken, new QueryRequestOptions());
             ResponseMessage response = await feedTokenIterator.ReadNextAsync();
 
             Assert.AreEqual(feedToken, feedTokenIterator.FeedToken);
@@ -140,7 +140,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .Setup(f => f.IsDone)
                 .Returns(true);
 
-            FeedIteratorCore feedTokenIterator = new FeedIteratorCore(containerCore, new Uri("http://localhost"), Documents.ResourceType.Document, null, null, feedToken, new QueryRequestOptions());
+            FeedIteratorCore feedTokenIterator = FeedIteratorCore.CreateForPartitionedResource(containerCore, new Uri("http://localhost"), Documents.ResourceType.Document, null, null, feedToken, new QueryRequestOptions());
             bool creatorCalled = false;
             Func<ResponseMessage, FeedResponse<dynamic>> creator = (ResponseMessage r) =>
             {
@@ -203,7 +203,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .Setup(f => f.IsDone)
                 .Returns(true);
 
-            FeedIterator feedTokenIterator = new FeedIteratorCore(containerCore, new Uri("http://localhost"), Documents.ResourceType.Document, null, null, feedToken, new QueryRequestOptions());
+            FeedIterator feedTokenIterator = FeedIteratorCore.CreateForPartitionedResource(containerCore, new Uri("http://localhost"), Documents.ResourceType.Document, null, null, feedToken, new QueryRequestOptions());
             ResponseMessage response = await feedTokenIterator.ReadNextAsync();
 
             Mock.Get(feedToken)
@@ -257,7 +257,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .Setup(f => f.IsDone)
                 .Returns(true);
 
-            FeedIterator feedTokenIterator = new FeedIteratorCore(containerCore, new Uri("http://localhost"), Documents.ResourceType.Document, null, null, feedToken, new QueryRequestOptions());
+            FeedIterator feedTokenIterator = FeedIteratorCore.CreateForPartitionedResource(containerCore, new Uri("http://localhost"), Documents.ResourceType.Document, null, null, feedToken, new QueryRequestOptions());
             ResponseMessage response = await feedTokenIterator.ReadNextAsync();
 
             Mock.Get(feedToken)
@@ -299,7 +299,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .Setup(c => c.ClientContext)
                 .Returns(cosmosClientContext.Object);
 
-            FeedIteratorCore feedTokenIterator = new FeedIteratorCore(containerCore, new Uri("http://localhost"), Documents.ResourceType.Document, null, null, null, new QueryRequestOptions());
+            FeedIteratorCore feedTokenIterator = FeedIteratorCore.CreateForPartitionedResource(containerCore, new Uri("http://localhost"), Documents.ResourceType.Document, null, null, null, new QueryRequestOptions());
             ResponseMessage response = await feedTokenIterator.ReadNextAsync();
 
             FeedToken feedTokenOut = feedTokenIterator.FeedToken;
@@ -337,7 +337,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(responseMessage));
 
-            FeedIteratorCore feedTokenIterator = new FeedIteratorCore(cosmosClientContext.Object, new Uri("http://localhost"), Documents.ResourceType.Document, null, null, null, new QueryRequestOptions());
+            FeedIteratorCore feedTokenIterator = FeedIteratorCore.CreateForNonPartitionedResource(cosmosClientContext.Object, new Uri("http://localhost"), Documents.ResourceType.Document, null, null, new QueryRequestOptions());
             ResponseMessage response = await feedTokenIterator.ReadNextAsync();
 
             FeedToken feedTokenOut = feedTokenIterator.FeedToken;
@@ -381,7 +381,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .Setup(f => f.ShouldRetryAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(false));
 
-            FeedIteratorCore changeFeedIteratorCore = new FeedIteratorCore(containerCore, new Uri($"/dbs/db/colls/colls", UriKind.Relative), Documents.ResourceType.Document, null, null, feedToken, new QueryRequestOptions());
+            FeedIteratorCore changeFeedIteratorCore = FeedIteratorCore.CreateForPartitionedResource(containerCore, new Uri($"/dbs/db/colls/colls", UriKind.Relative), Documents.ResourceType.Document, null, null, feedToken, new QueryRequestOptions());
 
             ResponseMessage response = await changeFeedIteratorCore.ReadNextAsync();
 

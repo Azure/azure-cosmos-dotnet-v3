@@ -228,13 +228,12 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return new FeedIteratorCore(
+            return FeedIteratorCore.CreateForNonPartitionedResource(
                clientContext: this.ClientContext,
                this.LinkUri,
                resourceType: ResourceType.Permission,
                queryDefinition: queryDefinition,
                continuationToken: continuationToken,
-               feedTokenInternal: null, // Add FeedToken input support
                options: requestOptions);
         }
 

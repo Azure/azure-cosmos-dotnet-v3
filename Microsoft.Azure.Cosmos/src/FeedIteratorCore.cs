@@ -26,10 +26,52 @@ namespace Microsoft.Azure.Cosmos
         private bool hasMoreResultsInternal;
         private FeedTokenInternal feedTokenInternal;
 
-        /// <summary>
-        /// For non-partitioned resources
-        /// </summary>
-        internal FeedIteratorCore(
+        internal static FeedIteratorCore CreateForNonPartitionedResource( 
+            CosmosClientContext clientContext,
+            Uri resourceLink,
+            ResourceType resourceType,
+            QueryDefinition queryDefinition,
+            string continuationToken,
+            QueryRequestOptions options)
+        {
+            return new FeedIteratorCore(
+                clientContext: clientContext,
+                containerCore: null,
+                resourceLink: resourceLink,
+                resourceType: resourceType,
+                queryDefinition: queryDefinition,
+                continuationToken: continuationToken,
+                feedTokenInternal: null,
+                options: options);
+        }
+
+        internal static FeedIteratorCore CreateForPartitionedResource(
+            ContainerCore containerCore,
+            Uri resourceLink,
+            ResourceType resourceType,
+            QueryDefinition queryDefinition,
+            string continuationToken,
+            FeedTokenInternal feedTokenInternal,
+            QueryRequestOptions options)
+        {
+            if (containerCore == null)
+            {
+                throw new ArgumentNullException(nameof(containerCore));
+            }
+
+            return new FeedIteratorCore(
+                containerCore: containerCore,
+                clientContext: containerCore.ClientContext,
+                resourceLink: resourceLink,
+                resourceType: resourceType,
+                queryDefinition: queryDefinition,
+                continuationToken: continuationToken,
+                feedTokenInternal: feedTokenInternal,
+                options: options);
+        }
+
+        private FeedIteratorCore(
+            ContainerCore containerCore,
             CosmosClientContext clientContext,
             Uri resourceLink,
             ResourceType resourceType,
@@ -39,30 +81,8 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions options)
         {
             this.resourceLink = resourceLink;
-            this.clientContext = clientContext;
-            this.resourceType = resourceType;
-            this.querySpec = queryDefinition?.ToSqlQuerySpec();
-            this.feedTokenInternal = feedTokenInternal;
-            this.continuationToken = continuationToken ?? this.feedTokenInternal?.GetContinuation();
-            this.requestOptions = options;
-            this.hasMoreResultsInternal = true;
-        }
-
-        /// <summary>
-        /// For partitioned resources
-        /// </summary>
-        internal FeedIteratorCore(
-            ContainerCore containerCore,
-            Uri resourceLink,
-            ResourceType resourceType,
-            QueryDefinition queryDefinition,
-            string continuationToken,
-            FeedTokenInternal feedTokenInternal,
-            QueryRequestOptions options)
-        {
-            this.resourceLink = resourceLink;
             this.containerCore = containerCore;
-            this.clientContext = containerCore.ClientContext;
+            this.clientContext = clientContext;
             this.resourceType = resourceType;
             this.querySpec = queryDefinition?.ToSqlQuerySpec();
             this.feedTokenInternal = feedTokenInternal;
@@ -121,8 +141,7 @@ namespace Microsoft.Azure.Cosmos
                 TryCatch<FeedTokenInternal> tryCatchFeedTokeninternal = await this.TryInitializeFeedTokenAsync(cancellationToken);
                 if (!tryCatchFeedTokeninternal.Succeeded)
                 {
-                    CosmosException cosmosException = tryCatchFeedTokeninternal.Exception.InnerException as CosmosException;
-                    if (cosmosException != null)
+                    if (tryCatchFeedTokeninternal.Exception.InnerException is CosmosException cosmosException)
                     {
                         return cosmosException.ToCosmosResponseMessage(new RequestMessage(method: null, requestUri: null, diagnosticsContext: diagnostics));
                     }

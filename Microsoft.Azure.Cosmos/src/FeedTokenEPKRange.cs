@@ -20,13 +20,14 @@ namespace Microsoft.Azure.Cosmos
         internal readonly Documents.Routing.Range<string> CompleteRange;
         private CompositeContinuationToken currentToken;
         private string initialNoResultsRange;
-        private HashSet<string> doneRanges = new HashSet<string>();
+        private HashSet<string> doneRanges;
 
         private FeedTokenEPKRange(
             string containerRid)
             : base(containerRid)
         {
             this.CompositeContinuationTokens = new Queue<CompositeContinuationToken>();
+            this.doneRanges = new HashSet<string>();
         }
 
         private FeedTokenEPKRange(

@@ -75,13 +75,12 @@ namespace Microsoft.Azure.Cosmos.Scripts
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return new FeedIteratorCore(
+            return FeedIteratorCore.CreateForNonPartitionedResource(
                clientContext: this.clientContext,
                this.container.LinkUri,
                resourceType: ResourceType.StoredProcedure,
                queryDefinition: queryDefinition,
                continuationToken: continuationToken,
-               feedTokenInternal: null, // Add FeedToken input support
                options: requestOptions);
         }
 
@@ -288,13 +287,12 @@ namespace Microsoft.Azure.Cosmos.Scripts
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return new FeedIteratorCore(
+            return FeedIteratorCore.CreateForNonPartitionedResource(
                clientContext: this.clientContext,
                this.container.LinkUri,
                resourceType: ResourceType.Trigger,
                queryDefinition: queryDefinition,
                continuationToken: continuationToken,
-               feedTokenInternal: null, // Add FeedToken input support
                options: requestOptions);
         }
 
@@ -449,13 +447,12 @@ namespace Microsoft.Azure.Cosmos.Scripts
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return new FeedIteratorCore(
+            return FeedIteratorCore.CreateForNonPartitionedResource(
                clientContext: this.clientContext,
                this.container.LinkUri,
                resourceType: ResourceType.UserDefinedFunction,
                queryDefinition: queryDefinition,
                continuationToken: continuationToken,
-               feedTokenInternal: null, // Add FeedToken input support
                options: requestOptions);
         }
 

@@ -588,7 +588,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (sqlQuerySpec == null)
             {
-                return new FeedIteratorCore(
+                return FeedIteratorCore.CreateForPartitionedResource(
                     this,
                     this.LinkUri,
                     resourceType: ResourceType.Document,
