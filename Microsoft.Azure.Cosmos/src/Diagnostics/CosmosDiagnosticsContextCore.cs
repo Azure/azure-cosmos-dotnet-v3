@@ -6,6 +6,8 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
+    using System.Linq;
     using Microsoft.Azure.Cosmos.Diagnostics;
 
     /// <summary>
@@ -16,6 +18,7 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal sealed class CosmosDiagnosticsContextCore : CosmosDiagnosticsContext
     {
+        private static readonly IReadOnlyCollection<Uri> DefaultContactedRegions = new ReadOnlyCollection<Uri>(null);
         /// <summary>
         /// Detailed view of all the operations.
         /// </summary>
@@ -27,6 +30,8 @@ namespace Microsoft.Azure.Cosmos
 
         private bool isOverallScopeSet = false;
 
+        private HashSet<Uri> ContactedRegions = null;
+
         static CosmosDiagnosticsContextCore()
         {
             // Default user agent string does not contain client id or features.
@@ -34,9 +39,10 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContextCore.DefaultUserAgentString = userAgentContainer.UserAgent;
         }
 
-        public CosmosDiagnosticsContextCore()
+        public CosmosDiagnosticsContextCore(string userClientRequestId)
         {
             this.StartUtc = DateTime.UtcNow;
+            this.UserClientRequestId = userClientRequestId;
             this.ContextList = new List<CosmosDiagnosticsInternal>();
         }
 
@@ -49,6 +55,8 @@ namespace Microsoft.Azure.Cosmos
         public override TimeSpan? TotalElapsedTime { get; protected set; }
 
         public override string UserAgent { get; protected set; } = CosmosDiagnosticsContextCore.DefaultUserAgentString;
+
+        public override string UserClientRequestId { get; }
 
         internal override CosmosDiagnosticScope CreateOverallScope(string name)
         {
@@ -88,6 +96,22 @@ namespace Microsoft.Azure.Cosmos
             if (statusCode < 200 || statusCode > 299)
             {
                 this.FailedRequestCount++;
+            }
+
+            HashSet<Uri> contactedRegions = pointOperationStatistics?.ClientSideRequestStatistics?.RegionsContacted;
+            if (contactedRegions != null && contactedRegions.Count > 0)
+            {
+                if (this.ContactedRegions == null)
+                {
+                    this.ContactedRegions = contactedRegions;
+                }
+                else
+                {
+                    if (!object.ReferenceEquals(this.ContactedRegions, contactedRegions))
+                    {
+                        this.ContactedRegions.UnionWith(contactedRegions);
+                    }
+                }
             }
 
             this.ContextList.Add(pointOperationStatistics);
@@ -160,6 +184,21 @@ namespace Microsoft.Azure.Cosmos
 
             this.TotalRequestCount += newContext.TotalRequestCount;
             this.FailedRequestCount += newContext.FailedRequestCount;
+        }
+
+        public override TimeSpan GetElapsedClientLatency()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override IReadOnlyCollection<Uri> GetContactedRegions()
+        {
+            if (this.ContactedRegions == null)
+            {
+                return DefaultContactedRegions;
+            }
+
+            return new ReadOnlyCollection<Uri>(this.ContactedRegions.ToList());
         }
     }
 }

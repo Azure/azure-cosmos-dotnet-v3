@@ -44,12 +44,12 @@ namespace Microsoft.Azure.Cosmos
 
         internal static CosmosDiagnosticsContext Create(RequestOptions requestOptions)
         {
-            return requestOptions?.DiagnosticContext ?? CosmosDiagnosticsContext.Create();
+            return requestOptions?.DiagnosticContext ?? CosmosDiagnosticsContext.Create(requestOptions?.UserClientRequestId);
         }
 
-        internal static CosmosDiagnosticsContext Create()
+        internal static CosmosDiagnosticsContext Create(string userClientRequestId = null)
         {
-            return new CosmosDiagnosticsContextCore();
+            return new CosmosDiagnosticsContextCore(userClientRequestId);
         }
     }
 }
