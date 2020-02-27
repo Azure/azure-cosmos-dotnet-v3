@@ -79,6 +79,7 @@ namespace Microsoft.Azure.Cosmos
         public void OnBeforeSendRequest(DocumentServiceRequest request)
         {
             this.shouldPassThroughOnGone = request != null
+                && request.Properties != null
                 && request.Properties.ContainsKey(HandlerConstants.GonePassthrough);
             this.nextRetryPolicy?.OnBeforeSendRequest(request);
         }
