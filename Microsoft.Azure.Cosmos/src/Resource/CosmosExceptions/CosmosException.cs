@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Net;
     using System.Text;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// The Cosmos Client exception
@@ -25,8 +26,9 @@ namespace Microsoft.Azure.Cosmos
             TimeSpan? retryAfter,
             Headers headers,
             CosmosDiagnosticsContext diagnosticsContext,
+            Error error,
             Exception innerException)
-            : base(message, innerException)
+            : base(MergeErrorMessages(message, error), innerException)
         {
             this.stackTrace = stackTrace;
             this.ActivityId = activityId;
@@ -35,6 +37,7 @@ namespace Microsoft.Azure.Cosmos
             this.RetryAfter = retryAfter;
             this.RequestCharge = requestCharge;
             this.Headers = headers;
+            this.Error = error;
 
             // Always have a diagnostic context. A new diagnostic will have useful info like user agent
             this.DiagnosticsContext = diagnosticsContext ?? CosmosDiagnosticsContext.Create();
@@ -132,6 +135,11 @@ namespace Microsoft.Azure.Cosmos
         internal virtual CosmosDiagnosticsContext DiagnosticsContext { get; }
 
         /// <summary>
+        /// Gets the internal error object.
+        /// </summary>
+        internal virtual Documents.Error Error { get; set; }
+
+        /// <summary>
         /// Try to get a header from the cosmos response message
         /// </summary>
         /// <param name="headerName"></param>
@@ -172,6 +180,24 @@ namespace Microsoft.Azure.Cosmos
                  diagnostics: this.DiagnosticsContext);
         }
 
+        /// <summary>
+        /// This handles the scenario there is a message and the error object is set.
+        /// </summary>
+        private static string MergeErrorMessages(string message, Error error)
+        {
+            if (error == null)
+            {
+                return message;
+            }
+
+            if (string.IsNullOrEmpty(message))
+            {
+                return error.Message;
+            }
+
+            return $"{message}; Inner Message:{error.Message}";
+        }
+
         private string ToStringHelper(bool includeDiagnostics)
         {
             StringBuilder stringBuilder = new StringBuilder();
@@ -180,6 +206,14 @@ namespace Microsoft.Azure.Cosmos
             {
                 stringBuilder.Append(" : ");
                 stringBuilder.Append(this.Message);
+                stringBuilder.AppendLine();
+            }
+
+            if (this.Error != null)
+            {
+                stringBuilder.Append(" : ");
+                stringBuilder.Append($"Code :{this.Error.Code ?? string.Empty}; Details :{this.Error.ErrorDetails ?? string.Empty}; ");
+                stringBuilder.Append($"Additional Details: {this.Error.AdditionalErrorInfo ?? string.Empty};");
                 stringBuilder.AppendLine();
             }
 

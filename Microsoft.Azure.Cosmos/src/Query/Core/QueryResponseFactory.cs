@@ -46,8 +46,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                 }
                 else
                 {
-                    CosmosException unkownCosmosException = CosmosExceptionFactory.Create(
-                        statusCode: System.Net.HttpStatusCode.InternalServerError,
+                    CosmosException unkownCosmosException = CosmosExceptionFactory.CreateInternalServerErrorException(
                         subStatusCode: default,
                         message: exception.Message,
                         stackTrace: exception.StackTrace,
@@ -127,6 +126,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                     cosmosException.RetryAfter,
                     cosmosException.Headers,
                     cosmosException.DiagnosticsContext,
+                    cosmosException.Error,
                     cosmosException.InnerException),
                 requestCharge: queryResponseCore.RequestCharge,
                 activityId: queryResponseCore.ActivityId,

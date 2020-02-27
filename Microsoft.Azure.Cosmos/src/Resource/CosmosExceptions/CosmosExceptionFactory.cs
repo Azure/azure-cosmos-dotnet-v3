@@ -49,6 +49,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 dce.RetryAfter,
                 headers,
                 diagnosticsContext,
+                dce.Error,
                 dce.InnerException);
         }
 
@@ -67,6 +68,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 retryAfter: default,
                 headers: requestMessage?.Headers,
                 diagnosticsContext: default,
+                error: default,
                 innerException: default);
         }
 
@@ -83,8 +85,8 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
 
             // If content was added after the response message
             // creation the exception should be updated.
-            string errorMessage = responseMessage.ErrorMessage;
-            string contentMessage = CosmosExceptionFactory.GetErrorMessageFromStream(responseMessage.Content);
+            string errorMessage = responseMessage.CosmosException?.Message;
+            (Error error, string contentMessage) = CosmosExceptionFactory.GetErrorFromStream(responseMessage.Content);
             if (!string.IsNullOrEmpty(contentMessage))
             {
                 if (string.IsNullOrEmpty(errorMessage))
@@ -97,26 +99,17 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 }
             }
 
-            string stackTrace;
-            if (responseMessage.CosmosException != null)
-            {
-                stackTrace = responseMessage.CosmosException.StackTrace;
-            }
-            else
-            {
-                stackTrace = null;
-            }
-
             return CosmosExceptionFactory.Create(
                 responseMessage.StatusCode,
                 (int)responseMessage.Headers.SubStatusCode,
                 errorMessage,
-                stackTrace,
+                responseMessage?.CosmosException?.StackTrace,
                 responseMessage.Headers.ActivityId,
                 responseMessage.Headers.RequestCharge,
                 responseMessage.Headers.RetryAfter,
                 responseMessage.Headers,
                 responseMessage.DiagnosticsContext,
+                error,
                 responseMessage.CosmosException?.InnerException);
         }
 
@@ -134,23 +127,24 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 throw new ArgumentNullException(nameof(requestMessage));
             }
 
-            string errorMessage = CosmosExceptionFactory.GetErrorMessageFromStream(storeResponse.ResponseBody);
+            (Error error, string errorMessage) = CosmosExceptionFactory.GetErrorFromStream(storeResponse.ResponseBody);
             Headers headers = storeResponse.ToCosmosHeaders();
 
             return CosmosExceptionFactory.Create(
-                storeResponse.StatusCode,
-                (int)headers.SubStatusCode,
-                errorMessage,
-                null,
-                headers.ActivityId,
-                headers.RequestCharge,
-                headers.RetryAfter,
-                headers,
-                requestMessage.DiagnosticsContext,
-                null);
+                statusCode: storeResponse.StatusCode,
+                subStatusCode: (int)headers.SubStatusCode,
+                message: errorMessage,
+                stackTrace: null,
+                activityId: headers.ActivityId,
+                requestCharge: headers.RequestCharge,
+                retryAfter: headers.RetryAfter,
+                headers: headers,
+                diagnosticsContext: requestMessage.DiagnosticsContext,
+                error: error,
+                innerException: null);
         }
 
-        internal static string GetErrorMessageFromStream(
+        internal static (Error, string) GetErrorFromStream(
             Stream content)
         {
             using (content)
@@ -164,28 +158,22 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                         if (error != null)
                         {
                             // Error format is not consistent across modes
-                            if (!string.IsNullOrEmpty(error.Message))
-                            {
-                                return error.Message;
-                            }
-                            else
-                            {
-                                return error.ToString();
-                            }
+                            return (error, null);
                         }
                     }
                     catch (Newtonsoft.Json.JsonReaderException)
                     {
-                        // Content is not Json
-                        content.Position = 0;
-                        using (StreamReader streamReader = new StreamReader(content))
-                        {
-                            return streamReader.ReadToEnd();
-                        }
+                    }
+
+                    // Content is not Json
+                    content.Position = 0;
+                    using (StreamReader streamReader = new StreamReader(content))
+                    {
+                        return (null, streamReader.ReadToEnd());
                     }
                 }
 
-                return null;
+                return (null, null);
             }
         }
 
@@ -198,6 +186,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
             TimeSpan? retryAfter = default,
             Headers headers = default,
             CosmosDiagnosticsContext diagnosticsContext = default,
+            Error error = default,
             Exception innerException = default)
         {
             return CosmosExceptionFactory.Create(
@@ -210,6 +199,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 retryAfter,
                 headers,
                 diagnosticsContext,
+                error,
                 innerException);
         }
 
@@ -222,6 +212,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
             TimeSpan? retryAfter = default,
             Headers headers = default,
             CosmosDiagnosticsContext diagnosticsContext = default,
+            Error error = default,
             Exception innerException = default)
         {
             return CosmosExceptionFactory.Create(
@@ -234,6 +225,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 retryAfter,
                 headers,
                 diagnosticsContext,
+                error,
                 innerException);
         }
 
@@ -246,6 +238,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
             TimeSpan? retryAfter = default,
             Headers headers = default,
             CosmosDiagnosticsContext diagnosticsContext = default,
+            Error error = default,
             Exception innerException = default)
         {
             return CosmosExceptionFactory.Create(
@@ -258,6 +251,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 retryAfter,
                 headers,
                 diagnosticsContext,
+                error,
                 innerException);
         }
 
@@ -270,6 +264,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
             TimeSpan? retryAfter = default,
             Headers headers = default,
             CosmosDiagnosticsContext diagnosticsContext = default,
+            Error error = default,
             Exception innerException = default)
         {
             return CosmosExceptionFactory.Create(
@@ -282,6 +277,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 retryAfter,
                 headers,
                 diagnosticsContext,
+                error,
                 innerException);
         }
 
@@ -294,6 +290,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
             TimeSpan? retryAfter = default,
             Headers headers = default,
             CosmosDiagnosticsContext diagnosticsContext = default,
+            Error error = default,
             Exception innerException = default)
         {
             return CosmosExceptionFactory.Create(
@@ -306,6 +303,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 retryAfter,
                 headers,
                 diagnosticsContext,
+                error,
                 innerException);
         }
 
@@ -319,6 +317,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
             TimeSpan? retryAfter,
             Headers headers,
             CosmosDiagnosticsContext diagnosticsContext,
+            Error error,
             Exception innerException)
         {
             return new CosmosException(
@@ -331,6 +330,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 retryAfter,
                 headers,
                 diagnosticsContext,
+                error,
                 innerException);
         }
     }

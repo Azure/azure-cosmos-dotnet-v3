@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Documents;
 
     internal static class QueryResponseMessageFactory
@@ -171,17 +172,18 @@ namespace Microsoft.Azure.Cosmos.Tests
             QueryResponseCore splitResponse = QueryResponseCore.CreateFailure(
                statusCode: httpStatusCode,
                subStatusCodes: subStatusCodes,
-               cosmosException: new CosmosException(
-                   httpStatusCode,
-                   errorMessage,
-                   (int)subStatusCodes,
-                   new System.Diagnostics.StackTrace().ToString(),
-                   acitivityId,
-                   10.4,
-                   default,
-                   default,
+               cosmosException: CosmosExceptionFactory.Create(
+                   statusCode: httpStatusCode,
+                   subStatusCode: (int)subStatusCodes,
+                   message: errorMessage,
+                   stackTrace: new System.Diagnostics.StackTrace().ToString(),
+                   activityId: acitivityId,
+                   requestCharge: 10.4,
+                   retryAfter: default,
+                   headers: default,
                    diagnosticsContext: diagnosticsContext,
-                   default),
+                   error: default,
+                   innerException: default),
                requestCharge: 10.4,
                activityId: acitivityId,
                diagnostics: diagnostics);
