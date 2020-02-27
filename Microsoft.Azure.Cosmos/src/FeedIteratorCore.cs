@@ -150,6 +150,8 @@ namespace Microsoft.Azure.Cosmos
                        request.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
                    }
 
+                   // Avoid Split handling on the pipeline, let it be handled by the FeedToken
+                   request.Properties[HandlerConstants.GonePassthrough] = true;
                    this.feedTokenInternal?.EnrichRequest(request);
                },
                diagnosticsScope: diagnostics,

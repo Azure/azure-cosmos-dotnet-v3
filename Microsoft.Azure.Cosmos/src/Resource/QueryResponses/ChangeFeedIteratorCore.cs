@@ -106,6 +106,8 @@ namespace Microsoft.Azure.Cosmos
                 requestEnricher: request =>
                 {
                     ChangeFeedRequestOptions.FillContinuationToken(request, this.feedTokenInternal.GetContinuation());
+                    // Avoid Split handling on the pipeline, let it be handled by the FeedToken
+                    request.Properties[HandlerConstants.GonePassthrough] = true;
                     this.feedTokenInternal.EnrichRequest(request);
                 },
                 partitionKey: null,

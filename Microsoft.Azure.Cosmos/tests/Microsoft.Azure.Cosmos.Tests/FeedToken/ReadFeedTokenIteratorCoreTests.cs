@@ -9,6 +9,8 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Handlers;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -347,6 +349,73 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey, feedTokenEPKRange.CompleteRange.Max);
             Assert.AreEqual(continuation, feedTokenEPKRange.CompositeContinuationTokens.Peek().Token);
             Assert.IsFalse(feedTokenEPKRange.IsDone);
+        }
+
+        [TestMethod]
+        public async Task ReadFeedIteratorCore_Avoids_PartitionKeyRangeGoneRetryHandler()
+        {
+            int executionCount = 0;
+            CosmosClientContext cosmosClientContext = GetMockedClientContext((RequestMessage requestMessage, CancellationToken cancellationToken) =>
+            {
+                // Force OnBeforeRequestActions call
+                requestMessage.ToDocumentServiceRequest();
+                if (executionCount++ == 0)
+                {
+                    return TestHandler.ReturnStatusCode(HttpStatusCode.Gone, Documents.SubStatusCodes.PartitionKeyRangeGone);
+                }
+
+                return TestHandler.ReturnStatusCode(HttpStatusCode.OK);
+            });
+
+            ContainerCore containerCore = Mock.Of<ContainerCore>();
+            Mock.Get(containerCore)
+                .Setup(c => c.ClientContext)
+                .Returns(cosmosClientContext);
+            Mock.Get(containerCore)
+                .Setup(c => c.LinkUri)
+                .Returns(new Uri($"/dbs/db/colls/colls", UriKind.Relative));
+
+            FeedIteratorCore changeFeedIteratorCore = new FeedIteratorCore(cosmosClientContext, new Uri($"/dbs/db/colls/colls", UriKind.Relative), Documents.ResourceType.Document, null, null, null, new QueryRequestOptions());
+
+            ResponseMessage response = await changeFeedIteratorCore.ReadNextAsync();
+
+            Assert.AreEqual(1, executionCount, "PartitionKeyRangeGoneRetryHandler handled the Split");
+            Assert.AreEqual(HttpStatusCode.Gone, response.StatusCode);
+        }
+
+        private static CosmosClientContext GetMockedClientContext(
+            Func<RequestMessage, CancellationToken, Task<ResponseMessage>> handlerFunc)
+        {
+            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
+
+            Mock<PartitionRoutingHelper> partitionRoutingHelperMock = MockCosmosUtil.GetPartitionRoutingHelperMock("0");
+            PartitionKeyRangeGoneRetryHandler partitionKeyRangeHandler = new PartitionKeyRangeGoneRetryHandler(client);
+
+            TestHandler testHandler = new TestHandler(handlerFunc);
+            partitionKeyRangeHandler.InnerHandler = testHandler;
+
+            RequestHandler handler = client.RequestHandler.InnerHandler;
+            while (handler != null)
+            {
+                if (handler.InnerHandler is RouterHandler)
+                {
+                    handler.InnerHandler = new RouterHandler(partitionKeyRangeHandler, testHandler);
+                    break;
+                }
+
+                handler = handler.InnerHandler;
+            }
+
+            CosmosResponseFactory responseFactory = new CosmosResponseFactory(MockCosmosUtil.Serializer);
+
+            return new ClientContextCore(
+                client: client,
+                clientOptions: new CosmosClientOptions(),
+                serializerCore: MockCosmosUtil.Serializer,
+                cosmosResponseFactory: responseFactory,
+                requestHandler: client.RequestHandler,
+                documentClient: new MockDocumentClient(),
+                userAgent: null);
         }
     }
 }

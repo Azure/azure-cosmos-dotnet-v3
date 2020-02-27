@@ -6,17 +6,11 @@ namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.IO;
     using System.Linq;
     using System.Net;
-    using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Common;
-    using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
-    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -348,159 +342,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             // Finish first one
             token.UpdateContinuation(null);
             Assert.IsTrue(token.IsDone);
-        }
-
-        [TestMethod]
-        public async Task FeedToken_EPK_Avoids_PartitionKeyRangeGoneRetryHandler()
-        {
-            int executionCount = 0;
-            const string containerRid = "containerRid";
-            FeedTokenEPKRange token = new FeedTokenEPKRange(containerRid,
-                new List<Documents.PartitionKeyRange>() {
-                    new Documents.PartitionKeyRange() { MinInclusive = "A", MaxExclusive = "B" },
-                    new Documents.PartitionKeyRange() { MinInclusive = "B", MaxExclusive = "C" },
-                    new Documents.PartitionKeyRange() { MinInclusive = "C", MaxExclusive = "D" }
-                });
-
-            CosmosClientContext cosmosClientContext = GetMockedClientContext((RequestMessage requestMessage, CancellationToken cancellationToken) =>
-            {
-                // Force OnBeforeRequestActions call
-                requestMessage.ToDocumentServiceRequest();
-                if (executionCount++ == 0)
-                {
-                    return TestHandler.ReturnStatusCode(HttpStatusCode.Gone, Documents.SubStatusCodes.PartitionKeyRangeGone);
-                }
-
-                return TestHandler.ReturnStatusCode(HttpStatusCode.OK);
-            });
-
-            ResponseMessage response = await cosmosClientContext.ProcessResourceOperationStreamAsync(
-               resourceUri: new Uri("https://dummy.documents.azure.com:443/dbs"),
-               resourceType: Documents.ResourceType.Document,
-               operationType: Documents.OperationType.ReadFeed,
-               requestOptions: new RequestOptions(),
-               cosmosContainerCore: null,
-               partitionKey: null,
-               streamPayload: null,
-               requestEnricher: request =>
-               {
-                   token.EnrichRequest(request);
-               },
-               diagnosticsScope: null,
-               cancellationToken: default(CancellationToken));
-
-            Assert.AreEqual(1, executionCount);
-            Assert.AreEqual(HttpStatusCode.Gone, response.StatusCode);
-        }
-
-        [TestMethod]
-        public async Task FeedToken_PartitionKeyRange_Avoids_PartitionKeyRangeGoneRetryHandler()
-        {
-            int executionCount = 0;
-            string pkrangeId = "0";
-            FeedTokenPartitionKeyRange token = new FeedTokenPartitionKeyRange(pkrangeId);
-
-            CosmosClientContext cosmosClientContext = GetMockedClientContext((RequestMessage requestMessage, CancellationToken cancellationToken) =>
-            {
-                // Force OnBeforeRequestActions call
-                requestMessage.ToDocumentServiceRequest();
-                if (executionCount++ == 0)
-                {
-                    return TestHandler.ReturnStatusCode(HttpStatusCode.Gone, Documents.SubStatusCodes.PartitionKeyRangeGone);
-                }
-
-                return TestHandler.ReturnStatusCode(HttpStatusCode.OK);
-            });
-
-            ResponseMessage response = await cosmosClientContext.ProcessResourceOperationStreamAsync(
-               resourceUri: new Uri("https://dummy.documents.azure.com:443/dbs"),
-               resourceType: Documents.ResourceType.Document,
-               operationType: Documents.OperationType.ReadFeed,
-               requestOptions: new RequestOptions(),
-               cosmosContainerCore: null,
-               partitionKey: null,
-               streamPayload: null,
-               requestEnricher: request =>
-               {
-                   token.EnrichRequest(request);
-               },
-               diagnosticsScope: null,
-               cancellationToken: default(CancellationToken));
-
-            Assert.AreEqual(1, executionCount);
-            Assert.AreEqual(HttpStatusCode.Gone, response.StatusCode);
-        }
-
-        [TestMethod]
-        public async Task FeedToken_PartitionKey_Avoids_PartitionKeyRangeGoneRetryHandler()
-        {
-            int executionCount = 0;
-            FeedTokenPartitionKey token = new FeedTokenPartitionKey(new PartitionKey("0"));
-
-            CosmosClientContext cosmosClientContext = GetMockedClientContext((RequestMessage requestMessage, CancellationToken cancellationToken) =>
-            {
-                // Force OnBeforeRequestActions call
-                requestMessage.ToDocumentServiceRequest();
-                if (executionCount++ == 0)
-                {
-                    return TestHandler.ReturnStatusCode(HttpStatusCode.Gone, Documents.SubStatusCodes.PartitionKeyRangeGone);
-                }
-
-                return TestHandler.ReturnStatusCode(HttpStatusCode.OK);
-            });
-
-            ResponseMessage response = await cosmosClientContext.ProcessResourceOperationStreamAsync(
-               resourceUri: new Uri("https://dummy.documents.azure.com:443/dbs"),
-               resourceType: Documents.ResourceType.Document,
-               operationType: Documents.OperationType.ReadFeed,
-               requestOptions: new RequestOptions(),
-               cosmosContainerCore: null,
-               partitionKey: null,
-               streamPayload: null,
-               requestEnricher: request =>
-               {
-                   token.EnrichRequest(request);
-               },
-               diagnosticsScope: null,
-               cancellationToken: default(CancellationToken));
-
-            Assert.AreEqual(1, executionCount);
-            Assert.AreEqual(HttpStatusCode.Gone, response.StatusCode);
-        }
-
-        private static CosmosClientContext GetMockedClientContext(
-            Func<RequestMessage, CancellationToken, Task<ResponseMessage>> handlerFunc)
-        {
-            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
-
-            Mock<PartitionRoutingHelper> partitionRoutingHelperMock = MockCosmosUtil.GetPartitionRoutingHelperMock("0");
-            PartitionKeyRangeGoneRetryHandler partitionKeyRangeHandler = new PartitionKeyRangeGoneRetryHandler(client);
-
-            TestHandler testHandler = new TestHandler(handlerFunc);
-            partitionKeyRangeHandler.InnerHandler = testHandler;
-
-            RequestHandler handler = client.RequestHandler.InnerHandler;
-            while (handler != null)
-            {
-                if (handler.InnerHandler is RouterHandler)
-                {
-                    handler.InnerHandler = new RouterHandler(partitionKeyRangeHandler, testHandler);
-                    break;
-                }
-
-                handler = handler.InnerHandler;
-            }
-
-            CosmosResponseFactory responseFactory = new CosmosResponseFactory(MockCosmosUtil.Serializer);
-
-            return new ClientContextCore(
-                client: client,
-                clientOptions: new CosmosClientOptions(),
-                serializerCore: MockCosmosUtil.Serializer,
-                cosmosResponseFactory: responseFactory,
-                requestHandler: client.RequestHandler,
-                documentClient: new MockDocumentClient(),
-                userAgent: null);
         }
 
         private static CompositeContinuationToken BuildTokenForRange(
