@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
             // If content was added after the response message
             // creation the exception should be updated.
             string errorMessage = responseMessage.ErrorMessage;
-            string contentMessage = GetErrorMessageFromStream(responseMessage.Content);
+            string contentMessage = CosmosExceptionFactory.GetErrorMessageFromStream(responseMessage.Content);
             if (!string.IsNullOrEmpty(contentMessage))
             {
                 if (string.IsNullOrEmpty(errorMessage))
