@@ -33,7 +33,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
     using Newtonsoft.Json.Linq;
-    using UInt128 = Microsoft.Azure.Cosmos.Query.Core.UInt128;
 
     /// <summary>
     /// Tests for CrossPartitionQueryTests.
@@ -2571,7 +2570,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     FeedResponse<JToken> cosmosQueryResponse = await documentQueryWithoutDistinct.ReadNextAsync();
                     foreach (JToken document in cosmosQueryResponse)
                     {
-                        if (documentsSeen.Add(document, out UInt128 hash))
+                        if (documentsSeen.Add(document, out Cosmos.Query.Core.UInt128 hash))
                         {
                             documentsFromWithoutDistinct.Add(document);
                         }
@@ -2629,7 +2628,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     },
                     QueryDrainingMode.ContinuationToken | QueryDrainingMode.HoldState);
                 documentsFromWithoutDistinct = documentsFromWithoutDistinct
-                    .Where(document => documentsSeen.Add(document, out UInt128 hash))
+                    .Where(document => documentsSeen.Add(document, out Cosmos.Query.Core.UInt128 hash))
                     .ToList();
 
                 foreach (int pageSize in new int[] { 1, 10, 100 })
@@ -2677,7 +2676,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     },
                     QueryDrainingMode.HoldState | QueryDrainingMode.SerializeState);
                 documentsFromWithoutDistinct = documentsFromWithoutDistinct
-                    .Where(document => documentsSeen.Add(document, out UInt128 hash))
+                    .Where(document => documentsSeen.Add(document, out Cosmos.Query.Core.UInt128 hash))
                     .ToList();
 
                 foreach (int pageSize in new int[] { 1, 10, 100 })
@@ -4742,9 +4741,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // >> True
             private readonly HashSet<JToken> jTokenSet = new HashSet<JToken>(JsonTokenEqualityComparer.Value);
 
-            public bool Add(JToken jToken, out UInt128 hash)
+            public bool Add(JToken jToken, out Cosmos.Query.Core.UInt128 hash)
             {
-                hash = default(UInt128);
+                hash = default(Cosmos.Query.Core.UInt128);
                 return this.jTokenSet.Add(jToken);
             }
         }

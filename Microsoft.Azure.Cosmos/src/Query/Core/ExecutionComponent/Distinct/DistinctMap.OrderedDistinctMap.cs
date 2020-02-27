@@ -113,7 +113,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                                         $"Malformed {nameof(OrderedDistinctMap)} continuation token: {cosmosElementRequestContinuationToken.Value}."));
                             }
 
-                            if (!UInt128.TryParse(cosmosBinary.Value.Span, out lastHash))
+                            if (!UInt128.TryCreateFromByteArray(cosmosBinary.Value.Span, out lastHash))
                             {
                                 return TryCatch<DistinctMap>.FromException(
                                     new MalformedContinuationTokenException(

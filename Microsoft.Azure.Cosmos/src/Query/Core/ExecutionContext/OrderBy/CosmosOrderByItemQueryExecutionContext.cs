@@ -169,17 +169,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
                 foreach (ItemProducer activeItemProducer in activeItemProducers)
                 {
                     OrderByQueryResult orderByQueryResult = new OrderByQueryResult(activeItemProducer.Current);
-                    OrderByContinuationTokenRefStruct orderByContinuationToken = new OrderByContinuationTokenRefStruct(
-                        compositeContinuationTokenRefStruct: new CompositeContinuationTokenRefStruct(
-                            backendContinuationToken: activeItemProducer.PreviousContinuationToken,
-                            range: new RangeRefStruct(
+                    OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
+                        compositeContinuationToken: new CompositeContinuationToken()
+                        {
+                            Token = activeItemProducer.PreviousContinuationToken,
+                            Range = new Documents.Routing.Range<string>(
                                 min: activeItemProducer.PartitionKeyRange.MinInclusive,
-                                max: activeItemProducer.PartitionKeyRange.MaxExclusive)),
+                                max: activeItemProducer.PartitionKeyRange.MaxExclusive,
+                                isMinInclusive: true,
+                                isMaxInclusive: false)
+                        },
                         orderByItems: orderByQueryResult.OrderByItems,
                         rid: orderByQueryResult.Rid,
                         skipCount: this.ShouldIncrementSkipCount(activeItemProducer) ? this.skipCount + 1 : 0,
                         filter: activeItemProducer.Filter);
-                    orderByContinuationToken.WriteTo(jsonWriter);
+
+                    OrderByContinuationToken.ToCosmosElement(orderByContinuationToken).WriteTo(jsonWriter);
                 }
 
                 jsonWriter.WriteArrayEnd();

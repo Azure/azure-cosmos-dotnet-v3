@@ -235,7 +235,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
         public static UInt128 FromByteArray(ReadOnlySpan<byte> buffer)
         {
-            if (!UInt128.TryParse(buffer, out UInt128 value))
+            if (!UInt128.TryCreateFromByteArray(buffer, out UInt128 value))
             {
                 throw new FormatException($"Malformed buffer");
             }
@@ -400,7 +400,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             return true;
         }
 
-        public static bool TryParse(ReadOnlySpan<byte> buffer, out UInt128 value)
+        public static bool TryCreateFromByteArray(ReadOnlySpan<byte> buffer, out UInt128 value)
         {
             if (buffer.Length < UInt128.Length)
             {

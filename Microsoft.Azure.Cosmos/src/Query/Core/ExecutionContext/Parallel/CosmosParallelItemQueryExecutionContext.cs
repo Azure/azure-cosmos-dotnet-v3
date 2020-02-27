@@ -122,12 +122,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
 
                 foreach (ItemProducer activeItemProducer in activeItemProducers)
                 {
-                    CompositeContinuationTokenRefStruct compositeToken = new CompositeContinuationTokenRefStruct(
-                        backendContinuationToken: activeItemProducer.CurrentContinuationToken,
-                        range: new RangeRefStruct(
+                    CompositeContinuationToken compositeToken = new CompositeContinuationToken()
+                    {
+                        Token = activeItemProducer.CurrentContinuationToken,
+                        Range = new Documents.Routing.Range<string>(
                             min: activeItemProducer.PartitionKeyRange.MinInclusive,
-                            max: activeItemProducer.PartitionKeyRange.MaxExclusive));
-                    compositeToken.WriteTo(jsonWriter);
+                            max: activeItemProducer.PartitionKeyRange.MaxExclusive,
+                            isMinInclusive: false,
+                            isMaxInclusive: true)
+                    };
+
+                    CompositeContinuationToken.ToCosmosElement(compositeToken).WriteTo(jsonWriter);
                 }
 
                 jsonWriter.WriteArrayEnd();
