@@ -250,55 +250,5 @@ namespace Microsoft.Azure.Cosmos.Tests
             await invoker.SendAsync(requestMessage, new CancellationToken());
             Assert.AreEqual(expectedHandlerCalls, handlerCalls);
         }
-
-        [TestMethod]
-        public async Task PartitionKeyRangeGoneRetryHandlerOnSuccess()
-        {
-            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
-
-            PartitionKeyRangeGoneRetryHandler retryHandler = new PartitionKeyRangeGoneRetryHandler(client);
-            int handlerCalls = 0;
-            int expectedHandlerCalls = 1;
-            TestHandler testHandler = new TestHandler((request, cancellationToken) => {
-                handlerCalls++;
-                return TestHandler.ReturnSuccess();
-            });
-
-            retryHandler.InnerHandler = testHandler;
-            RequestInvokerHandler invoker = new RequestInvokerHandler(client);
-            invoker.InnerHandler = retryHandler;
-            RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new Uri("https://dummy.documents.azure.com:443/dbs"));
-            await invoker.SendAsync(requestMessage, new CancellationToken());
-            Assert.AreEqual(expectedHandlerCalls, handlerCalls);
-        }
-
-        [TestMethod]
-        public async Task PartitionKeyRangeGoneRetryHandlerOn410()
-        {
-            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
-
-            int handlerCalls = 0;
-            TestHandler testHandler = new TestHandler((request, response) => {
-                if (handlerCalls == 0)
-                {
-                    handlerCalls++;
-                    return TestHandler.ReturnStatusCode((HttpStatusCode)StatusCodes.Gone, SubStatusCodes.PartitionKeyRangeGone);
-                }
-
-                handlerCalls++;
-                return TestHandler.ReturnSuccess();
-            });
-
-            PartitionKeyRangeGoneRetryHandler retryHandler = new PartitionKeyRangeGoneRetryHandler(client);
-            retryHandler.InnerHandler = testHandler;
-
-            RequestInvokerHandler invoker = new RequestInvokerHandler(client);
-            invoker.InnerHandler = retryHandler;
-            RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new Uri("https://localhost/dbs/db1/colls/col1/docs/doc1"));
-            await invoker.SendAsync(requestMessage, new CancellationToken());
-
-            int expectedHandlerCalls = 2;
-            Assert.AreEqual(expectedHandlerCalls, handlerCalls);
-        }
     }
 }

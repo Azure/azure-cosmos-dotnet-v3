@@ -352,7 +352,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public async Task ReadFeedIteratorCore_Avoids_PartitionKeyRangeGoneRetryHandler()
+        public async Task ReadFeedIteratorCore_HandlesSplitsThroughPipeline()
         {
             int executionCount = 0;
             CosmosClientContext cosmosClientContext = GetMockedClientContext((RequestMessage requestMessage, CancellationToken cancellationToken) =>
@@ -385,7 +385,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             ResponseMessage response = await changeFeedIteratorCore.ReadNextAsync();
 
-            Assert.AreEqual(1, executionCount, "PartitionKeyRangeGoneRetryHandler handled the Split");
+            Assert.AreEqual(1, executionCount, "Pipeline handled the Split");
             Assert.AreEqual(HttpStatusCode.Gone, response.StatusCode);
         }
 
@@ -395,17 +395,25 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
 
             Mock<PartitionRoutingHelper> partitionRoutingHelperMock = MockCosmosUtil.GetPartitionRoutingHelperMock("0");
-            PartitionKeyRangeGoneRetryHandler partitionKeyRangeHandler = new PartitionKeyRangeGoneRetryHandler(client);
 
             TestHandler testHandler = new TestHandler(handlerFunc);
-            partitionKeyRangeHandler.InnerHandler = testHandler;
+
+            // Similar to FeedPipeline but with replaced transport
+            RequestHandler[] feedPipeline = new RequestHandler[]
+                {
+                    new NamedCacheRetryHandler(),
+                    new PartitionKeyRangeHandler(client),
+                    testHandler,
+                };
+
+            RequestHandler feedHandler =  ClientPipelineBuilder.CreatePipeline(feedPipeline);
 
             RequestHandler handler = client.RequestHandler.InnerHandler;
             while (handler != null)
             {
                 if (handler.InnerHandler is RouterHandler)
                 {
-                    handler.InnerHandler = new RouterHandler(partitionKeyRangeHandler, testHandler);
+                    handler.InnerHandler = new RouterHandler(feedHandler, testHandler);
                     break;
                 }
 

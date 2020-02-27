@@ -19,7 +19,6 @@ namespace Microsoft.Azure.Cosmos
         private readonly PartitionKeyRangeCache partitionKeyRangeCache;
         private readonly string collectionLink;
         private bool retried;
-        private bool shouldPassThroughOnGone = false;
 
         public PartitionKeyRangeGoneRetryPolicy(
             CollectionCache collectionCache,
@@ -78,9 +77,6 @@ namespace Microsoft.Azure.Cosmos
 
         public void OnBeforeSendRequest(DocumentServiceRequest request)
         {
-            this.shouldPassThroughOnGone = request != null
-                && request.Properties != null
-                && request.Properties.ContainsKey(HandlerConstants.GonePassthrough);
             this.nextRetryPolicy?.OnBeforeSendRequest(request);
         }
 
@@ -99,8 +95,7 @@ namespace Microsoft.Azure.Cosmos
             if (statusCode == HttpStatusCode.Gone
                 && subStatusCode == SubStatusCodes.PartitionKeyRangeGone)
             {
-                if (this.retried
-                    || this.shouldPassThroughOnGone)
+                if (this.retried)
                 {
                     return ShouldRetryResult.NoRetry();
                 }
