@@ -154,6 +154,26 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A string representation of the exception.</returns>
         public override string ToString()
         {
+            return this.ToStringHelper(true);
+        }
+
+        internal string ToString(bool includeDiagnostics)
+        {
+            return this.ToStringHelper(includeDiagnostics);
+        }
+
+        internal ResponseMessage ToCosmosResponseMessage(RequestMessage request)
+        {
+            return new ResponseMessage(
+                 headers: this.Headers,
+                 requestMessage: request,
+                 cosmosException: this,
+                 statusCode: this.StatusCode,
+                 diagnostics: this.DiagnosticsContext);
+        }
+
+        private string ToStringHelper(bool includeDiagnostics)
+        {
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.Append(this.GetType().FullName);
             if (this.Message != null)
@@ -175,7 +195,7 @@ namespace Microsoft.Azure.Cosmos
             stringBuilder.AppendFormat("RequestCharge = {0};", this.RequestCharge);
             stringBuilder.AppendLine();
 
-            if (this.Diagnostics != null)
+            if (includeDiagnostics && this.Diagnostics != null)
             {
                 stringBuilder.Append(this.Diagnostics);
                 stringBuilder.AppendLine();
@@ -194,16 +214,6 @@ namespace Microsoft.Azure.Cosmos
             stringBuilder.Append(this.StackTrace);
 
             return stringBuilder.ToString();
-        }
-
-        internal ResponseMessage ToCosmosResponseMessage(RequestMessage request)
-        {
-            return new ResponseMessage(
-                 headers: this.Headers,
-                 requestMessage: request,
-                 cosmosException: this,
-                 statusCode: this.StatusCode,
-                 diagnostics: this.DiagnosticsContext);
         }
     }
 }

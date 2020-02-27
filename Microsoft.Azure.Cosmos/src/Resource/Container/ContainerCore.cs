@@ -380,7 +380,9 @@ namespace Microsoft.Azure.Cosmos
             }
             catch (DocumentClientException ex)
             {
-                throw CosmosExceptionFactory.Create(ex, null);
+                throw CosmosExceptionFactory.Create(
+                    dce: ex,
+                    diagnosticsContext: null);
             }
         }
 
