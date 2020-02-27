@@ -122,6 +122,48 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task ReadFeedIteratorCore_ReadOnlyPartitionKey()
+        {
+            int totalCount = 0;
+            int firstRunTotal = 25;
+            int batchSize = 25;
+
+            string pkToRead = "pkToRead";
+            string otherPK = "otherPK";
+
+            for (int i = 0; i < batchSize; i++)
+            {
+                await this.Container.CreateItemAsync(this.CreateRandomToDoActivity(pkToRead));
+            }
+
+            for (int i = 0; i < batchSize; i++)
+            {
+                await this.Container.CreateItemAsync(this.CreateRandomToDoActivity(otherPK));
+            }
+
+            ContainerCore itemsCore = this.Container;
+            FeedIterator feedIterator = itemsCore.GetItemQueryStreamIterator(requestOptions: new QueryRequestOptions() { PartitionKey = new PartitionKey(pkToRead) });
+            while (feedIterator.HasMoreResults)
+            {
+                using (ResponseMessage responseMessage =
+                    await feedIterator.ReadNextAsync(this.cancellationToken))
+                {
+                    if (responseMessage.IsSuccessStatusCode)
+                    {
+                        Collection<ToDoActivity> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
+                        totalCount += response.Count;
+                        foreach (ToDoActivity toDoActivity in response)
+                        {
+                            Assert.AreEqual(pkToRead, toDoActivity.status);
+                        }
+                    }
+                }
+            }
+
+            Assert.AreEqual(firstRunTotal, totalCount);
+        }
+
+        [TestMethod]
         public async Task ReadFeedIteratorCore_PassingFeedToken_ReadAll()
         {
             int totalCount = 0;
