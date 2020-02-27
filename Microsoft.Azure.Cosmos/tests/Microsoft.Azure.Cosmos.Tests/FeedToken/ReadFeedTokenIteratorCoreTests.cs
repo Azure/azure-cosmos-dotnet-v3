@@ -374,8 +374,14 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock.Get(containerCore)
                 .Setup(c => c.LinkUri)
                 .Returns(new Uri($"/dbs/db/colls/colls", UriKind.Relative));
+            FeedTokenInternal feedToken = Mock.Of<FeedTokenInternal>();
+            Mock.Get(feedToken)
+                .Setup(f => f.EnrichRequest(It.IsAny<RequestMessage>()));
+            Mock.Get(feedToken)
+                .Setup(f => f.ShouldRetryAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(false));
 
-            FeedIteratorCore changeFeedIteratorCore = new FeedIteratorCore(cosmosClientContext, new Uri($"/dbs/db/colls/colls", UriKind.Relative), Documents.ResourceType.Document, null, null, null, new QueryRequestOptions());
+            FeedIteratorCore changeFeedIteratorCore = new FeedIteratorCore(containerCore, new Uri($"/dbs/db/colls/colls", UriKind.Relative), Documents.ResourceType.Document, null, null, feedToken, new QueryRequestOptions());
 
             ResponseMessage response = await changeFeedIteratorCore.ReadNextAsync();
 
