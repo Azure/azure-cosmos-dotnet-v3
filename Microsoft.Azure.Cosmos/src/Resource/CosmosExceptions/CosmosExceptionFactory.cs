@@ -225,7 +225,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
             Exception innerException = default)
         {
             return CosmosExceptionFactory.Create(
-                (HttpStatusCode)429,
+                (HttpStatusCode)StatusCodes.TooManyRequests,
                 subStatusCode,
                 message,
                 stackTrace,
