@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos
         public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             CosmosDiagnosticsContext diagnostics = CosmosDiagnosticsContext.Create(this.changeFeedOptions);
-            using (diagnostics.CreateScope("ChangeFeedReadNextAsync"))
+            using (diagnostics.CreateOverallScope("ChangeFeedReadNextAsync"))
             {
                 if (this.containerRId == null)
                 {

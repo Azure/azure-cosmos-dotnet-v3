@@ -247,7 +247,7 @@ namespace Microsoft.Azure.Cosmos
                 sqlQuerySpec: queryDefinition?.ToSqlQuerySpec(),
                 isContinuationExcpected: true,
                 continuationToken: continuationToken,
-                feedTokenInternal: null,
+                feedToken: null,
                 requestOptions: requestOptions);
         }
 
@@ -404,11 +404,6 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions requestOptions = null)
         {
             requestOptions = requestOptions ?? new QueryRequestOptions();
-
-            if (requestOptions.IsEffectivePartitionKeyRouting)
-            {
-                requestOptions.PartitionKey = null;
-            }
 
             if (!(this.GetItemQueryStreamIterator(
                 feedToken,
@@ -578,25 +573,30 @@ namespace Microsoft.Azure.Cosmos
             SqlQuerySpec sqlQuerySpec,
             bool isContinuationExcpected,
             string continuationToken,
-            FeedTokenInternal feedTokenInternal,
+            FeedTokenInternal feedToken,
             QueryRequestOptions requestOptions)
         {
             requestOptions = requestOptions ?? new QueryRequestOptions();
 
             if (requestOptions.IsEffectivePartitionKeyRouting)
             {
+                if (feedToken != null)
+                {
+                    throw new ArgumentException(nameof(feedToken), ClientResources.FeedToken_EffectivePartitionKeyRouting);
+                }
+
                 requestOptions.PartitionKey = null;
             }
 
             if (sqlQuerySpec == null)
             {
-                return new FeedIteratorCore(
+                return FeedIteratorCore.CreateForPartitionedResource(
                     this,
                     this.LinkUri,
                     resourceType: ResourceType.Document,
                     queryDefinition: null,
                     continuationToken: continuationToken,
-                    feedTokenInternal: feedTokenInternal,
+                    feedTokenInternal: feedToken,
                     options: requestOptions);
             }
 

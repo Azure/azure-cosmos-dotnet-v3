@@ -399,13 +399,12 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return new FeedIteratorCore(
+            return FeedIteratorCore.CreateForNonPartitionedResource(
                clientContext: this.ClientContext,
                resourceLink: this.LinkUri,
                resourceType: ResourceType.Collection,
                queryDefinition: queryDefinition,
                continuationToken: continuationToken,
-               feedTokenInternal: null, // Add FeedToken input support
                options: requestOptions);
         }
 
@@ -454,13 +453,12 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return new FeedIteratorCore(
+            return FeedIteratorCore.CreateForNonPartitionedResource(
                clientContext: this.ClientContext,
                resourceLink: this.LinkUri,
                resourceType: ResourceType.User,
                queryDefinition: queryDefinition,
                continuationToken: continuationToken,
-               feedTokenInternal: null, // Add FeedToken input support
                options: requestOptions);
         }
 
@@ -588,13 +586,12 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions.EnumerationDirection = isDescending ? EnumerationDirection.Reverse : EnumerationDirection.Forward;
             }
 
-            return new FeedIteratorCore(
+            return FeedIteratorCore.CreateForNonPartitionedResource(
                clientContext: this.ClientContext,
                resourceLink: this.LinkUri,
                resourceType: ResourceType.ClientEncryptionKey,
                queryDefinition: null,
                continuationToken: continuationToken,
-               feedTokenInternal: null, // Add FeedToken input support
                options: requestOptions);
         }
 

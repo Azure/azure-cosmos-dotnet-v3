@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos
     using static Microsoft.Azure.Documents.RuntimeConstants;
 
     /// <summary>
-    /// Cosmos feed stream iterator for ReadFeed operations
+    /// Cosmos feed stream iterator. This is used to get the query responses with a Stream content
     /// </summary>
     internal class FeedIteratorCore : FeedIteratorInternal
     {
@@ -27,10 +27,52 @@ namespace Microsoft.Azure.Cosmos
         private FeedTokenInternal feedTokenInternal;
         private string containerRId = null;
 
-        /// <summary>
-        /// For non-partitioned resources
-        /// </summary>
-        internal FeedIteratorCore(
+        internal static FeedIteratorCore CreateForNonPartitionedResource( 
+            CosmosClientContext clientContext,
+            Uri resourceLink,
+            ResourceType resourceType,
+            QueryDefinition queryDefinition,
+            string continuationToken,
+            QueryRequestOptions options)
+        {
+            return new FeedIteratorCore(
+                clientContext: clientContext,
+                containerCore: null,
+                resourceLink: resourceLink,
+                resourceType: resourceType,
+                queryDefinition: queryDefinition,
+                continuationToken: continuationToken,
+                feedTokenInternal: null,
+                options: options);
+        }
+
+        internal static FeedIteratorCore CreateForPartitionedResource(
+            ContainerCore containerCore,
+            Uri resourceLink,
+            ResourceType resourceType,
+            QueryDefinition queryDefinition,
+            string continuationToken,
+            FeedTokenInternal feedTokenInternal,
+            QueryRequestOptions options)
+        {
+            if (containerCore == null)
+            {
+                throw new ArgumentNullException(nameof(containerCore));
+            }
+
+            return new FeedIteratorCore(
+                containerCore: containerCore,
+                clientContext: containerCore.ClientContext,
+                resourceLink: resourceLink,
+                resourceType: resourceType,
+                queryDefinition: queryDefinition,
+                continuationToken: continuationToken,
+                feedTokenInternal: feedTokenInternal,
+                options: options);
+        }
+
+        private FeedIteratorCore(
+            ContainerCore containerCore,
             CosmosClientContext clientContext,
             Uri resourceLink,
             ResourceType resourceType,
@@ -40,30 +82,8 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions options)
         {
             this.resourceLink = resourceLink;
-            this.clientContext = clientContext;
-            this.resourceType = resourceType;
-            this.querySpec = queryDefinition?.ToSqlQuerySpec();
-            this.feedTokenInternal = feedTokenInternal;
-            this.continuationToken = continuationToken ?? this.feedTokenInternal?.GetContinuation();
-            this.requestOptions = options;
-            this.hasMoreResultsInternal = true;
-        }
-
-        /// <summary>
-        /// For partitioned resources
-        /// </summary>
-        internal FeedIteratorCore(
-            ContainerCore containerCore,
-            Uri resourceLink,
-            ResourceType resourceType,
-            QueryDefinition queryDefinition,
-            string continuationToken,
-            FeedTokenInternal feedTokenInternal,
-            QueryRequestOptions options)
-        {
-            this.resourceLink = resourceLink;
             this.containerCore = containerCore;
-            this.clientContext = containerCore.ClientContext;
+            this.clientContext = clientContext;
             this.resourceType = resourceType;
             this.querySpec = queryDefinition?.ToSqlQuerySpec();
             this.feedTokenInternal = feedTokenInternal;
@@ -99,7 +119,7 @@ namespace Microsoft.Azure.Cosmos
         public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
             CosmosDiagnosticsContext diagnostics = CosmosDiagnosticsContext.Create(this.requestOptions);
-            using (diagnostics.CreateScope("QueryReadNextAsync"))
+            using (diagnostics.CreateOverallScope("QueryReadNextAsync"))
             {
                 if (this.containerRId == null)
                 {
