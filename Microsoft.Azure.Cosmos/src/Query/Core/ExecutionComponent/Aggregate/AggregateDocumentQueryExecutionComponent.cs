@@ -62,8 +62,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
             IReadOnlyDictionary<string, AggregateOperator?> aliasToAggregateType,
             IReadOnlyList<string> orderedAliases,
             bool hasSelectValue,
-            RequestContinuationToken continuationToken,
-            Func<RequestContinuationToken, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync)
+            CosmosElement continuationToken,
+            Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync)
         {
             if (tryCreateSourceAsync == null)
             {

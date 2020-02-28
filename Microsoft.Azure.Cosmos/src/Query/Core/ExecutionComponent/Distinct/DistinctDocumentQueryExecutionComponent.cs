@@ -42,8 +42,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
 
         public static async Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
             ExecutionEnvironment executionEnvironment,
-            RequestContinuationToken requestContinuation,
-            Func<RequestContinuationToken, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync,
+            CosmosElement requestContinuation,
+            Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync,
             DistinctQueryType distinctQueryType)
         {
             if (tryCreateSourceAsync == null)

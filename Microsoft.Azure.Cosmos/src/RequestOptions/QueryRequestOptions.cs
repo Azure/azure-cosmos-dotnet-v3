@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Globalization;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Documents;
@@ -141,7 +142,7 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         public string SessionToken { get; set; }
 
-        internal ReadOnlyMemory<byte> BinaryContinuationToken { get; set; }
+        internal CosmosElement CosmosElementContinuationToken { get; set; }
 
         internal CosmosSerializationFormatOptions CosmosSerializationFormatOptions { get; set; }
 
@@ -224,7 +225,7 @@ namespace Microsoft.Azure.Cosmos
                 CosmosSerializationFormatOptions = this.CosmosSerializationFormatOptions,
                 Properties = this.Properties,
                 IsEffectivePartitionKeyRouting = this.IsEffectivePartitionKeyRouting,
-                BinaryContinuationToken = this.BinaryContinuationToken,
+                CosmosElementContinuationToken = this.CosmosElementContinuationToken,
             };
 
             return queryRequestOptions;

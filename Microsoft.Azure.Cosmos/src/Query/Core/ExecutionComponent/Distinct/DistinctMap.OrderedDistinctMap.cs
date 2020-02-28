@@ -84,47 +84,35 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                 jsonWriter.WriteBinaryValue(UInt128.ToByteArray(this.lastHash));
             }
 
-            public static TryCatch<DistinctMap> TryCreate(RequestContinuationToken requestContinuationToken)
+            public static TryCatch<DistinctMap> TryCreate(CosmosElement requestContinuationToken)
             {
-                if (requestContinuationToken == null)
-                {
-                    throw new ArgumentNullException(nameof(requestContinuationToken));
-                }
-
                 UInt128 lastHash;
-                if (!requestContinuationToken.IsNull)
+                if (requestContinuationToken != null)
                 {
                     switch (requestContinuationToken)
                     {
-                        case StringRequestContinuationToken stringRequestContinuationToken:
-                            if (!UInt128.TryParse(stringRequestContinuationToken.Value, out lastHash))
+                        case CosmosString cosmosString:
+                            if (!UInt128.TryParse(cosmosString.Value, out lastHash))
                             {
                                 return TryCatch<DistinctMap>.FromException(
                                     new MalformedContinuationTokenException(
-                                        $"Malformed {nameof(OrderedDistinctMap)} continuation token: {stringRequestContinuationToken.Value}."));
+                                        $"Malformed {nameof(OrderedDistinctMap)} continuation token: {requestContinuationToken}."));
                             }
                             break;
 
-                        case CosmosElementRequestContinuationToken cosmosElementRequestContinuationToken:
-                            if (!(cosmosElementRequestContinuationToken.Value is CosmosBinary cosmosBinary))
-                            {
-                                return TryCatch<DistinctMap>.FromException(
-                                    new MalformedContinuationTokenException(
-                                        $"Malformed {nameof(OrderedDistinctMap)} continuation token: {cosmosElementRequestContinuationToken.Value}."));
-                            }
+                        case CosmosBinary cosmosBinary:
 
                             if (!UInt128.TryCreateFromByteArray(cosmosBinary.Value.Span, out lastHash))
                             {
                                 return TryCatch<DistinctMap>.FromException(
                                     new MalformedContinuationTokenException(
-                                        $"Malformed {nameof(OrderedDistinctMap)} continuation token: {cosmosElementRequestContinuationToken.Value}."));
+                                        $"Malformed {nameof(OrderedDistinctMap)} continuation token: {requestContinuationToken}."));
                             }
                             break;
 
                         default:
-                            throw new ArgumentOutOfRangeException($"Unknown {nameof(RequestContinuationToken)} type. {requestContinuationToken.GetType()}.");
+                            throw new ArgumentOutOfRangeException($"Unknown {nameof(requestContinuationToken)} type. {requestContinuationToken.GetType()}.");
                     }
-
                 }
                 else
                 {

@@ -61,8 +61,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
 
         public static async Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
             ExecutionEnvironment executionEnvironment,
-            RequestContinuationToken continuationToken,
-            Func<RequestContinuationToken, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync,
+            CosmosElement continuationToken,
+            Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync,
             IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
             IReadOnlyList<string> orderedAliases,
             bool hasSelectValue)
@@ -208,7 +208,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                         this.groupByAliasToAggregateType,
                         this.orderedAliases,
                         this.hasSelectValue,
-                        continuationToken: CosmosElementRequestContinuationToken.Null).Result;
+                        continuationToken: null).Result;
                     this.table[groupByKeysHash] = singleGroupAggregator;
                 }
 
@@ -306,7 +306,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                             groupByAliasToAggregateType,
                             orderedAliases,
                             hasSelectValue,
-                            RequestContinuationToken.Create(value));
+                            value);
 
                         if (tryCreateSingleGroupAggregator.Succeeded)
                         {

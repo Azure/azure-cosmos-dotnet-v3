@@ -597,12 +597,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             List<T> resultsFromSerializeState = new List<T>();
-            ReadOnlyMemory<byte> continuationToken = default(ReadOnlyMemory<byte>);
+            CosmosElement continuationToken = null;
             do
             {
                 QueryRequestOptions computeRequestOptions = queryRequestOptions.Clone();
                 computeRequestOptions.ExecutionEnvironment = Cosmos.Query.Core.ExecutionContext.ExecutionEnvironment.Compute;
-                computeRequestOptions.BinaryContinuationToken = continuationToken;
+                computeRequestOptions.CosmosElementContinuationToken = continuationToken;
 
                 FeedIteratorInternal<T> itemQuery = (FeedIteratorInternal<T>)container.GetItemQueryIterator<T>(
                    queryText: query,
@@ -620,11 +620,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     resultsFromSerializeState.AddRange(cosmosQueryResponse);
                     Json.IJsonWriter jsonWriter = Json.JsonWriter.Create(Json.JsonSerializationFormat.Binary);
                     itemQuery.SerializeState(jsonWriter);
-                    continuationToken = jsonWriter.GetResult();
+                    ReadOnlyMemory<byte> continuationTokenBuffer = jsonWriter.GetResult();
 
-                    if (!continuationToken.IsEmpty)
+                    if (!continuationTokenBuffer.IsEmpty)
                     {
-                        string stringContinuationToken = CosmosElement.CreateFromBuffer(continuationToken).ToString();
+                        continuationToken = CosmosElement.CreateFromBuffer(continuationTokenBuffer);
+                    }
+                    else
+                    {
+                        continuationToken = null;
                     }
                 }
                 catch (CosmosException cosmosException) when (cosmosException.StatusCode == (HttpStatusCode)429)
@@ -633,7 +637,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             queryText: query,
                             requestOptions: queryRequestOptions);
                 }
-            } while (!continuationToken.IsEmpty);
+            } while (continuationToken != null);
 
             return resultsFromSerializeState;
         }

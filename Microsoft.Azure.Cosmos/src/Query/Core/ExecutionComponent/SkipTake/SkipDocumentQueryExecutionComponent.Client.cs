@@ -28,24 +28,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
 
             public static async Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
                 int offsetCount,
-                RequestContinuationToken continuationToken,
-                Func<RequestContinuationToken, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync)
+                CosmosElement continuationToken,
+                Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync)
             {
                 if (tryCreateSourceAsync == null)
                 {
                     throw new ArgumentNullException(nameof(tryCreateSourceAsync));
                 }
 
-                if (!(continuationToken is StringRequestContinuationToken stringRequestContinuationToken))
-                {
-                    return TryCatch<IDocumentQueryExecutionComponent>.FromException(
-                        new ArgumentException($"Expected {nameof(RequestContinuationToken)} to be a {nameof(StringRequestContinuationToken)}"));
-                }
-
                 OffsetContinuationToken offsetContinuationToken;
-                if (!continuationToken.IsNull)
+                if (continuationToken != null)
                 {
-                    if (!OffsetContinuationToken.TryParse(stringRequestContinuationToken.Value, out offsetContinuationToken))
+                    if (!OffsetContinuationToken.TryParse(continuationToken.ToString(), out offsetContinuationToken))
                     {
                         return TryCatch<IDocumentQueryExecutionComponent>.FromException(
                             new MalformedContinuationTokenException($"Invalid {nameof(SkipDocumentQueryExecutionComponent)}: {continuationToken}."));
@@ -59,10 +53,24 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                 if (offsetContinuationToken.Offset > offsetCount)
                 {
                     return TryCatch<IDocumentQueryExecutionComponent>.FromException(
-                            new MalformedContinuationTokenException("offset count in continuation token can not be greater than the offsetcount in the query."));
+                        new MalformedContinuationTokenException("offset count in continuation token can not be greater than the offsetcount in the query."));
                 }
 
-                return (await tryCreateSourceAsync(RequestContinuationToken.Create(offsetContinuationToken.SourceToken)))
+                CosmosElement sourceToken;
+                if (offsetContinuationToken.SourceToken != null)
+                {
+                    if (!CosmosElement.TryParse(offsetContinuationToken.SourceToken, out sourceToken))
+                    {
+                        return TryCatch<IDocumentQueryExecutionComponent>.FromException(
+                            new MalformedContinuationTokenException("source token is not valid."));
+                    }
+                }
+                else
+                {
+                    sourceToken = null;
+                }
+
+                return (await tryCreateSourceAsync(sourceToken))
                     .Try<IDocumentQueryExecutionComponent>((source) => new ClientSkipDocumentQueryExecutionComponent(
                     source,
                     offsetContinuationToken.Offset));

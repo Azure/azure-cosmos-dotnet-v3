@@ -30,24 +30,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
 
             public static async Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
                 int offsetCount,
-                RequestContinuationToken continuationToken,
-                Func<RequestContinuationToken, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync)
+                CosmosElement continuationToken,
+                Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync)
             {
                 if (tryCreateSourceAsync == null)
                 {
                     throw new ArgumentNullException(nameof(tryCreateSourceAsync));
                 }
 
-                if (!(continuationToken is CosmosElementRequestContinuationToken cosmosElementRequestContinuationToken))
-                {
-                    return TryCatch<IDocumentQueryExecutionComponent>.FromException(
-                        new ArgumentException($"Expected {nameof(RequestContinuationToken)} to be a {nameof(StringRequestContinuationToken)}"));
-                }
-
                 OffsetContinuationToken offsetContinuationToken;
-                if (!continuationToken.IsNull)
+                if (continuationToken != null)
                 {
-                    (bool parsed, OffsetContinuationToken parsedToken) = OffsetContinuationToken.TryParse(cosmosElementRequestContinuationToken.Value);
+                    (bool parsed, OffsetContinuationToken parsedToken) = OffsetContinuationToken.TryParse(continuationToken);
                     if (!parsed)
                     {
                         return TryCatch<IDocumentQueryExecutionComponent>.FromException(
@@ -67,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                             new MalformedContinuationTokenException("offset count in continuation token can not be greater than the offsetcount in the query."));
                 }
 
-                return (await tryCreateSourceAsync(RequestContinuationToken.Create(offsetContinuationToken.SourceToken)))
+                return (await tryCreateSourceAsync(offsetContinuationToken.SourceToken))
                     .Try<IDocumentQueryExecutionComponent>((source) => new ComputeSkipDocumentQueryExecutionComponent(
                     source,
                     offsetContinuationToken.Offset));

@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 IDocumentQueryExecutionComponent executionContext = (await CosmosParallelItemQueryExecutionContext.TryCreateAsync(
                     context,
                     initParams,
-                    RequestContinuationToken.Create(fullConitnuationToken),
+                    CosmosElement.Parse(fullConitnuationToken),
                     this.cancellationToken)).Result;
 
                 // Read all the pages from both splits
@@ -182,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 IDocumentQueryExecutionComponent executionContext = (await CosmosParallelItemQueryExecutionContext.TryCreateAsync(
                     context,
                     initParams,
-                    RequestContinuationToken.Create(fullConitnuationToken),
+                    CosmosElement.Parse(fullConitnuationToken),
                     this.cancellationToken)).Result;
 
                 // Read all the pages from both splits
@@ -315,7 +315,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 IDocumentQueryExecutionComponent executionContext = (await CosmosOrderByItemQueryExecutionContext.TryCreateAsync(
                     context,
                     initParams,
-                    RequestContinuationToken.Create(fullConitnuationToken),
+                    CosmosElement.Parse(fullConitnuationToken),
                     this.cancellationToken)).Result;
 
                 // For order by it will drain all the pages till it gets a value.
@@ -442,7 +442,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 TryCatch<IDocumentQueryExecutionComponent> tryCreate = await CosmosOrderByItemQueryExecutionContext.TryCreateAsync(
                     context,
                     initParams,
-                    RequestContinuationToken.Create(fullContinuationToken),
+                    CosmosElement.Parse(fullContinuationToken),
                     this.cancellationToken);
 
                 if (tryCreate.Succeeded)
@@ -523,7 +523,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             TryCatch<IDocumentQueryExecutionComponent> tryCreateWhenSourceFails = await DistinctDocumentQueryExecutionComponent.TryCreateAsync(
                 ExecutionEnvironment.Client,
-                StringRequestContinuationToken.Null,
+                null,
                 FailToCreateSource,
                 DistinctQueryType.Ordered);
 
@@ -531,7 +531,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             TryCatch<IDocumentQueryExecutionComponent> tryCreateWhenInvalidContinuationToken = await DistinctDocumentQueryExecutionComponent.TryCreateAsync(
                 ExecutionEnvironment.Client,
-                RequestContinuationToken.Create("This is not a valid continuation token"),
+                CosmosElement.Parse("This is not a valid continuation token"),
                 CreateSource,
                 DistinctQueryType.Unordered);
 
@@ -540,12 +540,12 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         // ADD MORE TESTS HERE
 
-        private static Task<TryCatch<IDocumentQueryExecutionComponent>> FailToCreateSource(RequestContinuationToken continuationToken)
+        private static Task<TryCatch<IDocumentQueryExecutionComponent>> FailToCreateSource(CosmosElement continuationToken)
         {
             return Task.FromResult(TryCatch<IDocumentQueryExecutionComponent>.FromException(new Exception()));
         }
 
-        private static Task<TryCatch<IDocumentQueryExecutionComponent>> CreateSource(RequestContinuationToken continuationToken)
+        private static Task<TryCatch<IDocumentQueryExecutionComponent>> CreateSource(CosmosElement continuationToken)
         {
             return Task.FromResult(TryCatch<IDocumentQueryExecutionComponent>.FromResult(new Mock<IDocumentQueryExecutionComponent>().Object));
         }

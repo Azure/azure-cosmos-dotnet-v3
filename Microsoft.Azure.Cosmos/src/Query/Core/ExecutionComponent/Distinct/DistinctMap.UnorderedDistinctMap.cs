@@ -391,13 +391,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                 return this.objects.Add(hash);
             }
 
-            public static TryCatch<DistinctMap> TryCreate(RequestContinuationToken continuationToken)
+            public static TryCatch<DistinctMap> TryCreate(CosmosElement continuationToken)
             {
-                if (continuationToken == null)
-                {
-                    throw new ArgumentNullException(nameof(continuationToken));
-                }
-
                 HashSet<Number64> numbers = new HashSet<Number64>();
                 HashSet<uint> stringsLength4 = new HashSet<uint>();
                 HashSet<ulong> stringsLength8 = new HashSet<ulong>();
@@ -407,15 +402,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                 HashSet<UInt128> objects = new HashSet<UInt128>();
                 SimpleValues simpleValues = SimpleValues.None;
 
-                if (!continuationToken.IsNull)
+                if (continuationToken != null)
                 {
-                    if (!(continuationToken is CosmosElementRequestContinuationToken cosmosElementRequestContinuation))
-                    {
-                        throw new ArgumentException($"Unknown {nameof(RequestContinuationToken)} type: {continuationToken.GetType()}");
-                    }
-
-                    CosmosElement cosmosElement = cosmosElementRequestContinuation.Value;
-                    if (!(cosmosElement is CosmosObject hashDictionary))
+                    if (!(continuationToken is CosmosObject hashDictionary))
                     {
                         return TryCatch<DistinctMap>.FromException(
                             new MalformedContinuationTokenException(

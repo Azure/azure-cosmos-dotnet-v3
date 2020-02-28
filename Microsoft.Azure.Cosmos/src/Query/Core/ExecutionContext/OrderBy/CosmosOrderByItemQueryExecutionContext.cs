@@ -194,7 +194,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
         public static async Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
             CosmosQueryContext queryContext,
             CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams,
-            RequestContinuationToken requestContinuationToken,
+            CosmosElement requestContinuationToken,
             CancellationToken cancellationToken)
         {
             Debug.Assert(
@@ -362,7 +362,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
 
         private async Task<TryCatch> TryInitializeAsync(
             SqlQuerySpec sqlQuerySpec,
-            RequestContinuationToken requestContinuation,
+            CosmosElement requestContinuation,
             string collectionRid,
             List<PartitionKeyRange> partitionKeyRanges,
             int initialPageSize,
@@ -373,11 +373,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
             if (sqlQuerySpec == null)
             {
                 throw new ArgumentNullException(nameof(sqlQuerySpec));
-            }
-
-            if (requestContinuation == null)
-            {
-                throw new ArgumentNullException(nameof(requestContinuation));
             }
 
             if (collectionRid == null)
@@ -402,7 +397,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
 
             cancellationToken.ThrowIfCancellationRequested();
 
-            if (requestContinuation.IsNull)
+            if (requestContinuation == null)
             {
                 SqlQuerySpec sqlQuerySpecForInit = new SqlQuerySpec(
                     sqlQuerySpec.QueryText.Replace(oldValue: FormatPlaceHolder, newValue: True),
@@ -513,7 +508,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
         }
 
         private static TryCatch<OrderByContinuationToken[]> TryExtractContinuationTokens(
-            RequestContinuationToken requestContinuation,
+            CosmosElement requestContinuation,
             SortOrder[] sortOrders,
             string[] orderByExpressions)
         {
@@ -530,31 +525,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
                 throw new ArgumentNullException("continuation can not be null or empty.");
             }
 
-            if (requestContinuation.IsNull)
-            {
-                throw new ArgumentNullException("continuation can not be null or empty.");
-            }
-
-            CosmosElement cosmosElement;
-            switch (requestContinuation)
-            {
-                case StringRequestContinuationToken stringRequestContinuationToken:
-                    if (!CosmosElement.TryParse(stringRequestContinuationToken.Value, out cosmosElement))
-                    {
-                        return TryCatch<OrderByContinuationToken[]>.FromException(
-                            new MalformedContinuationTokenException($"Order by continuation token is malformed: {stringRequestContinuationToken.Value}."));
-                    }
-                    break;
-
-                case CosmosElementRequestContinuationToken cosmosElementRequestContinuation:
-                    cosmosElement = cosmosElementRequestContinuation.Value;
-                    break;
-
-                default:
-                    throw new ArgumentException($"Unknown {nameof(RequestContinuationToken)} type: {requestContinuation.GetType()}.");
-            }
-
-            if (!(cosmosElement is CosmosArray cosmosArray))
+            if (!(requestContinuation is CosmosArray cosmosArray))
             {
                 return TryCatch<OrderByContinuationToken[]>.FromException(
                     new MalformedContinuationTokenException($"Order by continuation token must be an array: {requestContinuation}."));

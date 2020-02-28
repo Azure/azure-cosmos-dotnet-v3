@@ -38,13 +38,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
                 IReadOnlyDictionary<string, AggregateOperator?> aliasToAggregateType,
                 IReadOnlyList<string> orderedAliases,
                 bool hasSelectValue,
-                RequestContinuationToken requestContinuation,
-                Func<RequestContinuationToken, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync)
+                CosmosElement requestContinuation,
+                Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync)
             {
                 AggregateContinuationToken aggregateContinuationToken;
-                if (!requestContinuation.IsNull)
+                if (requestContinuation != null)
                 {
-                    if (!AggregateContinuationToken.TryParse(requestContinuation, out aggregateContinuationToken))
+                    if (!AggregateContinuationToken.TryCreateFromCosmosElement(requestContinuation, out aggregateContinuationToken))
                     {
                         return TryCatch<IDocumentQueryExecutionComponent>.FromException(
                             new MalformedContinuationTokenException($"Malfomed {nameof(AggregateContinuationToken)}: '{requestContinuation}'"));
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
                     aliasToAggregateType,
                     orderedAliases,
                     hasSelectValue,
-                    RequestContinuationToken.Create(aggregateContinuationToken.SingleGroupAggregatorContinuationToken));
+                    aggregateContinuationToken.SingleGroupAggregatorContinuationToken);
 
                 if (!tryCreateSingleGroupAggregator.Succeeded)
                 {
@@ -68,13 +68,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
                         tryCreateSingleGroupAggregator.Exception);
                 }
 
-                return (await tryCreateSourceAsync(RequestContinuationToken.Create(aggregateContinuationToken.SourceContinuationToken))).Try<IDocumentQueryExecutionComponent>((source) =>
-                {
-                    return new ComputeAggregateDocumentQueryExecutionComponent(
-                        source,
-                        tryCreateSingleGroupAggregator.Result,
-                        hasSelectValue);
-                });
+                return (await tryCreateSourceAsync(aggregateContinuationToken.SourceContinuationToken))
+                    .Try<IDocumentQueryExecutionComponent>((source) =>
+                    {
+                        return new ComputeAggregateDocumentQueryExecutionComponent(
+                            source,
+                            tryCreateSingleGroupAggregator.Result,
+                            hasSelectValue);
+                    });
             }
 
             public override async Task<QueryResponseCore> DrainAsync(
@@ -191,8 +192,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
 
                 public CosmosElement SourceContinuationToken { get; }
 
-                public static bool TryParse(
-                    RequestContinuationToken continuationToken,
+                public static bool TryCreateFromCosmosElement(
+                    CosmosElement continuationToken,
                     out AggregateContinuationToken aggregateContinuationToken)
                 {
                     if (continuationToken == null)
@@ -200,12 +201,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
                         throw new ArgumentNullException(nameof(continuationToken));
                     }
 
-                    if (!(continuationToken is CosmosElementRequestContinuationToken cosmosElementRequestContinuationToken))
-                    {
-                        throw new ArgumentException($"Expected {nameof(CosmosElementRequestContinuationToken)} instead of: {continuationToken.GetType()}");
-                    }
-
-                    if (!(cosmosElementRequestContinuationToken.Value is CosmosObject rawAggregateContinuationToken))
+                    if (!(continuationToken is CosmosObject rawAggregateContinuationToken))
                     {
                         aggregateContinuationToken = default;
                         return false;

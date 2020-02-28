@@ -11,9 +11,8 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
+    using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
-    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
 
@@ -62,36 +61,35 @@ namespace Microsoft.Azure.Cosmos.Query
                 allowNonValueAggregateQuery: allowNonValueAggregateQuery,
                 correlatedActivityId: Guid.NewGuid());
 
-            RequestContinuationToken requestContinuationToken;
-            if (queryRequestOptions.ExecutionEnvironment.HasValue)
+            CosmosElement requestContinuationToken;
+            switch (queryRequestOptions.ExecutionEnvironment.GetValueOrDefault(ExecutionEnvironment.Client))
             {
-                switch (queryRequestOptions.ExecutionEnvironment.Value)
-                {
-                    case ExecutionEnvironment.Client:
-                        requestContinuationToken = RequestContinuationToken.Create(continuationToken);
-                        break;
-
-                    case ExecutionEnvironment.Compute:
-                        CosmosElement cosmosElement;
-                        if (queryRequestOptions.BinaryContinuationToken.IsEmpty)
+                case ExecutionEnvironment.Client:
+                    if (continuationToken != null)
+                    {
+                        if (!CosmosElement.TryParse(continuationToken, out requestContinuationToken))
                         {
-                            cosmosElement = null;
+                            return new QueryIterator(
+                                cosmosQueryContext,
+                                new QueryExecutionContextWithException(
+                                    new MalformedContinuationTokenException(
+                                        $"Malformed Continuation Token: {requestContinuationToken}")),
+                                queryRequestOptions.CosmosSerializationFormatOptions,
+                                queryRequestOptions);
                         }
-                        else
-                        {
-                            cosmosElement = CosmosElement.CreateFromBuffer(queryRequestOptions.BinaryContinuationToken);
-                        }
+                    }
+                    else
+                    {
+                        requestContinuationToken = null;
+                    }
+                    break;
 
-                        requestContinuationToken = RequestContinuationToken.Create(cosmosElement);
-                        break;
+                case ExecutionEnvironment.Compute:
+                    requestContinuationToken = queryRequestOptions.CosmosElementContinuationToken;
+                    break;
 
-                    default:
-                        throw new ArgumentOutOfRangeException($"Unknown {nameof(ExecutionEnvironment)}: {queryRequestOptions.ExecutionEnvironment.Value}.");
-                }
-            }
-            else
-            {
-                requestContinuationToken = RequestContinuationToken.Create(continuationToken);
+                default:
+                    throw new ArgumentOutOfRangeException($"Unknown {nameof(ExecutionEnvironment)}: {queryRequestOptions.ExecutionEnvironment.Value}.");
             }
 
             CosmosQueryExecutionContextFactory.InputParameters inputParameters = new CosmosQueryExecutionContextFactory.InputParameters(

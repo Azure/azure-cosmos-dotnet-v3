@@ -80,18 +80,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
             jsonWriter.WriteFloat64Value(this.globalSum);
         }
 
-        public static TryCatch<IAggregator> TryCreate(RequestContinuationToken requestContinuationToken)
+        public static TryCatch<IAggregator> TryCreate(CosmosElement requestContinuationToken)
         {
             double partialSum;
-            if (!requestContinuationToken.IsNull)
+            if (requestContinuationToken != null)
             {
-                if (!requestContinuationToken.TryConvertToCosmosElement(out CosmosFloat64 cosmosFloat64))
+                if (!(requestContinuationToken is CosmosNumber cosmosNumber))
                 {
                     return TryCatch<IAggregator>.FromException(
                         new MalformedContinuationTokenException($"Malformed {nameof(SumAggregator)} continuation token: {requestContinuationToken}"));
                 }
 
-                partialSum = cosmosFloat64.GetValue();
+                partialSum = Number64.ToLong(cosmosNumber.Value);
             }
             else
             {

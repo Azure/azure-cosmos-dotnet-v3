@@ -36,8 +36,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
         /// <param name="localAverage">The local average to add to the global average.</param>
         public void Aggregate(CosmosElement localAverage)
         {
-            // item is a JObject of the form : { "sum": <number>, "count": <number> } 
-            AverageInfo newInfo = AverageInfo.Create(localAverage);
+            // item is a JObject of the form : { "sum": <number>, "count": <number> }
+            TryCatch<AverageInfo> tryCreateAverageInfo = AverageInfo.TryCreateFromCosmosElement(localAverage);
+            if (!tryCreateAverageInfo.Succeeded)
+            {
+                throw tryCreateAverageInfo.Exception;
+            }
+
+            AverageInfo newInfo = tryCreateAverageInfo.Result;
             this.globalAverage += newInfo;
         }
 
@@ -65,21 +71,21 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
             this.globalAverage.SerializeState(jsonWriter);
         }
 
-        public static TryCatch<IAggregator> TryCreate(RequestContinuationToken continuationToken)
+        public static TryCatch<IAggregator> TryCreate(CosmosElement continuationToken)
         {
-            if (continuationToken == null)
-            {
-                throw new ArgumentNullException(nameof(continuationToken));
-            }
-
             AverageInfo averageInfo;
-            if (!continuationToken.IsNull)
+            if (continuationToken != null)
             {
-                if (!AverageInfo.TryParse(continuationToken, out averageInfo))
+                TryCatch<AverageInfo> tryCreateAverageInfo = AverageInfo.TryCreateFromCosmosElement(continuationToken);
+                if (!tryCreateAverageInfo.Succeeded)
                 {
                     return TryCatch<IAggregator>.FromException(
-                        new MalformedContinuationTokenException($"Invalid continuation token: {continuationToken}"));
+                        new MalformedContinuationTokenException(
+                            message: $"Invalid continuation token: {continuationToken}",
+                            innerException: tryCreateAverageInfo.Exception));
                 }
+
+                averageInfo = tryCreateAverageInfo.Result;
             }
             else
             {
@@ -111,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
             /// <summary>
             /// Initializes a new instance of the AverageInfo class.
             /// </summary>
-            public static AverageInfo Create(CosmosElement cosmosElement)
+            public static TryCatch<AverageInfo> TryCreateFromCosmosElement(CosmosElement cosmosElement)
             {
                 if (cosmosElement == null)
                 {
@@ -120,7 +126,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
 
                 if (!(cosmosElement is CosmosObject cosmosObject))
                 {
-                    throw new ArgumentException($"{nameof(cosmosElement)} must not be an object.");
+                    return TryCatch<AverageInfo>.FromException(
+                        new ArgumentException($"{nameof(cosmosElement)} must be an object."));
                 }
 
                 double? sum;
@@ -128,7 +135,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
                 {
                     if (!(sumPropertyValue is CosmosNumber cosmosSum))
                     {
-                        throw new ArgumentException($"value for the {SumName} field was not a number");
+                        return TryCatch<AverageInfo>.FromException(
+                            new ArgumentException($"value for the {SumName} field was not a number"));
                     }
 
                     sum = Number64.ToDouble(cosmosSum.Value);
@@ -140,12 +148,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
 
                 if (!cosmosObject.TryGetValue(CountName, out CosmosNumber cosmosCount))
                 {
-                    throw new ArgumentException($"value for the {CountName} field was not a number");
+                    return TryCatch<AverageInfo>.FromException(
+                        new ArgumentException($"value for the {CountName} field was not a number"));
                 }
 
                 long count = Number64.ToLong(cosmosCount.Value);
-
-                return new AverageInfo(sum, count);
+                
+                return TryCatch<AverageInfo>.FromResult(new AverageInfo(sum, count));
             }
 
             /// <summary>
@@ -223,23 +232,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
                     {(this.Sum.HasValue ? $@"""{SumName}"" : {this.Sum.Value}," : string.Empty)}
                     ""{CountName}"" : {this.Count}
                 }}";
-            }
-
-            public static bool TryParse(RequestContinuationToken requestContinuationToken, out AverageInfo averageInfo)
-            {
-                if (requestContinuationToken == null)
-                {
-                    throw new ArgumentNullException(nameof(requestContinuationToken));
-                }
-
-                if (!requestContinuationToken.TryConvertToCosmosElement(out CosmosElement cosmosElementAverageInfo))
-                {
-                    averageInfo = default;
-                    return false;
-                }
-
-                averageInfo = AverageInfo.Create(cosmosElementAverageInfo);
-                return true;
             }
         }
     }

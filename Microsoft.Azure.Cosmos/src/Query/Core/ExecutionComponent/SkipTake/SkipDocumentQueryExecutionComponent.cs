@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
 {
     using System;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
@@ -28,8 +29,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
         public static Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
             ExecutionEnvironment executionEnvironment,
             int offsetCount,
-            RequestContinuationToken continuationToken,
-            Func<RequestContinuationToken, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync)
+            CosmosElement continuationToken,
+            Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync)
         {
             Task<TryCatch<IDocumentQueryExecutionComponent>> tryCreate;
             switch (executionEnvironment)

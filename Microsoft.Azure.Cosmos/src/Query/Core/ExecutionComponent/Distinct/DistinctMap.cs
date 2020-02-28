@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
         /// <returns>The appropriate IDistinctMap.</returns>
         public static TryCatch<DistinctMap> TryCreate(
             DistinctQueryType distinctQueryType,
-            RequestContinuationToken distinctMapContinuationToken)
+            CosmosElement distinctMapContinuationToken)
         {
             TryCatch<DistinctMap> tryCreateDistinctMap;
             switch (distinctQueryType)

@@ -72,23 +72,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
             jsonWriter.WriteInt64Value(this.globalCount);
         }
 
-        public static TryCatch<IAggregator> TryCreate(RequestContinuationToken continuationToken)
+        public static TryCatch<IAggregator> TryCreate(CosmosElement continuationToken)
         {
-            if (continuationToken == null)
-            {
-                throw new ArgumentNullException(nameof(continuationToken));
-            }
-
             long partialCount;
-            if (!continuationToken.IsNull)
+            if (continuationToken != null)
             {
-                if (!continuationToken.TryConvertToCosmosElement<CosmosInt64>(out CosmosInt64 cosmosPartialCount))
+                if (!(continuationToken is CosmosNumber cosmosPartialCount))
                 {
                     return TryCatch<IAggregator>.FromException(
                         new MalformedContinuationTokenException($@"Invalid count continuation token: ""{continuationToken}""."));
                 }
 
-                partialCount = cosmosPartialCount.GetValue();
+                partialCount = Number64.ToLong(cosmosPartialCount.Value);
             }
             else
             {

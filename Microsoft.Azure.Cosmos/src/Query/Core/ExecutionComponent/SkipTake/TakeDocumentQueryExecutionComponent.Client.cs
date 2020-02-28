@@ -30,8 +30,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
 
             public static async Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateLimitDocumentQueryExecutionComponentAsync(
                 int limitCount,
-                RequestContinuationToken requestContinuationToken,
-                Func<RequestContinuationToken, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync)
+                CosmosElement requestContinuationToken,
+                Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync)
             {
                 if (limitCount < 0)
                 {
@@ -43,20 +43,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                     throw new ArgumentNullException(nameof(tryCreateSourceAsync));
                 }
 
-                if (requestContinuationToken == null)
-                {
-                    throw new ArgumentNullException(nameof(requestContinuationToken));
-                }
-
-                if (!(requestContinuationToken is StringRequestContinuationToken stringRequestContinuationToken))
-                {
-                    throw new ArgumentException($"Unknown {nameof(StringRequestContinuationToken)} type: {requestContinuationToken.GetType()}.");
-                }
-
                 LimitContinuationToken limitContinuationToken;
-                if (!requestContinuationToken.IsNull)
+                if (requestContinuationToken != null)
                 {
-                    if (!LimitContinuationToken.TryParse(stringRequestContinuationToken.Value, out limitContinuationToken))
+                    if (!LimitContinuationToken.TryParse(requestContinuationToken.ToString(), out limitContinuationToken))
                     {
                         return TryCatch<IDocumentQueryExecutionComponent>.FromException(
                             new MalformedContinuationTokenException($"Malformed {nameof(LimitContinuationToken)}: {requestContinuationToken}."));
@@ -70,10 +60,24 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                 if (limitContinuationToken.Limit > limitCount)
                 {
                     return TryCatch<IDocumentQueryExecutionComponent>.FromException(
-                        new MalformedContinuationTokenException($"{nameof(LimitContinuationToken.Limit)} in {nameof(LimitContinuationToken)}: {stringRequestContinuationToken.Value}: {limitContinuationToken.Limit} can not be greater than the limit count in the query: {limitCount}."));
+                        new MalformedContinuationTokenException($"{nameof(LimitContinuationToken.Limit)} in {nameof(LimitContinuationToken)}: {requestContinuationToken}: {limitContinuationToken.Limit} can not be greater than the limit count in the query: {limitCount}."));
                 }
 
-                return (await tryCreateSourceAsync(RequestContinuationToken.Create(limitContinuationToken.SourceToken)))
+                CosmosElement sourceToken;
+                if (limitContinuationToken.SourceToken != null)
+                {
+                    if (!CosmosElement.TryParse(limitContinuationToken.SourceToken, out sourceToken))
+                    {
+                        return TryCatch<IDocumentQueryExecutionComponent>.FromException(
+                            new MalformedContinuationTokenException($"Malformed {nameof(LimitContinuationToken)}: {requestContinuationToken}."));
+                    }
+                }
+                else
+                {
+                    sourceToken = null;
+                }
+
+                return (await tryCreateSourceAsync(sourceToken))
                     .Try<IDocumentQueryExecutionComponent>((source) => new ClientTakeDocumentQueryExecutionComponent(
                     source,
                     limitContinuationToken.Limit,
@@ -82,8 +86,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
 
             public static async Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateTopDocumentQueryExecutionComponentAsync(
                 int topCount,
-                RequestContinuationToken requestContinuationToken,
-                Func<RequestContinuationToken, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync)
+                CosmosElement requestContinuationToken,
+                Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync)
             {
                 if (topCount < 0)
                 {
@@ -95,23 +99,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                     throw new ArgumentNullException(nameof(tryCreateSourceAsync));
                 }
 
-                if (requestContinuationToken == null)
-                {
-                    throw new ArgumentNullException(nameof(requestContinuationToken));
-                }
-
-                if (!(requestContinuationToken is StringRequestContinuationToken stringRequestContinuationToken))
-                {
-                    throw new ArgumentException($"Unknown {nameof(StringRequestContinuationToken)} type: {requestContinuationToken.GetType()}.");
-                }
-
                 TopContinuationToken topContinuationToken;
-                if (!requestContinuationToken.IsNull)
+                if (requestContinuationToken != null)
                 {
-                    if (!TopContinuationToken.TryParse(stringRequestContinuationToken.Value, out topContinuationToken))
+                    if (!TopContinuationToken.TryParse(requestContinuationToken.ToString(), out topContinuationToken))
                     {
                         return TryCatch<IDocumentQueryExecutionComponent>.FromException(
-                            new MalformedContinuationTokenException($"Malformed {nameof(LimitContinuationToken)}: {stringRequestContinuationToken.Value}."));
+                            new MalformedContinuationTokenException($"Malformed {nameof(LimitContinuationToken)}: {requestContinuationToken}."));
                     }
                 }
                 else
@@ -122,10 +116,24 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                 if (topContinuationToken.Top > topCount)
                 {
                     return TryCatch<IDocumentQueryExecutionComponent>.FromException(
-                        new MalformedContinuationTokenException($"{nameof(TopContinuationToken.Top)} in {nameof(TopContinuationToken)}: {stringRequestContinuationToken.Value}: {topContinuationToken.Top} can not be greater than the top count in the query: {topCount}."));
+                        new MalformedContinuationTokenException($"{nameof(TopContinuationToken.Top)} in {nameof(TopContinuationToken)}: {requestContinuationToken}: {topContinuationToken.Top} can not be greater than the top count in the query: {topCount}."));
                 }
 
-                return (await tryCreateSourceAsync(RequestContinuationToken.Create(topContinuationToken.SourceToken)))
+                CosmosElement sourceToken;
+                if (topContinuationToken.SourceToken != null)
+                {
+                    if (!CosmosElement.TryParse(topContinuationToken.SourceToken, out sourceToken))
+                    {
+                        return TryCatch<IDocumentQueryExecutionComponent>.FromException(
+                            new MalformedContinuationTokenException($"{nameof(TopContinuationToken.SourceToken)} in {nameof(TopContinuationToken)}: {requestContinuationToken}: {topContinuationToken.SourceToken} was malformed."));
+                    }
+                }
+                else
+                {
+                    sourceToken = null;
+                }
+
+                return (await tryCreateSourceAsync(sourceToken))
                     .Try<IDocumentQueryExecutionComponent>((source) => new ClientTakeDocumentQueryExecutionComponent(
                     source,
                     topContinuationToken.Top,

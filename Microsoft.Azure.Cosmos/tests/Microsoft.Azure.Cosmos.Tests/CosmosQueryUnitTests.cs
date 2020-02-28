@@ -256,7 +256,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             CosmosQueryExecutionContextFactory.InputParameters inputParameters = new CosmosQueryExecutionContextFactory.InputParameters(
                 sqlQuerySpec: sqlQuerySpec,
-                initialUserContinuationToken: StringRequestContinuationToken.Null,
+                initialUserContinuationToken: null,
                 maxConcurrency: queryRequestOptions?.MaxConcurrency,
                 maxItemCount: queryRequestOptions?.MaxItemCount,
                 maxBufferedItemCount: queryRequestOptions?.MaxBufferedItemCount,
@@ -289,7 +289,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private async Task<(IList<IDocumentQueryExecutionComponent> components, QueryResponseCore response)> GetAllExecutionComponents()
         {
-            (Func<RequestContinuationToken, Task<TryCatch<IDocumentQueryExecutionComponent>>> func, QueryResponseCore response) = this.SetupBaseContextToVerifyFailureScenario();
+            (Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> func, QueryResponseCore response) = this.SetupBaseContextToVerifyFailureScenario();
 
             List<IDocumentQueryExecutionComponent> components = new List<IDocumentQueryExecutionComponent>();
             List<AggregateOperator> operators = new List<AggregateOperator>()
@@ -310,37 +310,37 @@ namespace Microsoft.Azure.Cosmos.Tests
                 },
                 new List<string>() { "test" },
                 false,
-                StringRequestContinuationToken.Null,
+                null,
                 func)).Result);
 
             components.Add((await DistinctDocumentQueryExecutionComponent.TryCreateAsync(
                 ExecutionEnvironment.Client,
-                StringRequestContinuationToken.Null,
+                null,
                 func,
                 DistinctQueryType.Ordered)).Result);
 
             components.Add((await SkipDocumentQueryExecutionComponent.TryCreateAsync(
                 ExecutionEnvironment.Client,
                 5,
-                StringRequestContinuationToken.Null,
+                null,
                 func)).Result);
 
             components.Add((await TakeDocumentQueryExecutionComponent.TryCreateLimitDocumentQueryExecutionComponentAsync(
                 ExecutionEnvironment.Client,
                 5,
-                StringRequestContinuationToken.Null,
+                null,
                 func)).Result);
 
             components.Add((await TakeDocumentQueryExecutionComponent.TryCreateTopDocumentQueryExecutionComponentAsync(
                 ExecutionEnvironment.Client,
                 5,
-                StringRequestContinuationToken.Null,
+                null,
                 func)).Result);
 
             return (components, response);
         }
 
-        private (Func<RequestContinuationToken, Task<TryCatch<IDocumentQueryExecutionComponent>>>, QueryResponseCore) SetupBaseContextToVerifyFailureScenario()
+        private (Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>>, QueryResponseCore) SetupBaseContextToVerifyFailureScenario()
         {
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create();
             diagnosticsContext.AddDiagnosticsInternal( new PointOperationStatistics(
@@ -374,7 +374,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Mock<IDocumentQueryExecutionComponent> baseContext = new Mock<IDocumentQueryExecutionComponent>();
             baseContext.Setup(x => x.DrainAsync(It.IsAny<int>(), It.IsAny<CancellationToken>())).Returns(Task.FromResult<QueryResponseCore>(failure));
-            Task<TryCatch<IDocumentQueryExecutionComponent>> callBack(RequestContinuationToken x) => Task.FromResult<TryCatch<IDocumentQueryExecutionComponent>>(TryCatch<IDocumentQueryExecutionComponent>.FromResult(baseContext.Object));
+            Task<TryCatch<IDocumentQueryExecutionComponent>> callBack(CosmosElement x) => Task.FromResult<TryCatch<IDocumentQueryExecutionComponent>>(TryCatch<IDocumentQueryExecutionComponent>.FromResult(baseContext.Object));
             return (callBack, failure);
         }
     }

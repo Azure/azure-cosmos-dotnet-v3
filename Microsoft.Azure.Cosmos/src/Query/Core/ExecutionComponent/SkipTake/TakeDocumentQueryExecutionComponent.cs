@@ -34,8 +34,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
         public static Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateLimitDocumentQueryExecutionComponentAsync(
             ExecutionEnvironment executionEnvironment,
             int limitCount,
-            RequestContinuationToken requestContinuationToken,
-            Func<RequestContinuationToken, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync)
+            CosmosElement requestContinuationToken,
+            Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync)
         {
             Task<TryCatch<IDocumentQueryExecutionComponent>> tryCreateComponentAsync;
             switch (executionEnvironment)
@@ -64,8 +64,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
         public static Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateTopDocumentQueryExecutionComponentAsync(
             ExecutionEnvironment executionEnvironment,
             int topCount,
-            RequestContinuationToken requestContinuationToken,
-            Func<RequestContinuationToken, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync)
+            CosmosElement requestContinuationToken,
+            Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync)
         {
             Task<TryCatch<IDocumentQueryExecutionComponent>> tryCreateComponentAsync;
             switch (executionEnvironment)

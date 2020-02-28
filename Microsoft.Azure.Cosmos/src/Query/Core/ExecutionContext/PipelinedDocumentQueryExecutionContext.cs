@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             ExecutionEnvironment executionEnvironment,
             CosmosQueryContext queryContext,
             CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams,
-            RequestContinuationToken requestContinuationToken,
+            CosmosElement requestContinuationToken,
             CancellationToken cancellationToken)
         {
             if (queryContext == null)
@@ -163,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     testSettings: initParams.TestSettings);
             }
 
-            Task<TryCatch<IDocumentQueryExecutionComponent>> tryCreateOrderByComponentAsync(RequestContinuationToken continuationToken)
+            Task<TryCatch<IDocumentQueryExecutionComponent>> tryCreateOrderByComponentAsync(CosmosElement continuationToken)
             {
                 return CosmosOrderByItemQueryExecutionContext.TryCreateAsync(
                     queryContext,
@@ -172,7 +172,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     cancellationToken);
             }
 
-            Task<TryCatch<IDocumentQueryExecutionComponent>> tryCreateParallelComponentAsync(RequestContinuationToken continuationToken)
+            Task<TryCatch<IDocumentQueryExecutionComponent>> tryCreateParallelComponentAsync(CosmosElement continuationToken)
             {
                 return CosmosParallelItemQueryExecutionContext.TryCreateAsync(
                     queryContext,
@@ -181,7 +181,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     cancellationToken);
             }
 
-            Func<RequestContinuationToken, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreatePipelineAsync;
+            Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreatePipelineAsync;
             if (queryInfo.HasOrderBy)
             {
                 tryCreatePipelineAsync = tryCreateOrderByComponentAsync;
@@ -193,7 +193,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
             if (queryInfo.HasAggregates && !queryInfo.HasGroupBy)
             {
-                Func<RequestContinuationToken, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync = tryCreatePipelineAsync;
+                Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync = tryCreatePipelineAsync;
                 tryCreatePipelineAsync = async (continuationToken) =>
                 {
                     return await AggregateDocumentQueryExecutionComponent.TryCreateAsync(
@@ -209,7 +209,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
             if (queryInfo.HasDistinct)
             {
-                Func<RequestContinuationToken, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync = tryCreatePipelineAsync;
+                Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync = tryCreatePipelineAsync;
                 tryCreatePipelineAsync = async (continuationToken) =>
                 {
                     return await DistinctDocumentQueryExecutionComponent.TryCreateAsync(
@@ -222,7 +222,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
             if (queryInfo.HasGroupBy)
             {
-                Func<RequestContinuationToken, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync = tryCreatePipelineAsync;
+                Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync = tryCreatePipelineAsync;
                 tryCreatePipelineAsync = async (continuationToken) =>
                 {
                     return await GroupByDocumentQueryExecutionComponent.TryCreateAsync(
@@ -237,7 +237,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
             if (queryInfo.HasOffset)
             {
-                Func<RequestContinuationToken, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync = tryCreatePipelineAsync;
+                Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync = tryCreatePipelineAsync;
                 tryCreatePipelineAsync = async (continuationToken) =>
                 {
                     return await SkipDocumentQueryExecutionComponent.TryCreateAsync(
@@ -250,7 +250,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
             if (queryInfo.HasLimit)
             {
-                Func<RequestContinuationToken, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync = tryCreatePipelineAsync;
+                Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync = tryCreatePipelineAsync;
                 tryCreatePipelineAsync = async (continuationToken) =>
                 {
                     return await TakeDocumentQueryExecutionComponent.TryCreateLimitDocumentQueryExecutionComponentAsync(
@@ -263,7 +263,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
             if (queryInfo.HasTop)
             {
-                Func<RequestContinuationToken, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync = tryCreatePipelineAsync;
+                Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync = tryCreatePipelineAsync;
                 tryCreatePipelineAsync = async (continuationToken) =>
                 {
                     return await TakeDocumentQueryExecutionComponent.TryCreateTopDocumentQueryExecutionComponentAsync(
@@ -326,7 +326,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 {
                     if (queryResponse.ContinuationToken != null)
                     {
-                        updatedContinuationToken = new PipelineContinuationTokenV0(queryResponse.ContinuationToken).ToString();
+                        updatedContinuationToken = new PipelineContinuationTokenV0(CosmosElement.Parse(queryResponse.ContinuationToken)).ToString();
                     }
                     else
                     {

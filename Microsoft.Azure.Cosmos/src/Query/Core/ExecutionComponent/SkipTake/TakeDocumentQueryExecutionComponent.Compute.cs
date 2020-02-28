@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
-    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
@@ -30,8 +29,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
 
             public static async Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
                 int takeCount,
-                RequestContinuationToken requestContinuationToken,
-                Func<RequestContinuationToken, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync)
+                CosmosElement requestContinuationToken,
+                Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync)
             {
                 if (takeCount < 0)
                 {
@@ -43,23 +42,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                     throw new ArgumentNullException(nameof(tryCreateSourceAsync));
                 }
 
-                if (requestContinuationToken == null)
-                {
-                    throw new ArgumentNullException(nameof(requestContinuationToken));
-                }
-
-                if (!(requestContinuationToken is CosmosElementRequestContinuationToken cosmosElementRequestContinuationToken))
-                {
-                    throw new ArgumentException($"Unknown {nameof(RequestContinuationToken)} type: {requestContinuationToken.GetType()}.");
-                }
-
                 TakeContinuationToken takeContinuationToken;
-                if (!requestContinuationToken.IsNull)
+                if (requestContinuationToken != null)
                 {
-                    if (!TakeContinuationToken.TryParse(cosmosElementRequestContinuationToken.Value, out takeContinuationToken))
+                    if (!TakeContinuationToken.TryParse(requestContinuationToken, out takeContinuationToken))
                     {
                         return TryCatch<IDocumentQueryExecutionComponent>.FromException(
-                            new MalformedContinuationTokenException($"Malformed {nameof(TakeContinuationToken)}: {cosmosElementRequestContinuationToken.Value}."));
+                            new MalformedContinuationTokenException($"Malformed {nameof(TakeContinuationToken)}: {requestContinuationToken}."));
                     }
                 }
                 else
@@ -70,10 +59,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                 if (takeContinuationToken.TakeCount > takeCount)
                 {
                     return TryCatch<IDocumentQueryExecutionComponent>.FromException(
-                        new MalformedContinuationTokenException($"{nameof(TakeContinuationToken.TakeCount)} in {nameof(TakeContinuationToken)}: {cosmosElementRequestContinuationToken.Value}: {takeContinuationToken.TakeCount} can not be greater than the limit count in the query: {takeCount}."));
+                        new MalformedContinuationTokenException($"{nameof(TakeContinuationToken.TakeCount)} in {nameof(TakeContinuationToken)}: {requestContinuationToken}: {takeContinuationToken.TakeCount} can not be greater than the limit count in the query: {takeCount}."));
                 }
 
-                return (await tryCreateSourceAsync(RequestContinuationToken.Create(takeContinuationToken.SourceToken)))
+                return (await tryCreateSourceAsync(takeContinuationToken.SourceToken))
                     .Try<IDocumentQueryExecutionComponent>((source) => new ComputeTakeDocumentQueryExecutionComponent(
                     source,
                     takeContinuationToken.TakeCount));

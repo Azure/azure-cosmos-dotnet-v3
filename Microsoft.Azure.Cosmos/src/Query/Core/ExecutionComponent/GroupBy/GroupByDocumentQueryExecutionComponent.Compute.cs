@@ -37,21 +37,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
             }
 
             public static async Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
-                RequestContinuationToken requestContinuation,
-                Func<RequestContinuationToken, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync,
+                CosmosElement requestContinuation,
+                Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync,
                 IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
                 IReadOnlyList<string> orderedAliases,
                 bool hasSelectValue)
             {
-                if (!(requestContinuation is CosmosElementRequestContinuationToken cosmosElementRequestContinuationToken))
-                {
-                    throw new ArgumentException($"Unknown {nameof(RequestContinuationToken)} type: {requestContinuation.GetType()}.");
-                }
-
                 GroupByContinuationToken groupByContinuationToken;
-                if (!requestContinuation.IsNull)
+                if (requestContinuation != null)
                 {
-                    if (!GroupByContinuationToken.TryParse(cosmosElementRequestContinuationToken.Value, out groupByContinuationToken))
+                    if (!GroupByContinuationToken.TryParse(requestContinuation, out groupByContinuationToken))
                     {
                         return TryCatch<IDocumentQueryExecutionComponent>.FromException(
                             new MalformedContinuationTokenException($"Invalid {nameof(GroupByContinuationToken)}: '{requestContinuation}'"));
@@ -73,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                 }
                 else
                 {
-                    tryCreateSource = await tryCreateSourceAsync(RequestContinuationToken.Create(groupByContinuationToken.SourceContinuationToken));
+                    tryCreateSource = await tryCreateSourceAsync(groupByContinuationToken.SourceContinuationToken);
                 }
 
                 if (!tryCreateSource.Succeeded)

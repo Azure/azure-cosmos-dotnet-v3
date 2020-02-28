@@ -64,19 +64,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             CancellationToken cancellationToken)
         {
             // Try to parse the continuation token.
-            RequestContinuationToken continuationToken = inputParameters.InitialUserContinuationToken;
+            CosmosElement continuationToken = inputParameters.InitialUserContinuationToken;
             PartitionedQueryExecutionInfo queryPlanFromContinuationToken = inputParameters.PartitionedQueryExecutionInfo;
-            if (!continuationToken.IsNull)
+            if (continuationToken != null)
             {
-                if (!continuationToken.TryConvertToCosmosElement(out CosmosElement cosmosElement))
-                {
-                    return TryCatch<CosmosQueryExecutionContext>.FromException(
-                        new MalformedContinuationTokenException(
-                            $"Malformed {nameof(PipelineContinuationToken)}."));
-                }
-
-                if (!PipelineContinuationToken.TryParse(
-                    cosmosElement.ToString(),
+                if (!PipelineContinuationToken.TryCreateFromCosmosElement(
+                    continuationToken,
                     out PipelineContinuationToken pipelineContinuationToken))
                 {
                     return TryCatch<CosmosQueryExecutionContext>.FromException(
@@ -102,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                             $"{nameof(PipelineContinuationToken)}: '{continuationToken}' is no longer supported."));
                 }
 
-                continuationToken = RequestContinuationToken.Create(latestVersionPipelineContinuationToken.SourceContinuationToken);
+                continuationToken = latestVersionPipelineContinuationToken.SourceContinuationToken;
                 if (latestVersionPipelineContinuationToken.QueryPlan != null)
                 {
                     queryPlanFromContinuationToken = latestVersionPipelineContinuationToken.QueryPlan;
@@ -354,7 +347,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
             public InputParameters(
                 SqlQuerySpec sqlQuerySpec,
-                RequestContinuationToken initialUserContinuationToken,
+                CosmosElement initialUserContinuationToken,
                 int? maxConcurrency,
                 int? maxItemCount,
                 int? maxBufferedItemCount,
@@ -398,7 +391,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             }
 
             public SqlQuerySpec SqlQuerySpec { get; }
-            public RequestContinuationToken InitialUserContinuationToken { get; }
+            public CosmosElement InitialUserContinuationToken { get; }
             public int MaxConcurrency { get; }
             public int MaxItemCount { get; }
             public int MaxBufferedItemCount { get; }
