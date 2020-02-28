@@ -1,13 +1,13 @@
-## Cosmos1000
+## Cosmos429_0000
 
 <table>
 <tr>
   <td>TypeName</td>
-  <td>Cosmos1000RequestRateTooLarge</td>
+  <td>Cosmos429_0000RequestRateTooLarge</td>
 </tr>
 <tr>
   <td>CheckId</td>
-  <td>Cosmos1000</td>
+  <td>Cosmos429_0000</td>
 </tr>
 <tr>
   <td>Category</td>

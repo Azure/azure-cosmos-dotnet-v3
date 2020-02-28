@@ -1,13 +1,13 @@
-## Cosmos1001
+## Cosmos503_9000
 
 <table>
 <tr>
   <td>TypeName</td>
-  <td>Cosmos1001SNATPortExhuastion</td>
+  <td>Cosmos503_9000SNATPortExhuastion</td>
 </tr>
 <tr>
   <td>CheckId</td>
-  <td>Cosmos1001</td>
+  <td>Cosmos503_9000</td>
 </tr>
 <tr>
   <td>Category</td>

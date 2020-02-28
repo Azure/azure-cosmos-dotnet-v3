@@ -1,13 +1,13 @@
-## Cosmos1002
+## Cosmos404_0000
 
 <table>
 <tr>
   <td>TypeName</td>
-  <td>Cosmos1002NotFound</td>
+  <td>Cosmos404_0000NotFound</td>
 </tr>
 <tr>
   <td>CheckId</td>
-  <td>Cosmos1002</td>
+  <td>Cosmos404_0000</td>
 </tr>
 <tr>
   <td>Category</td>

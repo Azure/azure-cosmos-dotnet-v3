@@ -1,13 +1,13 @@
-## Cosmos1001
+## Cosmos304_0000
 
 <table>
 <tr>
   <td>TypeName</td>
-  <td>Cosmos1001NotModified</td>
+  <td>Cosmos304_0000NotModified</td>
 </tr>
 <tr>
   <td>CheckId</td>
-  <td>Cosmos1001</td>
+  <td>Cosmos304_0000</td>
 </tr>
 <tr>
   <td>Category</td>
