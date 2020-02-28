@@ -139,7 +139,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
                 matched,
                 $@"
                     Expected: {baselineTextSuffix},
-                    Actual:   {outputTextSuffix}");
+                    Actual:   {outputTextSuffix},
+                    OutputPath: {outputPath},
+                    BaselinePath: {baselinePath}");
         }
 
         /// <summary>
