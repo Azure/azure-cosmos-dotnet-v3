@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
 {
     using System;
-    using System.Diagnostics;
     using System.IO;
     using System.Net;
     using Microsoft.Azure.Documents;
@@ -111,6 +110,42 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 responseMessage.DiagnosticsContext,
                 error,
                 responseMessage.CosmosException?.InnerException);
+        }
+
+        internal static CosmosException Create(
+            DocumentServiceResponse documentServiceResponse,
+            Headers responseHeaders,
+            RequestMessage requestMessage)
+        {
+            if (documentServiceResponse == null)
+            {
+                throw new ArgumentNullException(nameof(documentServiceResponse));
+            }
+
+            if (requestMessage == null)
+            {
+                throw new ArgumentNullException(nameof(requestMessage));
+            }
+
+            if (responseHeaders == null)
+            {
+                responseHeaders = documentServiceResponse.Headers.ToCosmosHeaders();
+            }
+
+            (Error error, string errorMessage) = CosmosExceptionFactory.GetErrorFromStream(documentServiceResponse.ResponseBody);
+
+            return CosmosExceptionFactory.Create(
+                statusCode: documentServiceResponse.StatusCode,
+                subStatusCode: (int)responseHeaders.SubStatusCode,
+                message: errorMessage,
+                stackTrace: null,
+                activityId: responseHeaders.ActivityId,
+                requestCharge: responseHeaders.RequestCharge,
+                retryAfter: responseHeaders.RetryAfter,
+                headers: responseHeaders,
+                diagnosticsContext: requestMessage.DiagnosticsContext,
+                error: error,
+                innerException: null);
         }
 
         internal static CosmosException Create(
