@@ -6,9 +6,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using System;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
 
     internal sealed class QueryExecutionContextWithException : CosmosQueryExecutionContext
@@ -39,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             return Task.FromResult(queryResponse);
         }
 
-        public override void SerializeState(IJsonWriter jsonWriter)
+        public override CosmosElement GetCosmosElementContinuationToken()
         {
             throw new NotImplementedException();
         }

@@ -5,13 +5,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Runtime.InteropServices;
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
@@ -215,87 +215,48 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
 
             public override string GetContinuationToken()
             {
-                IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Binary);
-                this.SerializeState(jsonWriter);
-
-                ReadOnlyMemory<byte> memory = jsonWriter.GetResult();
-                if (!MemoryMarshal.TryGetArray(memory, out ArraySegment<byte> buffer))
-                {
-                    buffer = new ArraySegment<byte>(memory.ToArray());
-                }
-
-                return Convert.ToBase64String(buffer.Array, buffer.Offset, buffer.Count);
+                return this.GetCosmosElementContinuationToken().ToString();
             }
 
-            public override void SerializeState(IJsonWriter jsonWriter)
+            public override CosmosElement GetCosmosElementContinuationToken()
             {
-                if (jsonWriter == null)
+                Dictionary<string, CosmosElement> dictionary = new Dictionary<string, CosmosElement>()
                 {
-                    throw new ArgumentNullException(nameof(jsonWriter));
-                }
+                    {
+                        UnorderdDistinctMap.NumbersName,
+                        CosmosArray.Create(this.numbers.Select(x => CosmosNumber64.Create(x)))
+                    },
+                    {
+                        UnorderdDistinctMap.StringsLength4Name,
+                        CosmosArray.Create(this.stringsLength4.Select(x => CosmosUInt32.Create(x)))
+                    },
+                    {
+                        UnorderdDistinctMap.StringsLength8Name,
+                        CosmosArray.Create(this.stringsLength8.Select(x => CosmosInt64.Create((long)x)))
+                    },
+                    {
+                        UnorderdDistinctMap.StringsLength16Name,
+                        CosmosArray.Create(this.stringsLength16.Select(x => CosmosBinary.Create(UInt128.ToByteArray(x))))
+                    },
+                    {
+                        UnorderdDistinctMap.StringsLength16PlusName,
+                        CosmosArray.Create(this.stringsLength16Plus.Select(x => CosmosBinary.Create(UInt128.ToByteArray(x))))
+                    },
+                    {
+                        UnorderdDistinctMap.ArraysName,
+                        CosmosArray.Create(this.arrays.Select(x => CosmosBinary.Create(UInt128.ToByteArray(x))))
+                    },
+                    {
+                        UnorderdDistinctMap.ObjectName,
+                        CosmosArray.Create(this.objects.Select(x => CosmosBinary.Create(UInt128.ToByteArray(x))))
+                    },
+                    {
+                        UnorderdDistinctMap.SimpleValuesName,
+                        CosmosString.Create(this.simpleValues.ToString())
+                    }
+                };
 
-                jsonWriter.WriteObjectStart();
-
-                jsonWriter.WriteFieldName(UnorderdDistinctMap.NumbersName);
-                jsonWriter.WriteArrayStart();
-                foreach (Number64 number in this.numbers)
-                {
-                    jsonWriter.WriteNumberValue(number);
-                }
-                jsonWriter.WriteArrayEnd();
-
-                jsonWriter.WriteFieldName(UnorderdDistinctMap.StringsLength4Name);
-                jsonWriter.WriteArrayStart();
-                foreach (uint stringLength4 in this.stringsLength4)
-                {
-                    jsonWriter.WriteUInt32Value(stringLength4);
-                }
-                jsonWriter.WriteArrayEnd();
-
-                jsonWriter.WriteFieldName(UnorderdDistinctMap.StringsLength8Name);
-                jsonWriter.WriteArrayStart();
-                foreach (ulong stringLength8 in this.stringsLength8)
-                {
-                    jsonWriter.WriteInt64Value((long)stringLength8);
-                }
-                jsonWriter.WriteArrayEnd();
-
-                jsonWriter.WriteFieldName(UnorderdDistinctMap.StringsLength16Name);
-                jsonWriter.WriteArrayStart();
-                foreach (UInt128 stringLength16 in this.stringsLength16)
-                {
-                    jsonWriter.WriteBinaryValue(UInt128.ToByteArray(stringLength16));
-                }
-                jsonWriter.WriteArrayEnd();
-
-                jsonWriter.WriteFieldName(UnorderdDistinctMap.StringsLength16PlusName);
-                jsonWriter.WriteArrayStart();
-                foreach (UInt128 stringLength16Plus in this.stringsLength16Plus)
-                {
-                    jsonWriter.WriteBinaryValue(UInt128.ToByteArray(stringLength16Plus));
-                }
-                jsonWriter.WriteArrayEnd();
-
-                jsonWriter.WriteFieldName(UnorderdDistinctMap.ArraysName);
-                jsonWriter.WriteArrayStart();
-                foreach (UInt128 array in this.arrays)
-                {
-                    jsonWriter.WriteBinaryValue(UInt128.ToByteArray(array));
-                }
-                jsonWriter.WriteArrayEnd();
-
-                jsonWriter.WriteFieldName(UnorderdDistinctMap.ObjectName);
-                jsonWriter.WriteArrayStart();
-                foreach (UInt128 objectHash in this.objects)
-                {
-                    jsonWriter.WriteBinaryValue(UInt128.ToByteArray(objectHash));
-                }
-                jsonWriter.WriteArrayEnd();
-
-                jsonWriter.WriteFieldName(UnorderdDistinctMap.SimpleValuesName);
-                jsonWriter.WriteStringValue(this.simpleValues.ToString());
-
-                jsonWriter.WriteObjectEnd();
+                return CosmosObject.Create(dictionary);
             }
 
             /// <summary>

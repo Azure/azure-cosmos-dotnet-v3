@@ -62,6 +62,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
 
         public abstract string GetContinuationToken();
 
-        public abstract void SerializeState(IJsonWriter jsonWriter);
+        public abstract CosmosElement GetCosmosElementContinuationToken();
     }
 }

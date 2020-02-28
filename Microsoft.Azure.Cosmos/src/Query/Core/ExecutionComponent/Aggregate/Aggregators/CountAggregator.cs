@@ -62,16 +62,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
             return this.globalCount.ToString(CultureInfo.InvariantCulture);
         }
 
-        public void SerializeState(IJsonWriter jsonWriter)
-        {
-            if (jsonWriter == null)
-            {
-                throw new ArgumentNullException(nameof(jsonWriter));
-            }
-
-            jsonWriter.WriteInt64Value(this.globalCount);
-        }
-
         public static TryCatch<IAggregator> TryCreate(CosmosElement continuationToken)
         {
             long partialCount;
@@ -92,6 +82,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
 
             return TryCatch<IAggregator>.FromResult(
                 new CountAggregator(initialCount: partialCount));
+        }
+
+        public CosmosElement GetCosmosElementContinuationToken()
+        {
+            return CosmosNumber64.Create(this.globalCount);
         }
     }
 }

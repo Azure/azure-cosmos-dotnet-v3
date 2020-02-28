@@ -7,9 +7,10 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
 
-    internal class FeedIteratorInlineCore : FeedIteratorInternal
+    internal sealed class FeedIteratorInlineCore : FeedIteratorInternal
     {
         private readonly FeedIteratorInternal feedIteratorInternal;
 
@@ -34,18 +35,18 @@ namespace Microsoft.Azure.Cosmos
 
         public override bool HasMoreResults => this.feedIteratorInternal.HasMoreResults;
 
+        public override CosmosElement GetCosmsoElementContinuationToken()
+        {
+            return this.feedIteratorInternal.GetCosmsoElementContinuationToken();
+        }
+
         public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
             return TaskHelper.RunInlineIfNeededAsync(() => this.feedIteratorInternal.ReadNextAsync(cancellationToken));
         }
-
-        public override void SerializeState(IJsonWriter jsonWriter)
-        {
-            this.feedIteratorInternal.SerializeState(jsonWriter);
-        }
     }
 
-    internal class FeedIteratorInlineCore<T> : FeedIteratorInternal<T>
+    internal sealed class FeedIteratorInlineCore<T> : FeedIteratorInternal<T>
     {
         private readonly FeedIteratorInternal<T> feedIteratorInternal;
 
@@ -75,9 +76,9 @@ namespace Microsoft.Azure.Cosmos
             return TaskHelper.RunInlineIfNeededAsync(() => this.feedIteratorInternal.ReadNextAsync(cancellationToken));
         }
 
-        public override void SerializeState(IJsonWriter jsonWriter)
+        public override CosmosElement GetCosmosElementContinuationToken()
         {
-            this.feedIteratorInternal.SerializeState(jsonWriter);
+            return this.feedIteratorInternal.GetCosmosElementContinuationToken();
         }
     }
 }

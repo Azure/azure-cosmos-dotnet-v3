@@ -120,16 +120,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             }
         }
 
-        public override void SerializeState(IJsonWriter jsonWriter)
-        {
-            if (jsonWriter == null)
-            {
-                throw new ArgumentNullException(nameof(jsonWriter));
-            }
-
-            this.component.SerializeState(jsonWriter);
-        }
-
         public static async Task<TryCatch<CosmosQueryExecutionContext>> TryCreateAsync(
             ExecutionEnvironment executionEnvironment,
             CosmosQueryContext queryContext,
@@ -352,6 +342,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 this.component.Stop();
                 throw;
             }
+        }
+
+        public override CosmosElement GetCosmosElementContinuationToken()
+        {
+            return this.component.GetCosmosElementContinuationToken();
         }
     }
 }

@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
 
@@ -31,6 +32,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         /// <returns>A task to await on, which in return provides a DoucmentFeedResponse of documents.</returns>
         public abstract Task<QueryResponseCore> ExecuteNextAsync(CancellationToken cancellationToken);
 
-        public abstract void SerializeState(IJsonWriter jsonWriter);
+        public abstract CosmosElement GetCosmosElementContinuationToken();
     }
 }

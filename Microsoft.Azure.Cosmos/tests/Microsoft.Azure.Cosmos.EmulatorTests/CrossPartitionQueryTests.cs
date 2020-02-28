@@ -618,18 +618,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
 
                     resultsFromSerializeState.AddRange(cosmosQueryResponse);
-                    Json.IJsonWriter jsonWriter = Json.JsonWriter.Create(Json.JsonSerializationFormat.Binary);
-                    itemQuery.SerializeState(jsonWriter);
-                    ReadOnlyMemory<byte> continuationTokenBuffer = jsonWriter.GetResult();
-
-                    if (!continuationTokenBuffer.IsEmpty)
-                    {
-                        continuationToken = CosmosElement.CreateFromBuffer(continuationTokenBuffer);
-                    }
-                    else
-                    {
-                        continuationToken = null;
-                    }
+                    continuationToken = itemQuery.GetCosmosElementContinuationToken();
                 }
                 catch (CosmosException cosmosException) when (cosmosException.StatusCode == (HttpStatusCode)429)
                 {

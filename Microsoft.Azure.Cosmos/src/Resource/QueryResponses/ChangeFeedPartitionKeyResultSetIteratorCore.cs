@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
 
     /// <summary>
@@ -55,6 +56,11 @@ namespace Microsoft.Azure.Cosmos
 
         public override bool HasMoreResults => this.hasMoreResultsInternal;
 
+        public override CosmosElement GetCosmsoElementContinuationToken()
+        {
+            throw new NotImplementedException();
+        }
+
         /// <summary>
         /// Get the next set of results from the cosmos service
         /// </summary>
@@ -74,11 +80,6 @@ namespace Microsoft.Azure.Cosmos
                     response.Headers.ContinuationToken = this.continuationToken;
                     return response;
                 }, cancellationToken);
-        }
-
-        public override void SerializeState(IJsonWriter jsonWriter)
-        {
-            throw new NotImplementedException();
         }
 
         private Task<ResponseMessage> NextResultSetDelegateAsync(

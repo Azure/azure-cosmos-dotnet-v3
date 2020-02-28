@@ -74,14 +74,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                 return this.lastHash.ToString();
             }
 
-            public override void SerializeState(IJsonWriter jsonWriter)
+            public override CosmosElement GetCosmosElementContinuationToken()
             {
-                if (jsonWriter == null)
-                {
-                    throw new ArgumentNullException(nameof(jsonWriter));
-                }
-
-                jsonWriter.WriteBinaryValue(UInt128.ToByteArray(this.lastHash));
+                return CosmosBinary.Create(UInt128.ToByteArray(this.lastHash));
             }
 
             public static TryCatch<DistinctMap> TryCreate(CosmosElement requestContinuationToken)

@@ -172,9 +172,9 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        public override void SerializeState(IJsonWriter jsonWriter)
+        public override CosmosElement GetCosmsoElementContinuationToken()
         {
-            this.cosmosQueryExecutionContext.SerializeState(jsonWriter);
+            return this.cosmosQueryExecutionContext.GetCosmosElementContinuationToken();
         }
     }
 }

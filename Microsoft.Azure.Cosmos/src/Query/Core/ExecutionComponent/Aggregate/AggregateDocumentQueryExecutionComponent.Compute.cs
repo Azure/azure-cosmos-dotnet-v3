@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
 {
     using System;
     using System.Collections.Generic;
+    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
@@ -19,9 +20,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
     {
         private sealed class ComputeAggregateDocumentQueryExecutionComponent : AggregateDocumentQueryExecutionComponent
         {
-            private const string SourceTokenName = "SourceToken";
-            private const string AggregationTokenName = "AggregationToken";
-
             private static readonly IReadOnlyList<CosmosElement> EmptyResults = new List<CosmosElement>().AsReadOnly();
 
             private ComputeAggregateDocumentQueryExecutionComponent(
@@ -160,26 +158,24 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
                 return response;
             }
 
-            public override void SerializeState(IJsonWriter jsonWriter)
+            public override CosmosElement GetCosmosElementContinuationToken()
             {
-                if (jsonWriter == null)
+                if (this.IsDone)
                 {
-                    throw new ArgumentNullException(nameof(jsonWriter));
+                    return default;
                 }
 
-                if (!this.IsDone)
-                {
-                    jsonWriter.WriteObjectStart();
-                    jsonWriter.WriteFieldName(ComputeAggregateDocumentQueryExecutionComponent.SourceTokenName);
-                    this.Source.SerializeState(jsonWriter);
-                    jsonWriter.WriteFieldName(ComputeAggregateDocumentQueryExecutionComponent.AggregationTokenName);
-                    this.singleGroupAggregator.SerializeState(jsonWriter);
-                    jsonWriter.WriteObjectEnd();
-                }
+                AggregateContinuationToken aggregateContinuationToken = new AggregateContinuationToken(
+                    singleGroupAggregatorContinuationToken: this.singleGroupAggregator.GetCosmosElementContinuationToken(),
+                    sourceContinuationToken: this.Source.GetCosmosElementContinuationToken());
+                return AggregateContinuationToken.ToCosmosElement(aggregateContinuationToken);
             }
 
             private readonly struct AggregateContinuationToken
             {
+                private const string SourceTokenName = "SourceToken";
+                private const string AggregationTokenName = "AggregationToken";
+
                 public AggregateContinuationToken(
                     CosmosElement singleGroupAggregatorContinuationToken,
                     CosmosElement sourceContinuationToken)
@@ -191,6 +187,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
                 public CosmosElement SingleGroupAggregatorContinuationToken { get; }
 
                 public CosmosElement SourceContinuationToken { get; }
+
+                public static CosmosElement ToCosmosElement(AggregateContinuationToken aggregateContinuationToken)
+                {
+                    Dictionary<string, CosmosElement> dictionary = new Dictionary<string, CosmosElement>()
+                    {
+                        {
+                            AggregateContinuationToken.SourceTokenName,
+                            aggregateContinuationToken.SourceContinuationToken
+                        },
+                        {
+                            AggregateContinuationToken.AggregationTokenName,
+                            aggregateContinuationToken.SingleGroupAggregatorContinuationToken
+                        }
+                    };
+
+                    return CosmosObject.Create(dictionary);
+                }
 
                 public static bool TryCreateFromCosmosElement(
                     CosmosElement continuationToken,
@@ -208,7 +221,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
                     }
 
                     if (!rawAggregateContinuationToken.TryGetValue(
-                        ComputeAggregateDocumentQueryExecutionComponent.AggregationTokenName,
+                        AggregateContinuationToken.AggregationTokenName,
                         out CosmosElement singleGroupAggregatorContinuationToken))
                     {
                         aggregateContinuationToken = default;
@@ -216,7 +229,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
                     }
 
                     if (!rawAggregateContinuationToken.TryGetValue(
-                        ComputeAggregateDocumentQueryExecutionComponent.SourceTokenName,
+                        AggregateContinuationToken.SourceTokenName,
                         out CosmosElement sourceContinuationToken))
                     {
                         aggregateContinuationToken = default;

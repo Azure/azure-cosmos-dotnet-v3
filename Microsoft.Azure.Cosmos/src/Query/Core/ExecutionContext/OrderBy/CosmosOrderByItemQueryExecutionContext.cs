@@ -154,43 +154,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
             }
         }
 
-        public override void SerializeState(IJsonWriter jsonWriter)
-        {
-            if (jsonWriter == null)
-            {
-                throw new ArgumentNullException(nameof(jsonWriter));
-            }
-
-            IEnumerable<ItemProducer> activeItemProducers = this.GetActiveItemProducers();
-            if (activeItemProducers.Any())
-            {
-                jsonWriter.WriteArrayStart();
-
-                foreach (ItemProducer activeItemProducer in activeItemProducers)
-                {
-                    OrderByQueryResult orderByQueryResult = new OrderByQueryResult(activeItemProducer.Current);
-                    OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
-                        compositeContinuationToken: new CompositeContinuationToken()
-                        {
-                            Token = activeItemProducer.PreviousContinuationToken,
-                            Range = new Documents.Routing.Range<string>(
-                                min: activeItemProducer.PartitionKeyRange.MinInclusive,
-                                max: activeItemProducer.PartitionKeyRange.MaxExclusive,
-                                isMinInclusive: true,
-                                isMaxInclusive: false)
-                        },
-                        orderByItems: orderByQueryResult.OrderByItems,
-                        rid: orderByQueryResult.Rid,
-                        skipCount: this.ShouldIncrementSkipCount(activeItemProducer) ? this.skipCount + 1 : 0,
-                        filter: activeItemProducer.Filter);
-
-                    OrderByContinuationToken.ToCosmosElement(orderByContinuationToken).WriteTo(jsonWriter);
-                }
-
-                jsonWriter.WriteArrayEnd();
-            }
-        }
-
         public static async Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
             CosmosQueryContext queryContext,
             CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams,
@@ -938,6 +901,40 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
             }
 
             return new Tuple<string, string, string>(left.ToString(), target.ToString(), right.ToString());
+        }
+
+        public override CosmosElement GetCosmosElementContinuationToken()
+        {
+            IEnumerable<ItemProducer> activeItemProducers = this.GetActiveItemProducers();
+            if (!activeItemProducers.Any())
+            {
+                return default;
+            }
+
+            List<CosmosElement> orderByContinuationTokens = new List<CosmosElement>();
+            foreach (ItemProducer activeItemProducer in activeItemProducers)
+            {
+                OrderByQueryResult orderByQueryResult = new OrderByQueryResult(activeItemProducer.Current);
+                OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
+                    compositeContinuationToken: new CompositeContinuationToken()
+                    {
+                        Token = activeItemProducer.PreviousContinuationToken,
+                        Range = new Documents.Routing.Range<string>(
+                            min: activeItemProducer.PartitionKeyRange.MinInclusive,
+                            max: activeItemProducer.PartitionKeyRange.MaxExclusive,
+                            isMinInclusive: true,
+                            isMaxInclusive: false)
+                    },
+                    orderByItems: orderByQueryResult.OrderByItems,
+                    rid: orderByQueryResult.Rid,
+                    skipCount: this.ShouldIncrementSkipCount(activeItemProducer) ? this.skipCount + 1 : 0,
+                    filter: activeItemProducer.Filter);
+
+                CosmosElement cosmosElementToken = OrderByContinuationToken.ToCosmosElement(orderByContinuationToken);
+                orderByContinuationTokens.Add(cosmosElementToken);
+            }
+
+            return CosmosArray.Create(orderByContinuationTokens);
         }
 
         private readonly struct OrderByInitInfo

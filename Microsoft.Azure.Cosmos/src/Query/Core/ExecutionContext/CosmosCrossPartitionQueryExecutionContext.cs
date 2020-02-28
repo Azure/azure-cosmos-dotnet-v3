@@ -662,7 +662,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             }
         }
 
-        public abstract void SerializeState(IJsonWriter jsonWriter);
+        public abstract CosmosElement GetCosmosElementContinuationToken();
 
         public readonly struct InitInfo<TContinuationToken>
         {

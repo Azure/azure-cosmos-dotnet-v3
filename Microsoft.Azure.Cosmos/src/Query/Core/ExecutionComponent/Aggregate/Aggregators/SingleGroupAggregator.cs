@@ -28,9 +28,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
         /// </summary>
         public abstract CosmosElement GetResult();
 
-        public abstract string GetContinuationToken();
-
-        public abstract void SerializeState(IJsonWriter jsonWriter);
+        public abstract CosmosElement GetCosmosElementContinuationToken();
 
         public static TryCatch<SingleGroupAggregator> TryCreate(
             AggregateOperator[] aggregates,
@@ -107,19 +105,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
                 return this.aggregateValue.Result;
             }
 
-            public override string GetContinuationToken()
+            public override CosmosElement GetCosmosElementContinuationToken()
             {
-                return this.aggregateValue.GetContinuationToken();
-            }
-
-            public override void SerializeState(IJsonWriter jsonWriter)
-            {
-                if (jsonWriter == null)
-                {
-                    throw new ArgumentNullException(nameof(jsonWriter));
-                }
-
-                this.aggregateValue.SerializeState(jsonWriter);
+                return this.aggregateValue.GetCosmosElementContinuationToken();
             }
 
             public override string ToString()
@@ -162,29 +150,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
                 return CosmosObject.Create(aliasToElement);
             }
 
-            public override string GetContinuationToken()
+            public override CosmosElement GetCosmosElementContinuationToken()
             {
-                IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
-                this.SerializeState(jsonWriter);
-                return Utf8StringHelpers.ToString(jsonWriter.GetResult());
-            }
-
-            public override void SerializeState(IJsonWriter jsonWriter)
-            {
-                if (jsonWriter == null)
-                {
-                    throw new ArgumentNullException(nameof(jsonWriter));
-                }
-
-                jsonWriter.WriteObjectStart();
-
+                Dictionary<string, CosmosElement> dictionary = new Dictionary<string, CosmosElement>();
                 foreach (KeyValuePair<string, AggregateValue> kvp in this.aliasToValue)
                 {
-                    jsonWriter.WriteFieldName(kvp.Key);
-                    kvp.Value.SerializeState(jsonWriter);
+                    dictionary.Add(kvp.Key, kvp.Value.GetCosmosElementContinuationToken());
                 }
 
-                jsonWriter.WriteObjectEnd();
+                return CosmosObject.Create(dictionary);
             }
 
             public static TryCatch<SingleGroupAggregator> TryCreate(
@@ -287,9 +261,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
 
             public abstract CosmosElement Result { get; }
 
-            public abstract string GetContinuationToken();
-
-            public abstract void SerializeState(IJsonWriter jsonWriter);
+            public abstract CosmosElement GetCosmosElementContinuationToken();
 
             public override string ToString()
             {
@@ -328,14 +300,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
                     this.aggregator.Aggregate(aggregateItem.Item);
                 }
 
-                public override string GetContinuationToken()
+                public override CosmosElement GetCosmosElementContinuationToken()
                 {
-                    return this.aggregator.GetContinuationToken();
-                }
-
-                public override void SerializeState(IJsonWriter jsonWriter)
-                {
-                    this.aggregator.SerializeState(jsonWriter);
+                    return this.aggregator.GetCosmosElementContinuationToken();
                 }
 
                 public static TryCatch<AggregateValue> TryCreate(
@@ -397,34 +364,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
                     }
                 }
 
-                public override string GetContinuationToken()
+                public override CosmosElement GetCosmosElementContinuationToken()
                 {
-                    IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
-                    this.SerializeState(jsonWriter);
-
-                    string continuationToken = Utf8StringHelpers.ToString(jsonWriter.GetResult());
-                    return continuationToken;
-                }
-
-                public override void SerializeState(IJsonWriter jsonWriter)
-                {
-                    if (jsonWriter == null)
-                    {
-                        throw new ArgumentNullException(nameof(jsonWriter));
-                    }
-
-                    jsonWriter.WriteObjectStart();
-
-                    jsonWriter.WriteFieldName(nameof(this.initialized));
-                    jsonWriter.WriteBoolValue(this.initialized);
+                    Dictionary<string, CosmosElement> dictionary = new Dictionary<string, CosmosElement>();
+                    dictionary.Add(nameof(this.initialized), CosmosBoolean.Create(this.initialized));
 
                     if (this.value != null)
                     {
-                        jsonWriter.WriteFieldName(nameof(this.value));
-                        this.value.WriteTo(jsonWriter);
+                        dictionary.Add(nameof(this.value), this.value);
                     }
 
-                    jsonWriter.WriteObjectEnd();
+                    return CosmosObject.Create(dictionary);
                 }
 
                 public static TryCatch<AggregateValue> TryCreate(CosmosElement continuationToken)

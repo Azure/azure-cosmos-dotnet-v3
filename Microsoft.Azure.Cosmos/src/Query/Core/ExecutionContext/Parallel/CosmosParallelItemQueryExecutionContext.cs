@@ -108,37 +108,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
             }
         }
 
-        public override void SerializeState(IJsonWriter jsonWriter)
-        {
-            if (jsonWriter == null)
-            {
-                throw new ArgumentNullException(nameof(jsonWriter));
-            }
-
-            IEnumerable<ItemProducer> activeItemProducers = this.GetActiveItemProducers();
-            if (activeItemProducers.Any())
-            {
-                jsonWriter.WriteArrayStart();
-
-                foreach (ItemProducer activeItemProducer in activeItemProducers)
-                {
-                    CompositeContinuationToken compositeToken = new CompositeContinuationToken()
-                    {
-                        Token = activeItemProducer.CurrentContinuationToken,
-                        Range = new Documents.Routing.Range<string>(
-                            min: activeItemProducer.PartitionKeyRange.MinInclusive,
-                            max: activeItemProducer.PartitionKeyRange.MaxExclusive,
-                            isMinInclusive: false,
-                            isMaxInclusive: true)
-                    };
-
-                    CompositeContinuationToken.ToCosmosElement(compositeToken).WriteTo(jsonWriter);
-                }
-
-                jsonWriter.WriteArrayEnd();
-            }
-        }
-
         public static async Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
             CosmosQueryContext queryContext,
             CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams,
@@ -333,6 +302,34 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
                         filteredRanges,
                         rangeToToken);
                 });
+        }
+
+        public override CosmosElement GetCosmosElementContinuationToken()
+        {
+            IEnumerable<ItemProducer> activeItemProducers = this.GetActiveItemProducers();
+            if (!activeItemProducers.Any())
+            {
+                return default;
+            }
+
+            List<CosmosElement> compositeContinuationTokens = new List<CosmosElement>();
+            foreach (ItemProducer activeItemProducer in activeItemProducers)
+            {
+                CompositeContinuationToken compositeToken = new CompositeContinuationToken()
+                {
+                    Token = activeItemProducer.CurrentContinuationToken,
+                    Range = new Documents.Routing.Range<string>(
+                        min: activeItemProducer.PartitionKeyRange.MinInclusive,
+                        max: activeItemProducer.PartitionKeyRange.MaxExclusive,
+                        isMinInclusive: false,
+                        isMaxInclusive: true)
+                };
+
+                CosmosElement compositeContinuationToken = CompositeContinuationToken.ToCosmosElement(compositeToken);
+                compositeContinuationTokens.Add(compositeContinuationToken);
+            }
+
+            return CosmosArray.Create(compositeContinuationTokens);
         }
 
         private readonly struct ParallelInitInfo

@@ -6,11 +6,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Json;
-    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
@@ -19,9 +20,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
     {
         private sealed class ComputeSkipDocumentQueryExecutionComponent : SkipDocumentQueryExecutionComponent
         {
-            private const string SkipCountPropertyName = "SkipCount";
-            private const string SourceTokenPropertyName = "SourceToken";
-
             private ComputeSkipDocumentQueryExecutionComponent(IDocumentQueryExecutionComponent source, long skipCount)
                 : base(source, skipCount)
             {
@@ -92,22 +90,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                     responseLengthBytes: sourcePage.ResponseLengthBytes);
             }
 
-            public override void SerializeState(IJsonWriter jsonWriter)
+            public override CosmosElement GetCosmosElementContinuationToken()
             {
-                if (jsonWriter == null)
+                if (this.IsDone)
                 {
-                    throw new ArgumentNullException(nameof(jsonWriter));
+                    return default;
                 }
 
-                if (!this.IsDone)
-                {
-                    jsonWriter.WriteObjectStart();
-                    jsonWriter.WriteFieldName(SourceTokenPropertyName);
-                    this.Source.SerializeState(jsonWriter);
-                    jsonWriter.WriteFieldName(SkipCountPropertyName);
-                    jsonWriter.WriteInt64Value(this.skipCount);
-                    jsonWriter.WriteObjectEnd();
-                }
+                OffsetContinuationToken offsetContinuationToken = new OffsetContinuationToken(
+                    offset: this.skipCount,
+                    sourceToken: this.Source.GetCosmosElementContinuationToken());
+                return OffsetContinuationToken.ToCosmosElement(offsetContinuationToken);
             }
 
             /// <summary>
@@ -115,6 +108,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
             /// </summary>
             private readonly struct OffsetContinuationToken
             {
+                private const string SkipCountPropertyName = "SkipCount";
+                private const string SourceTokenPropertyName = "SourceToken";
+
                 /// <summary>
                 /// Initializes a new instance of the OffsetContinuationToken struct.
                 /// </summary>
@@ -147,6 +143,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                     get;
                 }
 
+                public static CosmosElement ToCosmosElement(OffsetContinuationToken offsetContinuationToken)
+                {
+                    Dictionary<string, CosmosElement> dictionary = new Dictionary<string, CosmosElement>()
+                    {
+                        {
+                            OffsetContinuationToken.SkipCountPropertyName,
+                            CosmosNumber64.Create(offsetContinuationToken.Offset)
+                        },
+                        {
+                            OffsetContinuationToken.SourceTokenPropertyName,
+                            offsetContinuationToken.SourceToken
+                        }
+                    };
+
+                    return CosmosObject.Create(dictionary);
+                }
+
                 public static (bool parsed, OffsetContinuationToken offsetContinuationToken) TryParse(CosmosElement value)
                 {
                     if (value == null)
@@ -159,12 +172,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                         return (false, default);
                     }
 
-                    if (!cosmosObject.TryGetValue(SkipCountPropertyName, out CosmosNumber offset))
+                    if (!cosmosObject.TryGetValue(OffsetContinuationToken.SkipCountPropertyName, out CosmosNumber offset))
                     {
                         return (false, default);
                     }
 
-                    if (!cosmosObject.TryGetValue(SourceTokenPropertyName, out CosmosElement sourceToken))
+                    if (!cosmosObject.TryGetValue(OffsetContinuationToken.SourceTokenPropertyName, out CosmosElement sourceToken))
                     {
                         return (false, default);
                     }

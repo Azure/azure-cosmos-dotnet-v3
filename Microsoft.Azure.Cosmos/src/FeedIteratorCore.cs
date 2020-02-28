@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Documents;
     using static Microsoft.Azure.Documents.RuntimeConstants;
@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos
             return continuationToken != null && statusCode != HttpStatusCode.NotModified;
         }
 
-        public override void SerializeState(IJsonWriter jsonWriter)
+        public override CosmosElement GetCosmsoElementContinuationToken()
         {
             throw new NotImplementedException();
         }
@@ -135,6 +135,11 @@ namespace Microsoft.Azure.Cosmos
 
         public override bool HasMoreResults => this.feedIterator.HasMoreResults;
 
+        public override CosmosElement GetCosmosElementContinuationToken()
+        {
+            return this.feedIterator.GetCosmsoElementContinuationToken();
+        }
+
         /// <summary>
         /// Get the next set of results from the cosmos service
         /// </summary>
@@ -146,11 +151,6 @@ namespace Microsoft.Azure.Cosmos
 
             ResponseMessage response = await this.feedIterator.ReadNextAsync(cancellationToken);
             return this.responseCreator(response);
-        }
-
-        public override void SerializeState(IJsonWriter jsonWriter)
-        {
-            this.feedIterator.SerializeState(jsonWriter);
         }
     }
 }

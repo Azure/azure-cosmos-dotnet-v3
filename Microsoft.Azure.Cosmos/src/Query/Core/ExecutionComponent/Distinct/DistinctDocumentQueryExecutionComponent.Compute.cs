@@ -112,26 +112,24 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                         responseLengthBytes: sourceResponse.ResponseLengthBytes);
             }
 
-            public override void SerializeState(IJsonWriter jsonWriter)
+            public override CosmosElement GetCosmosElementContinuationToken()
             {
-                if (jsonWriter == null)
+                if (this.IsDone)
                 {
-                    throw new ArgumentNullException(nameof(jsonWriter));
+                    return default;
                 }
 
-                if (!this.IsDone)
-                {
-                    jsonWriter.WriteObjectStart();
-                    jsonWriter.WriteFieldName(DistinctDocumentQueryExecutionComponent.SourceTokenName);
-                    this.Source.SerializeState(jsonWriter);
-                    jsonWriter.WriteFieldName(DistinctDocumentQueryExecutionComponent.DistinctMapTokenName);
-                    this.distinctMap.SerializeState(jsonWriter);
-                    jsonWriter.WriteObjectEnd();
-                }
+                DistinctContinuationToken distinctContinuationToken = new DistinctContinuationToken(
+                    sourceToken: this.Source.GetCosmosElementContinuationToken(),
+                    distinctMapToken: this.distinctMap.GetCosmosElementContinuationToken());
+                return DistinctContinuationToken.ToCosmosElement(distinctContinuationToken);
             }
 
             private readonly struct DistinctContinuationToken
             {
+                private const string SourceTokenName = "SourceToken";
+                private const string DistinctMapTokenName = "DistinctMapToken";
+
                 public DistinctContinuationToken(CosmosElement sourceToken, CosmosElement distinctMapToken)
                 {
                     this.SourceToken = sourceToken;
@@ -141,6 +139,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                 public CosmosElement SourceToken { get; }
 
                 public CosmosElement DistinctMapToken { get; }
+
+                public static CosmosElement ToCosmosElement(DistinctContinuationToken distinctContinuationToken)
+                {
+                    Dictionary<string, CosmosElement> dictionary = new Dictionary<string, CosmosElement>()
+                    {
+                        {
+                            DistinctContinuationToken.SourceTokenName,
+                            distinctContinuationToken.SourceToken
+                        },
+                        {
+                            DistinctContinuationToken.DistinctMapTokenName,
+                            distinctContinuationToken.DistinctMapToken
+                        }
+                    };
+
+                    return CosmosObject.Create(dictionary);
+                }
 
                 public static bool TryParse(
                     CosmosElement requestContinuationToken,

@@ -76,8 +76,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
             {
                 throw new ArgumentNullException(nameof(jsonWriter));
             }
+        }
 
-            jsonWriter.WriteFloat64Value(this.globalSum);
+        public CosmosElement GetCosmosElementContinuationToken()
+        {
+            return CosmosNumber64.Create(this.globalSum);
         }
 
         public static TryCatch<IAggregator> TryCreate(CosmosElement requestContinuationToken)

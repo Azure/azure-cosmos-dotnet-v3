@@ -245,28 +245,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                 return results;
             }
 
-            public string GetContinuationToken()
+            public CosmosElement GetCosmosElementContinuationToken()
             {
-                IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
-                this.SerializeState(jsonWriter);
-                string result = Utf8StringHelpers.ToString(jsonWriter.GetResult());
-                return result;
-            }
-
-            public void SerializeState(IJsonWriter jsonWriter)
-            {
-                if (jsonWriter == null)
-                {
-                    throw new ArgumentNullException(nameof(jsonWriter));
-                }
-
-                jsonWriter.WriteObjectStart();
+                Dictionary<string, CosmosElement> dictionary = new Dictionary<string, CosmosElement>();
                 foreach (KeyValuePair<UInt128, SingleGroupAggregator> kvp in this.table)
                 {
-                    jsonWriter.WriteFieldName(kvp.Key.ToString());
-                    kvp.Value.SerializeState(jsonWriter);
+                    dictionary.Add(kvp.Key.ToString(), kvp.Value.GetCosmosElementContinuationToken());
                 }
-                jsonWriter.WriteObjectEnd();
+
+                return CosmosObject.Create(dictionary);
             }
 
             public IEnumerator<KeyValuePair<UInt128, SingleGroupAggregator>> GetEnumerator => this.table.GetEnumerator();

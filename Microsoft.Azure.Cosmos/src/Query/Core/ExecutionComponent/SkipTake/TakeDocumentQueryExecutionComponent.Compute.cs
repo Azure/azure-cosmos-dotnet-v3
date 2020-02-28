@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
@@ -18,9 +18,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
     {
         private sealed class ComputeTakeDocumentQueryExecutionComponent : TakeDocumentQueryExecutionComponent
         {
-            private const string SourceTokenName = "SourceToken";
-            private const string TakeCountName = "TakeCount";
-
             private ComputeTakeDocumentQueryExecutionComponent(IDocumentQueryExecutionComponent source, int takeCount)
                 : base(source, takeCount)
             {
@@ -90,26 +87,24 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                     responseLengthBytes: sourcePage.ResponseLengthBytes);
             }
 
-            public override void SerializeState(IJsonWriter jsonWriter)
+            public override CosmosElement GetCosmosElementContinuationToken()
             {
-                if (jsonWriter == null)
+                if (this.IsDone)
                 {
-                    throw new ArgumentNullException(nameof(jsonWriter));
+                    return default;
                 }
 
-                if (!this.IsDone)
-                {
-                    jsonWriter.WriteObjectStart();
-                    jsonWriter.WriteFieldName(SourceTokenName);
-                    this.Source.SerializeState(jsonWriter);
-                    jsonWriter.WriteFieldName(TakeCountName);
-                    jsonWriter.WriteInt64Value(this.takeCount);
-                    jsonWriter.WriteObjectEnd();
-                }
+                TakeContinuationToken takeContinuationToken = new TakeContinuationToken(
+                    takeCount: this.takeCount,
+                    sourceToken: this.Source.GetCosmosElementContinuationToken());
+                return TakeContinuationToken.ToCosmosElement(takeContinuationToken);
             }
 
             private readonly struct TakeContinuationToken
             {
+                private const string SourceTokenName = "SourceToken";
+                private const string TakeCountName = "TakeCount";
+
                 public TakeContinuationToken(long takeCount, CosmosElement sourceToken)
                 {
                     if ((takeCount < 0) || (takeCount > int.MaxValue))
@@ -124,6 +119,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                 public int TakeCount { get; }
 
                 public CosmosElement SourceToken { get; }
+
+                public static CosmosElement ToCosmosElement(TakeContinuationToken takeContinuationToken)
+                {
+                    Dictionary<string, CosmosElement> dictionary = new Dictionary<string, CosmosElement>()
+                    {
+                        {
+                            TakeContinuationToken.SourceTokenName,
+                            takeContinuationToken.SourceToken
+                        },
+                        {
+                            TakeContinuationToken.TakeCountName,
+                            CosmosNumber64.Create(takeContinuationToken.TakeCount)
+                        },
+                    };
+
+                    return CosmosObject.Create(dictionary);
+                }
 
                 public static bool TryParse(CosmosElement value, out TakeContinuationToken takeContinuationToken)
                 {

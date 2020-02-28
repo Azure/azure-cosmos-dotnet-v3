@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
@@ -76,13 +77,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             return queryResponseCore;
         }
 
-        public override void SerializeState(IJsonWriter jsonWriter)
+        public override CosmosElement GetCosmosElementContinuationToken()
         {
-            if (jsonWriter == null)
-            {
-                throw new ArgumentNullException(nameof(jsonWriter));
-            }
-
             if (!this.lazyTryCreateCosmosQueryExecutionContext.ValueInitialized)
             {
                 throw new InvalidOperationException();
@@ -94,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 throw tryCreateCosmosQueryExecutionContext.Exception;
             }
 
-            tryCreateCosmosQueryExecutionContext.Result.SerializeState(jsonWriter);
+            return tryCreateCosmosQueryExecutionContext.Result.GetCosmosElementContinuationToken();
         }
     }
 }

@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
 
     /// <summary>
@@ -18,6 +19,6 @@ namespace Microsoft.Azure.Cosmos
 #endif
     abstract class FeedIteratorInternal<T> : FeedIterator<T>
     {
-        public abstract void SerializeState(IJsonWriter jsonWriter);
+        public abstract CosmosElement GetCosmosElementContinuationToken();
     }
 }

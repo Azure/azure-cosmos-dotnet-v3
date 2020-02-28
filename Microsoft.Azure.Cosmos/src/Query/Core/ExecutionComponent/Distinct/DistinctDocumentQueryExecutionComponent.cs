@@ -25,8 +25,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
     /// </summary>
     internal abstract partial class DistinctDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase
     {
-        private const string SourceTokenName = "SourceToken";
-        private const string DistinctMapTokenName = "DistinctMapToken";
         /// <summary>
         /// An DistinctMap that efficiently stores the documents that we have already seen.
         /// </summary>
