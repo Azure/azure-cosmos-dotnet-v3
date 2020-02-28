@@ -91,6 +91,20 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void FeedToken_EPK_NotEnrichRequest_IfEPKAlreadyExists()
+        {
+            const string containerRid = "containerRid";
+            string epkString = Guid.NewGuid().ToString();
+            FeedTokenEPKRange token = new FeedTokenEPKRange(containerRid, new Documents.PartitionKeyRange() { MinInclusive = "A", MaxExclusive = "B" });
+            RequestMessage requestMessage = new RequestMessage();
+            requestMessage.Properties[HandlerConstants.StartEpkString] = epkString;
+            requestMessage.Properties[HandlerConstants.EndEpkString] = epkString;
+            token.EnrichRequest(requestMessage);
+            Assert.AreEqual(epkString, requestMessage.Properties[HandlerConstants.StartEpkString]);
+            Assert.AreEqual(epkString, requestMessage.Properties[HandlerConstants.EndEpkString]);
+        }
+
+        [TestMethod]
         public void FeedToken_PartitionKey_TryParse()
         {
             FeedTokenPartitionKey token = new FeedTokenPartitionKey(new PartitionKey("test"));

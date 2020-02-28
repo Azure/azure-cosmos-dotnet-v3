@@ -128,8 +128,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 {
                     queryResponse = QueryResponse.CreateFailure(
                         statusCode: responseCore.StatusCode,
-                        error: null,
-                        errorMessage: responseCore.ErrorMessage,
+                        cosmosException: responseCore.CosmosException,
                         requestMessage: null,
                         diagnostics: diagnostics,
                         responseHeaders: new CosmosQueryResponseMessageHeaders(

@@ -1756,11 +1756,9 @@
           "Attributes": [],
           "MethodInfo": null
         },
-        "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()": {
           "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()"
         },
         "Microsoft.Azure.Cosmos.Headers get_Headers()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -1818,7 +1816,17 @@
           ],
           "MethodInfo": "System.String get_ResponseBody()"
         },
+        "System.String get_StackTrace()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.String get_StackTrace()"
+        },
         "System.String ResponseBody": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String StackTrace": {
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": null
@@ -5231,11 +5239,9 @@
           "Attributes": [],
           "MethodInfo": "System.String get_ContinuationToken()"
         },
-        "System.String get_ErrorMessage()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "System.String get_ErrorMessage()": {
           "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "System.String get_ErrorMessage()"
         },
         "Void .ctor()": {
