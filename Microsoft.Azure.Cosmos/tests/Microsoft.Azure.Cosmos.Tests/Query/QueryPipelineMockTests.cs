@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             foreach (MockPartitionResponse[] mockResponse in mockResponsesScenario)
             {
                 string initialContinuationToken = null;
-                string fullConitnuationToken = null;
+                string fullContinuationToken = null;
                 if (createInitialContinuationToken)
                 {
                     initialContinuationToken = " - RID:02FYAIvUH1kCAAAAAAAAAA ==#RT:1#TRC:1";
@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         Token = initialContinuationToken
                     };
 
-                    fullConitnuationToken = CosmosArray.Create(
+                    fullContinuationToken = CosmosArray.Create(
                         new List<CosmosElement>()
                         {
                             CompositeContinuationToken.ToCosmosElement(compositeContinuation)
@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 IDocumentQueryExecutionComponent executionContext = (await CosmosParallelItemQueryExecutionContext.TryCreateAsync(
                     context,
                     initParams,
-                    CosmosElement.Parse(fullConitnuationToken),
+                    fullContinuationToken != null ? CosmosElement.Parse(fullContinuationToken) : null,
                     this.cancellationToken)).Result;
 
                 // Read all the pages from both splits
@@ -132,7 +132,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             foreach (MockPartitionResponse[] mockResponse in mockResponsesScenario)
             {
                 string initialContinuationToken = null;
-                string fullConitnuationToken = null;
+                string fullContinuationToken = null;
                 if (createInitialContinuationToken)
                 {
                     initialContinuationToken = " - RID:02FYAIvUH1kCAAAAAAAAAA ==#RT:1#TRC:1";
@@ -146,7 +146,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         Token = initialContinuationToken
                     };
 
-                    fullConitnuationToken = CosmosArray.Create(
+                    fullContinuationToken = CosmosArray.Create(
                         new List<CosmosElement>()
                         {
                             CompositeContinuationToken.ToCosmosElement(compositeContinuation)
@@ -182,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 IDocumentQueryExecutionComponent executionContext = (await CosmosParallelItemQueryExecutionContext.TryCreateAsync(
                     context,
                     initParams,
-                    CosmosElement.Parse(fullConitnuationToken),
+                    fullContinuationToken != null ? CosmosElement.Parse(fullContinuationToken) : null,
                     this.cancellationToken)).Result;
 
                 // Read all the pages from both splits
@@ -235,7 +235,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             foreach (MockPartitionResponse[] mockResponse in mockResponsesScenario)
             {
                 string initialContinuationToken = null;
-                string fullConitnuationToken = null;
+                string fullContinuationToken = null;
                 if (createInitialContinuationToken)
                 {
                     ToDoItem itemToRepresentPreviousQuery = ToDoItem.CreateItems(
@@ -266,7 +266,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         skipCount: 0,
                         filter: null);
 
-                    fullConitnuationToken = CosmosArray.Create(
+                    fullContinuationToken = CosmosArray.Create(
                         new List<CosmosElement>()
                         {
                             OrderByContinuationToken.ToCosmosElement(orderByContinuationToken)
@@ -315,7 +315,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 IDocumentQueryExecutionComponent executionContext = (await CosmosOrderByItemQueryExecutionContext.TryCreateAsync(
                     context,
                     initParams,
-                    CosmosElement.Parse(fullConitnuationToken),
+                    fullContinuationToken != null ? CosmosElement.Parse(fullContinuationToken) : null,
                     this.cancellationToken)).Result;
 
                 // For order by it will drain all the pages till it gets a value.
@@ -442,7 +442,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 TryCatch<IDocumentQueryExecutionComponent> tryCreate = await CosmosOrderByItemQueryExecutionContext.TryCreateAsync(
                     context,
                     initParams,
-                    CosmosElement.Parse(fullContinuationToken),
+                    fullContinuationToken != null ? CosmosElement.Parse(fullContinuationToken) : null,
                     this.cancellationToken);
 
                 if (tryCreate.Succeeded)

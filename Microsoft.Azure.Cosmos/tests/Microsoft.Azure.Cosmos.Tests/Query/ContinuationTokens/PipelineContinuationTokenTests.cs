@@ -48,9 +48,6 @@ namespace Microsoft.Azure.Cosmos.Query
                 new PipelineContinuationTokenTestsInput(
                     description: "V1 No Source Continuation Token",
                     continuationToken: "{\"Version\":\"1.0\"}"),
-                new PipelineContinuationTokenTestsInput(
-                    description: "V1 Source Continuation Token Is Not A String",
-                    continuationToken: "{\"Version\":\"1.0\", \"SourceContinuationToken\": 42}"),
 
                 // Version 1.1 Negative Tests
                 new PipelineContinuationTokenTestsInput(
@@ -62,9 +59,6 @@ namespace Microsoft.Azure.Cosmos.Query
                 new PipelineContinuationTokenTestsInput(
                     description: "V1.1 No Source Continuation",
                     continuationToken: "{\"Version\":\"1.1\",\"QueryPlan\": null}"),
-                new PipelineContinuationTokenTestsInput(
-                    description: "V1.1 Source Continuation Is Not A String",
-                    continuationToken: "{\"Version\":\"1.1\",\"QueryPlan\": null,\"SourceContinuationToken\": 42}"),
             };
 
             this.ExecuteTestSuite(pipelineContinuationTokenTestsInputs);
