@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -135,7 +136,10 @@ namespace Microsoft.Azure.Cosmos
             }
             catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
             {
-                throw new CosmosException(HttpStatusCode.NotFound, ClientResources.DataEncryptionKeyNotFound, inner: ex);
+                throw CosmosExceptionFactory.CreateNotFoundException(
+                    ClientResources.DataEncryptionKeyNotFound,
+                    diagnosticsContext: diagnosticsContext,
+                    innerException: ex);
             }
 
             InMemoryRawDek inMemoryRawDek = await this.ClientContext.DekCache.GetOrAddRawDekAsync(
@@ -172,7 +176,10 @@ namespace Microsoft.Azure.Cosmos
             }
             catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
             {
-                throw new CosmosException(HttpStatusCode.NotFound, ClientResources.DataEncryptionKeyNotFound, inner: ex);
+                throw CosmosExceptionFactory.CreateNotFoundException(
+                    ClientResources.DataEncryptionKeyNotFound,
+                    diagnosticsContext: diagnosticsContext,
+                    innerException: ex);
             }
 
             InMemoryRawDek inMemoryRawDek = await this.ClientContext.DekCache.GetOrAddRawDekAsync(
@@ -223,7 +230,8 @@ namespace Microsoft.Azure.Cosmos
             InMemoryRawDek roundTripResponse = await this.UnwrapAsync(tempDekProperties, diagnosticsContext, cancellationToken);
             if (!roundTripResponse.RawDek.SequenceEqual(key))
             {
-                throw new CosmosException(HttpStatusCode.BadRequest, ClientResources.KeyWrappingDidNotRoundtrip);
+                throw CosmosExceptionFactory.CreateBadRequestException(ClientResources.KeyWrappingDidNotRoundtrip,
+                    diagnosticsContext: diagnosticsContext);
             }
 
             return (keyWrapResponse.WrappedDataEncryptionKey, keyWrapResponse.EncryptionKeyWrapMetadata, roundTripResponse);
