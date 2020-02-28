@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Documents;
 
     internal static class QueryResponseMessageFactory
@@ -87,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             if (isOrderByQuery)
             {
                 memoryStream = SerializeForOrderByQuery(items);
-                using(StreamReader sr = new StreamReader(SerializeForOrderByQuery(items)))
+                using (StreamReader sr = new StreamReader(SerializeForOrderByQuery(items)))
                 {
                     json = sr.ReadToEnd();
                 }
@@ -146,9 +147,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             SubStatusCodes subStatusCodes,
             string errorMessage)
         {
+            string acitivityId = Guid.NewGuid().ToString();
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create();
             diagnosticsContext.AddDiagnosticsInternal(new PointOperationStatistics(
-                Guid.NewGuid().ToString(),
+                acitivityId,
                 System.Net.HttpStatusCode.Gone,
                 subStatusCode: SubStatusCodes.PartitionKeyRangeGone,
                 requestCharge: 10.4,
@@ -170,9 +172,20 @@ namespace Microsoft.Azure.Cosmos.Tests
             QueryResponseCore splitResponse = QueryResponseCore.CreateFailure(
                statusCode: httpStatusCode,
                subStatusCodes: subStatusCodes,
-               errorMessage: errorMessage,
+               cosmosException: CosmosExceptionFactory.Create(
+                   statusCode: httpStatusCode,
+                   subStatusCode: (int)subStatusCodes,
+                   message: errorMessage,
+                   stackTrace: new System.Diagnostics.StackTrace().ToString(),
+                   activityId: acitivityId,
+                   requestCharge: 10.4,
+                   retryAfter: default,
+                   headers: default,
+                   diagnosticsContext: diagnosticsContext,
+                   error: default,
+                   innerException: default),
                requestCharge: 10.4,
-               activityId: Guid.NewGuid().ToString(),
+               activityId: acitivityId,
                diagnostics: diagnostics);
 
             return splitResponse;

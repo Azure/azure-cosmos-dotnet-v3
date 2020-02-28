@@ -642,12 +642,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
                                 if (failureResponse.HasValue)
                                 {
                                     return TryCatch.FromException(
-                                        new CosmosException(
-                                            statusCode: failureResponse.Value.StatusCode,
-                                            subStatusCode: (int)failureResponse.Value.SubStatusCode.GetValueOrDefault(0),
-                                            message: failureResponse.Value.ErrorMessage,
-                                            activityId: failureResponse.Value.ActivityId,
-                                            requestCharge: 0));
+                                        failureResponse.Value.CosmosException);
                                 }
 
                                 break;

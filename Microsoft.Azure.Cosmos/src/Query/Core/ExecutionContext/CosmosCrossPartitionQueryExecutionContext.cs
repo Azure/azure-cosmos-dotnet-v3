@@ -401,12 +401,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                         if (failureResponse.HasValue)
                         {
                             return TryCatch.FromException(
-                                new CosmosException(
-                                    statusCode: failureResponse.Value.StatusCode,
-                                    subStatusCode: (int)failureResponse.Value.SubStatusCode.GetValueOrDefault(0),
-                                    message: failureResponse.Value.ErrorMessage,
-                                    activityId: failureResponse.Value.ActivityId,
-                                    requestCharge: failureResponse.Value.RequestCharge));
+                                failureResponse.Value.CosmosException);
                         }
 
                         if (!movedToNextPage)

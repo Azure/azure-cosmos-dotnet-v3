@@ -182,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             {
                 streamPayload = this.clientContext.SerializerCore.ToStream<dynamic[]>(parameters);
             }
-            
+
             return this.ExecuteStoredProcedureStreamAsync(
                 storedProcedureId: storedProcedureId,
                 partitionKey: partitionKey,
@@ -190,7 +190,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
-        
+
         public override Task<ResponseMessage> ExecuteStoredProcedureStreamAsync(
             string storedProcedureId,
             Stream streamPayload,

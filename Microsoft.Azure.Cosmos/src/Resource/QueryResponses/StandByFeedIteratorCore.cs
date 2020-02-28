@@ -17,7 +17,11 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Cosmos Stand-By Feed iterator implementing Composite Continuation Token
     /// </summary>
-    internal class ChangeFeedResultSetIteratorCore : FeedIteratorInternal
+    /// <remarks>
+    /// Legacy, see <see cref="ChangeFeedIteratorCore"/>.
+    /// </remarks>
+    /// <seealso cref="ChangeFeedIteratorCore"/>
+    internal class StandByFeedIteratorCore : FeedIteratorInternal
     {
         internal StandByFeedContinuationToken compositeContinuationToken;
 
@@ -27,7 +31,7 @@ namespace Microsoft.Azure.Cosmos
         private string continuationToken;
         private int? maxItemCount;
 
-        internal ChangeFeedResultSetIteratorCore(
+        internal StandByFeedIteratorCore(
             CosmosClientContext clientContext,
             ContainerCore container,
             string continuationToken,
@@ -49,6 +53,13 @@ namespace Microsoft.Azure.Cosmos
         protected readonly ChangeFeedRequestOptions changeFeedOptions;
 
         public override bool HasMoreResults => true;
+
+#if PREVIEW
+        public override
+#else
+        internal
+#endif
+        FeedToken FeedToken => throw new NotImplementedException();
 
         /// <summary>
         /// Get the next set of results from the cosmos service
