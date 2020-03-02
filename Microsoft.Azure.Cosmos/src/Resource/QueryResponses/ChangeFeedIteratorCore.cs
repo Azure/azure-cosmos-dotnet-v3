@@ -75,8 +75,15 @@ namespace Microsoft.Azure.Cosmos
                     TryCatch<string> tryInitializeContainerRId = await this.TryInitializeContainerRIdAsync(cancellationToken);
                     if (!tryInitializeContainerRId.Succeeded)
                     {
-                        CosmosException cosmosException = tryInitializeContainerRId.Exception.InnerException as CosmosException;
-                        return cosmosException.ToCosmosResponseMessage(new RequestMessage(method: null, requestUri: null, diagnosticsContext: diagnostics));
+                        if (tryInitializeContainerRId.Exception.InnerException is CosmosException cosmosException)
+                        {
+                            return cosmosException.ToCosmosResponseMessage(new RequestMessage(method: null, requestUri: null, diagnosticsContext: diagnostics));
+                        }
+
+                        return CosmosExceptionFactory.CreateInternalServerErrorException(
+                            message: tryInitializeContainerRId.Exception.InnerException.Message,
+                            innerException: tryInitializeContainerRId.Exception.InnerException,
+                            diagnosticsContext: diagnostics).ToCosmosResponseMessage(new RequestMessage(method: null, requestUri: null, diagnosticsContext: diagnostics));
                     }
 
                     this.containerRId = tryInitializeContainerRId.Result;
