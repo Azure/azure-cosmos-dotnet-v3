@@ -146,7 +146,10 @@ namespace Microsoft.Azure.Cosmos
                         return cosmosException.ToCosmosResponseMessage(new RequestMessage(method: null, requestUri: null, diagnosticsContext: diagnostics));
                     }
 
-                    throw tryCatchFeedTokeninternal.Exception;
+                    return Resource.CosmosExceptions.CosmosExceptionFactory.CreateInternalServerErrorException(
+                        message: tryCatchFeedTokeninternal.Exception.InnerException.Message,
+                        innerException: tryCatchFeedTokeninternal.Exception.InnerException,
+                        diagnosticsContext: diagnostics).ToCosmosResponseMessage(new RequestMessage(method: null, requestUri: null, diagnosticsContext: diagnostics));
                 }
 
                 this.feedTokenInternal = tryCatchFeedTokeninternal.Result;
@@ -210,7 +213,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     containerRId = await this.containerCore.GetRIDAsync(cancellationToken);
                 }
-                catch (CosmosException cosmosException)
+                catch (Exception cosmosException)
                 {
                     return TryCatch<FeedTokenInternal>.FromException(cosmosException);
                 }
