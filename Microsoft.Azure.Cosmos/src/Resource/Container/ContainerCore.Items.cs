@@ -455,7 +455,7 @@ namespace Microsoft.Azure.Cosmos
                 sqlQuerySpec: queryDefinition?.ToSqlQuerySpec(),
                 isContinuationExcpected: true,
                 continuationToken: null,
-                feedTokenInternal: feedTokenInternal,
+                feedToken: feedTokenInternal,
                 requestOptions: requestOptions);
         }
 
@@ -604,7 +604,7 @@ namespace Microsoft.Azure.Cosmos
                 client: this.queryClient,
                 sqlQuerySpec: sqlQuerySpec,
                 continuationToken: continuationToken,
-                feedTokenInternal: feedTokenInternal,
+                feedTokenInternal: feedToken,
                 queryRequestOptions: requestOptions,
                 resourceLink: this.LinkUri,
                 isContinuationExpected: isContinuationExcpected,
