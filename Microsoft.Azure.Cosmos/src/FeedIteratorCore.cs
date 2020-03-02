@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Documents;
     using static Microsoft.Azure.Documents.RuntimeConstants;
 
@@ -146,7 +147,7 @@ namespace Microsoft.Azure.Cosmos
                         return cosmosException.ToCosmosResponseMessage(new RequestMessage(method: null, requestUri: null, diagnosticsContext: diagnostics));
                     }
 
-                    return Resource.CosmosExceptions.CosmosExceptionFactory.CreateInternalServerErrorException(
+                    return CosmosExceptionFactory.CreateInternalServerErrorException(
                         message: tryCatchFeedTokeninternal.Exception.InnerException.Message,
                         innerException: tryCatchFeedTokeninternal.Exception.InnerException,
                         diagnosticsContext: diagnostics).ToCosmosResponseMessage(new RequestMessage(method: null, requestUri: null, diagnosticsContext: diagnostics));

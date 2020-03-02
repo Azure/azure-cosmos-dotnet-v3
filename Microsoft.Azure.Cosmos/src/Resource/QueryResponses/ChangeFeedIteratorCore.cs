@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
 
     /// <summary>
     /// Cosmos Change Feed iterator using FeedToken
@@ -94,7 +95,7 @@ namespace Microsoft.Azure.Cosmos
                         return cosmosException.ToCosmosResponseMessage(new RequestMessage(method: null, requestUri: null, diagnosticsContext: diagnosticsScope));
                     }
 
-                    return Resource.CosmosExceptions.CosmosExceptionFactory.CreateInternalServerErrorException(
+                    return CosmosExceptionFactory.CreateInternalServerErrorException(
                         message: tryCatchFeedTokeninternal.Exception.InnerException.Message,
                         innerException: tryCatchFeedTokeninternal.Exception.InnerException,
                         diagnosticsContext: diagnosticsScope).ToCosmosResponseMessage(new RequestMessage(method: null, requestUri: null, diagnosticsContext: diagnosticsScope));
