@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Collections;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
@@ -174,7 +173,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
             // TODO (brchon): For now we are not honoring non deterministic ORDER BY queries, since there is a bug in the continuation logic.
             // We can turn it back on once the bug is fixed.
             // This shouldn't hurt any query results.
-            OrderByItemProducerTreeComparer orderByItemProducerTreeComparer = new OrderByItemProducerTreeComparer(initParams.PartitionedQueryExecutionInfo.QueryInfo.OrderBy);
+            OrderByItemProducerTreeComparer orderByItemProducerTreeComparer = new OrderByItemProducerTreeComparer(initParams.PartitionedQueryExecutionInfo.QueryInfo.OrderBy.ToArray());
             CosmosOrderByItemQueryExecutionContext context = new CosmosOrderByItemQueryExecutionContext(
                 initPararms: queryContext,
                 maxConcurrency: initParams.MaxConcurrency,
@@ -189,8 +188,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
                 collectionRid: initParams.CollectionRid,
                 partitionKeyRanges: initParams.PartitionKeyRanges,
                 initialPageSize: initParams.InitialPageSize,
-                sortOrders: initParams.PartitionedQueryExecutionInfo.QueryInfo.OrderBy,
-                orderByExpressions: initParams.PartitionedQueryExecutionInfo.QueryInfo.OrderByExpressions,
+                sortOrders: initParams.PartitionedQueryExecutionInfo.QueryInfo.OrderBy.ToArray(),
+                orderByExpressions: initParams.PartitionedQueryExecutionInfo.QueryInfo.OrderByExpressions.ToArray(),
                 cancellationToken: cancellationToken))
                 .Try<IDocumentQueryExecutionComponent>(() => context);
         }
@@ -595,8 +594,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
                             if (!ResourceId.TryParse(orderByResult.Rid, out rid))
                             {
                                 return TryCatch.FromException(
-                                    new MalformedContinuationTokenException($"Invalid Rid in the continuation token {continuationToken.CompositeContinuationToken.Token} for OrderBy~Context~TryParse."));
-
+                                    new MalformedContinuationTokenException(
+                                        $"Invalid Rid in the continuation token {continuationToken.CompositeContinuationToken.Token} for OrderBy~Context~TryParse."));
                             }
 
                             resourceIds.Add(orderByResult.Rid, rid);
@@ -607,7 +606,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
                             if (continuationRid.Database != rid.Database || continuationRid.DocumentCollection != rid.DocumentCollection)
                             {
                                 return TryCatch.FromException(
-                                    new MalformedContinuationTokenException($"Invalid Rid in the continuation token {continuationToken.CompositeContinuationToken.Token} for OrderBy~Context."));
+                                    new MalformedContinuationTokenException(
+                                        $"Invalid Rid in the continuation token {continuationToken.CompositeContinuationToken.Token} for OrderBy~Context."));
                             }
 
                             continuationRidVerified = true;

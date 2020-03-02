@@ -5,9 +5,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
 {
     using System;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
@@ -96,7 +94,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                             break;
 
                         case CosmosBinary cosmosBinary:
-
                             if (!UInt128.TryCreateFromByteArray(cosmosBinary.Value.Span, out lastHash))
                             {
                                 return TryCatch<DistinctMap>.FromException(

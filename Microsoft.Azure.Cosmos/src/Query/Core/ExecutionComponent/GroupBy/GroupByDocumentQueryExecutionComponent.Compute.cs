@@ -116,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                     response = QueryResponseCore.CreateSuccess(
                         result: EmptyResults,
                         continuationToken: null,
-                        disallowContinuationTokenMessage: DocumentQueryExecutionComponentBase.UseSerializeStateInstead,
+                        disallowContinuationTokenMessage: DocumentQueryExecutionComponentBase.UseCosmosElementContinuationTokenInstead,
                         activityId: sourceResponse.ActivityId,
                         requestCharge: sourceResponse.RequestCharge,
                         diagnostics: sourceResponse.Diagnostics,
@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                     response = QueryResponseCore.CreateSuccess(
                        result: results,
                        continuationToken: null,
-                       disallowContinuationTokenMessage: DocumentQueryExecutionComponentBase.UseSerializeStateInstead,
+                       disallowContinuationTokenMessage: DocumentQueryExecutionComponentBase.UseCosmosElementContinuationTokenInstead,
                        activityId: null,
                        requestCharge: 0,
                        diagnostics: QueryResponseCore.EmptyDiagnostics,
@@ -167,8 +167,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
 
             private readonly struct GroupByContinuationToken
             {
-                private const string SourceTokenName = "SourceToken";
-                private const string GroupingTableContinuationTokenName = "GroupingTableContinuationToken";
+                private static class PropertyNames
+                {
+                    public const string SourceToken = "SourceToken";
+                    public const string GroupingTableContinuationToken = "GroupingTableContinuationToken";
+                }
 
                 public GroupByContinuationToken(
                     CosmosElement groupingTableContinuationToken,
@@ -187,11 +190,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                     Dictionary<string, CosmosElement> dictionary = new Dictionary<string, CosmosElement>()
                     {
                         {
-                            GroupByContinuationToken.SourceTokenName,
+                            GroupByContinuationToken.PropertyNames.SourceToken,
                             groupByContinuationToken.SourceContinuationToken
                         },
                         {
-                            GroupByContinuationToken.GroupingTableContinuationTokenName,
+                            GroupByContinuationToken.PropertyNames.GroupingTableContinuationToken,
                             groupByContinuationToken.GroupingTableContinuationToken
                         },
                     };
@@ -208,7 +211,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                     }
 
                     if (!groupByContinuationTokenObject.TryGetValue(
-                        GroupByContinuationToken.GroupingTableContinuationTokenName,
+                        GroupByContinuationToken.PropertyNames.GroupingTableContinuationToken,
                         out CosmosElement groupingTableContinuationToken))
                     {
                         groupByContinuationToken = default;
@@ -216,7 +219,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                     }
 
                     if (!groupByContinuationTokenObject.TryGetValue(
-                        GroupByContinuationToken.SourceTokenName,
+                        GroupByContinuationToken.PropertyNames.SourceToken,
                         out CosmosElement sourceContinuationToken))
                     {
                         groupByContinuationToken = default;

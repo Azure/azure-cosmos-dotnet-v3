@@ -266,8 +266,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
 
         private sealed class MinMaxContinuationToken
         {
-            private const string TypeName = "type";
-            private const string ValueName = "value";
+            private static class PropertyNames
+            {
+                public const string Type = "type";
+                public const string Value = "value";
+            }
 
             private MinMaxContinuationToken(
                 MinMaxContinuationTokenType type,
@@ -331,11 +334,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
 
                 Dictionary<string, CosmosElement> dictionary = new Dictionary<string, CosmosElement>();
                 dictionary.Add(
-                    MinMaxContinuationToken.TypeName,
+                    MinMaxContinuationToken.PropertyNames.Type,
                     EnumToCosmosString.ConvertEnumToCosmosString(minMaxContinuationToken.Type));
                 if (minMaxContinuationToken.Value != null)
                 {
-                    dictionary.Add(MinMaxContinuationToken.ValueName, minMaxContinuationToken.Value);
+                    dictionary.Add(MinMaxContinuationToken.PropertyNames.Value, minMaxContinuationToken.Value);
                 }
 
                 return CosmosObject.Create(dictionary);
@@ -349,25 +352,25 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
                         new MalformedContinuationTokenException($"{nameof(MinMaxContinuationToken)} was not an object."));
                 }
 
-                if (!cosmosObject.TryGetValue(MinMaxContinuationToken.TypeName, out CosmosString typeValue))
+                if (!cosmosObject.TryGetValue(MinMaxContinuationToken.PropertyNames.Type, out CosmosString typeValue))
                 {
                     return TryCatch<MinMaxContinuationToken>.FromException(
-                        new MalformedContinuationTokenException($"{nameof(MinMaxContinuationToken)} is missing property: {MinMaxContinuationToken.TypeName}."));
+                        new MalformedContinuationTokenException($"{nameof(MinMaxContinuationToken)} is missing property: {MinMaxContinuationToken.PropertyNames.Type}."));
                 }
 
                 if (!Enum.TryParse(typeValue.Value, out MinMaxContinuationTokenType minMaxContinuationTokenType))
                 {
                     return TryCatch<MinMaxContinuationToken>.FromException(
-                        new MalformedContinuationTokenException($"{nameof(MinMaxContinuationToken)} has malformed '{MinMaxContinuationToken.TypeName}': {typeValue.Value}."));
+                        new MalformedContinuationTokenException($"{nameof(MinMaxContinuationToken)} has malformed '{MinMaxContinuationToken.PropertyNames.Type}': {typeValue.Value}."));
                 }
 
                 CosmosElement value;
                 if (minMaxContinuationTokenType == MinMaxContinuationTokenType.Value)
                 {
-                    if (!cosmosObject.TryGetValue(MinMaxContinuationToken.ValueName, out value))
+                    if (!cosmosObject.TryGetValue(MinMaxContinuationToken.PropertyNames.Value, out value))
                     {
                         return TryCatch<MinMaxContinuationToken>.FromException(
-                            new MalformedContinuationTokenException($"{nameof(MinMaxContinuationToken)} is missing property: {MinMaxContinuationToken.ValueName}."));
+                            new MalformedContinuationTokenException($"{nameof(MinMaxContinuationToken)} is missing property: {MinMaxContinuationToken.PropertyNames.Value}."));
                     }
                 }
                 else

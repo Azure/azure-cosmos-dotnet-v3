@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                 return QueryResponseCore.CreateSuccess(
                     result: takedDocuments,
                     continuationToken: null,
-                    disallowContinuationTokenMessage: DocumentQueryExecutionComponentBase.UseSerializeStateInstead,
+                    disallowContinuationTokenMessage: DocumentQueryExecutionComponentBase.UseCosmosElementContinuationTokenInstead,
                     activityId: sourcePage.ActivityId,
                     requestCharge: sourcePage.RequestCharge,
                     diagnostics: sourcePage.Diagnostics,
@@ -102,8 +102,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
 
             private readonly struct TakeContinuationToken
             {
-                private const string SourceTokenName = "SourceToken";
-                private const string TakeCountName = "TakeCount";
+                public static class PropertyNames
+                {
+                    public const string SourceToken = "SourceToken";
+                    public const string TakeCount = "TakeCount";
+                }
 
                 public TakeContinuationToken(long takeCount, CosmosElement sourceToken)
                 {
@@ -125,11 +128,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                     Dictionary<string, CosmosElement> dictionary = new Dictionary<string, CosmosElement>()
                     {
                         {
-                            TakeContinuationToken.SourceTokenName,
+                            TakeContinuationToken.PropertyNames.SourceToken,
                             takeContinuationToken.SourceToken
                         },
                         {
-                            TakeContinuationToken.TakeCountName,
+                            TakeContinuationToken.PropertyNames.TakeCount,
                             CosmosNumber64.Create(takeContinuationToken.TakeCount)
                         },
                     };
@@ -150,13 +153,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                         return false;
                     }
 
-                    if (!continuationToken.TryGetValue(TakeCountName, out CosmosNumber takeCount))
+                    if (!continuationToken.TryGetValue(TakeContinuationToken.PropertyNames.TakeCount, out CosmosNumber takeCount))
                     {
                         takeContinuationToken = default;
                         return false;
                     }
 
-                    if (!continuationToken.TryGetValue(SourceTokenName, out CosmosElement sourceToken))
+                    if (!continuationToken.TryGetValue(TakeContinuationToken.PropertyNames.SourceToken, out CosmosElement sourceToken))
                     {
                         takeContinuationToken = default;
                         return false;

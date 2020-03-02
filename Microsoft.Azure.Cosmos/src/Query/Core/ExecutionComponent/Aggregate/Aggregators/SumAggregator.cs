@@ -65,19 +65,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
             return CosmosNumber64.Create(this.globalSum);
         }
 
-        public string GetContinuationToken()
-        {
-            return this.globalSum.ToString("G17", CultureInfo.InvariantCulture);
-        }
-
-        public void SerializeState(IJsonWriter jsonWriter)
-        {
-            if (jsonWriter == null)
-            {
-                throw new ArgumentNullException(nameof(jsonWriter));
-            }
-        }
-
         public CosmosElement GetCosmosElementContinuationToken()
         {
             return CosmosNumber64.Create(this.globalSum);
@@ -94,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
                         new MalformedContinuationTokenException($"Malformed {nameof(SumAggregator)} continuation token: {requestContinuationToken}"));
                 }
 
-                partialSum = Number64.ToLong(cosmosNumber.Value);
+                partialSum = Number64.ToDouble(cosmosNumber.Value);
             }
             else
             {

@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
 
     /// <summary>
@@ -15,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
     /// </summary>
     internal abstract class DocumentQueryExecutionComponentBase : IDocumentQueryExecutionComponent
     {
-        public static readonly string UseSerializeStateInstead = $"Use Serialize State instead";
+        public static readonly string UseCosmosElementContinuationTokenInstead = $"Use Cosmos Element Continuation Token instead.";
 
         /// <summary>
         /// Source DocumentQueryExecutionComponent that this component will drain from.

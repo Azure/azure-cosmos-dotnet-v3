@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
             }
 
             public static async Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
-                AggregateOperator[] aggregates,
+                IReadOnlyList<AggregateOperator> aggregates,
                 IReadOnlyDictionary<string, AggregateOperator?> aliasToAggregateType,
                 IReadOnlyList<string> orderedAliases,
                 bool hasSelectValue,

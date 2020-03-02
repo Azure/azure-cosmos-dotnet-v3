@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
+    using Microsoft.Azure.Documents;
 
     internal abstract partial class SkipDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase
     {
@@ -83,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                 return QueryResponseCore.CreateSuccess(
                     result: documentsAfterSkip,
                     continuationToken: null,
-                    disallowContinuationTokenMessage: DocumentQueryExecutionComponentBase.UseSerializeStateInstead,
+                    disallowContinuationTokenMessage: DocumentQueryExecutionComponentBase.UseCosmosElementContinuationTokenInstead,
                     activityId: sourcePage.ActivityId,
                     requestCharge: sourcePage.RequestCharge,
                     diagnostics: sourcePage.Diagnostics,
@@ -108,8 +109,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
             /// </summary>
             private readonly struct OffsetContinuationToken
             {
-                private const string SkipCountPropertyName = "SkipCount";
-                private const string SourceTokenPropertyName = "SourceToken";
+                private static class ProperytNames
+                {
+                    public const string SkipCountProperty = "SkipCount";
+                    public const string SourceTokenProperty = "SourceToken";
+                }
 
                 /// <summary>
                 /// Initializes a new instance of the OffsetContinuationToken struct.
@@ -148,11 +152,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                     Dictionary<string, CosmosElement> dictionary = new Dictionary<string, CosmosElement>()
                     {
                         {
-                            OffsetContinuationToken.SkipCountPropertyName,
+                            OffsetContinuationToken.ProperytNames.SkipCountProperty,
                             CosmosNumber64.Create(offsetContinuationToken.Offset)
                         },
                         {
-                            OffsetContinuationToken.SourceTokenPropertyName,
+                            OffsetContinuationToken.ProperytNames.SourceTokenProperty,
                             offsetContinuationToken.SourceToken
                         }
                     };
@@ -172,12 +176,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                         return (false, default);
                     }
 
-                    if (!cosmosObject.TryGetValue(OffsetContinuationToken.SkipCountPropertyName, out CosmosNumber offset))
+                    if (!cosmosObject.TryGetValue(OffsetContinuationToken.ProperytNames.SkipCountProperty, out CosmosNumber offset))
                     {
                         return (false, default);
                     }
 
-                    if (!cosmosObject.TryGetValue(OffsetContinuationToken.SourceTokenPropertyName, out CosmosElement sourceToken))
+                    if (!cosmosObject.TryGetValue(OffsetContinuationToken.ProperytNames.SourceTokenProperty, out CosmosElement sourceToken))
                     {
                         return (false, default);
                     }

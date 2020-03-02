@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     sqlQuerySpec: MockQueryFactory.DefaultQuerySpec,
                     collectionRid: MockQueryFactory.DefaultCollectionRid,
                     partitionedQueryExecutionInfo: new PartitionedQueryExecutionInfo() { QueryInfo = new QueryInfo() },
-                    partitionKeyRanges: new List<PartitionKeyRange>() { MockQueryFactory.DefaultPartitionKeyRange },
+                    partitionKeyRanges: new List<PartitionKeyRange> { MockQueryFactory.DefaultPartitionKeyRange },
                     initialPageSize: maxPageSize,
                     maxConcurrency: null,
                     maxItemCount: maxPageSize,
@@ -531,7 +531,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             TryCatch<IDocumentQueryExecutionComponent> tryCreateWhenInvalidContinuationToken = await DistinctDocumentQueryExecutionComponent.TryCreateAsync(
                 ExecutionEnvironment.Client,
-                CosmosElement.Parse("This is not a valid continuation token"),
+                CosmosElement.Parse("\"This is not a valid continuation token\""),
                 CreateSource,
                 DistinctQueryType.Unordered);
 

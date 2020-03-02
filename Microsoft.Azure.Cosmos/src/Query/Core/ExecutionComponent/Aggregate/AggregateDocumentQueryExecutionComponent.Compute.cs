@@ -9,8 +9,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Json;
-    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggregators;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
@@ -32,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
             }
 
             public static async Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
-                AggregateOperator[] aggregates,
+                IReadOnlyList<AggregateOperator> aggregates,
                 IReadOnlyDictionary<string, AggregateOperator?> aliasToAggregateType,
                 IReadOnlyList<string> orderedAliases,
                 bool hasSelectValue,

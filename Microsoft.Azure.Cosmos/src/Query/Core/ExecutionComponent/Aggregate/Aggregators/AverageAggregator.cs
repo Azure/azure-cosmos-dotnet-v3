@@ -56,21 +56,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
             return this.globalAverage.GetAverage();
         }
 
-        public string GetContinuationToken()
-        {
-            return this.globalAverage.ToString();
-        }
-
-        public void SerializeState(IJsonWriter jsonWriter)
-        {
-            if (jsonWriter == null)
-            {
-                throw new ArgumentNullException(nameof(jsonWriter));
-            }
-
-            this.globalAverage.SerializeState(jsonWriter);
-        }
-
         public static TryCatch<IAggregator> TryCreate(CosmosElement continuationToken)
         {
             AverageInfo averageInfo;
@@ -220,28 +205,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
                     return null;
                 }
 
-                return CosmosNumber64.Create(this.Sum.Value / this.Count);
-            }
-
-            public void SerializeState(IJsonWriter jsonWriter)
-            {
-                if (jsonWriter == null)
-                {
-                    throw new ArgumentNullException(nameof(jsonWriter));
-                }
-
-                jsonWriter.WriteObjectStart();
-
-                if (this.Sum.HasValue)
-                {
-                    jsonWriter.WriteFieldName(AverageInfo.SumName);
-                    jsonWriter.WriteFloat64Value(this.Sum.Value);
-                }
-                
-                jsonWriter.WriteFieldName(AverageInfo.CountName);
-                jsonWriter.WriteInt64Value(this.Count);
-
-                jsonWriter.WriteObjectEnd();
+                return CosmosNumber64.Create(this.Sum.Value / (double)this.Count);
             }
 
             public override string ToString()

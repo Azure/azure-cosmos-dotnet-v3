@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
         public abstract CosmosElement GetCosmosElementContinuationToken();
 
         public static TryCatch<SingleGroupAggregator> TryCreate(
-            AggregateOperator[] aggregates,
+            IReadOnlyList<AggregateOperator> aggregates,
             IReadOnlyDictionary<string, AggregateOperator?> aggregateAliasToAggregateType,
             IReadOnlyList<string> orderedAliases,
             bool hasSelectValue,

@@ -175,7 +175,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
 
         protected sealed class GroupingTable : IEnumerable<KeyValuePair<UInt128, SingleGroupAggregator>>
         {
-            private static readonly AggregateOperator[] EmptyAggregateOperators = new AggregateOperator[] { };
+            private static readonly IReadOnlyList<AggregateOperator> EmptyAggregateOperators = new AggregateOperator[] { };
 
             private readonly Dictionary<UInt128, SingleGroupAggregator> table;
             private readonly IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType;

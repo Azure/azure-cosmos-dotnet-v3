@@ -4,20 +4,10 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
 {
     using System;
-    using System.Collections.Generic;
-    using System.Globalization;
-    using System.Linq;
-    using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Json;
-    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
-    using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
-    using Newtonsoft.Json;
 
     internal abstract partial class TakeDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase
     {
