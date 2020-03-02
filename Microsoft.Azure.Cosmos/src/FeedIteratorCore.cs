@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Documents;
     using static Microsoft.Azure.Documents.RuntimeConstants;
 
@@ -119,7 +120,7 @@ namespace Microsoft.Azure.Cosmos
         public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
             CosmosDiagnosticsContext diagnostics = CosmosDiagnosticsContext.Create(this.requestOptions);
-            using (diagnostics.CreateOverallScope("QueryReadNextAsync"))
+            using (diagnostics.CreateOverallScope("FeedReadNextAsync"))
             {
                 if (this.containerRId == null)
                 {
@@ -214,7 +215,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     containerRId = await this.containerCore.GetRIDAsync(cancellationToken);
                 }
-                catch (CosmosException cosmosException)
+                catch (Exception cosmosException)
                 {
                     return TryCatch<string>.FromException(cosmosException);
                 }

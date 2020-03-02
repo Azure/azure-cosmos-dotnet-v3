@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
 
     /// <summary>
     /// Cosmos Change Feed iterator using FeedToken
@@ -152,7 +153,7 @@ namespace Microsoft.Azure.Cosmos
                 string containerRId = await this.container.GetRIDAsync(cancellationToken);
                 return TryCatch<string>.FromResult(containerRId);
             }
-            catch (CosmosException cosmosException)
+            catch (Exception cosmosException)
             {
                 return TryCatch<string>.FromException(cosmosException);
             }
