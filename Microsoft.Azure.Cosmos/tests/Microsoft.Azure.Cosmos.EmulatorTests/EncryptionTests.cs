@@ -178,6 +178,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task EncryptionCreateItemWithoutEncryptionOptions()
+        {
+            TestDoc testDoc = TestDoc.Create();
+            ItemResponse<TestDoc> createResponse = await EncryptionTests.containerCore.CreateItemAsync(
+                testDoc,
+                new PartitionKey(testDoc.PK));
+            Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
+            Assert.AreEqual(testDoc, createResponse.Resource);
+        }
+
+        [TestMethod]
         public async Task EncryptionCreateItem()
         {
             TestDoc testDoc = await EncryptionTests.CreateItemAsync(EncryptionTests.containerCore, EncryptionTests.dekId, TestDoc.PathsToEncrypt);
