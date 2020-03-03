@@ -67,5 +67,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
         }
 
         public abstract bool TryGetContinuationToken(out string state);
+
+        public abstract bool TryGetFeedToken(out FeedToken feedToken);
     }
 }

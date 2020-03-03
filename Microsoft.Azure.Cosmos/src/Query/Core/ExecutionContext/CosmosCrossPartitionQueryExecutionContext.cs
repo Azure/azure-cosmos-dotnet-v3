@@ -205,6 +205,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         }
 
         /// <summary>
+        /// Gets the FeedToken for the context.
+        /// This method is overridden by the derived class, since they all have different FeedTokens.
+        /// </summary>
+        protected abstract FeedToken FeedToken
+        {
+            get;
+        }
+
+        /// <summary>
         /// Gets a value indicating whether we are allowed to prefetch.
         /// </summary>
         private bool CanPrefetch { get; }
@@ -660,6 +669,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         public bool TryGetContinuationToken(out string state)
         {
             state = this.ContinuationToken;
+            return true;
+        }
+
+        public bool TryGetFeedToken(out FeedToken feedToken)
+        {
+            feedToken = this.FeedToken;
             return true;
         }
 

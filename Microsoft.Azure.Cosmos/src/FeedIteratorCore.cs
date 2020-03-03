@@ -236,16 +236,8 @@ namespace Microsoft.Azure.Cosmos
             // Create FeedToken for the full Range
             FeedTokenEPKRange feedTokenInternal = new FeedTokenEPKRange(
                         this.containerRId,
-                        new PartitionKeyRange()
-                        {
-                            MinInclusive = Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
-                            MaxExclusive = Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey
-                        });
-            // Initialize with the ContinuationToken that the user passed, if any
-            if (this.continuationToken != null)
-            {
-                feedTokenInternal.UpdateContinuation(this.continuationToken);
-            }
+                        new Documents.Routing.Range<string>(Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey, Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey, true, false),
+                        continuationToken: this.continuationToken);
 
             return feedTokenInternal;
         }

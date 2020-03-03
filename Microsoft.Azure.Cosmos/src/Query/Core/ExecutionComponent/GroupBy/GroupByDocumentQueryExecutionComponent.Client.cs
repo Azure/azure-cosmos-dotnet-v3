@@ -107,6 +107,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                 state = default;
                 return false;
             }
+
+            public override bool TryGetFeedToken(out FeedToken feedToken)
+            {
+                feedToken = null;
+                return false;
+            }
         }
     }
 }

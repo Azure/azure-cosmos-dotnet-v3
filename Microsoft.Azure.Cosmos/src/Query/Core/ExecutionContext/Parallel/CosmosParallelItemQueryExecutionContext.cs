@@ -87,24 +87,69 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
         {
             get
             {
-                IEnumerable<ItemProducer> activeItemProducers = this.GetActiveItemProducers();
-                string continuationToken;
-                if (activeItemProducers.Any())
+                if (this.TryGetProducerContinuationAndRanges(
+                    out string continuationToken,
+                    out IEnumerable<Documents.Routing.Range<string>> _))
                 {
-                    IEnumerable<CompositeContinuationToken> compositeContinuationTokens = activeItemProducers.Select((documentProducer) => new CompositeContinuationToken
-                    {
-                        Token = documentProducer.CurrentContinuationToken,
-                        Range = documentProducer.PartitionKeyRange.ToRange()
-                    });
-                    continuationToken = JsonConvert.SerializeObject(compositeContinuationTokens, DefaultJsonSerializationSettings.Value);
-                }
-                else
-                {
-                    continuationToken = null;
+                    return continuationToken;
                 }
 
-                return continuationToken;
+                return null;
             }
+        }
+
+        /// <summary>
+        /// For parallel queries the continuation token semantically holds two pieces of information:
+        /// 1) What physical partition did the user read up to
+        /// 2) How far into said partition did they read up to
+        /// And since the client consumes queries strictly in a left to right order we can partition the documents:
+        /// 1) Documents left of the continuation token have been drained
+        /// 2) Documents to the right of the continuation token still need to be served.
+        /// This is useful since we can have a single continuation token for all partitions.
+        /// </summary>
+        protected override FeedToken FeedToken
+        {
+            get
+            {
+                if (this.TryGetProducerContinuationAndRanges(
+                    out string continuationToken,
+                    out IEnumerable<Documents.Routing.Range<string>> ranges))
+                {
+                    List<Documents.Routing.Range<string>> rangesList = ranges.ToList();
+                    rangesList.Sort(Documents.Routing.Range<string>.MinComparer.Instance);
+                    Documents.Routing.Range<string> completeRange = new Documents.Routing.Range<string>(rangesList[0].Min, rangesList[rangesList.Count - 1].Max, true, false);
+                    // Single FeedToken with the completeRange and continuation
+                    FeedTokenEPKRange feedToken = new FeedTokenEPKRange(
+                        string.Empty, // Rid or container reference not available
+                        completeRange,
+                        continuationToken);
+                    return feedToken;
+                }
+
+                return null;
+            }
+        }
+
+        private bool TryGetProducerContinuationAndRanges(
+            out string continuationToken,
+            out IEnumerable<Documents.Routing.Range<string>> ranges)
+        {
+            IEnumerable<ItemProducer> activeItemProducers = this.GetActiveItemProducers();
+            if (activeItemProducers.Any())
+            {
+                IEnumerable<CompositeContinuationToken> compositeContinuationTokens = activeItemProducers.Select((documentProducer) => new CompositeContinuationToken
+                {
+                    Token = documentProducer.CurrentContinuationToken,
+                    Range = documentProducer.PartitionKeyRange.ToRange()
+                });
+                continuationToken = JsonConvert.SerializeObject(compositeContinuationTokens, DefaultJsonSerializationSettings.Value);
+                ranges = compositeContinuationTokens.Select(token => token.Range);
+                return true;
+            }
+
+            ranges = null;
+            continuationToken = null;
+            return false;
         }
 
         /// <summary>

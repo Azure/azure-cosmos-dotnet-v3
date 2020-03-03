@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(keyRanges[1].MinInclusive, feedTokenEPKRanges[1].CompleteRange.Min);
             Assert.AreEqual(keyRanges[1].MaxExclusive, feedTokenEPKRanges[1].CompleteRange.Max);
 
-            FeedTokenEPKRange singleToken = new FeedTokenEPKRange(containerRid, new Documents.PartitionKeyRange() { MinInclusive = "A", MaxExclusive = "B" });
+            FeedTokenEPKRange singleToken = new FeedTokenEPKRange(containerRid, new Documents.Routing.Range<string>("A", "B", true, false), continuationToken: null);
             Assert.AreEqual(0, singleToken.Scale().Count);
         }
 
@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void FeedToken_EPK_EnrichRequest()
         {
             const string containerRid = "containerRid";
-            FeedTokenEPKRange token = new FeedTokenEPKRange(containerRid, new Documents.PartitionKeyRange() { MinInclusive = "A", MaxExclusive = "B" });
+            FeedTokenEPKRange token = new FeedTokenEPKRange(containerRid, new Documents.Routing.Range<string>("A", "B", true, false), continuationToken: null);
             RequestMessage requestMessage = new RequestMessage();
             token.EnrichRequest(requestMessage);
             Assert.AreEqual(token.CompleteRange.Min, requestMessage.Properties[HandlerConstants.StartEpkString]);
@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             const string containerRid = "containerRid";
             string epkString = Guid.NewGuid().ToString();
-            FeedTokenEPKRange token = new FeedTokenEPKRange(containerRid, new Documents.PartitionKeyRange() { MinInclusive = "A", MaxExclusive = "B" });
+            FeedTokenEPKRange token = new FeedTokenEPKRange(containerRid, new Documents.Routing.Range<string>("A", "B", true, false), continuationToken: null);
             RequestMessage requestMessage = new RequestMessage();
             requestMessage.Properties[HandlerConstants.StartEpkString] = epkString;
             requestMessage.Properties[HandlerConstants.EndEpkString] = epkString;
@@ -164,11 +164,11 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void FeedToken_EPK_SingleRange()
         {
             const string containerRid = "containerRid";
-            Documents.PartitionKeyRange partitionKeyRange = new Documents.PartitionKeyRange() { MinInclusive = "A", MaxExclusive = "B" };
-            FeedTokenEPKRange token = new FeedTokenEPKRange(containerRid, partitionKeyRange);
+            Documents.Routing.Range<string> range = new Documents.Routing.Range<string>("A", "B", true, false);
+            FeedTokenEPKRange token = new FeedTokenEPKRange(containerRid, new Documents.Routing.Range<string>("A", "B", true, false), continuationToken: null);
             Assert.AreEqual(1, token.CompositeContinuationTokens.Count);
-            Assert.AreEqual(partitionKeyRange.MinInclusive, token.CompleteRange.Min);
-            Assert.AreEqual(partitionKeyRange.MaxExclusive, token.CompleteRange.Max);
+            Assert.AreEqual(range.Min, token.CompleteRange.Min);
+            Assert.AreEqual(range.Max, token.CompleteRange.Max);
         }
 
         [TestMethod]
@@ -315,10 +315,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void FeedToken_EPK_IsDone()
         {
             const string containerRid = "containerRid";
-            FeedTokenEPKRange token = new FeedTokenEPKRange(containerRid,
-                new Documents.PartitionKeyRange() { MinInclusive = "A", MaxExclusive = "B" });
-
-            token.UpdateContinuation(Guid.NewGuid().ToString());
+            FeedTokenEPKRange token = new FeedTokenEPKRange(containerRid, new Documents.Routing.Range<string>("A", "B", true, false), continuationToken: Guid.NewGuid().ToString());
             Assert.IsFalse(token.IsDone);
 
             token.UpdateContinuation(null);

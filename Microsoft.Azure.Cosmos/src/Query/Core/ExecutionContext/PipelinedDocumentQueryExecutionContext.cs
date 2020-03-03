@@ -124,6 +124,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             return this.component.TryGetContinuationToken(out state);
         }
 
+        public override bool TryGetFeedToken(out FeedToken feedToken)
+        {
+            return this.component.TryGetFeedToken(out feedToken);
+        }
+
         public static async Task<TryCatch<CosmosQueryExecutionContext>> TryCreateAsync(
             ExecutionEnvironment executionEnvironment,
             CosmosQueryContext queryContext,

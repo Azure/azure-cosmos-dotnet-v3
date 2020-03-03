@@ -122,6 +122,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
                 state = null;
                 return true;
             }
+
+            public override bool TryGetFeedToken(out FeedToken state)
+            {
+                // Since we block until we get the final result the continuation token is always null.
+                state = null;
+                return true;
+            }
         }
     }
 }

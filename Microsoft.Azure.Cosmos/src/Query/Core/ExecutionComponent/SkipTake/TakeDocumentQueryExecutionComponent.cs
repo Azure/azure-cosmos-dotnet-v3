@@ -197,6 +197,44 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
             }
         }
 
+        public override bool TryGetFeedToken(out FeedToken feedToken)
+        {
+            if (this.IsDone)
+            {
+                feedToken = null;
+                return true;
+            }
+
+            if (!this.Source.TryGetFeedToken(out feedToken))
+            {
+                feedToken = null;
+                return false;
+            }
+
+            FeedTokenInternal feedTokenInternal = feedToken as FeedTokenInternal;
+            TakeContinuationToken takeContinuationToken;
+            switch (this.takeEnum)
+            {
+                case TakeEnum.Limit:
+                    takeContinuationToken = new LimitContinuationToken(
+                        this.takeCount,
+                        feedTokenInternal.GetContinuation());
+                    break;
+
+                case TakeEnum.Top:
+                    takeContinuationToken = new TopContinuationToken(
+                        this.takeCount,
+                        feedTokenInternal.GetContinuation());
+                    break;
+
+                default:
+                    throw new ArgumentException($"Unknown {nameof(TakeEnum)}: {this.takeEnum}");
+            }
+
+            feedTokenInternal.UpdateContinuation(takeContinuationToken.ToString());
+            return true;
+        }
+
         private enum TakeEnum
         {
             Limit,

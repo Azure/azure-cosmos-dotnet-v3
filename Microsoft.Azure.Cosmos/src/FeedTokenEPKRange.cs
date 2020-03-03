@@ -73,16 +73,17 @@ namespace Microsoft.Azure.Cosmos
 
         public FeedTokenEPKRange(
             string containerRid,
-            Documents.PartitionKeyRange keyRange)
+            Documents.Routing.Range<string> completeRange,
+            string continuationToken)
             : this(containerRid)
         {
-            if (keyRange == null)
+            if (completeRange == null)
             {
-                throw new ArgumentNullException(nameof(keyRange));
+                throw new ArgumentNullException(nameof(completeRange));
             }
 
-            this.CompleteRange = new Documents.Routing.Range<string>(keyRange.MinInclusive, keyRange.MaxExclusive, true, false);
-            this.CompositeContinuationTokens.Enqueue(FeedTokenEPKRange.CreateCompositeContinuationTokenForRange(keyRange.MinInclusive, keyRange.MaxExclusive, null));
+            this.CompleteRange = completeRange;
+            this.CompositeContinuationTokens.Enqueue(FeedTokenEPKRange.CreateCompositeContinuationTokenForRange(completeRange.Min, completeRange.Max, continuationToken));
 
             this.currentToken = this.CompositeContinuationTokens.Peek();
         }
@@ -177,7 +178,8 @@ namespace Microsoft.Azure.Cosmos
 
         public override void ValidateContainer(string containerRid)
         {
-            if (this.ContainerRid != containerRid)
+            if (!string.IsNullOrEmpty(this.ContainerRid) &&
+                this.ContainerRid != containerRid)
             {
                 throw new ArgumentException(string.Format(ClientResources.FeedToken_InvalidFeedTokenForContainer, this.ContainerRid, containerRid));
             }

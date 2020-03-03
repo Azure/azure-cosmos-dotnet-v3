@@ -168,6 +168,40 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                 return true;
             }
 
+            public override bool TryGetFeedToken(out FeedToken feedToken)
+            {
+                if (this.IsDone)
+                {
+                    feedToken = null;
+                    return true;
+                }
+
+                if (!this.Source.TryGetFeedToken(out feedToken))
+                {
+                    feedToken = null;
+                    return false;
+                }
+
+                FeedTokenInternal feedTokenInternal = feedToken as FeedTokenInternal;
+                string continuationToken;
+                if (this.Source.IsDone)
+                {
+                    continuationToken = new GroupByContinuationToken(
+                        this.groupingTable.GetContinuationToken(),
+                        ComputeGroupByDocumentQueryExecutionComponent.DoneReadingGroupingsContinuationToken).ToString();
+                }
+                else
+                {
+                    // Still need to drain the source.
+                    continuationToken = new GroupByContinuationToken(
+                        this.groupingTable.GetContinuationToken(),
+                        feedTokenInternal.GetContinuation()).ToString();
+                }
+
+                feedTokenInternal.UpdateContinuation(continuationToken);
+                return true;
+            }
+
             private sealed class GroupByContinuationToken
             {
                 public GroupByContinuationToken(
@@ -255,6 +289,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                 public bool TryGetContinuationToken(out string state)
                 {
                     state = null;
+                    return true;
+                }
+
+                public bool TryGetFeedToken(out FeedToken feedToken)
+                {
+                    feedToken = null;
                     return true;
                 }
             }

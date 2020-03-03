@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             RequestMessage request = new RequestMessage();
             request.OperationType = OperationType.ReadFeed;
             request.ResourceType = ResourceType.Document;
-            FeedTokenInternal feedTokenEPKRange = new FeedTokenEPKRange(Guid.NewGuid().ToString(), new PartitionKeyRange() { MinInclusive = "AA", MaxExclusive = "BB", Id = "0" });
+            FeedTokenInternal feedTokenEPKRange = new FeedTokenEPKRange(Guid.NewGuid().ToString(), new Documents.Routing.Range<string>("A", "B", true, false), continuationToken: null);
             feedTokenEPKRange.EnrichRequest(request);
             Assert.IsTrue(request.IsPartitionKeyRangeHandlerRequired);
         }

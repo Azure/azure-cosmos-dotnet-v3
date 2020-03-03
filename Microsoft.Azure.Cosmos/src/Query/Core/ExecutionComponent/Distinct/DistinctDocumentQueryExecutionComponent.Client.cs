@@ -155,6 +155,33 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                     this.distinctMap.GetContinuationToken()).ToString();
                 return true;
             }
+
+            public override bool TryGetFeedToken(out FeedToken feedToken)
+            {
+                if (this.distinctQueryType != DistinctQueryType.Ordered)
+                {
+                    feedToken = null;
+                    return false;
+                }
+
+                if (this.IsDone)
+                {
+                    feedToken = null;
+                    return true;
+                }
+
+                if (!this.Source.TryGetFeedToken(out feedToken))
+                {
+                    feedToken = null;
+                    return false;
+                }
+
+                FeedTokenInternal feedTokenInternal = feedToken as FeedTokenInternal;
+                feedTokenInternal.UpdateContinuation(new DistinctContinuationToken(
+                    feedTokenInternal.GetContinuation(),
+                    this.distinctMap.GetContinuationToken()).ToString());
+                return true;
+            }
         }
     }
 }

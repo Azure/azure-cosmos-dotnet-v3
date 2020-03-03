@@ -92,5 +92,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
             return tryCreateCosmosQueryExecutionContext.Result.TryGetContinuationToken(out state);
         }
+
+        public override bool TryGetFeedToken(out FeedToken feedToken)
+        {
+            if (!this.lazyTryCreateCosmosQueryExecutionContext.ValueInitialized)
+            {
+                feedToken = null;
+                return false;
+            }
+
+            TryCatch<CosmosQueryExecutionContext> tryCreateCosmosQueryExecutionContext = this.lazyTryCreateCosmosQueryExecutionContext.Result;
+            if (!tryCreateCosmosQueryExecutionContext.Succeeded)
+            {
+                feedToken = null;
+                return false;
+            }
+
+            return tryCreateCosmosQueryExecutionContext.Result.TryGetFeedToken(out feedToken);
+        }
     }
 }

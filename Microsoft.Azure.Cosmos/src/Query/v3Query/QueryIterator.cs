@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
+    using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Diagnostics;
@@ -88,7 +89,18 @@ namespace Microsoft.Azure.Cosmos.Query
 #else
         internal
 #endif
-        FeedToken FeedToken => throw new NotImplementedException();
+        FeedToken FeedToken
+        {
+            get
+            {
+                if (this.cosmosQueryExecutionContext.TryGetFeedToken(out FeedToken feedToken))
+                {
+                    return feedToken;
+                }
+
+                return null;
+            }
+        }
 
         public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
@@ -99,8 +111,10 @@ namespace Microsoft.Azure.Cosmos.Query
                 QueryResponseCore responseCore = await this.cosmosQueryExecutionContext.ExecuteNextAsync(cancellationToken);
                 CosmosQueryContext cosmosQueryContext = this.cosmosQueryContext;
 
+                HashSet<string> visitedPartitionKeyRangeIds = new HashSet<string>();
                 foreach (QueryPageDiagnostics queryPage in responseCore.Diagnostics)
                 {
+                    visitedPartitionKeyRangeIds.Add(queryPage.PartitionKeyRangeId);
                     diagnostics.AddDiagnosticsInternal(queryPage);
                 }
 

@@ -186,6 +186,28 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
             return true;
         }
 
+        public override bool TryGetFeedToken(out FeedToken feedToken)
+        {
+            if (this.IsDone)
+            {
+                feedToken = null;
+                return true;
+            }
+
+            if (!this.Source.TryGetFeedToken(out feedToken))
+            {
+                feedToken = null;
+                return false;
+            }
+
+            FeedTokenInternal feedTokenInternal = feedToken as FeedTokenInternal;
+            AggregateContinuationToken aggregateContinuationToken = AggregateContinuationToken.Create(
+                this.singleGroupAggregator.GetContinuationToken(),
+                feedTokenInternal.GetContinuation());
+            feedTokenInternal.UpdateContinuation(aggregateContinuationToken.ToString());
+            return true;
+        }
+
         private struct AggregateContinuationToken
         {
             private const string SingleGroupAggregatorContinuationTokenName = "SingleGroupAggregatorContinuationToken";

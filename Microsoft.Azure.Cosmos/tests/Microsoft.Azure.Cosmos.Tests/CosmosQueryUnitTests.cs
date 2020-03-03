@@ -256,6 +256,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosQueryExecutionContextFactory.InputParameters inputParameters = new CosmosQueryExecutionContextFactory.InputParameters(
                 sqlQuerySpec: sqlQuerySpec,
                 initialUserContinuationToken: null,
+                initialFeedToken: null,
                 maxConcurrency: queryRequestOptions?.MaxConcurrency,
                 maxItemCount: queryRequestOptions?.MaxItemCount,
                 maxBufferedItemCount: queryRequestOptions?.MaxBufferedItemCount,
