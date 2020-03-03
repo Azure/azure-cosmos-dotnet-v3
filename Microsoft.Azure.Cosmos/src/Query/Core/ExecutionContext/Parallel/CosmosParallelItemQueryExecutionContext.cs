@@ -87,14 +87,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
         {
             get
             {
-                if (this.TryGetProducerContinuationAndRanges(
-                    out string continuationToken,
-                    out IEnumerable<Documents.Routing.Range<string>> _))
+                IEnumerable<ItemProducer> activeItemProducers = this.GetActiveItemProducers();
+                string continuationToken;
+                if (activeItemProducers.Any())
                 {
-                    return continuationToken;
+                    IEnumerable<CompositeContinuationToken> compositeContinuationTokens = activeItemProducers.Select((documentProducer) => new CompositeContinuationToken
+                    {
+                        Token = documentProducer.CurrentContinuationToken,
+                        Range = documentProducer.PartitionKeyRange.ToRange()
+                    });
+                    continuationToken = JsonConvert.SerializeObject(compositeContinuationTokens, DefaultJsonSerializationSettings.Value);
+                }
+                else
+                {
+                    continuationToken = null;
                 }
 
-                return null;
+                return continuationToken;
             }
         }
 
@@ -111,45 +120,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
         {
             get
             {
-                if (this.TryGetProducerContinuationAndRanges(
-                    out string continuationToken,
-                    out IEnumerable<Documents.Routing.Range<string>> ranges))
+                IEnumerable<ItemProducer> allProducers = this.GetAllItemProducers();
+                if (!allProducers.Any())
                 {
-                    List<Documents.Routing.Range<string>> rangesList = ranges.ToList();
-                    rangesList.Sort(Documents.Routing.Range<string>.MinComparer.Instance);
-                    Documents.Routing.Range<string> completeRange = new Documents.Routing.Range<string>(rangesList[0].Min, rangesList[rangesList.Count - 1].Max, true, false);
-                    // Single FeedToken with the completeRange and continuation
-                    FeedTokenEPKRange feedToken = new FeedTokenEPKRange(
-                        string.Empty, // Rid or container reference not available
-                        completeRange,
-                        continuationToken);
-                    return feedToken;
+                    return null;
                 }
 
-                return null;
+                List<Documents.Routing.Range<string>> rangesList = allProducers.Select(producer => producer.PartitionKeyRange.ToRange()).ToList();
+                rangesList.Sort(Documents.Routing.Range<string>.MinComparer.Instance);
+                Documents.Routing.Range<string> completeRange = new Documents.Routing.Range<string>(rangesList[0].Min, rangesList[rangesList.Count - 1].Max, true, false);
+                // Single FeedToken with the completeRange and continuation
+                FeedTokenEPKRange feedToken = new FeedTokenEPKRange(
+                    string.Empty, // Rid or container reference not available
+                    completeRange,
+                    this.ContinuationToken);
+                return feedToken;
             }
-        }
-
-        private bool TryGetProducerContinuationAndRanges(
-            out string continuationToken,
-            out IEnumerable<Documents.Routing.Range<string>> ranges)
-        {
-            IEnumerable<ItemProducer> activeItemProducers = this.GetActiveItemProducers();
-            if (activeItemProducers.Any())
-            {
-                IEnumerable<CompositeContinuationToken> compositeContinuationTokens = activeItemProducers.Select((documentProducer) => new CompositeContinuationToken
-                {
-                    Token = documentProducer.CurrentContinuationToken,
-                    Range = documentProducer.PartitionKeyRange.ToRange()
-                });
-                continuationToken = JsonConvert.SerializeObject(compositeContinuationTokens, DefaultJsonSerializationSettings.Value);
-                ranges = compositeContinuationTokens.Select(token => token.Range);
-                return true;
-            }
-
-            ranges = null;
-            continuationToken = null;
-            return false;
         }
 
         /// <summary>

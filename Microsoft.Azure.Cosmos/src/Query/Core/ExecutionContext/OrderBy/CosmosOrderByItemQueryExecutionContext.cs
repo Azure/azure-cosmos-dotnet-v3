@@ -117,17 +117,39 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
             // With this information we have captured the progress for all partitions in a single continuation token.
             get
             {
-                if (this.TryGetProducerContinuationAndRanges(
-                    out string continuationToken,
-                    out List<Documents.Routing.Range<string>> _))
+                IEnumerable<ItemProducer> activeItemProducers = this.GetActiveItemProducers();
+                string continuationToken;
+                if (activeItemProducers.Any())
                 {
-                    // Note we are no longer escaping non ascii continuation tokens.
-                    // It is the callers job to encode a continuation token before adding it to a header in their service.
+                    IEnumerable<CosmosElement> orderByContinuationTokens = activeItemProducers.Select((itemProducer) =>
+                    {
+                        OrderByQueryResult orderByQueryResult = new OrderByQueryResult(itemProducer.Current);
+                        string filter = itemProducer.Filter;
+                        OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
+                            new CompositeContinuationToken
+                            {
+                                Token = itemProducer.PreviousContinuationToken,
+                                Range = itemProducer.PartitionKeyRange.ToRange(),
+                            },
+                            orderByQueryResult.OrderByItems,
+                            orderByQueryResult.Rid,
+                            this.ShouldIncrementSkipCount(itemProducer) ? this.skipCount + 1 : 0,
+                            filter);
 
-                    return continuationToken;
+                        return OrderByContinuationToken.ToCosmosElement(orderByContinuationToken);
+                    });
+
+                    continuationToken = CosmosArray.Create(orderByContinuationTokens).ToString();
+                }
+                else
+                {
+                    continuationToken = null;
                 }
 
-                return null;
+                // Note we are no longer escaping non ascii continuation tokens.
+                // It is the callers job to encode a continuation token before adding it to a header in their service.
+
+                return continuationToken;
             }
         }
 
@@ -148,59 +170,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
             // With this information we have captured the progress for all partitions in a single continuation token.
             get
             {
-                if (this.TryGetProducerContinuationAndRanges(
-                    out string continuationToken,
-                    out List<Documents.Routing.Range<string>> ranges))
+                IEnumerable<ItemProducer> allProducers = this.GetAllItemProducers();
+                if (!allProducers.Any())
                 {
-                    ranges.Sort(Documents.Routing.Range<string>.MinComparer.Instance);
-                    Documents.Routing.Range<string> completeRange = new Documents.Routing.Range<string>(ranges[0].Min, ranges[ranges.Count - 1].Max, true, false);
-                    // Single FeedToken with the completeRange and continuation
-                    FeedTokenEPKRange feedToken = new FeedTokenEPKRange(
-                        string.Empty, // Rid or container reference not available
-                        completeRange,
-                        continuationToken);
-                    return feedToken;
+                    return null;
                 }
 
-                return null;
+                List<Documents.Routing.Range<string>> rangesList = allProducers.Select(producer => producer.PartitionKeyRange.ToRange()).ToList();
+                rangesList.Sort(Documents.Routing.Range<string>.MinComparer.Instance);
+                Documents.Routing.Range<string> completeRange = new Documents.Routing.Range<string>(rangesList[0].Min, rangesList[rangesList.Count - 1].Max, true, false);
+                // Single FeedToken with the completeRange and continuation
+                FeedTokenEPKRange feedToken = new FeedTokenEPKRange(
+                    string.Empty, // Rid or container reference not available
+                    completeRange,
+                    this.ContinuationToken);
+                return feedToken;
             }
-        }
-
-        private bool TryGetProducerContinuationAndRanges(
-            out string continuationToken,
-            out List<Documents.Routing.Range<string>> ranges)
-        {
-            IEnumerable<ItemProducer> activeItemProducers = this.GetActiveItemProducers();
-            if (activeItemProducers.Any())
-            {
-                List<Documents.Routing.Range<string>> rangesList = new List<Documents.Routing.Range<string>>();
-                IEnumerable<CosmosElement> orderByContinuationTokens = activeItemProducers.Select((itemProducer) =>
-                {
-                    OrderByQueryResult orderByQueryResult = new OrderByQueryResult(itemProducer.Current);
-                    string filter = itemProducer.Filter;
-                    Documents.Routing.Range<string> producerRange = itemProducer.PartitionKeyRange.ToRange();
-                    OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
-                        new CompositeContinuationToken
-                        {
-                            Token = itemProducer.PreviousContinuationToken,
-                            Range = producerRange,
-                        },
-                        orderByQueryResult.OrderByItems,
-                        orderByQueryResult.Rid,
-                        this.ShouldIncrementSkipCount(itemProducer) ? this.skipCount + 1 : 0,
-                        filter);
-                    rangesList.Add(producerRange);
-                    return OrderByContinuationToken.ToCosmosElement(orderByContinuationToken);
-                });
-
-                continuationToken = CosmosArray.Create(orderByContinuationTokens).ToString();
-                ranges = rangesList;
-                return true;
-            }
-
-            ranges = null;
-            continuationToken = null;
-            return false;
         }
 
         public static async Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
