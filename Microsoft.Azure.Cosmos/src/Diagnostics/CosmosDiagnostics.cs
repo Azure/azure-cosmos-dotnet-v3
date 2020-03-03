@@ -22,16 +22,10 @@ namespace Microsoft.Azure.Cosmos
         public abstract string UserClientRequestId { get; }
 
         /// <summary>
-        /// This represent the total
+        /// This represent the current elapsed latency for the request. 
         /// </summary>
-        /// <returns>The elapsed time since the start of the request o</returns>
+        /// <returns>The elapsed time since the start of the request.</returns>
         public abstract TimeSpan GetElapsedClientLatency();
-
-        /// <summary>
-        /// Get a list of region contacted for the request.
-        /// </summary>
-        /// <returns>A list of regions contacted for the SDK operation</returns>
-        public abstract IReadOnlyCollection<Uri> GetContactedRegions();
 
         /// <summary>
         /// Gets the string field <see cref="CosmosDiagnostics"/> instance in the Azure CosmosDB database service.

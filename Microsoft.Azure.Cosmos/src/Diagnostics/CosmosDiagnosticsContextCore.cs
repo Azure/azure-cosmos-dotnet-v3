@@ -58,6 +58,11 @@ namespace Microsoft.Azure.Cosmos
 
         public override string UserClientRequestId { get; }
 
+        public override TimeSpan GetElapsedClientLatency()
+        {
+            throw new NotImplementedException();
+        }
+
         internal override CosmosDiagnosticScope CreateOverallScope(string name)
         {
             CosmosDiagnosticScope scope;
@@ -68,7 +73,7 @@ namespace Microsoft.Azure.Cosmos
             }
             else
             {
-                scope = new CosmosDiagnosticScope(name, this.SetElapsedTime);
+                scope = new CosmosDiagno sticScope(name, this.SetElapsedTime);
                 this.isOverallScopeSet = true;
             }
 
@@ -184,21 +189,6 @@ namespace Microsoft.Azure.Cosmos
 
             this.TotalRequestCount += newContext.TotalRequestCount;
             this.FailedRequestCount += newContext.FailedRequestCount;
-        }
-
-        public override TimeSpan GetElapsedClientLatency()
-        {
-            throw new NotImplementedException();
-        }
-
-        public override IReadOnlyCollection<Uri> GetContactedRegions()
-        {
-            if (this.ContactedRegions == null)
-            {
-                return DefaultContactedRegions;
-            }
-
-            return new ReadOnlyCollection<Uri>(this.ContactedRegions.ToList());
         }
     }
 }
