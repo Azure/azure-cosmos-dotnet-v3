@@ -2770,6 +2770,54 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             }
             #endregion
+            #region TryGetFeedToken Support
+            // Run the ordered distinct query through the continuation api, should result in the same set
+            // since the previous hash is passed in the continuation token.
+            foreach (string query in new string[]
+            {
+                "SELECT {0} VALUE c.age FROM c ORDER BY c.age",
+                "SELECT {0} VALUE c.name FROM c ORDER BY c.name",
+                "SELECT {0} VALUE c.name from c",
+                "SELECT {0} VALUE c.age from c",
+                "SELECT {0} VALUE c.mixedTypeField from c",
+                "SELECT {0} TOP 2147483647 VALUE c.city from c",
+                "SELECT {0} VALUE c.age from c ORDER BY c.name",
+            })
+            {
+                string queryWithoutDistinct = string.Format(query, "");
+                MockDistinctMap documentsSeen = new MockDistinctMap();
+                List<JToken> documentsFromWithoutDistinct = await CrossPartitionQueryTests.RunQueryCombinations<JToken>(
+                    container,
+                    queryWithoutDistinct,
+                    new QueryRequestOptions()
+                    {
+                        MaxConcurrency = 10,
+                        MaxItemCount = 100,
+                    },
+                    QueryDrainingMode.TryGetFeedTokens | QueryDrainingMode.HoldState);
+                documentsFromWithoutDistinct = documentsFromWithoutDistinct
+                    .Where(document => documentsSeen.Add(document, out UInt128 hash))
+                    .ToList();
+
+                foreach (int pageSize in new int[] { 1, 10, 100 })
+                {
+                    string queryWithDistinct = string.Format(query, "DISTINCT");
+                    List<JToken> documentsFromWithDistinct = await CrossPartitionQueryTests.RunQueryCombinations<JToken>(
+                        container,
+                        queryWithDistinct,
+                        new QueryRequestOptions()
+                        {
+                            MaxConcurrency = 10,
+                            MaxItemCount = pageSize
+                        },
+                        QueryDrainingMode.TryGetFeedTokens | QueryDrainingMode.HoldState);
+
+                    Assert.IsTrue(
+                        documentsFromWithDistinct.SequenceEqual(documentsFromWithoutDistinct, JsonTokenEqualityComparer.Value),
+                        $"Documents didn't match for {queryWithDistinct} on a Partitioned container");
+                }
+            }
+            #endregion
         }
 
         [TestMethod]
@@ -4699,7 +4747,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 container,
                 query,
                 queryRequestOptions,
-                QueryDrainingMode.ContinuationToken | QueryDrainingMode.HoldState | QueryDrainingMode.TryGetContinuationTokens);
+                QueryDrainingMode.ContinuationToken | QueryDrainingMode.HoldState | QueryDrainingMode.TryGetContinuationTokens | QueryDrainingMode.TryGetFeedTokens);
         }
 
         [Flags]
@@ -4709,6 +4757,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             HoldState = 1,
             ContinuationToken = 2,
             TryGetContinuationTokens = 4,
+            TryGetFeedTokens = 5,
         }
 
         private static async Task<List<T>> RunQueryCombinations<T>(
@@ -4752,6 +4801,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     queryRequestOptions);
 
                 queryExecutionResults[QueryDrainingMode.TryGetContinuationTokens] = queryResultsWithTryGetContinuationToken;
+            }
+
+            if (queryDrainingMode.HasFlag(QueryDrainingMode.TryGetFeedTokens))
+            {
+                List<T> queryResultsWithTryGetFeedToken = await QueryWithTryGetFeedToken<T>(
+                    container,
+                    query,
+                    queryRequestOptions);
+
+                queryExecutionResults[QueryDrainingMode.TryGetFeedTokens] = queryResultsWithTryGetFeedToken;
             }
 
             foreach (QueryDrainingMode queryDrainingMode1 in queryExecutionResults.Keys)
