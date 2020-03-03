@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -269,7 +270,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Task.FromResult(QueryResponseCore.CreateFailure(
                     statusCode: HttpStatusCode.InternalServerError,
                     subStatusCodes: null,
-                    errorMessage: "Error message",
+                    cosmosException: CosmosExceptionFactory.CreateInternalServerErrorException(
+                        "Error message"),
                     requestCharge: 10.2,
                     activityId: Guid.NewGuid().ToString(),
                     diagnostics: pageDiagnostics)));
