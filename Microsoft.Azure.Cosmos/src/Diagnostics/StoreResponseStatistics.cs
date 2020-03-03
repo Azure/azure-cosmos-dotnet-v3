@@ -4,10 +4,6 @@
 namespace Microsoft.Azure.Cosmos.Diagnostics
 {
     using System;
-    using System.Collections.Generic;
-    using System.Globalization;
-    using System.IO;
-    using System.Text;
     using Microsoft.Azure.Documents;
 
     internal sealed class StoreResponseStatistics : CosmosDiagnosticsInternal
