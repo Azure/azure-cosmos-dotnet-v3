@@ -6,12 +6,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Query.Core.Collections;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent;
@@ -28,9 +26,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
             CosmosElement requestContinuationToken,
             CancellationToken cancellationToken)
         {
-            Debug.Assert(
-                !initParams.PartitionedQueryExecutionInfo.QueryInfo.HasOrderBy,
-                "Parallel~Context must not have order by query info.");
+            if (queryContext == null)
+            {
+                throw new ArgumentNullException(nameof(queryContext));
+            }
 
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -75,33 +74,32 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
         private async Task<TryCatch<CosmosParallelItemQueryExecutionContext>> TryInitializeAsync(
             SqlQuerySpec sqlQuerySpec,
             string collectionRid,
-            List<PartitionKeyRange> partitionKeyRanges,
+            IReadOnlyList<PartitionKeyRange> partitionKeyRanges,
             int initialPageSize,
             CosmosElement requestContinuation,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            TryCatch<ParallelInitInfo> tryGetInitInfo = TryGetInitializationInfoFromContinuationToken(
+            TryCatch<IReadOnlyDictionary<PartitionKeyRange, CompositeContinuationToken>> tryGetPartitionKeyRangeToCompositeContinuationToken = CosmosParallelItemQueryExecutionContext.TryGetPartitionKeyRangeToCompositeContinuationToken(
                 partitionKeyRanges,
                 requestContinuation);
-            if (!tryGetInitInfo.Succeeded)
+            if (!tryGetPartitionKeyRangeToCompositeContinuationToken.Succeeded)
             {
-                return TryCatch<CosmosParallelItemQueryExecutionContext>.FromException(tryGetInitInfo.Exception);
+                return TryCatch<CosmosParallelItemQueryExecutionContext>.FromException(tryGetPartitionKeyRangeToCompositeContinuationToken.Exception);
             }
 
-            ParallelInitInfo initializationInfo = tryGetInitInfo.Result;
-            IReadOnlyList<PartitionKeyRange> filteredPartitionKeyRanges = initializationInfo.PartialRanges;
-            IReadOnlyDictionary<string, CompositeContinuationToken> targetIndicesForFullContinuation = initializationInfo.ContinuationTokens;
+            IReadOnlyDictionary<PartitionKeyRange, string> partitionKeyRangeToContinuationToken = tryGetPartitionKeyRangeToCompositeContinuationToken
+                .Result
+                .ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Token);
             TryCatch tryInitialize = await base.TryInitializeAsync(
                 collectionRid,
-                filteredPartitionKeyRanges,
                 initialPageSize,
                 sqlQuerySpec,
-                targetIndicesForFullContinuation?.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Token),
-                true,
-                null,
-                null,
+                partitionKeyRangeToContinuationToken,
+                deferFirstPage: true,
+                filter: null,
+                tryFilterAsync: null,
                 cancellationToken);
             if (!tryInitialize.Succeeded)
             {
@@ -111,30 +109,52 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
             return TryCatch<CosmosParallelItemQueryExecutionContext>.FromResult(this);
         }
 
-        /// <summary>
-        /// Given a continuation token and a list of partitionKeyRanges this function will return a list of partition key ranges you should resume with.
-        /// Note that the output list is just a right hand slice of the input list, since we know that for any continuation of a parallel query it is just
-        /// resuming from the partition that the query left off that.
-        /// </summary>
-        /// <param name="partitionKeyRanges">The partition key ranges.</param>
-        /// <param name="continuationToken">The continuation tokens that the user has supplied.</param>
-        /// <returns>The subset of partition to actually target and continuation tokens.</returns>
-        private static TryCatch<ParallelInitInfo> TryGetInitializationInfoFromContinuationToken(
-            List<PartitionKeyRange> partitionKeyRanges,
+        private static TryCatch<IReadOnlyDictionary<PartitionKeyRange, CompositeContinuationToken>> TryGetPartitionKeyRangeToCompositeContinuationToken(
+            IReadOnlyList<PartitionKeyRange> partitionKeyRanges,
             CosmosElement continuationToken)
         {
             if (continuationToken == null)
             {
-                return TryCatch<ParallelInitInfo>.FromResult(
-                    new ParallelInitInfo(
-                        partitionKeyRanges,
-                        null));
+                Dictionary<PartitionKeyRange, CompositeContinuationToken> dictionary = new Dictionary<PartitionKeyRange, CompositeContinuationToken>();
+                foreach (PartitionKeyRange partitionKeyRange in partitionKeyRanges)
+                {
+                    dictionary.Add(key: partitionKeyRange, value: null);
+                }
+
+                return TryCatch<IReadOnlyDictionary<PartitionKeyRange, CompositeContinuationToken>>.FromResult(dictionary);
             }
 
-            if (!(continuationToken is CosmosArray compositeContinuationTokenListRaw))
+            TryCatch<IReadOnlyList<CompositeContinuationToken>> tryParseCompositeContinuationTokens = TryParseCompositeContinuationList(continuationToken);
+            if (!tryParseCompositeContinuationTokens.Succeeded)
             {
-                return TryCatch<ParallelInitInfo>.FromException(
-                    new MalformedContinuationTokenException($"Invalid format for continuation token {continuationToken} for {nameof(CosmosParallelItemQueryExecutionContext)}"));
+                return TryCatch<IReadOnlyDictionary<PartitionKeyRange, CompositeContinuationToken>>.FromException(tryParseCompositeContinuationTokens.Exception);
+            }
+
+            TryCatch<IReadOnlyDictionary<PartitionKeyRange, CompositeContinuationToken>> tryMatchContinuationTokensToRanges = CosmosCrossPartitionQueryExecutionContext.TryMatchRangesToContinuationTokens(
+                partitionKeyRanges,
+                tryParseCompositeContinuationTokens.Result);
+            if (!tryMatchContinuationTokensToRanges.Succeeded)
+            {
+                return TryCatch<IReadOnlyDictionary<PartitionKeyRange, CompositeContinuationToken>>.FromException(
+                    tryMatchContinuationTokensToRanges.Exception);
+            }
+
+            return tryMatchContinuationTokensToRanges;
+        }
+
+        private static TryCatch<IReadOnlyList<CompositeContinuationToken>> TryParseCompositeContinuationList(
+            CosmosElement requestContinuationToken)
+        {
+            if (requestContinuationToken == null)
+            {
+                throw new ArgumentNullException(nameof(requestContinuationToken));
+            }
+
+            if (!(requestContinuationToken is CosmosArray compositeContinuationTokenListRaw))
+            {
+                return TryCatch<IReadOnlyList<CompositeContinuationToken>>.FromException(
+                    new MalformedContinuationTokenException(
+                        $"Invalid format for continuation token {requestContinuationToken} for {nameof(CosmosParallelItemQueryExecutionContext)}"));
             }
 
             List<CompositeContinuationToken> compositeContinuationTokens = new List<CompositeContinuationToken>();
@@ -143,43 +163,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
                 TryCatch<CompositeContinuationToken> tryCreateCompositeContinuationToken = CompositeContinuationToken.TryCreateFromCosmosElement(compositeContinuationTokenRaw);
                 if (!tryCreateCompositeContinuationToken.Succeeded)
                 {
-                    return TryCatch<ParallelInitInfo>.FromException(tryCreateCompositeContinuationToken.Exception);
+                    return TryCatch<IReadOnlyList<CompositeContinuationToken>>.FromException(tryCreateCompositeContinuationToken.Exception);
                 }
 
                 compositeContinuationTokens.Add(tryCreateCompositeContinuationToken.Result);
             }
 
-            return CosmosCrossPartitionQueryExecutionContext.TryFindTargetRangeAndExtractContinuationTokens(
-                partitionKeyRanges,
-                compositeContinuationTokens.Select(token => Tuple.Create(token, token.Range)))
-                .Try<ParallelInitInfo>((indexAndTokens) =>
-                {
-                    int minIndex = indexAndTokens.TargetIndex;
-                    IReadOnlyDictionary<string, CompositeContinuationToken> rangeToToken = indexAndTokens.ContinuationTokens;
-
-                    // We know that all partitions to the left of the continuation token are fully drained so we can filter them out
-                    IReadOnlyList<PartitionKeyRange> filteredRanges = new PartialReadOnlyList<PartitionKeyRange>(
-                    partitionKeyRanges,
-                    minIndex,
-                    partitionKeyRanges.Count - minIndex);
-
-                    return new ParallelInitInfo(
-                        filteredRanges,
-                        rangeToToken);
-                });
-        }
-
-        private readonly struct ParallelInitInfo
-        {
-            public ParallelInitInfo(IReadOnlyList<PartitionKeyRange> partialRanges, IReadOnlyDictionary<string, CompositeContinuationToken> continuationTokens)
-            {
-                this.PartialRanges = partialRanges;
-                this.ContinuationTokens = continuationTokens;
-            }
-
-            public IReadOnlyList<PartitionKeyRange> PartialRanges { get; }
-
-            public IReadOnlyDictionary<string, CompositeContinuationToken> ContinuationTokens { get; }
+            return TryCatch<IReadOnlyList<CompositeContinuationToken>>.FromResult(compositeContinuationTokens);
         }
     }
 }

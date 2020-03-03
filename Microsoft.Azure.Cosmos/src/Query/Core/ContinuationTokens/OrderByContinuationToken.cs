@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -53,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
     ///  {"compositeToken":{"token":"+RID:OpY0AN-mFAACAAAAAAAABA==#RT:1#TRC:1#RTD:qdTAEA==","range":{"min":"05C1D9CD673398","max":"05C1E399CD6732"}},"orderByItems"[{"item":2}],"rid":"OpY0AN-mFAACAAAAAAAABA==","skipCount":0,"filter":"r.key > 1"}
     /// ]]>
     /// </example>
-    internal sealed class OrderByContinuationToken
+    internal sealed class OrderByContinuationToken : IPartitionedToken
     {
         private static class PropertyNames
         {
@@ -205,6 +206,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
         {
             get;
         }
+
+        public Range<string> PartitionRange => this.CompositeContinuationToken.Range;
 
         public static CosmosElement ToCosmosElement(OrderByContinuationToken orderByContinuationToken)
         {

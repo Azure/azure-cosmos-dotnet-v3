@@ -12,16 +12,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using Core.ExecutionComponent;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Diagnostics;
-    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Collections;
     using Microsoft.Azure.Cosmos.Query.Core.ComparableTask;
+    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using Microsoft.Azure.Documents.Routing;
     using PartitionKeyRange = Documents.PartitionKeyRange;
     using RequestChargeTracker = Documents.RequestChargeTracker;
     using RMResources = Documents.RMResources;
@@ -322,25 +323,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             this.comparableTaskScheduler.Stop();
         }
 
-        /// <summary>
-        /// Initializes cross partition query execution context by initializing the necessary document producers.
-        /// </summary>
-        /// <param name="collectionRid">The collection to drain from.</param>
-        /// <param name="partitionKeyRanges">The partitions to target.</param>
-        /// <param name="initialPageSize">The page size to start the document producers off with.</param>
-        /// <param name="querySpecForInit">The query specification for the rewritten query.</param>
-        /// <param name="targetRangeToContinuationMap">Map from partition to it's corresponding continuation token.</param>
-        /// <param name="deferFirstPage">Whether or not we should defer the fetch of the first page from each partition.</param>
-        /// <param name="filter">The filter to inject in the predicate.</param>
-        /// <param name="tryFilterAsync">The callback used to filter each partition.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>A task to await on.</returns>
         protected async Task<TryCatch> TryInitializeAsync(
             string collectionRid,
-            IReadOnlyList<PartitionKeyRange> partitionKeyRanges,
             int initialPageSize,
             SqlQuerySpec querySpecForInit,
-            IReadOnlyDictionary<string, string> targetRangeToContinuationMap,
+            IReadOnlyDictionary<PartitionKeyRange, string> targetRangeToContinuationMap,
             bool deferFirstPage,
             string filter,
             Func<ItemProducerTree, Task<TryCatch>> tryFilterAsync,
@@ -438,7 +425,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
         /// <summary>
         /// <para>
-        /// If a query encounters split up resuming using continuation, we need to regenerate the continuation tokens. 
+        /// If a query encounters split upon resuming using continuation, we need to regenerate the continuation tokens. 
         /// Specifically, since after split we will have new set of ranges, we need to remove continuation token for the 
         /// parent partition and introduce continuation token for the child partitions. 
         /// </para>
@@ -451,90 +438,60 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         /// </para>
         /// </summary>
         /// <param name="partitionKeyRanges">The partition key ranges to extract continuation tokens for.</param>
-        /// <param name="suppliedContinuationTokens">The continuation token that the user supplied.</param>
-        /// <typeparam name="TContinuationToken">The type of continuation token to generate.</typeparam>
+        /// <param name="partitionedContinuationTokens">The continuation token that the user supplied.</param>
+        /// <typeparam name="PartitionedToken">The type of continuation token to generate.</typeparam>
         /// <Remarks>
         /// The code assumes that merge doesn't happen and 
         /// </Remarks>
         /// <returns>The index of the partition whose MinInclusive is equal to the suppliedContinuationTokens along with the continuation tokens.</returns>
-        protected static TryCatch<InitInfo<TContinuationToken>> TryFindTargetRangeAndExtractContinuationTokens<TContinuationToken>(
-            List<PartitionKeyRange> partitionKeyRanges,
-            IEnumerable<Tuple<TContinuationToken, Documents.Routing.Range<string>>> suppliedContinuationTokens)
+        protected static TryCatch<IReadOnlyDictionary<PartitionKeyRange, PartitionedToken>> TryMatchRangesToContinuationTokens<PartitionedToken>(
+            IReadOnlyList<PartitionKeyRange> partitionKeyRanges,
+            IReadOnlyList<PartitionedToken> partitionedContinuationTokens)
+            where PartitionedToken : IPartitionedToken
         {
             if (partitionKeyRanges == null)
             {
                 throw new ArgumentNullException(nameof(partitionKeyRanges));
             }
 
-            if (partitionKeyRanges.Count < 1)
+            if (partitionKeyRanges.Count() < 1)
             {
                 throw new ArgumentException(nameof(partitionKeyRanges));
             }
 
-            foreach (PartitionKeyRange partitionKeyRange in partitionKeyRanges)
+            if (partitionedContinuationTokens == null)
             {
-                if (partitionKeyRange == null)
-                {
-                    throw new ArgumentException(nameof(partitionKeyRanges));
-                }
+                throw new ArgumentNullException(nameof(partitionedContinuationTokens));
             }
 
-            if (suppliedContinuationTokens == null)
+            if (partitionedContinuationTokens.Count() < 1)
             {
-                throw new ArgumentNullException(nameof(suppliedContinuationTokens));
+                throw new ArgumentException(nameof(partitionedContinuationTokens));
             }
 
-            if (suppliedContinuationTokens.Count() < 1)
+            if (partitionedContinuationTokens.Count() > partitionKeyRanges.Count())
             {
-                throw new ArgumentException(nameof(suppliedContinuationTokens));
+                throw new ArgumentException($"{nameof(partitionedContinuationTokens)} can not have more elements than {nameof(partitionKeyRanges)}.");
             }
 
-            if (suppliedContinuationTokens.Count() > partitionKeyRanges.Count)
+            Dictionary<PartitionKeyRange, IPartitionedToken> partitionKeyRangeToToken = new Dictionary<PartitionKeyRange, IPartitionedToken>();
+            foreach (IPartitionedToken partitionedToken in partitionedContinuationTokens)
             {
-                throw new ArgumentException($"{nameof(suppliedContinuationTokens)} can not have more elements than {nameof(partitionKeyRanges)}.");
-            }
-
-            Dictionary<string, TContinuationToken> targetRangeToContinuationTokenMap = new Dictionary<string, TContinuationToken>();
-
-            // Find the minimum index.
-            Tuple<TContinuationToken, Documents.Routing.Range<string>> firstContinuationTokenAndRange = suppliedContinuationTokens
-                .OrderBy((tuple) => tuple.Item2.Min)
-                .First();
-            TContinuationToken firstContinuationToken = firstContinuationTokenAndRange.Item1;
-            PartitionKeyRange firstContinuationRange = new PartitionKeyRange
-            {
-                MinInclusive = firstContinuationTokenAndRange.Item2.Min,
-                MaxExclusive = firstContinuationTokenAndRange.Item2.Max
-            };
-
-            int minIndex = partitionKeyRanges.BinarySearch(
-                firstContinuationRange,
-                Comparer<PartitionKeyRange>.Create((range1, range2) => string.CompareOrdinal(range1.MinInclusive, range2.MinInclusive)));
-            if (minIndex < 0)
-            {
-                return TryCatch<InitInfo<TContinuationToken>>.FromException(
-                    new MalformedContinuationTokenException(
-                        $"{RMResources.InvalidContinuationToken} - Could not find continuation token: {firstContinuationToken}"));
-            }
-
-            foreach (Tuple<TContinuationToken, Documents.Routing.Range<string>> suppledContinuationToken in suppliedContinuationTokens)
-            {
-                // find what ranges make up the supplied continuation token
-                TContinuationToken continuationToken = suppledContinuationToken.Item1;
-                Documents.Routing.Range<string> range = suppledContinuationToken.Item2;
-
-                IEnumerable<PartitionKeyRange> replacementRanges = partitionKeyRanges
+                // Find what ranges make up the supplied continuation token
+                Range<string> range = partitionedToken.PartitionRange;
+                IReadOnlyList<PartitionKeyRange> replacementRanges = partitionKeyRanges
                     .Where((partitionKeyRange) =>
                         string.CompareOrdinal(range.Min, partitionKeyRange.MinInclusive) <= 0 &&
                         string.CompareOrdinal(range.Max, partitionKeyRange.MaxExclusive) >= 0)
-                    .OrderBy((partitionKeyRange) => partitionKeyRange.MinInclusive);
+                    .OrderBy((partitionKeyRange) => partitionKeyRange.MinInclusive)
+                    .ToList();
 
                 // Could not find the child ranges
-                if (replacementRanges.Count() == 0)
+                if (replacementRanges.Count == 0)
                 {
-                    return TryCatch<InitInfo<TContinuationToken>>.FromException(
+                    return TryCatch<IReadOnlyDictionary<PartitionKeyRange, PartitionedToken>>.FromException(
                         new MalformedContinuationTokenException(
-                            $"{RMResources.InvalidContinuationToken} - Could not find continuation token: {continuationToken}"));
+                            $"{RMResources.InvalidContinuationToken} - Could not find continuation token: {partitionedToken}"));
                 }
 
                 // PMax = C2Max > C2Min > C1Max > C1Min = PMin.
@@ -551,21 +508,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     string.CompareOrdinal(child1Max, child1Min) >= 0 &&
                     child1Min == parentMin))
                 {
-                    return TryCatch<InitInfo<TContinuationToken>>.FromException(
+                    return TryCatch<IReadOnlyDictionary<PartitionKeyRange, PartitionedToken>>.FromException(
                         new MalformedContinuationTokenException(
-                            $"{RMResources.InvalidContinuationToken} - PMax = C2Max > C2Min > C1Max > C1Min = PMin: {continuationToken}"));
+                            $"{RMResources.InvalidContinuationToken} - PMax = C2Max > C2Min > C1Max > C1Min = PMin: {partitionedToken}"));
                 }
 
                 foreach (PartitionKeyRange partitionKeyRange in replacementRanges)
                 {
-                    targetRangeToContinuationTokenMap.Add(partitionKeyRange.Id, continuationToken);
+                    partitionKeyRangeToToken[partitionKeyRange] = partitionedToken;
                 }
             }
 
-            return TryCatch<InitInfo<TContinuationToken>>.FromResult(
-                new InitInfo<TContinuationToken>(
-                    minIndex,
-                    targetRangeToContinuationTokenMap));
+            return TryCatch<IReadOnlyDictionary<PartitionKeyRange, PartitionedToken>>.FromResult(
+                (IReadOnlyDictionary<PartitionKeyRange, PartitionedToken>)partitionKeyRangeToToken);
         }
 
         protected virtual long GetAndResetResponseLengthBytes()
@@ -677,7 +632,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         /// I moved it out into it's own type, so that we don't have to keep passing around all the individual parameters in the factory pattern.
         /// This also allows us to check the arguments once instead of in each of the constructors.
         /// </summary>
-        public struct CrossPartitionInitParams
+        public readonly struct CrossPartitionInitParams
         {
             /// <summary>
             /// Initializes a new instance of the InitParams struct.
