@@ -652,6 +652,64 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return resultsFromTryGetContinuationToken;
         }
 
+        private static async Task<List<T>> QueryWithTryGetFeedToken<T>(
+            Container container,
+            string query,
+            QueryRequestOptions queryRequestOptions = null)
+        {
+            if (queryRequestOptions == null)
+            {
+                queryRequestOptions = new QueryRequestOptions();
+            }
+
+            List<T> resultsFromTryGetContinuationToken = new List<T>();
+            FeedToken feedToken = null;
+            bool hasMoreResults = true;
+            do
+            {
+                QueryRequestOptions computeRequestOptions = queryRequestOptions.Clone();
+                computeRequestOptions.ExecutionEnvironment = Cosmos.Query.Core.ExecutionContext.ExecutionEnvironment.Compute;
+
+                FeedIteratorInternal itemQuery = feedToken == null? ((ContainerCore)(container as ContainerInlineCore)).GetItemQueryStreamIterator(
+                   queryText: query,
+                   requestOptions: computeRequestOptions) as FeedIteratorInternal
+                   : ((ContainerCore)(container as ContainerInlineCore)).GetItemQueryStreamIterator(
+                   queryText: query,
+                   requestOptions: computeRequestOptions,
+                   feedToken: feedToken) as FeedIteratorInternal;
+                try
+                {
+                    ResponseMessage cosmosQueryResponse = await itemQuery.ReadNextAsync();
+                    Collection<T> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<T>>(cosmosQueryResponse.Content).Data;
+
+                    if (queryRequestOptions.MaxItemCount.HasValue)
+                    {
+                        Assert.IsTrue(
+                            response.Count <= queryRequestOptions.MaxItemCount.Value,
+                            "Max Item Count is not being honored");
+                    }
+
+                    resultsFromTryGetContinuationToken.AddRange(response);
+                    Assert.IsTrue(
+                        itemQuery.TryGetFeedToken(out feedToken),
+                        "Failed to get state for query");
+                    hasMoreResults = itemQuery.HasMoreResults;
+                }
+                catch (CosmosException cosmosException) when (cosmosException.StatusCode == (HttpStatusCode)429)
+                {
+                    itemQuery = feedToken == null ? ((ContainerCore)(container as ContainerInlineCore)).GetItemQueryStreamIterator(
+                       queryText: query,
+                       requestOptions: computeRequestOptions) as FeedIteratorInternal
+                       : ((ContainerCore)(container as ContainerInlineCore)).GetItemQueryStreamIterator(
+                       queryText: query,
+                       requestOptions: computeRequestOptions,
+                       feedToken: feedToken) as FeedIteratorInternal;
+                }
+            } while (hasMoreResults);
+
+            return resultsFromTryGetContinuationToken;
+        }
+
         private static async Task<List<T>> QueryWithContinuationTokens<T>(
             Container container,
             string query,
@@ -1415,6 +1473,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             await ValidateNonDeterministicQuery(CrossPartitionQueryTests.QueryWithoutContinuationTokens<JToken>, useOrderBy);
                             await ValidateNonDeterministicQuery(CrossPartitionQueryTests.QueryWithContinuationTokens<JToken>, useOrderBy);
                             await ValidateNonDeterministicQuery(CrossPartitionQueryTests.QueryWithTryGetContinuationTokens<JToken>, useOrderBy);
+                            await ValidateNonDeterministicQuery(CrossPartitionQueryTests.QueryWithTryGetFeedToken<JToken>, useOrderBy);
                         }
                     }
                 }
