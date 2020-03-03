@@ -269,11 +269,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 returnResultsInDeterministicOrder: inputParameters.ReturnResultsInDeterministicOrder,
                 testSettings: inputParameters.TestInjections);
 
+            string continuationToken = inputParameters.InitialFeedToken?.GetContinuation()
+                ?? inputParameters.InitialUserContinuationToken;
             return await PipelinedDocumentQueryExecutionContext.TryCreateAsync(
                 inputParameters.ExecutionEnvironment,
                 cosmosQueryContext,
                 initParams,
-                inputParameters.InitialUserContinuationToken,
+                continuationToken,
                 cancellationToken);
         }
 
