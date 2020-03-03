@@ -78,9 +78,6 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = Constants.Properties.Id)]
         public string Id { get; internal set; }
 
-        /// <summary>
-        /// Encryption algorithm that will be used along with this data encryption key to encrypt/decrypt data.
-        /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.EncryptionAlgorithmId, NullValueHandling = NullValueHandling.Ignore)]
         public CosmosEncryptionAlgorithm EncryptionAlgorithmId { get; internal set; }
 

@@ -4,11 +4,15 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
+
     /// <summary>
     /// Abstract base class for all encryption algorithms.
     /// </summary>
     internal abstract class EncryptionAlgorithm
     {
+        internal abstract SymmetricKey Key { get; }
+
         internal abstract string AlgorithmName { get; }
 
         /// <summary>

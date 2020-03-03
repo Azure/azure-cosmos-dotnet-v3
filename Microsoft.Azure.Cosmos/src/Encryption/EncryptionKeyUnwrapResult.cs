@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos
         /// The byte array passed in must not be modified after this call by the <see cref="EncryptionKeyWrapProvider"/>.
         /// </param>
         /// <param name="clientCacheTimeToLive">
-        /// Amount of time after which the raw data encryption key must not be used
+        /// Amount of time after which the raw data encryption key may not be used
         /// without invoking the <see cref="EncryptionKeyWrapProvider.UnwrapKeyAsync"/> again.
         /// </param>
         public EncryptionKeyUnwrapResult(byte[] dataEncryptionKey, TimeSpan clientCacheTimeToLive)
@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos
         public ReadOnlyMemory<byte> DataEncryptionKey => this.DataEncryptionKeyBytes;
 
         /// <summary>
-        /// Amount of time after which the raw data encryption key must not be used
+        /// Amount of time after which the raw data encryption key may not be used
         /// without invoking the <see cref="EncryptionKeyWrapProvider.UnwrapKeyAsync"/> again.
         /// </summary>
         public TimeSpan ClientCacheTimeToLive { get; }

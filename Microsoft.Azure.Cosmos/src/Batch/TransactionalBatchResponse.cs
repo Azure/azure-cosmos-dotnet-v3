@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.IO;
     using System.Net;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Serialization.HybridRow;
     using Microsoft.Azure.Cosmos.Serialization.HybridRow.RecordIO;
@@ -217,7 +218,9 @@ namespace Microsoft.Azure.Cosmos
             ResponseMessage responseMessage,
             ServerBatchRequest serverRequest,
             CosmosSerializerCore serializer,
-            bool shouldPromoteOperationStatus = true)
+            CancellationToken cancellationToken,
+            bool shouldPromoteOperationStatus = true,
+            bool shouldPerformDecryption = false)
         {
             using (responseMessage)
             {
@@ -306,6 +309,28 @@ namespace Microsoft.Azure.Cosmos
                     }
 
                     response.CreateAndPopulateResults(serverRequest.Operations, retryAfterMilliseconds);
+                }
+                else if (shouldPerformDecryption)
+                {
+                    for (int index = 0; index < serverRequest.Operations.Count; index++)
+                    {
+                        ContainerCore containerCore = serverRequest.Operations[index].ContainerCore;
+                        if (containerCore.ClientContext.ClientOptions.EncryptionKeyWrapProvider == null)
+                        {
+                            break;
+                        }
+
+                        TransactionalBatchOperationResult result = response.results[index];
+                        if (result.ResourceStream != null)
+                        {
+                            (result.ResourceStream, _) = await containerCore.ClientContext.EncryptionProcessor.DecryptAsync(
+                                result.ResourceStream,
+                                (DatabaseCore)containerCore.Database,
+                                containerCore.ClientContext.ClientOptions.EncryptionKeyWrapProvider,
+                                responseMessage.DiagnosticsContext,
+                                cancellationToken);
+                        }
+                    }
                 }
 
                 return response;

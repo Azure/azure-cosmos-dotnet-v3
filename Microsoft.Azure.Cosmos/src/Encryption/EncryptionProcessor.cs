@@ -20,24 +20,25 @@ namespace Microsoft.Azure.Cosmos
     internal class EncryptionProcessor
     {
         // todo: get this from usual HttpHeaders constants once new .Direct package is published
-        internal const string ClientEncryptedHeader = "x-ms-cosmos-client-encrypted";
+        internal const string ClientEncryptionKeyHeader = "x-ms-cosmos-client-encryption-key";
         internal const string ClientDecryptedHeader = "x-ms-cosmos-client-decrypted";
 
         private static readonly CosmosSerializer baseSerializer = new CosmosJsonSerializerWrapper(new CosmosJsonDotNetSerializer());
 
-        public async Task<Stream> EncryptAsync(
+        public async Task<(Stream, string)> EncryptAsync(
             Stream input,
             EncryptionOptions encryptionOptions,
             DatabaseCore database,
             EncryptionKeyWrapProvider encryptionKeyWrapProvider,
             CosmosDiagnosticsContext diagnosticsContext,
-            CancellationToken cancellationToken,
-            List<string> encryptedPaths)
+            CancellationToken cancellationToken)
         {
             Debug.Assert(input != null);
             Debug.Assert(encryptionOptions != null);
             Debug.Assert(database != null);
             Debug.Assert(diagnosticsContext != null);
+
+            string dataEncryptionKeyRid = null;
 
             if (encryptionOptions.PathsToEncrypt == null)
             {
@@ -46,7 +47,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (encryptionOptions.PathsToEncrypt.Count == 0)
             {
-                return input;
+                return (input, dataEncryptionKeyRid);
             }
 
             if (encryptionOptions.DataEncryptionKey == null)
@@ -90,22 +91,29 @@ namespace Microsoft.Azure.Cosmos
 
             if (EncryptionProcessor.SplitItemJObject(itemJObj, toEncryptJObj, pathsToEncrypt))
             {
-                MemoryStream memoryStream = EncryptionProcessor.baseSerializer.ToStream<JObject>(toEncryptJObj) as MemoryStream;
+                Stream stream = EncryptionProcessor.baseSerializer.ToStream<JObject>(toEncryptJObj);
+                Debug.Assert(stream != null);
+
+                MemoryStream memoryStream = stream as MemoryStream;
                 Debug.Assert(memoryStream != null);
 
-                bool bufferRetrieved = memoryStream.TryGetBuffer(out ArraySegment<byte> plainTextArraySegment);
-                Debug.Assert(bufferRetrieved);
+                if (memoryStream == null)
+                {
+                    memoryStream = new MemoryStream();
+                    stream.CopyTo(memoryStream);
+                }
 
-                byte[] plainText = plainTextArraySegment.ToArray();
+                byte[] plainText = memoryStream.ToArray();
                 EncryptionProperties encryptionProperties = new EncryptionProperties(
                     dataEncryptionKeyRid: dekProperties.ResourceId,
                     encryptionFormatVersion: 1,
                     encryptedData: inMemoryRawDek.AlgorithmUsingRawDek.EncryptData(plainText));
 
                 itemJObj.Add(Constants.Properties.EncryptedInfo, JObject.FromObject(encryptionProperties));
+                dataEncryptionKeyRid = dekProperties.ResourceId;
             }
 
-            return EncryptionProcessor.baseSerializer.ToStream(itemJObj);
+            return (EncryptionProcessor.baseSerializer.ToStream(itemJObj), dataEncryptionKeyRid);
         }
 
         private static bool SplitItemJObject(JObject itemJObj, JObject toEncryptJObj, List<string> pathsToEncrypt)
@@ -171,25 +179,26 @@ namespace Microsoft.Azure.Cosmos
             return isAnyPathFound;
         }
 
-        public async Task<Stream> DecryptAsync(
+        public async Task<(Stream, bool)> DecryptAsync(
             Stream input,
             DatabaseCore database,
             EncryptionKeyWrapProvider encryptionKeyWrapProvider,
             CosmosDiagnosticsContext diagnosticsContext,
-            CancellationToken cancellationToken,
-            List<string> decryptedPaths)
+            CancellationToken cancellationToken)
         {
             Debug.Assert(input != null);
             Debug.Assert(database != null);
             Debug.Assert(input.CanSeek);
             Debug.Assert(diagnosticsContext != null);
 
+            bool wasDecryptionPerformed = false;
+
             if (encryptionKeyWrapProvider == null)
             {
-                return input;
+                return (input, wasDecryptionPerformed);
             }
 
-            JObject itemJObj = null;
+            JObject itemJObj;
             using (StreamReader sr = new StreamReader(input, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true))
             {
                 using (JsonTextReader jsonTextReader = new JsonTextReader(sr))
@@ -208,7 +217,7 @@ namespace Microsoft.Azure.Cosmos
             if (encryptionPropertiesJObj == null)
             {
                 input.Position = 0;
-                return input;
+                return (input, wasDecryptionPerformed);
             }
 
             EncryptionProperties encryptionProperties = encryptionPropertiesJObj.ToObject<EncryptionProperties>();
@@ -235,7 +244,10 @@ namespace Microsoft.Azure.Cosmos
 
             itemJObj.Merge(plainTextJObj);
             itemJObj.Remove(Constants.Properties.EncryptedInfo);
-            return EncryptionProcessor.baseSerializer.ToStream(itemJObj);
+            wasDecryptionPerformed = true;
+            input.Dispose();
+
+            return (EncryptionProcessor.baseSerializer.ToStream(itemJObj), wasDecryptionPerformed);
         }
     }
 }

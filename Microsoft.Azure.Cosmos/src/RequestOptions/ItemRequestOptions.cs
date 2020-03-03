@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos
 #endif
         EncryptionOptions EncryptionOptions { get; set; }
 
-        internal bool IsItemEncrypted { get; set; }
+        internal string DataEncryptionKeyRid { get; set; }
 
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
@@ -132,9 +132,9 @@ namespace Microsoft.Azure.Cosmos
                     IndexingDirectiveStrings.FromIndexingDirective(this.IndexingDirective.Value));
             }
 
-            if (this.IsItemEncrypted)
+            if (this.DataEncryptionKeyRid != null)
             {
-                request.Headers.Add(EncryptionProcessor.ClientEncryptedHeader, bool.TrueString);
+                request.Headers.Add(EncryptionProcessor.ClientEncryptionKeyHeader, this.DataEncryptionKeyRid);
             }
 
             RequestOptions.SetSessionToken(request, this.SessionToken);

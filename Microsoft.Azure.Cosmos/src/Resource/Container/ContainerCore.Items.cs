@@ -615,19 +615,18 @@ namespace Microsoft.Azure.Cosmos
 
                     using (diagnosticsContext.CreateScope("Encrypt"))
                     {
-                        List<string> encryptedPaths = new List<string>();
-                        streamPayload = await this.ClientContext.EncryptionProcessor.EncryptAsync(
+                        string dekRid;
+                        (streamPayload, dekRid) = await this.ClientContext.EncryptionProcessor.EncryptAsync(
                             streamPayload,
                             requestOptions.EncryptionOptions,
                             (DatabaseCore)this.Database,
                             this.ClientContext.ClientOptions.EncryptionKeyWrapProvider,
                             diagnosticsContext,
-                            cancellationToken,
-                            encryptedPaths);
+                            cancellationToken);
 
-                        if (encryptedPaths.Any())
+                        if (dekRid != null)
                         {
-                            requestOptions.IsItemEncrypted = true;
+                            requestOptions.DataEncryptionKeyRid = dekRid;
                         }
                     }
                 }
@@ -649,16 +648,15 @@ namespace Microsoft.Azure.Cosmos
                 {
                     using (diagnosticsContext.CreateScope("Decrypt"))
                     {
-                        List<string> decryptedPaths = new List<string>();
-                        responseMessage.Content = await this.ClientContext.EncryptionProcessor.DecryptAsync(
+                        bool wasDecryptionPerformed;
+                        (responseMessage.Content, wasDecryptionPerformed) = await this.ClientContext.EncryptionProcessor.DecryptAsync(
                             responseMessage.Content,
                             (DatabaseCore)this.Database,
                             this.ClientContext.ClientOptions.EncryptionKeyWrapProvider,
                             diagnosticsContext,
-                            cancellationToken,
-                            decryptedPaths);
+                            cancellationToken);
 
-                        if (decryptedPaths.Any())
+                        if (wasDecryptionPerformed)
                         {
                             responseMessage.Headers.Add(EncryptionProcessor.ClientDecryptedHeader, bool.TrueString);
                         }

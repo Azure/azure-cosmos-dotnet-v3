@@ -36,7 +36,6 @@ namespace Microsoft.Azure.Cosmos
 
         private EncryptionTestHandler testHandler;
         private Mock<EncryptionKeyWrapProvider> mockKeyWrapProvider;
-        private Mock<EncryptionAlgorithm> mockEncryptionAlgorithm;
         private Mock<DatabaseCore> mockDatabaseCore;
 
         [TestMethod]
@@ -258,6 +257,16 @@ namespace Microsoft.Azure.Cosmos
             DataEncryptionKeyResponse dekResponse = await database.CreateDataEncryptionKeyAsync(dekId, EncryptionUnitTests.Algo, this.metadata1);
             Assert.AreEqual(HttpStatusCode.Created, dekResponse.StatusCode);
 
+            // Null path to encrypt
+            try
+            {
+                await EncryptionUnitTests.CreateItemAsync(container, dekId, pathsToEncrypt: null);
+                Assert.Fail("Expected encryption with null pathsToEncrypt to fail");
+            }
+            catch (ArgumentException ex)
+            {
+                Assert.AreEqual(nameof(EncryptionOptions.PathsToEncrypt), ex.ParamName);
+            }
 
             // Invalid path to encrypt
             try
@@ -454,13 +463,6 @@ namespace Microsoft.Azure.Cosmos
                 .AddCustomHandlers(this.testHandler)
                 .WithEncryptionKeyWrapProvider(this.mockKeyWrapProvider.Object));
 
-            this.mockEncryptionAlgorithm = new Mock<EncryptionAlgorithm>();
-            this.mockEncryptionAlgorithm.Setup(m => m.EncryptData(It.IsAny<byte[]>()))
-                .Returns((byte[] plainText) => plainText.Reverse().ToArray());
-            this.mockEncryptionAlgorithm.Setup(m => m.DecryptData(It.IsAny<byte[]>()))
-                .Returns((byte[] cipherText) => cipherText.Reverse().ToArray());
-            this.mockEncryptionAlgorithm.SetupGet(m => m.AlgorithmName).Returns(AeadAes256CbcHmac256Algorithm.AlgorithmNameConstant);
-
             this.mockDatabaseCore = new Mock<DatabaseCore>(client.ClientContext, EncryptionUnitTests.DatabaseId);
             this.mockDatabaseCore.CallBase = true;
             this.mockDatabaseCore.Setup(m => m.GetDataEncryptionKey(It.IsAny<string>()))
@@ -470,7 +472,17 @@ namespace Microsoft.Azure.Cosmos
                  mockDekCore.CallBase = true;
                  mockDekCore.Setup(m => m.GenerateKey(EncryptionUnitTests.Algo)).Returns(this.dek);
                  mockDekCore.Setup(m => m.GetEncryptionAlgorithm(It.IsAny<byte[]>(), EncryptionUnitTests.Algo))
-                    .Returns(this.mockEncryptionAlgorithm.Object);
+                    .Returns((byte[] rawDek, CosmosEncryptionAlgorithm algoId) =>
+                    {
+                        Mock<EncryptionAlgorithm> mockEncryptionAlgorithm = new Mock<EncryptionAlgorithm>();
+                        mockEncryptionAlgorithm.Setup(m => m.EncryptData(It.IsAny<byte[]>()))
+                            .Returns((byte[] plainText) => plainText.Reverse().ToArray());
+                        mockEncryptionAlgorithm.Setup(m => m.DecryptData(It.IsAny<byte[]>()))
+                            .Returns((byte[] cipherText) => cipherText.Reverse().ToArray());
+                        mockEncryptionAlgorithm.SetupGet(m => m.AlgorithmName).Returns(AeadAes256CbcHmac256Algorithm.AlgorithmNameConstant);
+                        mockEncryptionAlgorithm.SetupGet(m => m.Key).Returns(new SymmetricKey(rawDek));
+                        return mockEncryptionAlgorithm.Object;
+                    });
                  return new DataEncryptionKeyInlineCore(mockDekCore.Object);
              });
 

@@ -17,14 +17,18 @@ namespace Microsoft.Azure.Cosmos
     /// This (and AeadAes256CbcHmac256EncryptionKey) implementation for Cosmos DB is same as the existing
     /// SQL client implementation with StyleCop related changes - also, we restrict to randomized encryption to start with.
     /// </summary>
-    internal class AeadAes256CbcHmac256Algorithm : EncryptionAlgorithm
+    internal class AeadAes256CbcHmac256Algorithm : EncryptionAlgorithm, IDisposable
     {
+        private bool isDisposed = false;
+
         internal const string AlgorithmNameConstant = @"AEAD_AES_256_CBC_HMAC_SHA256";
 
         /// <summary>
         /// Algorithm Name
         /// </summary>
         internal override string AlgorithmName { get; } = AlgorithmNameConstant;
+
+        internal override SymmetricKey Key => this.dataEncryptionKey;
 
         /// <summary>
         /// Key size in bytes
@@ -420,6 +424,31 @@ namespace Microsoft.Azure.Cosmos
             Debug.Assert(computedHash.Length >= authenticationTag.Length);
             Buffer.BlockCopy(computedHash, 0, authenticationTag, 0, authenticationTag.Length);
             return authenticationTag;
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!this.isDisposed)
+            {
+                if (disposing)
+                {
+                    while (this.cryptoProviderPool.TryDequeue(out AesCryptoServiceProvider aesCryptoServiceProvider))
+                    {
+                        // This 0's out Key and IV held by the AesCryptoServiceProvider instance
+                        aesCryptoServiceProvider.Dispose();
+                    }
+
+                    this.dataEncryptionKey.Dispose();
+                }
+
+                this.isDisposed = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+            this.Dispose(true);
         }
     }
 }
