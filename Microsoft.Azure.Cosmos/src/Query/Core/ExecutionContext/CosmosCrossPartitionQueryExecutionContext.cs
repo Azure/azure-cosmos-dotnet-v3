@@ -274,15 +274,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             }
             else
             {
-                // Just return all item producers that have a continuation token
-                foreach (ItemProducerTree itemProducerTree in this.itemProducerForest)
+                foreach (ItemProducer itemProducer in this.GetAllItemProducers())
                 {
-                    foreach (ItemProducerTree leaf in itemProducerTree)
+                    yield return itemProducer;
+                }
+            }
+        }
+
+        public IEnumerable<ItemProducer> GetAllItemProducers()
+        {
+            foreach (ItemProducerTree itemProducerTree in this.itemProducerForest)
+            {
+                foreach (ItemProducerTree leaf in itemProducerTree)
+                {
+                    if (leaf.HasMoreResults)
                     {
-                        if (leaf.HasMoreResults)
-                        {
-                            yield return leaf.Root;
-                        }
+                        yield return leaf.Root;
                     }
                 }
             }
