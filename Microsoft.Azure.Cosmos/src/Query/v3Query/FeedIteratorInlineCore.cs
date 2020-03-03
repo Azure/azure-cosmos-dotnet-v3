@@ -51,6 +51,11 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.feedIteratorInternal.TryGetContinuationToken(out continuationToken);
         }
+
+        public override bool TryGetFeedToken(out FeedToken feedToken)
+        {
+            return this.feedIteratorInternal.TryGetFeedToken(out feedToken);
+        }
     }
 
     internal class FeedIteratorInlineCore<T> : FeedIteratorInternal<T>

@@ -102,6 +102,12 @@ namespace Microsoft.Azure.Cosmos
             return true;
         }
 
+        public override bool TryGetFeedToken(out FeedToken feedToken)
+        {
+            feedToken = this.FeedToken;
+            return true;
+        }
+
         internal async Task<Tuple<string, ResponseMessage>> ReadNextInternalAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();

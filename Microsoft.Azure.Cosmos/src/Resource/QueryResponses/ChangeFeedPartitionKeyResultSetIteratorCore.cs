@@ -92,6 +92,12 @@ namespace Microsoft.Azure.Cosmos
             return true;
         }
 
+        public override bool TryGetFeedToken(out FeedToken feedToken)
+        {
+            feedToken = this.feedToken;
+            return true;
+        }
+
         private Task<ResponseMessage> NextResultSetDelegateAsync(
             string continuationToken,
             string partitionKeyRangeId,

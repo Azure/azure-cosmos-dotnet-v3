@@ -213,6 +213,12 @@ namespace Microsoft.Azure.Cosmos
             return true;
         }
 
+        public override bool TryGetFeedToken(out FeedToken feedToken)
+        {
+            feedToken = this.feedTokenInternal;
+            return true;
+        }
+
         private async Task<TryCatch<string>> TryInitializeContainerRIdAsync(CancellationToken cancellationToken)
         {
             string containerRId = string.Empty;

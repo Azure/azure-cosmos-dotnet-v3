@@ -106,6 +106,12 @@ namespace Microsoft.Azure.Cosmos
             return true;
         }
 
+        public override bool TryGetFeedToken(out FeedToken feedToken)
+        {
+            feedToken = this.feedTokenInternal;
+            return true;
+        }
+
         private async Task<ResponseMessage> ReadNextInternalAsync(
             CosmosDiagnosticsContext diagnosticsScope,
             CancellationToken cancellationToken = default(CancellationToken))

@@ -111,10 +111,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 QueryResponseCore responseCore = await this.cosmosQueryExecutionContext.ExecuteNextAsync(cancellationToken);
                 CosmosQueryContext cosmosQueryContext = this.cosmosQueryContext;
 
-                HashSet<string> visitedPartitionKeyRangeIds = new HashSet<string>();
                 foreach (QueryPageDiagnostics queryPage in responseCore.Diagnostics)
                 {
-                    visitedPartitionKeyRangeIds.Add(queryPage.PartitionKeyRangeId);
                     diagnostics.AddDiagnosticsInternal(queryPage);
                 }
 
@@ -164,6 +162,11 @@ namespace Microsoft.Azure.Cosmos.Query
         public override bool TryGetContinuationToken(out string continuationToken)
         {
             return this.cosmosQueryExecutionContext.TryGetContinuationToken(out continuationToken);
+        }
+
+        public override bool TryGetFeedToken(out FeedToken feedToken)
+        {
+            return this.cosmosQueryExecutionContext.TryGetFeedToken(out feedToken);
         }
     }
 #if INTERNAL
