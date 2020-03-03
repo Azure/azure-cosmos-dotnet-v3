@@ -670,10 +670,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 QueryRequestOptions computeRequestOptions = queryRequestOptions.Clone();
                 computeRequestOptions.ExecutionEnvironment = Cosmos.Query.Core.ExecutionContext.ExecutionEnvironment.Compute;
 
-                FeedIteratorInternal itemQuery = feedToken == null? ((ContainerCore)(container as ContainerInlineCore)).GetItemQueryStreamIterator(
+                FeedIteratorInternal itemQuery = feedToken == null? ((ContainerCore)container).GetItemQueryStreamIterator(
                    queryText: query,
                    requestOptions: computeRequestOptions) as FeedIteratorInternal
-                   : ((ContainerCore)(container as ContainerInlineCore)).GetItemQueryStreamIterator(
+                   : ((ContainerCore)container).GetItemQueryStreamIterator(
                    queryText: query,
                    requestOptions: computeRequestOptions,
                    feedToken: feedToken) as FeedIteratorInternal;
@@ -697,10 +697,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
                 catch (CosmosException cosmosException) when (cosmosException.StatusCode == (HttpStatusCode)429)
                 {
-                    itemQuery = feedToken == null ? ((ContainerCore)(container as ContainerInlineCore)).GetItemQueryStreamIterator(
+                    itemQuery = feedToken == null ? ((ContainerCore)container).GetItemQueryStreamIterator(
                        queryText: query,
                        requestOptions: computeRequestOptions) as FeedIteratorInternal
-                       : ((ContainerCore)(container as ContainerInlineCore)).GetItemQueryStreamIterator(
+                       : ((ContainerCore)container).GetItemQueryStreamIterator(
                        queryText: query,
                        requestOptions: computeRequestOptions,
                        feedToken: feedToken) as FeedIteratorInternal;
