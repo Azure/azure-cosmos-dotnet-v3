@@ -80,5 +80,12 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         public abstract Task<FeedResponse<T>> ReadNextAsync(CancellationToken cancellationToken = default);
+
+#if PREVIEW
+        /// <summary>
+        /// Current FeedToken for the iterator.
+        /// </summary>
+        public abstract FeedToken FeedToken { get; }
+#endif
     }
 }
