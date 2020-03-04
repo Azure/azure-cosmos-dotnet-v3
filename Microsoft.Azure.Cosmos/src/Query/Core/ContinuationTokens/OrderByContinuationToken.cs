@@ -207,6 +207,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
             get;
         }
 
+        [JsonIgnore]
         public Range<string> PartitionRange => this.CompositeContinuationToken.Range;
 
         public static CosmosElement ToCosmosElement(OrderByContinuationToken orderByContinuationToken)

@@ -354,11 +354,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 throw new ArgumentNullException(nameof(targetRangeToContinuationMap));
             }
 
-            if (tryFilterAsync == null)
-            {
-                throw new ArgumentNullException(nameof(tryFilterAsync));
-            }
-
             cancellationToken.ThrowIfCancellationRequested();
 
             List<ItemProducerTree> itemProducerTrees = new List<ItemProducerTree>();
@@ -547,7 +542,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 throw new ArgumentNullException(nameof(partitionedContinuationTokens));
             }
 
-            Dictionary<PartitionKeyRange, IPartitionedToken> partitionKeyRangeToToken = new Dictionary<PartitionKeyRange, IPartitionedToken>();
+            Dictionary<PartitionKeyRange, PartitionedToken> partitionKeyRangeToToken = new Dictionary<PartitionKeyRange, PartitionedToken>();
             ReadOnlySpan<PartitionKeyRange> partitionKeyRangeSpan = partitionKeyRanges.Span;
             for (int i = 0; i < partitionKeyRangeSpan.Length; i++)
             {
@@ -562,9 +557,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                         break;
                     }
                 }
+
+                if (!partitionKeyRangeToToken.ContainsKey(partitionKeyRange))
+                {
+                    // Could not find a matching token so just set it to null
+                    partitionKeyRangeToToken[partitionKeyRange] = default;
+                }
             }
 
-            return (IReadOnlyDictionary<PartitionKeyRange, PartitionedToken>)partitionKeyRangeToToken;
+            return partitionKeyRangeToToken;
         }
 
         protected virtual long GetAndResetResponseLengthBytes()

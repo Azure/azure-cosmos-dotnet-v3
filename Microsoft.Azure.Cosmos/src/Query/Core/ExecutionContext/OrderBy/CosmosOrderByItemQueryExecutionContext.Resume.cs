@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
@@ -105,6 +106,29 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
 
             cancellationToken.ThrowIfCancellationRequested();
 
+            if (requestContinuation == null)
+            {
+                // Start off all the partition key ranges with null continuation
+                SqlQuerySpec rewrittenQueryForOrderBy = new SqlQuerySpec(
+                    sqlQuerySpec.QueryText.Replace(oldValue: FormatPlaceHolder, newValue: True),
+                    sqlQuerySpec.Parameters);
+                Dictionary<PartitionKeyRange, string> partitionKeyRangeToContinuationToken = new Dictionary<PartitionKeyRange, string>();
+                foreach (PartitionKeyRange partitionKeyRange in partitionKeyRanges)
+                {
+                    partitionKeyRangeToContinuationToken.Add(key: partitionKeyRange, value: null);
+                }
+
+                return await base.TryInitializeAsync(
+                    collectionRid,
+                    initialPageSize,
+                    rewrittenQueryForOrderBy,
+                    partitionKeyRangeToContinuationToken,
+                    deferFirstPage: false,
+                    filter: null,
+                    tryFilterAsync: null,
+                    cancellationToken);
+            }
+
             TryCatch<PartitionMapping<OrderByContinuationToken>> tryGetOrderByContinuationTokenMapping = TryGetOrderByContinuationTokenMapping(
                 partitionKeyRanges,
                 requestContinuation,
@@ -113,10 +137,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
             {
                 return TryCatch.FromException(tryGetOrderByContinuationTokenMapping.Exception);
             }
-
-            SqlQuerySpec rewrittenQueryForOrderBy = new SqlQuerySpec(
-                sqlQuerySpec.QueryText.Replace(oldValue: FormatPlaceHolder, newValue: True),
-                sqlQuerySpec.Parameters);
 
             IReadOnlyList<CosmosElement> orderByItems = tryGetOrderByContinuationTokenMapping
                 .Result
@@ -148,6 +168,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
             IReadOnlyList<SortOrder> sortOrders = orderByColumns.Select(column => column.SortOrder).ToList();
             foreach ((IReadOnlyDictionary<PartitionKeyRange, OrderByContinuationToken> tokenMapping, string filter) in tokenMappingAndFilters)
             {
+                SqlQuerySpec rewrittenQueryForOrderBy = new SqlQuerySpec(
+                    sqlQuerySpec.QueryText.Replace(oldValue: FormatPlaceHolder, newValue: filter),
+                    sqlQuerySpec.Parameters);
+
                 TryCatch tryInitialize = await base.TryInitializeAsync(
                     collectionRid,
                     initialPageSize,
@@ -162,6 +186,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
                             out OrderByContinuationToken continuationToken))
                         {
                             throw new InvalidOperationException($"Failed to retrieve {nameof(OrderByContinuationToken)}.");
+                        }
+
+                        if (continuationToken == null)
+                        {
+                            return TryCatch.FromResult();
                         }
 
                         return await this.TryFilterAsync(
@@ -197,18 +226,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
 
             if (continuationToken == null)
             {
-                // Create a mapping for all the ranges being right of the target partition (since they are let to be consumed).
-                Dictionary<PartitionKeyRange, OrderByContinuationToken> dictionary = new Dictionary<PartitionKeyRange, OrderByContinuationToken>();
-                foreach (PartitionKeyRange partitionKeyRange in partitionKeyRanges)
-                {
-                    dictionary.Add(key: partitionKeyRange, value: null);
-                }
-
-                return TryCatch<PartitionMapping<OrderByContinuationToken>>.FromResult(
-                    new PartitionMapping<OrderByContinuationToken>(
-                        partitionsLeftOfTarget: new Dictionary<PartitionKeyRange, OrderByContinuationToken>(),
-                        targetPartition: new Dictionary<PartitionKeyRange, OrderByContinuationToken>(),
-                        partitionsRightOfTarget: dictionary));
+                throw new ArgumentNullException(nameof(continuationToken));
             }
 
             TryCatch<IReadOnlyList<OrderByContinuationToken>> tryExtractContinuationTokens = TryExtractContinuationTokens(continuationToken, numOrderByItems);

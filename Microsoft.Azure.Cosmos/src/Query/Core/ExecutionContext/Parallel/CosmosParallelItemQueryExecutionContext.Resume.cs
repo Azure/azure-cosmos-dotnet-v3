@@ -124,7 +124,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
         {
             if (continuationToken == null)
             {
-                // Create a mapping for all the ranges being right of the target partition (since they are let to be consumed).
                 Dictionary<PartitionKeyRange, CompositeContinuationToken> dictionary = new Dictionary<PartitionKeyRange, CompositeContinuationToken>();
                 foreach (PartitionKeyRange partitionKeyRange in partitionKeyRanges)
                 {
@@ -134,8 +133,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
                 return TryCatch<PartitionMapping<CompositeContinuationToken>>.FromResult(
                     new PartitionMapping<CompositeContinuationToken>(
                         partitionsLeftOfTarget: new Dictionary<PartitionKeyRange, CompositeContinuationToken>(),
-                        targetPartition: new Dictionary<PartitionKeyRange, CompositeContinuationToken>(),
-                        partitionsRightOfTarget: dictionary));
+                        targetPartition: dictionary,
+                        partitionsRightOfTarget: new Dictionary<PartitionKeyRange, CompositeContinuationToken>()));
             }
 
             TryCatch<IReadOnlyList<CompositeContinuationToken>> tryParseCompositeContinuationTokens = TryParseCompositeContinuationList(continuationToken);

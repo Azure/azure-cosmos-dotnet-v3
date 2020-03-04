@@ -42,6 +42,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
             set;
         }
 
+        [JsonIgnore]
         public Range<string> PartitionRange => this.Range;
 
         public object ShallowCopy()
