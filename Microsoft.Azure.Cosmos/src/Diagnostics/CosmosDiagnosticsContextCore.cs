@@ -4,7 +4,6 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Collections;
     using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Diagnostics;
 
@@ -23,7 +22,7 @@ namespace Microsoft.Azure.Cosmos
 
         private static readonly string DefaultUserAgentString;
 
-        private bool IsDefaultUserAgent = true;
+        private readonly bool IsDefaultUserAgent = true;
 
         private bool isOverallScopeSet = false;
 
@@ -94,7 +93,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.AddRequestCount((int)storeResponseStatistics.StoreResult.StatusCode);
             }
-            
+
             this.ContextList.Add(storeResponseStatistics);
         }
 
