@@ -1,5 +1,10 @@
-﻿namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
+﻿// ------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+// ------------------------------------------------------------
+
+namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
 {
+    using System;
     using System.Collections.Generic;
     using System.Linq;
     using Microsoft.Azure.Cosmos.CosmosElements;

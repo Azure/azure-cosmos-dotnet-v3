@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.Collections;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent;
@@ -53,14 +52,24 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
                 consumeComparer: orderByItemProducerTreeComparer,
                 testSettings: initParams.TestSettings);
 
+            IReadOnlyList<string> orderByExpressions = initParams.PartitionedQueryExecutionInfo.QueryInfo.OrderByExpressions;
+            IReadOnlyList<SortOrder> sortOrders = initParams.PartitionedQueryExecutionInfo.QueryInfo.OrderBy;
+            if (orderByExpressions.Count() != sortOrders.Count())
+            {
+                throw new ArgumentException("order by expressions count does not match sort order");
+            }
+
+            IReadOnlyList<OrderByColumn> columns = orderByExpressions
+                .Zip(sortOrders, (expression, order) => new OrderByColumn(expression, order))
+                .ToList();
+
             return (await context.TryInitializeAsync(
                 sqlQuerySpec: initParams.SqlQuerySpec,
                 requestContinuation: requestContinuationToken,
                 collectionRid: initParams.CollectionRid,
                 partitionKeyRanges: initParams.PartitionKeyRanges,
                 initialPageSize: initParams.InitialPageSize,
-                sortOrders: initParams.PartitionedQueryExecutionInfo.QueryInfo.OrderBy.ToArray(),
-                orderByExpressions: initParams.PartitionedQueryExecutionInfo.QueryInfo.OrderByExpressions.ToArray(),
+                orderByColumns: columns,
                 cancellationToken: cancellationToken))
                 .Try<IDocumentQueryExecutionComponent>(() => context);
         }
@@ -69,10 +78,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
             SqlQuerySpec sqlQuerySpec,
             CosmosElement requestContinuation,
             string collectionRid,
-            List<PartitionKeyRange> partitionKeyRanges,
+            IReadOnlyList<PartitionKeyRange> partitionKeyRanges,
             int initialPageSize,
-            SortOrder[] sortOrders,
-            string[] orderByExpressions,
+            IReadOnlyList<OrderByColumn> orderByColumns,
             CancellationToken cancellationToken)
         {
             if (sqlQuerySpec == null)
@@ -90,150 +98,149 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
                 throw new ArgumentNullException(nameof(partitionKeyRanges));
             }
 
-            if (sortOrders == null)
+            if (orderByColumns == null)
             {
-                throw new ArgumentNullException(nameof(sortOrders));
-            }
-
-            if (orderByExpressions == null)
-            {
-                throw new ArgumentNullException(nameof(orderByExpressions));
+                throw new ArgumentNullException(nameof(orderByColumns));
             }
 
             cancellationToken.ThrowIfCancellationRequested();
 
-            if (requestContinuation == null)
+            TryCatch<PartitionMapping<OrderByContinuationToken>> tryGetOrderByContinuationTokenMapping = TryGetOrderByContinuationTokenMapping(
+                partitionKeyRanges,
+                requestContinuation,
+                orderByColumns.Count());
+            if (!tryGetOrderByContinuationTokenMapping.Succeeded)
             {
-                SqlQuerySpec sqlQuerySpecForInit = new SqlQuerySpec(
-                    sqlQuerySpec.QueryText.Replace(oldValue: FormatPlaceHolder, newValue: True),
-                    sqlQuerySpec.Parameters);
+                return TryCatch.FromException(tryGetOrderByContinuationTokenMapping.Exception);
+            }
 
+            SqlQuerySpec rewrittenQueryForOrderBy = new SqlQuerySpec(
+                sqlQuerySpec.QueryText.Replace(oldValue: FormatPlaceHolder, newValue: True),
+                sqlQuerySpec.Parameters);
+
+            IReadOnlyList<CosmosElement> orderByItems = tryGetOrderByContinuationTokenMapping
+                .Result
+                .TargetPartition
+                .Values
+                .First()
+                .OrderByItems
+                .Select(x => x.Item)
+                .ToList();
+            if (orderByItems.Count() != orderByColumns.Count())
+            {
+                return TryCatch.FromException(
+                    new MalformedContinuationTokenException("Order By Items from continuation token did not match the query text."));
+            }
+
+            ReadOnlyMemory<(OrderByColumn, CosmosElement)> columnAndItems = orderByColumns.Zip(orderByItems, (column, item) => (column, item)).ToArray();
+
+            // For ascending order-by, left of target partition has filter expression > value,
+            // right of target partition has filter expression >= value, 
+            // and target partition takes the previous filter from continuation (or true if no continuation)
+            (string leftFilter, string targetFilter, string rightFilter) = CosmosOrderByItemQueryExecutionContext.GetFormattedFilters(columnAndItems);
+            List<(IReadOnlyDictionary<PartitionKeyRange, OrderByContinuationToken>, string)> tokenMappingAndFilters = new List<(IReadOnlyDictionary<PartitionKeyRange, OrderByContinuationToken>, string)>()
+            {
+                { (tryGetOrderByContinuationTokenMapping.Result.PartitionsLeftOfTarget, leftFilter) },
+                { (tryGetOrderByContinuationTokenMapping.Result.TargetPartition, targetFilter) },
+                { (tryGetOrderByContinuationTokenMapping.Result.PartitionsRightOfTarget, rightFilter) },
+            };
+
+            IReadOnlyList<SortOrder> sortOrders = orderByColumns.Select(column => column.SortOrder).ToList();
+            foreach ((IReadOnlyDictionary<PartitionKeyRange, OrderByContinuationToken> tokenMapping, string filter) in tokenMappingAndFilters)
+            {
                 TryCatch tryInitialize = await base.TryInitializeAsync(
                     collectionRid,
-                    partitionKeyRanges,
                     initialPageSize,
-                    sqlQuerySpecForInit,
-                    cancellationToken: cancellationToken,
-                    targetRangeToContinuationMap: null,
+                    rewrittenQueryForOrderBy,
+                    tokenMapping.ToDictionary(kvp => kvp.Key, kvp => kvp.Value?.CompositeContinuationToken.Token),
                     deferFirstPage: false,
-                    filter: null,
-                    tryFilterAsync: null);
+                    filter,
+                    tryFilterAsync: async (itemProducerTree) =>
+                    {
+                        if (!tokenMapping.TryGetValue(
+                            itemProducerTree.PartitionKeyRange,
+                            out OrderByContinuationToken continuationToken))
+                        {
+                            throw new InvalidOperationException($"Failed to retrieve {nameof(OrderByContinuationToken)}.");
+                        }
+
+                        return await this.TryFilterAsync(
+                            itemProducerTree,
+                            sortOrders,
+                            continuationToken,
+                            cancellationToken);
+                    },
+                    cancellationToken);
                 if (!tryInitialize.Succeeded)
                 {
                     return tryInitialize;
-                }
-            }
-            else
-            {
-                TryCatch<OrderByContinuationToken[]> tryExtractContinuationTokens = CosmosOrderByItemQueryExecutionContext.TryExtractContinuationTokens(
-                    requestContinuation,
-                    sortOrders,
-                    orderByExpressions);
-                if (!tryExtractContinuationTokens.Succeeded)
-                {
-                    return TryCatch.FromException(tryExtractContinuationTokens.Exception);
-                }
-
-                TryCatch<OrderByInitInfo> tryGetOrderByInitInfo = CosmosOrderByItemQueryExecutionContext.TryGetOrderByPartitionKeyRangesInitializationInfo(
-                    tryExtractContinuationTokens.Result,
-                    partitionKeyRanges,
-                    sortOrders,
-                    orderByExpressions);
-                if (!tryGetOrderByInitInfo.Succeeded)
-                {
-                    return TryCatch.FromException(tryGetOrderByInitInfo.Exception);
-                }
-
-                OrderByInitInfo initiaizationInfo = tryGetOrderByInitInfo.Result;
-                RangeFilterInitializationInfo[] orderByInfos = initiaizationInfo.Filters;
-                IReadOnlyDictionary<string, OrderByContinuationToken> targetRangeToOrderByContinuationMap = initiaizationInfo.ContinuationTokens;
-                Debug.Assert(
-                    targetRangeToOrderByContinuationMap != null,
-                    "If targetRangeToOrderByContinuationMap can't be null is valid continuation is supplied");
-
-                // For ascending order-by, left of target partition has filter expression > value,
-                // right of target partition has filter expression >= value, 
-                // and target partition takes the previous filter from continuation (or true if no continuation)
-                foreach (RangeFilterInitializationInfo info in orderByInfos)
-                {
-                    if (info.StartIndex > info.EndIndex)
-                    {
-                        continue;
-                    }
-
-                    PartialReadOnlyList<PartitionKeyRange> partialRanges =
-                        new PartialReadOnlyList<PartitionKeyRange>(
-                            partitionKeyRanges,
-                            info.StartIndex,
-                            info.EndIndex - info.StartIndex + 1);
-
-                    SqlQuerySpec sqlQuerySpecForInit = new SqlQuerySpec(
-                        sqlQuerySpec.QueryText.Replace(FormatPlaceHolder, info.Filter),
-                        sqlQuerySpec.Parameters);
-
-                    TryCatch tryInitialize = await base.TryInitializeAsync(
-                        collectionRid,
-                        partialRanges,
-                        initialPageSize,
-                        sqlQuerySpecForInit,
-                        targetRangeToOrderByContinuationMap.ToDictionary(
-                            kvp => kvp.Key,
-                            kvp => kvp.Value.CompositeContinuationToken.Token),
-                        false,
-                        info.Filter,
-                        async (itemProducerTree) =>
-                        {
-                            if (targetRangeToOrderByContinuationMap.TryGetValue(
-                                itemProducerTree.Root.PartitionKeyRange.Id,
-                                out OrderByContinuationToken continuationToken))
-                            {
-                                TryCatch tryFilter = await this.TryFilterAsync(
-                                    itemProducerTree,
-                                    sortOrders,
-                                    continuationToken,
-                                    cancellationToken);
-
-                                if (!tryFilter.Succeeded)
-                                {
-                                    return tryFilter;
-                                }
-                            }
-
-                            return TryCatch.FromResult();
-                        },
-                        cancellationToken);
-                    if (!tryInitialize.Succeeded)
-                    {
-                        return tryInitialize;
-                    }
                 }
             }
 
             return TryCatch.FromResult();
         }
 
-        private static TryCatch<OrderByContinuationToken[]> TryExtractContinuationTokens(
-            CosmosElement requestContinuation,
-            SortOrder[] sortOrders,
-            string[] orderByExpressions)
+        private static TryCatch<PartitionMapping<OrderByContinuationToken>> TryGetOrderByContinuationTokenMapping(
+            IReadOnlyList<PartitionKeyRange> partitionKeyRanges,
+            CosmosElement continuationToken,
+            int numOrderByItems)
         {
-            Debug.Assert(
-                !(orderByExpressions == null
-                || orderByExpressions.Length <= 0
-                || sortOrders == null
-                || sortOrders.Length <= 0
-                || orderByExpressions.Length != sortOrders.Length),
-                "Partitioned QueryExecutionInfo returned bogus results.");
+            if (partitionKeyRanges == null)
+            {
+                throw new ArgumentOutOfRangeException(nameof(partitionKeyRanges));
+            }
 
+            if (numOrderByItems < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(numOrderByItems));
+            }
+
+            if (continuationToken == null)
+            {
+                // Create a mapping for all the ranges being right of the target partition (since they are let to be consumed).
+                Dictionary<PartitionKeyRange, OrderByContinuationToken> dictionary = new Dictionary<PartitionKeyRange, OrderByContinuationToken>();
+                foreach (PartitionKeyRange partitionKeyRange in partitionKeyRanges)
+                {
+                    dictionary.Add(key: partitionKeyRange, value: null);
+                }
+
+                return TryCatch<PartitionMapping<OrderByContinuationToken>>.FromResult(
+                    new PartitionMapping<OrderByContinuationToken>(
+                        partitionsLeftOfTarget: new Dictionary<PartitionKeyRange, OrderByContinuationToken>(),
+                        targetPartition: new Dictionary<PartitionKeyRange, OrderByContinuationToken>(),
+                        partitionsRightOfTarget: dictionary));
+            }
+
+            TryCatch<IReadOnlyList<OrderByContinuationToken>> tryExtractContinuationTokens = TryExtractContinuationTokens(continuationToken, numOrderByItems);
+            if (!tryExtractContinuationTokens.Succeeded)
+            {
+                return TryCatch<PartitionMapping<OrderByContinuationToken>>.FromException(tryExtractContinuationTokens.Exception);
+            }
+
+            return TryGetInitializationInfo(
+                partitionKeyRanges,
+                tryExtractContinuationTokens.Result);
+        }
+
+        private static TryCatch<IReadOnlyList<OrderByContinuationToken>> TryExtractContinuationTokens(
+            CosmosElement requestContinuation,
+            int numOrderByItems)
+        {
             if (requestContinuation == null)
             {
                 throw new ArgumentNullException("continuation can not be null or empty.");
             }
 
+            if (numOrderByItems < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(numOrderByItems));
+            }
+
             if (!(requestContinuation is CosmosArray cosmosArray))
             {
-                return TryCatch<OrderByContinuationToken[]>.FromException(
-                    new MalformedContinuationTokenException($"Order by continuation token must be an array: {requestContinuation}."));
+                return TryCatch<IReadOnlyList<OrderByContinuationToken>>.FromException(
+                    new MalformedContinuationTokenException(
+                        $"Order by continuation token must be an array: {requestContinuation}."));
             }
 
             List<OrderByContinuationToken> orderByContinuationTokens = new List<OrderByContinuationToken>();
@@ -242,7 +249,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
                 TryCatch<OrderByContinuationToken> tryCreateOrderByContinuationToken = OrderByContinuationToken.TryCreateFromCosmosElement(arrayItem);
                 if (!tryCreateOrderByContinuationToken.Succeeded)
                 {
-                    return TryCatch<OrderByContinuationToken[]>.FromException(tryCreateOrderByContinuationToken.Exception);
+                    return TryCatch<IReadOnlyList<OrderByContinuationToken>>.FromException(tryCreateOrderByContinuationToken.Exception);
                 }
 
                 orderByContinuationTokens.Add(tryCreateOrderByContinuationToken.Result);
@@ -250,20 +257,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
 
             if (orderByContinuationTokens.Count == 0)
             {
-                return TryCatch<OrderByContinuationToken[]>.FromException(
-                    new MalformedContinuationTokenException($"Order by continuation token cannot be empty: {requestContinuation}."));
+                return TryCatch<IReadOnlyList<OrderByContinuationToken>>.FromException(
+                    new MalformedContinuationTokenException(
+                        $"Order by continuation token cannot be empty: {requestContinuation}."));
             }
 
             foreach (OrderByContinuationToken suppliedOrderByContinuationToken in orderByContinuationTokens)
             {
-                if (suppliedOrderByContinuationToken.OrderByItems.Count != sortOrders.Length)
+                if (suppliedOrderByContinuationToken.OrderByItems.Count != numOrderByItems)
                 {
-                    return TryCatch<OrderByContinuationToken[]>.FromException(
-                        new MalformedContinuationTokenException($"Invalid order-by items in continuation token {requestContinuation} for OrderBy~Context."));
+                    return TryCatch<IReadOnlyList<OrderByContinuationToken>>.FromException(
+                        new MalformedContinuationTokenException(
+                            $"Invalid order-by items in continuation token {requestContinuation} for OrderBy~Context."));
                 }
             }
 
-            return TryCatch<OrderByContinuationToken[]>.FromResult(orderByContinuationTokens.ToArray());
+            return TryCatch<IReadOnlyList<OrderByContinuationToken>>.FromResult(orderByContinuationTokens);
         }
 
         /// <summary>
@@ -276,7 +285,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
         /// <returns>A task to await on.</returns>
         private async Task<TryCatch> TryFilterAsync(
             ItemProducerTree producer,
-            SortOrder[] sortOrders,
+            IReadOnlyList<SortOrder> sortOrders,
             OrderByContinuationToken continuationToken,
             CancellationToken cancellationToken)
         {
@@ -293,7 +302,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
                 if (!ResourceId.TryParse(continuationToken.Rid, out ResourceId continuationRid))
                 {
                     return TryCatch.FromException(
-                        new MalformedContinuationTokenException($"Invalid Rid in the continuation token {continuationToken.CompositeContinuationToken.Token} for OrderBy~Context."));
+                        new MalformedContinuationTokenException(
+                            $"Invalid Rid in the continuation token {continuationToken.CompositeContinuationToken.Token} for OrderBy~Context."));
                 }
 
                 Dictionary<string, ResourceId> resourceIds = new Dictionary<string, ResourceId>();
@@ -311,7 +321,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
                     OrderByQueryResult orderByResult = new OrderByQueryResult(tree.Current);
                     // Throw away documents until it matches the item from the continuation token.
                     int cmp = 0;
-                    for (int i = 0; i < sortOrders.Length; ++i)
+                    for (int i = 0; i < sortOrders.Count(); ++i)
                     {
                         cmp = ItemComparer.Instance.Compare(
                             continuationToken.OrderByItems[i].Item,
@@ -408,95 +418,20 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
             return TryCatch.FromResult();
         }
 
-        /// <summary>
-        /// Gets the filters for every partition.
-        /// </summary>
-        private static TryCatch<OrderByInitInfo> TryGetOrderByPartitionKeyRangesInitializationInfo(
-            OrderByContinuationToken[] suppliedContinuationTokens,
-            List<PartitionKeyRange> partitionKeyRanges,
-            SortOrder[] sortOrders,
-            string[] orderByExpressions)
-        {
-            TryCatch<InitInfo<OrderByContinuationToken>> tryFindRangeAndContinuationTokensMonad = CosmosCrossPartitionQueryExecutionContext.TryFindTargetRangeAndExtractContinuationTokens(
-                partitionKeyRanges,
-                suppliedContinuationTokens
-                    .Select(token => Tuple.Create(token, token.CompositeContinuationToken.Range)));
-
-            return tryFindRangeAndContinuationTokensMonad.Try<OrderByInitInfo>((indexAndContinuationTokens) =>
-            {
-                int minIndex = indexAndContinuationTokens.TargetIndex;
-                IReadOnlyDictionary<string, OrderByContinuationToken> partitionKeyRangeToContinuationToken = indexAndContinuationTokens.ContinuationTokens;
-
-                FormattedFilterInfo formattedFilterInfo = CosmosOrderByItemQueryExecutionContext.GetFormattedFilters(
-                    orderByExpressions,
-                    suppliedContinuationTokens,
-                    sortOrders);
-
-                RangeFilterInitializationInfo[] filters = new RangeFilterInitializationInfo[]
-                {
-                    new RangeFilterInitializationInfo(
-                        filter: formattedFilterInfo.FilterForRangesLeftOfTargetRanges,
-                        startIndex: 0,
-                        endIndex: minIndex - 1),
-                    new RangeFilterInitializationInfo(
-                        filter: formattedFilterInfo.FiltersForTargetRange,
-                        startIndex: minIndex,
-                        endIndex: minIndex),
-                    new RangeFilterInitializationInfo(
-                        filter: formattedFilterInfo.FilterForRangesRightOfTargetRanges,
-                        startIndex: minIndex + 1,
-                        endIndex: partitionKeyRanges.Count - 1),
-                };
-
-                return new OrderByInitInfo(
-                    filters,
-                    partitionKeyRangeToContinuationToken);
-            });
-        }
-
-        /// <summary>
-        /// Gets the formatted filters for every partition.
-        /// </summary>
-        /// <param name="expressions">The filter expressions.</param>
-        /// <param name="continuationTokens">The continuation token.</param>
-        /// <param name="sortOrders">The sort orders.</param>
-        /// <returns>The formatted filters for every partition.</returns>
-        private static FormattedFilterInfo GetFormattedFilters(
-            string[] expressions,
-            OrderByContinuationToken[] continuationTokens,
-            SortOrder[] sortOrders)
-        {
-            // Validate the inputs
-            for (int index = 0; index < continuationTokens.Length; index++)
-            {
-                Debug.Assert(continuationTokens[index].OrderByItems.Count == sortOrders.Length, "Expect values and orders are the same size.");
-                Debug.Assert(expressions.Length == sortOrders.Length, "Expect expressions and orders are the same size.");
-            }
-
-            Tuple<string, string, string> filters = CosmosOrderByItemQueryExecutionContext.GetFormattedFilters(
-                expressions,
-                continuationTokens[0].OrderByItems.Select(orderByItem => orderByItem.Item).ToArray(),
-                sortOrders);
-
-            return new FormattedFilterInfo(filters.Item1, filters.Item2, filters.Item3);
-        }
-
-        private static void AppendToBuilders(Tuple<StringBuilder, StringBuilder, StringBuilder> builders, object str)
+        private static void AppendToBuilders((StringBuilder, StringBuilder, StringBuilder) builders, object str)
         {
             CosmosOrderByItemQueryExecutionContext.AppendToBuilders(builders, str, str, str);
         }
 
-        private static void AppendToBuilders(Tuple<StringBuilder, StringBuilder, StringBuilder> builders, object left, object target, object right)
+        private static void AppendToBuilders((StringBuilder, StringBuilder, StringBuilder) builders, object left, object target, object right)
         {
             builders.Item1.Append(left);
             builders.Item2.Append(target);
             builders.Item3.Append(right);
         }
 
-        private static Tuple<string, string, string> GetFormattedFilters(
-            string[] expressions,
-            CosmosElement[] orderByItems,
-            SortOrder[] sortOrders)
+        private static (string leftFilter, string targetFilter, string rightFilter) GetFormattedFilters(
+            ReadOnlyMemory<(OrderByColumn orderByColumn, CosmosElement orderByItem)> columnAndItems)
         {
             // When we run cross partition queries, 
             // we only serialize the continuation token for the partition that we left off on.
@@ -506,13 +441,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
             // so we can generate range filters which in turn the backend will turn into rid based continuation tokens,
             // which is enough to get the streams of data flowing from all partitions.
             // The details of how this is done is described below:
-            int numOrderByItems = expressions.Length;
+            int numOrderByItems = columnAndItems.Length;
             bool isSingleOrderBy = numOrderByItems == 1;
             StringBuilder left = new StringBuilder();
             StringBuilder target = new StringBuilder();
             StringBuilder right = new StringBuilder();
 
-            Tuple<StringBuilder, StringBuilder, StringBuilder> builders = new Tuple<StringBuilder, StringBuilder, StringBuilder>(left, right, target);
+            (StringBuilder, StringBuilder, StringBuilder) builders = (left, right, target);
 
             if (isSingleOrderBy)
             {
@@ -536,13 +471,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
                 //            < for partitions to the left
                 //            <= for the partition we left off on
                 //            <= for the partitions to the right
-                string expression = expressions.First();
-                SortOrder sortOrder = sortOrders.First();
-                CosmosElement orderByItem = orderByItems.First();
+                (OrderByColumn orderByColumn, CosmosElement orderByItem) = columnAndItems.Span[0];
+                (string expression, SortOrder sortOrder) = (orderByColumn.Expression, orderByColumn.SortOrder);
+
                 StringBuilder sb = new StringBuilder();
                 CosmosElementToQueryLiteral cosmosElementToQueryLiteral = new CosmosElementToQueryLiteral(sb);
                 orderByItem.Accept(cosmosElementToQueryLiteral);
+
                 string orderByItemToString = sb.ToString();
+
                 left.Append($"{expression} {(sortOrder == SortOrder.Descending ? "<" : ">")} {orderByItemToString}");
                 target.Append($"{expression} {(sortOrder == SortOrder.Descending ? "<=" : ">=")} {orderByItemToString}");
                 right.Append($"{expression} {(sortOrder == SortOrder.Descending ? "<=" : ">=")} {orderByItemToString}");
@@ -580,9 +517,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
                 //        And then you just OR all the possibilities together
                 for (int prefixLength = 1; prefixLength <= numOrderByItems; prefixLength++)
                 {
-                    ArraySegment<string> expressionPrefix = new ArraySegment<string>(expressions, 0, prefixLength);
-                    ArraySegment<SortOrder> sortOrderPrefix = new ArraySegment<SortOrder>(sortOrders, 0, prefixLength);
-                    ArraySegment<CosmosElement> orderByItemsPrefix = new ArraySegment<CosmosElement>(orderByItems, 0, prefixLength);
+                    ReadOnlySpan<(OrderByColumn orderByColumn, CosmosElement orderByItem)> columnAndItemPrefix = columnAndItems.Span.Slice(start: 0, length: prefixLength);
 
                     bool lastPrefix = prefixLength == numOrderByItems;
                     bool firstPrefix = prefixLength == 1;
@@ -591,9 +526,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
 
                     for (int index = 0; index < prefixLength; index++)
                     {
-                        string expression = expressionPrefix.ElementAt(index);
-                        SortOrder sortOrder = sortOrderPrefix.ElementAt(index);
-                        CosmosElement orderByItem = orderByItemsPrefix.ElementAt(index);
+                        string expression = columnAndItemPrefix[index].orderByColumn.Expression;
+                        SortOrder sortOrder = columnAndItemPrefix[index].orderByColumn.SortOrder;
+                        CosmosElement orderByItem = columnAndItemPrefix[index].orderByItem;
                         bool lastItem = index == prefixLength - 1;
 
                         // Append Expression
@@ -638,7 +573,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
                 }
             }
 
-            return new Tuple<string, string, string>(left.ToString(), target.ToString(), right.ToString());
+            return (left.ToString(), target.ToString(), right.ToString());
         }
 
         private readonly struct OrderByInitInfo
@@ -654,38 +589,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
             public IReadOnlyDictionary<string, OrderByContinuationToken> ContinuationTokens { get; }
         }
 
-        /// <summary>
-        /// Struct to hold all the filters for every partition.
-        /// </summary>
-        private readonly struct FormattedFilterInfo
+        private readonly struct OrderByColumn
         {
-            /// <summary>
-            /// Filters for current partition.
-            /// </summary>
-            public readonly string FiltersForTargetRange;
-
-            /// <summary>
-            /// Filters for partitions left of the current partition.
-            /// </summary>
-            public readonly string FilterForRangesLeftOfTargetRanges;
-
-            /// <summary>
-            /// Filters for partitions right of the current partition.
-            /// </summary>
-            public readonly string FilterForRangesRightOfTargetRanges;
-
-            /// <summary>
-            /// Initializes a new instance of the FormattedFilterInfo struct.
-            /// </summary>
-            /// <param name="leftFilter">The filters for the partitions left of the current partition.</param>
-            /// <param name="targetFilter">The filters for the current partition.</param>
-            /// <param name="rightFilters">The filters for the partitions right of the current partition.</param>
-            public FormattedFilterInfo(string leftFilter, string targetFilter, string rightFilters)
+            public OrderByColumn(string expression, SortOrder sortOrder)
             {
-                this.FilterForRangesLeftOfTargetRanges = leftFilter;
-                this.FiltersForTargetRange = targetFilter;
-                this.FilterForRangesRightOfTargetRanges = rightFilters;
+                this.Expression = expression ?? throw new ArgumentNullException(nameof(expression));
+                this.SortOrder = sortOrder;
             }
+
+            public string Expression { get; }
+            public SortOrder SortOrder { get; }
         }
     }
 }

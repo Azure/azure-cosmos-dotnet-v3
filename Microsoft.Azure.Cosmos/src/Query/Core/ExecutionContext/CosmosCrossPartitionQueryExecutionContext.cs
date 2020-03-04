@@ -22,6 +22,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using Microsoft.Azure.Cosmos.Sql;
     using Microsoft.Azure.Documents.Routing;
     using PartitionKeyRange = Documents.PartitionKeyRange;
     using RequestChargeTracker = Documents.RequestChargeTracker;
@@ -333,24 +334,38 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             Func<ItemProducerTree, Task<TryCatch>> tryFilterAsync,
             CancellationToken cancellationToken)
         {
+            if (collectionRid == null)
+            {
+                throw new ArgumentNullException(nameof(collectionRid));
+            }
+
+            if (initialPageSize < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(initialPageSize));
+            }
+
+            if (querySpecForInit == null)
+            {
+                throw new ArgumentNullException(nameof(querySpecForInit));
+            }
+
+            if (targetRangeToContinuationMap == null)
+            {
+                throw new ArgumentNullException(nameof(targetRangeToContinuationMap));
+            }
+
+            if (tryFilterAsync == null)
+            {
+                throw new ArgumentNullException(nameof(tryFilterAsync));
+            }
+
             cancellationToken.ThrowIfCancellationRequested();
 
             List<ItemProducerTree> itemProducerTrees = new List<ItemProducerTree>();
-            foreach (PartitionKeyRange partitionKeyRange in partitionKeyRanges)
+            foreach (KeyValuePair<PartitionKeyRange, string> rangeAndContinuationToken in targetRangeToContinuationMap)
             {
-                string initialContinuationToken;
-                if (targetRangeToContinuationMap != null)
-                {
-                    if (!targetRangeToContinuationMap.TryGetValue(partitionKeyRange.Id, out initialContinuationToken))
-                    {
-                        initialContinuationToken = null;
-                    }
-                }
-                else
-                {
-                    initialContinuationToken = null;
-                }
-
+                PartitionKeyRange partitionKeyRange = rangeAndContinuationToken.Key;
+                string continuationToken = rangeAndContinuationToken.Value;
                 ItemProducerTree itemProducerTree = new ItemProducerTree(
                     this.queryContext,
                     querySpecForInit,
@@ -362,7 +377,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     deferFirstPage,
                     collectionRid,
                     initialPageSize,
-                    initialContinuationToken)
+                    continuationToken)
                 {
                     Filter = filter
                 };
@@ -423,6 +438,84 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             return TryCatch.FromResult();
         }
 
+        protected static TryCatch<PartitionMapping<PartitionedToken>> TryGetInitializationInfo<PartitionedToken>(
+            IReadOnlyList<PartitionKeyRange> partitionKeyRanges,
+            IReadOnlyList<PartitionedToken> partitionedContinuationTokens)
+            where PartitionedToken : IPartitionedToken
+        {
+            if (partitionKeyRanges == null)
+            {
+                throw new ArgumentNullException(nameof(partitionKeyRanges));
+            }
+
+            if (partitionedContinuationTokens == null)
+            {
+                throw new ArgumentNullException(nameof(partitionedContinuationTokens));
+            }
+
+            if (partitionKeyRanges.Count() < 1)
+            {
+                throw new ArgumentException(nameof(partitionKeyRanges));
+            }
+
+            if (partitionedContinuationTokens.Count() < 1)
+            {
+                throw new ArgumentException(nameof(partitionKeyRanges));
+            }
+
+            if (partitionedContinuationTokens.Count() > partitionKeyRanges.Count())
+            {
+                throw new ArgumentException($"{nameof(partitionedContinuationTokens)} can not have more elements than {nameof(partitionKeyRanges)}.");
+            }
+
+            // Find the continuation token for the partition we left off on:
+            PartitionedToken firstContinuationToken = partitionedContinuationTokens
+                .OrderBy((partitionedToken) => partitionedToken.PartitionRange.Min)
+                .First();
+
+            // Segment the ranges based off that:
+            ReadOnlyMemory<PartitionKeyRange> sortedRanges = partitionKeyRanges
+                .OrderBy((partitionKeyRange) => partitionKeyRange.MinInclusive)
+                .ToArray();
+
+            PartitionKeyRange firstContinuationRange = new PartitionKeyRange
+            {
+                MinInclusive = firstContinuationToken.PartitionRange.Min,
+                MaxExclusive = firstContinuationToken.PartitionRange.Max
+            };
+
+            int matchedIndex = sortedRanges.Span.BinarySearch(
+                firstContinuationRange,
+                Comparer<PartitionKeyRange>.Create((range1, range2) => string.CompareOrdinal(range1.MinInclusive, range2.MinInclusive)));
+            if (matchedIndex < 0)
+            {
+                return TryCatch<PartitionMapping<PartitionedToken>>.FromException(
+                    new MalformedContinuationTokenException(
+                        $"{RMResources.InvalidContinuationToken} - Could not find continuation token: {firstContinuationToken}"));
+            }
+
+            ReadOnlyMemory<PartitionKeyRange> partitionsLeftOfTarget = matchedIndex == 0 ? ReadOnlyMemory<PartitionKeyRange>.Empty : sortedRanges.Slice(start: 0, length: matchedIndex - 1);
+            ReadOnlyMemory<PartitionKeyRange> targetPartition = sortedRanges.Slice(start: matchedIndex, length: 1);
+            ReadOnlyMemory<PartitionKeyRange> partitionsRightOfTarget = matchedIndex == sortedRanges.Length - 1 ? ReadOnlyMemory<PartitionKeyRange>.Empty : sortedRanges.Slice(start: matchedIndex + 1);
+
+            // Create the continuation token mapping for each region.
+            IReadOnlyDictionary<PartitionKeyRange, PartitionedToken> mappingForPartitionsLeftOfTarget = MatchRangesToContinuationTokens(
+                partitionsLeftOfTarget,
+                partitionedContinuationTokens);
+            IReadOnlyDictionary<PartitionKeyRange, PartitionedToken> mappingForTargetPartition = MatchRangesToContinuationTokens(
+                targetPartition,
+                partitionedContinuationTokens);
+            IReadOnlyDictionary<PartitionKeyRange, PartitionedToken> mappingForPartitionsRightOfTarget = MatchRangesToContinuationTokens(
+                partitionsRightOfTarget,
+                partitionedContinuationTokens);
+
+            return TryCatch<PartitionMapping<PartitionedToken>>.FromResult(
+                new PartitionMapping<PartitionedToken>(
+                    partitionsLeftOfTarget: mappingForPartitionsLeftOfTarget,
+                    targetPartition: mappingForTargetPartition,
+                    partitionsRightOfTarget: mappingForPartitionsRightOfTarget));
+        }
+
         /// <summary>
         /// <para>
         /// If a query encounters split upon resuming using continuation, we need to regenerate the continuation tokens. 
@@ -444,83 +537,34 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         /// The code assumes that merge doesn't happen and 
         /// </Remarks>
         /// <returns>The index of the partition whose MinInclusive is equal to the suppliedContinuationTokens along with the continuation tokens.</returns>
-        protected static TryCatch<IReadOnlyDictionary<PartitionKeyRange, PartitionedToken>> TryMatchRangesToContinuationTokens<PartitionedToken>(
-            IReadOnlyList<PartitionKeyRange> partitionKeyRanges,
+        private static IReadOnlyDictionary<PartitionKeyRange, PartitionedToken> MatchRangesToContinuationTokens<PartitionedToken>(
+            ReadOnlyMemory<PartitionKeyRange> partitionKeyRanges,
             IReadOnlyList<PartitionedToken> partitionedContinuationTokens)
             where PartitionedToken : IPartitionedToken
         {
-            if (partitionKeyRanges == null)
-            {
-                throw new ArgumentNullException(nameof(partitionKeyRanges));
-            }
-
-            if (partitionKeyRanges.Count() < 1)
-            {
-                throw new ArgumentException(nameof(partitionKeyRanges));
-            }
-
             if (partitionedContinuationTokens == null)
             {
                 throw new ArgumentNullException(nameof(partitionedContinuationTokens));
             }
 
-            if (partitionedContinuationTokens.Count() < 1)
-            {
-                throw new ArgumentException(nameof(partitionedContinuationTokens));
-            }
-
-            if (partitionedContinuationTokens.Count() > partitionKeyRanges.Count())
-            {
-                throw new ArgumentException($"{nameof(partitionedContinuationTokens)} can not have more elements than {nameof(partitionKeyRanges)}.");
-            }
-
             Dictionary<PartitionKeyRange, IPartitionedToken> partitionKeyRangeToToken = new Dictionary<PartitionKeyRange, IPartitionedToken>();
-            foreach (IPartitionedToken partitionedToken in partitionedContinuationTokens)
+            ReadOnlySpan<PartitionKeyRange> partitionKeyRangeSpan = partitionKeyRanges.Span;
+            for (int i = 0; i < partitionKeyRangeSpan.Length; i++)
             {
-                // Find what ranges make up the supplied continuation token
-                Range<string> range = partitionedToken.PartitionRange;
-                IReadOnlyList<PartitionKeyRange> replacementRanges = partitionKeyRanges
-                    .Where((partitionKeyRange) =>
-                        string.CompareOrdinal(range.Min, partitionKeyRange.MinInclusive) <= 0 &&
-                        string.CompareOrdinal(range.Max, partitionKeyRange.MaxExclusive) >= 0)
-                    .OrderBy((partitionKeyRange) => partitionKeyRange.MinInclusive)
-                    .ToList();
-
-                // Could not find the child ranges
-                if (replacementRanges.Count == 0)
+                PartitionKeyRange partitionKeyRange = partitionKeyRangeSpan[i];
+                foreach (PartitionedToken partitionedToken in partitionedContinuationTokens)
                 {
-                    return TryCatch<IReadOnlyDictionary<PartitionKeyRange, PartitionedToken>>.FromException(
-                        new MalformedContinuationTokenException(
-                            $"{RMResources.InvalidContinuationToken} - Could not find continuation token: {partitionedToken}"));
-                }
-
-                // PMax = C2Max > C2Min > C1Max > C1Min = PMin.
-                string parentMax = range.Max;
-                string child2Max = replacementRanges.Last().MaxExclusive;
-                string child2Min = replacementRanges.Last().MinInclusive;
-                string child1Max = replacementRanges.First().MaxExclusive;
-                string child1Min = replacementRanges.First().MinInclusive;
-                string parentMin = range.Min;
-
-                if (!(parentMax == child2Max &&
-                    string.CompareOrdinal(child2Max, child2Min) >= 0 &&
-                    (replacementRanges.Count() == 1 ? true : string.CompareOrdinal(child2Min, child1Max) >= 0) &&
-                    string.CompareOrdinal(child1Max, child1Min) >= 0 &&
-                    child1Min == parentMin))
-                {
-                    return TryCatch<IReadOnlyDictionary<PartitionKeyRange, PartitionedToken>>.FromException(
-                        new MalformedContinuationTokenException(
-                            $"{RMResources.InvalidContinuationToken} - PMax = C2Max > C2Min > C1Max > C1Min = PMin: {partitionedToken}"));
-                }
-
-                foreach (PartitionKeyRange partitionKeyRange in replacementRanges)
-                {
-                    partitionKeyRangeToToken[partitionKeyRange] = partitionedToken;
+                    // See if continuation token includes the range
+                    if ((partitionKeyRange.MinInclusive.CompareTo(partitionedToken.PartitionRange.Min) >= 0)
+                        && (partitionKeyRange.MaxExclusive.CompareTo(partitionedToken.PartitionRange.Max) <= 0))
+                    {
+                        partitionKeyRangeToToken[partitionKeyRange] = partitionedToken;
+                        break;
+                    }
                 }
             }
 
-            return TryCatch<IReadOnlyDictionary<PartitionKeyRange, PartitionedToken>>.FromResult(
-                (IReadOnlyDictionary<PartitionKeyRange, PartitionedToken>)partitionKeyRangeToToken);
+            return (IReadOnlyDictionary<PartitionKeyRange, PartitionedToken>)partitionKeyRangeToToken;
         }
 
         protected virtual long GetAndResetResponseLengthBytes()
@@ -625,6 +669,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             public int TargetIndex { get; }
 
             public IReadOnlyDictionary<string, TContinuationToken> ContinuationTokens { get; }
+        }
+
+        public readonly struct PartitionMapping<T>
+        {
+            public PartitionMapping(
+                IReadOnlyDictionary<PartitionKeyRange, T> partitionsLeftOfTarget,
+                IReadOnlyDictionary<PartitionKeyRange, T> targetPartition,
+                IReadOnlyDictionary<PartitionKeyRange, T> partitionsRightOfTarget)
+            {
+                this.PartitionsLeftOfTarget = partitionsLeftOfTarget ?? throw new ArgumentNullException(nameof(partitionsLeftOfTarget));
+                this.TargetPartition = targetPartition ?? throw new ArgumentNullException(nameof(targetPartition));
+                this.PartitionsRightOfTarget = partitionsRightOfTarget ?? throw new ArgumentNullException(nameof(partitionsRightOfTarget));
+            }
+
+            public IReadOnlyDictionary<PartitionKeyRange, T> PartitionsLeftOfTarget { get; }
+            public IReadOnlyDictionary<PartitionKeyRange, T> TargetPartition { get; }
+            public IReadOnlyDictionary<PartitionKeyRange, T> PartitionsRightOfTarget { get; }
         }
 
         /// <summary>

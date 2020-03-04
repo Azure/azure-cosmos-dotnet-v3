@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            TryCatch<IReadOnlyDictionary<PartitionKeyRange, CompositeContinuationToken>> tryGetPartitionKeyRangeToCompositeContinuationToken = CosmosParallelItemQueryExecutionContext.TryGetPartitionKeyRangeToCompositeContinuationToken(
+            TryCatch<PartitionMapping<CompositeContinuationToken>> tryGetPartitionKeyRangeToCompositeContinuationToken = CosmosParallelItemQueryExecutionContext.TryGetPartitionKeyRangeToCompositeContinuationToken(
                 partitionKeyRanges,
                 requestContinuation);
             if (!tryGetPartitionKeyRangeToCompositeContinuationToken.Succeeded)
@@ -89,57 +89,64 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
                 return TryCatch<CosmosParallelItemQueryExecutionContext>.FromException(tryGetPartitionKeyRangeToCompositeContinuationToken.Exception);
             }
 
-            IReadOnlyDictionary<PartitionKeyRange, string> partitionKeyRangeToContinuationToken = tryGetPartitionKeyRangeToCompositeContinuationToken
-                .Result
-                .ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Token);
-            TryCatch tryInitialize = await base.TryInitializeAsync(
-                collectionRid,
-                initialPageSize,
-                sqlQuerySpec,
-                partitionKeyRangeToContinuationToken,
-                deferFirstPage: true,
-                filter: null,
-                tryFilterAsync: null,
-                cancellationToken);
-            if (!tryInitialize.Succeeded)
+            List<IReadOnlyDictionary<PartitionKeyRange, CompositeContinuationToken>> rangesToInitialize = new List<IReadOnlyDictionary<PartitionKeyRange, CompositeContinuationToken>>()
             {
-                return TryCatch<CosmosParallelItemQueryExecutionContext>.FromException(tryInitialize.Exception);
+                // Skip all the partitions left of the target range, since they have already been drained fully.
+                tryGetPartitionKeyRangeToCompositeContinuationToken.Result.TargetPartition,
+                tryGetPartitionKeyRangeToCompositeContinuationToken.Result.PartitionsRightOfTarget,
+            };
+
+            foreach (IReadOnlyDictionary<PartitionKeyRange, CompositeContinuationToken> rangeToCompositeToken in rangesToInitialize)
+            {
+                IReadOnlyDictionary<PartitionKeyRange, string> partitionKeyRangeToContinuationToken = rangeToCompositeToken
+                    .ToDictionary(kvp => kvp.Key, kvp => kvp.Value?.Token);
+                TryCatch tryInitialize = await base.TryInitializeAsync(
+                    collectionRid,
+                    initialPageSize,
+                    sqlQuerySpec,
+                    partitionKeyRangeToContinuationToken,
+                    deferFirstPage: true,
+                    filter: null,
+                    tryFilterAsync: null,
+                    cancellationToken);
+                if (!tryInitialize.Succeeded)
+                {
+                    return TryCatch<CosmosParallelItemQueryExecutionContext>.FromException(tryInitialize.Exception);
+                }
             }
 
             return TryCatch<CosmosParallelItemQueryExecutionContext>.FromResult(this);
         }
 
-        private static TryCatch<IReadOnlyDictionary<PartitionKeyRange, CompositeContinuationToken>> TryGetPartitionKeyRangeToCompositeContinuationToken(
+        private static TryCatch<PartitionMapping<CompositeContinuationToken>> TryGetPartitionKeyRangeToCompositeContinuationToken(
             IReadOnlyList<PartitionKeyRange> partitionKeyRanges,
             CosmosElement continuationToken)
         {
             if (continuationToken == null)
             {
+                // Create a mapping for all the ranges being right of the target partition (since they are let to be consumed).
                 Dictionary<PartitionKeyRange, CompositeContinuationToken> dictionary = new Dictionary<PartitionKeyRange, CompositeContinuationToken>();
                 foreach (PartitionKeyRange partitionKeyRange in partitionKeyRanges)
                 {
                     dictionary.Add(key: partitionKeyRange, value: null);
                 }
 
-                return TryCatch<IReadOnlyDictionary<PartitionKeyRange, CompositeContinuationToken>>.FromResult(dictionary);
+                return TryCatch<PartitionMapping<CompositeContinuationToken>>.FromResult(
+                    new PartitionMapping<CompositeContinuationToken>(
+                        partitionsLeftOfTarget: new Dictionary<PartitionKeyRange, CompositeContinuationToken>(),
+                        targetPartition: new Dictionary<PartitionKeyRange, CompositeContinuationToken>(),
+                        partitionsRightOfTarget: dictionary));
             }
 
             TryCatch<IReadOnlyList<CompositeContinuationToken>> tryParseCompositeContinuationTokens = TryParseCompositeContinuationList(continuationToken);
             if (!tryParseCompositeContinuationTokens.Succeeded)
             {
-                return TryCatch<IReadOnlyDictionary<PartitionKeyRange, CompositeContinuationToken>>.FromException(tryParseCompositeContinuationTokens.Exception);
+                return TryCatch<PartitionMapping<CompositeContinuationToken>>.FromException(tryParseCompositeContinuationTokens.Exception);
             }
 
-            TryCatch<IReadOnlyDictionary<PartitionKeyRange, CompositeContinuationToken>> tryMatchContinuationTokensToRanges = CosmosCrossPartitionQueryExecutionContext.TryMatchRangesToContinuationTokens(
+            return CosmosCrossPartitionQueryExecutionContext.TryGetInitializationInfo<CompositeContinuationToken>(
                 partitionKeyRanges,
                 tryParseCompositeContinuationTokens.Result);
-            if (!tryMatchContinuationTokensToRanges.Succeeded)
-            {
-                return TryCatch<IReadOnlyDictionary<PartitionKeyRange, CompositeContinuationToken>>.FromException(
-                    tryMatchContinuationTokensToRanges.Exception);
-            }
-
-            return tryMatchContinuationTokensToRanges;
         }
 
         private static TryCatch<IReadOnlyList<CompositeContinuationToken>> TryParseCompositeContinuationList(
