@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics;
     using System.Net;
     using System.Net.Sockets;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
@@ -108,7 +107,7 @@ namespace Microsoft.Azure.Cosmos
 
             // if there is a status code then it came from the backend, return error as http error instead of throwing the exception
             ResponseMessage responseMessage = cosmosException.ToCosmosResponseMessage(requestMessage);
-            
+
             if (requestMessage != null)
             {
                 requestMessage.Properties.Remove(nameof(DocumentClientException));
