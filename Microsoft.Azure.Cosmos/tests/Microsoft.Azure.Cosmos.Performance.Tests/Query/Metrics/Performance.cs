@@ -2,14 +2,13 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
+namespace Microsoft.Azure.Cosmos.Performance.Tests.Query.Metrics
 {
     using System;
-    using VisualStudio.TestTools.UnitTesting;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using System.Diagnostics;
+    using BenchmarkDotNet.Attributes;
 
-    [TestClass]
     public class Performance
     {
         private static readonly TimeSpan totalExecutionTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 33.67));
@@ -31,13 +30,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
 
         private static readonly string delimitedString = $"totalExecutionTimeInMs={totalExecutionTime.TotalMilliseconds};queryCompileTimeInMs={queryCompileTime.TotalMilliseconds};queryLogicalPlanBuildTimeInMs={logicalPlanBuildTime.TotalMilliseconds};queryPhysicalPlanBuildTimeInMs={physicalPlanBuildTime.TotalMilliseconds};queryOptimizationTimeInMs={queryOptimizationTime.TotalMilliseconds};VMExecutionTimeInMs={vmExecutionTime.TotalMilliseconds};indexLookupTimeInMs={indexLookupTime.TotalMilliseconds};documentLoadTimeInMs={documentLoadTime.TotalMilliseconds};systemFunctionExecuteTimeInMs={systemFunctionExecuteTime.TotalMilliseconds};userFunctionExecuteTimeInMs={userFunctionExecuteTime.TotalMilliseconds};retrievedDocumentCount={retrievedDocumentCount};retrievedDocumentSize={retrievedDocumentSize};outputDocumentCount={outputDocumentCount};outputDocumentSize={outputDocumentSize};writeOutputTimeInMs={documentWriteTime.TotalMilliseconds};indexUtilizationRatio={indexHitRatio}";
 
-        [TestMethod]
+        [Benchmark]
         public void TestParse()
         {
             Stopwatch stopwatch = Stopwatch.StartNew();
             for (int i = 0; i < 100000; i++)
             {
-                Assert.IsTrue(BackendMetricsParser.TryParse(delimitedString, out BackendMetrics backendMetrics));
+                BackendMetricsParser.TryParse(delimitedString, out BackendMetrics backendMetrics);
             }
             stopwatch.Stop();
             Console.WriteLine(stopwatch.ElapsedMilliseconds);
