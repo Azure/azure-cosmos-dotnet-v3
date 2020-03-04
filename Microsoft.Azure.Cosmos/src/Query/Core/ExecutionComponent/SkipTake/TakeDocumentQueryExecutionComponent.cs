@@ -211,7 +211,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                 return false;
             }
 
-            FeedTokenInternal feedTokenInternal = feedToken as FeedTokenInternal;
+            FeedTokenEPKRange feedTokenInternal = feedToken as FeedTokenEPKRange;
             TakeContinuationToken takeContinuationToken;
             switch (this.takeEnum)
             {
@@ -231,7 +231,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                     throw new ArgumentException($"Unknown {nameof(TakeEnum)}: {this.takeEnum}");
             }
 
-            feedTokenInternal.UpdateContinuation(takeContinuationToken.ToString());
+            feedToken = new FeedTokenEPKRange(
+                    feedTokenInternal.ContainerRid,
+                    feedTokenInternal.CompositeContinuationTokens.Select(token => token.Range).ToList(),
+                    takeContinuationToken.ToString());
             return true;
         }
 

@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
@@ -184,7 +185,7 @@ namespace Microsoft.Azure.Cosmos
                         isMaxInclusive: false),
                     forceRefresh: true);
             // ReadAll scenario, initialize with one token for all
-            return new FeedTokenEPKRange(this.containerRId, partitionKeyRanges);
+            return new FeedTokenEPKRange(this.containerRId, partitionKeyRanges.Select(pkRange => pkRange.ToRange()).ToList(), continuationToken: null);
         }
     }
 }

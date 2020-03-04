@@ -194,7 +194,7 @@ namespace Microsoft.Azure.Cosmos
             if (partitionSplit)
             {
                 string containerRid = await containerCore.GetRIDAsync(cancellationToken);
-                Routing.PartitionKeyRangeCache partitionKeyRangeCache = await containerCore.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
+                PartitionKeyRangeCache partitionKeyRangeCache = await containerCore.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
                 IReadOnlyList<Documents.PartitionKeyRange> keyRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
                 containerRid,
                 new Documents.Routing.Range<string>(
@@ -212,8 +212,8 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 this.FeedTokenEPKRange = new FeedTokenEPKRange(containerRid,
-                    new Documents.Routing.Range<string>(addedRanges[0].MinInclusive, addedRanges[addedRanges.Count - 1].MaxExclusive, true, false),
-                    addedRanges.Select(range => FeedTokenEPKRange.CreateCompositeContinuationTokenForRange(range.MinInclusive, range.MaxExclusive, this.continuationToken)).ToList());
+                    addedRanges.Select(pkRange => pkRange.ToRange()).ToList(),
+                    continuationToken: this.continuationToken);
                 return true;
             }
 

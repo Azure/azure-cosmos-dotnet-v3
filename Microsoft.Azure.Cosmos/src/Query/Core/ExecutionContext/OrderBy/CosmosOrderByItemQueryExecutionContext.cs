@@ -178,11 +178,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
 
                 List<Documents.Routing.Range<string>> rangesList = allProducers.Select(producer => producer.PartitionKeyRange.ToRange()).ToList();
                 rangesList.Sort(Documents.Routing.Range<string>.MinComparer.Instance);
-                Documents.Routing.Range<string> completeRange = new Documents.Routing.Range<string>(rangesList[0].Min, rangesList[rangesList.Count - 1].Max, true, false);
                 // Single FeedToken with the completeRange and continuation
                 FeedTokenEPKRange feedToken = new FeedTokenEPKRange(
                     string.Empty, // Rid or container reference not available
-                    completeRange,
+                    rangesList,
                     this.ContinuationToken);
                 return feedToken;
             }

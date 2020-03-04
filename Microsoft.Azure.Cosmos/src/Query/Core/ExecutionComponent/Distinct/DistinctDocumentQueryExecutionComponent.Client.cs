@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
@@ -176,10 +177,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                     return false;
                 }
 
-                FeedTokenInternal feedTokenInternal = feedToken as FeedTokenInternal;
-                feedTokenInternal.UpdateContinuation(new DistinctContinuationToken(
-                    feedTokenInternal.GetContinuation(),
-                    this.distinctMap.GetContinuationToken()).ToString());
+                FeedTokenEPKRange feedTokenInternal = feedToken as FeedTokenEPKRange;
+                feedToken = new FeedTokenEPKRange(
+                    feedTokenInternal.ContainerRid,
+                    feedTokenInternal.CompositeContinuationTokens.Select(token => token.Range).ToList(),
+                    new DistinctContinuationToken(
+                        feedTokenInternal.GetContinuation(),
+                        this.distinctMap.GetContinuationToken()).ToString());
                 return true;
             }
         }

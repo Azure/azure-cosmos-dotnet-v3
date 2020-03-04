@@ -664,16 +664,26 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             List<T> resultsFromTryGetContinuationToken = new List<T>();
             FeedToken feedToken = null;
+            ContainerCore containerCore;
+            if (container is ContainerInlineCore containerInlineCore)
+            {
+                containerCore = (ContainerCore)containerInlineCore;
+            }
+            else
+            {
+                containerCore = (ContainerCore)container;
+            }
+
             bool hasMoreResults = true;
             do
             {
                 QueryRequestOptions computeRequestOptions = queryRequestOptions.Clone();
                 computeRequestOptions.ExecutionEnvironment = Cosmos.Query.Core.ExecutionContext.ExecutionEnvironment.Compute;
 
-                FeedIteratorInternal itemQuery = feedToken == null? ((ContainerCore)container).GetItemQueryStreamIterator(
+                FeedIteratorInternal itemQuery = feedToken == null? containerCore.GetItemQueryStreamIterator(
                    queryText: query,
                    requestOptions: computeRequestOptions) as FeedIteratorInternal
-                   : ((ContainerCore)container).GetItemQueryStreamIterator(
+                   : containerCore.GetItemQueryStreamIterator(
                    queryText: query,
                    requestOptions: computeRequestOptions,
                    feedToken: feedToken) as FeedIteratorInternal;
@@ -697,10 +707,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
                 catch (CosmosException cosmosException) when (cosmosException.StatusCode == (HttpStatusCode)429)
                 {
-                    itemQuery = feedToken == null ? ((ContainerCore)container).GetItemQueryStreamIterator(
+                    itemQuery = feedToken == null ? containerCore.GetItemQueryStreamIterator(
                        queryText: query,
                        requestOptions: computeRequestOptions) as FeedIteratorInternal
-                       : ((ContainerCore)container).GetItemQueryStreamIterator(
+                       : containerCore.GetItemQueryStreamIterator(
                        queryText: query,
                        requestOptions: computeRequestOptions,
                        feedToken: feedToken) as FeedIteratorInternal;

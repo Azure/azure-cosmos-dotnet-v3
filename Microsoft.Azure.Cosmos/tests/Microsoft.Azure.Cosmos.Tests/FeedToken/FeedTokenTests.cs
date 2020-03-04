@@ -21,43 +21,43 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void FeedToken_EPK_MoveToNextTokenCircles()
         {
             const string containerRid = "containerRid";
-            List<Documents.PartitionKeyRange> keyRanges = new List<Documents.PartitionKeyRange>()
+            List<Documents.Routing.Range<string>> keyRanges = new List<Documents.Routing.Range<string>>()
             {
-                new Documents.PartitionKeyRange() { MinInclusive = "A", MaxExclusive ="B" },
-                new Documents.PartitionKeyRange() { MinInclusive = "D", MaxExclusive ="E" },
+                new Documents.Routing.Range<string>("A", "B", true, false),
+                new Documents.Routing.Range<string>("D", "E", true, false),
             };
-            FeedTokenEPKRange token = new FeedTokenEPKRange(containerRid, keyRanges);
-            Assert.AreEqual(keyRanges[0].MinInclusive, token.CompositeContinuationTokens.Peek().Range.Min);
+            FeedTokenEPKRange token = new FeedTokenEPKRange(containerRid, keyRanges, continuationToken: null);
+            Assert.AreEqual(keyRanges[0].Min, token.CompositeContinuationTokens.Peek().Range.Min);
             token.UpdateContinuation("something");
-            Assert.AreEqual(keyRanges[1].MinInclusive, token.CompositeContinuationTokens.Peek().Range.Min);
+            Assert.AreEqual(keyRanges[1].Min, token.CompositeContinuationTokens.Peek().Range.Min);
             token.UpdateContinuation("something");
-            Assert.AreEqual(keyRanges[0].MinInclusive, token.CompositeContinuationTokens.Peek().Range.Min);
+            Assert.AreEqual(keyRanges[0].Min, token.CompositeContinuationTokens.Peek().Range.Min);
             token.UpdateContinuation("something");
-            Assert.AreEqual(keyRanges[1].MinInclusive, token.CompositeContinuationTokens.Peek().Range.Min);
+            Assert.AreEqual(keyRanges[1].Min, token.CompositeContinuationTokens.Peek().Range.Min);
         }
 
         [TestMethod]
         public void FeedToken_EPK_Scale()
         {
             const string containerRid = "containerRid";
-            List<Documents.PartitionKeyRange> keyRanges = new List<Documents.PartitionKeyRange>()
+            List<Documents.Routing.Range<string>> keyRanges = new List<Documents.Routing.Range<string>>()
             {
-                new Documents.PartitionKeyRange() { MinInclusive = "A", MaxExclusive ="B" },
-                new Documents.PartitionKeyRange() { MinInclusive = "D", MaxExclusive ="E" },
+                new Documents.Routing.Range<string>("A", "B", true, false),
+                new Documents.Routing.Range<string>("D", "E", true, false),
             };
-            FeedTokenEPKRange token = new FeedTokenEPKRange(containerRid, keyRanges);
+            FeedTokenEPKRange token = new FeedTokenEPKRange(containerRid, keyRanges, continuationToken: null);
             IReadOnlyList<FeedToken> splitTokens = token.Scale();
             Assert.AreEqual(keyRanges.Count, splitTokens.Count);
 
             List<FeedTokenEPKRange> feedTokenEPKRanges = splitTokens.Select(t => t as FeedTokenEPKRange).ToList();
-            Assert.AreEqual(keyRanges[0].MinInclusive, feedTokenEPKRanges[0].CompositeContinuationTokens.Peek().Range.Min);
-            Assert.AreEqual(keyRanges[0].MaxExclusive, feedTokenEPKRanges[0].CompositeContinuationTokens.Peek().Range.Max);
-            Assert.AreEqual(keyRanges[1].MinInclusive, feedTokenEPKRanges[1].CompositeContinuationTokens.Peek().Range.Min);
-            Assert.AreEqual(keyRanges[1].MaxExclusive, feedTokenEPKRanges[1].CompositeContinuationTokens.Peek().Range.Max);
-            Assert.AreEqual(keyRanges[0].MinInclusive, feedTokenEPKRanges[0].CompleteRange.Min);
-            Assert.AreEqual(keyRanges[0].MaxExclusive, feedTokenEPKRanges[0].CompleteRange.Max);
-            Assert.AreEqual(keyRanges[1].MinInclusive, feedTokenEPKRanges[1].CompleteRange.Min);
-            Assert.AreEqual(keyRanges[1].MaxExclusive, feedTokenEPKRanges[1].CompleteRange.Max);
+            Assert.AreEqual(keyRanges[0].Min, feedTokenEPKRanges[0].CompositeContinuationTokens.Peek().Range.Min);
+            Assert.AreEqual(keyRanges[0].Max, feedTokenEPKRanges[0].CompositeContinuationTokens.Peek().Range.Max);
+            Assert.AreEqual(keyRanges[1].Min, feedTokenEPKRanges[1].CompositeContinuationTokens.Peek().Range.Min);
+            Assert.AreEqual(keyRanges[1].Max, feedTokenEPKRanges[1].CompositeContinuationTokens.Peek().Range.Max);
+            Assert.AreEqual(keyRanges[0].Min, feedTokenEPKRanges[0].CompleteRange.Min);
+            Assert.AreEqual(keyRanges[0].Max, feedTokenEPKRanges[0].CompleteRange.Max);
+            Assert.AreEqual(keyRanges[1].Min, feedTokenEPKRanges[1].CompleteRange.Min);
+            Assert.AreEqual(keyRanges[1].Max, feedTokenEPKRanges[1].CompleteRange.Max);
 
             FeedTokenEPKRange singleToken = new FeedTokenEPKRange(containerRid, new Documents.Routing.Range<string>("A", "B", true, false), continuationToken: null);
             Assert.AreEqual(0, singleToken.Scale().Count);
@@ -67,12 +67,12 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void FeedToken_EPK_TryParse()
         {
             const string containerRid = "containerRid";
-            List<Documents.PartitionKeyRange> keyRanges = new List<Documents.PartitionKeyRange>()
+            List<Documents.Routing.Range<string>> keyRanges = new List<Documents.Routing.Range<string>>()
             {
-                new Documents.PartitionKeyRange() { MinInclusive = "A", MaxExclusive ="B" },
-                new Documents.PartitionKeyRange() { MinInclusive = "D", MaxExclusive ="E" },
+                new Documents.Routing.Range<string>("A", "B", true, false),
+                new Documents.Routing.Range<string>("D", "E", true, false),
             };
-            FeedTokenEPKRange token = new FeedTokenEPKRange(containerRid, keyRanges);
+            FeedTokenEPKRange token = new FeedTokenEPKRange(containerRid, keyRanges, continuationToken: null);
             Assert.IsTrue(FeedTokenEPKRange.TryParseInstance(token.ToString(), out FeedToken parsed));
             Assert.IsFalse(FeedTokenEPKRange.TryParseInstance("whatever", out FeedToken _));
         }
@@ -149,15 +149,15 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void FeedToken_EPK_CompleteRange()
         {
             const string containerRid = "containerRid";
-            List<Documents.PartitionKeyRange> keyRanges = new List<Documents.PartitionKeyRange>()
+            List<Documents.Routing.Range<string>> keyRanges = new List<Documents.Routing.Range<string>>()
             {
-                new Documents.PartitionKeyRange() { MinInclusive = "A", MaxExclusive ="B" },
-                new Documents.PartitionKeyRange() { MinInclusive = "D", MaxExclusive ="E" },
+                new Documents.Routing.Range<string>("A", "B", true, false),
+                new Documents.Routing.Range<string>("D", "E", true, false)
             };
-            FeedTokenEPKRange token = new FeedTokenEPKRange(containerRid, keyRanges);
+            FeedTokenEPKRange token = new FeedTokenEPKRange(containerRid, keyRanges, continuationToken: null);
             Assert.AreEqual(keyRanges.Count, token.CompositeContinuationTokens.Count);
-            Assert.AreEqual(keyRanges[0].MinInclusive, token.CompleteRange.Min);
-            Assert.AreEqual(keyRanges[1].MaxExclusive, token.CompleteRange.Max);
+            Assert.AreEqual(keyRanges[0].Min, token.CompleteRange.Min);
+            Assert.AreEqual(keyRanges[1].Max, token.CompleteRange.Max);
         }
 
         [TestMethod]
@@ -327,11 +327,11 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             const string containerRid = "containerRid";
             FeedTokenEPKRange token = new FeedTokenEPKRange(containerRid,
-                new List<Documents.PartitionKeyRange>() {
-                    new Documents.PartitionKeyRange() { MinInclusive = "A", MaxExclusive = "B" },
-                    new Documents.PartitionKeyRange() { MinInclusive = "B", MaxExclusive = "C" },
-                    new Documents.PartitionKeyRange() { MinInclusive = "C", MaxExclusive = "D" }
-                });
+                new List<Documents.Routing.Range<string>>() {
+                    new Documents.Routing.Range<string>("A", "B", true, false),
+                    new Documents.Routing.Range<string>("B", "C", true, false),
+                    new Documents.Routing.Range<string>("C", "D", true, false)
+                }, continuationToken: null);
 
             // First range has continuation
             token.UpdateContinuation(Guid.NewGuid().ToString());

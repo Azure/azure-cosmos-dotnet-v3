@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
@@ -182,7 +183,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                     return false;
                 }
 
-                FeedTokenInternal feedTokenInternal = feedToken as FeedTokenInternal;
+                FeedTokenEPKRange feedTokenInternal = feedToken as FeedTokenEPKRange;
                 string continuationToken;
                 if (this.Source.IsDone)
                 {
@@ -198,7 +199,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                         feedTokenInternal.GetContinuation()).ToString();
                 }
 
-                feedTokenInternal.UpdateContinuation(continuationToken);
+                feedToken = new FeedTokenEPKRange(
+                    feedTokenInternal.ContainerRid,
+                    feedTokenInternal.CompositeContinuationTokens.Select(token => token.Range).ToList(),
+                    continuationToken);
                 return true;
             }
 

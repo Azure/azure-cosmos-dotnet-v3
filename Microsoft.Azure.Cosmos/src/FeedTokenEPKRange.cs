@@ -49,23 +49,24 @@ namespace Microsoft.Azure.Cosmos
 
         public FeedTokenEPKRange(
             string containerRid,
-            IReadOnlyList<Documents.PartitionKeyRange> keyRanges)
+            IReadOnlyList<Documents.Routing.Range<string>> ranges,
+            string continuationToken)
             : this(containerRid)
         {
-            if (keyRanges == null)
+            if (ranges == null)
             {
-                throw new ArgumentNullException(nameof(keyRanges));
+                throw new ArgumentNullException(nameof(ranges));
             }
 
-            if (keyRanges.Count == 0)
+            if (ranges.Count == 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(keyRanges));
+                throw new ArgumentOutOfRangeException(nameof(ranges));
             }
 
-            this.CompleteRange = new Documents.Routing.Range<string>(keyRanges[0].MinInclusive, keyRanges[keyRanges.Count - 1].MaxExclusive, true, false);
-            foreach (Documents.PartitionKeyRange keyRange in keyRanges)
+            this.CompleteRange = new Documents.Routing.Range<string>(ranges[0].Min, ranges[ranges.Count - 1].Max, true, false);
+            foreach (Documents.Routing.Range<string> range in ranges)
             {
-                this.CompositeContinuationTokens.Enqueue(FeedTokenEPKRange.CreateCompositeContinuationTokenForRange(keyRange.MinInclusive, keyRange.MaxExclusive, null));
+                this.CompositeContinuationTokens.Enqueue(FeedTokenEPKRange.CreateCompositeContinuationTokenForRange(range.Min, range.Max, continuationToken));
             }
 
             this.currentToken = this.CompositeContinuationTokens.Peek();
@@ -88,6 +89,9 @@ namespace Microsoft.Azure.Cosmos
             this.currentToken = this.CompositeContinuationTokens.Peek();
         }
 
+        /// <summary>
+        /// Used for deserialization only
+        /// </summary>
         public FeedTokenEPKRange(
             string containerRid,
             Documents.Routing.Range<string> completeRange,
@@ -160,10 +164,7 @@ namespace Microsoft.Azure.Cosmos
             string containerRid,
             Documents.PartitionKeyDefinition partitionKeyDefinition)
         {
-            return Task.FromResult(new List<Documents.Routing.Range<string>>
-                {
-                    this.currentToken.Range
-                });
+            return Task.FromResult(this.CompositeContinuationTokens.Select(token => token.Range).ToList());
         }
 
         public override async Task<IEnumerable<string>> GetPartitionKeyRangesAsync(

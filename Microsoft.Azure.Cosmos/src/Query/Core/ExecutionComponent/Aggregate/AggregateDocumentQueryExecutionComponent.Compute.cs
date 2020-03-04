@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
@@ -200,11 +201,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
                 return false;
             }
 
-            FeedTokenInternal feedTokenInternal = feedToken as FeedTokenInternal;
+            FeedTokenEPKRange feedTokenInternal = feedToken as FeedTokenEPKRange;
             AggregateContinuationToken aggregateContinuationToken = AggregateContinuationToken.Create(
                 this.singleGroupAggregator.GetContinuationToken(),
                 feedTokenInternal.GetContinuation());
-            feedTokenInternal.UpdateContinuation(aggregateContinuationToken.ToString());
+
+            feedToken = new FeedTokenEPKRange(
+                feedTokenInternal.ContainerRid,
+                feedTokenInternal.CompositeContinuationTokens.Select(token => token.Range).ToList(),
+                aggregateContinuationToken.ToString());
             return true;
         }
 

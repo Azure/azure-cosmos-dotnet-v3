@@ -142,10 +142,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                 return false;
             }
 
-            FeedTokenInternal feedTokenInternal = feedToken as FeedTokenInternal;
-            feedTokenInternal.UpdateContinuation(new OffsetContinuationToken(
-                    this.skipCount,
-                    feedTokenInternal.GetContinuation()).ToString());
+            FeedTokenEPKRange feedTokenInternal = feedToken as FeedTokenEPKRange;
+            feedToken = new FeedTokenEPKRange(
+                    feedTokenInternal.ContainerRid,
+                    feedTokenInternal.CompositeContinuationTokens.Select(token => token.Range).ToList(),
+                    new OffsetContinuationToken(
+                        this.skipCount,
+                        feedTokenInternal.GetContinuation()).ToString());
             return true;
         }
 
