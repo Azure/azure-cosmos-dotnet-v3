@@ -289,7 +289,7 @@ namespace Microsoft.Azure.Cosmos
                     return QueryResponseCore.CreateFailure(
                         statusCode: cosmosResponseMessage.StatusCode,
                         subStatusCodes: cosmosResponseMessage.Headers.SubStatusCode,
-                        errorMessage: cosmosResponseMessage.ErrorMessage,
+                        cosmosException: cosmosResponseMessage.CosmosException,
                         requestCharge: cosmosResponseMessage.Headers.RequestCharge,
                         activityId: cosmosResponseMessage.Headers.ActivityId,
                         diagnostics: pageDiagnostics);

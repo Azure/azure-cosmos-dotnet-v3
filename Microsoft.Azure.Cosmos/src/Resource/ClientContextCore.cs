@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
 
@@ -23,7 +24,9 @@ namespace Microsoft.Azure.Cosmos
             CosmosResponseFactory cosmosResponseFactory,
             RequestInvokerHandler requestHandler,
             DocumentClient documentClient,
-            string userAgent)
+            string userAgent,
+            EncryptionProcessor encryptionProcessor = null,
+            DekCache dekCache = null)
         {
             this.Client = client;
             this.ClientOptions = clientOptions;
@@ -32,6 +35,8 @@ namespace Microsoft.Azure.Cosmos
             this.RequestHandler = requestHandler;
             this.DocumentClient = documentClient;
             this.UserAgent = userAgent;
+            this.EncryptionProcessor = encryptionProcessor;
+            this.DekCache = dekCache;
         }
 
         /// <summary>
@@ -50,6 +55,10 @@ namespace Microsoft.Azure.Cosmos
         internal override CosmosClientOptions ClientOptions { get; }
 
         internal override string UserAgent { get; }
+
+        internal override EncryptionProcessor EncryptionProcessor { get; }
+
+        internal override DekCache DekCache { get; }
 
         /// <summary>
         /// Generates the URI link for the resource
@@ -191,17 +200,21 @@ namespace Microsoft.Azure.Cosmos
             string containerUri,
             CancellationToken cancellationToken = default(CancellationToken))
         {
+            CosmosDiagnosticsContextCore diagnosticsContext = new CosmosDiagnosticsContextCore();
             ClientCollectionCache collectionCache = await this.DocumentClient.GetCollectionCacheAsync();
             try
             {
-                return await collectionCache.ResolveByNameAsync(
-                    HttpConstants.Versions.CurrentVersion,
-                    containerUri,
-                    cancellationToken);
+                using (diagnosticsContext.CreateScope("ContainerCache.ResolveByNameAsync"))
+                {
+                    return await collectionCache.ResolveByNameAsync(
+                        HttpConstants.Versions.CurrentVersion,
+                        containerUri,
+                        cancellationToken);
+                }
             }
             catch (DocumentClientException ex)
             {
-                throw new CosmosException(ex.ToCosmosResponseMessage(null), ex.Message, ex.Error);
+                throw CosmosExceptionFactory.Create(ex, diagnosticsContext);
             }
         }
 
