@@ -47,6 +47,16 @@ namespace Microsoft.Azure.Cosmos
             this.currentToken = this.CompositeContinuationTokens.Peek();
         }
 
+        public static FeedTokenEPKRange Clone(
+            FeedTokenEPKRange feedTokenEPKRange,
+            string continuationToken)
+        {
+            return new FeedTokenEPKRange(
+                feedTokenEPKRange.ContainerRid,
+                feedTokenEPKRange.CompositeContinuationTokens.Select(token => token.Range).ToList(),
+                continuationToken);
+        }
+
         public FeedTokenEPKRange(
             string containerRid,
             IReadOnlyList<Documents.Routing.Range<string>> ranges,

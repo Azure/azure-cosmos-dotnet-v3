@@ -206,9 +206,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
                 this.singleGroupAggregator.GetContinuationToken(),
                 feedTokenInternal.GetContinuation());
 
-            feedToken = new FeedTokenEPKRange(
-                feedTokenInternal.ContainerRid,
-                feedTokenInternal.CompositeContinuationTokens.Select(token => token.Range).ToList(),
+            feedToken = FeedTokenEPKRange.Clone(
+                feedTokenInternal,
                 aggregateContinuationToken.ToString());
             return true;
         }

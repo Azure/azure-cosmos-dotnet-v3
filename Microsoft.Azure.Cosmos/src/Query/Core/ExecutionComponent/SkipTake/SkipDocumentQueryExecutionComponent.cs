@@ -143,9 +143,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
             }
 
             FeedTokenEPKRange feedTokenInternal = feedToken as FeedTokenEPKRange;
-            feedToken = new FeedTokenEPKRange(
-                    feedTokenInternal.ContainerRid,
-                    feedTokenInternal.CompositeContinuationTokens.Select(token => token.Range).ToList(),
+            feedToken = FeedTokenEPKRange.Clone(
+                    feedTokenInternal,
                     new OffsetContinuationToken(
                         this.skipCount,
                         feedTokenInternal.GetContinuation()).ToString());
