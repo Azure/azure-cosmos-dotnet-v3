@@ -5,10 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Diagnostics
 {
     using System;
-    using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Text;
-    using Newtonsoft.Json;
 
     /// <summary>
     /// This represents a single scope in the diagnostics.
