@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
     using Newtonsoft.Json.Linq;
     using System;
     using System.Collections.Generic;
@@ -74,6 +75,53 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         [DataRow(true)]
         [DataRow(false)]
+        public async Task PointOperationRequestTimeoutDiagnostic(bool disableDiagnostics)
+        {
+            ItemRequestOptions requestOptions = new ItemRequestOptions()
+            {
+                DiagnosticContext = disableDiagnostics ? EmptyCosmosDiagnosticsContext.Singleton : null
+            };
+
+            Guid exceptionActivityId = Guid.NewGuid();
+            string transportExceptionDescription = "transportExceptionDescription" + Guid.NewGuid();
+            Container containerWithTransportException = TransportClientHelper.GetContainerWithItemTransportException(
+                this.database.Id,
+                this.Container.Id,
+                exceptionActivityId,
+                transportExceptionDescription);
+
+            //Checking point operation diagnostics on typed operations
+            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+            try
+            {
+                ItemResponse<ToDoActivity> createResponse = await containerWithTransportException.CreateItemAsync<ToDoActivity>(
+                  item: testItem,
+                  requestOptions: requestOptions);
+                Assert.Fail("Should have thrown a request timeout exception");
+            }
+            catch(CosmosException ce) when (ce.StatusCode == System.Net.HttpStatusCode.RequestTimeout)
+            {
+                string exception = ce.ToString();
+                Assert.IsNotNull(exception);
+                Assert.IsTrue(exception.Contains(exceptionActivityId.ToString()));
+                Assert.IsTrue(exception.Contains(transportExceptionDescription));
+
+                string diagnosics = ce.Diagnostics.ToString();
+                if (disableDiagnostics)
+                {
+                    Assert.IsTrue(string.IsNullOrEmpty(diagnosics));
+                }
+                else
+                {
+                    Assert.IsFalse(string.IsNullOrEmpty(diagnosics));
+                    Assert.IsTrue(exception.Contains(diagnosics));
+                }
+            }
+        }
+
+        [TestMethod]
+        [DataRow(true)]
+        [DataRow(false)]
         public async Task PointOperationDiagnostic(bool disableDiagnostics)
         {
             ItemRequestOptions requestOptions = new ItemRequestOptions()
@@ -91,7 +139,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ItemResponse<ToDoActivity> readResponse = await this.Container.ReadItemAsync<ToDoActivity>(
                 id: testItem.id,
                 partitionKey: new PartitionKey(testItem.status),
-                requestOptions: requestOptions);
+                requestOptions);
+            CosmosDiagnosticsTests.VerifyPointDiagnostics(readResponse.Diagnostics, disableDiagnostics);
             Assert.IsNotNull(readResponse.Diagnostics);
 
             testItem.description = "NewDescription";
@@ -102,7 +151,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 requestOptions: requestOptions);
 
             Assert.AreEqual(replaceResponse.Resource.description, "NewDescription");
-            CosmosDiagnosticsTests.VerifyPointDiagnostics(createResponse.Diagnostics, disableDiagnostics);
+            CosmosDiagnosticsTests.VerifyPointDiagnostics(replaceResponse.Diagnostics, disableDiagnostics);
 
             ItemResponse<ToDoActivity> deleteResponse = await this.Container.DeleteItemAsync<ToDoActivity>(
                 partitionKey: new Cosmos.PartitionKey(testItem.status),

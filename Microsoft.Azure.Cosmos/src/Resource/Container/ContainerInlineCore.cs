@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
     using System.Linq;
     using System.Threading;
@@ -261,7 +262,57 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.container.CreateTransactionalBatch(partitionKey);
         }
+#if PREVIEW
+        public override Task<IReadOnlyList<FeedToken>> GetFeedTokensAsync(CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return TaskHelper.RunInlineIfNeededAsync(() => this.container.GetFeedTokensAsync(cancellationToken));
+        }
 
+        public override FeedIterator GetChangeFeedStreamIterator(ChangeFeedRequestOptions changeFeedRequestOptions = null)
+        {
+            return this.container.GetChangeFeedStreamIterator(changeFeedRequestOptions);
+        }
+
+        public override FeedIterator GetChangeFeedStreamIterator(
+            FeedToken feedToken,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null)
+        {
+            return this.container.GetChangeFeedStreamIterator(feedToken, changeFeedRequestOptions);
+        }
+
+        public override FeedIterator GetChangeFeedStreamIterator(
+            PartitionKey partitionKey,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null)
+        {
+            return this.container.GetChangeFeedStreamIterator(partitionKey, changeFeedRequestOptions);
+        }
+
+        public override FeedIterator<T> GetChangeFeedIterator<T>(ChangeFeedRequestOptions changeFeedRequestOptions = null)
+        {
+            return this.container.GetChangeFeedIterator<T>(changeFeedRequestOptions);
+        }
+
+        public override FeedIterator<T> GetChangeFeedIterator<T>(
+            FeedToken feedToken,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null)
+        {
+            return this.container.GetChangeFeedIterator<T>(feedToken, changeFeedRequestOptions);
+        }
+
+        public override FeedIterator<T> GetChangeFeedIterator<T>(
+            PartitionKey partitionKey,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null)
+        {
+            return this.container.GetChangeFeedIterator<T>(partitionKey, changeFeedRequestOptions);
+        }
+
+        public override Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
+            FeedToken feedToken,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return TaskHelper.RunInlineIfNeededAsync(() => this.container.GetPartitionKeyRangesAsync(feedToken, cancellationToken));
+        }
+#endif
         public static implicit operator ContainerCore(ContainerInlineCore containerInlineCore) => containerInlineCore.container;
     }
 }

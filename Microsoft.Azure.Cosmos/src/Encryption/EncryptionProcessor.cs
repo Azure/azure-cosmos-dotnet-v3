@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -116,7 +117,14 @@ namespace Microsoft.Azure.Cosmos
                 return input;
             }
 
-            JObject itemJObj = EncryptionProcessor.baseSerializer.FromStream<JObject>(input);
+            JObject itemJObj;
+            using (StreamReader sr = new StreamReader(input, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true))
+            {
+                using (JsonTextReader jsonTextReader = new JsonTextReader(sr))
+                {
+                    itemJObj = JsonSerializer.Create().Deserialize<JObject>(jsonTextReader);
+                }
+            }
 
             JProperty encryptionPropertiesJProp = itemJObj.Property(Constants.Properties.EncryptedInfo);
             JObject encryptionPropertiesJObj = null;
@@ -134,7 +142,7 @@ namespace Microsoft.Azure.Cosmos
             EncryptionProperties encryptionProperties = encryptionPropertiesJObj.ToObject<EncryptionProperties>();
             if (encryptionProperties.EncryptionFormatVersion != 1)
             {
-                throw new CosmosException(HttpStatusCode.InternalServerError, $"Unknown encryption format version: {encryptionProperties.EncryptionFormatVersion}. Please upgrade your SDK to the latest version.");
+                throw CosmosExceptionFactory.CreateInternalServerErrorException($"Unknown encryption format version: {encryptionProperties.EncryptionFormatVersion}. Please upgrade your SDK to the latest version.");
             }
 
             DataEncryptionKeyCore tempDek = (DataEncryptionKeyInlineCore)database.GetDataEncryptionKey(id: "unknown");
