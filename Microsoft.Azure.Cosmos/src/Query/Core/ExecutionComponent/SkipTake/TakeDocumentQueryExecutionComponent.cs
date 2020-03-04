@@ -231,7 +231,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                     throw new ArgumentException($"Unknown {nameof(TakeEnum)}: {this.takeEnum}");
             }
 
-            feedToken = FeedTokenEPKRange.Clone(
+            feedToken = FeedTokenEPKRange.Copy(
                     feedTokenInternal,
                     takeContinuationToken.ToString());
             return true;

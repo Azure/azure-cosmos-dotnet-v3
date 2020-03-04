@@ -178,7 +178,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                 }
 
                 FeedTokenEPKRange feedTokenInternal = feedToken as FeedTokenEPKRange;
-                feedToken = FeedTokenEPKRange.Clone(
+                feedToken = FeedTokenEPKRange.Copy(
                     feedTokenInternal,
                     new DistinctContinuationToken(
                         feedTokenInternal.GetContinuation(),

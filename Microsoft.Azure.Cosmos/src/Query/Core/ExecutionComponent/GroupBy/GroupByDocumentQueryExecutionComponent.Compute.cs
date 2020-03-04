@@ -199,7 +199,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                         feedTokenInternal.GetContinuation()).ToString();
                 }
 
-                feedToken = FeedTokenEPKRange.Clone(
+                feedToken = FeedTokenEPKRange.Copy(
                     feedTokenInternal,
                     continuationToken);
                 return true;

@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 List<Task<List<string>>> tasks = feedTokens.Select(async feedToken =>
                 {
                     List<string> results = new List<string>();
-                    FeedIterator feedIterator = container.GetItemQueryStreamIterator(queryText: "select * from T where STARTSWITH(T.id, \"BasicItem\")", feedToken: feedToken);
+                    FeedIteratorInternal feedIterator = container.GetItemQueryStreamIterator(queryText: "select * from T where STARTSWITH(T.id, \"BasicItem\")", feedToken: feedToken, requestOptions: new QueryRequestOptions() { MaxItemCount = 10 }) as FeedIteratorInternal;
                     while (feedIterator.HasMoreResults)
                     {
                         using (ResponseMessage responseMessage =
@@ -137,6 +137,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                     }
                                 }
                             }
+
+                            Assert.IsTrue(feedIterator.TryGetFeedToken(out FeedToken finalFeedToken));
+                            if (finalFeedToken != null)
+                            {
+                                // Since we are using FeedTokens for each PKRange, they shouldn't be able to scale
+                                Assert.AreEqual(0, finalFeedToken.Scale().Count);
+                            }
                         }
                     }
 
@@ -146,6 +153,72 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await Task.WhenAll(tasks);
 
                 CollectionAssert.AreEquivalent(generatedIds, tasks.SelectMany(t => t.Result).ToList());
+            }
+            finally
+            {
+                await container?.DeleteContainerAsync();
+            }
+        }
+
+        /// <summary>
+        /// This test will execute a query once over a multiple partition collection, get the FeedToken, call Scale, and see if the resulting FeedToken produces more.
+        /// </summary>
+        [TestMethod]
+        public async Task CanScale()
+        {
+            ContainerCore container = null;
+            try
+            {
+                // Create a container large enough to have at least 2 partitions
+                ContainerResponse containerResponse = await this.database.CreateContainerAsync(
+                    id: Guid.NewGuid().ToString(),
+                    partitionKeyPath: "/id",
+                    throughput: 15000);
+                container = (ContainerInlineCore)containerResponse;
+
+                List<string> generatedIds = Enumerable.Range(0, 1000).Select(n => $"BasicItem{n}").ToList();
+                foreach (string id in generatedIds)
+                {
+                    string item = $@"
+                    {{    
+                        ""id"": ""{id}""
+                    }}";
+
+                    using (ResponseMessage createResponse = await container.CreateItemStreamAsync(
+                            QueryFeedTokenTests.GenerateStreamFromString(item),
+                            new Cosmos.PartitionKey(id)))
+                    {
+                        Assert.IsTrue(createResponse.IsSuccessStatusCode);
+                    }
+                }
+
+                List<string> results = new List<string>();
+                FeedIteratorInternal initialIterator = container.GetItemQueryStreamIterator(queryText: "select * from T where STARTSWITH(T.id, \"BasicItem\")") as FeedIteratorInternal;
+                while (initialIterator.HasMoreResults)
+                {
+                    using (ResponseMessage responseMessage =
+                        await initialIterator.ReadNextAsync(this.cancellationToken))
+                    {
+                        if (responseMessage.IsSuccessStatusCode)
+                        {
+                            using (StreamReader reader = new StreamReader(responseMessage.Content))
+                            {
+                                string json = await reader.ReadToEndAsync();
+                                JArray documents = (JArray)JObject.Parse(json).SelectToken("Documents");
+                                foreach (JObject document in documents)
+                                {
+                                    results.Add(document.SelectToken("id").ToString());
+                                }
+                            }
+                        }
+
+                        break;
+                    }
+                }
+
+                Assert.IsTrue(initialIterator.TryGetFeedToken(out FeedToken baseFeedToken));
+                IReadOnlyList<FeedToken> feedTokens = baseFeedToken.Scale();
+                Assert.IsTrue(feedTokens.Count > 0, "Should be able to scale");
             }
             finally
             {

@@ -47,13 +47,13 @@ namespace Microsoft.Azure.Cosmos
             this.currentToken = this.CompositeContinuationTokens.Peek();
         }
 
-        public static FeedTokenEPKRange Clone(
+        public static FeedTokenEPKRange Copy(
             FeedTokenEPKRange feedTokenEPKRange,
             string continuationToken)
         {
             return new FeedTokenEPKRange(
                 feedTokenEPKRange.ContainerRid,
-                feedTokenEPKRange.CompositeContinuationTokens.Select(token => token.Range).ToList(),
+                feedTokenEPKRange.CompleteRange,
                 continuationToken);
         }
 
