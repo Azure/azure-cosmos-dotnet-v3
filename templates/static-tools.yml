@@ -28,6 +28,7 @@ jobs:
   - task: securedevelopmentteam.vss-secure-development-tools.build-task-credscan.CredScan@2
     displayName: 'CredScan'
     inputs:
+      toolMajorVersion: V2
       scanFolder: $(Build.SourcesDirectory)
       suppressionsFile: CredScanSuppressions.json
       debugMode: true
