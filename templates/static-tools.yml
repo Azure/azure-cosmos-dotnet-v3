@@ -31,7 +31,7 @@ jobs:
       toolMajorVersion: V1
       scanFolder: $(Build.SourcesDirectory)
       suppressionsFile: CredScanSuppressions.json
-      debugMode: true
+      debugMode: false
       verboseOutput: false
 
   # Scan text elements including code, code comments, and content/web pages, for sensitive terms based on legal, cultural, or geopolitical reasons
