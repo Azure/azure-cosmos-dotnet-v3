@@ -1119,5 +1119,205 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="partitionKey">The partition key for all items in the batch.</param>
         /// <returns>A new instance of <see cref="TransactionalBatch"/>.</returns>
         public abstract TransactionalBatch CreateTransactionalBatch(PartitionKey partitionKey);
+
+#if PREVIEW
+        /// <summary>
+        /// Obtains a list of <see cref="FeedToken"/> that can be used to parallelize Read Feed operations.
+        /// </summary>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>A list of <see cref="FeedToken"/>.</returns>
+        public abstract Task<IReadOnlyList<FeedToken>> GetFeedTokensAsync(CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
+        ///  This method creates an iterator to consume the container's Change Feed.
+        ///  The iterator exposes mechanisms to save and resume state through <see cref="FeedIterator.FeedToken"/>.
+        /// </summary>
+        /// <param name="changeFeedRequestOptions">(Optional) The options for the Change Feed consumption.</param>
+        /// <returns>An iterator to go through the Change Feed.</returns>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// FeedIterator feedIterator = this.Container.GetChangeFeedStreamIterator();
+        ///
+        /// while (feedIterator.HasMoreResults)
+        /// {
+        ///     using (ResponseMessage response = await feedIterator.ReadNextAsync())
+        ///     {
+        ///         using (StreamReader sr = new StreamReader(response.Content))
+        ///         using (JsonTextReader jtr = new JsonTextReader(sr))
+        ///         {
+        ///             JObject result = JObject.Load(jtr);
+        ///         }
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract FeedIterator GetChangeFeedStreamIterator(ChangeFeedRequestOptions changeFeedRequestOptions = null);
+
+        /// <summary>
+        ///  This method creates an iterator to consume a FeedToken's Change Feed.
+        ///  The iterator exposes mechanisms to save and resume state through <see cref="FeedIterator.FeedToken"/>.
+        /// </summary>
+        /// <param name="feedToken">A FeedToken obtained from <see cref="Container.GetFeedTokensAsync(CancellationToken)"/> or from a previous FeedIterator</param>
+        /// <param name="changeFeedRequestOptions">(Optional) The options for the Change Feed consumption.</param>
+        /// <seealso cref="Container.GetFeedTokensAsync(CancellationToken)"/>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// IReadOnlyList<FeedToken> feedTokens = await this.Container.GetFeedTokensAsync();
+        /// // Distribute feedTokens across multiple compute units and pass each one to a different iterator
+        /// FeedIterator feedIterator = this.Container.GetChangeFeedStreamIterator(feedToken[0]);
+        ///
+        /// while (feedIterator.HasMoreResults)
+        /// {
+        ///     using (ResponseMessage response = await feedIterator.ReadNextAsync())
+        ///     {
+        ///         using (StreamReader sr = new StreamReader(response.Content))
+        ///         using (JsonTextReader jtr = new JsonTextReader(sr))
+        ///         {
+        ///             JObject result = JObject.Load(jtr);
+        ///         }
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <returns>An iterator to go through the Change Feed for a particular FeedToken.</returns>
+        public abstract FeedIterator GetChangeFeedStreamIterator(
+            FeedToken feedToken,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null);
+
+        /// <summary>
+        ///  This method creates an iterator to consume the Change Feed for a Partition Key value.
+        ///  The iterator exposes mechanisms to save and resume state through <see cref="FeedIterator.FeedToken"/>.
+        /// </summary>
+        /// <param name="partitionKey">A <see cref="PartitionKey"/> to read the Change Feed for.</param>
+        /// <param name="changeFeedRequestOptions">(Optional) The options for the Change Feed consumption.</param>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// FeedIterator feedIterator = this.Container.GetChangeFeedStreamIterator(new PartitionKey("myPartitionKey"));
+        ///
+        /// while (feedIterator.HasMoreResults)
+        /// {
+        ///     using (ResponseMessage response = await feedIterator.ReadNextAsync())
+        ///     {
+        ///         using (StreamReader sr = new StreamReader(response.Content))
+        ///         using (JsonTextReader jtr = new JsonTextReader(sr))
+        ///         {
+        ///             JObject result = JObject.Load(jtr);
+        ///         }
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <returns>An iterator to go through the Change Feed for a particular FeedToken.</returns>
+        public abstract FeedIterator GetChangeFeedStreamIterator(
+            PartitionKey partitionKey,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null);
+
+        /// <summary>
+        ///  This method creates an iterator to consume the container's Change Feed.
+        ///  The iterator exposes mechanisms to save and resume state through <see cref="FeedIterator.FeedToken"/>.
+        /// </summary>
+        /// <param name="changeFeedRequestOptions">(Optional) The options for the Change Feed consumption.</param>
+        /// <returns>An iterator to go through the Change Feed.</returns>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// FeedIterator<MyItem> feedIterator = this.Container.GetChangeFeedIterator<MyItem>();
+        /// FeedToken lastFeedTokenState;
+        /// while (feedIterator.HasMoreResults)
+        /// {
+        ///     FeedResponse<MyItem> response = await feedIterator.ReadNextAsync();
+        ///     foreach (var item in response)
+        ///     {
+        ///         Console.WriteLine(item);
+        ///     }
+        ///     
+        ///     // if saving state is needed, the FeedToken can be saved and stored
+        ///     lastFeedTokenState = feedIterator.FeedToken;
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract FeedIterator<T> GetChangeFeedIterator<T>(ChangeFeedRequestOptions changeFeedRequestOptions = null);
+
+        /// <summary>
+        ///  This method creates an iterator to consume a FeedToken's Change Feed.
+        ///  The iterator exposes mechanisms to save and resume state through <see cref="FeedIterator.FeedToken"/>.
+        /// </summary>
+        /// <param name="feedToken">A FeedToken obtained from <see cref="Container.GetFeedTokensAsync(CancellationToken)"/> or from a previous FeedIterator</param>
+        /// <param name="changeFeedRequestOptions">(Optional) The options for the Change Feed consumption.</param>
+        /// <seealso cref="Container.GetFeedTokensAsync(CancellationToken)"/>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// IReadOnlyList<FeedToken> feedTokens = await this.Container.GetFeedTokensAsync();
+        /// // Distribute feedTokens across multiple compute units and pass each one to a different iterator
+        /// FeedIterator<MyItem> feedIterator = this.Container.GetChangeFeedIterator<MyItem>(feedToken[0]);
+        /// FeedToken lastFeedTokenState;
+        /// while (feedIterator.HasMoreResults)
+        /// {
+        ///     FeedResponse<MyItem> response = await feedIterator.ReadNextAsync();
+        ///     foreach (var item in response)
+        ///     {
+        ///         Console.WriteLine(item);
+        ///     }
+        ///     
+        ///     // if saving state is needed, the FeedToken can be saved and stored
+        ///     lastFeedTokenState = feedIterator.FeedToken;
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <returns>An iterator to go through the Change Feed for a particular FeedToken.</returns>
+        public abstract FeedIterator<T> GetChangeFeedIterator<T>(
+            FeedToken feedToken,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null);
+
+        /// <summary>
+        ///  This method creates an iterator to consume the Change Feed for a Partition Key value.
+        ///  The iterator exposes mechanisms to save and resume state through <see cref="FeedIterator.FeedToken"/>.
+        /// </summary>
+        /// <param name="partitionKey">A <see cref="PartitionKey"/> to read the Change Feed for.</param>
+        /// <param name="changeFeedRequestOptions">(Optional) The options for the Change Feed consumption.</param>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// FeedIterator<MyItem> feedIterator = this.Container.GetChangeFeedIterator<MyItem>(new PartitionKey("myPartitionKey"));
+        /// FeedToken lastFeedTokenState;
+        /// while (feedIterator.HasMoreResults)
+        /// {
+        ///     FeedResponse<MyItem> response = await feedIterator.ReadNextAsync();
+        ///     foreach (var item in response)
+        ///     {
+        ///         Console.WriteLine(item);
+        ///     }
+        ///     
+        ///     // if saving state is needed, the FeedToken can be saved and stored
+        ///     lastFeedTokenState = feedIterator.FeedToken;
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <returns>An iterator to go through the Change Feed for a Partition Key.</returns>
+        public abstract FeedIterator<T> GetChangeFeedIterator<T>(
+            PartitionKey partitionKey,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null);
+
+        /// <summary>
+        /// Gets the list of Partition Key Range identifiers for a <see cref="FeedToken"/>.
+        /// </summary>
+        /// <param name="feedToken">A <see cref="FeedToken"/></param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>The list of Partition Key Range identifiers affected by a particular FeedToken.</returns>
+        /// <seealso cref="Container.GetFeedTokensAsync(CancellationToken)"/>
+        public abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
+            FeedToken feedToken,
+            CancellationToken cancellationToken = default(CancellationToken));
+#endif
     }
 }

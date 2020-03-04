@@ -12,16 +12,30 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// The Cosmos Change Feed request options
     /// </summary>
-    internal class ChangeFeedRequestOptions : RequestOptions
+#if PREVIEW
+    public
+#else
+    internal
+#endif
+    class ChangeFeedRequestOptions : RequestOptions
     {
         internal const string IfNoneMatchAllHeaderValue = "*";
         internal static readonly DateTime DateTimeStartFromBeginning = DateTime.MinValue.ToUniversalTime();
 
         /// <summary>
-        /// Specifies a particular point in time to start to read the change feed.
+        /// Gets or sets the maximum number of items to be returned in the enumeration operation in the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>
+        /// The maximum number of items to be returned in the enumeration operation.
+        /// </value> 
+        public int? MaxItemCount { get; set; }
+
+        /// <summary>
+        /// Gets or sets a particular point in time to start to read the change feed.
         /// </summary>
         /// <remarks>
-        /// In order to read the Change Feed from the beginning, set this to DateTime.MinValue.
+        /// Only applies in the case where no FeedToken is provided or the FeedToken was never used in a previous iterator.
+        /// In order to read the Change Feed from the beginning, set this to DateTime.MinValue.ToUniversalTime().
         /// </remarks>
         public DateTime? StartTime { get; set; }
 
@@ -45,6 +59,7 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
+            ChangeFeedRequestOptions.FillMaxItemCount(request, this.MaxItemCount);
             request.Headers.Add(HttpConstants.HttpHeaders.A_IM, HttpConstants.A_IMHeaderValues.IncrementalFeed);
 
             base.PopulateRequestOptions(request);
@@ -58,6 +73,13 @@ namespace Microsoft.Azure.Cosmos
             {
                 request.PartitionKeyRangeId = new PartitionKeyRangeIdentity(partitionKeyRangeId);
             }
+        }
+
+        internal static void FillPartitionKey(RequestMessage request, PartitionKey partitionKey)
+        {
+            Debug.Assert(request != null);
+
+            request.Headers.PartitionKey = partitionKey.ToJsonString();
         }
 
         internal static void FillContinuationToken(RequestMessage request, string continuationToken)
