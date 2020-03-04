@@ -2,7 +2,7 @@
   "tool": "Credential Scanner",
   "suppressions": [
     {
-      "file": "\\Microsoft.Azure.Cosmos\\tests\\Microsoft.Azure.Cosmos.Tests\\TestJsons\\runsCollection.json",
+      "folder": "\\Microsoft.Azure.Cosmos\\tests\\Microsoft.Azure.Cosmos.Tests\\TestJsons",
       "_justification": "folder to be suppressed for debugging purpose"
     }
   ]
