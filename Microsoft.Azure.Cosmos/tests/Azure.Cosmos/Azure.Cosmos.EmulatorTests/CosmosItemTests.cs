@@ -90,7 +90,7 @@ namespace Azure.Cosmos.EmulatorTests
             // Create a client that ignore null
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
-                Serializer = new CosmosTextJsonSerializer(
+                Serializer = CosmosTextJsonSerializer.CreateUserDefaultSerializer(
                     new CosmosSerializationOptions()
                     {
                         IgnoreNullValues = true

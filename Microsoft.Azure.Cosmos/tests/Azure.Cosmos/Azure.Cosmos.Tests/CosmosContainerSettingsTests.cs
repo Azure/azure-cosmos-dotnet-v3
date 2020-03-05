@@ -128,12 +128,13 @@ namespace Azure.Cosmos.Tests
         {
             // HAKC: Work-around till BE fixes defautls 
             settings.ValidateRequiredProperties();
-
-            string containerSerialized = JsonSerializer.Serialize(settings);
+            JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions();
+            CosmosTextJsonSerializer.InitializeRESTConverters(jsonSerializerOptions);
+            string containerSerialized = JsonSerializer.Serialize(settings, jsonSerializerOptions);
             string collectionSerialized = CosmosContainerSettingsTests.SerializeDocumentCollection(documentCollection);
 
-            Dictionary<string, object> containerJObject = JsonSerializer.Deserialize<Dictionary<string, object>>(containerSerialized);
-            Dictionary<string, object> collectionJObject = JsonSerializer.Deserialize<Dictionary<string, object>>(collectionSerialized);
+            Dictionary<string, object> containerJObject = JsonSerializer.Deserialize<Dictionary<string, object>>(containerSerialized, jsonSerializerOptions);
+            Dictionary<string, object> collectionJObject = JsonSerializer.Deserialize<Dictionary<string, object>>(collectionSerialized, jsonSerializerOptions);
 
             CollectionAssert.AreEqual(containerJObject.Keys.OrderBy( k => k).ToList(), collectionJObject.Keys.OrderBy(k => k).ToList());
         }

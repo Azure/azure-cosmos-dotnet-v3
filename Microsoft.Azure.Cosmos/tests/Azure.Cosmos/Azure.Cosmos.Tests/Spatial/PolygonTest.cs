@@ -16,6 +16,13 @@ namespace Azure.Cosmos.Test.Spatial
     [TestClass]
     public class PolygonTest
     {
+        private JsonSerializerOptions restContractOptions;
+        public PolygonTest()
+        {
+            this.restContractOptions = new JsonSerializerOptions();
+            CosmosTextJsonSerializer.InitializeRESTConverters(this.restContractOptions);
+        }
+
         /// <summary>
         /// Tests serialization/deserialization.
         /// </summary>
@@ -29,7 +36,7 @@ namespace Azure.Cosmos.Test.Spatial
                     ""extra"":1,
                     ""crs"":{""type"":""name"", ""properties"":{""name"":""hello""}}}";
 
-            var polygon = JsonSerializer.Deserialize<Polygon>(json);
+            var polygon = JsonSerializer.Deserialize<Polygon>(json, this.restContractOptions);
 
             Assert.AreEqual(2, polygon.Rings.Count);
             Assert.AreEqual(5, polygon.Rings[0].Positions.Count);
@@ -42,13 +49,13 @@ namespace Azure.Cosmos.Test.Spatial
             Assert.AreEqual(1, polygon.AdditionalProperties.Count);
             Assert.AreEqual(1L, polygon.AdditionalProperties["extra"]);
 
-            var geom = JsonSerializer.Deserialize<Geometry>(json);
+            var geom = JsonSerializer.Deserialize<Geometry>(json, this.restContractOptions);
             Assert.AreEqual(GeometryType.Polygon, geom.Type);
 
             Assert.AreEqual(geom, polygon);
 
-            string json1 = JsonSerializer.Serialize(polygon);
-            var geom1 = JsonSerializer.Deserialize<Geometry>(json1);
+            string json1 = JsonSerializer.Serialize(polygon, this.restContractOptions);
+            var geom1 = JsonSerializer.Deserialize<Geometry>(json1, this.restContractOptions);
             Assert.AreEqual(geom1, geom);
         }
 
