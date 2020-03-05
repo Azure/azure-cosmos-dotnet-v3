@@ -117,7 +117,14 @@ namespace Microsoft.Azure.Cosmos
                 return input;
             }
 
-            JObject itemJObj = EncryptionProcessor.baseSerializer.FromStream<JObject>(input);
+            JObject itemJObj;
+            using (StreamReader sr = new StreamReader(input, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true))
+            {
+                using (JsonTextReader jsonTextReader = new JsonTextReader(sr))
+                {
+                    itemJObj = JsonSerializer.Create().Deserialize<JObject>(jsonTextReader);
+                }
+            }
 
             JProperty encryptionPropertiesJProp = itemJObj.Property(Constants.Properties.EncryptedInfo);
             JObject encryptionPropertiesJObj = null;

@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using Core.ExecutionComponent;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Collections;
     using Microsoft.Azure.Cosmos.Query.Core.ComparableTask;

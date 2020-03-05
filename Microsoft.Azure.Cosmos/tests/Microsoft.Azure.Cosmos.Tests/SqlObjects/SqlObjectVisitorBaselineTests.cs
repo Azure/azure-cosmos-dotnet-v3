@@ -45,7 +45,17 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
         public void SqlLiteral()
         {
             List<SqlObjectVisitorInput> inputs = new List<SqlObjectVisitorInput>();
+            for (int i = 0; i < ' '; i++)
+            {
+                inputs.Add(
+                    new SqlObjectVisitorInput(
+                        $"Escape Sequence {i}",
+                        SqlStringLiteral.Create(new string(new char[] { (char)i }))));
+            }
+
+            inputs.Add(new SqlObjectVisitorInput("Empty String", SqlStringLiteral.Create(string.Empty)));
             inputs.Add(new SqlObjectVisitorInput(nameof(SqlStringLiteral), SqlStringLiteral.Create("Hello")));
+            inputs.Add(new SqlObjectVisitorInput(nameof(SqlStringLiteral) + " With Unicode", SqlStringLiteral.Create("💩")));
             inputs.Add(new SqlObjectVisitorInput(nameof(SqlNumberLiteral), SqlNumberLiteral.Create(0x5F3759DF)));
             inputs.Add(new SqlObjectVisitorInput(nameof(SqlNullLiteral), SqlNullLiteral.Singleton));
             inputs.Add(new SqlObjectVisitorInput(nameof(SqlBooleanLiteral) + "True", SqlBooleanLiteral.True));
