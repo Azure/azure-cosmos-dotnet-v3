@@ -203,8 +203,8 @@ namespace Microsoft.Azure.Cosmos
                     : "Not set";
 
                 this.stringBuilder
-                    .Append($"AddressResolution - StartTime: {addressResolutionStatistics.StartTime.ToString("o", CultureInfo.InvariantCulture)}, ")
-                    .Append($"EndTime: {endTime}, ")
+                    .Append($"AddressResolution - StartTimeUtc: {addressResolutionStatistics.StartTime.ToString("o", CultureInfo.InvariantCulture)}, ")
+                    .Append($"EndTimeUtc: {endTime}, ")
                     .Append("TargetEndpoint: ")
                     .Append(addressResolutionStatistics.TargetEndpoint);
             }
@@ -242,7 +242,7 @@ namespace Microsoft.Azure.Cosmos
                 //first trace request start time, as well as total non-head/headfeed requests made.
                 this.stringBuilder.AppendFormat(
                    CultureInfo.InvariantCulture,
-                   "RequestStartTime: {0}, RequestEndTime: {1},  Number of regions attempted:{2}",
+                   "RequestStartTimeUtc: {0}, RequestEndTimeUtc: {1},  Number of regions attempted:{2}",
                    clientSideRequestStatistics.RequestStartTimeUtc.ToString("o", CultureInfo.InvariantCulture),
                    endtime,
                    clientSideRequestStatistics.RegionsContacted.Count == 0 ? 1 : clientSideRequestStatistics.RegionsContacted.Count);

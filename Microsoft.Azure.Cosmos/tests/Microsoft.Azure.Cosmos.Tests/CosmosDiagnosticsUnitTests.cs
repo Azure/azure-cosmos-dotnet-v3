@@ -155,9 +155,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                     usingLocalLSN: true));
 
             string statistics = clientSideRequestStatistics.ToString();
-            Assert.IsTrue(statistics.Contains(@"{""Id"":""AddressResolutionStatistics"",""StartTimeUtc"":""20"));
-            Assert.IsTrue(statistics.Contains(@"Z"",""TargetEndpoint"":""https://testuri/"""));
-            Assert.IsTrue(statistics.Contains(@"""StoreResult"":""StorePhysicalAddress: , LSN: 42, GlobalCommittedLsn: 2, PartitionKeyRangeId: PkRange, IsValid: True, StatusCode: 0, SubStatusCode: 0, RequestCharge: 9000.42, ItemLSN: 5, SessionToken: , UsingLocalLSN: True, TransportException: null"));
+            Assert.IsTrue(statistics.Contains("RequestStartTimeUtc:"));
+            Assert.IsTrue(statistics.Contains("TransportException: null, ResourceType: Database, OperationType: Read"));
+            Assert.IsTrue(statistics.Contains("AddressResolution - StartTimeUtc:"));
         }
     }
 }
