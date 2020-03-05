@@ -55,6 +55,7 @@ namespace Azure.Cosmos
         /// Default request timeout
         /// </summary>
         private static readonly CosmosSerializer propertiesSerializer = new CosmosJsonSerializerWrapper(new CosmosTextJsonSerializer());
+        private static readonly CosmosSerializationOptions defaultSerializerOptions = new CosmosSerializationOptions();
 
         private int gatewayModeMaxConnectionLimit;
         private CosmosSerializationOptions serializerOptions;
@@ -80,7 +81,6 @@ namespace Azure.Cosmos
             this.ConnectionProtocol = CosmosClientOptions.DefaultProtocol;
             this.ApiType = CosmosClientOptions.DefaultApiType;
             this.CustomHandlers = new Collection<RequestHandler>();
-            this.serializerOptions = new CosmosSerializationOptions();
         }
 
         /// <summary>
@@ -304,10 +304,10 @@ namespace Azure.Cosmos
         /// </example>
         public CosmosSerializationOptions DefaultSerializerOptions
         {
-            get => this.serializerOptions;
+            get => this.serializerOptions ?? CosmosClientOptions.defaultSerializerOptions;
             set
             {
-                if (this.Serializer != null)
+                if (this.serializer != null)
                 {
                     throw new ArgumentException(
                         $"{nameof(this.DefaultSerializerOptions)} is not compatible with {nameof(this.Serializer)}. Only one can be set.  ");
@@ -337,7 +337,7 @@ namespace Azure.Cosmos
             get => this.serializer;
             set
             {
-                if (this.DefaultSerializerOptions != null)
+                if (this.serializerOptions != null)
                 {
                     throw new ArgumentException(
                         $"{nameof(this.Serializer)} is not compatible with {nameof(this.DefaultSerializerOptions)}. Only one can be set.  ");
@@ -491,9 +491,9 @@ namespace Azure.Cosmos
         /// </summary>
         internal CosmosSerializer GetCosmosSerializerWithWrapperOrDefault()
         {
-            if (this.DefaultSerializerOptions != null)
+            if (this.serializerOptions != null)
             {
-                CosmosTextJsonSerializer cosmosJsonDotNetSerializer = new CosmosTextJsonSerializer(this.DefaultSerializerOptions);
+                CosmosTextJsonSerializer cosmosJsonDotNetSerializer = new CosmosTextJsonSerializer(this.serializerOptions);
                 return new CosmosJsonSerializerWrapper(cosmosJsonDotNetSerializer);
             }
             else

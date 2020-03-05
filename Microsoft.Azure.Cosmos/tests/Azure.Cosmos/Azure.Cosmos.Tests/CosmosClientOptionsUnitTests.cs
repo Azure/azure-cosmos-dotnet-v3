@@ -66,7 +66,7 @@ namespace Azure.Cosmos.Tests
             Assert.AreNotEqual(apiType, clientOptions.ApiType);
             Assert.IsFalse(clientOptions.AllowBulkExecution);
             Assert.AreEqual(0, clientOptions.CustomHandlers.Count);
-            Assert.IsNull(clientOptions.DefaultSerializerOptions);
+            Assert.IsNotNull(clientOptions.DefaultSerializerOptions);
             Assert.IsNull(clientOptions.Serializer);
             Assert.IsNull(clientOptions.WebProxy);
             Assert.IsFalse(clientOptions.LimitToEndpoint);
@@ -404,13 +404,6 @@ namespace Azure.Cosmos.Tests
 
             connectionPolicy = cosmosClientOptions.GetConnectionPolicy();
             Assert.IsFalse(connectionPolicy.EnableEndpointDiscovery);
-        }
-
-        [TestMethod]
-        public void HasDefaultSerializationOptions()
-        {
-            CosmosClientOptions options = new CosmosClientOptions();
-            Assert.IsNotNull(options.DefaultSerializerOptions);
         }
 
         private class TestWebProxy : IWebProxy
