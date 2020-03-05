@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    public sealed class EffectivePartitionKeyRangeFactoryTests
+    public sealed class PartitionKeyHashRangeFactoryTests
     {
         [TestMethod]
         public void TestSplit()
@@ -18,14 +18,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             {
                 // Empty partition
                 VerifySplit(
-                    splitOutcome: EffectivePartitionKeyRangeFactory.SplitOutcome.RangeNotWideEnough,
+                    splitOutcome: PartitionKeyHashRangeFactory.SplitOutcome.RangeNotWideEnough,
                     range: CreateRange(0, 0));
             }
 
             {
                 // Range Not Wide Enough
                 VerifySplit(
-                    splitOutcome: EffectivePartitionKeyRangeFactory.SplitOutcome.RangeNotWideEnough,
+                    splitOutcome: PartitionKeyHashRangeFactory.SplitOutcome.RangeNotWideEnough,
                     range: CreateRange(0, 1),
                     numRanges: 2);
             }
@@ -33,12 +33,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             {
                 // Ranges Need to Be Positive
                 VerifySplit(
-                    splitOutcome: EffectivePartitionKeyRangeFactory.SplitOutcome.NumRangesNeedsToBePositive,
+                    splitOutcome: PartitionKeyHashRangeFactory.SplitOutcome.NumRangesNeedsToBePositive,
                     range: CreateRange(0, 2),
                     numRanges: 0);
 
                 VerifySplit(
-                    splitOutcome: EffectivePartitionKeyRangeFactory.SplitOutcome.NumRangesNeedsToBePositive,
+                    splitOutcome: PartitionKeyHashRangeFactory.SplitOutcome.NumRangesNeedsToBePositive,
                     range: CreateRange(0, 2),
                     numRanges: -1);
             }
@@ -46,39 +46,39 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             {
                 // Success
                 VerifySplit(
-                    splitOutcome: EffectivePartitionKeyRangeFactory.SplitOutcome.Success,
+                    splitOutcome: PartitionKeyHashRangeFactory.SplitOutcome.Success,
                     range: CreateRange(0, 2),
                     numRanges: 2,
                     CreateRange(0, 1), CreateRange(1, 2));
 
                 VerifySplit(
-                    splitOutcome: EffectivePartitionKeyRangeFactory.SplitOutcome.Success,
+                    splitOutcome: PartitionKeyHashRangeFactory.SplitOutcome.Success,
                     range: CreateRange(0, 3),
                     numRanges: 2,
                     CreateRange(0, 1), CreateRange(1, 3));
             }
 
             void VerifySplit(
-                EffectivePartitionKeyRangeFactory.SplitOutcome splitOutcome,
-                EffectivePartitionKeyRange range,
+                PartitionKeyHashRangeFactory.SplitOutcome splitOutcome,
+                PartitionKeyHashRange range,
                 int numRanges = 1,
-                params EffectivePartitionKeyRange[] splitRanges)
+                params PartitionKeyHashRange[] splitRanges)
             {
-                EffectivePartitionKeyRangeFactory.SplitOutcome actualSplitOutcome = EffectivePartitionKeyRangeFactory.TrySplitRange(
-                    effectivePartitionKeyRange: range,
+                PartitionKeyHashRangeFactory.SplitOutcome actualSplitOutcome = PartitionKeyHashRangeFactory.TrySplitRange(
+                    partitionKeyHashRange: range,
                     numRanges: numRanges,
-                    splitRanges: out PartitionedSortedEffectiveRanges splitRangesActual);
+                    splitRanges: out PartitionKeyHashRanges splitRangesActual);
 
                 Assert.AreEqual(splitOutcome, actualSplitOutcome);
-                if (splitOutcome == EffectivePartitionKeyRangeFactory.SplitOutcome.Success)
+                if (splitOutcome == PartitionKeyHashRangeFactory.SplitOutcome.Success)
                 {
                     Assert.AreEqual(numRanges, splitRangesActual.Count());
                     Assert.AreEqual(splitRanges.Count(), splitRangesActual.Count());
 
-                    PartitionedSortedEffectiveRanges expectedSplitRanges = PartitionedSortedEffectiveRanges.Create(splitRanges);
+                    PartitionKeyHashRanges expectedSplitRanges = PartitionKeyHashRanges.Create(splitRanges);
 
-                    IEnumerable<(EffectivePartitionKeyRange, EffectivePartitionKeyRange)> expectedAndActual = expectedSplitRanges.Zip(splitRangesActual, (first, second) => (first, second));
-                    foreach ((EffectivePartitionKeyRange expected, EffectivePartitionKeyRange actual) in expectedAndActual)
+                    IEnumerable<(PartitionKeyHashRange, PartitionKeyHashRange)> expectedAndActual = expectedSplitRanges.Zip(splitRangesActual, (first, second) => (first, second));
+                    foreach ((PartitionKeyHashRange expected, PartitionKeyHashRange actual) in expectedAndActual)
                     {
                         Assert.AreEqual(expected, actual);
                     }
@@ -111,20 +111,20 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             }
 
             void VerifyMerge(
-                EffectivePartitionKeyRange expectedMergedRange,
-                params EffectivePartitionKeyRange[] rangesToMerge)
+                PartitionKeyHashRange expectedMergedRange,
+                params PartitionKeyHashRange[] rangesToMerge)
             {
-                EffectivePartitionKeyRange actualMergedRange = EffectivePartitionKeyRangeFactory.MergeRanges(
-                    PartitionedSortedEffectiveRanges.Create(rangesToMerge));
+                PartitionKeyHashRange actualMergedRange = PartitionKeyHashRangeFactory.MergeRanges(
+                    PartitionKeyHashRanges.Create(rangesToMerge));
                 Assert.AreEqual(expectedMergedRange, actualMergedRange);
             }
         }
 
-        private static EffectivePartitionKeyRange CreateRange(UInt128 start, UInt128 end)
+        private static PartitionKeyHashRange CreateRange(UInt128 start, UInt128 end)
         {
-            return new EffectivePartitionKeyRange(
-                startInclusive: new EffectivePartitionKey(start),
-                endExclusive: new EffectivePartitionKey(end));
+            return new PartitionKeyHashRange(
+                startInclusive: new PartitionKeyHash(start),
+                endExclusive: new PartitionKeyHash(end));
         }
     }
 }

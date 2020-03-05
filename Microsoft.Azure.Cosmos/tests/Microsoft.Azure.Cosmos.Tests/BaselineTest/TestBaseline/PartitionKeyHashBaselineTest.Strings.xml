@@ -5,8 +5,8 @@
       <PartitionKeyValue>""</PartitionKeyValue>
     </Input>
     <Output>
-      <EffectivePartitionKeyV1>C7-BC-36-20-00-00-00-00-00-00-00-00-00-00-00-00</EffectivePartitionKeyV1>
-      <EffectivePartitionKeyV2>2A-63-D2-CF-33-E5-2B-DB-DF-A3-A1-B7-1A-F6-E0-7E</EffectivePartitionKeyV2>
+      <PartitionKeyHashV1>C7-BC-36-20-00-00-00-00-00-00-00-00-00-00-00-00</PartitionKeyHashV1>
+      <PartitionKeyHashV2>7E-E0-F6-1A-B7-A1-A3-DF-DB-2B-E5-33-CF-D2-63-6A</PartitionKeyHashV2>
     </Output>
   </Result>
   <Result>
@@ -15,8 +15,8 @@
       <PartitionKeyValue>"asdf"</PartitionKeyValue>
     </Input>
     <Output>
-      <EffectivePartitionKeyV1>90-E7-36-FA-00-00-00-00-00-00-00-00-00-00-00-00</EffectivePartitionKeyV1>
-      <EffectivePartitionKeyV2>09-8D-89-FE-39-4B-06-8D-05-EE-6E-B1-49-D8-39-08</EffectivePartitionKeyV2>
+      <PartitionKeyHashV1>90-E7-36-FA-00-00-00-00-00-00-00-00-00-00-00-00</PartitionKeyHashV1>
+      <PartitionKeyHashV2>08-39-D8-49-B1-6E-EE-05-8D-06-4B-39-FE-89-8D-49</PartitionKeyHashV2>
     </Output>
   </Result>
   <Result>
@@ -25,8 +25,8 @@
       <PartitionKeyValue>"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"</PartitionKeyValue>
     </Input>
     <Output>
-      <EffectivePartitionKeyV1>FE-6B-6F-A3-00-00-00-00-00-00-00-00-00-00-00-00</EffectivePartitionKeyV1>
-      <EffectivePartitionKeyV2>03-A5-59-26-5D-27-2A-0B-08-97-D5-DA-B8-49-7A-67</EffectivePartitionKeyV2>
+      <PartitionKeyHashV1>FE-6B-6F-A3-00-00-00-00-00-00-00-00-00-00-00-00</PartitionKeyHashV1>
+      <PartitionKeyHashV2>67-7A-49-B8-DA-D5-97-08-0B-2A-27-5D-26-59-A5-83</PartitionKeyHashV2>
     </Output>
   </Result>
   <Result>
@@ -35,8 +35,8 @@
       <PartitionKeyValue>"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"</PartitionKeyValue>
     </Input>
     <Output>
-      <EffectivePartitionKeyV1>25-E3-64-0D-00-00-00-00-00-00-00-00-00-00-00-00</EffectivePartitionKeyV1>
-      <EffectivePartitionKeyV2>29-28-8C-FB-BD-29-36-CE-26-ED-98-C2-72-50-5B-4E</EffectivePartitionKeyV2>
+      <PartitionKeyHashV1>25-E3-64-0D-00-00-00-00-00-00-00-00-00-00-00-00</PartitionKeyHashV1>
+      <PartitionKeyHashV2>4E-5B-50-72-C2-98-ED-26-CE-36-29-BD-FB-8C-28-A9</PartitionKeyHashV2>
     </Output>
   </Result>
   <Result>
@@ -45,8 +45,8 @@
       <PartitionKeyValue>"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"</PartitionKeyValue>
     </Input>
     <Output>
-      <EffectivePartitionKeyV1>25-E3-64-0D-00-00-00-00-00-00-00-00-00-00-00-00</EffectivePartitionKeyV1>
-      <EffectivePartitionKeyV2>03-46-A8-E3-F5-0B-E7-81-D8-E0-72-65-1D-39-8E-AE</EffectivePartitionKeyV2>
+      <PartitionKeyHashV1>25-E3-64-0D-00-00-00-00-00-00-00-00-00-00-00-00</PartitionKeyHashV1>
+      <PartitionKeyHashV2>AE-8E-39-1D-65-72-E0-D8-81-E7-0B-F5-E3-A8-46-43</PartitionKeyHashV2>
     </Output>
   </Result>
   <Result>
@@ -55,8 +55,8 @@
       <PartitionKeyValue>"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"</PartitionKeyValue>
     </Input>
     <Output>
-      <EffectivePartitionKeyV1>25-E3-64-0D-00-00-00-00-00-00-00-00-00-00-00-00</EffectivePartitionKeyV1>
-      <EffectivePartitionKeyV2>0E-CA-B7-5F-2B-22-0F-61-42-08-0A-FA-1C-FB-6C-D6</EffectivePartitionKeyV2>
+      <PartitionKeyHashV1>25-E3-64-0D-00-00-00-00-00-00-00-00-00-00-00-00</PartitionKeyHashV1>
+      <PartitionKeyHashV2>D6-6C-FB-1C-FA-0A-08-42-61-0F-22-2B-5F-B7-CA-CE</PartitionKeyHashV2>
     </Output>
   </Result>
 </Results>

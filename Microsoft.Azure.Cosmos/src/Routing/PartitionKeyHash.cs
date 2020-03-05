@@ -29,23 +29,23 @@ namespace Microsoft.Azure.Cosmos.Routing
     ///     "partitionKey" : {"paths":["/address/country", "address/zipcode"], "kind" : "Range"}
     /// partition key ["USA", 98052] corresponds to effective partition key binaryencode(["USA", 98052]).
     /// </example>
-    internal readonly struct EffectivePartitionKey : IComparable<EffectivePartitionKey>, IEquatable<EffectivePartitionKey>
+    internal readonly struct PartitionKeyHash : IComparable<PartitionKeyHash>, IEquatable<PartitionKeyHash>
     {
-        public EffectivePartitionKey(UInt128 value)
+        public PartitionKeyHash(UInt128 value)
         {
             this.Value = value;
         }
 
         public UInt128 Value { get; }
 
-        public int CompareTo(EffectivePartitionKey other)
+        public int CompareTo(PartitionKeyHash other)
         {
             return this.Value.CompareTo(other.Value);
         }
 
         public override bool Equals(object obj)
         {
-            if (!(obj is EffectivePartitionKey effectivePartitionKey))
+            if (!(obj is PartitionKeyHash effectivePartitionKey))
             {
                 return false;
             }
@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             return this.Equals(effectivePartitionKey);
         }
 
-        public bool Equals(EffectivePartitionKey other)
+        public bool Equals(PartitionKeyHash other)
         {
             return this.Value.Equals(other.Value);
         }
@@ -72,26 +72,26 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             private const int MaxStringLength = 100;
 
-            private static readonly EffectivePartitionKey True = EffectivePartitionKey.V1.Hash(new byte[] { (byte)PartitionKeyComponentType.True });
-            private static readonly EffectivePartitionKey False = EffectivePartitionKey.V1.Hash(new byte[] { (byte)PartitionKeyComponentType.False });
-            private static readonly EffectivePartitionKey Null = EffectivePartitionKey.V1.Hash(new byte[] { (byte)PartitionKeyComponentType.Null });
-            private static readonly EffectivePartitionKey Undefined = EffectivePartitionKey.V1.Hash(new byte[] { (byte)PartitionKeyComponentType.Undefined });
-            private static readonly EffectivePartitionKey EmptyString = EffectivePartitionKey.V1.Hash(new byte[] { (byte)PartitionKeyComponentType.String });
+            private static readonly PartitionKeyHash True = PartitionKeyHash.V1.Hash(new byte[] { (byte)PartitionKeyComponentType.True });
+            private static readonly PartitionKeyHash False = PartitionKeyHash.V1.Hash(new byte[] { (byte)PartitionKeyComponentType.False });
+            private static readonly PartitionKeyHash Null = PartitionKeyHash.V1.Hash(new byte[] { (byte)PartitionKeyComponentType.Null });
+            private static readonly PartitionKeyHash Undefined = PartitionKeyHash.V1.Hash(new byte[] { (byte)PartitionKeyComponentType.Undefined });
+            private static readonly PartitionKeyHash EmptyString = PartitionKeyHash.V1.Hash(new byte[] { (byte)PartitionKeyComponentType.String });
 
-            public static EffectivePartitionKey Hash(bool boolean)
+            public static PartitionKeyHash Hash(bool boolean)
             {
-                return boolean ? EffectivePartitionKey.V1.True : EffectivePartitionKey.V1.False;
+                return boolean ? PartitionKeyHash.V1.True : PartitionKeyHash.V1.False;
             }
 
-            public static EffectivePartitionKey Hash(double value)
+            public static PartitionKeyHash Hash(double value)
             {
                 Span<byte> bytesForHashing = stackalloc byte[sizeof(byte) + sizeof(double)];
                 bytesForHashing[0] = (byte)PartitionKeyComponentType.Number;
                 MemoryMarshal.Cast<byte, double>(bytesForHashing.Slice(start: 1))[0] = value;
-                return EffectivePartitionKey.V1.Hash(bytesForHashing);
+                return PartitionKeyHash.V1.Hash(bytesForHashing);
             }
 
-            public static EffectivePartitionKey Hash(string value)
+            public static PartitionKeyHash Hash(string value)
             {
                 if (value == null)
                 {
@@ -113,49 +113,49 @@ namespace Microsoft.Azure.Cosmos.Routing
                 Encoding.UTF8.GetBytes(
                     trimmedValue,
                     bytesForHashingSuffix);
-                return EffectivePartitionKey.V1.Hash(bytesForHashing);
+                return PartitionKeyHash.V1.Hash(bytesForHashing);
             }
 
-            public static EffectivePartitionKey HashNull()
+            public static PartitionKeyHash HashNull()
             {
-                return EffectivePartitionKey.V1.Null;
+                return PartitionKeyHash.V1.Null;
             }
 
-            public static EffectivePartitionKey HashUndefined()
+            public static PartitionKeyHash HashUndefined()
             {
-                return EffectivePartitionKey.V1.Undefined;
+                return PartitionKeyHash.V1.Undefined;
             }
 
-            private static EffectivePartitionKey Hash(ReadOnlySpan<byte> bytesForHashing)
+            private static PartitionKeyHash Hash(ReadOnlySpan<byte> bytesForHashing)
             {
                 uint hash = Cosmos.MurmurHash3.Hash32(bytesForHashing, seed: 0);
-                return new EffectivePartitionKey(hash);
+                return new PartitionKeyHash(hash);
             }
         }
 
         public static class V2
         {
             private const int MaxStringLength = 2 * 1024;
-            private static readonly EffectivePartitionKey True = EffectivePartitionKey.V2.Hash(new byte[] { (byte)PartitionKeyComponentType.True });
-            private static readonly EffectivePartitionKey False = EffectivePartitionKey.V2.Hash(new byte[] { (byte)PartitionKeyComponentType.False });
-            private static readonly EffectivePartitionKey Null = EffectivePartitionKey.V2.Hash(new byte[] { (byte)PartitionKeyComponentType.Null });
-            private static readonly EffectivePartitionKey Undefined = EffectivePartitionKey.V2.Hash(new byte[] { (byte)PartitionKeyComponentType.Undefined });
-            private static readonly EffectivePartitionKey EmptyString = EffectivePartitionKey.V2.Hash(new byte[] { (byte)PartitionKeyComponentType.String });
+            private static readonly PartitionKeyHash True = PartitionKeyHash.V2.Hash(new byte[] { (byte)PartitionKeyComponentType.True });
+            private static readonly PartitionKeyHash False = PartitionKeyHash.V2.Hash(new byte[] { (byte)PartitionKeyComponentType.False });
+            private static readonly PartitionKeyHash Null = PartitionKeyHash.V2.Hash(new byte[] { (byte)PartitionKeyComponentType.Null });
+            private static readonly PartitionKeyHash Undefined = PartitionKeyHash.V2.Hash(new byte[] { (byte)PartitionKeyComponentType.Undefined });
+            private static readonly PartitionKeyHash EmptyString = PartitionKeyHash.V2.Hash(new byte[] { (byte)PartitionKeyComponentType.String });
 
-            public static EffectivePartitionKey Hash(bool boolean)
+            public static PartitionKeyHash Hash(bool boolean)
             {
-                return boolean ? EffectivePartitionKey.V2.True : EffectivePartitionKey.V2.False;
+                return boolean ? PartitionKeyHash.V2.True : PartitionKeyHash.V2.False;
             }
 
-            public static EffectivePartitionKey Hash(double value)
+            public static PartitionKeyHash Hash(double value)
             {
                 Span<byte> bytesForHashing = stackalloc byte[sizeof(byte) + sizeof(double)];
                 bytesForHashing[0] = (byte)PartitionKeyComponentType.Number;
                 MemoryMarshal.Cast<byte, double>(bytesForHashing.Slice(start: 1))[0] = value;
-                return EffectivePartitionKey.V2.Hash(bytesForHashing);
+                return PartitionKeyHash.V2.Hash(bytesForHashing);
             }
 
-            public static EffectivePartitionKey Hash(string value)
+            public static PartitionKeyHash Hash(string value)
             {
                 if (value == null)
                 {
@@ -176,31 +176,23 @@ namespace Microsoft.Azure.Cosmos.Routing
                 bytesForHashing[0] = (byte)PartitionKeyComponentType.String;
                 Span<byte> bytesForHashingSuffix = bytesForHashing.Slice(start: 1);
                 Encoding.UTF8.GetBytes(value, bytesForHashingSuffix);
-                return EffectivePartitionKey.V2.Hash(bytesForHashing);
+                return PartitionKeyHash.V2.Hash(bytesForHashing);
             }
 
-            public static EffectivePartitionKey HashNull()
+            public static PartitionKeyHash HashNull()
             {
-                return EffectivePartitionKey.V2.Null;
+                return PartitionKeyHash.V2.Null;
             }
 
-            public static EffectivePartitionKey HashUndefined()
+            public static PartitionKeyHash HashUndefined()
             {
-                return EffectivePartitionKey.V2.Undefined;
+                return PartitionKeyHash.V2.Undefined;
             }
 
-            private unsafe static EffectivePartitionKey Hash(ReadOnlySpan<byte> bytesForHashing)
+            private static PartitionKeyHash Hash(ReadOnlySpan<byte> bytesForHashing)
             {
                 UInt128 hash = Cosmos.MurmurHash3.Hash128(bytesForHashing, seed: 0);
-                ReadOnlySpan<UInt128> readSpan = new ReadOnlySpan<UInt128>(&hash, 1);
-                Span<byte> hashBytes = stackalloc byte[sizeof(UInt128)];
-                MemoryMarshal.AsBytes(readSpan).CopyTo(hashBytes);
-                MemoryExtensions.Reverse(hashBytes);
-                // Reset 2 most significant bits, as max exclusive value is 'FF'.
-                // Plus one more just in case.
-                hashBytes[0] &= 0x3F;
-                hash = MemoryMarshal.Cast<byte, UInt128>(hashBytes)[0];
-                return new EffectivePartitionKey(hash);
+                return new PartitionKeyHash(hash);
             }
         }
     }

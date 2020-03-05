@@ -9,41 +9,41 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Collections.Generic;
     using System.Linq;
 
-    internal sealed class PartitionedSortedEffectiveRanges : IOrderedEnumerable<EffectivePartitionKeyRange>
+    internal sealed class PartitionKeyHashRanges : IOrderedEnumerable<PartitionKeyHashRange>
     {
-        private readonly SortedSet<EffectivePartitionKeyRange> effectivePartitionKeyRanges;
+        private readonly SortedSet<PartitionKeyHashRange> partitionKeyHashRanges;
 
-        private PartitionedSortedEffectiveRanges(SortedSet<EffectivePartitionKeyRange> effectivePartitionKeyRanges)
+        private PartitionKeyHashRanges(SortedSet<PartitionKeyHashRange> partitionKeyHashRanges)
         {
             // All invariants are checked by the static constructor
-            this.effectivePartitionKeyRanges = effectivePartitionKeyRanges;
+            this.partitionKeyHashRanges = partitionKeyHashRanges;
         }
 
-        public static PartitionedSortedEffectiveRanges Create(IEnumerable<EffectivePartitionKeyRange> effectivePartitionKeyRanges)
+        public static PartitionKeyHashRanges Create(IEnumerable<PartitionKeyHashRange> partitionKeyHashRanges)
         {
-            CreateOutcome createStatus = PartitionedSortedEffectiveRanges.TryCreate(
-                effectivePartitionKeyRanges,
-                out PartitionedSortedEffectiveRanges partitionedSortedEffectiveRanges);
+            CreateOutcome createStatus = PartitionKeyHashRanges.TryCreate(
+                partitionKeyHashRanges,
+                out PartitionKeyHashRanges partitionedSortedEffectiveRanges);
 
             switch (createStatus)
             {
                 case CreateOutcome.DuplicatePartitionKeyRange:
-                    throw new ArgumentException($"{nameof(effectivePartitionKeyRanges)} must not have duplicate values.");
+                    throw new ArgumentException($"{nameof(partitionKeyHashRanges)} must not have duplicate values.");
 
                 case CreateOutcome.EmptyPartitionKeyRange:
-                    throw new ArgumentException($"{nameof(effectivePartitionKeyRanges)} must not have an empty range.");
+                    throw new ArgumentException($"{nameof(partitionKeyHashRanges)} must not have an empty range.");
 
                 case CreateOutcome.NoPartitionKeyRanges:
-                    throw new ArgumentException($"{nameof(effectivePartitionKeyRanges)} must not be empty.");
+                    throw new ArgumentException($"{nameof(partitionKeyHashRanges)} must not be empty.");
 
                 case CreateOutcome.NullPartitionKeyRanges:
-                    throw new ArgumentNullException(nameof(effectivePartitionKeyRanges));
+                    throw new ArgumentNullException(nameof(partitionKeyHashRanges));
 
                 case CreateOutcome.RangesAreNotContiguous:
-                    throw new ArgumentException($"{nameof(effectivePartitionKeyRanges)} must have contiguous ranges.");
+                    throw new ArgumentException($"{nameof(partitionKeyHashRanges)} must have contiguous ranges.");
 
                 case CreateOutcome.RangesOverlap:
-                    throw new ArgumentException($"{nameof(effectivePartitionKeyRanges)} must not overlapping ranges.");
+                    throw new ArgumentException($"{nameof(partitionKeyHashRanges)} must not overlapping ranges.");
 
                 case CreateOutcome.Success:
                     return partitionedSortedEffectiveRanges;
@@ -54,31 +54,31 @@ namespace Microsoft.Azure.Cosmos.Routing
         }
 
         public static CreateOutcome TryCreate(
-            IEnumerable<EffectivePartitionKeyRange> effectivePartitionKeyRanges,
-            out PartitionedSortedEffectiveRanges partitionedSortedEffectiveRanges)
+            IEnumerable<PartitionKeyHashRange> partitionKeyHashRanges,
+            out PartitionKeyHashRanges partitionedSortedEffectiveRanges)
         {
-            if (effectivePartitionKeyRanges == null)
+            if (partitionKeyHashRanges == null)
             {
                 partitionedSortedEffectiveRanges = default;
                 return CreateOutcome.NullPartitionKeyRanges;
             }
 
-            if (effectivePartitionKeyRanges.Count() == 0)
+            if (partitionKeyHashRanges.Count() == 0)
             {
                 partitionedSortedEffectiveRanges = default;
                 return CreateOutcome.NoPartitionKeyRanges;
             }
 
-            SortedSet<EffectivePartitionKeyRange> sortedSet = new SortedSet<EffectivePartitionKeyRange>();
-            foreach (EffectivePartitionKeyRange effectivePartitionKeyRange in effectivePartitionKeyRanges)
+            SortedSet<PartitionKeyHashRange> sortedSet = new SortedSet<PartitionKeyHashRange>();
+            foreach (PartitionKeyHashRange partitionKeyHashRange in partitionKeyHashRanges)
             {
-                if (effectivePartitionKeyRange.StartInclusive.Equals(effectivePartitionKeyRange.EndExclusive))
+                if (partitionKeyHashRange.StartInclusive.Equals(partitionKeyHashRange.EndExclusive))
                 {
                     partitionedSortedEffectiveRanges = default;
                     return CreateOutcome.EmptyPartitionKeyRange;
                 }
 
-                if (!sortedSet.Add(effectivePartitionKeyRange))
+                if (!sortedSet.Add(partitionKeyHashRange))
                 {
                     partitionedSortedEffectiveRanges = default;
                     return CreateOutcome.DuplicatePartitionKeyRange;
@@ -93,19 +93,34 @@ namespace Microsoft.Azure.Cosmos.Routing
             UInt128 maxEnd = UInt128.MinValue;
             UInt128 sumOfWidth = 0;
 
-            foreach (EffectivePartitionKeyRange effectivePartitionKeyRange in sortedSet)
+            foreach (PartitionKeyHashRange partitionKeyHashRange in sortedSet)
             {
-                if (effectivePartitionKeyRange.StartInclusive.Value < minStart)
+                if (partitionKeyHashRange.StartInclusive.HasValue)
                 {
-                    minStart = effectivePartitionKeyRange.StartInclusive.Value;
+                    if (partitionKeyHashRange.StartInclusive.Value.Value < minStart)
+                    {
+                        minStart = partitionKeyHashRange.StartInclusive.Value.Value;
+                    }
+                }
+                else
+                {
+                    minStart = UInt128.MinValue;
                 }
 
-                if (effectivePartitionKeyRange.EndExclusive.Value > maxEnd)
+                if (partitionKeyHashRange.EndExclusive.HasValue)
                 {
-                    maxEnd = effectivePartitionKeyRange.EndExclusive.Value;
+                    if (partitionKeyHashRange.EndExclusive.Value.Value > maxEnd)
+                    {
+                        maxEnd = partitionKeyHashRange.EndExclusive.Value.Value;
+                    }
+                }
+                else
+                {
+                    maxEnd = UInt128.MaxValue;
                 }
 
-                UInt128 width = effectivePartitionKeyRange.EndExclusive.Value - effectivePartitionKeyRange.StartInclusive.Value;
+                UInt128 width = partitionKeyHashRange.EndExclusive.GetValueOrDefault(new PartitionKeyHash(UInt128.MaxValue)).Value
+                    - partitionKeyHashRange.StartInclusive.GetValueOrDefault(new PartitionKeyHash(UInt128.MinValue)).Value;
                 sumOfWidth += width;
             }
 
@@ -122,26 +137,26 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
             else
             {
-                partitionedSortedEffectiveRanges = new PartitionedSortedEffectiveRanges(sortedSet);
+                partitionedSortedEffectiveRanges = new PartitionKeyHashRanges(sortedSet);
                 return CreateOutcome.Success;
             }
         }
 
-        public IOrderedEnumerable<EffectivePartitionKeyRange> CreateOrderedEnumerable<TKey>(
-            Func<EffectivePartitionKeyRange, TKey> keySelector,
+        public IOrderedEnumerable<PartitionKeyHashRange> CreateOrderedEnumerable<TKey>(
+            Func<PartitionKeyHashRange, TKey> keySelector,
             IComparer<TKey> comparer,
             bool descending)
         {
-            IOrderedEnumerable<EffectivePartitionKeyRange> orderedEnumerable;
+            IOrderedEnumerable<PartitionKeyHashRange> orderedEnumerable;
             if (descending)
             {
-                orderedEnumerable = this.effectivePartitionKeyRanges
+                orderedEnumerable = this.partitionKeyHashRanges
                     .OrderByDescending((range) => range.StartInclusive.Value)
                     .ThenByDescending(keySelector, comparer);
             }
             else
             {
-                orderedEnumerable = this.effectivePartitionKeyRanges
+                orderedEnumerable = this.partitionKeyHashRanges
                     .OrderBy((range) => range.StartInclusive.Value)
                     .ThenBy(keySelector, comparer);
             }
@@ -149,14 +164,14 @@ namespace Microsoft.Azure.Cosmos.Routing
             return orderedEnumerable;
         }
 
-        public IEnumerator<EffectivePartitionKeyRange> GetEnumerator()
+        public IEnumerator<PartitionKeyHashRange> GetEnumerator()
         {
-            return this.effectivePartitionKeyRanges.GetEnumerator();
+            return this.partitionKeyHashRanges.GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return this.effectivePartitionKeyRanges.GetEnumerator();
+            return this.partitionKeyHashRanges.GetEnumerator();
         }
 
         public enum CreateOutcome

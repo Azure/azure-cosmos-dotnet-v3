@@ -6,39 +6,36 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 {
     using System;
     using System.Collections.Generic;
-    using System.Configuration;
     using System.Linq;
-    using System.Runtime.ExceptionServices;
-    using System.Text;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    public class PartitionedSortedEffectiveRangesTest
+    public class PartitionKeyHashRangesTests
     {
         [TestMethod]
         public void TestNoPartitionKeyRanges()
         {
-            VerifyCreate(PartitionedSortedEffectiveRanges.CreateOutcome.NoPartitionKeyRanges);
+            VerifyCreate(PartitionKeyHashRanges.CreateOutcome.NoPartitionKeyRanges);
         }
 
         [TestMethod]
         public void TestEmptyPartitionKeyRange()
         {
             VerifyCreate(
-                PartitionedSortedEffectiveRanges.CreateOutcome.EmptyPartitionKeyRange,
+                PartitionKeyHashRanges.CreateOutcome.EmptyPartitionKeyRange,
                 CreateRange(0, 0));
 
             VerifyCreate(
-                PartitionedSortedEffectiveRanges.CreateOutcome.EmptyPartitionKeyRange,
+                PartitionKeyHashRanges.CreateOutcome.EmptyPartitionKeyRange,
                 CreateRange(0, 0), CreateRange(0, 1));
 
             VerifyCreate(
-                PartitionedSortedEffectiveRanges.CreateOutcome.EmptyPartitionKeyRange,
+                PartitionKeyHashRanges.CreateOutcome.EmptyPartitionKeyRange,
                 CreateRange(0, 1), CreateRange(1, 1));
 
             VerifyCreate(
-                PartitionedSortedEffectiveRanges.CreateOutcome.EmptyPartitionKeyRange,
+                PartitionKeyHashRanges.CreateOutcome.EmptyPartitionKeyRange,
                 CreateRange(0, 1), CreateRange(1, 1), CreateRange(1, 2));
         }
 
@@ -46,11 +43,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         public void TestDuplicatePartitionKeyRange()
         {
             VerifyCreate(
-                PartitionedSortedEffectiveRanges.CreateOutcome.DuplicatePartitionKeyRange,
+                PartitionKeyHashRanges.CreateOutcome.DuplicatePartitionKeyRange,
                 CreateRange(0, 1), CreateRange(0, 1));
 
             VerifyCreate(
-                PartitionedSortedEffectiveRanges.CreateOutcome.DuplicatePartitionKeyRange,
+                PartitionKeyHashRanges.CreateOutcome.DuplicatePartitionKeyRange,
                 CreateRange(0, 1), CreateRange(1, 2), CreateRange(0, 1));
         }
 
@@ -58,15 +55,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         public void TestRangeOverlap()
         {
             VerifyCreate(
-                PartitionedSortedEffectiveRanges.CreateOutcome.RangesOverlap,
+                PartitionKeyHashRanges.CreateOutcome.RangesOverlap,
                 CreateRange(0, 2), CreateRange(1, 3));
 
             VerifyCreate(
-                PartitionedSortedEffectiveRanges.CreateOutcome.RangesOverlap,
+                PartitionKeyHashRanges.CreateOutcome.RangesOverlap,
                 CreateRange(0, 2), CreateRange(0, 3));
 
             VerifyCreate(
-                PartitionedSortedEffectiveRanges.CreateOutcome.RangesOverlap,
+                PartitionKeyHashRanges.CreateOutcome.RangesOverlap,
                 CreateRange(0, 2), CreateRange(0, 1), CreateRange(0, 3));
         }
 
@@ -74,11 +71,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         public void TestRangesOverlap()
         {
             VerifyCreate(
-                PartitionedSortedEffectiveRanges.CreateOutcome.RangesAreNotContiguous,
+                PartitionKeyHashRanges.CreateOutcome.RangesAreNotContiguous,
                 CreateRange(0, 1), CreateRange(2, 3));
 
             VerifyCreate(
-                PartitionedSortedEffectiveRanges.CreateOutcome.RangesAreNotContiguous,
+                PartitionKeyHashRanges.CreateOutcome.RangesAreNotContiguous,
                 CreateRange(0, 1), CreateRange(1, 2), CreateRange(3, 4));
         }
 
@@ -86,42 +83,42 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         public void TestSuccess()
         {
             VerifyCreate(
-                PartitionedSortedEffectiveRanges.CreateOutcome.Success,
+                PartitionKeyHashRanges.CreateOutcome.Success,
                 CreateRange(0, 1));
 
             VerifyCreate(
-                PartitionedSortedEffectiveRanges.CreateOutcome.Success,
+                PartitionKeyHashRanges.CreateOutcome.Success,
                 CreateRange(0, 1), CreateRange(1, 2));
 
             VerifyCreate(
-                PartitionedSortedEffectiveRanges.CreateOutcome.Success,
+                PartitionKeyHashRanges.CreateOutcome.Success,
                 CreateRange(0, 1234), CreateRange(1234, int.MaxValue));
         }
 
         private static void VerifyCreate(
-            PartitionedSortedEffectiveRanges.CreateOutcome expectedCreateStatus,
-            params EffectivePartitionKeyRange[] rangesToInsert)
+            PartitionKeyHashRanges.CreateOutcome expectedCreateStatus,
+            params PartitionKeyHashRange[] rangesToInsert)
         {
-            PartitionedSortedEffectiveRanges.CreateOutcome actualCreateStatus = PartitionedSortedEffectiveRanges.TryCreate(
+            PartitionKeyHashRanges.CreateOutcome actualCreateStatus = PartitionKeyHashRanges.TryCreate(
                 rangesToInsert.OrderBy(x => Guid.NewGuid()),
-                out PartitionedSortedEffectiveRanges insertedRanges);
+                out PartitionKeyHashRanges insertedRanges);
             Assert.AreEqual(expectedCreateStatus, actualCreateStatus);
-            if (expectedCreateStatus == PartitionedSortedEffectiveRanges.CreateOutcome.Success)
+            if (expectedCreateStatus == PartitionKeyHashRanges.CreateOutcome.Success)
             {
                 Assert.AreEqual(rangesToInsert.Count(), insertedRanges.Count());
-                IEnumerable<(EffectivePartitionKeyRange, EffectivePartitionKeyRange)> pairs = insertedRanges.Zip(insertedRanges.Skip(1), (first, second) => (first, second));
-                foreach ((EffectivePartitionKeyRange first, EffectivePartitionKeyRange second) in pairs)
+                IEnumerable<(PartitionKeyHashRange, PartitionKeyHashRange)> pairs = insertedRanges.Zip(insertedRanges.Skip(1), (first, second) => (first, second));
+                foreach ((PartitionKeyHashRange first, PartitionKeyHashRange second) in pairs)
                 {
                     Assert.IsTrue(first.CompareTo(second) < 0, "Ranges are not sorted");
                 }
             }
         }
 
-        private static EffectivePartitionKeyRange CreateRange(UInt128 start, UInt128 end)
+        private static PartitionKeyHashRange CreateRange(UInt128 start, UInt128 end)
         {
-            return new EffectivePartitionKeyRange(
-                startInclusive: new EffectivePartitionKey(start),
-                endExclusive: new EffectivePartitionKey(end));
+            return new PartitionKeyHashRange(
+                startInclusive: new PartitionKeyHash(start),
+                endExclusive: new PartitionKeyHash(end));
         }
     }
 }

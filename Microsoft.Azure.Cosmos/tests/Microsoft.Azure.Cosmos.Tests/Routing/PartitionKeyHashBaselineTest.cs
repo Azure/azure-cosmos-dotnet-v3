@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    public class EffectivePartitionKeyBaselineTest : BaselineTests<EffectivePartitionKeyBaselineTest.Input, EffectivePartitionKeyBaselineTest.Output>
+    public class PartitionKeyHashBaselineTest : BaselineTests<PartitionKeyHashBaselineTest.Input, PartitionKeyHashBaselineTest.Output>
     {
         private static readonly long MaxSafeInteger = (long)BigInteger.Pow(2, 53) - 1;
         [TestMethod]
@@ -130,41 +130,41 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         {
             CosmosElement value = input.PartitionKeyValue;
 
-            EffectivePartitionKey effectivePartitionKeyV1;
-            EffectivePartitionKey effectivePartitionKeyV2;
+            PartitionKeyHash partitionKeyHashV1;
+            PartitionKeyHash partitionKeyHashV2;
 
             switch (value)
             {
                 case null:
-                    effectivePartitionKeyV1 = EffectivePartitionKey.V1.HashUndefined();
-                    effectivePartitionKeyV2 = EffectivePartitionKey.V2.HashUndefined();
+                    partitionKeyHashV1 = PartitionKeyHash.V1.HashUndefined();
+                    partitionKeyHashV2 = PartitionKeyHash.V2.HashUndefined();
                     break;
 
                 case CosmosNull cosmosNull:
-                    effectivePartitionKeyV1 = EffectivePartitionKey.V1.HashNull();
-                    effectivePartitionKeyV2 = EffectivePartitionKey.V2.HashNull();
+                    partitionKeyHashV1 = PartitionKeyHash.V1.HashNull();
+                    partitionKeyHashV2 = PartitionKeyHash.V2.HashNull();
                     break;
 
                 case CosmosBoolean cosmosBoolean:
-                    effectivePartitionKeyV1 = EffectivePartitionKey.V1.Hash(cosmosBoolean.Value);
-                    effectivePartitionKeyV2 = EffectivePartitionKey.V2.Hash(cosmosBoolean.Value);
+                    partitionKeyHashV1 = PartitionKeyHash.V1.Hash(cosmosBoolean.Value);
+                    partitionKeyHashV2 = PartitionKeyHash.V2.Hash(cosmosBoolean.Value);
                     break;
 
                 case CosmosString cosmosString:
-                    effectivePartitionKeyV1 = EffectivePartitionKey.V1.Hash(cosmosString.Value);
-                    effectivePartitionKeyV2 = EffectivePartitionKey.V2.Hash(cosmosString.Value);
+                    partitionKeyHashV1 = PartitionKeyHash.V1.Hash(cosmosString.Value);
+                    partitionKeyHashV2 = PartitionKeyHash.V2.Hash(cosmosString.Value);
                     break;
 
                 case CosmosNumber cosmosNumber:
-                    effectivePartitionKeyV1 = EffectivePartitionKey.V1.Hash(Number64.ToDouble(cosmosNumber.Value));
-                    effectivePartitionKeyV2 = EffectivePartitionKey.V2.Hash(Number64.ToDouble(cosmosNumber.Value));
+                    partitionKeyHashV1 = PartitionKeyHash.V1.Hash(Number64.ToDouble(cosmosNumber.Value));
+                    partitionKeyHashV2 = PartitionKeyHash.V2.Hash(Number64.ToDouble(cosmosNumber.Value));
                     break;
 
                 default:
                     throw new ArgumentOutOfRangeException($"Unknown {nameof(CosmosElement)} type: {value.GetType()}.");
             }
 
-            return new Output(effectivePartitionKeyV1, effectivePartitionKeyV2);
+            return new Output(partitionKeyHashV1, partitionKeyHashV2);
         }
 
         public sealed class Input : BaselineTestInput
@@ -186,19 +186,19 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 
         public sealed class Output : BaselineTestOutput
         {
-            internal Output(EffectivePartitionKey effectivePartitionKeyV1, EffectivePartitionKey effectivePartitionKeyV2)
+            internal Output(PartitionKeyHash partitionKeyHashV1, PartitionKeyHash partitionKeyHashV2)
             {
-                this.EffectivePartitionKeyV1 = effectivePartitionKeyV1;
-                this.EffectivePartitionKeyV2 = effectivePartitionKeyV2;
+                this.PartitionKeyHashV1 = partitionKeyHashV1;
+                this.PartitionKeyHashV2 = partitionKeyHashV2;
             }
 
-            internal EffectivePartitionKey EffectivePartitionKeyV1 { get; }
-            internal EffectivePartitionKey EffectivePartitionKeyV2 { get; }
+            internal PartitionKeyHash PartitionKeyHashV1 { get; }
+            internal PartitionKeyHash PartitionKeyHashV2 { get; }
 
             public override void SerializeAsXml(XmlWriter xmlWriter)
             {
-                xmlWriter.WriteElementString(nameof(this.EffectivePartitionKeyV1), this.EffectivePartitionKeyV1.Value.ToString());
-                xmlWriter.WriteElementString(nameof(this.EffectivePartitionKeyV2), this.EffectivePartitionKeyV2.Value.ToString());
+                xmlWriter.WriteElementString(nameof(this.PartitionKeyHashV1), this.PartitionKeyHashV1.Value.ToString());
+                xmlWriter.WriteElementString(nameof(this.PartitionKeyHashV2), this.PartitionKeyHashV2.Value.ToString());
             }
         }
     }
