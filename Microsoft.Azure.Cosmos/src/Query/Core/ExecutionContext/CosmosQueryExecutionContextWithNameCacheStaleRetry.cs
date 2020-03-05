@@ -7,6 +7,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
 
     internal sealed class CosmosQueryExecutionContextWithNameCacheStaleRetry : CosmosQueryExecutionContext
@@ -59,9 +61,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             return queryResponse;
         }
 
-        public override bool TryGetContinuationToken(out string continuationToken)
+        public override CosmosElement GetCosmosElementContinuationToken()
         {
-            return this.currentCosmosQueryExecutionContext.TryGetContinuationToken(out continuationToken);
+            return this.currentCosmosQueryExecutionContext.GetCosmosElementContinuationToken();
         }
     }
 }

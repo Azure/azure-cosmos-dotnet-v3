@@ -61,18 +61,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public void ChangeFeedIteratorCore_TryGetContinuation()
-        {
-            string continuation = Guid.NewGuid().ToString();
-            FeedTokenInternal feedToken = Mock.Of<FeedTokenInternal>();
-            Mock.Get(feedToken)
-                .Setup(f => f.GetContinuation()).Returns(continuation);
-            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(Mock.Of<CosmosClientContext>(), Mock.Of<ContainerCore>(), feedToken, null);
-            Assert.IsTrue(changeFeedIteratorCore.TryGetContinuationToken(out string state));
-            Assert.AreEqual(continuation, state);
-        }
-
-        [TestMethod]
         public async Task ChangeFeedIteratorCore_ReadNextAsync()
         {
             string continuation = "TBD";

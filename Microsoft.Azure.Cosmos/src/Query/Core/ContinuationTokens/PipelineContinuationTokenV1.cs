@@ -17,13 +17,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
 
         private static readonly string SourceContinuationTokenPropertyName = "SourceContinuationToken";
 
-        public PipelineContinuationTokenV1(string sourceContinuationToken)
+        public PipelineContinuationTokenV1(CosmosElement sourceContinuationToken)
             : base(PipelineContinuationTokenV1.VersionNumber)
         {
             this.SourceContinuationToken = sourceContinuationToken ?? throw new ArgumentNullException(nameof(sourceContinuationToken));
         }
 
-        public string SourceContinuationToken { get; }
+        public CosmosElement SourceContinuationToken { get; }
 
         public override string ToString()
         {
@@ -35,12 +35,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
                 },
                 {
                     PipelineContinuationTokenV1.SourceContinuationTokenPropertyName,
-                    CosmosString.Create(this.SourceContinuationToken)
+                    this.SourceContinuationToken
                 },
             }).ToString();
         }
 
-        public static bool TryParse(
+        public static bool TryCreateFromCosmosElement(
             CosmosObject parsedContinuationToken,
             out PipelineContinuationTokenV1 pipelinedContinuationTokenV1)
         {
@@ -63,9 +63,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
                 return false;
             }
 
-            if (!PipelineContinuationTokenV1.TryParseSourceContinuationToken(
-                parsedContinuationToken,
-                out string sourceContinuationToken))
+            if (!parsedContinuationToken.TryGetValue(
+                SourceContinuationTokenPropertyName,
+                out CosmosElement sourceContinuationToken))
             {
                 pipelinedContinuationTokenV1 = default;
                 return false;
@@ -84,27 +84,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
             }
 
             return new PipelineContinuationTokenV1(pipelinedContinuationTokenV0.SourceContinuationToken);
-        }
-
-        private static bool TryParseSourceContinuationToken(
-            CosmosObject parsedContinuationToken,
-            out string sourceContinuationToken)
-        {
-            if (parsedContinuationToken == null)
-            {
-                throw new ArgumentNullException(nameof(parsedContinuationToken));
-            }
-
-            if (!parsedContinuationToken.TryGetValue<CosmosString>(
-                PipelineContinuationTokenV1.SourceContinuationTokenPropertyName,
-                out CosmosString parsedSourceContinuationToken))
-            {
-                sourceContinuationToken = default;
-                return false;
-            }
-
-            sourceContinuationToken = parsedSourceContinuationToken.Value;
-            return true;
         }
     }
 }

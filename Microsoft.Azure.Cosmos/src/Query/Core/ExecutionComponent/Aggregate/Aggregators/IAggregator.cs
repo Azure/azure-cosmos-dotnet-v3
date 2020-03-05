@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggregators
 {
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
 
     /// <summary>
     /// Interface for all aggregators that are used to aggregate across continuation and partition boundaries.
@@ -22,10 +23,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
         /// <returns>The result of the aggregation.</returns>
         CosmosElement GetResult();
 
-        /// <summary>
-        /// Gets a continuation token that stores the partial aggregate up till this point.
-        /// </summary>
-        /// <returns>A continuation token that stores the partial aggregate up till this point.</returns>
-        string GetContinuationToken();
+        CosmosElement GetCosmosElementContinuationToken();
     }
 }

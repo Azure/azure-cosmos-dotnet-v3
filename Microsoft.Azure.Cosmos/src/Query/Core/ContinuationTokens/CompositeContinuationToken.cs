@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
 {
     using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Routing;
@@ -16,20 +17,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
     /// </summary>
     internal sealed class CompositeContinuationToken
     {
-        private const string TokenName = "token";
-        private const string RangeName = "range";
+        private static class PropertyNames
+        {
+            public const string Token = "token";
+            public const string Range = "range";
 
-        private const string MinName = "min";
-        private const string MaxName = "max";
+            public const string Min = "min";
+            public const string Max = "max";
+        }
 
-        [JsonProperty(TokenName)]
+        [JsonProperty(PropertyNames.Token)]
         public string Token
         {
             get;
             set;
         }
 
-        [JsonProperty(RangeName)]
+        [JsonProperty(PropertyNames.Range)]
         [JsonConverter(typeof(RangeJsonConverter))]
         public Documents.Routing.Range<string> Range
         {
@@ -48,14 +52,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
             return CosmosObject.Create(
                 new Dictionary<string, CosmosElement>()
                 {
-                    { CompositeContinuationToken.TokenName, token },
+                    { CompositeContinuationToken.PropertyNames.Token, token },
                     {
-                        CompositeContinuationToken.RangeName,
+                        CompositeContinuationToken.PropertyNames.Range,
                         CosmosObject.Create(
                             new Dictionary<string, CosmosElement>()
                             {
-                                { MinName, CosmosString.Create(compositeContinuationToken.Range.Min) },
-                                { MaxName, CosmosString.Create(compositeContinuationToken.Range.Max) }
+                                { PropertyNames.Min, CosmosString.Create(compositeContinuationToken.Range.Min) },
+                                { PropertyNames.Max, CosmosString.Create(compositeContinuationToken.Range.Max) }
                             })
                     },
                 });
@@ -69,10 +73,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
                     new MalformedContinuationTokenException($"{nameof(CompositeContinuationToken)} is not an object: {cosmosElement}"));
             }
 
-            if (!cosmosObject.TryGetValue(TokenName, out CosmosElement rawToken))
+            if (!cosmosObject.TryGetValue(PropertyNames.Token, out CosmosElement rawToken))
             {
                 return TryCatch<CompositeContinuationToken>.FromException(
-                    new MalformedContinuationTokenException($"{nameof(CompositeContinuationToken)} is missing field: '{TokenName}': {cosmosElement}"));
+                    new MalformedContinuationTokenException($"{nameof(CompositeContinuationToken)} is missing field: '{PropertyNames.Token}': {cosmosElement}"));
             }
 
             string token;
@@ -85,24 +89,24 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
                 token = null;
             }
 
-            if (!cosmosObject.TryGetValue(RangeName, out CosmosObject rawRange))
+            if (!cosmosObject.TryGetValue(PropertyNames.Range, out CosmosObject rawRange))
             {
                 return TryCatch<CompositeContinuationToken>.FromException(
-                    new MalformedContinuationTokenException($"{nameof(CompositeContinuationToken)} is missing field: '{RangeName}': {cosmosElement}"));
+                    new MalformedContinuationTokenException($"{nameof(CompositeContinuationToken)} is missing field: '{PropertyNames.Range}': {cosmosElement}"));
             }
 
-            if (!rawRange.TryGetValue(MinName, out CosmosString rawMin))
+            if (!rawRange.TryGetValue(PropertyNames.Min, out CosmosString rawMin))
             {
                 return TryCatch<CompositeContinuationToken>.FromException(
-                    new MalformedContinuationTokenException($"{nameof(CompositeContinuationToken)} is missing field: '{MinName}': {cosmosElement}"));
+                    new MalformedContinuationTokenException($"{nameof(CompositeContinuationToken)} is missing field: '{PropertyNames.Min}': {cosmosElement}"));
             }
 
             string min = rawMin.Value;
 
-            if (!rawRange.TryGetValue(MaxName, out CosmosString rawMax))
+            if (!rawRange.TryGetValue(PropertyNames.Max, out CosmosString rawMax))
             {
                 return TryCatch<CompositeContinuationToken>.FromException(
-                    new MalformedContinuationTokenException($"{nameof(CompositeContinuationToken)} is missing field: '{MaxName}': {cosmosElement}"));
+                    new MalformedContinuationTokenException($"{nameof(CompositeContinuationToken)} is missing field: '{PropertyNames.Max}': {cosmosElement}"));
             }
 
             string max = rawMax.Value;
