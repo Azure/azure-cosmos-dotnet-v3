@@ -631,18 +631,6 @@
           "Attributes": [],
           "MethodInfo": "Azure.AsyncPageable`1[T] GetDatabaseQueryIterator[T](System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
         },
-        "Azure.Cosmos.CosmosClientOptions ClientOptions": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "Azure.Cosmos.CosmosClientOptions get_ClientOptions()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Azure.Cosmos.CosmosClientOptions get_ClientOptions()"
-        },
         "Azure.Cosmos.CosmosContainer GetContainer(System.String, System.String)": {
           "Type": "Method",
           "Attributes": [],
