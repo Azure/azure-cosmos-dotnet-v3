@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Text;
 
     internal sealed class PartitionKeyHashRanges : IOrderedEnumerable<PartitionKeyHashRange>
     {
@@ -179,6 +180,22 @@ namespace Microsoft.Azure.Cosmos.Routing
         IEnumerator IEnumerable.GetEnumerator()
         {
             return this.partitionKeyHashRanges.GetEnumerator();
+        }
+
+        public override string ToString()
+        {
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.Append("[");
+
+            foreach (PartitionKeyHashRange partitionKeyHashRange in this.partitionKeyHashRanges)
+            {
+                stringBuilder.Append(partitionKeyHashRange.ToString());
+                stringBuilder.Append(",");
+            }
+
+            stringBuilder.Append("]");
+
+            return stringBuilder.ToString();
         }
 
         public enum CreateOutcome

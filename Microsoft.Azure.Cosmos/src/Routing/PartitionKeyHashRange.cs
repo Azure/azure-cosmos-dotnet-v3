@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Routing
 {
     using System;
+    using System.Text;
 
     internal readonly struct PartitionKeyHashRange : IComparable<PartitionKeyHashRange>, IEquatable<PartitionKeyHashRange>
     {
@@ -38,11 +39,11 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
             else if (this.StartInclusive.HasValue && !other.StartInclusive.HasValue)
             {
-                cmp = -1;
+                cmp = 1;
             }
             else if (!this.StartInclusive.HasValue && other.StartInclusive.HasValue)
             {
-                cmp = 1;
+                cmp = -1;
             }
             else
             {
@@ -94,6 +95,28 @@ namespace Microsoft.Azure.Cosmos.Routing
             int startHashCode = this.StartInclusive.GetHashCode();
             int endHashCode = this.EndExclusive.GetHashCode();
             return startHashCode ^ endHashCode;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.Append("[");
+
+            if (this.StartInclusive.HasValue)
+            {
+                stringBuilder.Append(this.StartInclusive.Value.Value);
+            }
+
+            stringBuilder.Append(",");
+
+            if (this.EndExclusive.HasValue)
+            {
+                stringBuilder.Append(this.EndExclusive.Value.Value);
+            }
+
+            stringBuilder.Append("]");
+
+            return stringBuilder.ToString();
         }
     }
 }

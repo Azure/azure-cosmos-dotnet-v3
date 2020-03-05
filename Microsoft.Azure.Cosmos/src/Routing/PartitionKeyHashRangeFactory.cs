@@ -52,9 +52,23 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return SplitOutcome.RangeNotWideEnough;
             }
 
+            if (numRanges == 1)
+            {
+                // Just return the range as is:
+                splitRanges = PartitionKeyHashRanges.Create(new PartitionKeyHashRange[] { partitionKeyHashRange });
+                return SplitOutcome.Success;
+            }
+
             List<PartitionKeyHashRange> childrenRanges = new List<PartitionKeyHashRange>();
             UInt128 subrangeLength = rangeLength / numRanges;
-            for (int i = 0; i < numRanges - 1; i++)
+            // First range should start at the user supplied range (since the input might have an open range and we don't want to return 0)
+            {
+                PartitionKeyHash? start = partitionKeyHashRange.StartInclusive;
+                PartitionKeyHash end = new PartitionKeyHash(actualStart + subrangeLength);
+                childrenRanges.Add(new PartitionKeyHashRange(start, end));
+            }
+
+            for (int i = 1; i < numRanges - 1; i++)
             {
                 PartitionKeyHash start = new PartitionKeyHash(actualStart + (subrangeLength * i));
                 PartitionKeyHash end = new PartitionKeyHash(start.Value + subrangeLength);
