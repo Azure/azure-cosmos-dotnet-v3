@@ -32,11 +32,10 @@ namespace Microsoft.Azure.Cosmos
 
             // Only record point operation stats if ClientSideRequestStats did not record the response.
             CosmosClientSideRequestStatistics clientSideRequestStatistics = documentServiceResponse.RequestStats as CosmosClientSideRequestStatistics;
-            if (clientSideRequestStatistics != null &&
-                clientSideRequestStatistics.ContactedReplicas.Count == 0 &&
-                clientSideRequestStatistics.FailedReplicas.Count == 0)
+            if (clientSideRequestStatistics == null ||
+                (clientSideRequestStatistics.ContactedReplicas.Count == 0 && clientSideRequestStatistics.FailedReplicas.Count == 0))
             {
-                PointOperationStatistics pointOperationStatistics = new PointOperationStatistics(
+                requestMessage.DiagnosticsContext.AddDiagnosticsInternal(new PointOperationStatistics(
                     activityId: headers.ActivityId,
                     responseTimeUtc: DateTime.UtcNow,
                     statusCode: documentServiceResponse.StatusCode,
@@ -46,7 +45,7 @@ namespace Microsoft.Azure.Cosmos
                     method: requestMessage?.Method,
                     requestUri: requestMessage?.RequestUri,
                     requestSessionToken: requestMessage?.Headers?.Session,
-                    responseSessionToken: headers.Session);
+                    responseSessionToken: headers.Session));
             }
 
             // If it's considered a failure create the corresponding CosmosException
@@ -78,7 +77,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContext diagnosticsContext = requestMessage?.DiagnosticsContext;
             if (diagnosticsContext == null)
             {
-                diagnosticsContext = CosmosDiagnosticsContextCore.Create();
+                diagnosticsContext = new CosmosDiagnosticsContextCore();
             }
 
             CosmosException cosmosException = CosmosExceptionFactory.Create(
@@ -112,28 +111,6 @@ namespace Microsoft.Azure.Cosmos
             {
                 requestMessage.Properties.Remove(nameof(DocumentClientException));
                 requestMessage.Properties.Add(nameof(DocumentClientException), documentClientException);
-            }
-
-            return responseMessage;
-        }
-
-        internal static ResponseMessage ToCosmosResponseMessage(this StoreResponse storeResponse, RequestMessage requestMessage)
-        {
-            // If it's considered a failure create the corresponding CosmosException
-            if (!storeResponse.StatusCode.IsSuccess())
-            {
-                CosmosException cosmosException = CosmosExceptionFactory.Create(
-                    storeResponse,
-                    requestMessage);
-
-                return cosmosException.ToCosmosResponseMessage(requestMessage);
-            }
-
-            // Is status code conversion lossy? 
-            ResponseMessage responseMessage = new ResponseMessage((HttpStatusCode)storeResponse.Status, requestMessage);
-            if (storeResponse.ResponseBody != null)
-            {
-                responseMessage.Content = storeResponse.ResponseBody;
             }
 
             return responseMessage;

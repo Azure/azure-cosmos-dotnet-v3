@@ -16,7 +16,6 @@ namespace Microsoft.Azure.Cosmos
     internal sealed class CosmosClientSideRequestStatistics : CosmosDiagnosticsInternal, IClientSideRequestStatistics
     {
         private readonly object lockObject = new object();
-        private readonly CosmosDiagnosticsContext diagnosticsContext;
 
         public CosmosClientSideRequestStatistics(CosmosDiagnosticsContext diagnosticsContext = null)
         {
@@ -26,8 +25,8 @@ namespace Microsoft.Azure.Cosmos
             this.ContactedReplicas = new List<Uri>();
             this.FailedReplicas = new HashSet<Uri>();
             this.RegionsContacted = new HashSet<Uri>();
-            this.diagnosticsContext = diagnosticsContext ?? CosmosDiagnosticsContext.Create();
-            this.diagnosticsContext.AddDiagnosticsInternal(this);
+            this.DiagnosticsContext = diagnosticsContext ?? new CosmosDiagnosticsContextCore();
+            this.DiagnosticsContext.AddDiagnosticsInternal(this);
         }
 
         private DateTime RequestStartTimeUtc { get; }
@@ -56,6 +55,8 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public bool IsCpuOverloaded { get; private set; } = false;
+
+        public CosmosDiagnosticsContext DiagnosticsContext { get; }
 
         public void RecordRequest(DocumentServiceRequest request)
         {
@@ -89,7 +90,7 @@ namespace Microsoft.Azure.Cosmos
                     this.RegionsContacted.Add(locationEndpoint);
                 }
 
-                this.diagnosticsContext.AddDiagnosticsInternal(responseStatistics);
+                this.DiagnosticsContext.AddDiagnosticsInternal(responseStatistics);
             }
         }
 
@@ -104,7 +105,7 @@ namespace Microsoft.Azure.Cosmos
             lock (this.lockObject)
             {
                 this.EndpointToAddressResolutionStatistics.Add(identifier, resolutionStats);
-                this.diagnosticsContext.AddDiagnosticsInternal(resolutionStats);
+                this.DiagnosticsContext.AddDiagnosticsInternal(resolutionStats);
             }
 
             return identifier;
@@ -139,7 +140,7 @@ namespace Microsoft.Azure.Cosmos
             // This is required for the older IClientSideRequestStatistics
             // Capture the entire diagnostic context in the toString to avoid losing any information
             // for any APIs using the older interface.
-            return this.diagnosticsContext.ToString();
+            return this.DiagnosticsContext.ToString();
         }
 
         public void AppendToBuilder(StringBuilder stringBuilder)
@@ -147,7 +148,7 @@ namespace Microsoft.Azure.Cosmos
             // This is required for the older IClientSideRequestStatistics
             // Capture the entire diagnostic context in the toString to avoid losing any information
             // for any APIs using the older interface.
-            stringBuilder.Append(this.diagnosticsContext.ToString());
+            stringBuilder.Append(this.DiagnosticsContext.ToString());
         }
 
         public override void Accept(CosmosDiagnosticsInternalVisitor visitor)

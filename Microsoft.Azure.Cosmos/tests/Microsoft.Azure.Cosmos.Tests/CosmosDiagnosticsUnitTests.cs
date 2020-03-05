@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void ValidateDiagnosticsContext()
         {
-            CosmosDiagnosticsContext cosmosDiagnostics = CosmosDiagnosticsContext.Create();
+            CosmosDiagnosticsContext cosmosDiagnostics = new CosmosDiagnosticsContextCore();
             string diagnostics = cosmosDiagnostics.ToString();
 
             //Test the default user agent string
@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void ValidateDiagnosticsAppendContext()
         {
-            CosmosDiagnosticsContext cosmosDiagnostics = CosmosDiagnosticsContext.Create();
+            CosmosDiagnosticsContext cosmosDiagnostics = new CosmosDiagnosticsContextCore();
 
             // Test all the different operations on diagnostics context
             using (cosmosDiagnostics.CreateScope("ValidateScope"))
@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             cosmosDiagnostics.SetSdkUserAgent("MyCustomUserAgentString");
 
-            CosmosDiagnosticsContext cosmosDiagnostics2 = CosmosDiagnosticsContext.Create();
+            CosmosDiagnosticsContext cosmosDiagnostics2 = new CosmosDiagnosticsContextCore();
 
             using (cosmosDiagnostics.CreateScope("CosmosDiagnostics2Scope"))
             {

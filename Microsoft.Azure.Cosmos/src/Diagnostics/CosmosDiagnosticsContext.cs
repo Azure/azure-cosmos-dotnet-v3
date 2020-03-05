@@ -52,12 +52,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal static CosmosDiagnosticsContext Create(RequestOptions requestOptions)
         {
-            return requestOptions?.DiagnosticContext ?? CosmosDiagnosticsContext.Create();
-        }
-
-        internal static CosmosDiagnosticsContext Create()
-        {
-            return new CosmosDiagnosticsContextCore();
+            return requestOptions?.DiagnosticContext ?? new CosmosDiagnosticsContextCore();
         }
     }
 }

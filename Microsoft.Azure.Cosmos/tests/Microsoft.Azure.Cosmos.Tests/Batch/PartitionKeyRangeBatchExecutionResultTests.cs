@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 requestUri: new Uri("http://localhost"),
                 requestSessionToken: null,
                 responseSessionToken: null);
-            CosmosDiagnosticsContext scope = CosmosDiagnosticsContext.Create();
+            CosmosDiagnosticsContext scope = new CosmosDiagnosticsContextCore();
             scope.AddDiagnosticsInternal(pointOperationStatistics);
 
             TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.OK)

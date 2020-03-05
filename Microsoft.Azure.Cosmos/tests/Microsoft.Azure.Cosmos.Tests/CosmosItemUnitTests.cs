@@ -666,7 +666,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     .Setup(e => e.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()))
                     .ReturnsAsync(new TransactionalBatchOperationResult(HttpStatusCode.OK)
                     {
-                       DiagnosticsContext = CosmosDiagnosticsContext.Create()
+                       DiagnosticsContext = new CosmosDiagnosticsContextCore()
                     });
             }
 
