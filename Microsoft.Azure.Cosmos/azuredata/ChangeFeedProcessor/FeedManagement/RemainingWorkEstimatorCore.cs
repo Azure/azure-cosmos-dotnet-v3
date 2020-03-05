@@ -24,7 +24,7 @@ namespace Azure.Cosmos.ChangeFeed
         private const char PKRangeIdSeparator = ':';
         private const char SegmentSeparator = '#';
         private static readonly JsonEncodedText LSNPropertyName = JsonEncodedText.Encode("_lsn");
-        private static readonly CosmosSerializer DefaultSerializer = new CosmosTextJsonSerializer();
+        private static readonly CosmosSerializer DefaultSerializer = CosmosTextJsonSerializer.CreatePropertiesSerializer();
         private readonly Func<string, string, bool, FeedIterator> feedCreator;
         private readonly DocumentServiceLeaseContainer leaseContainer;
         private readonly int degreeOfParallelism;

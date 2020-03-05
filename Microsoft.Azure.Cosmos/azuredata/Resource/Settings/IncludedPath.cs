@@ -5,12 +5,10 @@
 namespace Azure.Cosmos
 {
     using System.Collections.ObjectModel;
-    using System.Text.Json.Serialization;
 
     /// <summary> 
     /// Specifies a path within a JSON document to be included in the Azure Cosmos DB service.
     /// </summary>
-    [JsonConverter(typeof(TextJsonIncludedPathConverter))]
     public sealed class IncludedPath
     {
         /// <summary>

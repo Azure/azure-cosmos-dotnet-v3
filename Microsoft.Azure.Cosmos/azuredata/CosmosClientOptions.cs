@@ -10,7 +10,6 @@ namespace Azure.Cosmos
     using System.Linq;
     using System.Net;
     using System.Text.Json;
-    using System.Text.Json.Serialization;
     using Azure.Core;
     using Azure.Cosmos.Fluent;
     using Azure.Cosmos.Serialization;
@@ -33,7 +32,6 @@ namespace Azure.Cosmos
     /// 
     /// CosmosClient client = new CosmosClient("endpoint", "key", clientOptions);
     /// </example>
-    [JsonConverter(typeof(TextJsonCosmosClientOptionsConverter))]
     public class CosmosClientOptions : ClientOptions
     {
         /// <summary>
@@ -54,7 +52,7 @@ namespace Azure.Cosmos
         /// <summary>
         /// Default request timeout
         /// </summary>
-        private static readonly CosmosSerializer propertiesSerializer = new CosmosJsonSerializerWrapper(new CosmosTextJsonSerializer());
+        private static readonly CosmosSerializer propertiesSerializer = new CosmosJsonSerializerWrapper(CosmosTextJsonSerializer.CreatePropertiesSerializer());
 
         private int gatewayModeMaxConnectionLimit;
         private CosmosSerializationOptions serializerOptions;
@@ -492,7 +490,7 @@ namespace Azure.Cosmos
         {
             if (this.SerializerOptions != null)
             {
-                CosmosTextJsonSerializer cosmosJsonDotNetSerializer = new CosmosTextJsonSerializer(this.SerializerOptions);
+                CosmosTextJsonSerializer cosmosJsonDotNetSerializer = CosmosTextJsonSerializer.CreateUserDefaultSerializer(this.SerializerOptions);
                 return new CosmosJsonSerializerWrapper(cosmosJsonDotNetSerializer);
             }
             else
@@ -665,7 +663,14 @@ namespace Azure.Cosmos
         /// <returns>Returns a JSON string of the current configuration.</returns>
         internal string GetSerializedConfiguration()
         {
-            return JsonSerializer.Serialize(this);
+            return JsonSerializer.Serialize(this, this.serializationOptions.Value);
         }
+
+        private Lazy<JsonSerializerOptions> serializationOptions = new Lazy<JsonSerializerOptions>(() =>
+        {
+            JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions();
+            jsonSerializerOptions.Converters.Add(new TextJsonCosmosClientOptionsConverter());
+            return jsonSerializerOptions;
+        });
     }
 }

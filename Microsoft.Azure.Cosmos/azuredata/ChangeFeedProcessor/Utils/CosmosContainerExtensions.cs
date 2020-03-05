@@ -13,7 +13,7 @@ namespace Azure.Cosmos.ChangeFeed
 
     internal static class CosmosContainerExtensions
     {
-        public static readonly CosmosSerializer DefaultJsonSerializer = new CosmosTextJsonSerializer();
+        public static readonly CosmosSerializer DefaultJsonSerializer = CosmosTextJsonSerializer.CreatePropertiesSerializer();
 
         public static async Task<T> TryGetItemAsync<T>(
             this CosmosContainer container,

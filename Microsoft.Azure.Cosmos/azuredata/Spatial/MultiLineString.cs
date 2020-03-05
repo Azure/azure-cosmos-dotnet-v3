@@ -9,14 +9,12 @@ namespace Azure.Cosmos.Spatial
     using System.Collections.ObjectModel;
     using System.Linq;
     using System.Runtime.Serialization;
-    using System.Text.Json.Serialization;
-
+    
     /// <summary>
     /// Represents a geometry consisting of multiple <see cref="LineString"/>.
     /// </summary>
     /// <seealso cref="LineString"/>.
     [DataContract]
-    [JsonConverter(typeof(TextJsonGeometryConverterFactory))]
     internal sealed class MultiLineString : Geometry, IEquatable<MultiLineString>
     {
         /// <summary>

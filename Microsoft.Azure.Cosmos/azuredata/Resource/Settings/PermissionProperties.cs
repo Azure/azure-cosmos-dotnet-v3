@@ -5,13 +5,11 @@
 namespace Azure.Cosmos
 {
     using System;
-    using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
 
     /// <summary> 
     /// Represents a permission in the Azure Cosmos DB service.
     /// </summary>
-    [JsonConverter(typeof(TextJsonPermissionPropertiesConverter))]
     public class PermissionProperties
     {
         /// <summary>

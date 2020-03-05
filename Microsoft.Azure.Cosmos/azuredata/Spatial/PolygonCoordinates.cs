@@ -9,14 +9,12 @@ namespace Azure.Cosmos.Spatial
     using System.Collections.ObjectModel;
     using System.Linq;
     using System.Runtime.Serialization;
-    using System.Text.Json.Serialization;
-
+    
     /// <summary>
     /// Polygon coordinates.
     /// </summary>
     /// <seealso cref="MultiPolygon"/>
     [DataContract]
-    [JsonConverter(typeof(TextJsonPolygonCoordinatesConverter))]
     internal sealed class PolygonCoordinates : IEquatable<PolygonCoordinates>
     {
         /// <summary>

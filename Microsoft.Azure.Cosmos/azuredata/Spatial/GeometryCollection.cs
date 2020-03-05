@@ -9,13 +9,11 @@ namespace Azure.Cosmos.Spatial
     using System.Collections.ObjectModel;
     using System.Linq;
     using System.Runtime.Serialization;
-    using System.Text.Json.Serialization;
 
     /// <summary>
     /// Represents a geometry consisting of other geometries.
     /// </summary>
     [DataContract]
-    [JsonConverter(typeof(TextJsonGeometryConverterFactory))]
     internal sealed class GeometryCollection : Geometry, IEquatable<GeometryCollection>
     {
         /// <summary>

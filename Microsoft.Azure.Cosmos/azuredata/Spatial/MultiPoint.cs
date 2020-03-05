@@ -9,14 +9,12 @@ namespace Azure.Cosmos.Spatial
     using System.Collections.ObjectModel;
     using System.Linq;
     using System.Runtime.Serialization;
-    using System.Text.Json.Serialization;
-
+    
     /// <summary>
     /// Geometry consisting of several points.
     /// </summary>
     /// <seealso cref="Point"/>.
     [DataContract]
-    [JsonConverter(typeof(TextJsonGeometryConverterFactory))]
     internal sealed class MultiPoint : Geometry, IEquatable<MultiPoint>
     {
         /// <summary>

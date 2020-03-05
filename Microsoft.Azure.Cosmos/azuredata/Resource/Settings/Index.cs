@@ -4,12 +4,9 @@
 
 namespace Azure.Cosmos
 {
-    using System.Text.Json.Serialization;
-
     /// <summary>
     /// Base class for IndexingPolicy Indexes in the Azure Cosmos DB service, you should use a concrete Index like HashIndex or RangeIndex.
     /// </summary> 
-    [JsonConverter(typeof(TextJsonIndexConverter))]
     internal abstract class Index
     {
         /// <summary>

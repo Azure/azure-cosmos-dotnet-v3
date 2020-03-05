@@ -3,12 +3,9 @@
 //------------------------------------------------------------
 namespace Azure.Cosmos
 {
-    using System.Text.Json.Serialization;
-
     /// <summary>
     /// The AccountLocation class represents an Azure Cosmos DB database account in a specific region.
     /// </summary>
-    [JsonConverter(typeof(TextJsonAccountRegionConverter))]
     public class AccountRegion
     {
         /// <summary>

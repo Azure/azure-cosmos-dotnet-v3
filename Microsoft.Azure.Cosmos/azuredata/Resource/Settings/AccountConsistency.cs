@@ -3,12 +3,9 @@
 //------------------------------------------------------------
 namespace Azure.Cosmos
 {
-    using System.Text.Json.Serialization;
-
     /// <summary>
     /// Represents the consistency policy of a database account of the Azure Cosmos DB service.
     /// </summary>
-    [JsonConverter(typeof(TextJsonAccountConsistencyConverter))]
     public class AccountConsistency
     {
         private const ConsistencyLevel defaultDefaultConsistencyLevel = ConsistencyLevel.Session;

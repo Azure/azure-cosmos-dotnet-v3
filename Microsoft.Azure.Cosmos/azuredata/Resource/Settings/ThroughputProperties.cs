@@ -5,7 +5,6 @@
 namespace Azure.Cosmos
 {
     using System;
-    using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -24,7 +23,6 @@ namespace Azure.Cosmos
     /// ]]>
     /// </code>
     /// </example>
-    [JsonConverter(typeof(TextJsonThroughputPropertiesConverter))]
     public class ThroughputProperties
     {
         /// <summary>

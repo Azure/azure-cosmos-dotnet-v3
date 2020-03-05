@@ -4,13 +4,10 @@
 
 namespace Azure.Cosmos
 {
-    using System.Text.Json.Serialization;
-
     /// <summary>
     /// Represents the conflict resolution policy configuration for specifying how to resolve conflicts 
     /// in case writes from different regions result in conflicts on items in the container in the Azure Cosmos DB service.
     /// </summary>
-    [JsonConverter(typeof(TextJsonConflictResolutionPolicyConverter))]
     public class ConflictResolutionPolicy
     {
         /// <summary>

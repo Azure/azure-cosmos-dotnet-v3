@@ -6,13 +6,11 @@ namespace Azure.Cosmos.Spatial
 {
     using System;
     using System.Runtime.Serialization;
-    using System.Text.Json.Serialization;
-
+    
     /// <summary>
     /// Point geometry class in the Azure Cosmos DB service.
     /// </summary>
     [DataContract]
-    [JsonConverter(typeof(TextJsonGeometryConverterFactory))]
     public sealed class Point : Geometry, IEquatable<Point>
     {
         /// <summary>

@@ -4,12 +4,9 @@
 
 namespace Azure.Cosmos
 {
-    using System.Text.Json.Serialization;
-
     /// <summary> 
     /// Specifies a path within a JSON document to be excluded while indexing data for the Azure Cosmos DB service.
     /// </summary>
-    [JsonConverter(typeof(TextJsonExcludedPathConverter))]
     public sealed class ExcludedPath
     {
         /// <summary>

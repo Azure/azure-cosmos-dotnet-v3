@@ -9,8 +9,7 @@ namespace Azure.Cosmos.Spatial
     using System.Collections.ObjectModel;
     using System.Linq;
     using System.Runtime.Serialization;
-    using System.Text.Json.Serialization;
-
+    
     /// <summary>
     /// <para>
     /// A position is represented by an array of numbers in the Azure Cosmos DB service. There must be at least two elements, and may be more.
@@ -21,7 +20,6 @@ namespace Azure.Cosmos.Spatial
     /// </para>
     /// </summary>
     [DataContract]
-    [JsonConverter(typeof(TextJsonPositionConverter))]
     public sealed class Position : IEquatable<Position>
     {
         /// <summary>

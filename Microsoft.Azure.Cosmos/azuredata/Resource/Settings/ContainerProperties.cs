@@ -6,7 +6,6 @@ namespace Azure.Cosmos
 {
     using System;
     using System.Collections.ObjectModel;
-    using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
 
@@ -24,7 +23,7 @@ namespace Azure.Cosmos
     /// The partition key is the first level 'country' property in all the documents within this container.
     /// <code language="c#">
     /// <![CDATA[
-    ///     Container container = await client.GetDatabase("dbName"].Containers.CreateAsync("MyCollection", "/country", 50000} );
+    ///     CosmosContainer container = await client.GetDatabase("dbName"].Containers.CreateAsync("MyCollection", "/country", 50000} );
     ///     ContainerProperties containerProperties = container.Resource;
     /// ]]>
     /// </code>
@@ -53,7 +52,6 @@ namespace Azure.Cosmos
     /// </example>
     /// <seealso cref="IndexingPolicy"/>
     /// <seealso cref="UniqueKeyPolicy"/>
-    [JsonConverter(typeof(TextJsonContainerPropertiesConverter))]
     public class ContainerProperties
     {
         private static readonly char[] partitionKeyTokenDelimeter = new char[] { '/' };

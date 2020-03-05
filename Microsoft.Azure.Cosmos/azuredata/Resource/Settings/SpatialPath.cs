@@ -5,12 +5,10 @@ namespace Azure.Cosmos.Spatial
 {
     using System;
     using System.Collections.ObjectModel;
-    using System.Text.Json.Serialization;
 
     /// <summary>
     /// Spatial index specification
     /// </summary>
-    [JsonConverter(typeof(TextJsonSpatialPathConverter))]
     public sealed class SpatialPath
     {
         private Collection<SpatialType> spatialTypesInternal;

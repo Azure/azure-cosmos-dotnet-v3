@@ -9,14 +9,12 @@ namespace Azure.Cosmos.Spatial
     using System.Collections.ObjectModel;
     using System.Linq;
     using System.Runtime.Serialization;
-    using System.Text.Json.Serialization;
-
+    
     /// <summary>
     /// Line string coordinates.
     /// </summary>
     /// <seealso cref="MultiLineString"/>
     [DataContract]
-    [JsonConverter(typeof(TextJsonLineStringCoordinatesConverter))]
     internal sealed class LineStringCoordinates : IEquatable<LineStringCoordinates>
     {
         /// <summary>

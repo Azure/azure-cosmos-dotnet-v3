@@ -5,7 +5,6 @@
 namespace Azure.Cosmos
 {
     using System;
-    using System.Text.Json.Serialization;
 
     /// <summary>
     /// Represents a database in the Azure Cosmos DB account.
@@ -55,7 +54,6 @@ namespace Azure.Cosmos
     /// </code>
     /// </example>
     /// <seealso cref="ContainerProperties"/>
-    [JsonConverter(typeof(TextJsonDatabasePropertiesConverter))]
     public class DatabaseProperties
     {
         private string id;

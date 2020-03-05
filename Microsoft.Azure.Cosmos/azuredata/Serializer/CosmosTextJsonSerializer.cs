@@ -21,16 +21,39 @@ namespace Azure.Cosmos
         private readonly JsonSerializerOptions jsonSerializerOptions;
 
         /// <summary>
-        /// Create a serializer that uses the JSON.net serializer
+        /// Creates a Serializer using System.Text.Json for user type handling.
         /// </summary>
-        /// <remarks>
-        /// This is internal to reduce exposure of JSON.net types so
-        /// it is easier to convert to System.Text.Json
-        /// </remarks>
-        internal CosmosTextJsonSerializer()
+        internal static CosmosTextJsonSerializer CreateUserDefaultSerializer(CosmosSerializationOptions cosmosSerializerOptions = null)
         {
-            this.jsonSerializerOptions = new JsonSerializerOptions();
-            this.InitializeConverters();
+            JsonSerializerOptions jsonSerializerOptions;
+            if (cosmosSerializerOptions != null)
+            {
+                jsonSerializerOptions = new JsonSerializerOptions()
+                {
+                    IgnoreNullValues = cosmosSerializerOptions.IgnoreNullValues,
+                    WriteIndented = cosmosSerializerOptions.Indented,
+                    PropertyNamingPolicy = cosmosSerializerOptions.PropertyNamingPolicy == CosmosPropertyNamingPolicy.CamelCase ?
+                            JsonNamingPolicy.CamelCase : null
+                };
+            }
+            else
+            {
+                jsonSerializerOptions = new JsonSerializerOptions();
+            }
+
+            CosmosTextJsonSerializer.InitializeDataContractConverters(jsonSerializerOptions);
+            return new CosmosTextJsonSerializer(jsonSerializerOptions);
+        }
+
+        /// <summary>
+        /// Creates a Serializer using System.Text.Json for REST type handling.
+        /// </summary>
+        internal static CosmosTextJsonSerializer CreatePropertiesSerializer()
+        {
+            JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions();
+            CosmosTextJsonSerializer.InitializeDataContractConverters(jsonSerializerOptions);
+            CosmosTextJsonSerializer.InitializeRESTConverters(jsonSerializerOptions);
+            return new CosmosTextJsonSerializer(jsonSerializerOptions);
         }
 
         /// <summary>
@@ -43,25 +66,6 @@ namespace Azure.Cosmos
         internal CosmosTextJsonSerializer(JsonSerializerOptions jsonSerializerSettings)
         {
             this.jsonSerializerOptions = jsonSerializerSettings ?? throw new ArgumentNullException(nameof(jsonSerializerSettings));
-        }
-
-        /// <summary>
-        /// Create a serializer that uses the JSON.net serializer
-        /// </summary>
-        /// <remarks>
-        /// This is internal to reduce exposure of JSON.net types so
-        /// it is easier to convert to System.Text.Json
-        /// </remarks>
-        internal CosmosTextJsonSerializer(CosmosSerializationOptions cosmosSerializerOptions)
-        {
-            this.jsonSerializerOptions = new JsonSerializerOptions()
-            {
-                IgnoreNullValues = cosmosSerializerOptions.IgnoreNullValues,
-                WriteIndented = cosmosSerializerOptions.Indented,
-                PropertyNamingPolicy = cosmosSerializerOptions.PropertyNamingPolicy == CosmosPropertyNamingPolicy.CamelCase ?
-                        JsonNamingPolicy.CamelCase : null
-            };
-            this.InitializeConverters();
         }
 
         /// <summary>
@@ -201,10 +205,44 @@ namespace Azure.Cosmos
         /// <summary>
         /// System.Text.Json does not support DataContract, so all DataContract types require custom converters, and all Direct classes too.
         /// </summary>
-        private void InitializeConverters()
+        public static void InitializeDataContractConverters(JsonSerializerOptions serializerOptions)
         {
-            this.jsonSerializerOptions.Converters.Add(new TextJsonCosmosSqlQuerySpecConverter());
-            this.jsonSerializerOptions.Converters.Add(new TextJsonOfferV2Converter());
+            serializerOptions.Converters.Add(new TextJsonCosmosSqlQuerySpecConverter());
+            serializerOptions.Converters.Add(new TextJsonBoundingBoxConverter());
+            serializerOptions.Converters.Add(new TextJsonCrsConverterFactory());
+            serializerOptions.Converters.Add(new TextJsonGeometryConverterFactory());
+            serializerOptions.Converters.Add(new TextJsonGeometryParamsJsonConverter());
+            serializerOptions.Converters.Add(new TextJsonGeometryValidationResultConverter());
+            serializerOptions.Converters.Add(new TextJsonLinearRingConverter());
+            serializerOptions.Converters.Add(new TextJsonLineStringCoordinatesConverter());
+            serializerOptions.Converters.Add(new TextJsonPolygonCoordinatesConverter());
+            serializerOptions.Converters.Add(new TextJsonPositionConverter());
+        }
+
+        public static void InitializeRESTConverters(JsonSerializerOptions serializerOptions)
+        {
+            serializerOptions.Converters.Add(new TextJsonOfferV2Converter());
+            serializerOptions.Converters.Add(new TextJsonAccountConsistencyConverter());
+            serializerOptions.Converters.Add(new TextJsonAccountPropertiesConverter());
+            serializerOptions.Converters.Add(new TextJsonAccountRegionConverter());
+            serializerOptions.Converters.Add(new TextJsonCompositePathConverter());
+            serializerOptions.Converters.Add(new TextJsonConflictPropertiesConverter());
+            serializerOptions.Converters.Add(new TextJsonConflictResolutionPolicyConverter());
+            serializerOptions.Converters.Add(new TextJsonContainerPropertiesConverter());
+            serializerOptions.Converters.Add(new TextJsonDatabasePropertiesConverter());
+            serializerOptions.Converters.Add(new TextJsonExcludedPathConverter());
+            serializerOptions.Converters.Add(new TextJsonIncludedPathConverter());
+            serializerOptions.Converters.Add(new TextJsonIndexConverter());
+            serializerOptions.Converters.Add(new TextJsonIndexingPolicyConverter());
+            serializerOptions.Converters.Add(new TextJsonPermissionPropertiesConverter());
+            serializerOptions.Converters.Add(new TextJsonSpatialPathConverter());
+            serializerOptions.Converters.Add(new TextJsonStoredProcedurePropertiesConverter());
+            serializerOptions.Converters.Add(new TextJsonThroughputPropertiesConverter());
+            serializerOptions.Converters.Add(new TextJsonTriggerPropertiesConverter());
+            serializerOptions.Converters.Add(new TextJsonUniqueKeyConverter());
+            serializerOptions.Converters.Add(new TextJsonUniqueKeyPolicyConverter());
+            serializerOptions.Converters.Add(new TextJsonUserDefinedFunctionPropertiesConverter());
+            serializerOptions.Converters.Add(new TextJsonUserPropertiesConverter());
         }
     }
 }

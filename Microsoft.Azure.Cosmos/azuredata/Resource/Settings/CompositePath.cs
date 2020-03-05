@@ -3,15 +3,12 @@
 //------------------------------------------------------------
 namespace Azure.Cosmos
 {
-    using System.Text.Json.Serialization;
-
     /// <summary>
     /// DOM for a composite path.
     /// A composite path is used in a composite index.
     /// For example if you want to run a query like "SELECT * FROM c ORDER BY c.age, c.height",
     /// then you need to add "/age" and "/height" as composite paths to your composite index.
     /// </summary>
-    [JsonConverter(typeof(TextJsonCompositePathConverter))]
     public sealed class CompositePath
     {
         /// <summary>

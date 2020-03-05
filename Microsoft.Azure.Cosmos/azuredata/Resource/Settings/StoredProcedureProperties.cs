@@ -5,7 +5,6 @@
 namespace Azure.Cosmos.Scripts
 {
     using System;
-    using System.Text.Json.Serialization;
 
     /// <summary>
     /// Represents a stored procedure in the Azure Cosmos DB service.
@@ -14,7 +13,6 @@ namespace Azure.Cosmos.Scripts
     /// Azure Cosmos DB allows application logic written entirely in JavaScript to be executed directly inside the database engine under the database transaction.
     /// For additional details, refer to the server-side JavaScript API documentation.
     /// </remarks>
-    [JsonConverter(typeof(TextJsonStoredProcedurePropertiesConverter))]
     public class StoredProcedureProperties
     {
         private string id;

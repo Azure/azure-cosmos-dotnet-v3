@@ -9,13 +9,11 @@ namespace Azure.Cosmos.Spatial
     using System.Collections.ObjectModel;
     using System.Linq;
     using System.Runtime.Serialization;
-    using System.Text.Json.Serialization;
-
+    
     /// <summary>
     /// Represents a geometry consisting of connected line segments.
     /// </summary>
     [DataContract]
-    [JsonConverter(typeof(TextJsonGeometryConverterFactory))]
     public sealed class LineString : Geometry, IEquatable<LineString>
     {
         /// <summary>

@@ -7,7 +7,6 @@ namespace Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.Text.Json.Serialization;
     using Azure.Cosmos.Spatial;
 
     /// <summary>
@@ -22,7 +21,6 @@ namespace Azure.Cosmos
     /// </para>
     /// </remarks>
     /// <seealso cref="ContainerProperties"/>
-    [JsonConverter(typeof(TextJsonIndexingPolicyConverter))]
     public sealed class IndexingPolicy
     {
         internal const string DefaultPath = "/*";

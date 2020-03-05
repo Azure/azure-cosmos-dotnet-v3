@@ -9,8 +9,7 @@ namespace Azure.Cosmos.Spatial
     using System.Collections.ObjectModel;
     using System.Linq;
     using System.Runtime.Serialization;
-    using System.Text.Json.Serialization;
-
+    
     /// <summary>
     /// A <see cref="LinearRing" /> is closed LineString with 4 or more positions. The first and last positions are
     /// equivalent (they represent equivalent points).
@@ -18,7 +17,6 @@ namespace Azure.Cosmos.Spatial
     /// the <see cref="Polygon"/> geometry type definition in the Azure Cosmos DB service.
     /// </summary>
     [DataContract]
-    [JsonConverter(typeof(TextJsonLinearRingConverter))]
     public sealed class LinearRing : IEquatable<LinearRing>
     {
         /// <summary>
