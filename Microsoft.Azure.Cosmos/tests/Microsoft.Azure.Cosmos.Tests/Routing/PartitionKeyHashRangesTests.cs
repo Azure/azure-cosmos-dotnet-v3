@@ -49,10 +49,22 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             VerifyCreate(
                 PartitionKeyHashRanges.CreateOutcome.DuplicatePartitionKeyRange,
                 CreateRange(0, 1), CreateRange(1, 2), CreateRange(0, 1));
+
+            VerifyCreate(
+                PartitionKeyHashRanges.CreateOutcome.DuplicatePartitionKeyRange,
+                CreateRange(0, null), CreateRange(0, null));
+
+            VerifyCreate(
+                PartitionKeyHashRanges.CreateOutcome.DuplicatePartitionKeyRange,
+                CreateRange(null, 1), CreateRange(null, 1));
+
+            VerifyCreate(
+                PartitionKeyHashRanges.CreateOutcome.DuplicatePartitionKeyRange,
+                CreateRange(null, null), CreateRange(null, null));
         }
 
         [TestMethod]
-        public void TestRangeOverlap()
+        public void TestRangesOverlap()
         {
             VerifyCreate(
                 PartitionKeyHashRanges.CreateOutcome.RangesOverlap,
@@ -65,10 +77,22 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             VerifyCreate(
                 PartitionKeyHashRanges.CreateOutcome.RangesOverlap,
                 CreateRange(0, 2), CreateRange(0, 1), CreateRange(0, 3));
+
+            VerifyCreate(
+                PartitionKeyHashRanges.CreateOutcome.RangesOverlap,
+                CreateRange(0, 2), CreateRange(0, null));
+
+            VerifyCreate(
+                PartitionKeyHashRanges.CreateOutcome.RangesOverlap,
+                CreateRange(1, 2), CreateRange(null, 2));
+
+            VerifyCreate(
+                PartitionKeyHashRanges.CreateOutcome.RangesOverlap,
+                CreateRange(1, 2), CreateRange(null, null));
         }
 
         [TestMethod]
-        public void TestRangesOverlap()
+        public void TestRangesAreNotContiguous()
         {
             VerifyCreate(
                 PartitionKeyHashRanges.CreateOutcome.RangesAreNotContiguous,
@@ -77,6 +101,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             VerifyCreate(
                 PartitionKeyHashRanges.CreateOutcome.RangesAreNotContiguous,
                 CreateRange(0, 1), CreateRange(1, 2), CreateRange(3, 4));
+
+            VerifyCreate(
+                PartitionKeyHashRanges.CreateOutcome.RangesAreNotContiguous,
+                CreateRange(0, 1), CreateRange(2, null));
+
+            VerifyCreate(
+                PartitionKeyHashRanges.CreateOutcome.RangesAreNotContiguous,
+                CreateRange(null, 1), CreateRange(2, 3));
         }
 
         [TestMethod]
@@ -93,6 +125,18 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             VerifyCreate(
                 PartitionKeyHashRanges.CreateOutcome.Success,
                 CreateRange(0, 1234), CreateRange(1234, int.MaxValue));
+
+            VerifyCreate(
+                PartitionKeyHashRanges.CreateOutcome.Success,
+                CreateRange(0, 1234), CreateRange(1234, null));
+
+            VerifyCreate(
+                PartitionKeyHashRanges.CreateOutcome.Success,
+                CreateRange(null, 1234), CreateRange(1234, int.MaxValue));
+
+            VerifyCreate(
+                PartitionKeyHashRanges.CreateOutcome.Success,
+                CreateRange(null, 1234), CreateRange(1234, null));
         }
 
         private static void VerifyCreate(
@@ -114,11 +158,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             }
         }
 
-        private static PartitionKeyHashRange CreateRange(UInt128 start, UInt128 end)
+        private static PartitionKeyHashRange CreateRange(UInt128? start, UInt128? end)
         {
             return new PartitionKeyHashRange(
-                startInclusive: new PartitionKeyHash(start),
-                endExclusive: new PartitionKeyHash(end));
+                startInclusive: start.HasValue ? (PartitionKeyHash?)new PartitionKeyHash(start.Value) : null,
+                endExclusive: end.HasValue ? (PartitionKeyHash?)new PartitionKeyHash(end.Value) : null);
         }
     }
 }

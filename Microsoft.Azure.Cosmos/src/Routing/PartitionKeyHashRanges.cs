@@ -74,8 +74,11 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 if (partitionKeyHashRange.StartInclusive.Equals(partitionKeyHashRange.EndExclusive))
                 {
-                    partitionedSortedEffectiveRanges = default;
-                    return CreateOutcome.EmptyPartitionKeyRange;
+                    if (partitionKeyHashRange.StartInclusive.HasValue && partitionKeyHashRange.EndExclusive.HasValue)
+                    {
+                        partitionedSortedEffectiveRanges = default;
+                        return CreateOutcome.EmptyPartitionKeyRange;
+                    }
                 }
 
                 if (!sortedSet.Add(partitionKeyHashRange))
@@ -91,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             // https://stackoverflow.com/questions/3269434/whats-the-most-efficient-way-to-test-two-integer-ranges-for-overlap
             UInt128 minStart = UInt128.MaxValue;
             UInt128 maxEnd = UInt128.MinValue;
-            UInt128 sumOfWidth = 0;
+            (UInt128 sumOfWidth, bool overflowed) = (0, false);
 
             foreach (PartitionKeyHashRange partitionKeyHashRange in sortedSet)
             {
@@ -122,10 +125,14 @@ namespace Microsoft.Azure.Cosmos.Routing
                 UInt128 width = partitionKeyHashRange.EndExclusive.GetValueOrDefault(new PartitionKeyHash(UInt128.MaxValue)).Value
                     - partitionKeyHashRange.StartInclusive.GetValueOrDefault(new PartitionKeyHash(UInt128.MinValue)).Value;
                 sumOfWidth += width;
+                if (sumOfWidth < width)
+                {
+                    overflowed = true;
+                }
             }
 
             UInt128 rangeCoverage = maxEnd - minStart;
-            if (rangeCoverage < sumOfWidth)
+            if ((rangeCoverage < sumOfWidth) || overflowed)
             {
                 partitionedSortedEffectiveRanges = default;
                 return CreateOutcome.RangesOverlap;
