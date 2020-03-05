@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- [#1256](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1256) Removed public accessor to CosmosClient.CosmosClientOptions to avoid mutation after pipeline is created
+
 ### Fixed
 
 ## <a name="4.0.0-preview3"/> [4.0.0-preview3](https://www.nuget.org/packages/Azure.Cosmos/4.0.0-preview3) - 2020-01-09
