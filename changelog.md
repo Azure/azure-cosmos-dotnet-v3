@@ -21,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## <a name="3.6.0"/> [3.6.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.6.0) - 2020-01-23
 
+- [#1105](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1198) CosmosClient Immutability + Disposable Fixes
+
 ### Added
 
 - [#1097](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1097) Add GeospatialConfig to ContainerProperties, BoundingBoxProperties to SpatialPath
