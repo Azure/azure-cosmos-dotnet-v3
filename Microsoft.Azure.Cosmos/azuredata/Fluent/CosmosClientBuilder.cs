@@ -323,10 +323,10 @@ namespace Azure.Cosmos.Fluent
         /// <param name="cosmosSerializerOptions">The custom class that implements <see cref="CosmosSerializer"/> </param>
         /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
         /// <seealso cref="CosmosSerializer"/>
-        /// <seealso cref="CosmosClientOptions.SerializerOptions"/>
+        /// <seealso cref="CosmosClientOptions.DefaultSerializerOptions"/>
         public CosmosClientBuilder WithSerializerOptions(CosmosSerializationOptions cosmosSerializerOptions)
         {
-            this.clientOptions.SerializerOptions = cosmosSerializerOptions;
+            this.clientOptions.DefaultSerializerOptions = cosmosSerializerOptions;
             return this;
         }
 
