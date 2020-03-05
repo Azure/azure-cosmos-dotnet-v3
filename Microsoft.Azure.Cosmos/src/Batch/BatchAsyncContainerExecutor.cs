@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Diagnostics;
@@ -38,6 +39,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly ConcurrentDictionary<string, SemaphoreSlim> limitersByPartitionkeyRange = new ConcurrentDictionary<string, SemaphoreSlim>();
         private readonly TimerPool timerPool;
         private readonly RetryOptions retryOptions;
+        private readonly int defaultMaxDegreeOfConcurrency = 50;
 
         /// <summary>
         /// For unit testing.
@@ -259,16 +261,17 @@ namespace Microsoft.Azure.Cosmos
             {
                 return streamer;
             }
-
+            SemaphoreSlim limiter = this.GetOrAddLimiterForPartitionKeyRange(partitionKeyRangeId);
             BatchAsyncStreamer newStreamer = new BatchAsyncStreamer(
                 this.maxServerRequestOperationCount,
                 this.maxServerRequestBodyLength,
                 this.dispatchTimerInSeconds,
                 this.timerPool,
+                limiter,
+                this.defaultMaxDegreeOfConcurrency,
                 this.cosmosClientContext.SerializerCore,
                 this.ExecuteAsync,
                 this.ReBatchAsync);
-
             if (!this.streamersByPartitionKeyRange.TryAdd(partitionKeyRangeId, newStreamer))
             {
                 newStreamer.Dispose();
@@ -284,7 +287,7 @@ namespace Microsoft.Azure.Cosmos
                 return limiter;
             }
 
-            SemaphoreSlim newLimiter = new SemaphoreSlim(1, 1);
+            SemaphoreSlim newLimiter = new SemaphoreSlim(1, this.defaultMaxDegreeOfConcurrency);
             if (!this.limitersByPartitionkeyRange.TryAdd(partitionKeyRangeId, newLimiter))
             {
                 newLimiter.Dispose();

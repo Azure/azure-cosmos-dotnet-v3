@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             long responseLengthBytes,
             string disallowContinuationTokenMessage,
             string continuationToken,
-            string errorMessage,
+            CosmosException cosmosException,
             SubStatusCodes? subStatusCode)
         {
             this.IsSuccess = isSuccess;
@@ -47,13 +47,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             this.RequestCharge = requestCharge;
             this.DisallowContinuationTokenMessage = disallowContinuationTokenMessage;
             this.ContinuationToken = continuationToken;
-            this.ErrorMessage = errorMessage;
+            this.CosmosException = cosmosException;
             this.SubStatusCode = subStatusCode;
         }
 
         internal IReadOnlyList<CosmosElement> CosmosElements { get; }
 
-        internal string ErrorMessage { get; }
+        internal CosmosException CosmosException { get; }
 
         internal SubStatusCodes? SubStatusCode { get; }
 
@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
                responseLengthBytes: responseLengthBytes,
                disallowContinuationTokenMessage: disallowContinuationTokenMessage,
                continuationToken: continuationToken,
-               errorMessage: null,
+               cosmosException: null,
                subStatusCode: null);
 
             return cosmosQueryResponse;
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
         internal static QueryResponseCore CreateFailure(
             HttpStatusCode statusCode,
             SubStatusCodes? subStatusCodes,
-            string errorMessage,
+            CosmosException cosmosException,
             double requestCharge,
             string activityId,
             IReadOnlyCollection<QueryPageDiagnostics> diagnostics)
@@ -116,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
                 responseLengthBytes: 0,
                 disallowContinuationTokenMessage: null,
                 continuationToken: null,
-                errorMessage: errorMessage,
+                cosmosException: cosmosException,
                 subStatusCode: subStatusCodes);
 
             return cosmosQueryResponse;

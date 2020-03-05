@@ -13,93 +13,96 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
 
     internal static class Extensions
     {
         private static readonly char[] NewLineCharacters = new[] { '\r', '\n' };
 
+        internal static bool IsSuccess(this HttpStatusCode httpStatusCode)
+        {
+            return ((int)httpStatusCode >= 200) && ((int)httpStatusCode <= 299);
+        }
+
         internal static ResponseMessage ToCosmosResponseMessage(this DocumentServiceResponse documentServiceResponse, RequestMessage requestMessage)
         {
             Debug.Assert(requestMessage != null, nameof(requestMessage));
 
-            ResponseMessage responseMessage = new ResponseMessage(documentServiceResponse.StatusCode, requestMessage);
-            if (documentServiceResponse.ResponseBody != null)
-            {
-                responseMessage.Content = documentServiceResponse.ResponseBody;
-            }
-
-            if (documentServiceResponse.Headers != null)
-            {
-                foreach (string key in documentServiceResponse.Headers)
-                {
-                    responseMessage.Headers.Add(key, documentServiceResponse.Headers[key]);
-                }
-            }
-
+            Headers headers = documentServiceResponse.Headers.ToCosmosHeaders();
             CosmosClientSideRequestStatistics cosmosClientSideRequestStatistics = documentServiceResponse.RequestStats as CosmosClientSideRequestStatistics;
-            PointOperationStatistics pointOperationStatistics = new PointOperationStatistics(
-                activityId: responseMessage.Headers.ActivityId,
+            requestMessage.DiagnosticsContext.AddDiagnosticsInternal(new PointOperationStatistics(
+                activityId: headers.ActivityId,
                 statusCode: documentServiceResponse.StatusCode,
                 subStatusCode: documentServiceResponse.SubStatusCode,
-                requestCharge: responseMessage.Headers.RequestCharge,
-                errorMessage: responseMessage.ErrorMessage,
+                requestCharge: headers.RequestCharge,
+                errorMessage: null,
                 method: requestMessage?.Method,
                 requestUri: requestMessage?.RequestUri,
                 requestSessionToken: requestMessage?.Headers?.Session,
-                responseSessionToken: responseMessage.Headers.Session,
-                clientSideRequestStatistics: cosmosClientSideRequestStatistics);
+                responseSessionToken: headers.Session,
+                clientSideRequestStatistics: cosmosClientSideRequestStatistics));
 
-            requestMessage.DiagnosticsContext.AddDiagnosticsInternal(pointOperationStatistics);
+            // If it's considered a failure create the corresponding CosmosException
+            if (!documentServiceResponse.StatusCode.IsSuccess())
+            {
+                CosmosException cosmosException = CosmosExceptionFactory.Create(
+                    documentServiceResponse,
+                    headers,
+                    requestMessage);
+
+                return cosmosException.ToCosmosResponseMessage(requestMessage);
+            }
+
+            ResponseMessage responseMessage = new ResponseMessage(
+                statusCode: documentServiceResponse.StatusCode,
+                requestMessage: requestMessage,
+                headers: headers,
+                cosmosException: null,
+                diagnostics: requestMessage.DiagnosticsContext)
+            {
+                Content = documentServiceResponse.ResponseBody
+            };
+
             return responseMessage;
         }
 
         internal static ResponseMessage ToCosmosResponseMessage(this DocumentClientException documentClientException, RequestMessage requestMessage)
         {
-            // if StatusCode is null it is a client business logic error and it never hit the backend, so throw
-            if (documentClientException.StatusCode == null)
+            CosmosDiagnosticsContext diagnosticsContext = requestMessage?.DiagnosticsContext;
+            if (diagnosticsContext == null)
             {
-                throw documentClientException;
+                diagnosticsContext = CosmosDiagnosticsContextCore.Create();
             }
 
-            // if there is a status code then it came from the backend, return error as http error instead of throwing the exception
-            ResponseMessage responseMessage = new ResponseMessage(documentClientException.StatusCode ?? HttpStatusCode.InternalServerError, requestMessage);
-            string reasonPhraseString = documentClientException.ToString();
-            if (!string.IsNullOrEmpty(reasonPhraseString))
-            {
-                if (documentClientException.Message.IndexOfAny(Extensions.NewLineCharacters) >= 0)
-                {
-                    StringBuilder sb = new StringBuilder(reasonPhraseString);
-                    sb = sb.Replace("\r", string.Empty);
-                    sb = sb.Replace("\n", string.Empty);
-                    reasonPhraseString = sb.ToString();
-                }
-            }
-
-            responseMessage.ErrorMessage = reasonPhraseString;
-            responseMessage.Error = documentClientException.Error;
-
-            if (documentClientException.Headers != null)
-            {
-                foreach (string header in documentClientException.Headers.AllKeys())
-                {
-                    responseMessage.Headers.Add(header, documentClientException.Headers[header]);
-                }
-            }
+            CosmosException cosmosException = CosmosExceptionFactory.Create(
+                documentClientException,
+                diagnosticsContext);
 
             PointOperationStatistics pointOperationStatistics = new PointOperationStatistics(
-                activityId: responseMessage.Headers.ActivityId,
-                statusCode: documentClientException.StatusCode.Value,
+                activityId: cosmosException.Headers.ActivityId,
+                statusCode: cosmosException.StatusCode,
                 subStatusCode: (int)SubStatusCodes.Unknown,
-                requestCharge: responseMessage.Headers.RequestCharge,
-                errorMessage: responseMessage.ErrorMessage,
+                requestCharge: cosmosException.Headers.RequestCharge,
+                errorMessage: cosmosException.Message,
                 method: requestMessage?.Method,
                 requestUri: requestMessage?.RequestUri,
                 requestSessionToken: requestMessage?.Headers?.Session,
-                responseSessionToken: responseMessage.Headers.Session,
+                responseSessionToken: cosmosException.Headers.Session,
                 clientSideRequestStatistics: documentClientException.RequestStatistics as CosmosClientSideRequestStatistics);
 
-            responseMessage.DiagnosticsContext.AddDiagnosticsInternal(pointOperationStatistics);
+            diagnosticsContext.AddDiagnosticsInternal(pointOperationStatistics);
+
+            // if StatusCode is null it is a client business logic error and it never hit the backend, so throw
+            if (documentClientException.StatusCode == null)
+            {
+                throw cosmosException;
+            }
+
+            // if there is a status code then it came from the backend, return error as http error instead of throwing the exception
+            ResponseMessage responseMessage = cosmosException.ToCosmosResponseMessage(requestMessage);
+            
             if (requestMessage != null)
             {
                 requestMessage.Properties.Remove(nameof(DocumentClientException));
@@ -111,6 +114,16 @@ namespace Microsoft.Azure.Cosmos
 
         internal static ResponseMessage ToCosmosResponseMessage(this StoreResponse storeResponse, RequestMessage requestMessage)
         {
+            // If it's considered a failure create the corresponding CosmosException
+            if (!storeResponse.StatusCode.IsSuccess())
+            {
+                CosmosException cosmosException = CosmosExceptionFactory.Create(
+                    storeResponse,
+                    requestMessage);
+
+                return cosmosException.ToCosmosResponseMessage(requestMessage);
+            }
+
             // Is status code conversion lossy? 
             ResponseMessage responseMessage = new ResponseMessage((HttpStatusCode)storeResponse.Status, requestMessage);
             if (storeResponse.ResponseBody != null)
@@ -118,12 +131,29 @@ namespace Microsoft.Azure.Cosmos
                 responseMessage.Content = storeResponse.ResponseBody;
             }
 
+            return responseMessage;
+        }
+
+        internal static Headers ToCosmosHeaders(this StoreResponse storeResponse)
+        {
+            Headers headers = new Headers();
             for (int i = 0; i < storeResponse.ResponseHeaderNames.Length; i++)
             {
-                responseMessage.Headers.Add(storeResponse.ResponseHeaderNames[i], storeResponse.ResponseHeaderValues[i]);
+                headers.Add(storeResponse.ResponseHeaderNames[i], storeResponse.ResponseHeaderValues[i]);
             }
 
-            return responseMessage;
+            return headers;
+        }
+
+        internal static Headers ToCosmosHeaders(this INameValueCollection nameValueCollection)
+        {
+            Headers headers = new Headers();
+            foreach (string key in nameValueCollection)
+            {
+                headers.Add(key, nameValueCollection[key]);
+            }
+
+            return headers;
         }
 
         internal static void TraceException(Exception exception)

@@ -6705,7 +6705,8 @@ namespace Microsoft.Azure.Cosmos
             if (resourceType == ResourceType.Offer ||
                 (resourceType.IsScript() && operationType != OperationType.ExecuteJavaScript) ||
                 resourceType == ResourceType.PartitionKeyRange ||
-                resourceType == ResourceType.Snapshot)
+                resourceType == ResourceType.Snapshot ||
+                resourceType == ResourceType.ClientEncryptionKey)
             {
                 return this.GatewayStoreModel;
             }

@@ -726,7 +726,9 @@ namespace Microsoft.Azure.Cosmos
                 cosmosResponseFactory: this.ResponseFactory,
                 requestHandler: this.RequestHandler,
                 documentClient: this.DocumentClient,
-                userAgent: this.DocumentClient.ConnectionPolicy.UserAgentContainer.UserAgent);
+                userAgent: this.DocumentClient.ConnectionPolicy.UserAgentContainer.UserAgent,
+                encryptionProcessor: new EncryptionProcessor(),
+                dekCache: new DekCache());
         }
 
         internal virtual async Task<ConsistencyLevel> GetAccountConsistencyLevelAsync()

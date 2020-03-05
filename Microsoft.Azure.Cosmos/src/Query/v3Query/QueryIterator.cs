@@ -81,6 +81,13 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public override bool HasMoreResults => !this.cosmosQueryExecutionContext.IsDone;
 
+#if PREVIEW
+        public override
+#else
+        internal
+#endif
+        FeedToken FeedToken => throw new NotImplementedException();
+
         public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
             CosmosDiagnosticsContext diagnostics = CosmosDiagnosticsContext.Create(this.requestOptions);
@@ -119,8 +126,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 {
                     queryResponse = QueryResponse.CreateFailure(
                         statusCode: responseCore.StatusCode,
-                        error: null,
-                        errorMessage: responseCore.ErrorMessage,
+                        cosmosException: responseCore.CosmosException,
                         requestMessage: null,
                         diagnostics: diagnostics,
                         responseHeaders: new CosmosQueryResponseMessageHeaders(
