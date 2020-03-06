@@ -135,10 +135,9 @@ namespace Microsoft.Azure.Cosmos.Query
                     diagnostics.AddDiagnosticsInternal(queryPage);
                 }
 
-                QueryResponse queryResponse;
                 if (responseCore.IsSuccess)
                 {
-                    queryResponse = QueryResponse.CreateSuccess(
+                    return QueryResponse.CreateSuccess(
                         result: responseCore.CosmosElements,
                         count: responseCore.CosmosElements.Count,
                         responseLengthBytes: responseCore.ResponseLengthBytes,
@@ -155,26 +154,27 @@ namespace Microsoft.Azure.Cosmos.Query
                             SubStatusCode = responseCore.SubStatusCode ?? Documents.SubStatusCodes.Unknown
                         });
                 }
-                else
+
+                if (responseCore.CosmosException != null)
                 {
-                    queryResponse = QueryResponse.CreateFailure(
-                        statusCode: responseCore.StatusCode,
-                        cosmosException: responseCore.CosmosException,
-                        requestMessage: null,
-                        diagnostics: diagnostics,
-                        responseHeaders: new CosmosQueryResponseMessageHeaders(
-                            responseCore.ContinuationToken,
-                            responseCore.DisallowContinuationTokenMessage,
-                            cosmosQueryContext.ResourceTypeEnum,
-                            cosmosQueryContext.ContainerResourceId)
-                        {
-                            RequestCharge = responseCore.RequestCharge,
-                            ActivityId = responseCore.ActivityId,
-                            SubStatusCode = responseCore.SubStatusCode ?? Documents.SubStatusCodes.Unknown
-                        });
+                    return responseCore.CosmosException.ToCosmosResponseMessage(null);
                 }
 
-                return queryResponse;
+                return QueryResponse.CreateFailure(
+                    statusCode: responseCore.StatusCode,
+                    cosmosException: responseCore.CosmosException,
+                    requestMessage: null,
+                    diagnostics: diagnostics,
+                    responseHeaders: new CosmosQueryResponseMessageHeaders(
+                        responseCore.ContinuationToken,
+                        responseCore.DisallowContinuationTokenMessage,
+                        cosmosQueryContext.ResourceTypeEnum,
+                        cosmosQueryContext.ContainerResourceId)
+                    {
+                        RequestCharge = responseCore.RequestCharge,
+                        ActivityId = responseCore.ActivityId,
+                        SubStatusCode = responseCore.SubStatusCode ?? Documents.SubStatusCodes.Unknown,
+                    });
             }
         }
 

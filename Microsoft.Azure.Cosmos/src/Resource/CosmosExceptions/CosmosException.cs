@@ -192,10 +192,10 @@ namespace Microsoft.Azure.Cosmos
 
             if (string.IsNullOrEmpty(message))
             {
-                return error.Message;
+                return error.ToString();
             }
 
-            return $"{message}; Inner Message:{error.Message}";
+            return $"{message}; Inner Message:{error.ToString()}";
         }
 
         private string ToStringHelper(bool includeDiagnostics)
