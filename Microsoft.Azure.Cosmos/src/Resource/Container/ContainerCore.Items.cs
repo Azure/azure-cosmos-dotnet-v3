@@ -426,13 +426,17 @@ namespace Microsoft.Azure.Cosmos
             QueryDefinition queryDefinition,            
             QueryRequestOptions requestOptions = null)
         {
-            FeedTokenInternal feedTokenInternal = feedToken as FeedTokenInternal;
-            return this.GetItemQueryStreamIteratorInternal(
+            if (feedToken is FeedTokenInternal feedTokenInternal)
+            {
+                return this.GetItemQueryStreamIteratorInternal(
                 sqlQuerySpec: queryDefinition?.ToSqlQuerySpec(),
                 isContinuationExcpected: true,
                 continuationToken: null,
                 feedToken: feedTokenInternal,
                 requestOptions: requestOptions);
+            }
+
+            throw new ArgumentException(nameof(feedToken), ClientResources.FeedToken_InvalidImplementation);
         }
 
 #if PREVIEW

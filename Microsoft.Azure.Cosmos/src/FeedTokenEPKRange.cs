@@ -18,9 +18,9 @@ namespace Microsoft.Azure.Cosmos
     {
         internal readonly Queue<CompositeContinuationToken> CompositeContinuationTokens;
         internal readonly Documents.Routing.Range<string> CompleteRange;
+        private readonly HashSet<string> doneRanges;
         private CompositeContinuationToken currentToken;
         private string initialNoResultsRange;
-        private HashSet<string> doneRanges;
 
         private FeedTokenEPKRange(
             string containerRid)
