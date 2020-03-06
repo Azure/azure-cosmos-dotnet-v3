@@ -67,6 +67,11 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <returns>A concrete JsonReader that can read the supplied byte array.</returns>
         public static IJsonReader Create(ReadOnlyMemory<byte> buffer, JsonStringDictionary jsonStringDictionary = null, bool skipValidation = false)
         {
+            if (buffer.IsEmpty)
+            {
+                throw new ArgumentOutOfRangeException($"{nameof(buffer)} can not be empty.");
+            }
+
             byte firstByte = buffer.Span[0];
 
             // Explicitly pick from the set of supported formats, or otherwise assume text format

@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
@@ -63,11 +64,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             CancellationToken cancellationToken)
         {
             // Try to parse the continuation token.
-            string continuationToken = inputParameters.InitialUserContinuationToken;
+            CosmosElement continuationToken = inputParameters.InitialUserContinuationToken;
             PartitionedQueryExecutionInfo queryPlanFromContinuationToken = inputParameters.PartitionedQueryExecutionInfo;
             if (continuationToken != null)
             {
-                if (!PipelineContinuationToken.TryParse(
+                if (!PipelineContinuationToken.TryCreateFromCosmosElement(
                     continuationToken,
                     out PipelineContinuationToken pipelineContinuationToken))
                 {
@@ -346,7 +347,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
             public InputParameters(
                 SqlQuerySpec sqlQuerySpec,
-                string initialUserContinuationToken,
+                CosmosElement initialUserContinuationToken,
                 int? maxConcurrency,
                 int? maxItemCount,
                 int? maxBufferedItemCount,
@@ -390,7 +391,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             }
 
             public SqlQuerySpec SqlQuerySpec { get; }
-            public string InitialUserContinuationToken { get; }
+            public CosmosElement InitialUserContinuationToken { get; }
             public int MaxConcurrency { get; }
             public int MaxItemCount { get; }
             public int MaxBufferedItemCount { get; }

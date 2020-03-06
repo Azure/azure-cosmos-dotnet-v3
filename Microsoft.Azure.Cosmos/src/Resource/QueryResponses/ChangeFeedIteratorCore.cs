@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.CosmosElements;
 
     /// <summary>
     /// Cosmos Change Feed iterator using FeedToken
@@ -71,12 +72,6 @@ namespace Microsoft.Azure.Cosmos
             {
                 return this.ReadNextInternalAsync(diagnostics, cancellationToken);
             }
-        }
-
-        public override bool TryGetContinuationToken(out string state)
-        {
-            state = this.feedTokenInternal.GetContinuation();
-            return true;
         }
 
         private async Task<ResponseMessage> ReadNextInternalAsync(
@@ -168,6 +163,11 @@ namespace Microsoft.Azure.Cosmos
                     forceRefresh: true);
             // ReadAll scenario, initialize with one token for all
             return TryCatch<FeedTokenInternal>.FromResult(new FeedTokenEPKRange(containerRId, partitionKeyRanges));
+        }
+
+        public override CosmosElement GetCosmsoElementContinuationToken()
+        {
+            throw new NotImplementedException();
         }
     }
 }
