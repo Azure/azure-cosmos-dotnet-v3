@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
 
@@ -101,12 +102,6 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public override bool TryGetContinuationToken(out string state)
-        {
-            state = this.feedTokenInternal.GetContinuation();
-            return true;
-        }
-
         public override bool TryGetFeedToken(out FeedToken feedToken)
         {
             feedToken = this.feedTokenInternal;
@@ -186,6 +181,11 @@ namespace Microsoft.Azure.Cosmos
                     forceRefresh: true);
             // ReadAll scenario, initialize with one token for all
             return new FeedTokenEPKRange(this.containerRId, partitionKeyRanges.Select(pkRange => pkRange.ToRange()).ToList(), continuationToken: null);
+        }
+
+        public override CosmosElement GetCosmsoElementContinuationToken()
+        {
+            throw new NotImplementedException();
         }
     }
 }

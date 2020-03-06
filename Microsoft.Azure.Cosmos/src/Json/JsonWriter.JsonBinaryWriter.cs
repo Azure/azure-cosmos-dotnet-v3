@@ -301,6 +301,12 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new JsonNotCompleteException();
                 }
 
+                if (this.binaryWriter.Position == 1)
+                {
+                    // We haven't written anything but the type marker, so just return an empty buffer.
+                    return ReadOnlyMemory<byte>.Empty;
+                }
+
                 return this.binaryWriter.Buffer.Slice(
                     0,
                     this.binaryWriter.Position);

@@ -8,10 +8,12 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
-    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
 
@@ -61,9 +63,40 @@ namespace Microsoft.Azure.Cosmos.Query
                 allowNonValueAggregateQuery: allowNonValueAggregateQuery,
                 correlatedActivityId: Guid.NewGuid());
 
+            CosmosElement requestContinuationToken;
+            switch (queryRequestOptions.ExecutionEnvironment.GetValueOrDefault(ExecutionEnvironment.Client))
+            {
+                case ExecutionEnvironment.Client:
+                    if (continuationToken != null)
+                    {
+                        if (!CosmosElement.TryParse(continuationToken, out requestContinuationToken))
+                        {
+                            return new QueryIterator(
+                                cosmosQueryContext,
+                                new QueryExecutionContextWithException(
+                                    new MalformedContinuationTokenException(
+                                        $"Malformed Continuation Token: {requestContinuationToken}")),
+                                queryRequestOptions.CosmosSerializationFormatOptions,
+                                queryRequestOptions);
+                        }
+                    }
+                    else
+                    {
+                        requestContinuationToken = null;
+                    }
+                    break;
+
+                case ExecutionEnvironment.Compute:
+                    requestContinuationToken = queryRequestOptions.CosmosElementContinuationToken;
+                    break;
+
+                default:
+                    throw new ArgumentOutOfRangeException($"Unknown {nameof(ExecutionEnvironment)}: {queryRequestOptions.ExecutionEnvironment.Value}.");
+            }
+
             CosmosQueryExecutionContextFactory.InputParameters inputParameters = new CosmosQueryExecutionContextFactory.InputParameters(
                 sqlQuerySpec: sqlQuerySpec,
-                initialUserContinuationToken: continuationToken,
+                initialUserContinuationToken: requestContinuationToken,
                 initialFeedToken: feedTokenInternal,
                 maxConcurrency: queryRequestOptions.MaxConcurrency,
                 maxItemCount: queryRequestOptions.MaxItemCount,
@@ -159,9 +192,9 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        public override bool TryGetContinuationToken(out string continuationToken)
+        public override CosmosElement GetCosmsoElementContinuationToken()
         {
-            return this.cosmosQueryExecutionContext.TryGetContinuationToken(out continuationToken);
+            return this.cosmosQueryExecutionContext.GetCosmosElementContinuationToken();
         }
 
         public override bool TryGetFeedToken(out FeedToken feedToken)
@@ -169,8 +202,4 @@ namespace Microsoft.Azure.Cosmos.Query
             return this.cosmosQueryExecutionContext.TryGetFeedToken(out feedToken);
         }
     }
-#if INTERNAL
-#pragma warning restore SA1601 // Partial elements should be documented
-#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-#endif
 }

@@ -5,10 +5,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
 {
     using System;
     using System.Collections.Generic;
+    using System.Runtime.CompilerServices;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
@@ -19,11 +22,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
     {
         private sealed class ComputeGroupByDocumentQueryExecutionComponent : GroupByDocumentQueryExecutionComponent
         {
+            private const string DoneReadingGroupingsContinuationToken = "DONE";
+            private static readonly CosmosElement DoneCosmosElementToken = CosmosString.Create(DoneReadingGroupingsContinuationToken);
+
             private static readonly IReadOnlyList<CosmosElement> EmptyResults = new List<CosmosElement>().AsReadOnly();
             private static readonly IReadOnlyDictionary<string, QueryMetrics> EmptyQueryMetrics = new Dictionary<string, QueryMetrics>();
-            private static readonly string DoneReadingGroupingsContinuationToken = "DONE";
-
-            private static readonly string UseTryGetContinuationTokenInstead = "Use TryGetContinuationTokenInstead";
 
             private ComputeGroupByDocumentQueryExecutionComponent(
                 IDocumentQueryExecutionComponent source,
@@ -35,8 +38,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
             }
 
             public static async Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
-                string requestContinuation,
-                Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync,
+                CosmosElement requestContinuation,
+                Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync,
                 IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
                 IReadOnlyList<string> orderedAliases,
                 bool hasSelectValue)
@@ -58,7 +61,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                 }
 
                 TryCatch<IDocumentQueryExecutionComponent> tryCreateSource;
-                if (groupByContinuationToken.SourceContinuationToken == ComputeGroupByDocumentQueryExecutionComponent.DoneReadingGroupingsContinuationToken)
+                if ((groupByContinuationToken.SourceContinuationToken is CosmosString sourceContinuationToken)
+                    && (sourceContinuationToken.Value == ComputeGroupByDocumentQueryExecutionComponent.DoneReadingGroupingsContinuationToken))
                 {
                     tryCreateSource = TryCatch<IDocumentQueryExecutionComponent>.FromResult(DoneDocumentQueryExecutionComponent.Value);
                 }
@@ -113,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                     response = QueryResponseCore.CreateSuccess(
                         result: EmptyResults,
                         continuationToken: null,
-                        disallowContinuationTokenMessage: UseTryGetContinuationTokenInstead,
+                        disallowContinuationTokenMessage: DocumentQueryExecutionComponentBase.UseCosmosElementContinuationTokenInstead,
                         activityId: sourceResponse.ActivityId,
                         requestCharge: sourceResponse.RequestCharge,
                         diagnostics: sourceResponse.Diagnostics,
@@ -128,7 +132,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                     response = QueryResponseCore.CreateSuccess(
                        result: results,
                        continuationToken: null,
-                       disallowContinuationTokenMessage: UseTryGetContinuationTokenInstead,
+                       disallowContinuationTokenMessage: DocumentQueryExecutionComponentBase.UseCosmosElementContinuationTokenInstead,
                        activityId: null,
                        requestCharge: 0,
                        diagnostics: QueryResponseCore.EmptyDiagnostics,
@@ -138,123 +142,94 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                 return response;
             }
 
-            public override bool TryGetContinuationToken(out string continuationToken)
+            public override CosmosElement GetCosmosElementContinuationToken()
             {
                 if (this.IsDone)
                 {
-                    continuationToken = null;
-                    return true;
+                    return default;
                 }
 
-                if (!this.Source.TryGetContinuationToken(out string sourceContinuationToken))
-                {
-                    continuationToken = default;
-                    return false;
-                }
-
+                CosmosElement sourceContinuationToken;
                 if (this.Source.IsDone)
                 {
-                    continuationToken = new GroupByContinuationToken(
-                        this.groupingTable.GetContinuationToken(),
-                        ComputeGroupByDocumentQueryExecutionComponent.DoneReadingGroupingsContinuationToken).ToString();
+                    sourceContinuationToken = DoneCosmosElementToken;
                 }
                 else
                 {
-                    // Still need to drain the source.
-                    continuationToken = new GroupByContinuationToken(
-                        this.groupingTable.GetContinuationToken(),
-                        sourceContinuationToken).ToString();
+                    sourceContinuationToken = this.Source.GetCosmosElementContinuationToken();
                 }
 
-                return true;
+                GroupByContinuationToken groupByContinuationToken = new GroupByContinuationToken(
+                    groupingTableContinuationToken: this.groupingTable.GetCosmosElementContinuationToken(),
+                    sourceContinuationToken: sourceContinuationToken);
+
+                return GroupByContinuationToken.ToCosmosElement(groupByContinuationToken);
             }
 
-            public override bool TryGetFeedToken(out FeedToken feedToken)
+            private readonly struct GroupByContinuationToken
             {
-                if (this.IsDone)
+                private static class PropertyNames
                 {
-                    feedToken = null;
-                    return true;
+                    public const string SourceToken = "SourceToken";
+                    public const string GroupingTableContinuationToken = "GroupingTableContinuationToken";
                 }
 
-                if (!this.Source.TryGetFeedToken(out feedToken))
-                {
-                    feedToken = null;
-                    return false;
-                }
-
-                FeedTokenEPKRange feedTokenInternal = feedToken as FeedTokenEPKRange;
-                string continuationToken;
-                if (this.Source.IsDone)
-                {
-                    continuationToken = new GroupByContinuationToken(
-                        this.groupingTable.GetContinuationToken(),
-                        ComputeGroupByDocumentQueryExecutionComponent.DoneReadingGroupingsContinuationToken).ToString();
-                }
-                else
-                {
-                    // Still need to drain the source.
-                    continuationToken = new GroupByContinuationToken(
-                        this.groupingTable.GetContinuationToken(),
-                        feedTokenInternal.GetContinuation()).ToString();
-                }
-
-                feedToken = FeedTokenEPKRange.Copy(
-                    feedTokenInternal,
-                    continuationToken);
-                return true;
-            }
-
-            private sealed class GroupByContinuationToken
-            {
                 public GroupByContinuationToken(
-                    string groupingTableContinuationToken,
-                    string sourceContinuationToken)
+                    CosmosElement groupingTableContinuationToken,
+                    CosmosElement sourceContinuationToken)
                 {
                     this.GroupingTableContinuationToken = groupingTableContinuationToken;
                     this.SourceContinuationToken = sourceContinuationToken;
                 }
 
-                public string GroupingTableContinuationToken { get; }
+                public CosmosElement GroupingTableContinuationToken { get; }
 
-                public string SourceContinuationToken { get; }
+                public CosmosElement SourceContinuationToken { get; }
 
-                public override string ToString()
+                public static CosmosElement ToCosmosElement(GroupByContinuationToken groupByContinuationToken)
                 {
-                    return CosmosObject.Create(new Dictionary<string, CosmosElement>()
+                    Dictionary<string, CosmosElement> dictionary = new Dictionary<string, CosmosElement>()
                     {
-                        { nameof(this.GroupingTableContinuationToken), CosmosString.Create(this.GroupingTableContinuationToken) },
-                        { nameof(this.SourceContinuationToken), CosmosString.Create(this.SourceContinuationToken) }
-                    }).ToString();
+                        {
+                            GroupByContinuationToken.PropertyNames.SourceToken,
+                            groupByContinuationToken.SourceContinuationToken
+                        },
+                        {
+                            GroupByContinuationToken.PropertyNames.GroupingTableContinuationToken,
+                            groupByContinuationToken.GroupingTableContinuationToken
+                        },
+                    };
+
+                    return CosmosObject.Create(dictionary);
                 }
 
-                public static bool TryParse(string value, out GroupByContinuationToken groupByContinuationToken)
+                public static bool TryParse(CosmosElement value, out GroupByContinuationToken groupByContinuationToken)
                 {
-                    if (!CosmosElement.TryParse<CosmosObject>(value, out CosmosObject groupByContinuationTokenObject))
+                    if (!(value is CosmosObject groupByContinuationTokenObject))
                     {
                         groupByContinuationToken = default;
                         return false;
                     }
 
                     if (!groupByContinuationTokenObject.TryGetValue(
-                        nameof(GroupByContinuationToken.GroupingTableContinuationToken),
-                        out CosmosString groupingTableContinuationToken))
+                        GroupByContinuationToken.PropertyNames.GroupingTableContinuationToken,
+                        out CosmosElement groupingTableContinuationToken))
                     {
                         groupByContinuationToken = default;
                         return false;
                     }
 
                     if (!groupByContinuationTokenObject.TryGetValue(
-                        nameof(GroupByContinuationToken.SourceContinuationToken),
-                        out CosmosString sourceContinuationToken))
+                        GroupByContinuationToken.PropertyNames.SourceToken,
+                        out CosmosElement sourceContinuationToken))
                     {
                         groupByContinuationToken = default;
                         return false;
                     }
 
                     groupByContinuationToken = new GroupByContinuationToken(
-                        groupingTableContinuationToken.Value,
-                        sourceContinuationToken.Value);
+                        groupingTableContinuationToken: groupingTableContinuationToken,
+                        sourceContinuationToken: sourceContinuationToken);
                     return true;
                 }
             }
@@ -280,6 +255,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                     throw new NotImplementedException();
                 }
 
+                public CosmosElement GetCosmosElementContinuationToken()
+                {
+                    throw new NotImplementedException();
+                }
+
                 public IReadOnlyDictionary<string, QueryMetrics> GetQueryMetrics()
                 {
                     throw new NotImplementedException();
@@ -287,12 +267,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
 
                 public void Stop()
                 {
-                }
-
-                public bool TryGetContinuationToken(out string state)
-                {
-                    state = null;
-                    return true;
                 }
 
                 public bool TryGetFeedToken(out FeedToken feedToken)

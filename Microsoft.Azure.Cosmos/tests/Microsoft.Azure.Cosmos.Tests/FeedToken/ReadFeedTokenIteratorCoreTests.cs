@@ -40,8 +40,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock.Get(feedToken)
                 .Setup(f => f.GetContinuation()).Returns(continuation);
             FeedIteratorCore feedTokenIterator = FeedIteratorCore.CreateForPartitionedResource(Mock.Of<ContainerCore>(), new Uri("http://localhost"), Documents.ResourceType.Document, null, null, feedToken, new QueryRequestOptions());
-            Assert.IsTrue(feedTokenIterator.TryGetContinuationToken(out string state));
-            Assert.AreEqual(continuation, state);
+            Assert.AreEqual(continuation, feedTokenIterator.ContinuationToken);
         }
 
         [TestMethod]

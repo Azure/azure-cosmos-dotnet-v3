@@ -4,6 +4,9 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
+
     /// <summary>
     /// Internal API for FeedIterator<typeparamref name="T"/> for inheritance and mocking purposes.
     /// </summary>
@@ -16,6 +19,6 @@ namespace Microsoft.Azure.Cosmos
 #endif
     abstract class FeedIteratorInternal<T> : FeedIterator<T>
     {
-        public abstract bool TryGetContinuationToken(out string continuationToken);
+        public abstract CosmosElement GetCosmosElementContinuationToken();
     }
 }

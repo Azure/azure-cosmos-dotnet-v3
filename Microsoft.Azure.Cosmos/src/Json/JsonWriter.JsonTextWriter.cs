@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.Buffers;
     using System.Buffers.Text;
     using System.Globalization;
+    using System.Linq;
     using System.Text;
 
     /// <summary>
@@ -75,6 +76,11 @@ namespace Microsoft.Azure.Cosmos.Json
             {
                 (byte)'n', (byte)'u', (byte)'l', (byte)'l'
             };
+
+            /// <summary>
+            /// JSON needs to escape quote, reverse soldius, and control characters (anything less than space).
+            /// </summary>
+            private static readonly byte[] CharactersThatNeedEscaping = Enumerable.Range(0, (int)' ').Select(x => (byte)x).Concat(new byte[] { (byte)'"', (byte)'\\' }).ToArray();
 
             private readonly JsonTextMemoryWriter jsonTextMemoryWriter;
 
@@ -502,31 +508,12 @@ namespace Microsoft.Azure.Cosmos.Json
 
             private static int? IndexOfCharacterThatNeedsEscaping(ReadOnlySpan<byte> span)
             {
-                const byte DoubleQuote = (byte)'"';
-                const byte ReverseSolidus = (byte)'\\';
-                const byte Space = (byte)' ';
-
                 int? index = null;
 
-                int doubleQuoteIndex = span.IndexOf(DoubleQuote);
-                if (doubleQuoteIndex != -1)
+                int indexOfAny = span.IndexOfAny(JsonTextWriter.CharactersThatNeedEscaping.AsSpan());
+                if (indexOfAny != -1)
                 {
-                    index = index.HasValue ? Math.Min(index.Value, doubleQuoteIndex) : doubleQuoteIndex;
-                }
-
-                int reverseSolidiusIndex = span.IndexOf(ReverseSolidus);
-                if (reverseSolidiusIndex != -1)
-                {
-                    index = index.HasValue ? Math.Min(index.Value, reverseSolidiusIndex) : reverseSolidiusIndex;
-                }
-
-                for (byte controlCharacter = 0; controlCharacter < Space; controlCharacter++)
-                {
-                    int controlCharacterIndex = span.IndexOf(controlCharacter);
-                    if (controlCharacterIndex != -1)
-                    {
-                        index = index.HasValue ? Math.Min(index.Value, controlCharacterIndex) : controlCharacterIndex;
-                    }
+                    index = indexOfAny;
                 }
 
                 return index;
