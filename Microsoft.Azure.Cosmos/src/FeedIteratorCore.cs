@@ -204,12 +204,6 @@ namespace Microsoft.Azure.Cosmos
             return response;
         }
 
-        public override bool TryGetContinuationToken(out string continuationToken)
-        {
-            continuationToken = this.continuationToken;
-            return true;
-        }
-
         private async Task<TryCatch<FeedTokenInternal>> TryInitializeFeedTokenAsync(CancellationToken cancellationToken)
         {
             string containerRId = string.Empty;
@@ -234,9 +228,9 @@ namespace Microsoft.Azure.Cosmos
                     MaxExclusive = Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey
                 });
             // Initialize with the ContinuationToken that the user passed, if any
-            if (this.continuationToken != null)
+            if (this.ContinuationToken != null)
             {
-                feedTokenInternal.UpdateContinuation(this.continuationToken);
+                feedTokenInternal.UpdateContinuation(this.ContinuationToken);
             }
 
             return TryCatch<FeedTokenInternal>.FromResult(feedTokenInternal);

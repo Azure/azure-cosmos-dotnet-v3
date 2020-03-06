@@ -69,7 +69,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         await feedIterator.ReadNextAsync(this.cancellationToken))
                     {
                         Assert.IsNotNull(feedIterator.FeedToken);
-                        Assert.IsTrue(feedIterator.TryGetContinuationToken(out string continuationToken));
 
                         if (responseMessage.IsSuccessStatusCode)
                         {
@@ -109,7 +108,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     await feedIterator.ReadNextAsync(this.cancellationToken))
                 {
                     Assert.IsNotNull(feedIterator.FeedToken);
-                    Assert.IsTrue(feedIterator.TryGetContinuationToken(out string continuationToken));
                     if (responseMessage.IsSuccessStatusCode)
                     {
                         Collection<ToDoActivity> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
@@ -195,7 +193,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     await feedIterator.ReadNextAsync(this.cancellationToken))
                 {
                     Assert.IsNotNull(feedIterator.FeedToken);
-                    Assert.IsTrue(feedIterator.TryGetContinuationToken(out string continuationToken));
                     if (responseMessage.IsSuccessStatusCode)
                     {
                         Collection<ToDoActivity> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
@@ -246,7 +243,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     await feedIterator.ReadNextAsync(this.cancellationToken))
                 {
                     Assert.IsNotNull(feedIterator.FeedToken);
-                    Assert.IsTrue(feedIterator.TryGetContinuationToken(out string continuationToken));
                     if (responseMessage.IsSuccessStatusCode)
                     {
                         Collection<ToDoActivity> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
