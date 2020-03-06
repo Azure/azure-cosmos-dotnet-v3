@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContext diagnosticsContext,
             Error error,
             Exception innerException)
-            : base(MergeErrorMessages(message, error), innerException)
+            : base(message, innerException)
         {
             this.stackTrace = stackTrace;
             this.ActivityId = activityId;
@@ -180,24 +180,6 @@ namespace Microsoft.Azure.Cosmos
                  diagnostics: this.DiagnosticsContext);
         }
 
-        /// <summary>
-        /// This handles the scenario there is a message and the error object is set.
-        /// </summary>
-        private static string MergeErrorMessages(string message, Error error)
-        {
-            if (error == null)
-            {
-                return message;
-            }
-
-            if (string.IsNullOrEmpty(message))
-            {
-                return error.Message;
-            }
-
-            return $"{message}; Inner Message:{error.Message}";
-        }
-
         private string ToStringHelper(bool includeDiagnostics)
         {
             StringBuilder stringBuilder = new StringBuilder();
@@ -206,14 +188,6 @@ namespace Microsoft.Azure.Cosmos
             {
                 stringBuilder.Append(" : ");
                 stringBuilder.Append(this.Message);
-                stringBuilder.AppendLine();
-            }
-
-            if (this.Error != null)
-            {
-                stringBuilder.Append(" : ");
-                stringBuilder.Append($"Code :{this.Error.Code ?? string.Empty}; Details :{this.Error.ErrorDetails ?? string.Empty}; ");
-                stringBuilder.Append($"Additional Details: {this.Error.AdditionalErrorInfo ?? string.Empty};");
                 stringBuilder.AppendLine();
             }
 
