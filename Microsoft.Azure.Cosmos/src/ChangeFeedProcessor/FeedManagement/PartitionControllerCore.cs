@@ -39,13 +39,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
 
         public override async Task InitializeAsync()
         {
-            shutdownCts = new CancellationTokenSource();
+            this.shutdownCts = new CancellationTokenSource();
             await this.LoadLeasesAsync().ConfigureAwait(false);
         }
 
         public override async Task AddOrUpdateLeaseAsync(DocumentServiceLease lease)
         {
-            var tcs = new TaskCompletionSource<bool>();
+            TaskCompletionSource<bool> tcs = new TaskCompletionSource<bool>();
 
             if (!this.currentlyOwnedPartitions.TryAdd(lease.CurrentLeaseToken, tcs))
             {
@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
 
             try
             {
-                var updatedLease = await this.leaseManager.AcquireAsync(lease).ConfigureAwait(false);
+                DocumentServiceLease updatedLease = await this.leaseManager.AcquireAsync(lease).ConfigureAwait(false);
                 if (updatedLease != null) lease = updatedLease;
                 DefaultTrace.TraceInformation("Lease with token {0}: acquired", lease.CurrentLeaseToken);
             }
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
         private async Task LoadLeasesAsync()
         {
             DefaultTrace.TraceVerbose("Starting renew leases assigned to this host on initialize.");
-            var addLeaseTasks = new List<Task>();
+            List<Task> addLeaseTasks = new List<Task>();
             foreach (DocumentServiceLease lease in await this.leaseContainer.GetOwnedLeasesAsync().ConfigureAwait(false))
             {
                 DefaultTrace.TraceInformation("Acquired lease with token '{0}' on startup.", lease.CurrentLeaseToken);

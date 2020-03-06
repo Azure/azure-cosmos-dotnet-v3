@@ -7,13 +7,10 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
-    using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
-    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
 
-    internal class FeedIteratorInlineCore : FeedIteratorInternal
+    internal sealed class FeedIteratorInlineCore : FeedIteratorInternal
     {
         private readonly FeedIteratorInternal feedIteratorInternal;
 
@@ -38,6 +35,11 @@ namespace Microsoft.Azure.Cosmos
 
         public override bool HasMoreResults => this.feedIteratorInternal.HasMoreResults;
 
+        public override CosmosElement GetCosmsoElementContinuationToken()
+        {
+            return this.feedIteratorInternal.GetCosmsoElementContinuationToken();
+        }
+
 #if PREVIEW
         public override FeedToken FeedToken => this.feedIteratorInternal.FeedToken;
 #endif
@@ -46,14 +48,9 @@ namespace Microsoft.Azure.Cosmos
         {
             return TaskHelper.RunInlineIfNeededAsync(() => this.feedIteratorInternal.ReadNextAsync(cancellationToken));
         }
-
-        public override bool TryGetContinuationToken(out string continuationToken)
-        {
-            return this.feedIteratorInternal.TryGetContinuationToken(out continuationToken);
-        }
     }
 
-    internal class FeedIteratorInlineCore<T> : FeedIteratorInternal<T>
+    internal sealed class FeedIteratorInlineCore<T> : FeedIteratorInternal<T>
     {
         private readonly FeedIteratorInternal<T> feedIteratorInternal;
 
@@ -87,9 +84,9 @@ namespace Microsoft.Azure.Cosmos
             return TaskHelper.RunInlineIfNeededAsync(() => this.feedIteratorInternal.ReadNextAsync(cancellationToken));
         }
 
-        public override bool TryGetContinuationToken(out string continuationToken)
+        public override CosmosElement GetCosmosElementContinuationToken()
         {
-            return this.feedIteratorInternal.TryGetContinuationToken(out continuationToken);
+            return this.feedIteratorInternal.GetCosmosElementContinuationToken();
         }
     }
 }

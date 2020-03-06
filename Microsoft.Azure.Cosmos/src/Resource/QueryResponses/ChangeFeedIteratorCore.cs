@@ -6,10 +6,10 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.CosmosElements;
 
     /// <summary>
     /// Cosmos Change Feed iterator using FeedToken
@@ -75,12 +75,6 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public override bool TryGetContinuationToken(out string state)
-        {
-            state = this.feedTokenInternal.GetContinuation();
-            return true;
-        }
-
         private async Task<ResponseMessage> ReadNextInternalAsync(
             CosmosDiagnosticsContext diagnosticsScope,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -142,6 +136,11 @@ namespace Microsoft.Azure.Cosmos
 
             this.hasMoreResults = responseMessage.IsSuccessStatusCode;
             return responseMessage;
+        }
+
+        public override CosmosElement GetCosmsoElementContinuationToken()
+        {
+            throw new NotImplementedException();
         }
     }
 }

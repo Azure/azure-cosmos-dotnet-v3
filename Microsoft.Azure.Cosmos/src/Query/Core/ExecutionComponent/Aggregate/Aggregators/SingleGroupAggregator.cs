@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
     using System.Linq;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
@@ -27,14 +28,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
         /// </summary>
         public abstract CosmosElement GetResult();
 
-        public abstract string GetContinuationToken();
+        public abstract CosmosElement GetCosmosElementContinuationToken();
 
         public static TryCatch<SingleGroupAggregator> TryCreate(
-            AggregateOperator[] aggregates,
+            IReadOnlyList<AggregateOperator> aggregates,
             IReadOnlyDictionary<string, AggregateOperator?> aggregateAliasToAggregateType,
             IReadOnlyList<string> orderedAliases,
             bool hasSelectValue,
-            string continuationToken)
+            CosmosElement continuationToken)
         {
             if (aggregates == null)
             {
@@ -88,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
                 this.aggregateValue = aggregateValue ?? throw new ArgumentNullException(nameof(AggregateValue));
             }
 
-            public static TryCatch<SingleGroupAggregator> TryCreate(AggregateOperator? aggregateOperator, string continuationToken)
+            public static TryCatch<SingleGroupAggregator> TryCreate(AggregateOperator? aggregateOperator, CosmosElement continuationToken)
             {
                 return AggregateValue.TryCreate(aggregateOperator, continuationToken)
                     .Try((aggregateValue) => (SingleGroupAggregator)new SelectValueAggregateValues(aggregateValue));
@@ -104,9 +105,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
                 return this.aggregateValue.Result;
             }
 
-            public override string GetContinuationToken()
+            public override CosmosElement GetCosmosElementContinuationToken()
             {
-                return this.aggregateValue.GetContinuationToken();
+                return this.aggregateValue.GetCosmosElementContinuationToken();
             }
 
             public override string ToString()
@@ -149,32 +150,43 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
                 return CosmosObject.Create(aliasToElement);
             }
 
-            public override string GetContinuationToken()
+            public override CosmosElement GetCosmosElementContinuationToken()
             {
-                Dictionary<string, CosmosElement> aliasToContinuationToken = new Dictionary<string, CosmosElement>();
+                Dictionary<string, CosmosElement> dictionary = new Dictionary<string, CosmosElement>();
                 foreach (KeyValuePair<string, AggregateValue> kvp in this.aliasToValue)
                 {
-                    aliasToContinuationToken[kvp.Key] = CosmosString.Create(kvp.Value.GetContinuationToken());
+                    dictionary.Add(kvp.Key, kvp.Value.GetCosmosElementContinuationToken());
                 }
 
-                CosmosObject cosmosObject = CosmosObject.Create(aliasToContinuationToken);
-                return cosmosObject.ToString();
+                return CosmosObject.Create(dictionary);
             }
 
             public static TryCatch<SingleGroupAggregator> TryCreate(
                 IReadOnlyDictionary<string, AggregateOperator?> aggregateAliasToAggregateType,
                 IReadOnlyList<string> orderedAliases,
-                string continuationToken)
+                CosmosElement continuationToken)
             {
+                if (aggregateAliasToAggregateType == null)
+                {
+                    throw new ArgumentNullException(nameof(aggregateAliasToAggregateType));
+                }
+
+                if (orderedAliases == null)
+                {
+                    throw new ArgumentNullException(nameof(orderedAliases));
+                }
+
                 CosmosObject aliasToContinuationToken;
                 if (continuationToken != null)
                 {
-                    if (!CosmosElement.TryParse(continuationToken, out aliasToContinuationToken))
+                    if (!(continuationToken is CosmosObject cosmosObject))
                     {
                         return TryCatch<SingleGroupAggregator>.FromException(
                             new MalformedContinuationTokenException(
                                 $"{nameof(SelectListAggregateValues)} continuation token is malformed: {continuationToken}."));
                     }
+
+                    aliasToContinuationToken = cosmosObject;
                 }
                 else
                 {
@@ -186,17 +198,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
                 {
                     string alias = aliasToAggregate.Key;
                     AggregateOperator? aggregateOperator = aliasToAggregate.Value;
-                    string aliasContinuationToken;
+                    CosmosElement aliasContinuationToken;
                     if (aliasToContinuationToken != null)
                     {
-                        if (!(aliasToContinuationToken[alias] is CosmosString parsedAliasContinuationToken))
-                        {
-                            return TryCatch<SingleGroupAggregator>.FromException(
-                                new MalformedContinuationTokenException(
-                                    $"{nameof(SelectListAggregateValues)} continuation token is malformed: {continuationToken}."));
-                        }
-
-                        aliasContinuationToken = parsedAliasContinuationToken.Value;
+                        aliasContinuationToken = aliasToContinuationToken[alias];
                     }
                     else
                     {
@@ -256,14 +261,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
 
             public abstract CosmosElement Result { get; }
 
-            public abstract string GetContinuationToken();
+            public abstract CosmosElement GetCosmosElementContinuationToken();
 
             public override string ToString()
             {
                 return this.Result.ToString();
             }
 
-            public static TryCatch<AggregateValue> TryCreate(AggregateOperator? aggregateOperator, string continuationToken)
+            public static TryCatch<AggregateValue> TryCreate(AggregateOperator? aggregateOperator, CosmosElement continuationToken)
             {
                 TryCatch<AggregateValue> value;
                 if (aggregateOperator.HasValue)
@@ -295,14 +300,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
                     this.aggregator.Aggregate(aggregateItem.Item);
                 }
 
-                public override string GetContinuationToken()
+                public override CosmosElement GetCosmosElementContinuationToken()
                 {
-                    return this.aggregator.GetContinuationToken();
+                    return this.aggregator.GetCosmosElementContinuationToken();
                 }
 
                 public static TryCatch<AggregateValue> TryCreate(
                     AggregateOperator aggregateOperator,
-                    string continuationToken)
+                    CosmosElement continuationToken)
                 {
                     TryCatch<IAggregator> tryCreateAggregator;
                     switch (aggregateOperator)
@@ -359,32 +364,26 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
                     }
                 }
 
-                public override string GetContinuationToken()
+                public override CosmosElement GetCosmosElementContinuationToken()
                 {
-                    IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
-                    jsonWriter.WriteObjectStart();
-                    jsonWriter.WriteFieldName(nameof(this.initialized));
-                    jsonWriter.WriteBoolValue(this.initialized);
+                    Dictionary<string, CosmosElement> dictionary = new Dictionary<string, CosmosElement>();
+                    dictionary.Add(nameof(this.initialized), CosmosBoolean.Create(this.initialized));
+
                     if (this.value != null)
                     {
-                        jsonWriter.WriteFieldName(nameof(this.value));
-                        this.value.WriteTo(jsonWriter);
+                        dictionary.Add(nameof(this.value), this.value);
                     }
-                    jsonWriter.WriteObjectEnd();
 
-                    string continuationToken = Utf8StringHelpers.ToString(jsonWriter.GetResult());
-                    return continuationToken;
+                    return CosmosObject.Create(dictionary);
                 }
 
-                public static TryCatch<AggregateValue> TryCreate(string continuationToken)
+                public static TryCatch<AggregateValue> TryCreate(CosmosElement continuationToken)
                 {
                     CosmosElement value;
                     bool initialized;
                     if (continuationToken != null)
                     {
-                        if (!CosmosElement.TryParse<CosmosObject>(
-                            continuationToken,
-                            out CosmosObject rawContinuationToken))
+                        if (!(continuationToken is CosmosObject rawContinuationToken))
                         {
                             return TryCatch<AggregateValue>.FromException(
                                 new MalformedContinuationTokenException($"Invalid {nameof(ScalarAggregateValue)}: {continuationToken}"));

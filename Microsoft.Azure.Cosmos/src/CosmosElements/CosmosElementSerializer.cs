@@ -254,7 +254,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 return new List<T>();
             }
 
-            if (typeof(T) == typeof(CosmosElement))
+            if (typeof(CosmosElement).IsAssignableFrom(typeof(T)))
             {
                 return cosmosArray.Cast<T>();
             }
