@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1213](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1213) CosmosException now returns the original stack trace.
 - [#1213](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1213) ResponseMessage.ErrorMessage is now always correctly populated. There was bug in some scenarios where the error message was left in the content stream.
 - [#1242](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1242) Client encryption - Fix bug in read path without encrypted properties
+- [#1263](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1263) Fix a bug where retry after internval did not get set on query stream responses
 
 ## <a name="3.7.0-preview"/> [3.7.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.7.0-preview) - 2020-02-25
 
