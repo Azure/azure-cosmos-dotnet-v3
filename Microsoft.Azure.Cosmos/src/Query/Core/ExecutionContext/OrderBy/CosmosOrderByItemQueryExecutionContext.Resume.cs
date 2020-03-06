@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
@@ -24,6 +23,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
 
     internal sealed partial class CosmosOrderByItemQueryExecutionContext : CosmosCrossPartitionQueryExecutionContext
     {
+        private static class Expressions
+        {
+            public const string LessThan = "<";
+            public const string LessThanOrEqualTo = "<=";
+            public const string EqualTo = "=";
+            public const string GreaterThan = ">";
+            public const string GreaterThanOrEqualTo = ">=";
+        }
+
         public static async Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
             CosmosQueryContext queryContext,
             CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams,
@@ -436,16 +444,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
             return TryCatch.FromResult();
         }
 
-        private static void AppendToBuilders((StringBuilder, StringBuilder, StringBuilder) builders, object str)
+        private static void AppendToBuilders((StringBuilder leftFilter, StringBuilder targetFilter, StringBuilder rightFilter) builders, object str)
         {
             CosmosOrderByItemQueryExecutionContext.AppendToBuilders(builders, str, str, str);
         }
 
-        private static void AppendToBuilders((StringBuilder, StringBuilder, StringBuilder) builders, object left, object target, object right)
+        private static void AppendToBuilders((StringBuilder leftFilter, StringBuilder targetFilter, StringBuilder rightFilter) builders, object left, object target, object right)
         {
-            builders.Item1.Append(left);
-            builders.Item2.Append(target);
-            builders.Item3.Append(right);
+            builders.leftFilter.Append(left);
+            builders.targetFilter.Append(target);
+            builders.rightFilter.Append(right);
         }
 
         private static (string leftFilter, string targetFilter, string rightFilter) GetFormattedFilters(
@@ -498,9 +506,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
 
                 string orderByItemToString = sb.ToString();
 
-                left.Append($"{expression} {(sortOrder == SortOrder.Descending ? "<" : ">")} {orderByItemToString}");
-                target.Append($"{expression} {(sortOrder == SortOrder.Descending ? "<=" : ">=")} {orderByItemToString}");
-                right.Append($"{expression} {(sortOrder == SortOrder.Descending ? "<=" : ">=")} {orderByItemToString}");
+                left.Append($"{expression} {(sortOrder == SortOrder.Descending ? Expressions.LessThan : Expressions.GreaterThan)} {orderByItemToString}");
+                target.Append($"{expression} {(sortOrder == SortOrder.Descending ? Expressions.LessThanOrEqualTo : Expressions.GreaterThanOrEqualTo)} {orderByItemToString}");
+                right.Append($"{expression} {(sortOrder == SortOrder.Descending ? Expressions.LessThanOrEqualTo : Expressions.GreaterThanOrEqualTo)} {orderByItemToString}");
             }
             else
             {
@@ -556,16 +564,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
                         // Append binary operator
                         if (lastItem)
                         {
-                            string inequality = sortOrder == SortOrder.Descending ? "<" : ">";
+                            string inequality = sortOrder == SortOrder.Descending ? Expressions.LessThan : Expressions.GreaterThan;
                             CosmosOrderByItemQueryExecutionContext.AppendToBuilders(builders, inequality);
                             if (lastPrefix)
                             {
-                                CosmosOrderByItemQueryExecutionContext.AppendToBuilders(builders, string.Empty, "=", "=");
+                                CosmosOrderByItemQueryExecutionContext.AppendToBuilders(builders, string.Empty, Expressions.EqualTo, Expressions.EqualTo);
                             }
                         }
                         else
                         {
-                            CosmosOrderByItemQueryExecutionContext.AppendToBuilders(builders, "=");
+                            CosmosOrderByItemQueryExecutionContext.AppendToBuilders(builders, Expressions.EqualTo);
                         }
 
                         // Append SortOrder
@@ -596,7 +604,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
 
         private readonly struct OrderByInitInfo
         {
-            public OrderByInitInfo(RangeFilterInitializationInfo[] filters, IReadOnlyDictionary<string, OrderByContinuationToken> continuationTokens)
+            public OrderByInitInfo(
+                RangeFilterInitializationInfo[] filters,
+                IReadOnlyDictionary<string, OrderByContinuationToken> continuationTokens)
             {
                 this.Filters = filters;
                 this.ContinuationTokens = continuationTokens;

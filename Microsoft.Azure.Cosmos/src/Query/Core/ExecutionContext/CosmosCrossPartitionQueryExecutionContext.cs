@@ -449,17 +449,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 throw new ArgumentNullException(nameof(partitionedContinuationTokens));
             }
 
-            if (partitionKeyRanges.Count() < 1)
+            if (partitionKeyRanges.Count < 1)
             {
                 throw new ArgumentException(nameof(partitionKeyRanges));
             }
 
-            if (partitionedContinuationTokens.Count() < 1)
+            if (partitionedContinuationTokens.Count < 1)
             {
                 throw new ArgumentException(nameof(partitionKeyRanges));
             }
 
-            if (partitionedContinuationTokens.Count() > partitionKeyRanges.Count())
+            if (partitionedContinuationTokens.Count > partitionKeyRanges.Count)
             {
                 throw new ArgumentException($"{nameof(partitionedContinuationTokens)} can not have more elements than {nameof(partitionKeyRanges)}.");
             }
@@ -513,26 +513,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         }
 
         /// <summary>
-        /// <para>
-        /// If a query encounters split upon resuming using continuation, we need to regenerate the continuation tokens. 
-        /// Specifically, since after split we will have new set of ranges, we need to remove continuation token for the 
-        /// parent partition and introduce continuation token for the child partitions. 
-        /// </para>
-        /// <para>
-        /// This function does that. Also in that process, we also check validity of the input continuation tokens. For example, 
-        /// even after split the boundary ranges of the child partitions should match with the parent partitions. If the Min and Max
-        /// range of a target partition in the continuation token was Min1 and Max1. Then the Min and Max range info for the two 
-        /// corresponding child partitions C1Min, C1Max, C2Min, and C2Max should follow the constrain below:
-        ///  PMax = C2Max > C2Min > C1Max > C1Min = PMin.
-        /// </para>
+        /// Matches ranges to their corresponding continuation token.
+        /// Note that most ranges don't have a corresponding continuation token, so their value will be set to null.
+        /// Also note that in the event of a split two or more ranges will match to the same continuation token.
         /// </summary>
-        /// <param name="partitionKeyRanges">The partition key ranges to extract continuation tokens for.</param>
-        /// <param name="partitionedContinuationTokens">The continuation token that the user supplied.</param>
-        /// <typeparam name="PartitionedToken">The type of continuation token to generate.</typeparam>
-        /// <Remarks>
-        /// The code assumes that merge doesn't happen and 
-        /// </Remarks>
-        /// <returns>The index of the partition whose MinInclusive is equal to the suppliedContinuationTokens along with the continuation tokens.</returns>
+        /// <typeparam name="PartitionedToken">The type of token we are matching with.</typeparam>
+        /// <param name="partitionKeyRanges">The partition key ranges to match.</param>
+        /// <param name="partitionedContinuationTokens">The continuation tokens to match with.</param>
+        /// <returns>A dictionary of ranges matched with their continuation tokens.</returns>
         private static IReadOnlyDictionary<PartitionKeyRange, PartitionedToken> MatchRangesToContinuationTokens<PartitionedToken>(
             ReadOnlyMemory<PartitionKeyRange> partitionKeyRanges,
             IReadOnlyList<PartitionedToken> partitionedContinuationTokens)
