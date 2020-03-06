@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos.Linq;
-    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using System;
@@ -418,7 +417,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             string queryText = "SELECT VALUE item0 FROM root JOIN item0 IN root[\"children\"] WHERE (((((root[\"CamelCase\"] = @param1)" +
                 " AND (root[\"description\"] = @param2)) AND (root[\"taskNum\"] < @param3))" +
-                " AND (root[\"valid\"] = @param4)) AND (item0 = @param5)) ";
+                " AND (root[\"valid\"] = @param4)) AND (item0 = @param5))";
             ToDoActivity child1 = new ToDoActivity { id = "child1", taskNum = 30 };
             string description = "CreateRandomToDoActivity";
             string camelCase = "camelCase";
@@ -549,7 +548,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             queryDefinition.WithParameter("@param1", camelCase);
             Assert.AreEqual(10, (await this.FetchResults<ToDoActivity>(queryDefinition)).Count);
 
-            string queryText = "SELECT VALUE root FROM root WHERE (root[\"children\"] = [@param1, @param2]) ";
+            string queryText = "SELECT VALUE root FROM root WHERE (root[\"children\"] = [@param1, @param2])";
             //Test array in query, array items will be parametrized
             ToDoActivity child1 = new ToDoActivity { id = "child1", taskNum = 30 };
             ToDoActivity child2 = new ToDoActivity { id = "child2", taskNum = 40 };
@@ -574,7 +573,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             //Test orderby, skip, take, distinct, these will not get parameterized.
             queryText = "SELECT VALUE root FROM root WHERE (root[\"CamelCase\"] = @param1) ORDER BY" +
-                " root[\"taskNum\"] ASC OFFSET @param2 LIMIT @param3 ";
+                " root[\"taskNum\"] ASC OFFSET @param2 LIMIT @param3";
             queriable = linqQueryable
                 .Where(item => item.CamelCase == camelCase)
                 .OrderBy(item => item.taskNum)
@@ -593,7 +592,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(0, (await this.FetchResults<ToDoActivity>(queryDefinition)).Count);
 
 
-            queryText = "SELECT VALUE root FROM root WHERE (root[\"CamelCase\"] != @param1) ";
+            queryText = "SELECT VALUE root FROM root WHERE (root[\"CamelCase\"] != @param1)";
             camelCase = "\b\n";
             queriable = linqQueryable
                 .Where(item => item.CamelCase != camelCase);
@@ -621,7 +620,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 " AND (root[\"decimaleValue\"] = @param11))" +
                 " AND (root[\"ushortValue\"] = @param15))" +
                 " AND (root[\"booleanValue\"] = @param12))" +
-                " AND (item0 = @param13)) ";
+                " AND (item0 = @param13))";
 
             string id = "testId";
             string pk = "testPk";

@@ -146,7 +146,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                 QueryFeatures neededQueryFeatures = QueryFeatures.None;
                 if (queryInfo.HasAggregates)
                 {
-                    bool isSingleAggregate = (queryInfo.Aggregates.Length == 1)
+                    bool isSingleAggregate = (queryInfo.Aggregates.Count == 1)
                         || (queryInfo.GroupByAliasToAggregateType.Values.Where(aggregateOperator => aggregateOperator.HasValue).Count() == 1);
                     if (isSingleAggregate)
                     {
@@ -253,7 +253,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                 QueryFeatures neededQueryFeatures = QueryFeatures.None;
                 if (queryInfo.HasOrderBy)
                 {
-                    if (queryInfo.OrderByExpressions.Length == 1)
+                    if (queryInfo.OrderByExpressions.Count == 1)
                     {
                         if (!supportedQueryFeatures.HasFlag(QueryFeatures.OrderBy))
                         {

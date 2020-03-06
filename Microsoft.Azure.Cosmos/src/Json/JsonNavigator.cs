@@ -39,6 +39,11 @@ namespace Microsoft.Azure.Cosmos.Json
             JsonStringDictionary jsonStringDictionary = null,
             bool skipValidation = false)
         {
+            if (buffer.IsEmpty)
+            {
+                throw new ArgumentOutOfRangeException($"{nameof(buffer)} can not be empty.");
+            }
+
             // Examine the first buffer byte to determine the serialization format
             byte firstByte = buffer.Span[0];
 

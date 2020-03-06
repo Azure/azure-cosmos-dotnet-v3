@@ -9,8 +9,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggregators;
-    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
 
@@ -28,12 +29,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
             }
 
             public static async Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
-                AggregateOperator[] aggregates,
+                IReadOnlyList<AggregateOperator> aggregates,
                 IReadOnlyDictionary<string, AggregateOperator?> aliasToAggregateType,
                 IReadOnlyList<string> orderedAliases,
                 bool hasSelectValue,
-                string continuationToken,
-                Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync)
+                CosmosElement continuationToken,
+                Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync)
             {
                 if (tryCreateSourceAsync == null)
                 {
@@ -41,11 +42,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
                 }
 
                 TryCatch<SingleGroupAggregator> tryCreateSingleGroupAggregator = SingleGroupAggregator.TryCreate(
-                            aggregates,
-                            aliasToAggregateType,
-                            orderedAliases,
-                            hasSelectValue,
-                            continuationToken: null);
+                    aggregates,
+                    aliasToAggregateType,
+                    orderedAliases,
+                    hasSelectValue,
+                    continuationToken: null);
 
                 if (!tryCreateSingleGroupAggregator.Succeeded)
                 {
@@ -116,11 +117,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
                     responseLengthBytes: responseLengthBytes);
             }
 
-            public override bool TryGetContinuationToken(out string state)
+            public override CosmosElement GetCosmosElementContinuationToken()
             {
-                // Since we block until we get the final result the continuation token is always null.
-                state = null;
-                return true;
+                throw new NotImplementedException();
             }
         }
     }

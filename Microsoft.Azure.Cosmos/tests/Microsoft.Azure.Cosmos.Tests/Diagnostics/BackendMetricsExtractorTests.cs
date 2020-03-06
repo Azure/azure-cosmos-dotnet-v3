@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
         [TestMethod]
         public void TestWithMalformedString()
         {
-            string malformedString = "totalExecutionTimeInMs+33.67";
+            string malformedString = "totalExecutionTimeInMs=asdf";
             QueryPageDiagnostics queryPageDiagnostics = new QueryPageDiagnostics(
                 partitionKeyRangeId: nameof(QueryPageDiagnostics.PartitionKeyRangeId),
                 queryMetricText: malformedString,

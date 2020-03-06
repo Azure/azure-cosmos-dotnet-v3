@@ -20,34 +20,24 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
 
         public Version Version { get; }
 
-        public static bool TryParse(
-            string rawContinuationToken,
+        public static bool TryCreateFromCosmosElement(
+            CosmosElement cosmosElement,
             out PipelineContinuationToken pipelineContinuationToken)
         {
-            if (rawContinuationToken == null)
+            if (cosmosElement == null)
             {
-                throw new ArgumentNullException(nameof(rawContinuationToken));
+                throw new ArgumentNullException(nameof(cosmosElement));
             }
 
-            if (!CosmosElement.TryParse<CosmosObject>(
-                rawContinuationToken,
-                out CosmosObject parsedContinuationToken))
+            if (!(cosmosElement is CosmosObject cosmosObject))
             {
-                // Failed to parse so we need to assume it's a V0 token
-                if (!PipelineContinuationTokenV0.TryParse(
-                    rawContinuationToken,
-                    out PipelineContinuationTokenV0 pipelineContinuationTokenV0))
-                {
-                    pipelineContinuationToken = default;
-                    return false;
-                }
-
-                pipelineContinuationToken = pipelineContinuationTokenV0;
+                // Not a CosmosObject, so it doesn't have a version number, so 
+                pipelineContinuationToken = new PipelineContinuationTokenV0(cosmosElement);
                 return true;
             }
 
             if (!PipelineContinuationToken.TryParseVersion(
-                parsedContinuationToken,
+                cosmosObject,
                 out Version version))
             {
                 pipelineContinuationToken = default;
@@ -56,8 +46,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
 
             if (version == PipelineContinuationTokenV0.VersionNumber)
             {
-                if (!PipelineContinuationTokenV0.TryParse(
-                    rawContinuationToken,
+                if (!PipelineContinuationTokenV0.TryCreateFromCosmosElement(
+                    cosmosElement,
                     out PipelineContinuationTokenV0 pipelineContinuationTokenV0))
                 {
                     pipelineContinuationToken = default;
@@ -68,8 +58,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
             }
             else if (version == PipelineContinuationTokenV1.VersionNumber)
             {
-                if (!PipelineContinuationTokenV1.TryParse(
-                    parsedContinuationToken,
+                if (!PipelineContinuationTokenV1.TryCreateFromCosmosElement(
+                    cosmosObject,
                     out PipelineContinuationTokenV1 pipelineContinuationTokenV1))
                 {
                     pipelineContinuationToken = default;
@@ -80,8 +70,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
             }
             else if (version == PipelineContinuationTokenV1_1.VersionNumber)
             {
-                if (!PipelineContinuationTokenV1_1.TryParse(
-                    parsedContinuationToken,
+                if (!PipelineContinuationTokenV1_1.TryCreateFromCosmosElement(
+                    cosmosObject,
                     out PipelineContinuationTokenV1_1 pipelineContinuationTokenV1_1))
                 {
                     pipelineContinuationToken = default;

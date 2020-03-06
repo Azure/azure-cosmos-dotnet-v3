@@ -7,6 +7,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
     using System.Globalization;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
+    using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
@@ -63,21 +65,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
             return CosmosNumber64.Create(this.globalSum);
         }
 
-        public string GetContinuationToken()
+        public CosmosElement GetCosmosElementContinuationToken()
         {
-            return this.globalSum.ToString("G17", CultureInfo.InvariantCulture);
+            return CosmosNumber64.Create(this.globalSum);
         }
 
-        public static TryCatch<IAggregator> TryCreate(string continuationToken)
+        public static TryCatch<IAggregator> TryCreate(CosmosElement requestContinuationToken)
         {
             double partialSum;
-            if (continuationToken != null)
+            if (requestContinuationToken != null)
             {
-                if (!double.TryParse(continuationToken, out partialSum))
+                if (!(requestContinuationToken is CosmosNumber cosmosNumber))
                 {
                     return TryCatch<IAggregator>.FromException(
-                        new MalformedContinuationTokenException($"Malformed {nameof(SumAggregator)} continuation token: {continuationToken}"));
+                        new MalformedContinuationTokenException($"Malformed {nameof(SumAggregator)} continuation token: {requestContinuationToken}"));
                 }
+
+                partialSum = Number64.ToDouble(cosmosNumber.Value);
             }
             else
             {

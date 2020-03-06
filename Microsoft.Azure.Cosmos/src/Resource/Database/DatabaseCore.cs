@@ -609,8 +609,7 @@ namespace Microsoft.Azure.Cosmos
                 resourceType: ResourceType.ClientEncryptionKey,
                 queryDefinition: null,
                 continuationToken: continuationToken,
-                options: requestOptions,
-                usePropertySerializer: true);
+                options: requestOptions);
         }
 
 #if PREVIEW

@@ -477,7 +477,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-
         public class ToDoActivity
         {
             public string id { get; set; }

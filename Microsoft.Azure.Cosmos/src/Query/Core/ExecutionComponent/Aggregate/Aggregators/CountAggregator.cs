@@ -7,6 +7,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
     using System.Globalization;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
+    using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
@@ -60,16 +62,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
             return this.globalCount.ToString(CultureInfo.InvariantCulture);
         }
 
-        public static TryCatch<IAggregator> TryCreate(string continuationToken)
+        public static TryCatch<IAggregator> TryCreate(CosmosElement continuationToken)
         {
             long partialCount;
             if (continuationToken != null)
             {
-                if (!long.TryParse(continuationToken, out partialCount))
+                if (!(continuationToken is CosmosNumber cosmosPartialCount))
                 {
                     return TryCatch<IAggregator>.FromException(
                         new MalformedContinuationTokenException($@"Invalid count continuation token: ""{continuationToken}""."));
                 }
+
+                partialCount = Number64.ToLong(cosmosPartialCount.Value);
             }
             else
             {
@@ -78,6 +82,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
 
             return TryCatch<IAggregator>.FromResult(
                 new CountAggregator(initialCount: partialCount));
+        }
+
+        public CosmosElement GetCosmosElementContinuationToken()
+        {
+            return CosmosNumber64.Create(this.globalCount);
         }
     }
 }
