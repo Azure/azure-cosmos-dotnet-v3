@@ -4,8 +4,8 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Microsoft.Azure.Documents;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     public class PartitionKeyTests
@@ -110,6 +110,34 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
 
             Assert.IsFalse(Cosmos.PartitionKey.TryParseJsonString("Ceci n'est pas une partition key.", out Cosmos.PartitionKey thisNotAPartitionKey));
+        }
+
+        [TestMethod]
+        public void TestCosmosPartitionKeyComparison()
+        {
+            Cosmos.PartitionKey pk = new Cosmos.PartitionKey("partition_key");
+            Cosmos.PartitionKey equal_to_pk = new Cosmos.PartitionKey("partition_key");
+            Cosmos.PartitionKey differs_from_pk = new Cosmos.PartitionKey("different_partition_key");
+
+            (Func<bool> testFunction, bool expectedResult)[] testcases =
+            {
+                (() => pk.Equals((object)equal_to_pk), true),
+                (() => pk.Equals((object)differs_from_pk), false),
+                (() => pk.Equals(equal_to_pk), true),
+                (() => pk.Equals(differs_from_pk), false),
+                (() => pk == equal_to_pk, true),
+                (() => pk == differs_from_pk, false),
+                (() => pk != equal_to_pk, false),
+                (() => pk != differs_from_pk, true),
+                (() => pk.CompareTo(equal_to_pk) == 0, true),
+                (() => pk.GetHashCode() == equal_to_pk.GetHashCode(), true),
+            };
+
+            foreach ((Func<bool> testFunction, bool expectedResult) in testcases)
+            {
+                bool result = testFunction();
+                Assert.AreEqual(result, expectedResult);
+            }
         }
     }
 }
