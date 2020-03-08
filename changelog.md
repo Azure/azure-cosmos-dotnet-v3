@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- [#1233](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1265) PartitionKey now supports operators ==, != for equality comparison.
+
 ### Fixed
 
 - [#1213](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1213) CosmosException now returns the original stack trace.
