@@ -188,7 +188,7 @@
     <Content Include="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestTypeCheckFunctions.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="CrossPartitionQueryTests.AggregateMixedTypes_baseline.xml">
+    <Content Include="Query\CrossPartitionQueryTests.AggregateMixedTypes_baseline.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
@@ -225,7 +225,7 @@
     <ProjectReference Include="..\..\src\Microsoft.Azure.Cosmos.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <None Update="CrossPartitionQueryTests.AggregateMixedTypes_baseline.xml">
+    <None Update="Query\CrossPartitionQueryTests.AggregateMixedTypes_baseline.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
