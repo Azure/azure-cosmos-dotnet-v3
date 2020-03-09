@@ -233,17 +233,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             return new UInt128(low, high);
         }
 
-        /// <summary>
-        /// Creates a UInt128 from a byte array.
-        /// </summary>
-        /// <param name="bytes">The bytes.</param>
-        /// <returns>The UInt128 from the byte array.</returns>
-        public static UInt128 FromByteArray(ReadOnlySpan<byte> bytes)
+        public static UInt128 FromByteArray(ReadOnlySpan<byte> buffer)
         {
-            ulong low = MemoryMarshal.Read<ulong>(bytes);
-            ulong high = MemoryMarshal.Read<ulong>(bytes.Slice(sizeof(ulong)));
+            if (!UInt128.TryCreateFromByteArray(buffer, out UInt128 value))
+            {
+                throw new FormatException($"Malformed buffer");
+            }
 
-            return new UInt128(low, high);
+            return value;
         }
 
         /// <summary>
@@ -400,6 +397,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             }
 
             uInt128 = UInt128.FromByteArray(bytes);
+            return true;
+        }
+
+        public static bool TryCreateFromByteArray(ReadOnlySpan<byte> buffer, out UInt128 value)
+        {
+            if (buffer.Length < UInt128.Length)
+            {
+                value = default;
+                return false;
+            }
+
+            ReadOnlySpan<ulong> bufferAsULongs = MemoryMarshal.Cast<byte, ulong>(buffer);
+            value = new UInt128(low: bufferAsULongs[0], high: bufferAsULongs[1]);
             return true;
         }
     }

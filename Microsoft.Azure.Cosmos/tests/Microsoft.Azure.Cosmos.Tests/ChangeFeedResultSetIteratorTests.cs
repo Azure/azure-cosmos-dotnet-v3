@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Newtonsoft.Json;
@@ -34,9 +35,15 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             ResponseMessage firstResponse = new ResponseMessage(HttpStatusCode.NotModified);
             firstResponse.Headers.ETag = "FirstContinuation";
-            ResponseMessage secondResponse = new ResponseMessage(HttpStatusCode.NotFound);
-            secondResponse.Headers.ETag = "ShouldNotContainThis";
-            secondResponse.ErrorMessage = "something";
+            ResponseMessage secondResponse = new ResponseMessage(
+                statusCode: HttpStatusCode.NotFound,
+                requestMessage: null,
+                headers: new Headers()
+                {
+                    ETag = "ShouldNotContainThis"
+                },
+                cosmosException: CosmosExceptionFactory.CreateNotFoundException("something"),
+                diagnostics: CosmosDiagnosticsContext.Create());
 
             mockContext.SetupSequence(x => x.ProcessResourceOperationAsync<ResponseMessage>(
                 It.IsAny<Uri>(),

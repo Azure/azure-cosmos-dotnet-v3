@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
         /// If items1 was ["Brandon", 22] and items2 was ["Brandon", 23] then we would say have to look at the age to break the tie and in this case 23 comes first in a descending order.
         /// Some examples of composite order by: http://www.dofactory.com/sql/order-by
         /// </example>
-        public int CompareOrderByItems(IList<OrderByItem> items1, IList<OrderByItem> items2)
+        public int CompareOrderByItems(IReadOnlyList<OrderByItem> items1, IReadOnlyList<OrderByItem> items2)
         {
             if (object.ReferenceEquals(items1, items2))
             {

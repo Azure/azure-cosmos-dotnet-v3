@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
         /// <summary>
         /// Gets the order by items from the document.
         /// </summary>
-        public IList<OrderByItem> OrderByItems
+        public IReadOnlyList<OrderByItem> OrderByItems
         {
             get
             {

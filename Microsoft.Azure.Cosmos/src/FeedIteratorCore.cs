@@ -7,9 +7,10 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.IO;
     using System.Net;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Documents;
     using static Microsoft.Azure.Documents.RuntimeConstants;
@@ -17,31 +18,28 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Cosmos feed stream iterator. This is used to get the query responses with a Stream content
     /// </summary>
-    internal class FeedIteratorCore : FeedIteratorInternal
+    internal sealed class FeedIteratorCore : FeedIteratorInternal
     {
         private readonly CosmosClientContext clientContext;
         private readonly Uri resourceLink;
         private readonly ResourceType resourceType;
         private readonly SqlQuerySpec querySpec;
-        private readonly bool usePropertySerializer;
         private bool hasMoreResultsInternal;
 
-        internal FeedIteratorCore(
+        public FeedIteratorCore(
             CosmosClientContext clientContext,
             Uri resourceLink,
             ResourceType resourceType,
             QueryDefinition queryDefinition,
             string continuationToken,
-            QueryRequestOptions options,
-            bool usePropertySerializer = false)
+            QueryRequestOptions options)
         {
             this.resourceLink = resourceLink;
             this.clientContext = clientContext;
             this.resourceType = resourceType;
             this.querySpec = queryDefinition?.ToSqlQuerySpec();
-            this.continuationToken = continuationToken;
+            this.ContinuationToken = continuationToken;
             this.requestOptions = options;
-            this.usePropertySerializer = usePropertySerializer;
             this.hasMoreResultsInternal = true;
         }
 
@@ -57,12 +55,12 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// The query options for the result set
         /// </summary>
-        protected QueryRequestOptions requestOptions { get; }
+        public QueryRequestOptions requestOptions { get; }
 
         /// <summary>
         /// The Continuation Token
         /// </summary>
-        protected string continuationToken { get; set; }
+        public string ContinuationToken { get; set; }
 
         /// <summary>
         /// Get the next set of results from the cosmos service
@@ -71,6 +69,8 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A query response from cosmos service</returns>
         public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             Stream stream = null;
             OperationType operation = OperationType.ReadFeed;
             if (this.querySpec != null)
@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos
                streamPayload: stream,
                requestEnricher: request =>
                {
-                   QueryRequestOptions.FillContinuationToken(request, this.continuationToken);
+                   QueryRequestOptions.FillContinuationToken(request, this.ContinuationToken);
                    if (this.querySpec != null)
                    {
                        request.Headers.Add(HttpConstants.HttpHeaders.ContentType, MediaTypes.QueryJson);
@@ -99,15 +99,9 @@ namespace Microsoft.Azure.Cosmos
                diagnosticsScope: null,
                cancellationToken: cancellationToken);
 
-            this.continuationToken = response.Headers.ContinuationToken;
-            this.hasMoreResultsInternal = GetHasMoreResults(this.continuationToken, response.StatusCode);
+            this.ContinuationToken = response.Headers.ContinuationToken;
+            this.hasMoreResultsInternal = GetHasMoreResults(this.ContinuationToken, response.StatusCode);
             return response;
-        }
-
-        public override bool TryGetContinuationToken(out string continuationToken)
-        {
-            continuationToken = this.continuationToken;
-            return true;
         }
 
         internal static string GetContinuationToken(ResponseMessage httpResponseMessage)
@@ -121,6 +115,11 @@ namespace Microsoft.Azure.Cosmos
             // in the case where this is a result set iterator for a change feed, not modified indicates that
             // the enumeration is done for now.
             return continuationToken != null && statusCode != HttpStatusCode.NotModified;
+        }
+
+        public override CosmosElement GetCosmsoElementContinuationToken()
+        {
+            throw new NotImplementedException();
         }
     }
 
@@ -143,6 +142,11 @@ namespace Microsoft.Azure.Cosmos
 
         public override bool HasMoreResults => this.feedIterator.HasMoreResults;
 
+        public override CosmosElement GetCosmosElementContinuationToken()
+        {
+            return this.feedIterator.GetCosmsoElementContinuationToken();
+        }
+
 #if PREVIEW
         public override FeedToken FeedToken => this.feedIterator.FeedToken;
 #endif
@@ -158,11 +162,6 @@ namespace Microsoft.Azure.Cosmos
 
             ResponseMessage response = await this.feedIterator.ReadNextAsync(cancellationToken);
             return this.responseCreator(response);
-        }
-
-        public override bool TryGetContinuationToken(out string continuationToken)
-        {
-            return this.feedIterator.TryGetContinuationToken(out continuationToken);
         }
     }
 }

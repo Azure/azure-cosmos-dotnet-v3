@@ -4,19 +4,24 @@
 namespace Microsoft.Azure.Cosmos.Sql
 {
     using System;
+    using System.Buffers;
+    using System.Buffers.Text;
     using System.Globalization;
     using System.IO;
     using System.Linq;
+    using System.Runtime.CompilerServices;
+    using System.ServiceModel.Channels;
     using System.Text;
     using Newtonsoft.Json;
 
     internal sealed class SqlObjectTextSerializer : SqlObjectVisitor
     {
-        // Mongo's query translation tests do not use baseline files,
-        // so changing whitespaces involve manually updating the expected output for each test.
-        // When the tests are converted over to baseline files we can just bulk update them and remove this flag.
-        private const bool MongoDoesNotUseBaselineFiles = true;
-        private static readonly string Tab = "    ";
+        private const string Tab = "    ";
+        private static readonly char[] CharactersThatNeedEscaping = Enumerable
+            .Range(0, ' ')
+            .Select(x => (char)x)
+            .Concat(new char[] { '"', '\\' })
+            .ToArray();
         private readonly StringWriter writer;
         private readonly bool prettyPrint;
         private int indentLevel;
@@ -316,26 +321,7 @@ namespace Microsoft.Azure.Cosmos.Sql
 
         public override void Visit(SqlNumberLiteral sqlNumberLiteral)
         {
-            // We have to use InvariantCulture due to number formatting.
-            // "1234.1234" is correct while "1234,1234" is incorrect.
-            if (sqlNumberLiteral.Value.IsDouble)
-            {
-                string literalString = sqlNumberLiteral.Value.ToString(CultureInfo.InvariantCulture);
-                double literalValue = 0.0;
-                if (!sqlNumberLiteral.Value.IsNaN &&
-                    !sqlNumberLiteral.Value.IsInfinity &&
-                    (!double.TryParse(literalString, NumberStyles.Number, CultureInfo.InvariantCulture, out literalValue) ||
-                    !Number64.ToDouble(sqlNumberLiteral.Value).Equals(literalValue)))
-                {
-                    literalString = sqlNumberLiteral.Value.ToString("G17", CultureInfo.InvariantCulture);
-                }
-
-                this.writer.Write(literalString);
-            }
-            else
-            {
-                this.writer.Write(sqlNumberLiteral.Value.ToString(CultureInfo.InvariantCulture));
-            }
+            SqlObjectTextSerializer.WriteNumber64(this.writer.GetStringBuilder(), sqlNumberLiteral.Value);
         }
 
         public override void Visit(SqlNumberPathExpression sqlNumberPathExpression)
@@ -494,11 +480,6 @@ namespace Microsoft.Azure.Cosmos.Sql
                 this.WriteDelimiter(string.Empty);
                 sqlQuery.OffsetLimitClause.Accept(this);
             }
-
-            if (MongoDoesNotUseBaselineFiles)
-            {
-                this.writer.Write(" ");
-            }
         }
 
         public override void Visit(SqlSelectClause sqlSelectClause)
@@ -576,7 +557,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         public override void Visit(SqlStringLiteral sqlStringLiteral)
         {
             this.writer.Write("\"");
-            this.writer.Write(SqlObjectTextSerializer.GetEscapedString(sqlStringLiteral.Value));
+            SqlObjectTextSerializer.WriteEscapedString(this.writer.GetStringBuilder(), sqlStringLiteral.Value.AsSpan());
             this.writer.Write("\"");
         }
 
@@ -680,121 +661,136 @@ namespace Microsoft.Azure.Cosmos.Sql
             }
         }
 
-        private static string GetEscapedString(string value)
+        unsafe private static void WriteNumber64(StringBuilder stringBuilder, Number64 value)
         {
-            if (value == null)
+            const int MaxNumberLength = 32;
+            Span<byte> buffer = stackalloc byte[MaxNumberLength];
+            if (value.IsInteger)
             {
-                throw new ArgumentNullException("value");
-            }
-
-            if (value.All(c => !IsEscapedCharacter(c)))
-            {
-                return value;
-            }
-
-            StringBuilder stringBuilder = new StringBuilder(value.Length);
-
-            foreach (char c in value)
-            {
-                switch (c)
+                if (!Utf8Formatter.TryFormat(
+                    value: Number64.ToLong(value),
+                    destination: buffer,
+                    bytesWritten: out int bytesWritten))
                 {
-                    case '"':
-                        stringBuilder.Append("\\\"");
-                        break;
-                    case '\\':
-                        stringBuilder.Append("\\\\");
-                        break;
-                    case '\b':
-                        stringBuilder.Append("\\b");
-                        break;
-                    case '\f':
-                        stringBuilder.Append("\\f");
-                        break;
-                    case '\n':
-                        stringBuilder.Append("\\n");
-                        break;
-                    case '\r':
-                        stringBuilder.Append("\\r");
-                        break;
-                    case '\t':
-                        stringBuilder.Append("\\t");
-                        break;
-                    default:
-                        switch (CharUnicodeInfo.GetUnicodeCategory(c))
-                        {
-                            case UnicodeCategory.UppercaseLetter:
-                            case UnicodeCategory.LowercaseLetter:
-                            case UnicodeCategory.TitlecaseLetter:
-                            case UnicodeCategory.OtherLetter:
-                            case UnicodeCategory.DecimalDigitNumber:
-                            case UnicodeCategory.LetterNumber:
-                            case UnicodeCategory.OtherNumber:
-                            case UnicodeCategory.SpaceSeparator:
-                            case UnicodeCategory.ConnectorPunctuation:
-                            case UnicodeCategory.DashPunctuation:
-                            case UnicodeCategory.OpenPunctuation:
-                            case UnicodeCategory.ClosePunctuation:
-                            case UnicodeCategory.InitialQuotePunctuation:
-                            case UnicodeCategory.FinalQuotePunctuation:
-                            case UnicodeCategory.OtherPunctuation:
-                            case UnicodeCategory.MathSymbol:
-                            case UnicodeCategory.CurrencySymbol:
-                            case UnicodeCategory.ModifierSymbol:
-                            case UnicodeCategory.OtherSymbol:
-                                stringBuilder.Append(c);
-                                break;
-                            default:
-                                stringBuilder.AppendFormat("\\u{0:x4}", (int)c);
-                                break;
-                        }
-                        break;
+                    throw new InvalidOperationException($"Failed to write a long.");
+                }
+
+                buffer = buffer.Slice(start: 0, length: bytesWritten);
+
+                for (int i = 0; i < buffer.Length; i++)
+                {
+                    stringBuilder.Append((char)buffer[i]);
                 }
             }
-
-            return stringBuilder.ToString();
+            else
+            {
+                // Until we move to Core 3.0 we have to call ToString(),
+                // since neither G with precision nor R are supported for Utf8Formatter.
+                stringBuilder.Append(value.ToString("R", CultureInfo.InvariantCulture));
+            }
         }
 
-        private static bool IsEscapedCharacter(char c)
+        unsafe private static void WriteEscapedString(StringBuilder stringBuilder, ReadOnlySpan<char> unescapedString)
         {
-            switch (c)
+            while (!unescapedString.IsEmpty)
             {
-                case '"':
-                case '\\':
-                case '\b':
-                case '\f':
-                case '\n':
-                case '\r':
-                case '\t':
-                    return true;
+                int? indexOfFirstCharacterThatNeedsEscaping = SqlObjectTextSerializer.IndexOfCharacterThatNeedsEscaping(unescapedString);
+                if (!indexOfFirstCharacterThatNeedsEscaping.HasValue)
+                {
+                    // No escaping needed;
+                    indexOfFirstCharacterThatNeedsEscaping = unescapedString.Length;
+                }
 
-                default:
-                    switch (CharUnicodeInfo.GetUnicodeCategory(c))
+                // Write as much of the string as possible
+                ReadOnlySpan<char> noEscapeNeededPrefix = unescapedString.Slice(
+                    start: 0,
+                    length: indexOfFirstCharacterThatNeedsEscaping.Value);
+
+                fixed (char* noEscapeNeedPrefixPointer = noEscapeNeededPrefix)
+                {
+                    stringBuilder.Append(noEscapeNeedPrefixPointer, noEscapeNeededPrefix.Length);
+                }
+
+                unescapedString = unescapedString.Slice(start: indexOfFirstCharacterThatNeedsEscaping.Value);
+
+                // Escape the next character if it exists
+                if (!unescapedString.IsEmpty)
+                {
+                    char character = unescapedString[0];
+                    unescapedString = unescapedString.Slice(start: 1);
+
+                    switch (character)
                     {
-                        case UnicodeCategory.UppercaseLetter:
-                        case UnicodeCategory.LowercaseLetter:
-                        case UnicodeCategory.TitlecaseLetter:
-                        case UnicodeCategory.OtherLetter:
-                        case UnicodeCategory.DecimalDigitNumber:
-                        case UnicodeCategory.LetterNumber:
-                        case UnicodeCategory.OtherNumber:
-                        case UnicodeCategory.SpaceSeparator:
-                        case UnicodeCategory.ConnectorPunctuation:
-                        case UnicodeCategory.DashPunctuation:
-                        case UnicodeCategory.OpenPunctuation:
-                        case UnicodeCategory.ClosePunctuation:
-                        case UnicodeCategory.InitialQuotePunctuation:
-                        case UnicodeCategory.FinalQuotePunctuation:
-                        case UnicodeCategory.OtherPunctuation:
-                        case UnicodeCategory.MathSymbol:
-                        case UnicodeCategory.CurrencySymbol:
-                        case UnicodeCategory.ModifierSymbol:
-                        case UnicodeCategory.OtherSymbol:
-                            return false;
+                        case '\\':
+                            stringBuilder.Append('\\');
+                            stringBuilder.Append('\\');
+                            break;
+
+                        case '"':
+                            stringBuilder.Append('\\');
+                            stringBuilder.Append('"');
+                            break;
+
+                        case '/':
+                            stringBuilder.Append('\\');
+                            stringBuilder.Append('/');
+                            break;
+
+                        case '\b':
+                            stringBuilder.Append('\\');
+                            stringBuilder.Append('b');
+                            break;
+
+                        case '\f':
+                            stringBuilder.Append('\\');
+                            stringBuilder.Append('f');
+                            break;
+
+                        case '\n':
+                            stringBuilder.Append('\\');
+                            stringBuilder.Append('n');
+                            break;
+
+                        case '\r':
+                            stringBuilder.Append('\\');
+                            stringBuilder.Append('r');
+                            break;
+
+                        case '\t':
+                            stringBuilder.Append('\\');
+                            stringBuilder.Append('t');
+                            break;
 
                         default:
-                            return true;
+                            char wideCharToEscape = (char)character;
+                            // We got a control character (U+0000 through U+001F).
+                            stringBuilder.Append('\\');
+                            stringBuilder.Append('u');
+                            stringBuilder.Append(SqlObjectTextSerializer.GetHexDigit((wideCharToEscape >> 12) & 0xF));
+                            stringBuilder.Append(SqlObjectTextSerializer.GetHexDigit((wideCharToEscape >> 8) & 0xF));
+                            stringBuilder.Append(SqlObjectTextSerializer.GetHexDigit((wideCharToEscape >> 4) & 0xF));
+                            stringBuilder.Append(SqlObjectTextSerializer.GetHexDigit((wideCharToEscape >> 0) & 0xF));
+                            break;
                     }
+                }
             }
+        }
+
+        private static int? IndexOfCharacterThatNeedsEscaping(ReadOnlySpan<char> unescapedString)
+        {
+            int? index = null;
+            int indexOfAny = unescapedString.IndexOfAny(SqlObjectTextSerializer.CharactersThatNeedEscaping);
+            if (indexOfAny != -1)
+            {
+                index = indexOfAny;
+            }
+
+            return index;
+        }
+
+        private static char GetHexDigit(int value)
+        {
+            return (char)((value < 10) ? '0' + value : 'A' + value - 10);
         }
 
         private static string SqlUnaryScalarOperatorKindToString(SqlUnaryScalarOperatorKind kind)
