@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos {
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "15.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     internal class ClientResources {
@@ -277,11 +277,11 @@ namespace Microsoft.Azure.Cosmos {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The client was not configured to use the EncryptionSerializer. Initialize the client by providing an instance of EncryptionSerializer to cosmosClientBuilder.WithCustomSerializer..
+        ///   Looks up a localized string similar to The client was not configured to allow for encryption. Create the client by using cosmosClientBuilder.WithEncryptionKeyWrapProvider..
         /// </summary>
-        internal static string EncryptionSerializerNotConfigured {
+        internal static string EncryptionKeyWrapProviderNotConfigured {
             get {
-                return ResourceManager.GetString("EncryptionSerializerNotConfigured", resourceCulture);
+                return ResourceManager.GetString("EncryptionKeyWrapProviderNotConfigured", resourceCulture);
             }
         }
         
@@ -354,6 +354,15 @@ namespace Microsoft.Azure.Cosmos {
         internal static string InvalidRangeError {
             get {
                 return ResourceManager.GetString("InvalidRangeError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Encryption options may not be specified on this request..
+        /// </summary>
+        internal static string InvalidRequestWithEncryptionOptions {
+            get {
+                return ResourceManager.GetString("InvalidRequestWithEncryptionOptions", resourceCulture);
             }
         }
         

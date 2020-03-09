@@ -33,12 +33,7 @@ namespace Microsoft.Azure.Cosmos
             byte[] wrappedDataEncryptionKey,
             EncryptionKeyWrapMetadata encryptionKeyWrapMetadata)
         {
-            if (string.IsNullOrEmpty(id))
-            {
-                throw new ArgumentNullException(nameof(id));
-            }
-
-            this.Id = id;
+            this.Id = !string.IsNullOrEmpty(id) ? id : throw new ArgumentNullException(nameof(id));
             this.EncryptionAlgorithmId = encryptionAlgorithm;
             this.WrappedDataEncryptionKey = wrappedDataEncryptionKey ?? throw new ArgumentNullException(nameof(wrappedDataEncryptionKey));
             this.EncryptionKeyWrapMetadata = encryptionKeyWrapMetadata ?? throw new ArgumentNullException(nameof(encryptionKeyWrapMetadata));
@@ -83,9 +78,6 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = Constants.Properties.Id)]
         public string Id { get; internal set; }
 
-        /// <summary>
-        /// Encryption algorithm that will be used along with this data encryption key to encrypt/decrypt data.
-        /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.EncryptionAlgorithmId, NullValueHandling = NullValueHandling.Ignore)]
         public CosmosEncryptionAlgorithm EncryptionAlgorithmId { get; internal set; }
 
@@ -173,11 +165,11 @@ namespace Microsoft.Azure.Cosmos
             return other != null &&
                    this.Id == other.Id &&
                    this.EncryptionAlgorithmId == other.EncryptionAlgorithmId &&
-                   this.Equals(this.WrappedDataEncryptionKey, other.WrappedDataEncryptionKey) &&
+                   DataEncryptionKeyProperties.Equals(this.WrappedDataEncryptionKey, other.WrappedDataEncryptionKey) &&
                    EqualityComparer<EncryptionKeyWrapMetadata>.Default.Equals(this.EncryptionKeyWrapMetadata, other.EncryptionKeyWrapMetadata) &&
-                   this.Equals(this.CreatedTime, other.CreatedTime) &&
+                   this.CreatedTime == other.CreatedTime &&
                    this.ETag == other.ETag &&
-                   this.Equals(this.LastModified, other.LastModified) &&
+                   this.LastModified == other.LastModified &&
                    this.SelfLink == other.SelfLink &&
                    this.ResourceId == other.ResourceId;
         }
@@ -192,23 +184,18 @@ namespace Microsoft.Azure.Cosmos
             hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.Id);
             hashCode = (hashCode * -1521134295) + EqualityComparer<CosmosEncryptionAlgorithm>.Default.GetHashCode(this.EncryptionAlgorithmId);
             hashCode = (hashCode * -1521134295) + EqualityComparer<EncryptionKeyWrapMetadata>.Default.GetHashCode(this.EncryptionKeyWrapMetadata);
+            hashCode = (hashCode * -1521134295) + EqualityComparer<DateTime?>.Default.GetHashCode(this.CreatedTime);
             hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.ETag);
+            hashCode = (hashCode * -1521134295) + EqualityComparer<DateTime?>.Default.GetHashCode(this.LastModified);
             hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.SelfLink);
             hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.ResourceId);
             return hashCode;
         }
 
-        private bool Equals(byte[] x, byte[] y)
+        private static bool Equals(byte[] x, byte[] y)
         {
             return (x == null && y == null)
                 || (x != null && y != null && x.SequenceEqual(y));
-        }
-
-        private bool Equals(DateTime? x, DateTime? y)
-        {
-            return (!x.HasValue && !y.HasValue)
-                || (x.HasValue && y.HasValue
-                    && (x.Value - y.Value).Duration() < TimeSpan.FromSeconds(1));
         }
     }
 }

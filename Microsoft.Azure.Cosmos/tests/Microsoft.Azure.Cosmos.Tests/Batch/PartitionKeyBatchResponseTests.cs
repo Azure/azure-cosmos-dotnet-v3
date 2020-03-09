@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
             ItemBatchOperation[] arrayOperations = new ItemBatchOperation[1];
 
-            ItemBatchOperation operation = new ItemBatchOperation(OperationType.AddComputeGatewayRequestCharges, 0, "0");
+            ItemBatchOperation operation = new ItemBatchOperation(OperationType.Read, 0, new Cosmos.PartitionKey(), "0");
 
             results.Add(
                     new TransactionalBatchOperationResult(HttpStatusCode.OK)
@@ -46,7 +46,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             TransactionalBatchResponse batchresponse = await TransactionalBatchResponse.FromResponseMessageAsync(
                 new ResponseMessage(HttpStatusCode.OK) { Content = responseContent },
                 batchRequest,
-                MockCosmosUtil.Serializer);
+                MockCosmosUtil.Serializer,
+                CancellationToken.None);
 
             PartitionKeyRangeBatchResponse response = new PartitionKeyRangeBatchResponse(arrayOperations.Length, batchresponse, MockCosmosUtil.Serializer);
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
@@ -58,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
             ItemBatchOperation[] arrayOperations = new ItemBatchOperation[1];
 
-            ItemBatchOperation operation = new ItemBatchOperation(OperationType.AddComputeGatewayRequestCharges, 0, "0");
+            ItemBatchOperation operation = new ItemBatchOperation(OperationType.Read, 0, new Cosmos.PartitionKey(), "0");
 
             results.Add(
                     new TransactionalBatchOperationResult(HttpStatusCode.OK)
@@ -99,7 +100,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             TransactionalBatchResponse batchresponse = await TransactionalBatchResponse.FromResponseMessageAsync(
                 responseMessage,
                 batchRequest,
-                MockCosmosUtil.Serializer);
+                MockCosmosUtil.Serializer,
+                CancellationToken.None);
 
             PartitionKeyRangeBatchResponse response = new PartitionKeyRangeBatchResponse(arrayOperations.Length, batchresponse, MockCosmosUtil.Serializer);
 

@@ -24,6 +24,7 @@ namespace Microsoft.Azure.Cosmos
             RequestInvokerHandler requestHandler,
             DocumentClient documentClient,
             string userAgent,
+            EncryptionProcessor encryptionProcessor = null,
             DekCache dekCache = null)
         {
             this.Client = client;
@@ -33,6 +34,7 @@ namespace Microsoft.Azure.Cosmos
             this.RequestHandler = requestHandler;
             this.DocumentClient = documentClient;
             this.UserAgent = userAgent;
+            this.EncryptionProcessor = encryptionProcessor;
             this.DekCache = dekCache;
         }
 
@@ -52,6 +54,8 @@ namespace Microsoft.Azure.Cosmos
         internal override CosmosClientOptions ClientOptions { get; }
 
         internal override string UserAgent { get; }
+
+        internal override EncryptionProcessor EncryptionProcessor { get; }
 
         internal override DekCache DekCache { get; }
 

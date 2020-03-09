@@ -17,14 +17,18 @@ namespace Microsoft.Azure.Cosmos
     /// This (and AeadAes256CbcHmac256EncryptionKey) implementation for Cosmos DB is same as the existing
     /// SQL client implementation with StyleCop related changes - also, we restrict to randomized encryption to start with.
     /// </summary>
-    internal class AeadAes256CbcHmac256Algorithm : EncryptionAlgorithm
+    internal class AeadAes256CbcHmac256Algorithm : EncryptionAlgorithm, IDisposable
     {
+        private bool isDisposed = false;
+
         internal const string AlgorithmNameConstant = @"AEAD_AES_256_CBC_HMAC_SHA256";
 
         /// <summary>
         /// Algorithm Name
         /// </summary>
         internal override string AlgorithmName { get; } = AlgorithmNameConstant;
+
+        internal override SymmetricKey Key => this.dataEncryptionKey;
 
         /// <summary>
         /// Key size in bytes
@@ -105,6 +109,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.dataEncryptionKey = encryptionKey;
             this.algorithmVersion = algorithmVersion;
+
             version[0] = algorithmVersion;
 
             Debug.Assert(encryptionKey != null, "Null encryption key detected in AeadAes256CbcHmac256 algorithm");
@@ -277,7 +282,7 @@ namespace Microsoft.Azure.Cosmos
             int minimumCipherTextLength = hasAuthenticationTag ? MinimumCipherTextLengthInBytesWithAuthenticationTag : MinimumCipherTextLengthInBytesNoAuthenticationTag;
             if (cipherText.Length < minimumCipherTextLength)
             {
-                throw EncryptionExceptions.InvalidCipherTextSize(cipherText.Length, minimumCipherTextLength);
+                throw EncryptionExceptionFactory.InvalidCipherTextSize(cipherText.Length, minimumCipherTextLength);
             }
 
             // Validate the version byte
@@ -285,7 +290,7 @@ namespace Microsoft.Azure.Cosmos
             if (cipherText[startIndex] != this.algorithmVersion)
             {
                 // Cipher text was computed with a different algorithm version than this.
-                throw EncryptionExceptions.InvalidAlgorithmVersion(cipherText[startIndex], this.algorithmVersion);
+                throw EncryptionExceptionFactory.InvalidAlgorithmVersion(cipherText[startIndex], this.algorithmVersion);
             }
 
             startIndex += 1;
@@ -313,7 +318,7 @@ namespace Microsoft.Azure.Cosmos
                 if (!SecurityUtility.CompareBytes(authenticationTag, cipherText, authenticationTagOffset, authenticationTag.Length))
                 {
                     // Potentially tampered data, throw an exception
-                    throw EncryptionExceptions.InvalidAuthenticationTag();
+                    throw EncryptionExceptionFactory.InvalidAuthenticationTag();
                 }
             }
 
@@ -419,6 +424,31 @@ namespace Microsoft.Azure.Cosmos
             Debug.Assert(computedHash.Length >= authenticationTag.Length);
             Buffer.BlockCopy(computedHash, 0, authenticationTag, 0, authenticationTag.Length);
             return authenticationTag;
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!this.isDisposed)
+            {
+                if (disposing)
+                {
+                    while (this.cryptoProviderPool.TryDequeue(out AesCryptoServiceProvider aesCryptoServiceProvider))
+                    {
+                        // This 0's out Key and IV held by the AesCryptoServiceProvider instance
+                        aesCryptoServiceProvider.Dispose();
+                    }
+
+                    this.dataEncryptionKey.Dispose();
+                }
+
+                this.isDisposed = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+            this.Dispose(true);
         }
     }
 }

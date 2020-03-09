@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Diagnostics;
     using System.IO;
     using System.Net;
     using System.Threading;
@@ -612,7 +613,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(id));
             }
 
-            if (encryptionAlgorithmId != CosmosEncryptionAlgorithm.AEAD_AES_256_CBC_HMAC_SHA_256_RANDOMIZED)
+            if (encryptionAlgorithmId != CosmosEncryptionAlgorithm.AE_AES_256_CBC_HMAC_SHA_256_RANDOMIZED)
             {
                 throw new ArgumentException(string.Format("Unsupported Encryption Algorithm {0}", encryptionAlgorithmId), nameof(encryptionAlgorithmId));
             }
@@ -626,9 +627,16 @@ namespace Microsoft.Azure.Cosmos
 
             DataEncryptionKeyCore newDek = (DataEncryptionKeyInlineCore)this.GetDataEncryptionKey(id);
 
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
+
             byte[] rawDek = newDek.GenerateKey(encryptionAlgorithmId);
 
-            (byte[] wrappedDek, EncryptionKeyWrapMetadata updatedMetadata, InMemoryRawDek inMemoryRawDek) = await newDek.WrapAsync(rawDek, encryptionAlgorithmId, encryptionKeyWrapMetadata, cancellationToken);
+            (byte[] wrappedDek, EncryptionKeyWrapMetadata updatedMetadata, InMemoryRawDek inMemoryRawDek) = await newDek.WrapAsync(
+                rawDek,
+                encryptionAlgorithmId,
+                encryptionKeyWrapMetadata,
+                diagnosticsContext,
+                cancellationToken);
 
             DataEncryptionKeyProperties dekProperties = new DataEncryptionKeyProperties(id, encryptionAlgorithmId, wrappedDek, updatedMetadata);
             Stream streamPayload = this.ClientContext.SerializerCore.ToStream(dekProperties);
@@ -638,6 +646,8 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken);
 
             DataEncryptionKeyResponse dekResponse = await this.ClientContext.ResponseFactory.CreateDataEncryptionKeyResponseAsync(newDek, responseMessage);
+            Debug.Assert(dekResponse.Resource != null);
+
             this.ClientContext.DekCache.Set(this.Id, newDek.LinkUri, dekResponse.Resource);
             this.ClientContext.DekCache.SetRawDek(dekResponse.Resource.SelfLink, inMemoryRawDek);
             return dekResponse;

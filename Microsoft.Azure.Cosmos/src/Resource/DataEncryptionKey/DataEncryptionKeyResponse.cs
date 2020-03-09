@@ -17,17 +17,15 @@ namespace Microsoft.Azure.Cosmos
         class DataEncryptionKeyResponse : Response<DataEncryptionKeyProperties>
     {
         /// <summary>
-        /// Creates an EncryptionKeyResponse as a no-op for mock testing.
+        /// Creates a data encryption key response as a no-op for mock testing.
         /// </summary>
         protected DataEncryptionKeyResponse()
             : base()
         {
         }
 
-        /// <summary>
-        /// A private constructor to ensure the factory is used to create the object.
-        /// This will prevent memory leaks when handling the HttpResponseMessage.
-        /// </summary>
+        // A non-public constructor to ensure the factory is used to create the object.
+        // This will prevent memory leaks when handling the HttpResponseMessage.
         internal DataEncryptionKeyResponse(
             HttpStatusCode httpStatusCode,
             Headers headers,
@@ -45,7 +43,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// The reference to the data encryption key that allows additional operations on it.
         /// </summary>
-        public virtual DataEncryptionKey DataEncryptionKey { get; private set; }
+        public virtual DataEncryptionKey DataEncryptionKey { get; }
 
         /// <inheritdoc/>
         public override Headers Headers { get; }

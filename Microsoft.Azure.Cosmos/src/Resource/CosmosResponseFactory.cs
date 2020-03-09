@@ -5,7 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Threading;
+    using System.IO;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Scripts;
 
@@ -61,14 +61,11 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal Task<ItemResponse<T>> CreateItemResponseAsync<T>(
-            Task<ResponseMessage> cosmosResponseMessageTask,
-            Container container,
-            ItemRequestOptions requestOptions,
-            CancellationToken cancellationToken)
+            Task<ResponseMessage> cosmosResponseMessageTask)
         {
-            return this.ProcessMessageAsync(cosmosResponseMessageTask, async (cosmosResponseMessage) =>
+            return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                T item = await this.ToObjectInternalAsync<T>(cosmosResponseMessage, container, requestOptions, cancellationToken);
+                T item = this.ToObjectInternal<T>(cosmosResponseMessage);
                 return new ItemResponse<T>(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
@@ -81,9 +78,9 @@ namespace Microsoft.Azure.Cosmos
             Container container,
             Task<ResponseMessage> cosmosResponseMessageTask)
         {
-            return this.ProcessMessageAsync(cosmosResponseMessageTask, async (cosmosResponseMessage) =>
+            return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                ContainerProperties containerProperties = await this.ToObjectInternalAsync<ContainerProperties>(cosmosResponseMessage);
+                ContainerProperties containerProperties = this.ToObjectInternal<ContainerProperties>(cosmosResponseMessage);
                 return new ContainerResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
@@ -97,9 +94,9 @@ namespace Microsoft.Azure.Cosmos
             User user,
             Task<ResponseMessage> cosmosResponseMessageTask)
         {
-            return this.ProcessMessageAsync(cosmosResponseMessageTask, async (cosmosResponseMessage) =>
+            return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                UserProperties userProperties = await this.ToObjectInternalAsync<UserProperties>(cosmosResponseMessage);
+                UserProperties userProperties = this.ToObjectInternal<UserProperties>(cosmosResponseMessage);
                 return new UserResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
@@ -113,9 +110,9 @@ namespace Microsoft.Azure.Cosmos
             Permission permission,
             Task<ResponseMessage> cosmosResponseMessageTask)
         {
-            return this.ProcessMessageAsync(cosmosResponseMessageTask, async (cosmosResponseMessage) =>
+            return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                PermissionProperties permissionProperties = await this.ToObjectInternalAsync<PermissionProperties>(cosmosResponseMessage);
+                PermissionProperties permissionProperties = this.ToObjectInternal<PermissionProperties>(cosmosResponseMessage);
                 return new PermissionResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
@@ -129,10 +126,9 @@ namespace Microsoft.Azure.Cosmos
             DataEncryptionKey dataEncryptionKey,
             Task<ResponseMessage> cosmosResponseMessageTask)
         {
-            return this.ProcessMessageAsync(cosmosResponseMessageTask, async (cosmosResponseMessage) =>
+            return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                DataEncryptionKeyProperties dekProperties = await this.ToObjectInternalAsync<DataEncryptionKeyProperties>(cosmosResponseMessage);
-
+                DataEncryptionKeyProperties dekProperties = this.ToObjectInternal<DataEncryptionKeyProperties>(cosmosResponseMessage);
                 return new DataEncryptionKeyResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
@@ -146,9 +142,9 @@ namespace Microsoft.Azure.Cosmos
             Database database,
             Task<ResponseMessage> cosmosResponseMessageTask)
         {
-            return this.ProcessMessageAsync(cosmosResponseMessageTask, async (cosmosResponseMessage) =>
+            return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                DatabaseProperties databaseProperties = await this.ToObjectInternalAsync<DatabaseProperties>(cosmosResponseMessage);
+                DatabaseProperties databaseProperties = this.ToObjectInternal<DatabaseProperties>(cosmosResponseMessage);
 
                 return new DatabaseResponse(
                     cosmosResponseMessage.StatusCode,
@@ -162,9 +158,9 @@ namespace Microsoft.Azure.Cosmos
         internal Task<ThroughputResponse> CreateThroughputResponseAsync(
             Task<ResponseMessage> cosmosResponseMessageTask)
         {
-            return this.ProcessMessageAsync(cosmosResponseMessageTask, async (cosmosResponseMessage) =>
+            return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                ThroughputProperties throughputProperties = await this.ToObjectInternalAsync<ThroughputProperties>(cosmosResponseMessage);
+                ThroughputProperties throughputProperties = this.ToObjectInternal<ThroughputProperties>(cosmosResponseMessage);
                 return new ThroughputResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
@@ -175,9 +171,9 @@ namespace Microsoft.Azure.Cosmos
 
         internal Task<StoredProcedureExecuteResponse<T>> CreateStoredProcedureExecuteResponseAsync<T>(Task<ResponseMessage> cosmosResponseMessageTask)
         {
-            return this.ProcessMessageAsync(cosmosResponseMessageTask, async (cosmosResponseMessage) =>
+            return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                T item = await this.ToObjectInternalAsync<T>(cosmosResponseMessage);
+                T item = this.ToObjectInternal<T>(cosmosResponseMessage);
                 return new StoredProcedureExecuteResponse<T>(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
@@ -188,9 +184,9 @@ namespace Microsoft.Azure.Cosmos
 
         internal Task<StoredProcedureResponse> CreateStoredProcedureResponseAsync(Task<ResponseMessage> cosmosResponseMessageTask)
         {
-            return this.ProcessMessageAsync(cosmosResponseMessageTask, async (cosmosResponseMessage) =>
+            return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                StoredProcedureProperties cosmosStoredProcedure = await this.ToObjectInternalAsync<StoredProcedureProperties>(cosmosResponseMessage);
+                StoredProcedureProperties cosmosStoredProcedure = this.ToObjectInternal<StoredProcedureProperties>(cosmosResponseMessage);
                 return new StoredProcedureResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
@@ -201,9 +197,9 @@ namespace Microsoft.Azure.Cosmos
 
         internal Task<TriggerResponse> CreateTriggerResponseAsync(Task<ResponseMessage> cosmosResponseMessageTask)
         {
-            return this.ProcessMessageAsync(cosmosResponseMessageTask, async (cosmosResponseMessage) =>
+            return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                TriggerProperties triggerProperties = await this.ToObjectInternalAsync<TriggerProperties>(cosmosResponseMessage);
+                TriggerProperties triggerProperties = this.ToObjectInternal<TriggerProperties>(cosmosResponseMessage);
                 return new TriggerResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
@@ -214,9 +210,9 @@ namespace Microsoft.Azure.Cosmos
 
         internal Task<UserDefinedFunctionResponse> CreateUserDefinedFunctionResponseAsync(Task<ResponseMessage> cosmosResponseMessageTask)
         {
-            return this.ProcessMessageAsync(cosmosResponseMessageTask, async (cosmosResponseMessage) =>
+            return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                UserDefinedFunctionProperties settings = await this.ToObjectInternalAsync<UserDefinedFunctionProperties>(cosmosResponseMessage);
+                UserDefinedFunctionProperties settings = this.ToObjectInternal<UserDefinedFunctionProperties>(cosmosResponseMessage);
                 return new UserDefinedFunctionResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
@@ -225,29 +221,25 @@ namespace Microsoft.Azure.Cosmos
             });
         }
 
-        internal async Task<T> ProcessMessageAsync<T>(Task<ResponseMessage> cosmosResponseTask, Func<ResponseMessage, Task<T>> createResponse)
+        internal async Task<T> ProcessMessageAsync<T>(Task<ResponseMessage> cosmosResponseTask, Func<ResponseMessage, T> createResponse)
         {
             using (ResponseMessage message = await cosmosResponseTask)
             {
                 //Throw the exception
                 message.EnsureSuccessStatusCode();
 
-                return await createResponse(message);
+                return createResponse(message);
             }
         }
 
-        private Task<T> ToObjectInternalAsync<T>(
-            ResponseMessage responseMessage,
-            Container container = null,
-            RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+        internal T ToObjectInternal<T>(ResponseMessage responseMessage)
         {
             if (responseMessage.Content == null)
             {
-                return Task.FromResult(default(T));
+                return default(T);
             }
 
-            return this.serializerCore.FromStreamAsync<T>(responseMessage.Content, container, requestOptions, cancellationToken);
+            return this.serializerCore.FromStream<T>(responseMessage.Content);
         }
     }
 }

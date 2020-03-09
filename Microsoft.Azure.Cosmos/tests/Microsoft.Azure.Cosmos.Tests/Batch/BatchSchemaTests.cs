@@ -23,12 +23,14 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task BatchRequestSerializationAsync()
         {
             const string partitionKey1 = "pk1";
+            ContainerCore containerCore = (ContainerInlineCore)MockCosmosUtil.CreateMockCosmosClient().GetDatabase("db").GetContainer("cont");
 
             ItemBatchOperation[] operations = new ItemBatchOperation[]
             {
                 new ItemBatchOperation(
                     operationType: OperationType.Create,
-                    operationIndex: 0)
+                    operationIndex: 0,
+                    containerCore: containerCore)
                 {
                     ResourceBody = new byte[] { 0x41, 0x42 }
                 },
@@ -36,6 +38,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     id: "id2",
                     operationType: OperationType.Replace,
                     operationIndex: 1,
+                    containerCore: containerCore,
                     requestOptions: new TransactionalBatchItemRequestOptions()
                     {
                         IfMatchEtag = "theCondition"
@@ -66,7 +69,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         [Owner("abpai")]
         public async Task BatchResponseDeserializationAsync()
         {
-           List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
+            ContainerCore containerCore = (ContainerInlineCore)MockCosmosUtil.CreateMockCosmosClient().GetDatabase("db").GetContainer("cont");
+            List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
 
             results.Add(new TransactionalBatchOperationResult(HttpStatusCode.Conflict));
 
@@ -87,15 +91,16 @@ namespace Microsoft.Azure.Cosmos.Tests
                 operations: new ArraySegment<ItemBatchOperation>(
                     new ItemBatchOperation[]
                     {
-                        new ItemBatchOperation(OperationType.Read, operationIndex: 0, id: "someId"),
-                        new ItemBatchOperation(OperationType.Read, operationIndex: 0, id: "someId")
+                        new ItemBatchOperation(OperationType.Read, operationIndex: 0, id: "someId", containerCore: containerCore),
+                        new ItemBatchOperation(OperationType.Read, operationIndex: 0, id: "someId", containerCore: containerCore)
                     }),
                 serializerCore: MockCosmosUtil.Serializer,
                 cancellationToken: CancellationToken.None);
             TransactionalBatchResponse batchResponse = await TransactionalBatchResponse.FromResponseMessageAsync(
                 new ResponseMessage((HttpStatusCode)StatusCodes.MultiStatus) { Content = responseContent },
                 batchRequest,
-                MockCosmosUtil.Serializer);
+                MockCosmosUtil.Serializer,
+                CancellationToken.None);
 
             Assert.IsNotNull(batchRequest);
             Assert.AreEqual(HttpStatusCode.Conflict, batchResponse.StatusCode);

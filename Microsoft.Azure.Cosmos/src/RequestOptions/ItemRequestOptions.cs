@@ -98,9 +98,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Options to encrypt / decrypt properties of the item.
-        /// Only valid when used with <see cref="Container.CreateItemAsync{T}"/>, <see cref="Container.ReplaceItemAsync{T}"/> and <see cref="Container.UpsertItemAsync{T}"/>.
-        /// See <see href="tbd"/> for more information on client-side encryption support in Azure Cosmos DB.
+        /// Options to encrypt properties of the item.
         /// </summary>
 #if PREVIEW
         public
@@ -108,6 +106,8 @@ namespace Microsoft.Azure.Cosmos
         internal
 #endif
         EncryptionOptions EncryptionOptions { get; set; }
+
+        internal string DataEncryptionKeyRid { get; set; }
 
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
@@ -130,6 +130,11 @@ namespace Microsoft.Azure.Cosmos
                 request.Headers.Add(
                     HttpConstants.HttpHeaders.IndexingDirective,
                     IndexingDirectiveStrings.FromIndexingDirective(this.IndexingDirective.Value));
+            }
+
+            if (this.DataEncryptionKeyRid != null)
+            {
+                request.Headers.Add(EncryptionProcessor.ClientEncryptionKeyHeader, this.DataEncryptionKeyRid);
             }
 
             RequestOptions.SetSessionToken(request, this.SessionToken);

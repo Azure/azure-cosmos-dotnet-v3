@@ -152,7 +152,7 @@ namespace Microsoft.Azure.Cosmos
             string directAssemblyName = typeof(Documents.PartitionKeyRange).Assembly.GetName().Name;
             string inputAssemblyName = inputType.Assembly.GetName().Name;
             if (string.Equals(inputAssemblyName, clientAssemblyName) ||
-                string.Equals(inputAssemblyName, directAssemblyName)) 
+                string.Equals(inputAssemblyName, directAssemblyName))
             {
                 throw new ArgumentException($"User serializer is being used for internal type:{inputType.FullName}.");
             }

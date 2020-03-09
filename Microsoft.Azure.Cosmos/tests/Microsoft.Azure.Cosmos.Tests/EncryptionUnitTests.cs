@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -27,7 +26,7 @@ namespace Microsoft.Azure.Cosmos
         private const string DatabaseId = "mockDatabase";
         private const string ContainerId = "mockContainer";
         private const double requestCharge = 0.6;
-        private const CosmosEncryptionAlgorithm Algo = CosmosEncryptionAlgorithm.AEAD_AES_256_CBC_HMAC_SHA_256_RANDOMIZED;
+        private const CosmosEncryptionAlgorithm Algo = CosmosEncryptionAlgorithm.AE_AES_256_CBC_HMAC_SHA_256_RANDOMIZED;
 
         private TimeSpan cacheTTL = TimeSpan.FromDays(1);
         private byte[] dek = new byte[] { 1, 2, 3, 4 };
@@ -37,7 +36,6 @@ namespace Microsoft.Azure.Cosmos
 
         private EncryptionTestHandler testHandler;
         private Mock<EncryptionKeyWrapProvider> mockKeyWrapProvider;
-        private Mock<EncryptionAlgorithm> mockEncryptionAlgorithm;
         private Mock<DatabaseCore> mockDatabaseCore;
 
         [TestMethod]
@@ -52,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
             }
             catch (ArgumentException ex)
             {
-                Assert.AreEqual(ClientResources.EncryptionSerializerNotConfigured, ex.Message);
+                Assert.AreEqual(ClientResources.EncryptionKeyWrapProviderNotConfigured, ex.Message);
             }
 
         }
@@ -83,7 +81,7 @@ namespace Microsoft.Azure.Cosmos
             }
             catch (ArgumentException ex)
             {
-                Assert.AreEqual(ClientResources.EncryptionSerializerNotConfigured, ex.Message);
+                Assert.AreEqual(ClientResources.EncryptionKeyWrapProviderNotConfigured, ex.Message);
             }
         }
 
@@ -162,7 +160,6 @@ namespace Microsoft.Azure.Cosmos
             Assert.AreEqual(dekId, rewrappedProperties.Id);
             Assert.AreEqual(createdProperties.CreatedTime, rewrappedProperties.CreatedTime);
             Assert.IsNotNull(rewrappedProperties.LastModified);
-            Assert.AreNotEqual(createdProperties.LastModified, rewrappedProperties.LastModified);
             Assert.AreEqual(createdProperties.ResourceId, rewrappedProperties.ResourceId);
             Assert.AreEqual(createdProperties.SelfLink, rewrappedProperties.SelfLink);
 
@@ -201,7 +198,8 @@ namespace Microsoft.Azure.Cosmos
                     {
                         EncryptionOptions = new EncryptionOptions
                         {
-                            DataEncryptionKey = database.GetDataEncryptionKey("random")
+                            DataEncryptionKey = database.GetDataEncryptionKey("random"),
+                            PathsToEncrypt = MyItem.PathsToEncrypt
                         }
                     });
 
@@ -222,15 +220,15 @@ namespace Microsoft.Azure.Cosmos
             string dekId = "mydek";
             DataEncryptionKeyResponse dekResponse = await database.CreateDataEncryptionKeyAsync(dekId, EncryptionUnitTests.Algo, this.metadata1);
             Assert.AreEqual(HttpStatusCode.Created, dekResponse.StatusCode);
-            MyItem item = await EncryptionUnitTests.CreateItemAsync(container, dekId);
+            MyItem item = await EncryptionUnitTests.CreateItemAsync(container, dekId, MyItem.PathsToEncrypt);
 
             // Validate server state
             Assert.IsTrue(this.testHandler.Items.TryGetValue(item.Id, out JObject serverItem));
             Assert.IsNotNull(serverItem);
             Assert.AreEqual(item.Id, serverItem.Property(Constants.Properties.Id).Value.Value<string>());
             Assert.AreEqual(item.PK, serverItem.Property(nameof(MyItem.PK)).Value.Value<string>());
-            Assert.IsNull(serverItem.Property(nameof(MyItem.EncStr1)));
-            Assert.IsNull(serverItem.Property(nameof(MyItem.EncInt)));
+            Assert.IsNull(serverItem.Property(nameof(MyItem.Str)));
+            Assert.IsNull(serverItem.Property(nameof(MyItem.Int)));
 
             JProperty eiJProp = serverItem.Property(Constants.Properties.EncryptedInfo);
             Assert.IsNotNull(eiJProp);
@@ -245,8 +243,85 @@ namespace Microsoft.Azure.Cosmos
 
             JObject decryptedJObj = EncryptionUnitTests.ParseStream(new MemoryStream(encryptionPropertiesAtServer.EncryptedData.Reverse().ToArray()));
             Assert.AreEqual(2, decryptedJObj.Properties().Count());
-            Assert.AreEqual(item.EncStr1, decryptedJObj.Property(nameof(MyItem.EncStr1)).Value.Value<string>());
-            Assert.AreEqual(item.EncInt, decryptedJObj.Property(nameof(MyItem.EncInt)).Value.Value<int>());
+            Assert.AreEqual(item.Str, decryptedJObj.Property(nameof(MyItem.Str)).Value.Value<string>());
+            Assert.AreEqual(item.Int, decryptedJObj.Property(nameof(MyItem.Int)).Value.Value<int>());
+        }
+
+        [TestMethod]
+        public async Task EncryptionUTPathHandling()
+        {
+            Container container = this.GetContainerWithMockSetup();
+            DatabaseCore database = (DatabaseCore)((ContainerCore)(ContainerInlineCore)container).Database;
+
+            string dekId = "mydek";
+            DataEncryptionKeyResponse dekResponse = await database.CreateDataEncryptionKeyAsync(dekId, EncryptionUnitTests.Algo, this.metadata1);
+            Assert.AreEqual(HttpStatusCode.Created, dekResponse.StatusCode);
+
+            // Null path to encrypt
+            try
+            {
+                await EncryptionUnitTests.CreateItemAsync(container, dekId, pathsToEncrypt: null);
+                Assert.Fail("Expected encryption with null pathsToEncrypt to fail");
+            }
+            catch (ArgumentException ex)
+            {
+                Assert.AreEqual(nameof(EncryptionOptions.PathsToEncrypt), ex.ParamName);
+            }
+
+            // Invalid path to encrypt
+            try
+            {
+                await EncryptionUnitTests.CreateItemAsync(container, dekId, new List<string> { "Int" });
+                Assert.Fail("Expected encryption with invalid path to fail");
+            }
+            catch(ArgumentException ex)
+            {
+                Assert.AreEqual(nameof(EncryptionOptions.PathsToEncrypt), ex.ParamName);
+            }
+
+            // Overlapping (parent and child) paths to encrypt
+            try
+            {
+                await EncryptionUnitTests.CreateItemAsync(container, dekId, new List<string> { "/Child/MyChars", "/Int", "/Child", "/Str" });
+                Assert.Fail("Expected encryption with overlapping path to fail");
+            }
+            catch (ArgumentException ex)
+            {
+                Assert.AreEqual(nameof(EncryptionOptions.PathsToEncrypt), ex.ParamName);
+            }
+
+            // No properties to encrypt
+            MyItem item1 = await EncryptionUnitTests.CreateItemAsync(container, dekId, new List<string> { });
+            JObject serverItem1JObj = this.testHandler.Items[item1.Id];
+            JProperty eiJProp1 = serverItem1JObj.Property(Constants.Properties.EncryptedInfo);
+            Assert.IsNull(eiJProp1);
+            MyItem serverItem1 = serverItem1JObj.ToObject<MyItem>();
+            Assert.AreEqual(item1, serverItem1);
+
+            // Property to encrypt not in serialized item, or path intending to reference array indexes (are ignored)
+            MyItem item2 = await EncryptionUnitTests.CreateItemAsync(container, dekId, new List<string> { "/unknown", "/ByteArr[2]", "/ByteArr/2" });
+            JObject serverItem2JObj = this.testHandler.Items[item2.Id];
+            JProperty eiJProp2 = serverItem2JObj.Property(Constants.Properties.EncryptedInfo);
+            Assert.IsNull(eiJProp2);
+            MyItem serverItem2 = serverItem2JObj.ToObject<MyItem>();
+            Assert.AreEqual(item2, serverItem2);
+
+            // Encrypt various types
+            MyItem item3 = await EncryptionUnitTests.CreateItemAsync(container, dekId, new List<string> { "/Struct", "/Enum", "/ByteArr", "/Child" });
+            MyItem serverItem3 = this.testHandler.Items[item3.Id].ToObject<MyItem>();
+            item3.Struct = null;
+            item3.Enum = null;
+            item3.ByteArr = null;
+            item3.Child = null;
+            Assert.AreEqual(item3, serverItem3);
+
+            // Encrypt part of child class
+            MyItem item4 = await EncryptionUnitTests.CreateItemAsync(container, dekId, new List<string> { "/Child/MyStr", "/ByteArr", "/Child/MyChars" });
+            MyItem serverItem4 = this.testHandler.Items[item4.Id].ToObject<MyItem>();
+            item4.Child.MyStr = null;
+            item4.Child.MyChars = null;
+            item4.ByteArr = null;
+            Assert.AreEqual(item4, serverItem4);
         }
 
         [TestMethod]
@@ -258,13 +333,13 @@ namespace Microsoft.Azure.Cosmos
             string dekId = "mydek";
             DataEncryptionKeyResponse dekResponse = await database.CreateDataEncryptionKeyAsync(dekId, EncryptionUnitTests.Algo, this.metadata1);
             Assert.AreEqual(HttpStatusCode.Created, dekResponse.StatusCode);
-            MyItem item = await EncryptionUnitTests.CreateItemAsync(container, dekId);
+            MyItem item = await EncryptionUnitTests.CreateItemAsync(container, dekId, MyItem.PathsToEncrypt);
 
             ItemResponse<MyItem> readResponse = await container.ReadItemAsync<MyItem>(item.Id, new PartitionKey(item.PK));
             Assert.AreEqual(item, readResponse.Resource);
         }
 
-        private static async Task<MyItem> CreateItemAsync(Container container, string dekId)
+        private static async Task<MyItem> CreateItemAsync(Container container, string dekId, List<string> pathsToEncrypt)
         {
             DatabaseCore database = (DatabaseCore)((ContainerCore)(ContainerInlineCore)container).Database;
 
@@ -276,7 +351,8 @@ namespace Microsoft.Azure.Cosmos
                 {
                     EncryptionOptions = new EncryptionOptions
                     {
-                        DataEncryptionKey = database.GetDataEncryptionKey(dekId)
+                        DataEncryptionKey = database.GetDataEncryptionKey(dekId),
+                        PathsToEncrypt = pathsToEncrypt
                     }
                 });
 
@@ -287,12 +363,25 @@ namespace Microsoft.Azure.Cosmos
 
         private static MyItem GetNewItem()
         {
+            MyStruct myStruct = default;
+            myStruct.Prop1 = 42;
+            myStruct.Prop2 = new byte[] { 1, 2 };
+
             return new MyItem()
             {
                 Id = Guid.NewGuid().ToString(),
                 PK = "pk",
-                EncStr1 = "sensitive",
-                EncInt = 10000
+                Str = "sensitive",
+                Int = 10000,
+                Struct = myStruct,
+                Enum = MyEnum.Bar,
+                ByteArr = new byte[] { 3, 4 },
+                Child = new MyItemChild()
+                {
+                    MyInt = 57,
+                    MyStr = "childStr",
+                    MyChars = new char[] { 'e', 'f'}
+                }
             };
         }
 
@@ -372,14 +461,7 @@ namespace Microsoft.Azure.Cosmos
 
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient((builder) => builder
                 .AddCustomHandlers(this.testHandler)
-                .WithCustomSerializer(new EncryptionSerializer(this.mockKeyWrapProvider.Object)));
-
-            this.mockEncryptionAlgorithm = new Mock<EncryptionAlgorithm>();
-            this.mockEncryptionAlgorithm.Setup(m => m.EncryptData(It.IsAny<byte[]>()))
-                .Returns((byte[] plainText) => plainText.Reverse().ToArray());
-            this.mockEncryptionAlgorithm.Setup(m => m.DecryptData(It.IsAny<byte[]>()))
-                .Returns((byte[] cipherText) => cipherText.Reverse().ToArray());
-            this.mockEncryptionAlgorithm.SetupGet(m => m.AlgorithmName).Returns(AeadAes256CbcHmac256Algorithm.AlgorithmNameConstant);
+                .WithEncryptionKeyWrapProvider(this.mockKeyWrapProvider.Object));
 
             this.mockDatabaseCore = new Mock<DatabaseCore>(client.ClientContext, EncryptionUnitTests.DatabaseId);
             this.mockDatabaseCore.CallBase = true;
@@ -390,7 +472,17 @@ namespace Microsoft.Azure.Cosmos
                  mockDekCore.CallBase = true;
                  mockDekCore.Setup(m => m.GenerateKey(EncryptionUnitTests.Algo)).Returns(this.dek);
                  mockDekCore.Setup(m => m.GetEncryptionAlgorithm(It.IsAny<byte[]>(), EncryptionUnitTests.Algo))
-                    .Returns(this.mockEncryptionAlgorithm.Object);
+                    .Returns((byte[] rawDek, CosmosEncryptionAlgorithm algoId) =>
+                    {
+                        Mock<EncryptionAlgorithm> mockEncryptionAlgorithm = new Mock<EncryptionAlgorithm>();
+                        mockEncryptionAlgorithm.Setup(m => m.EncryptData(It.IsAny<byte[]>()))
+                            .Returns((byte[] plainText) => plainText.Reverse().ToArray());
+                        mockEncryptionAlgorithm.Setup(m => m.DecryptData(It.IsAny<byte[]>()))
+                            .Returns((byte[] cipherText) => cipherText.Reverse().ToArray());
+                        mockEncryptionAlgorithm.SetupGet(m => m.AlgorithmName).Returns(AeadAes256CbcHmac256Algorithm.AlgorithmNameConstant);
+                        mockEncryptionAlgorithm.SetupGet(m => m.Key).Returns(new SymmetricKey(rawDek));
+                        return mockEncryptionAlgorithm.Object;
+                    });
                  return new DataEncryptionKeyInlineCore(mockDekCore.Object);
              });
 
@@ -404,18 +496,24 @@ namespace Microsoft.Azure.Cosmos
 
         private class MyItem
         {
+            public static List<string> PathsToEncrypt { get; } = new List<string>() { "/Str", "/Int" };
+
             [JsonProperty(PropertyName = Constants.Properties.Id, NullValueHandling = NullValueHandling.Ignore)]
             public string Id { get; set; }
 
             public string PK { get; set; }
 
-            [CosmosEncrypt]
-            public string EncStr1 { get; set; }
+            public string Str { get; set; }
 
-            [CosmosEncrypt]
-            public int EncInt { get; set; }
+            public int? Int { get; set; }
 
-            // todo: byte array, parts of objects, structures, enum
+            public byte[] ByteArr { get; set; }
+
+            public MyItemChild Child { get; set; }
+
+            public MyStruct? Struct { get; set; }
+
+            public MyEnum? Enum { get; set; }
 
             public override bool Equals(object obj)
             {
@@ -423,8 +521,12 @@ namespace Microsoft.Azure.Cosmos
                 return item != null &&
                        this.Id == item.Id &&
                        this.PK == item.PK &&
-                       this.EncStr1 == item.EncStr1 &&
-                       this.EncInt == item.EncInt;
+                       this.Str == item.Str &&
+                       this.Int == item.Int &&
+                       MyItem.Equals(this.ByteArr, item.ByteArr) &&
+                       MyItem.Equals(this.Child, item.Child) &&
+                       this.Struct.Equals(item.Struct) &&
+                       this.Enum == item.Enum;
             }
 
             public override int GetHashCode()
@@ -432,10 +534,82 @@ namespace Microsoft.Azure.Cosmos
                 int hashCode = -307924070;
                 hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.Id);
                 hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.PK);
-                hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.EncStr1);
-                hashCode = (hashCode * -1521134295) + this.EncInt.GetHashCode();
+                hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.Str);
+                hashCode = (hashCode * -1521134295) + this.Int.GetHashCode();
                 return hashCode;
             }
+
+            public static bool Equals<T>(T[] x, T[] y)
+            {
+                return (x == null && y == null)
+                    || (x != null && y != null && x.SequenceEqual(y));
+            }
+
+            private static bool Equals<T>(T x, T y) where T : class
+            {
+                return (x == null && y == null)
+                    || (x != null && x.Equals(y));
+            }
+        }
+
+        private class MyItemChild : IEquatable<MyItemChild>
+        {
+            public string MyStr { get; set; }
+
+            public int? MyInt { get; set; }
+
+            public char[] MyChars { get; set; }
+
+            public override bool Equals(object obj)
+            {
+                return this.Equals(obj as MyItemChild);
+            }
+
+            public bool Equals(MyItemChild other)
+            {
+                return other != null &&
+                       this.MyStr == other.MyStr &&
+                       this.MyInt == other.MyInt &&
+                       MyItem.Equals(this.MyChars, other.MyChars);
+            }
+
+            public override int GetHashCode()
+            {
+                int hashCode = -1230299138;
+                hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.MyStr);
+                hashCode = (hashCode * -1521134295) + this.MyInt.GetHashCode();
+                return hashCode;
+            }
+        }
+
+        private struct MyStruct : IEquatable<MyStruct>
+        {
+            public int Prop1 { get; set; }
+            public byte[] Prop2 { get; set; }
+
+            public override bool Equals(object obj)
+            {
+                return obj is MyStruct @struct && this.Equals(@struct);
+            }
+
+            public bool Equals(MyStruct other)
+            {
+                return this.Prop1 == other.Prop1 &&
+                       MyItem.Equals(this.Prop2, other.Prop2);
+            }
+
+            public override int GetHashCode()
+            {
+                int hashCode = 1850903905;
+                hashCode = (hashCode * -1521134295) + this.Prop1.GetHashCode();
+                return hashCode;
+            }
+        }
+
+        private enum MyEnum
+        {
+            Foo = 20,
+            Bar = 21
         }
 
         private class EncryptionPropertiesComparer : IEqualityComparer<EncryptionProperties>
@@ -497,7 +671,7 @@ namespace Microsoft.Azure.Cosmos
                         dekProperties = this.serializer.FromStream<DataEncryptionKeyProperties>(request.Content);
                         string databaseRid = ResourceId.NewDatabaseId(1).ToString();
                         dekProperties.ResourceId = ResourceId.NewClientEncryptionKeyId(databaseRid, (uint)this.Received.Count).ToString();
-                        dekProperties.CreatedTime = DateTime.UtcNow;
+                        dekProperties.CreatedTime = EncryptionTestHandler.ReducePrecisionToSeconds(DateTime.UtcNow);
                         dekProperties.LastModified = dekProperties.CreatedTime;
                         dekProperties.ETag = Guid.NewGuid().ToString();
                         dekProperties.SelfLink = string.Format(
@@ -525,7 +699,7 @@ namespace Microsoft.Azure.Cosmos
                     {
                         string dekId = EncryptionTestHandler.ParseDekUri(request.RequestUri);
                         dekProperties = this.serializer.FromStream<DataEncryptionKeyProperties>(request.Content);
-                        dekProperties.LastModified = DateTime.UtcNow + TimeSpan.FromSeconds(1);
+                        dekProperties.LastModified = EncryptionTestHandler.ReducePrecisionToSeconds(DateTime.UtcNow);
                         dekProperties.ETag = Guid.NewGuid().ToString();
 
                         httpStatusCode = HttpStatusCode.OK;
@@ -661,6 +835,11 @@ namespace Microsoft.Azure.Cosmos
                 Assert.AreEqual(EncryptionUnitTests.DatabaseId, segments[1]);
                 Assert.AreEqual(Paths.ClientEncryptionKeysPathSegment, segments[2]);
                 return segments[3];
+            }
+
+            private static DateTime ReducePrecisionToSeconds(DateTime input)
+            {
+                return new DateTime(input.Year, input.Month, input.Day, input.Hour, input.Minute, input.Second, DateTimeKind.Utc);
             }
         }
     }

@@ -10,13 +10,13 @@ namespace Microsoft.Azure.Cosmos
     internal class EncryptionProperties
     {
         [JsonProperty(PropertyName = Constants.Properties.EncryptionFormatVersion)]
-        public int EncryptionFormatVersion { get; private set; }
+        public int EncryptionFormatVersion { get; }
 
         [JsonProperty(PropertyName = Constants.Properties.DataEncryptionKeyRid)]
-        public string DataEncryptionKeyRid { get; private set; }
+        public string DataEncryptionKeyRid { get; }
 
         [JsonProperty(PropertyName = Constants.Properties.EncryptedData)]
-        public byte[] EncryptedData { get; private set; }
+        public byte[] EncryptedData { get; }
 
         public EncryptionProperties(
             int encryptionFormatVersion,

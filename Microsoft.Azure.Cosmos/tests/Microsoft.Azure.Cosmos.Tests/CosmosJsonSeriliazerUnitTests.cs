@@ -106,7 +106,8 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
         {
             dynamic property = JsonConvert.DeserializeObject<T>(defaultJson);
             Assert.AreEqual(id, property.Id);
-            string propertyJson = JsonConvert.SerializeObject(property, new JsonSerializerSettings() {
+            string propertyJson = JsonConvert.SerializeObject(property, new JsonSerializerSettings()
+            {
                 Formatting = Formatting.None
             });
 
@@ -239,7 +240,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             {
                 QueryText = "Select * from something"
             });
-           
+
             sqlQuerySpecs.Add(new SqlQuerySpec()
             {
                 QueryText = "Select * from something",

@@ -56,8 +56,10 @@ namespace Microsoft.Azure.Cosmos
         internal static void GenerateRandomBytes(byte[] randomBytes)
         {
             // Generate random bytes cryptographically.
-            RNGCryptoServiceProvider rngCsp = new RNGCryptoServiceProvider();
-            rngCsp.GetBytes(randomBytes);
+            using (RNGCryptoServiceProvider rngCsp = new RNGCryptoServiceProvider())
+            {
+                rngCsp.GetBytes(randomBytes);
+            }
         }
 
         /// <summary>

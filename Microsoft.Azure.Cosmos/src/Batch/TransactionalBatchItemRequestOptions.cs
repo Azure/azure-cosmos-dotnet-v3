@@ -12,12 +12,18 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets or sets the indexing directive (Include or Exclude) for the request in the Azure Cosmos DB service.
         /// </summary>
-        /// <value>
-        /// The indexing directive to use with a request.
-        /// </value>
-        /// <seealso cref="Microsoft.Azure.Cosmos.IndexingPolicy"/>
-        /// <seealso cref="IndexingDirective"/>
+        /// <seealso cref="IndexingPolicy"/>
         public IndexingDirective? IndexingDirective { get; set; }
+
+        /// <summary>
+        /// Options to encrypt properties of the item.
+        /// </summary>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        EncryptionOptions EncryptionOptions { get; set; }
 
         internal static TransactionalBatchItemRequestOptions FromItemRequestOptions(ItemRequestOptions itemRequestOptions)
         {
