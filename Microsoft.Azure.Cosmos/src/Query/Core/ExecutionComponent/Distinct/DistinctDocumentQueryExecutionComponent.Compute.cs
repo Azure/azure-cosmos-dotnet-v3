@@ -206,11 +206,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                 }
 
                 FeedTokenEPKRange feedTokenInternal = feedToken as FeedTokenEPKRange;
+                DistinctContinuationToken distinctContinuationToken = new DistinctContinuationToken(
+                    sourceToken: this.Source.GetCosmosElementContinuationToken(),
+                    distinctMapToken: this.distinctMap.GetCosmosElementContinuationToken());
                 feedToken = FeedTokenEPKRange.Copy(
                     feedTokenInternal,
-                    new DistinctContinuationToken(
-                        feedTokenInternal.GetContinuation(),
-                        this.distinctMap.GetContinuationToken()).ToString());
+                    DistinctContinuationToken.ToCosmosElement(distinctContinuationToken).ToString());
                 return true;
             }
         }

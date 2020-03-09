@@ -218,7 +218,7 @@ namespace Microsoft.Azure.Cosmos
             return true;
         }
 
-        private async Task<TryCatch<FeedTokenInternal>> TryInitializeFeedTokenAsync(CancellationToken cancellationToken)
+        private async Task<TryCatch<string>> TryInitializeContainerRIdAsync(CancellationToken cancellationToken)
         {
             string containerRId = string.Empty;
             if (this.containerCore != null)
@@ -242,7 +242,7 @@ namespace Microsoft.Azure.Cosmos
             FeedTokenEPKRange feedTokenInternal = new FeedTokenEPKRange(
                         this.containerRId,
                         new Documents.Routing.Range<string>(Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey, Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey, true, false),
-                        continuationToken: this.continuationToken);
+                        continuationToken: this.ContinuationToken);
 
             return feedTokenInternal;
         }

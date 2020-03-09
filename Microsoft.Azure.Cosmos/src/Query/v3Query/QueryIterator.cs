@@ -80,6 +80,20 @@ namespace Microsoft.Azure.Cosmos.Query
                                 queryRequestOptions);
                         }
                     }
+                    else if (feedTokenInternal != null
+                        && feedTokenInternal.GetContinuation() != null)
+                    {
+                        if (!CosmosElement.TryParse(feedTokenInternal.GetContinuation(), out requestContinuationToken))
+                        {
+                            return new QueryIterator(
+                                cosmosQueryContext,
+                                new QueryExecutionContextWithException(
+                                    new MalformedContinuationTokenException(
+                                        $"Malformed Continuation Token: {feedTokenInternal.GetContinuation()}")),
+                                queryRequestOptions.CosmosSerializationFormatOptions,
+                                queryRequestOptions);
+                        }
+                    }
                     else
                     {
                         requestContinuationToken = null;
@@ -88,6 +102,21 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 case ExecutionEnvironment.Compute:
                     requestContinuationToken = queryRequestOptions.CosmosElementContinuationToken;
+                    if (requestContinuationToken == null
+                        && feedTokenInternal != null
+                        && feedTokenInternal.GetContinuation() != null)
+                    {
+                        if (!CosmosElement.TryParse(feedTokenInternal.GetContinuation(), out requestContinuationToken))
+                        {
+                            return new QueryIterator(
+                                cosmosQueryContext,
+                                new QueryExecutionContextWithException(
+                                    new MalformedContinuationTokenException(
+                                        $"Malformed Continuation Token: {feedTokenInternal.GetContinuation()}")),
+                                queryRequestOptions.CosmosSerializationFormatOptions,
+                                queryRequestOptions);
+                        }
+                    }
                     break;
 
                 default:

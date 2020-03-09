@@ -5,13 +5,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
 {
     using System;
     using System.Collections.Generic;
-    using System.Runtime.CompilerServices;
-    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Json;
-    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
@@ -164,6 +160,46 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                     sourceContinuationToken: sourceContinuationToken);
 
                 return GroupByContinuationToken.ToCosmosElement(groupByContinuationToken);
+            }
+
+            public override bool TryGetFeedToken(out FeedToken feedToken)
+            {
+                if (this.IsDone)
+                {
+                    feedToken = null;
+                    return true;
+                }
+
+                if (!this.Source.TryGetFeedToken(out feedToken))
+                {
+                    feedToken = null;
+                    return false;
+                }
+
+                if (feedToken is FeedTokenEPKRange feedTokenInternal)
+                {
+                    CosmosElement sourceContinuationToken;
+                    if (this.Source.IsDone)
+                    {
+                        sourceContinuationToken = DoneCosmosElementToken;
+                    }
+                    else
+                    {
+                        sourceContinuationToken = this.Source.GetCosmosElementContinuationToken();
+                    }
+
+                    GroupByContinuationToken groupByContinuationToken = new GroupByContinuationToken(
+                        groupingTableContinuationToken: this.groupingTable.GetCosmosElementContinuationToken(),
+                        sourceContinuationToken: sourceContinuationToken);
+
+                    feedToken = FeedTokenEPKRange.Copy(
+                            feedTokenInternal,
+                            GroupByContinuationToken.ToCosmosElement(groupByContinuationToken).ToString());
+                    return true;
+                }
+
+                feedToken = null;
+                return false;
             }
 
             private readonly struct GroupByContinuationToken

@@ -64,8 +64,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             CancellationToken cancellationToken)
         {
             // Try to parse the continuation token.
-            string continuationToken = inputParameters.InitialFeedToken?.GetContinuation()
-                ?? inputParameters.InitialUserContinuationToken;
+            CosmosElement continuationToken = inputParameters.InitialUserContinuationToken;
             PartitionedQueryExecutionInfo queryPlanFromContinuationToken = inputParameters.PartitionedQueryExecutionInfo;
             if (continuationToken != null)
             {
@@ -270,13 +269,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 returnResultsInDeterministicOrder: inputParameters.ReturnResultsInDeterministicOrder,
                 testSettings: inputParameters.TestInjections);
 
-            string continuationToken = inputParameters.InitialFeedToken?.GetContinuation()
-                ?? inputParameters.InitialUserContinuationToken;
             return await PipelinedDocumentQueryExecutionContext.TryCreateAsync(
                 inputParameters.ExecutionEnvironment,
                 cosmosQueryContext,
                 initParams,
-                continuationToken,
+                inputParameters.InitialUserContinuationToken,
                 cancellationToken);
         }
 

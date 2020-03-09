@@ -100,6 +100,36 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                 return TakeContinuationToken.ToCosmosElement(takeContinuationToken);
             }
 
+            public override bool TryGetFeedToken(out FeedToken feedToken)
+            {
+                if (this.IsDone)
+                {
+                    feedToken = null;
+                    return true;
+                }
+
+                if (!this.Source.TryGetFeedToken(out feedToken))
+                {
+                    feedToken = null;
+                    return false;
+                }
+
+                if (feedToken is FeedTokenEPKRange feedTokenInternal)
+                {
+                    TakeContinuationToken takeContinuationToken = new TakeContinuationToken(
+                        takeCount: this.takeCount,
+                        sourceToken: this.Source.GetCosmosElementContinuationToken());
+
+                    feedToken = FeedTokenEPKRange.Copy(
+                            feedTokenInternal,
+                            TakeContinuationToken.ToCosmosElement(takeContinuationToken).ToString());
+                    return true;
+                }
+
+                feedToken = null;
+                return false;
+            }
+
             private readonly struct TakeContinuationToken
             {
                 public static class PropertyNames
