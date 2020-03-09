@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
 
             IReadOnlyList<string> orderByExpressions = initParams.PartitionedQueryExecutionInfo.QueryInfo.OrderByExpressions;
             IReadOnlyList<SortOrder> sortOrders = initParams.PartitionedQueryExecutionInfo.QueryInfo.OrderBy;
-            if (orderByExpressions.Count() != sortOrders.Count())
+            if (orderByExpressions.Count != sortOrders.Count)
             {
                 throw new ArgumentException("order by expressions count does not match sort order");
             }
@@ -140,7 +140,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
             TryCatch<PartitionMapping<OrderByContinuationToken>> tryGetOrderByContinuationTokenMapping = TryGetOrderByContinuationTokenMapping(
                 partitionKeyRanges,
                 requestContinuation,
-                orderByColumns.Count());
+                orderByColumns.Count);
             if (!tryGetOrderByContinuationTokenMapping.Succeeded)
             {
                 return TryCatch.FromException(tryGetOrderByContinuationTokenMapping.Exception);
@@ -154,7 +154,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
                 .OrderByItems
                 .Select(x => x.Item)
                 .ToList();
-            if (orderByItems.Count() != orderByColumns.Count())
+            if (orderByItems.Count != orderByColumns.Count)
             {
                 return TryCatch.FromException(
                     new MalformedContinuationTokenException("Order By Items from continuation token did not match the query text."));
@@ -347,7 +347,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
                     OrderByQueryResult orderByResult = new OrderByQueryResult(tree.Current);
                     // Throw away documents until it matches the item from the continuation token.
                     int cmp = 0;
-                    for (int i = 0; i < sortOrders.Count(); ++i)
+                    for (int i = 0; i < sortOrders.Count; ++i)
                     {
                         cmp = ItemComparer.Instance.Compare(
                             continuationToken.OrderByItems[i].Item,
@@ -355,7 +355,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
 
                         if (cmp != 0)
                         {
-                            cmp = sortOrders[i] != SortOrder.Descending ? cmp : -cmp;
+                            cmp = sortOrders[i] == SortOrder.Ascending ? cmp : -cmp;
                             break;
                         }
                     }

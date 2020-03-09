@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
             /// <returns>The hash code for the object.</returns>
             public int GetHashCode(CosmosElement obj)
             {
-                return obj.GetHashCode();
+                return obj == null ? 0 : obj.GetHashCode();
             }
         }
     }
