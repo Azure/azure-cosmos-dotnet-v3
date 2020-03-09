@@ -155,9 +155,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                     usingLocalLSN: true));
 
             string statistics = clientSideRequestStatistics.ToString();
-            Assert.IsTrue(statistics.Contains("RequestStartTimeUtc:"));
-            Assert.IsTrue(statistics.Contains("TransportException: null, ResourceType: Database, OperationType: Read"));
-            Assert.IsTrue(statistics.Contains("AddressResolution - StartTimeUtc:"));
+            Assert.IsTrue(statistics.Contains("\"UserAgent\":\"cosmos-netstandard-sdk"));
+            Assert.IsTrue(statistics.Contains("UsingLocalLSN: True, TransportException: null"));
+            Assert.IsTrue(statistics.Contains("AddressResolutionStatistics\",\"StartTimeUtc"));
         }
     }
 }
