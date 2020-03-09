@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
     using Newtonsoft.Json.Converters;
 
     [TestClass]
-    public sealed class PartitioningCrossPartitionQueryTests : QueryTestsBase
+    public sealed class PartitioningQueryTests : QueryTestsBase
     {
         [TestMethod]
         public async Task TestQueryWithPartitionKeyAsync()

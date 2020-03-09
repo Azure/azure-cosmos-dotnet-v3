@@ -21,7 +21,7 @@
     using Newtonsoft.Json.Linq;
 
     [TestClass]
-    public sealed class OrderByCrossPartitionQueryTests : QueryTestsBase
+    public sealed class OrderByQueryTests : QueryTestsBase
     {
         [TestMethod]
         public async Task TestQueryCrossPartitionTopOrderByDifferentDimension()
@@ -464,7 +464,7 @@
             Random random = new Random(1234);
             for (int i = 0; i < numberOfDocuments; ++i)
             {
-                MultiOrderByDocument multiOrderByDocument = OrderByCrossPartitionQueryTests.GenerateMultiOrderByDocument(random);
+                MultiOrderByDocument multiOrderByDocument = OrderByQueryTests.GenerateMultiOrderByDocument(random);
                 int numberOfDuplicates = 5;
 
                 for (int j = 0; j < numberOfDuplicates; j++)
@@ -853,7 +853,7 @@
             Random random = new Random(1234);
             for (int i = 0; i < numberOfDocuments; ++i)
             {
-                MixedTypedDocument mixedTypeDocument = OrderByCrossPartitionQueryTests.GenerateMixedTypeDocument(random);
+                MixedTypedDocument mixedTypeDocument = OrderByQueryTests.GenerateMixedTypeDocument(random);
                 for (int j = 0; j < numberOfDuplicates; j++)
                 {
                     if (mixedTypeDocument.MixedTypeField != null)

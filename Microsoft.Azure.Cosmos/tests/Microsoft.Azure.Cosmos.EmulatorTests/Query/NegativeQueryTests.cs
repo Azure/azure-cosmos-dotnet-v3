@@ -7,7 +7,7 @@
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    public sealed class NegativeCrossPartitionQueryTests : QueryTestsBase
+    public sealed class NegativeQueryTests : QueryTestsBase
     {
         [TestMethod]
         public async Task TestBadQueriesOverMultiplePartitionsAsync()

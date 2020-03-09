@@ -86,48 +86,48 @@
                 double count = documentsWherePkIsANumber.Count();
                 AggregateQueryArguments[] aggregateQueryArgumentsList = new AggregateQueryArguments[]
                 {
-                new AggregateQueryArguments()
-                {
-                    AggregateOperator = "AVG",
-                    ExpectedValue = CosmosNumber64.Create(numberSum / count),
-                    Predicate = $"IS_NUMBER(r.{aggregateTestArgs.PartitionKey})",
-                },
-                new AggregateQueryArguments()
-                {
-                    AggregateOperator = "AVG",
-                    ExpectedValue = null,
-                    Predicate = "true",
-                },
-                new AggregateQueryArguments()
-                {
-                    AggregateOperator = "COUNT",
-                    ExpectedValue = CosmosNumber64.Create(documents.Count()),
-                    Predicate = "true",
-                },
-                new AggregateQueryArguments()
-                {
-                    AggregateOperator = "MAX",
-                    ExpectedValue = CosmosString.Create("xyz"),
-                    Predicate = "true",
-                },
-                new AggregateQueryArguments()
-                {
-                    AggregateOperator = "MIN",
-                    ExpectedValue = CosmosBoolean.Create(false),
-                    Predicate = "true",
-                },
-                new AggregateQueryArguments()
-                {
-                    AggregateOperator = "SUM",
-                    ExpectedValue = CosmosNumber64.Create(numberSum),
-                    Predicate = $"IS_NUMBER(r.{aggregateTestArgs.PartitionKey})",
-                },
-                new AggregateQueryArguments()
-                {
-                    AggregateOperator = "SUM",
-                    ExpectedValue = null,
-                    Predicate = $"true",
-                },
+                    new AggregateQueryArguments()
+                    {
+                        AggregateOperator = "AVG",
+                        ExpectedValue = CosmosNumber64.Create(numberSum / count),
+                        Predicate = $"IS_NUMBER(r.{aggregateTestArgs.PartitionKey})",
+                    },
+                    new AggregateQueryArguments()
+                    {
+                        AggregateOperator = "AVG",
+                        ExpectedValue = null,
+                        Predicate = "true",
+                    },
+                    new AggregateQueryArguments()
+                    {
+                        AggregateOperator = "COUNT",
+                        ExpectedValue = CosmosNumber64.Create(documents.Count()),
+                        Predicate = "true",
+                    },
+                    new AggregateQueryArguments()
+                    {
+                        AggregateOperator = "MAX",
+                        ExpectedValue = CosmosString.Create("xyz"),
+                        Predicate = "true",
+                    },
+                    new AggregateQueryArguments()
+                    {
+                        AggregateOperator = "MIN",
+                        ExpectedValue = CosmosBoolean.Create(false),
+                        Predicate = "true",
+                    },
+                    new AggregateQueryArguments()
+                    {
+                        AggregateOperator = "SUM",
+                        ExpectedValue = CosmosNumber64.Create(numberSum),
+                        Predicate = $"IS_NUMBER(r.{aggregateTestArgs.PartitionKey})",
+                    },
+                    new AggregateQueryArguments()
+                    {
+                        AggregateOperator = "SUM",
+                        ExpectedValue = null,
+                        Predicate = $"true",
+                    },
                 };
 
                 foreach (int maxDoP in new[] { 0, 10 })
