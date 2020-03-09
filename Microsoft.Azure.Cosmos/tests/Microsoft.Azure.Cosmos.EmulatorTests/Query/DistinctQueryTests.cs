@@ -6,14 +6,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
     [TestClass]
-    public sealed class DistinctCrossPartitionQueryTests : CrossPartitionQueryTestsBase
+    public sealed class DistinctQueryTests : QueryTestsBase
     {
         [TestMethod]
         public async Task TestQueryDistinct()
@@ -169,7 +168,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
             {
                 string queryWithoutDistinct = string.Format(query, "");
                 MockDistinctMap documentsSeen = new MockDistinctMap();
-                List<JToken> documentsFromWithoutDistinct = await CrossPartitionQueryTestsBase.RunQueryCombinationsAsync<JToken>(
+                List<JToken> documentsFromWithoutDistinct = await QueryTestsBase.RunQueryCombinationsAsync<JToken>(
                     container,
                     queryWithoutDistinct,
                     new QueryRequestOptions()
@@ -185,7 +184,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
                 foreach (int pageSize in new int[] { 1, 10, 100 })
                 {
                     string queryWithDistinct = string.Format(query, "DISTINCT");
-                    List<JToken> documentsFromWithDistinct = await CrossPartitionQueryTestsBase.RunQueryCombinationsAsync<JToken>(
+                    List<JToken> documentsFromWithDistinct = await QueryTestsBase.RunQueryCombinationsAsync<JToken>(
                         container,
                         queryWithDistinct,
                         new QueryRequestOptions()
@@ -217,7 +216,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
             {
                 string queryWithoutDistinct = string.Format(query, "");
                 MockDistinctMap documentsSeen = new MockDistinctMap();
-                List<JToken> documentsFromWithoutDistinct = await CrossPartitionQueryTestsBase.RunQueryCombinationsAsync<JToken>(
+                List<JToken> documentsFromWithoutDistinct = await QueryTestsBase.RunQueryCombinationsAsync<JToken>(
                     container,
                     queryWithoutDistinct,
                     new QueryRequestOptions()
@@ -233,7 +232,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
                 foreach (int pageSize in new int[] { 1, 10, 100 })
                 {
                     string queryWithDistinct = string.Format(query, "DISTINCT");
-                    List<JToken> documentsFromWithDistinct = await CrossPartitionQueryTestsBase.RunQueryCombinationsAsync<JToken>(
+                    List<JToken> documentsFromWithDistinct = await QueryTestsBase.RunQueryCombinationsAsync<JToken>(
                         container,
                         queryWithDistinct,
                         new QueryRequestOptions()

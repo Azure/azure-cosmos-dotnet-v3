@@ -5,9 +5,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Net;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query;
@@ -16,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Newtonsoft.Json.Linq;
 
     [TestClass]
-    public sealed class SanityCrossPartitionQueryTests : CrossPartitionQueryTestsBase
+    public sealed class SanityQueryTests : QueryTestsBase
     {
         [TestMethod]
         public async Task TestBasicCrossPartitionQueryAsync()
@@ -37,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                 ReturnResultsInDeterministicOrder = true,
                             };
 
-                            List<JToken> queryResults = await CrossPartitionQueryTestsBase.RunQueryAsync<JToken>(
+                            List<JToken> queryResults = await QueryTestsBase.RunQueryAsync<JToken>(
                                 container,
                                 query,
                                 feedOptions);
@@ -112,9 +110,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                 }
                             }
 
-                            await ValidateNonDeterministicQuery(CrossPartitionQueryTestsBase.QueryWithoutContinuationTokensAsync<JToken>, useOrderBy);
-                            await ValidateNonDeterministicQuery(CrossPartitionQueryTestsBase.QueryWithContinuationTokensAsync<JToken>, useOrderBy);
-                            await ValidateNonDeterministicQuery(CrossPartitionQueryTestsBase.QueryWithCosmosElementContinuationTokenAsync<JToken>, useOrderBy);
+                            await ValidateNonDeterministicQuery(QueryTestsBase.QueryWithoutContinuationTokensAsync<JToken>, useOrderBy);
+                            await ValidateNonDeterministicQuery(QueryTestsBase.QueryWithContinuationTokensAsync<JToken>, useOrderBy);
+                            await ValidateNonDeterministicQuery(QueryTestsBase.QueryWithCosmosElementContinuationTokenAsync<JToken>, useOrderBy);
                         }
                     }
                 }
@@ -149,7 +147,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             TestSettings = new TestInjections(simulate429s: true, simulateEmptyPages: false)
                         };
 
-                        List<JToken> queryResults = await CrossPartitionQueryTestsBase.RunQueryAsync<JToken>(
+                        List<JToken> queryResults = await QueryTestsBase.RunQueryAsync<JToken>(
                             container,
                             query,
                             feedOptions);
@@ -191,7 +189,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             TestSettings = new TestInjections(simulate429s: false, simulateEmptyPages: true)
                         };
 
-                        List<JToken> queryResults = await CrossPartitionQueryTestsBase.RunQueryAsync<JToken>(
+                        List<JToken> queryResults = await QueryTestsBase.RunQueryAsync<JToken>(
                             container,
                             query,
                             feedOptions);
@@ -249,7 +247,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                 MaxItemCount = maxItemCount,
                             };
 
-                            List<JToken> queryResults = await CrossPartitionQueryTestsBase.RunQueryAsync<JToken>(
+                            List<JToken> queryResults = await QueryTestsBase.RunQueryAsync<JToken>(
                                 containerWithForcedPlan,
                                 "SELECT * FROM c ORDER BY c._ts",
                                 feedOptions);
@@ -299,7 +297,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     try
                     {
-                        await CrossPartitionQueryTestsBase.RunQueryAsync<JToken>(
+                        await QueryTestsBase.RunQueryAsync<JToken>(
                             container,
                             unsupportedQuery,
                             queryRequestOptions: feedOptions);
@@ -326,7 +324,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await this.CreateIngestQueryDelete(
                 ConnectionModes.Direct,
                 CollectionTypes.SinglePartition,
-                CrossPartitionQueryTestsBase.NoDocuments,
+                QueryTestsBase.NoDocuments,
                 this.TestTryExecuteQueryHelper);
         }
 

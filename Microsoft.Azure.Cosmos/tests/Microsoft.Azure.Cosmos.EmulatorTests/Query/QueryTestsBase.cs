@@ -15,7 +15,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
@@ -28,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
     /// </summary>
     [TestClass]
     [TestCategory("Query")]
-    public abstract class CrossPartitionQueryTestsBase
+    public abstract class QueryTestsBase
     {
         protected static readonly string[] NoDocuments = new string[] { };
         protected CosmosClient GatewayClient = TestCommon.CreateCosmosClient(true);
@@ -57,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
         public static void ClassSetup(TestContext testContext = null)
         {
             CosmosClient client = TestCommon.CreateCosmosClient(false);
-            CrossPartitionQueryTestsBase.CleanUp(client).Wait();
+            QueryTestsBase.CleanUp(client).Wait();
         }
 
         [TestInitialize]

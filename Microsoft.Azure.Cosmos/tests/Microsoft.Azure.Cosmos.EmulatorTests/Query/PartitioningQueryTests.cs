@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
     using Newtonsoft.Json.Converters;
 
     [TestClass]
-    public sealed class PartitioningCrossPartitionQueryTests : CrossPartitionQueryTestsBase
+    public sealed class PartitioningCrossPartitionQueryTests : QueryTestsBase
     {
         [TestMethod]
         public async Task TestQueryWithPartitionKeyAsync()
@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
 
             async Task ImplementationAsync(Container container, IEnumerable<Document> documents)
             {
-                Assert.AreEqual(0, (await CrossPartitionQueryTestsBase.RunQueryAsync<Document>(
+                Assert.AreEqual(0, (await QueryTestsBase.RunQueryAsync<Document>(
                 container,
                 @"SELECT * FROM Root r WHERE false",
                 new QueryRequestOptions()
@@ -284,7 +284,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
                 await this.CreateIngestQueryDelete<QueryWithSpecialPartitionKeysArgs>(
                     ConnectionModes.Direct,
                     CollectionTypes.SinglePartition,
-                    CrossPartitionQueryTestsBase.NoDocuments,
+                    QueryTestsBase.NoDocuments,
                     ImplementationAsync,
                     testArg,
                     "/" + testArg.Name);
@@ -292,7 +292,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
                 await this.CreateIngestQueryDelete<QueryWithSpecialPartitionKeysArgs>(
                     ConnectionModes.Direct,
                     CollectionTypes.MultiPartition,
-                    CrossPartitionQueryTestsBase.NoDocuments,
+                    QueryTestsBase.NoDocuments,
                     ImplementationAsync,
                     testArg,
                     "/" + testArg.Name);
@@ -300,7 +300,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
                 await this.CreateIngestQueryDelete<QueryWithSpecialPartitionKeysArgs>(
                     ConnectionModes.Gateway,
                     CollectionTypes.SinglePartition,
-                    CrossPartitionQueryTestsBase.NoDocuments,
+                    QueryTestsBase.NoDocuments,
                     ImplementationAsync,
                     testArg,
                     "/" + testArg.Name);
@@ -308,7 +308,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
                 await this.CreateIngestQueryDelete<QueryWithSpecialPartitionKeysArgs>(
                     ConnectionModes.Gateway,
                     CollectionTypes.MultiPartition,
-                    CrossPartitionQueryTestsBase.NoDocuments,
+                    QueryTestsBase.NoDocuments,
                     ImplementationAsync,
                     testArg,
                     "/" + testArg.Name);

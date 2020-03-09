@@ -4,14 +4,13 @@
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
     [TestClass]
-    public sealed class GroupByCrossPartitionQueryTests : CrossPartitionQueryTestsBase
+    public sealed class GroupByQueryTests : QueryTestsBase
     {
         [TestMethod]
         public async Task TestGroupByQuery()
@@ -255,7 +254,7 @@
             {
                 foreach (int maxItemCount in new int[] { 1, 5, 10 })
                 {
-                    List<JToken> actualWithoutContinuationTokens = await CrossPartitionQueryTestsBase.QueryWithoutContinuationTokensAsync<JToken>(
+                    List<JToken> actualWithoutContinuationTokens = await QueryTestsBase.QueryWithoutContinuationTokensAsync<JToken>(
                         container,
                         query,
                         new QueryRequestOptions()
@@ -266,7 +265,7 @@
                         });
                     HashSet<JToken> actualWithoutContinuationTokensSet = new HashSet<JToken>(actualWithoutContinuationTokens, JsonTokenEqualityComparer.Value);
 
-                    List<JToken> actualWithTryGetContinuationTokens = await CrossPartitionQueryTestsBase.QueryWithCosmosElementContinuationTokenAsync<JToken>(
+                    List<JToken> actualWithTryGetContinuationTokens = await QueryTestsBase.QueryWithCosmosElementContinuationTokenAsync<JToken>(
                         container,
                         query,
                         new QueryRequestOptions()
@@ -298,7 +297,7 @@
             {
                 try
                 {
-                    List<JToken> actual = await CrossPartitionQueryTestsBase.QueryWithContinuationTokensAsync<JToken>(
+                    List<JToken> actual = await QueryTestsBase.QueryWithContinuationTokensAsync<JToken>(
                         container,
                         "SELECT c.age FROM c GROUP BY c.age",
                         new QueryRequestOptions()

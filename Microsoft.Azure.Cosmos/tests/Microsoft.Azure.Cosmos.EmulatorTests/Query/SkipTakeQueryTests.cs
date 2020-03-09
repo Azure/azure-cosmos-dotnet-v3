@@ -10,7 +10,7 @@
     using Newtonsoft.Json.Linq;
 
     [TestClass]
-    public sealed class SkipTakeCrossPartitionQueryTests : CrossPartitionQueryTestsBase
+    public sealed class SkipTakeQueryTests : QueryTestsBase
     {
         [TestMethod]
         public async Task TestQueryCrossPartitionTop()
@@ -100,7 +100,7 @@
                         expectedResults = expectedResults.Skip(offsetCount);
                         expectedResults = expectedResults.Take(limitCount);
 
-                        List<JToken> queryResults = await CrossPartitionQueryTestsBase.RunQueryAsync<JToken>(
+                        List<JToken> queryResults = await QueryTestsBase.RunQueryAsync<JToken>(
                             container,
                             query,
                             queryRequestOptions: queryRequestOptions);

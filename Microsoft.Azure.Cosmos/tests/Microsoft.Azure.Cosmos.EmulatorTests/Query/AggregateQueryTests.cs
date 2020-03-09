@@ -17,7 +17,7 @@
     using Newtonsoft.Json.Linq;
 
     [TestClass]
-    public sealed class AggregateCrossPartitionQueryTests : CrossPartitionQueryTestsBase
+    public sealed class AggregateQueryTests : QueryTestsBase
     {
         [TestMethod]
         public async Task TestQueryCrossPartitionAggregateFunctionsAsync()
@@ -154,7 +154,7 @@
                                 query,
                                 JsonConvert.SerializeObject(argument));
 
-                            List<CosmosElement> items = await CrossPartitionQueryTestsBase.RunQueryAsync<CosmosElement>(
+                            List<CosmosElement> items = await QueryTestsBase.RunQueryAsync<CosmosElement>(
                                 container,
                                 query,
                                 new QueryRequestOptions()
@@ -256,7 +256,7 @@
                 {
                     try
                     {
-                        List<dynamic> items = await CrossPartitionQueryTestsBase.RunQueryAsync<dynamic>(
+                        List<dynamic> items = await QueryTestsBase.RunQueryAsync<dynamic>(
                             container,
                             query,
                             new QueryRequestOptions()
@@ -390,7 +390,7 @@
             IEnumerable<Document> documents,
             AggregateQueryMixedTypes args)
         {
-            await CrossPartitionQueryTestsBase.NoOp();
+            await QueryTestsBase.NoOp();
             string partitionKey = args.PartitionKey;
             string field = args.Field;
             string[] typeOnlyPartitionKeys = new string[]
@@ -470,7 +470,7 @@
                             StringSplitOptions.None)
                             .Select(x => x.Trim()));
 
-                    List<dynamic> items = await CrossPartitionQueryTestsBase.RunQueryAsync<dynamic>(
+                    List<dynamic> items = await QueryTestsBase.RunQueryAsync<dynamic>(
                         container,
                         query,
                         new QueryRequestOptions()

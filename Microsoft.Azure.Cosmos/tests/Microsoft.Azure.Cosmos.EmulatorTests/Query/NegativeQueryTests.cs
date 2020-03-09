@@ -7,7 +7,7 @@
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    public sealed class NegativeCrossPartitionQueryTests : CrossPartitionQueryTestsBase
+    public sealed class NegativeCrossPartitionQueryTests : QueryTestsBase
     {
         [TestMethod]
         public async Task TestBadQueriesOverMultiplePartitionsAsync()
@@ -34,7 +34,7 @@
             await this.CreateIngestQueryDelete(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
                 CollectionTypes.MultiPartition,
-                CrossPartitionQueryTestsBase.NoDocuments,
+                QueryTestsBase.NoDocuments,
                 ImplementationAsync);
         }
 
@@ -47,7 +47,7 @@
         {
             async Task ImplementationAsync(Container container, IEnumerable<Document> documents)
             {
-                await CrossPartitionQueryTestsBase.NoOp();
+                await QueryTestsBase.NoOp();
                 try
                 {
                     /// note that there is no space before the from clause thus this query should fail 
@@ -73,7 +73,7 @@
             await this.CreateIngestQueryDelete(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
                 CollectionTypes.MultiPartition,
-                CrossPartitionQueryTestsBase.NoDocuments,
+                QueryTestsBase.NoDocuments,
                 ImplementationAsync);
         }
     }

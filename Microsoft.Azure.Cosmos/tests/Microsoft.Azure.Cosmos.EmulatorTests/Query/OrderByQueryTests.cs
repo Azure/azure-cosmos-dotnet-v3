@@ -21,7 +21,7 @@
     using Newtonsoft.Json.Linq;
 
     [TestClass]
-    public sealed class OrderByCrossPartitionQueryTests : CrossPartitionQueryTestsBase
+    public sealed class OrderByCrossPartitionQueryTests : QueryTestsBase
     {
         [TestMethod]
         public async Task TestQueryCrossPartitionTopOrderByDifferentDimension()
@@ -49,10 +49,10 @@
 
         private async Task TestQueryCrossPartitionTopOrderByDifferentDimensionHelper(Container container, IEnumerable<Document> documents)
         {
-            await CrossPartitionQueryTestsBase.NoOp();
+            await QueryTestsBase.NoOp();
 
             string[] expected = new[] { "documentId2", "documentId5", "documentId8" };
-            List<Document> query = await CrossPartitionQueryTestsBase.RunQueryAsync<Document>(
+            List<Document> query = await QueryTestsBase.RunQueryAsync<Document>(
                 container,
                 "SELECT r.id FROM r ORDER BY r.prop DESC",
                 new QueryRequestOptions()
@@ -112,7 +112,7 @@
             List<string> computedResults = new List<string>();
 
             string emptyQueryText = @"SELECT TOP 5 * FROM Root r WHERE r.partitionKey = 9991123 OR r.partitionKey = 9991124 OR r.partitionKey = 99991125";
-            List<Document> queryEmptyResult = await CrossPartitionQueryTestsBase.RunQueryAsync<Document>(
+            List<Document> queryEmptyResult = await QueryTestsBase.RunQueryAsync<Document>(
                 container,
                 emptyQueryText);
 
@@ -809,7 +809,7 @@
                                 MaxConcurrency = 10,
                             };
 
-                            List<List<object>> actual = await CrossPartitionQueryTestsBase.RunQueryAsync<List<object>>(
+                            List<List<object>> actual = await QueryTestsBase.RunQueryAsync<List<object>>(
                                 container,
                                 query,
                                 queryRequestOptions: feedOptions);
@@ -1054,7 +1054,7 @@
                     };
 
                     List<CosmosObject> actualFromQueryWithoutContinutionTokens;
-                    actualFromQueryWithoutContinutionTokens = await CrossPartitionQueryTestsBase.QueryWithoutContinuationTokensAsync<CosmosObject>(
+                    actualFromQueryWithoutContinutionTokens = await QueryTestsBase.QueryWithoutContinuationTokensAsync<CosmosObject>(
                         container,
                         query,
                         queryRequestOptions: feedOptions);
