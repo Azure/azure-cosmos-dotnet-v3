@@ -23,9 +23,8 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="masterKeyUri">Key Vault URL of the master key to be used for wrapping and unwrapping keys.</param>
         public AzureKeyVaultKeyWrapMetadata(Uri masterKeyUri)
-            : base(masterKeyUri.AbsoluteUri)
+            : base(AzureKeyVaultKeyWrapMetadata.TypeConstant, masterKeyUri.AbsoluteUri)
         {
-            this.Type = TypeConstant;
         }
     }
 }

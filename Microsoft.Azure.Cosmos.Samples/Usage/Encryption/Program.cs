@@ -1,6 +1,7 @@
 ﻿namespace Cosmos.Samples.Encryption
 {
     using System;
+    using System.Collections.Generic;
     using System.Security.Cryptography.X509Certificates;
     using System.Threading.Tasks;
     using Cosmos.Samples.Shared;
@@ -100,10 +101,10 @@
             }
 
             CosmosClient client = new CosmosClientBuilder(endpoint, authKey)
-                .WithCustomSerializer(new EncryptionSerializer(
+                .WithEncryptionKeyWrapProvider(
                     new AzureKeyVaultKeyWrapProvider(
                         clientId, 
-                        Program.GetCertificate(clientCertThumbprint))))
+                        Program.GetCertificate(clientCertThumbprint)))
                 .Build();
             return client;
         }
@@ -156,7 +157,7 @@
             /// Generates an encryption key, wraps it using the key wrap metadata provided
             /// with the key wrapping provider configured on the client
             /// and saves the wrapped encryption key as an asynchronous operation in the Azure Cosmos service.
-            await database.CreateDataEncryptionKeyAsync(myEncryptionKeyName, CosmosEncryptionAlgorithm.AEAD_AES_256_CBC_HMAC_SHA_256_RANDOMIZED, wrapMetadata);
+            await database.CreateDataEncryptionKeyAsync(myEncryptionKeyName, CosmosEncryptionAlgorithm.AE_AES_256_CBC_HMAC_SHA_256_RANDOMIZED, wrapMetadata);
         }
 
         private static async Task RunDemoAsync(CosmosClient client)
@@ -177,7 +178,8 @@
                 {
                     EncryptionOptions = new EncryptionOptions
                     {
-                        DataEncryptionKey = database.GetDataEncryptionKey(Program.myEncryptionKeyName)
+                        DataEncryptionKey = database.GetDataEncryptionKey(Program.myEncryptionKeyName),
+                        PathsToEncrypt = new List<string> { "/TotalDue" }
                     }
                 });
 

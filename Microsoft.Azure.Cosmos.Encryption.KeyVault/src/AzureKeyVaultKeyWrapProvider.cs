@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.KeyVault
             {
                 if(ex.KeyVaultErrorCode == KeyVaultErrorCode.KeyVaultKeyNotFound)
                 {
-                    throw new MasterKeyNotFoundException(ex.Message, ex);
+                    throw new KeyNotFoundException(ex.Message, ex);
                 }
 
                 throw;
@@ -92,18 +92,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.KeyVault
                 }
 
                 KeyVaultWrapResult result = await this.keyVaultAccessClient.WrapKeyAsync(keyString, keyVaultKeyUri, cancellationToken);
-                EncryptionKeyWrapMetadata responseMetadata = new EncryptionKeyWrapMetadata(metadata)
-                {
-                    Algorithm = KeyVaultConstants.RsaOaep256
-                };
-
+                EncryptionKeyWrapMetadata responseMetadata = new EncryptionKeyWrapMetadata(metadata.Type, metadata.Value, KeyVaultConstants.RsaOaep256);
                 return new EncryptionKeyWrapResult(Convert.FromBase64String(result.WrappedKeyBytesInBase64), responseMetadata);
             }
             catch (KeyVaultAccessException ex)
             {
                 if (ex.KeyVaultErrorCode == KeyVaultErrorCode.KeyVaultKeyNotFound)
                 {
-                    throw new MasterKeyNotFoundException(ex.Message, ex);
+                    throw new KeyNotFoundException(ex.Message, ex);
                 }
 
                 throw;

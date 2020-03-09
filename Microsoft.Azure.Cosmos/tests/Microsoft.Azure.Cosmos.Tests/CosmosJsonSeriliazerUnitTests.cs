@@ -178,7 +178,6 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             ResponseMessage itemResponse = this.CreateResponse();
 
             Mock<CosmosSerializer> mockUserJsonSerializer = new Mock<CosmosSerializer>();
-            mockUserJsonSerializer.CallBase = true;
             CosmosSerializerCore serializerCore = new CosmosSerializerCore(mockUserJsonSerializer.Object);
             CosmosResponseFactory cosmosResponseFactory = new CosmosResponseFactory(
                serializerCore);
@@ -188,7 +187,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             mockUserJsonSerializer.Setup(x => x.FromStream<ToDoActivity>(storedProcedureExecuteResponse.Content)).Callback<Stream>(input => input.Dispose()).Returns(new ToDoActivity());
 
             // Verify all the user types use the user specified version
-            await cosmosResponseFactory.CreateItemResponseAsync<ToDoActivity>(Task.FromResult(itemResponse), new Mock<ContainerCore>().Object, null, CancellationToken.None);
+            await cosmosResponseFactory.CreateItemResponseAsync<ToDoActivity>(Task.FromResult(itemResponse));
             await cosmosResponseFactory.CreateStoredProcedureExecuteResponseAsync<ToDoActivity>(Task.FromResult(storedProcedureExecuteResponse));
 
             // Throw if the setups were not called

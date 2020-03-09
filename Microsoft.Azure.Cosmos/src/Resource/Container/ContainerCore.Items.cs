@@ -73,7 +73,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response, this, requestOptions, cancellationToken);
+            return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response);
         }
 
         public override Task<ResponseMessage> ReadItemStreamAsync(
@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response, this, requestOptions, cancellationToken);
+            return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response);
         }
 
         public override Task<ResponseMessage> UpsertItemStreamAsync(
@@ -142,7 +142,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response, this, requestOptions, cancellationToken);
+            return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response);
         }
 
         public override Task<ResponseMessage> ReplaceItemStreamAsync(
@@ -187,7 +187,7 @@ namespace Microsoft.Azure.Cosmos
                requestOptions: requestOptions,
                cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response, this, requestOptions, cancellationToken);
+            return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response);
         }
 
         public override Task<ResponseMessage> DeleteItemStreamAsync(
@@ -218,7 +218,7 @@ namespace Microsoft.Azure.Cosmos
                requestOptions: requestOptions,
                cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response, this, requestOptions, cancellationToken);
+            return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response);
         }
 
         public override FeedIterator GetItemQueryStreamIterator(
@@ -530,7 +530,7 @@ namespace Microsoft.Azure.Cosmos
                 Stream itemStream;
                 using (diagnosticsContext.CreateScope("ItemSerialize"))
                 {
-                    itemStream = await this.ClientContext.SerializerCore.ToStreamAsync<T>(item, this, requestOptions, cancellationToken);
+                    itemStream = this.ClientContext.SerializerCore.ToStream<T>(item);
                 }
 
                 // User specified PK value, no need to extract it

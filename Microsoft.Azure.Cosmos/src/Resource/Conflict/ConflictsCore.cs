@@ -172,11 +172,7 @@ namespace Microsoft.Azure.Cosmos
                 diagnosticsScope: null,
                 cancellationToken: cancellationToken);
 
-            return await this.clientContext.ResponseFactory.CreateItemResponseAsync<T>(
-                response,
-                this.container,
-                requestOptions: null,
-                cancellationToken: cancellationToken);
+            return await this.clientContext.ResponseFactory.CreateItemResponseAsync<T>(response);
         }
 
         public override T ReadConflictContent<T>(ConflictProperties cosmosConflict)
