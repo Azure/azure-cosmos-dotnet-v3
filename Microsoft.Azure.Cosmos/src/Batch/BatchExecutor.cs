@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos
                         requestMessage.Headers.Add(HttpConstants.HttpHeaders.IsBatchAtomic, bool.TrueString);
                         requestMessage.Headers.Add(HttpConstants.HttpHeaders.IsBatchOrdered, bool.TrueString);
                     },
-                    diagnosticsScope: this.diagnosticsContext,
+                    diagnosticsContext: this.diagnosticsContext,
                     cancellationToken);
 
                 using (this.diagnosticsContext.CreateScope("TransactionalBatchResponse"))

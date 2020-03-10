@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos
             this.Error = error;
 
             // Always have a diagnostic context. A new diagnostic will have useful info like user agent
-            this.DiagnosticsContext = diagnosticsContext ?? CosmosDiagnosticsContext.Create();
+            this.DiagnosticsContext = diagnosticsContext ?? new CosmosDiagnosticsContextCore(userClientRequestId: null);
         }
 
         /// <summary>
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos
             this.RequestCharge = requestCharge;
             this.ActivityId = activityId;
             this.Headers = new Headers();
-            this.DiagnosticsContext = CosmosDiagnosticsContext.Create();
+            this.DiagnosticsContext = new CosmosDiagnosticsContextCore(userClientRequestId: null);
         }
 
         /// <summary>
@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the diagnostics for the request
         /// </summary>
-        public virtual CosmosDiagnostics Diagnostics => this.DiagnosticsContext;
+        public virtual CosmosDiagnostics Diagnostics => this.DiagnosticsContext.Diagnostics;
 
         /// <inheritdoc/>
         public override string StackTrace

@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Diagnostics;
     using System.Linq;
     using Microsoft.Azure.Cosmos.Diagnostics;
 
@@ -18,7 +19,6 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal sealed class CosmosDiagnosticsContextCore : CosmosDiagnosticsContext
     {
-        private static readonly IReadOnlyCollection<Uri> DefaultContactedRegions = new ReadOnlyCollection<Uri>(null);
         /// <summary>
         /// Detailed view of all the operations.
         /// </summary>
@@ -44,6 +44,8 @@ namespace Microsoft.Azure.Cosmos
             this.StartUtc = DateTime.UtcNow;
             this.UserClientRequestId = userClientRequestId;
             this.ContextList = new List<CosmosDiagnosticsInternal>();
+            this.Diagnostics = new CosmosDiagnosticsCore(this);
+            this.OverallClientRequestTime = Stopwatch.StartNew();
         }
 
         public override DateTime StartUtc { get; }
@@ -52,16 +54,13 @@ namespace Microsoft.Azure.Cosmos
 
         public override int FailedRequestCount { get; protected set; }
 
-        public override TimeSpan? TotalElapsedTime { get; protected set; }
-
         public override string UserAgent { get; protected set; } = CosmosDiagnosticsContextCore.DefaultUserAgentString;
 
         public override string UserClientRequestId { get; }
 
-        public override TimeSpan GetElapsedClientLatency()
-        {
-            throw new NotImplementedException();
-        }
+        internal override CosmosDiagnostics Diagnostics { get; }
+
+        public override Stopwatch OverallClientRequestTime { get; }
 
         internal override CosmosDiagnosticScope CreateOverallScope(string name)
         {
@@ -73,8 +72,8 @@ namespace Microsoft.Azure.Cosmos
             }
             else
             {
-                scope = new CosmosDiagno sticScope(name, this.SetElapsedTime);
                 this.isOverallScopeSet = true;
+                scope = new CosmosDiagnosticScope(name, this.OverallClientRequestTime);
             }
 
             this.ContextList.Add(scope);
@@ -164,11 +163,6 @@ namespace Microsoft.Azure.Cosmos
             return this.ContextList.GetEnumerator();
         }
 
-        private void SetElapsedTime(TimeSpan totalElapsedTime)
-        {
-            this.TotalElapsedTime = totalElapsedTime;
-        }
-
         private void AddSummaryInfo(CosmosDiagnosticsContext newContext)
         {
             if (Object.ReferenceEquals(this, newContext))
@@ -179,12 +173,6 @@ namespace Microsoft.Azure.Cosmos
             if (this.IsDefaultUserAgent && newContext.UserAgent != null)
             {
                 this.SetSdkUserAgent(newContext.UserAgent);
-            }
-
-            // Use the larger of the total elapsed times
-            if (this.TotalElapsedTime < newContext.TotalElapsedTime)
-            {
-                this.TotalElapsedTime = newContext.TotalElapsedTime;
             }
 
             this.TotalRequestCount += newContext.TotalRequestCount;

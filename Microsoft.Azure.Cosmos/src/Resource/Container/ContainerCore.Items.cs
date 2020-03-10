@@ -635,7 +635,7 @@ namespace Microsoft.Azure.Cosmos
                     itemId: itemId,
                     streamPayload: streamPayload,
                     requestEnricher: null,
-                    diagnosticsScope: diagnosticsContext,
+                    diagnosticsContext: diagnosticsContext,
                     cancellationToken: cancellationToken);
 
                 if (responseMessage.Content != null && this.ClientContext.ClientOptions.EncryptionKeyWrapProvider != null)

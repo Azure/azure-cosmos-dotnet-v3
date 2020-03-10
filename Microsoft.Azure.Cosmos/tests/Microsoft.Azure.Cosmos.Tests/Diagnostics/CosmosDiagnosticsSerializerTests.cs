@@ -18,11 +18,8 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
         [TestMethod]
         public void TestPointOperationStatistics()
         {
-            IList<CosmosDiagnosticsSerializerBaselineInput> inputs = new List<CosmosDiagnosticsSerializerBaselineInput>()
-            {
-                new CosmosDiagnosticsSerializerBaselineInput(
-                    description: nameof(PointOperationStatistics),
-                    cosmosDiagnostics: new PointOperationStatistics(
+            CosmosDiagnosticsContext context = new CosmosDiagnosticsContextCore(null);
+            context.AddDiagnosticsInternal(new PointOperationStatistics(
                     activityId: Guid.Empty.ToString(),
                     statusCode: System.Net.HttpStatusCode.OK,
                     subStatusCode: Documents.SubStatusCodes.WriteForbidden,
@@ -32,7 +29,13 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
                     requestUri: new Uri("http://localhost.com"),
                     requestSessionToken: nameof(PointOperationStatistics.RequestSessionToken),
                     responseSessionToken: nameof(PointOperationStatistics.ResponseSessionToken),
-                    clientSideRequestStatistics: null))
+                    clientSideRequestStatistics: null));
+
+            IList<CosmosDiagnosticsSerializerBaselineInput> inputs = new List<CosmosDiagnosticsSerializerBaselineInput>()
+            {
+                new CosmosDiagnosticsSerializerBaselineInput(
+                    description: nameof(PointOperationStatistics),
+                    cosmosDiagnostics: context.Diagnostics)
             };
 
             this.ExecuteTestSuite(inputs);

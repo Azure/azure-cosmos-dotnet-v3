@@ -1711,10 +1711,25 @@
     "CosmosDiagnostics": {
       "Subclasses": {},
       "Members": {
+        "System.String get_UserClientRequestId()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.String get_UserClientRequestId()"
+        },
         "System.String ToString()": {
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "System.String ToString()"
+        },
+        "System.String UserClientRequestId": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.TimeSpan GetElapsedClientLatency()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.TimeSpan GetElapsedClientLatency()"
         }
       },
       "NestedTypes": {}
@@ -5037,12 +5052,22 @@
           ],
           "MethodInfo": "System.String get_IfNoneMatchEtag()"
         },
+        "System.String get_UserClientRequestId()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.String get_UserClientRequestId()"
+        },
         "System.String IfMatchEtag": {
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": null
         },
         "System.String IfNoneMatchEtag": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String UserClientRequestId": {
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": null
@@ -5065,6 +5090,11 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_IfNoneMatchEtag(System.String)"
+        },
+        "Void set_UserClientRequestId(System.String)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void set_UserClientRequestId(System.String)"
         }
       },
       "NestedTypes": {}

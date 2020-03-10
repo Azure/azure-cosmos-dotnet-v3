@@ -13,8 +13,8 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     public class RequestOptions
     {
-        private string userClientRequestId;
-        private CosmosDiagnosticsContext diagnosticContext;
+        private string userClientRequestId = null;
+        private CosmosDiagnosticsContext diagnosticContext = null;
 
         internal Dictionary<string, object> Properties { get; set; }
 

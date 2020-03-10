@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract string UserClientRequestId { get; }
 
         /// <summary>
-        /// This represent the current elapsed latency for the request. 
+        /// This represent the current elapsed latency of the request. 
         /// </summary>
         /// <returns>The elapsed time since the start of the request.</returns>
         public abstract TimeSpan GetElapsedClientLatency();

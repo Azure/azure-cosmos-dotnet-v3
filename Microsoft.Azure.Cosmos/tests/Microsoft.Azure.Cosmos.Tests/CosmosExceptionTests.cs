@@ -203,7 +203,7 @@ namespace Microsoft.Azure.Cosmos
                 AdditionalErrorInfo = "Additional error info message"
             };
 
-            CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContextCore();
+            CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContextCore(null);
 
             CosmosException cosmosException = CosmosExceptionFactory.CreateBadRequestException(
                 null,

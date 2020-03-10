@@ -254,7 +254,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     operationIndex: i,
                     partitionKey: new Cosmos.PartitionKey(i.ToString()),
                     id: i.ToString(),
-                    diagnosticsContext: CosmosDiagnosticsContext.Create());
+                    diagnosticsContext: new CosmosDiagnosticsContextCore(userClientRequestId: null));
 
                 ItemBatchOperationContext context = new ItemBatchOperationContext(string.Empty);
                 operation.AttachContext(context);

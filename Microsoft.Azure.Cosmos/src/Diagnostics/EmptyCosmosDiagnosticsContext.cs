@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using Microsoft.Azure.Cosmos.Diagnostics;
 
     /// <summary>
@@ -17,19 +18,28 @@ namespace Microsoft.Azure.Cosmos
 
         public static readonly CosmosDiagnosticsContext Singleton = new EmptyCosmosDiagnosticsContext();
 
+        private static readonly Stopwatch Stopwatch = new Stopwatch();
+
+        private static readonly DateTime DefaultStartUtc = new DateTime(0);
+
         private EmptyCosmosDiagnosticsContext()
         {
+            this.Diagnostics = new CosmosDiagnosticsCore(this);
         }
 
-        public override DateTime StartUtc { get; } = new DateTime(0);
+        public override DateTime StartUtc { get; } = EmptyCosmosDiagnosticsContext.DefaultStartUtc;
 
         public override int TotalRequestCount { get; protected set; }
 
         public override int FailedRequestCount { get; protected set; }
 
-        public override TimeSpan? TotalElapsedTime { get; protected set; }
-
         public override string UserAgent { get; protected set; } = "Empty Context";
+
+        public override string UserClientRequestId => null;
+
+        internal override CosmosDiagnostics Diagnostics { get; }
+
+        public override Stopwatch OverallClientRequestTime => EmptyCosmosDiagnosticsContext.Stopwatch;
 
         internal override CosmosDiagnosticScope CreateOverallScope(string name)
         {

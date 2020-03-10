@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using Microsoft.Azure.Cosmos.Diagnostics;
 
     /// <summary>
@@ -19,9 +20,13 @@ namespace Microsoft.Azure.Cosmos
 
         public abstract int FailedRequestCount { get; protected set; }
 
-        public abstract TimeSpan? TotalElapsedTime { get; protected set; }
-
         public abstract string UserAgent { get; protected set; }
+
+        public abstract string UserClientRequestId { get; }
+
+        internal abstract CosmosDiagnostics Diagnostics { get; }
+
+        public abstract Stopwatch OverallClientRequestTime { get; }
 
         internal abstract CosmosDiagnosticScope CreateOverallScope(string name);
 
@@ -34,7 +39,7 @@ namespace Microsoft.Azure.Cosmos
         internal abstract void AddDiagnosticsInternal(CosmosDiagnosticsContext newContext);
 
         internal abstract void SetSdkUserAgent(string userAgent);
-
+       
         public abstract IEnumerator<CosmosDiagnosticsInternal> GetEnumerator();
 
         IEnumerator IEnumerable.GetEnumerator()
@@ -44,12 +49,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal static CosmosDiagnosticsContext Create(RequestOptions requestOptions)
         {
-            return requestOptions?.DiagnosticContext ?? CosmosDiagnosticsContext.Create(requestOptions?.UserClientRequestId);
-        }
-
-        internal static CosmosDiagnosticsContext Create(string userClientRequestId = null)
-        {
-            return new CosmosDiagnosticsContextCore(userClientRequestId);
+            return requestOptions?.DiagnosticContext ?? new CosmosDiagnosticsContextCore(requestOptions?.UserClientRequestId);
         }
     }
 }
