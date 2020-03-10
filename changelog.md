@@ -17,6 +17,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1189](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1189) Query diagnostics shows correct overall time.
 - [#1189](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1189) Fixed a bug that caused duplicate information in diagnostic context.
 
+## <a name="3.7.0-preview2"/> [3.7.0-preview2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.7.0-preview2) - 2020-03-09
+
+- [#1210](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1210) Change Feed pull model
+- [#1242](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1242) Client encryption - Fix bug in read path without encrypted properties
+
 ## <a name="3.7.0-preview"/> [3.7.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.7.0-preview) - 2020-02-25
 
 - [#1210](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1210) Change Feed pull model
