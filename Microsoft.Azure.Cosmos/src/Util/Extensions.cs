@@ -75,7 +75,16 @@ namespace Microsoft.Azure.Cosmos
         internal static ResponseMessage ToCosmosResponseMessage(this DocumentClientException documentClientException, RequestMessage requestMessage)
         {
             CosmosDiagnosticsContext diagnosticsContext = requestMessage?.DiagnosticsContext;
-            if (diagnosticsContext == null)
+            if (requestMessage != null)
+            {
+                diagnosticsContext = requestMessage.DiagnosticsContext;
+
+                if (diagnosticsContext == null)
+                {
+                    throw new ArgumentNullException("Request message should contain a DiagnosticsContext");
+                }
+            }
+            else
             {
                 diagnosticsContext = new CosmosDiagnosticsContextCore(userClientRequestId: null);
             }
