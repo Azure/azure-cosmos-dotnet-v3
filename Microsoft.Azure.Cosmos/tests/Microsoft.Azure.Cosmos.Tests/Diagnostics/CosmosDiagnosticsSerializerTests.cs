@@ -24,6 +24,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
                     description: nameof(PointOperationStatistics),
                     diagnosticsInternal: new PointOperationStatistics(
                     activityId: Guid.Empty.ToString(),
+                    responseTimeUtc: new DateTime(2020, 1, 2, 3, 4, 5, 6),
                     statusCode: System.Net.HttpStatusCode.OK,
                     subStatusCode: Documents.SubStatusCodes.WriteForbidden,
                     requestCharge: 4,
@@ -31,8 +32,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
                     method: HttpMethod.Post,
                     requestUri: new Uri("http://localhost.com"),
                     requestSessionToken: nameof(PointOperationStatistics.RequestSessionToken),
-                    responseSessionToken: nameof(PointOperationStatistics.ResponseSessionToken),
-                    clientSideRequestStatistics: null))
+                    responseSessionToken: nameof(PointOperationStatistics.ResponseSessionToken)))
             };
 
             this.ExecuteTestSuite(inputs);

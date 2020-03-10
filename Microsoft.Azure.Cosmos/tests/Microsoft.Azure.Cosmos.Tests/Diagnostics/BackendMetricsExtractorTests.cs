@@ -19,13 +19,13 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             activityId: Guid.NewGuid().ToString(),
             statusCode: HttpStatusCode.OK,
             subStatusCode: Documents.SubStatusCodes.Unknown,
+            responseTimeUtc: DateTime.UtcNow,
             requestCharge: 0,
             errorMessage: string.Empty,
             method: HttpMethod.Get,
             requestUri: new Uri("http://localhost"),
             requestSessionToken: null,
-            responseSessionToken: null,
-            clientSideRequestStatistics: new CosmosClientSideRequestStatistics());
+            responseSessionToken: null);
 
         private static readonly QueryPageDiagnostics MockQueryPageDiagnostics = new QueryPageDiagnostics(
             partitionKeyRangeId: nameof(QueryPageDiagnostics.PartitionKeyRangeId),

@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal sealed class EmptyCosmosDiagnosticsContext : CosmosDiagnosticsContext
     {
+        private static readonly IReadOnlyList<CosmosDiagnosticsInternal> EmptyList = new List<CosmosDiagnosticsInternal>();
         private static readonly CosmosDiagnosticScope DefaultScope = new CosmosDiagnosticScope("DisabledScope");
 
         public static readonly CosmosDiagnosticsContext Singleton = new EmptyCosmosDiagnosticsContext();
@@ -63,6 +64,18 @@ namespace Microsoft.Azure.Cosmos
         {
         }
 
+        internal override void AddDiagnosticsInternal(StoreResponseStatistics storeResponseStatistics)
+        {
+        }
+
+        internal override void AddDiagnosticsInternal(AddressResolutionStatistics addressResolutionStatistics)
+        {
+        }
+
+        internal override void AddDiagnosticsInternal(CosmosClientSideRequestStatistics clientSideRequestStatistics)
+        {
+        }
+
         internal override void SetSdkUserAgent(string userAgent)
         {
         }
@@ -78,7 +91,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override IEnumerator<CosmosDiagnosticsInternal> GetEnumerator()
         {
-            return default;
+            return EmptyCosmosDiagnosticsContext.EmptyList.GetEnumerator();
         }
     }
 }

@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             if (EncryptionTests.databaseCore != null)
             {
-                await EncryptionTests.databaseCore.DeleteAsync();
+                using (await EncryptionTests.databaseCore.DeleteStreamAsync()) { }
             }
 
             if (EncryptionTests.client != null)

@@ -49,13 +49,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                 activityId: Guid.NewGuid().ToString(),
                 statusCode: HttpStatusCode.OK,
                 subStatusCode: SubStatusCodes.Unknown,
+                responseTimeUtc: DateTime.UtcNow,
                 requestCharge: requestCharge,
                 errorMessage: null,
                 method: HttpMethod.Post,
                 requestUri: new Uri("http://localhost.com"),
                 requestSessionToken: null,
-                responseSessionToken: null,
-                clientSideRequestStatistics: null));
+                responseSessionToken: null));
             IReadOnlyCollection<QueryPageDiagnostics> diagnostics = new List<QueryPageDiagnostics>()
             {
                 new QueryPageDiagnostics("0",
@@ -108,13 +108,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                 activityId: Guid.NewGuid().ToString(),
                 statusCode: HttpStatusCode.OK,
                 subStatusCode: SubStatusCodes.Unknown,
+                responseTimeUtc: DateTime.UtcNow,
                 requestCharge: 4,
                 errorMessage: null,
                 method: HttpMethod.Post,
                 requestUri: new Uri("http://localhost.com"),
                 requestSessionToken: null,
-                responseSessionToken: null,
-                clientSideRequestStatistics: null));
+                responseSessionToken: null));
             IReadOnlyCollection<QueryPageDiagnostics> diagnostics = new List<QueryPageDiagnostics>()
             {
                 new QueryPageDiagnostics("0",
@@ -153,13 +153,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                 acitivityId,
                 System.Net.HttpStatusCode.Gone,
                 subStatusCode: SubStatusCodes.PartitionKeyRangeGone,
+                responseTimeUtc: DateTime.UtcNow,
                 requestCharge: 10.4,
                 errorMessage: null,
                 method: HttpMethod.Post,
                 requestUri: new Uri("http://localhost.com"),
                 requestSessionToken: null,
-                responseSessionToken: null,
-                clientSideRequestStatistics: null));
+                responseSessionToken: null));
             IReadOnlyCollection<QueryPageDiagnostics> diagnostics = new List<QueryPageDiagnostics>()
             {
                 new QueryPageDiagnostics("0",

@@ -215,7 +215,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(createResponse.Diagnostics);
             string diagnostics = createResponse.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
-            Assert.IsTrue(diagnostics.Contains("RequestStartTimeUtc"));
+            Assert.IsTrue(diagnostics.Contains("StartUtc"));
         }
 
         [TestMethod]

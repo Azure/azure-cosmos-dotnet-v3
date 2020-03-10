@@ -8,6 +8,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Diagnostics;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Documents;
+    using static Microsoft.Azure.Cosmos.CosmosClientSideRequestStatistics;
 
     /// <summary>
     /// This represents the diagnostics interface used in the SDK.
@@ -35,6 +37,12 @@ namespace Microsoft.Azure.Cosmos
         internal abstract void AddDiagnosticsInternal(PointOperationStatistics pointOperationStatistics);
 
         internal abstract void AddDiagnosticsInternal(QueryPageDiagnostics queryPageDiagnostics);
+
+        internal abstract void AddDiagnosticsInternal(StoreResponseStatistics storeResponseStatistics);
+
+        internal abstract void AddDiagnosticsInternal(AddressResolutionStatistics addressResolutionStatistics);
+
+        internal abstract void AddDiagnosticsInternal(CosmosClientSideRequestStatistics clientSideRequestStatistics);
 
         internal abstract void AddDiagnosticsInternal(CosmosDiagnosticsContext newContext);
 

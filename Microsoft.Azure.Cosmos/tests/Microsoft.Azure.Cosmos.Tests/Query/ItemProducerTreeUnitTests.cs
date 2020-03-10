@@ -186,13 +186,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Guid.NewGuid().ToString(),
                 System.Net.HttpStatusCode.OK,
                 subStatusCode: SubStatusCodes.Unknown,
+                responseTimeUtc: DateTime.UtcNow,
                 requestCharge: 42,
                 errorMessage: null,
                 method: HttpMethod.Post,
                 requestUri: new Uri("http://localhost.com"),
                 requestSessionToken: null,
-                responseSessionToken: null,
-                clientSideRequestStatistics: null));
+                responseSessionToken: null));
 
             QueryPageDiagnostics diagnostics = new QueryPageDiagnostics(
                 partitionKeyRangeId: "0",
@@ -242,13 +242,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Guid.NewGuid().ToString(),
                 System.Net.HttpStatusCode.InternalServerError,
                 subStatusCode: SubStatusCodes.Unknown,
+                responseTimeUtc: DateTime.UtcNow,
                 requestCharge: 10.2,
                 errorMessage: "Error message",
                 method: HttpMethod.Post,
                 requestUri: new Uri("http://localhost.com"),
                 requestSessionToken: null,
-                responseSessionToken: null,
-                clientSideRequestStatistics: null));
+                responseSessionToken: null));
 
             diagnostics = new QueryPageDiagnostics(
                 partitionKeyRangeId: "0",
