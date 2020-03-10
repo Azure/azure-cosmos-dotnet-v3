@@ -8,12 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Added
+- [#1268](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1268) Add UserClientRequestId to CosmosDiagnostics
+- [#1268](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1268) Add GetElapsedClientLatency to CosmosDiagnostics
 
 ### Fixed
 
 - [#1213](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1213) CosmosException now returns the original stack trace.
 - [#1213](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1213) ResponseMessage.ErrorMessage is now always correctly populated. There was bug in some scenarios where the error message was left in the content stream.
 - [#1242](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1242) Client encryption - Fix bug in read path without encrypted properties
+- [#1268](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1268) Fix bug where Request Options was getting lost for Database.ReadStreamAsync and Database.DeleteStreamAsync  
 
 ## <a name="3.7.0-preview"/> [3.7.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.7.0-preview) - 2020-02-25
 
