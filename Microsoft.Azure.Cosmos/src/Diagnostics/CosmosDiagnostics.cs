@@ -4,7 +4,6 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Collections.Generic;
 
     /// <summary>
     ///  Contains the cosmos diagnostic information for the current request to Azure Cosmos DB service.

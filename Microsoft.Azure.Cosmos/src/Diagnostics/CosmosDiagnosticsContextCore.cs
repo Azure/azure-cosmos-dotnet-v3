@@ -30,8 +30,6 @@ namespace Microsoft.Azure.Cosmos
 
         private bool isOverallScopeSet = false;
 
-        private HashSet<Uri> ContactedRegions = null;
-
         static CosmosDiagnosticsContextCore()
         {
             // Default user agent string does not contain client id or features.
@@ -100,22 +98,6 @@ namespace Microsoft.Azure.Cosmos
             if (statusCode < 200 || statusCode > 299)
             {
                 this.FailedRequestCount++;
-            }
-
-            HashSet<Uri> contactedRegions = pointOperationStatistics?.ClientSideRequestStatistics?.RegionsContacted;
-            if (contactedRegions != null && contactedRegions.Count > 0)
-            {
-                if (this.ContactedRegions == null)
-                {
-                    this.ContactedRegions = contactedRegions;
-                }
-                else
-                {
-                    if (!object.ReferenceEquals(this.ContactedRegions, contactedRegions))
-                    {
-                        this.ContactedRegions.UnionWith(contactedRegions);
-                    }
-                }
             }
 
             this.ContextList.Add(pointOperationStatistics);
