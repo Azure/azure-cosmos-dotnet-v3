@@ -13,13 +13,16 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
     using System.Net.Http;
 
     [TestClass]
-    public sealed class CosmosDiagnosticsSerializerTests : BaselineTests<CosmosDiagnosticsSerializerBaselineInput, CosmosDiagnosticsSerializerBaselineOutput>
+    internal sealed class CosmosDiagnosticsSerializerTests : BaselineTests<CosmosDiagnosticsSerializerBaselineInput, CosmosDiagnosticsSerializerBaselineOutput>
     {
         [TestMethod]
         public void TestPointOperationStatistics()
         {
-            CosmosDiagnosticsContext context = new CosmosDiagnosticsContextCore(null);
-            context.AddDiagnosticsInternal(new PointOperationStatistics(
+            IList<CosmosDiagnosticsSerializerBaselineInput> inputs = new List<CosmosDiagnosticsSerializerBaselineInput>()
+            {
+                new CosmosDiagnosticsSerializerBaselineInput(
+                    description: nameof(PointOperationStatistics),
+                    diagnosticsInternal: new PointOperationStatistics(
                     activityId: Guid.Empty.ToString(),
                     statusCode: System.Net.HttpStatusCode.OK,
                     subStatusCode: Documents.SubStatusCodes.WriteForbidden,
@@ -29,13 +32,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
                     requestUri: new Uri("http://localhost.com"),
                     requestSessionToken: nameof(PointOperationStatistics.RequestSessionToken),
                     responseSessionToken: nameof(PointOperationStatistics.ResponseSessionToken),
-                    clientSideRequestStatistics: null));
-
-            IList<CosmosDiagnosticsSerializerBaselineInput> inputs = new List<CosmosDiagnosticsSerializerBaselineInput>()
-            {
-                new CosmosDiagnosticsSerializerBaselineInput(
-                    description: nameof(PointOperationStatistics),
-                    cosmosDiagnostics: context.Diagnostics)
+                    clientSideRequestStatistics: null))
             };
 
             this.ExecuteTestSuite(inputs);
@@ -43,25 +40,25 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
         public override CosmosDiagnosticsSerializerBaselineOutput ExecuteTest(CosmosDiagnosticsSerializerBaselineInput input)
         {
-            return new CosmosDiagnosticsSerializerBaselineOutput(input.CosmosDiagnostics.ToString());
+            return new CosmosDiagnosticsSerializerBaselineOutput(input.iagnosticsInternal.ToString());
         }
     }
 
-    public sealed class CosmosDiagnosticsSerializerBaselineInput : BaselineTestInput
+    internal sealed class CosmosDiagnosticsSerializerBaselineInput : BaselineTestInput
     {
-        public CosmosDiagnosticsSerializerBaselineInput(string description, CosmosDiagnostics cosmosDiagnostics)
+        public CosmosDiagnosticsSerializerBaselineInput(string description, CosmosDiagnosticsInternal diagnosticsInternal)
             : base(description)
         {
-            this.CosmosDiagnostics = cosmosDiagnostics ?? throw new ArgumentNullException(nameof(cosmosDiagnostics));
+            this.iagnosticsInternal = diagnosticsInternal ?? throw new ArgumentNullException(nameof(diagnosticsInternal));
         }
 
-        public CosmosDiagnostics CosmosDiagnostics { get; }
+        public CosmosDiagnosticsInternal iagnosticsInternal { get; }
 
         public override void SerializeAsXml(XmlWriter xmlWriter)
         {
             xmlWriter.WriteElementString(nameof(this.Description), this.Description);
-            xmlWriter.WriteStartElement(nameof(this.CosmosDiagnostics));
-            xmlWriter.WriteCData(JsonConvert.SerializeObject(this.CosmosDiagnostics, Newtonsoft.Json.Formatting.Indented));
+            xmlWriter.WriteStartElement(nameof(this.iagnosticsInternal));
+            xmlWriter.WriteCData(JsonConvert.SerializeObject(this.iagnosticsInternal, Newtonsoft.Json.Formatting.Indented));
             xmlWriter.WriteEndElement();
         }
     }

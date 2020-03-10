@@ -272,7 +272,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.AreEqual(i.ToString(), result.ETag);
 
                 Assert.IsNotNull(operation.DiagnosticsContext);
-                Assert.AreEqual(operation.DiagnosticsContext.ToString(), result.DiagnosticsContext.ToString());
+                Assert.AreEqual(operation.DiagnosticsContext, result.DiagnosticsContext);
                 Assert.IsFalse(string.IsNullOrEmpty(operation.DiagnosticsContext.ToString()));
             }
         }
