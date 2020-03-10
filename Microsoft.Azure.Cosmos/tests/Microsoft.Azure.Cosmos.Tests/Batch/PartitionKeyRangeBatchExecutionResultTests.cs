@@ -77,14 +77,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                 activityId: Guid.NewGuid().ToString(),
                 statusCode: HttpStatusCode.OK,
                 subStatusCode: SubStatusCodes.Unknown,
+                responseTimeUtc: DateTime.UtcNow,
                 requestCharge: 0,
                 errorMessage: string.Empty,
                 method: HttpMethod.Get,
                 requestUri: new Uri("http://localhost"),
                 requestSessionToken: null,
-                responseSessionToken: null,
-                clientSideRequestStatistics: new CosmosClientSideRequestStatistics());
-            CosmosDiagnosticsContext scope = CosmosDiagnosticsContext.Create();
+                responseSessionToken: null);
+            CosmosDiagnosticsContext scope = new CosmosDiagnosticsContextCore();
             scope.AddDiagnosticsInternal(pointOperationStatistics);
 
             TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.OK)

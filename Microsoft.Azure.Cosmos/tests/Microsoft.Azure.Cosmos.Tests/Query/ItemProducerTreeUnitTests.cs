@@ -181,18 +181,18 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new Mock<CosmosElement>(CosmosElementType.Object).Object
             };
 
-            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create();
+            CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContextCore();
             diagnosticsContext.AddDiagnosticsInternal(new PointOperationStatistics(
                 Guid.NewGuid().ToString(),
                 System.Net.HttpStatusCode.OK,
                 subStatusCode: SubStatusCodes.Unknown,
+                responseTimeUtc: DateTime.UtcNow,
                 requestCharge: 42,
                 errorMessage: null,
                 method: HttpMethod.Post,
                 requestUri: new Uri("http://localhost.com"),
                 requestSessionToken: null,
-                responseSessionToken: null,
-                clientSideRequestStatistics: null));
+                responseSessionToken: null));
 
             QueryPageDiagnostics diagnostics = new QueryPageDiagnostics(
                 partitionKeyRangeId: "0",
@@ -237,18 +237,18 @@ namespace Microsoft.Azure.Cosmos.Tests
             await itemProducerTree.BufferMoreDocumentsAsync(cancellationTokenSource.Token);
             await itemProducerTree.BufferMoreDocumentsAsync(cancellationTokenSource.Token);
 
-            CosmosDiagnosticsContext diagnosticsContextInternalServerError = CosmosDiagnosticsContext.Create();
+            CosmosDiagnosticsContext diagnosticsContextInternalServerError = new CosmosDiagnosticsContextCore();
             diagnosticsContextInternalServerError.AddDiagnosticsInternal(new PointOperationStatistics(
                 Guid.NewGuid().ToString(),
                 System.Net.HttpStatusCode.InternalServerError,
                 subStatusCode: SubStatusCodes.Unknown,
+                responseTimeUtc: DateTime.UtcNow,
                 requestCharge: 10.2,
                 errorMessage: "Error message",
                 method: HttpMethod.Post,
                 requestUri: new Uri("http://localhost.com"),
                 requestSessionToken: null,
-                responseSessionToken: null,
-                clientSideRequestStatistics: null));
+                responseSessionToken: null));
 
             diagnostics = new QueryPageDiagnostics(
                 partitionKeyRangeId: "0",

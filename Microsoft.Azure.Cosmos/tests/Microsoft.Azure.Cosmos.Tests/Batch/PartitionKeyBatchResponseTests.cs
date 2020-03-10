@@ -81,13 +81,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                 activityId: Guid.NewGuid().ToString(),
                 statusCode: HttpStatusCode.OK,
                 subStatusCode: SubStatusCodes.Unknown,
+                responseTimeUtc: DateTime.UtcNow,
                 requestCharge: 0,
                 errorMessage: string.Empty,
                 method: HttpMethod.Get,
                 requestUri: new Uri("http://localhost"),
                 requestSessionToken: null,
-                responseSessionToken: null,
-                clientSideRequestStatistics: new CosmosClientSideRequestStatistics());
+                responseSessionToken: null);
 
             ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.OK)
             {
