@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos
         internal CosmosDiagnosticsContext Context { get; }
 
         /// <inheritdoc/>
-        public override TimeSpan GetElapsedClientLatency()
+        public override TimeSpan GetElapsedTime()
         {
             return this.Context.OverallClientRequestTime.Elapsed;
         }

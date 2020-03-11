@@ -11,10 +11,12 @@ namespace Microsoft.Azure.Cosmos
     public abstract class CosmosDiagnostics
     {
         /// <summary>
-        /// This represent the current elapsed latency of the request. 
+        /// This represent the end to end elapsed time of the request.
+        /// If the request is still in progress it will return the current
+        /// elapsed time since the start of the request.
         /// </summary>
-        /// <returns>The elapsed time since the start of the request.</returns>
-        public abstract TimeSpan GetElapsedClientLatency();
+        /// <returns>The end to end elapsed time of the request.</returns>
+        public abstract TimeSpan GetElapsedTime();
 
         /// <summary>
         /// Gets the string field <see cref="CosmosDiagnostics"/> instance in the Azure CosmosDB database service.
