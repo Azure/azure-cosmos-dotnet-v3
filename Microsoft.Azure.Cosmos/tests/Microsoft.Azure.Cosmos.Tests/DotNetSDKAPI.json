@@ -1716,10 +1716,10 @@
           "Attributes": [],
           "MethodInfo": "System.String ToString()"
         },
-        "System.TimeSpan GetElapsedClientLatency()": {
+        "System.TimeSpan GetElapsedTime()": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.TimeSpan GetElapsedClientLatency()"
+          "MethodInfo": "System.TimeSpan GetElapsedTime()"
         }
       },
       "NestedTypes": {}
