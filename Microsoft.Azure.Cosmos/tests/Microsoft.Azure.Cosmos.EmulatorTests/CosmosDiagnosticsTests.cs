@@ -132,8 +132,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 requestOptions: requestOptions);
             CosmosDiagnosticsTests.VerifyPointDiagnostics(
                 createResponse.Diagnostics,
-                disableDiagnostics,
-                requestOptions.UserClientRequestId);
+                disableDiagnostics);
 
             ItemResponse<ToDoActivity> readResponse = await this.Container.ReadItemAsync<ToDoActivity>(
                 id: testItem.id,
@@ -142,8 +141,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             CosmosDiagnosticsTests.VerifyPointDiagnostics(
                 readResponse.Diagnostics,
-                disableDiagnostics,
-                requestOptions.UserClientRequestId);
+                disableDiagnostics);
 
             testItem.description = "NewDescription";
             ItemResponse<ToDoActivity> replaceResponse = await this.Container.ReplaceItemAsync<ToDoActivity>(
@@ -156,8 +154,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             CosmosDiagnosticsTests.VerifyPointDiagnostics(
                 replaceResponse.Diagnostics,
-                disableDiagnostics,
-                requestOptions.UserClientRequestId);
+                disableDiagnostics);
 
             ItemResponse<ToDoActivity> deleteResponse = await this.Container.DeleteItemAsync<ToDoActivity>(
                 partitionKey: new Cosmos.PartitionKey(testItem.status),
@@ -167,8 +164,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(deleteResponse);
             CosmosDiagnosticsTests.VerifyPointDiagnostics(
                 deleteResponse.Diagnostics,
-                disableDiagnostics,
-                requestOptions.UserClientRequestId);
+                disableDiagnostics);
 
             //Checking point operation diagnostics on stream operations
             ResponseMessage createStreamResponse = await this.Container.CreateItemStreamAsync(
@@ -177,8 +173,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 requestOptions: requestOptions);
             CosmosDiagnosticsTests.VerifyPointDiagnostics(
                 createStreamResponse.Diagnostics,
-                disableDiagnostics,
-                requestOptions.UserClientRequestId);
+                disableDiagnostics);
 
             ResponseMessage readStreamResponse = await this.Container.ReadItemStreamAsync(
                 id: testItem.id,
@@ -186,8 +181,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 requestOptions: requestOptions);
             CosmosDiagnosticsTests.VerifyPointDiagnostics(
                 readStreamResponse.Diagnostics,
-                disableDiagnostics,
-                requestOptions.UserClientRequestId);
+                disableDiagnostics);
 
             ResponseMessage replaceStreamResponse = await this.Container.ReplaceItemStreamAsync(
                streamPayload: TestCommon.SerializerCore.ToStream<ToDoActivity>(testItem),
@@ -196,8 +190,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                requestOptions: requestOptions);
             CosmosDiagnosticsTests.VerifyPointDiagnostics(
                 replaceStreamResponse.Diagnostics,
-                disableDiagnostics,
-                requestOptions.UserClientRequestId);
+                disableDiagnostics);
 
             ResponseMessage deleteStreamResponse = await this.Container.DeleteItemStreamAsync(
                id: testItem.id,
@@ -205,8 +198,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                requestOptions: requestOptions);
             CosmosDiagnosticsTests.VerifyPointDiagnostics(
                 deleteStreamResponse.Diagnostics,
-                disableDiagnostics,
-                requestOptions.UserClientRequestId);
+                disableDiagnostics);
 
             // Ensure diagnostics are set even on failed operations
             testItem.description = new string('x', Microsoft.Azure.Documents.Constants.MaxResourceSizeInBytes + 1);
@@ -217,8 +209,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsFalse(createTooBigStreamResponse.IsSuccessStatusCode);
             CosmosDiagnosticsTests.VerifyPointDiagnostics(
                 createTooBigStreamResponse.Diagnostics,
-                disableDiagnostics,
-                requestOptions.UserClientRequestId);
+                disableDiagnostics);
         }
 
         [TestMethod]
@@ -248,8 +239,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response);
             CosmosDiagnosticsTests.VerifyPointDiagnostics(
                 diagnostics: response.Diagnostics,
-                disableDiagnostics: disableDiagnostics,
-                userClientRequestId: null);
+                disableDiagnostics: disableDiagnostics);
         }
 
         [TestMethod]
@@ -273,11 +263,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ItemResponse<ToDoActivity> itemResponse = await createTask;
                 Assert.IsNotNull(itemResponse);
 
-                // Bulk doesn't support userClientRequestId
                 CosmosDiagnosticsTests.VerifyPointDiagnostics(
                     diagnostics: itemResponse.Diagnostics,
-                    disableDiagnostics: false,
-                    userClientRequestId: null);
+                    disableDiagnostics: false);
             }
         }
 
@@ -415,8 +403,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         public static void VerifyPointDiagnostics(
             CosmosDiagnostics diagnostics,
-            bool disableDiagnostics,
-            string userClientRequestId)
+            bool disableDiagnostics)
         {
             string info = diagnostics.ToString();
 
@@ -427,7 +414,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             CosmosDiagnosticsContext diagnosticsContext = (diagnostics as CosmosDiagnosticsCore).Context;
-            DiagnosticValidator.ValidatePointOperationDiagnostics(diagnosticsContext, userClientRequestId);
+            DiagnosticValidator.ValidatePointOperationDiagnostics(diagnosticsContext);
         }
 
         private static JObject GetJObjectInContextList(JArray contextList, string value, string key = "Id")

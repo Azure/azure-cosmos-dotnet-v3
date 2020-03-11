@@ -134,12 +134,7 @@ namespace Microsoft.Azure.Cosmos
                     throw new InvalidOperationException(ClientResources.UnsupportedBulkRequestOptions);
                 }
 
-                if (itemRequestOptions.UserClientRequestId != null)
-                {
-                    throw new ArgumentException("UserClientRequestId is not allowed when AllowBulkExecution is set to true");
-                }
-
-                if (itemRequestOptions.UserClientRequestId != null)
+                if (itemRequestOptions.DiagnosticContext != null)
                 {
                     throw new ArgumentException("DiagnosticContext is not allowed when AllowBulkExecution is set to true");
                 }

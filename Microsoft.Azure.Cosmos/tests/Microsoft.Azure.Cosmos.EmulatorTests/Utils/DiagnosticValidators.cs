@@ -13,10 +13,10 @@ namespace Microsoft.Azure.Cosmos
 
     internal static class DiagnosticValidator
     {
-        public static void ValidatePointOperationDiagnostics(CosmosDiagnosticsContext diagnosticsContext, string userClientRequestId)
+        public static void ValidatePointOperationDiagnostics(CosmosDiagnosticsContext diagnosticsContext)
         {
             JObject jObject = JObject.Parse(diagnosticsContext.ToString());
-            PointDiagnosticValidatorHelper validator = new PointDiagnosticValidatorHelper(userClientRequestId);
+            PointDiagnosticValidatorHelper validator = new PointDiagnosticValidatorHelper();
             validator.Visit(diagnosticsContext);
             validator.Validate();
         }
@@ -137,7 +137,6 @@ namespace Microsoft.Azure.Cosmos
 
         private sealed class PointDiagnosticValidatorHelper : CosmosDiagnosticsInternalVisitor
         {
-            private readonly string userClientRequestId;
             private DateTime? StartTimeUtc = null;
             private TimeSpan? TotalElapsedTime = null;
             private bool containsFailures = false;
@@ -146,11 +145,6 @@ namespace Microsoft.Azure.Cosmos
             private bool isStoreResponseStatisticsVisited = false;
             private bool isCosmosClientSideRequestStatisticsVisited = false;
             private bool isPointOperationStatisticsVisited = false;
-
-            public PointDiagnosticValidatorHelper(string userClientRequestId)
-            {
-                this.userClientRequestId = userClientRequestId;
-            }
 
             public override void Visit(PointOperationStatistics pointOperationStatistics)
             {

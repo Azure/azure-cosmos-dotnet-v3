@@ -13,9 +13,6 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     public class RequestOptions
     {
-        private string userClientRequestId = null;
-        private CosmosDiagnosticsContext diagnosticContext = null;
-
         internal Dictionary<string, object> Properties { get; set; }
 
         /// <summary>
@@ -34,28 +31,6 @@ namespace Microsoft.Azure.Cosmos
         /// Most commonly used to detect changes to the resource
         /// </remarks>
         public string IfNoneMatchEtag { get; set; }
-
-        /// <summary>
-        /// This is a user passed in client side request id. This is used to help
-        /// users correlate a request with other application layers.
-        /// </summary>
-        /// <remarks>
-        /// This is only tracked on the client side <see cref="CosmosDiagnostics"/> and is never
-        /// sent to the Cosmos DB service.
-        /// </remarks>
-        public string UserClientRequestId
-        {
-            get => this.userClientRequestId;
-            set
-            {
-                if (this.DiagnosticContext != null)
-                {
-                    throw new ArgumentException($"{nameof(this.UserClientRequestId)} can not set when {nameof(this.DiagnosticContext)} is already set");
-                }
-
-                this.userClientRequestId = value;
-            }
-        }
 
         /// <summary>
         /// Gets or sets the boolean to use effective partition key routing in the cosmos db request.
@@ -78,19 +53,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// This disables all diagnostics for the CosmosDiagnostic in the response.
         /// </summary>
-        internal CosmosDiagnosticsContext DiagnosticContext
-        {
-            get => this.diagnosticContext;
-            set
-            {
-                if (this.UserClientRequestId != null)
-                {
-                    throw new ArgumentException($"{nameof(this.DiagnosticContext)} can not set when {nameof(this.UserClientRequestId)} is already set");
-                }
-
-                this.diagnosticContext = value;
-            }
-        }
+        internal CosmosDiagnosticsContext DiagnosticContext { get; set; }
 
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
