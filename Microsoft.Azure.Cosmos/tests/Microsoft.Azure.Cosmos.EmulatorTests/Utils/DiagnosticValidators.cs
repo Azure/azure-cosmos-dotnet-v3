@@ -21,10 +21,12 @@ namespace Microsoft.Azure.Cosmos
             validator.Validate();
         }
 
-        private static void ValidateCosmosDiagnosticsContext(CosmosDiagnosticsContext cosmosDiagnosticsContext, string userClientRequestId)
+        internal static void ValidateCosmosDiagnosticsContext(
+            CosmosDiagnosticsContext cosmosDiagnosticsContext,
+            string userClientRequestId)
         {
             Assert.IsTrue((cosmosDiagnosticsContext.StartUtc - DateTime.UtcNow) < TimeSpan.FromHours(12), $"Start Time is not valid {cosmosDiagnosticsContext.StartUtc}");
-            Assert.AreNotEqual(cosmosDiagnosticsContext.UserAgent, new UserAgentContainer().UserAgent, "User agent not set");
+            Assert.AreNotEqual(cosmosDiagnosticsContext.UserAgent.ToString(), new UserAgentContainer().UserAgent.ToString(), "User agent not set");
             Assert.IsTrue(cosmosDiagnosticsContext.TotalRequestCount > 0, "No request found");
             Assert.IsFalse(cosmosDiagnosticsContext.OverallClientRequestTime.IsRunning, "OverallClientRequestTime should be stopped");
             Assert.IsTrue(cosmosDiagnosticsContext.OverallClientRequestTime.Elapsed > TimeSpan.Zero, "OverallClientRequestTime should have time.");
@@ -139,7 +141,6 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsNotNull(jObject["RequestCharge"].ToString());
             Assert.IsNotNull(jObject["RequestUri"].ToString());
         }
-
 
         private sealed class PointDiagnosticValidatorHelper : CosmosDiagnosticsInternalVisitor
         {

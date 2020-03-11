@@ -125,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        //[DataRow(true)]
+        [DataRow(true)]
         [DataRow(false)]
         public async Task PointOperationDiagnostic(bool disableDiagnostics)
         {
@@ -376,7 +376,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public static void VerifyQueryDiagnostics(
             CosmosDiagnostics diagnostics,
             bool isFirstPage,
-            bool disableDiagnostics)
+            bool disableDiagnostics,
+            string userClientRequestId)
         {
             string info = diagnostics.ToString();
             if (disableDiagnostics)
@@ -385,9 +386,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 return;
             }
 
+   
+            CosmosDiagnosticsContext diagnosticsContext = (diagnostics as CosmosDiagnosticsCore).Context;
+
+            // If all the pages are buffered then several of the normal summary validation will fail.
+            if(diagnosticsContext.TotalRequestCount > 0)
+            {
+                DiagnosticValidator.ValidateCosmosDiagnosticsContext(diagnosticsContext, userClientRequestId);
+            }
+
             Assert.IsNotNull(info);
             JObject jObject = JObject.Parse(info);
-            VerifySummary(jObject);
 
             JArray contextList = jObject["Context"].ToObject<JArray>();
             Assert.IsTrue(contextList.Count > 0);
@@ -428,16 +437,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             DiagnosticValidator.ValidatePointOperationDiagnostics(diagnosticsContext, userClientRequestId);
         }
 
-        private static void VerifySummary(JObject jObject)
-        {
-            JToken summary = jObject["Summary"];
-            Assert.IsNotNull(summary["UserAgent"].ToString());
-            Assert.IsNotNull(summary["StartUtc"].ToString());
-            Assert.IsNotNull(summary["TotalElapsedTime"].ToString());
-            Assert.IsNotNull(summary["UserClientRequestId"].ToString());
-            Assert.AreEqual(CosmosDiagnosticsTests.DefaultUserClientRequestId, summary["UserClientRequestId"].ToString());
-        }
-
         private static JObject GetJObjectInContextList(JArray contextList, string value, string key = "Id")
         {
             foreach (JObject tempJObject in contextList)
@@ -454,7 +453,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
 
-        private async Task<long> ExecuteQueryAndReturnOutputDocumentCount(string queryText, int expectedItemCount, bool disableDiagnostics)
+        private async Task<long> ExecuteQueryAndReturnOutputDocumentCount(
+            string queryText,
+            int expectedItemCount,
+            bool disableDiagnostics)
         {
             QueryDefinition sql = new QueryDefinition(queryText);
 
@@ -485,7 +487,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 FeedResponse<ToDoActivity> response = await feedIterator.ReadNextAsync();
                 results.AddRange(response);
-                VerifyQueryDiagnostics(response.Diagnostics, isFirst, disableDiagnostics);
+                VerifyQueryDiagnostics(
+                    response.Diagnostics,
+                    isFirst,
+                    disableDiagnostics,
+                    requestOptions.UserClientRequestId);
                 isFirst = false;
             }
 
@@ -504,7 +510,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ResponseMessage response = await streamIterator.ReadNextAsync();
                 Collection<ToDoActivity> result = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(response.Content).Data;
                 streamResults.AddRange(result);
-                VerifyQueryDiagnostics(response.Diagnostics, isFirst, disableDiagnostics);
+                VerifyQueryDiagnostics(
+                    response.Diagnostics,
+                    isFirst,
+                    disableDiagnostics,
+                    requestOptions.UserClientRequestId);
                 isFirst = false;
             }
 
