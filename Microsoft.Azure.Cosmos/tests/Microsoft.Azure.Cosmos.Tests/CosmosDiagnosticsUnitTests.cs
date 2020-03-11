@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void ValidateDiagnosticsContext()
         {
-            CosmosDiagnosticsContext cosmosDiagnostics = new CosmosDiagnosticsContextCore(userClientRequestId: null);
+            CosmosDiagnosticsContext cosmosDiagnostics = new CosmosDiagnosticsContextCore();
             string diagnostics = cosmosDiagnostics.ToString();
 
             //Test the default user agent string
@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void ValidateDiagnosticsAppendContext()
         {
-            CosmosDiagnosticsContext cosmosDiagnostics = new CosmosDiagnosticsContextCore(userClientRequestId: null);
+            CosmosDiagnosticsContext cosmosDiagnostics = new CosmosDiagnosticsContextCore();
 
             // Test all the different operations on diagnostics context
             using (cosmosDiagnostics.CreateScope("ValidateScope"))
@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             cosmosDiagnostics.SetSdkUserAgent("MyCustomUserAgentString");
 
-            CosmosDiagnosticsContext cosmosDiagnostics2 = new CosmosDiagnosticsContextCore(userClientRequestId: null);
+            CosmosDiagnosticsContext cosmosDiagnostics2 = new CosmosDiagnosticsContextCore();
 
             using (cosmosDiagnostics.CreateScope("CosmosDiagnostics2Scope"))
             {
@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void ValidateClientSideRequestStatisticsToString()
         {
             // Verify that API using the interface get the older v2 string
-            CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContextCore(userClientRequestId: null);
+            CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContextCore();
             diagnosticsContext.OverallClientRequestTime.Stop();
 
             CosmosClientSideRequestStatistics clientSideRequestStatistics = new CosmosClientSideRequestStatistics(diagnosticsContext);

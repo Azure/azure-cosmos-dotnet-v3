@@ -81,12 +81,6 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             this.jsonWriter.WritePropertyName("UserAgent");
             this.jsonWriter.WriteValue(cosmosDiagnosticsContext.UserAgent);
 
-            if (!string.IsNullOrEmpty(cosmosDiagnosticsContext.UserClientRequestId))
-            {
-                this.jsonWriter.WritePropertyName("UserClientRequestId");
-                this.jsonWriter.WriteValue(cosmosDiagnosticsContext.UserClientRequestId);
-            }
-
             this.jsonWriter.WritePropertyName("TotalRequestCount");
             this.jsonWriter.WriteValue(cosmosDiagnosticsContext.TotalRequestCount);
 

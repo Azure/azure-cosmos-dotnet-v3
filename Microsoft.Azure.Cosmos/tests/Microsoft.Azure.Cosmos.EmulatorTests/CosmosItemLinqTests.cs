@@ -768,8 +768,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosDiagnosticsTests.VerifyQueryDiagnostics(
                 diagnostics: response.Diagnostics,
                 isFirstPage: false,
-                disableDiagnostics: disableDiagnostics,
-                userClientRequestId: queryRequestOptions.UserClientRequestId);
+                disableDiagnostics: disableDiagnostics);
         }
     }
 }

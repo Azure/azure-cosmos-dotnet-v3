@@ -743,7 +743,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                            System.Net.HttpStatusCode.OK,
                            new Headers(),
                            value,
-                           new CosmosDiagnosticsContextCore(null).Diagnostics));
+                           new CosmosDiagnosticsContextCore().Diagnostics));
         }
 
         private static MethodInfo GetMethodInfoOf<T1, T2>(Func<T1, T2> func)

@@ -22,16 +22,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     {
         private Container Container = null;
         private ContainerProperties containerSettings = null;
-        private static readonly string DefaultUserClientRequestId = "UserRequestId" + Guid.NewGuid();
 
         private static readonly ItemRequestOptions RequestOptionDisableDiagnostic = new ItemRequestOptions()
         {
             DiagnosticContext = EmptyCosmosDiagnosticsContext.Singleton
-        };
-
-        private static readonly ItemRequestOptions RequestOptionUserRequestId = new ItemRequestOptions()
-        {
-            UserClientRequestId = DefaultUserClientRequestId
         };
 
         [TestInitialize]
@@ -85,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(false)]
         public async Task PointOperationRequestTimeoutDiagnostic(bool disableDiagnostics)
         {
-            ItemRequestOptions requestOptions = disableDiagnostics ? RequestOptionDisableDiagnostic : RequestOptionUserRequestId;
+            ItemRequestOptions requestOptions = disableDiagnostics ? RequestOptionDisableDiagnostic : null;
 
             Guid exceptionActivityId = Guid.NewGuid();
             string transportExceptionDescription = "transportExceptionDescription" + Guid.NewGuid();
@@ -129,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(false)]
         public async Task PointOperationDiagnostic(bool disableDiagnostics)
         {
-            ItemRequestOptions requestOptions = disableDiagnostics ? RequestOptionDisableDiagnostic : RequestOptionUserRequestId;
+            ItemRequestOptions requestOptions = disableDiagnostics ? RequestOptionDisableDiagnostic : null;
 
             //Checking point operation diagnostics on typed operations
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
@@ -248,7 +242,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 batch.ReadItem(createItems[i].id);
             }
 
-            RequestOptions requestOptions = disableDiagnostics ? RequestOptionDisableDiagnostic : RequestOptionUserRequestId;
+            RequestOptions requestOptions = disableDiagnostics ? RequestOptionDisableDiagnostic : null;
             TransactionalBatchResponse response = await ((BatchCore)batch).ExecuteAsync(requestOptions);
             
             Assert.IsNotNull(response);
@@ -376,8 +370,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public static void VerifyQueryDiagnostics(
             CosmosDiagnostics diagnostics,
             bool isFirstPage,
-            bool disableDiagnostics,
-            string userClientRequestId)
+            bool disableDiagnostics)
         {
             string info = diagnostics.ToString();
             if (disableDiagnostics)
@@ -392,7 +385,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // If all the pages are buffered then several of the normal summary validation will fail.
             if(diagnosticsContext.TotalRequestCount > 0)
             {
-                DiagnosticValidator.ValidateCosmosDiagnosticsContext(diagnosticsContext, userClientRequestId);
+                DiagnosticValidator.ValidateCosmosDiagnosticsContext(diagnosticsContext);
             }
 
             Assert.IsNotNull(info);
@@ -470,10 +463,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 requestOptions.DiagnosticContext = EmptyCosmosDiagnosticsContext.Singleton;
             }
-            else
-            {
-                requestOptions.UserClientRequestId = CosmosDiagnosticsTests.DefaultUserClientRequestId;
-            }
 
             // Verify the typed query iterator
             FeedIterator<ToDoActivity> feedIterator = this.Container.GetItemQueryIterator<ToDoActivity>(
@@ -490,8 +479,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 VerifyQueryDiagnostics(
                     response.Diagnostics,
                     isFirst,
-                    disableDiagnostics,
-                    requestOptions.UserClientRequestId);
+                    disableDiagnostics);
                 isFirst = false;
             }
 
@@ -513,8 +501,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 VerifyQueryDiagnostics(
                     response.Diagnostics,
                     isFirst,
-                    disableDiagnostics,
-                    requestOptions.UserClientRequestId);
+                    disableDiagnostics);
                 isFirst = false;
             }
 

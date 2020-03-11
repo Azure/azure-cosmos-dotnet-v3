@@ -214,7 +214,7 @@ namespace Microsoft.Azure.Cosmos
                 requestMessage: null,
                 headers: headers,
                 cosmosException: null,
-                diagnostics: this.DiagnosticsContext ?? new CosmosDiagnosticsContextCore(userClientRequestId: null))
+                diagnostics: this.DiagnosticsContext ?? new CosmosDiagnosticsContextCore())
             {
                 Content = this.ResourceStream
             };

@@ -19,9 +19,6 @@ namespace Microsoft.Azure.Cosmos
         internal CosmosDiagnosticsContext Context { get; }
 
         /// <inheritdoc/>
-        public override string UserClientRequestId => this.Context.UserAgent;
-
-        /// <inheritdoc/>
         public override TimeSpan GetElapsedClientLatency()
         {
             return this.Context.OverallClientRequestTime.Elapsed;

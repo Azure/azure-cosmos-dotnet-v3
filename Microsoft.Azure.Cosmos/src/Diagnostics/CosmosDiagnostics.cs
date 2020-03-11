@@ -11,16 +11,6 @@ namespace Microsoft.Azure.Cosmos
     public abstract class CosmosDiagnostics
     {
         /// <summary>
-        /// This is a user passed in client side request id. This is used to help
-        /// users correlate a request with other application layers.
-        /// </summary>
-        /// <remarks>
-        /// This is only tracked on the client side and is never
-        /// sent to the Cosmos DB service.
-        /// </remarks>
-        public abstract string UserClientRequestId { get; }
-
-        /// <summary>
         /// This represent the current elapsed latency of the request. 
         /// </summary>
         /// <returns>The elapsed time since the start of the request.</returns>

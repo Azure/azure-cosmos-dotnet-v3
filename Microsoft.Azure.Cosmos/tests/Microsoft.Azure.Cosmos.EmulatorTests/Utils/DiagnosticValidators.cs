@@ -22,8 +22,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal static void ValidateCosmosDiagnosticsContext(
-            CosmosDiagnosticsContext cosmosDiagnosticsContext,
-            string userClientRequestId)
+            CosmosDiagnosticsContext cosmosDiagnosticsContext)
         {
             Assert.IsTrue((cosmosDiagnosticsContext.StartUtc - DateTime.UtcNow) < TimeSpan.FromHours(12), $"Start Time is not valid {cosmosDiagnosticsContext.StartUtc}");
             Assert.AreNotEqual(cosmosDiagnosticsContext.UserAgent.ToString(), new UserAgentContainer().UserAgent.ToString(), "User agent not set");
@@ -39,12 +38,6 @@ namespace Microsoft.Azure.Cosmos
             Assert.AreNotEqual(summary["UserAgent"].ToString(), new UserAgentContainer().UserAgent);
             Assert.IsNotNull(summary["StartUtc"].ToString());
             Assert.IsNotNull(summary["TotalElapsedTime"].ToString());
-
-            if(userClientRequestId != null)
-            {
-                Assert.IsNotNull(summary["UserClientRequestId"].ToString());
-                Assert.AreEqual(userClientRequestId, summary["UserClientRequestId"].ToString());
-            }
         }
 
         private static void ValidateScope(CosmosDiagnosticScope scope, TimeSpan? totalElapsedTime)
@@ -177,7 +170,7 @@ namespace Microsoft.Azure.Cosmos
                 this.StartTimeUtc = cosmosDiagnosticsContext.StartUtc;
                 this.TotalElapsedTime = cosmosDiagnosticsContext.OverallClientRequestTime.Elapsed;
 
-                DiagnosticValidator.ValidateCosmosDiagnosticsContext(cosmosDiagnosticsContext, this.userClientRequestId);
+                DiagnosticValidator.ValidateCosmosDiagnosticsContext(cosmosDiagnosticsContext);
 
                 foreach (CosmosDiagnosticsInternal diagnosticsInternal in cosmosDiagnosticsContext)
                 {

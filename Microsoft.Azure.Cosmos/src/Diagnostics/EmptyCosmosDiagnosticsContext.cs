@@ -36,8 +36,6 @@ namespace Microsoft.Azure.Cosmos
 
         public override string UserAgent { get; protected set; } = "Empty Context";
 
-        public override string UserClientRequestId => null;
-
         internal override CosmosDiagnostics Diagnostics { get; }
 
         public override Stopwatch OverallClientRequestTime => EmptyCosmosDiagnosticsContext.Stopwatch;

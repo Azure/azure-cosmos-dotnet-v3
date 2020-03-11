@@ -200,7 +200,7 @@ namespace Microsoft.Azure.Cosmos
             string containerUri,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            CosmosDiagnosticsContextCore diagnosticsContext = new CosmosDiagnosticsContextCore(null);
+            CosmosDiagnosticsContextCore diagnosticsContext = new CosmosDiagnosticsContextCore();
             ClientCollectionCache collectionCache = await this.DocumentClient.GetCollectionCacheAsync();
             try
             {

@@ -36,10 +36,9 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContextCore.DefaultUserAgentString = userAgentContainer.UserAgent;
         }
 
-        public CosmosDiagnosticsContextCore(string userClientRequestId)
+        public CosmosDiagnosticsContextCore()
         {
             this.StartUtc = DateTime.UtcNow;
-            this.UserClientRequestId = userClientRequestId;
             this.ContextList = new List<CosmosDiagnosticsInternal>();
             this.Diagnostics = new CosmosDiagnosticsCore(this);
             this.OverallClientRequestTime = Stopwatch.StartNew();
@@ -52,8 +51,6 @@ namespace Microsoft.Azure.Cosmos
         public override int FailedRequestCount { get; protected set; }
 
         public override string UserAgent { get; protected set; } = CosmosDiagnosticsContextCore.DefaultUserAgentString;
-
-        public override string UserClientRequestId { get; }
 
         internal override CosmosDiagnostics Diagnostics { get; }
 

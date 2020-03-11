@@ -24,8 +24,6 @@ namespace Microsoft.Azure.Cosmos
 
         public abstract string UserAgent { get; protected set; }
 
-        public abstract string UserClientRequestId { get; }
-
         internal abstract CosmosDiagnostics Diagnostics { get; }
 
         public abstract Stopwatch OverallClientRequestTime { get; }
@@ -57,7 +55,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal static CosmosDiagnosticsContext Create(RequestOptions requestOptions)
         {
-            return requestOptions?.DiagnosticContext ?? new CosmosDiagnosticsContextCore(requestOptions?.UserClientRequestId);
+            return requestOptions?.DiagnosticContext ?? new CosmosDiagnosticsContextCore();
         }
     }
 }

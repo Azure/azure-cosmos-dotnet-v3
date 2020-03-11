@@ -204,7 +204,7 @@ namespace Microsoft.Azure.Cosmos
                 
             };
 
-            CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContextCore(null);
+            CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContextCore();
 
             CosmosException cosmosException = CosmosExceptionFactory.CreateBadRequestException(
                 error.ToString(),
