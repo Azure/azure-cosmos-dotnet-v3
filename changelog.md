@@ -8,7 +8,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Added
-- [#1268](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1268) Add UserClientRequestId to CosmosDiagnostics
 - [#1268](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1268) Add GetElapsedClientLatency to CosmosDiagnostics
 
 ### Fixed
