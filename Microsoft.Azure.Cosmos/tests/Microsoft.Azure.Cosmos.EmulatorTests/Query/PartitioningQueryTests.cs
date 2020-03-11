@@ -1,6 +1,6 @@
 ﻿
 
-namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
+namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 {
     using System;
     using System.Collections.Generic;
@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
     using System.Linq;
     using System.Net;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
@@ -32,39 +33,50 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
                 @"{""id"":""documentId12"",""prop"":1,""shortArray"":[{""a"":7}]}",
             };
 
-            async Task ImplementationAsync(Container container, IEnumerable<Document> documents)
+            await this.CreateIngestQueryDeleteAsync(
+                ConnectionModes.Direct | ConnectionModes.Gateway,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
+                inputDocs,
+                ImplementationAsync,
+                "/key");
+
+            async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
             {
-                Assert.AreEqual(0, (await QueryTestsBase.RunQueryAsync<Document>(
-                container,
-                @"SELECT * FROM Root r WHERE false",
-                new QueryRequestOptions()
-                {
-                    MaxConcurrency = 1,
-                })).Count);
+                Assert.AreEqual(0, (await QueryTestsBase.RunQueryAsync(
+                    container,
+                    @"SELECT * FROM Root r WHERE false",
+                    new QueryRequestOptions()
+                    {
+                        MaxConcurrency = 1,
+                    })).Count);
 
                 object[] keys = new object[] { "A", 5, Undefined.Value };
                 for (int i = 0; i < keys.Length; ++i)
                 {
-                    List<string> expected = documents.Skip(i * 3).Take(3).Select(doc => doc.Id).ToList();
+                    List<string> expected = documents
+                        .Skip(i * 3)
+                        .Take(3)
+                        .Select(doc => ((CosmosString)doc["id"]).Value)
+                        .ToList();
                     string expectedResult = string.Join(",", expected);
+
                     // Order-by
-                    expected.Reverse();
-                    string expectedOrderByResult = string.Join(",", expected);
+                    List<string> expectedCopy = new List<string>(expected);
+                    expectedCopy.Reverse();
+                    string expectedOrderByResult = string.Join(",", expectedCopy);
 
                     List<(string, string)> queries = new List<(string, string)>()
-                {
-                    ($@"SELECT * FROM Root r WHERE r.id IN (""{expected[0]}"", ""{expected[1]}"", ""{expected[2]}"")", expectedResult),
-                    (@"SELECT * FROM Root r WHERE r.prop BETWEEN 1 AND 3", expectedResult),
-                    (@"SELECT VALUE r FROM Root r JOIN c IN r.shortArray WHERE c.a BETWEEN 5 and 7", expectedResult),
-                    ($@"SELECT TOP 10 * FROM Root r WHERE r.id IN (""{expected[0]}"", ""{expected[1]}"", ""{expected[2]}"")", expectedResult),
-                    (@"SELECT TOP 10 * FROM Root r WHERE r.prop BETWEEN 1 AND 3", expectedResult),
-                    (@"SELECT TOP 10 VALUE r FROM Root r JOIN c IN r.shortArray WHERE c.a BETWEEN 5 and 7", expectedResult),
-                    ($@"SELECT * FROM Root r WHERE r.id IN (""{expected[0]}"", ""{expected[1]}"", ""{expected[2]}"") ORDER BY r.prop", expectedOrderByResult),
-                    (@"SELECT * FROM Root r WHERE r.prop BETWEEN 1 AND 3 ORDER BY r.prop", expectedOrderByResult),
-                    (@"SELECT VALUE r FROM Root r JOIN c IN r.shortArray WHERE c.a BETWEEN 5 and 7 ORDER BY r.prop", expectedOrderByResult),
-                };
-
-
+                    {
+                        ($@"SELECT * FROM Root r WHERE r.id IN (""{expected[0]}"", ""{expected[1]}"", ""{expected[2]}"")", expectedResult),
+                        (@"SELECT * FROM Root r WHERE r.prop BETWEEN 1 AND 3", expectedResult),
+                        (@"SELECT VALUE r FROM Root r JOIN c IN r.shortArray WHERE c.a BETWEEN 5 and 7", expectedResult),
+                        ($@"SELECT TOP 10 * FROM Root r WHERE r.id IN (""{expected[0]}"", ""{expected[1]}"", ""{expected[2]}"")", expectedResult),
+                        (@"SELECT TOP 10 * FROM Root r WHERE r.prop BETWEEN 1 AND 3", expectedResult),
+                        (@"SELECT TOP 10 VALUE r FROM Root r JOIN c IN r.shortArray WHERE c.a BETWEEN 5 and 7", expectedResult),
+                        ($@"SELECT * FROM Root r WHERE r.id IN (""{expected[0]}"", ""{expected[1]}"", ""{expected[2]}"") ORDER BY r.prop", expectedOrderByResult),
+                        (@"SELECT * FROM Root r WHERE r.prop BETWEEN 1 AND 3 ORDER BY r.prop", expectedOrderByResult),
+                        (@"SELECT VALUE r FROM Root r JOIN c IN r.shortArray WHERE c.a BETWEEN 5 and 7 ORDER BY r.prop", expectedOrderByResult),
+                    };
 
                     if (i < keys.Length - 1)
                     {
@@ -102,17 +114,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
                     }
                 }
             }
-
-            await this.CreateIngestQueryDelete(
-                ConnectionModes.Direct | ConnectionModes.Gateway,
-                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
-                inputDocs,
-                ImplementationAsync,
-                "/key");
         }
 
         [TestMethod]
-        public async Task TestQuerySinglePartitionKey()
+        public async Task TestQuerySinglePartitionKeyAsync()
         {
             string[] inputDocs = new[]
             {
@@ -124,7 +129,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
                 @"{""pk"":""doc6""}",
             };
 
-            async Task ImplementationAsync(Container container, IEnumerable<Document> documents)
+            await this.CreateIngestQueryDeleteAsync(
+                ConnectionModes.Direct | ConnectionModes.Gateway,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
+                inputDocs,
+                ImplementationAsync,
+                partitionKey: "/pk");
+
+            async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
             {
                 // Query with partition key should be done in one round trip.
                 FeedIterator<dynamic> resultSetIterator = container.GetItemQueryIterator<dynamic>(
@@ -141,13 +153,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
                 Assert.AreEqual(0, response.Count());
                 Assert.IsNull(response.ContinuationToken);
             }
-
-            await this.CreateIngestQueryDelete(
-                ConnectionModes.Direct | ConnectionModes.Gateway,
-                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
-                inputDocs,
-                ImplementationAsync,
-                partitionKey: "/pk");
         }
 
         private struct QueryWithSpecialPartitionKeysArgs
@@ -162,9 +167,95 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
         [Ignore]
         public async Task TestQueryWithSpecialPartitionKeysAsync()
         {
+            QueryWithSpecialPartitionKeysArgs[] queryWithSpecialPartitionKeyArgsList = new QueryWithSpecialPartitionKeysArgs[]
+            {
+                new QueryWithSpecialPartitionKeysArgs()
+                {
+                    Name = "Guid",
+                    Value = Guid.NewGuid(),
+                    ValueToPartitionKey = val => val.ToString(),
+                },
+                //new QueryWithSpecialPartitionKeysArgs()
+                //{
+                //    Name = "DateTime",
+                //    Value = DateTime.Now,
+                //    ValueToPartitionKey = val =>
+                //    {
+                //        string str = JsonConvert.SerializeObject(
+                //            val,
+                //            new JsonSerializerSettings()
+                //            {
+                //                Converters = new List<JsonConverter> { new IsoDateTimeConverter() }
+                //            });
+                //        return str.Substring(1, str.Length - 2);
+                //    },
+                //},
+                new QueryWithSpecialPartitionKeysArgs()
+                {
+                    Name = "Enum",
+                    Value = HttpStatusCode.OK,
+                    ValueToPartitionKey = val => (int)val,
+                },
+                new QueryWithSpecialPartitionKeysArgs()
+                {
+                    Name = "CustomEnum",
+                    Value = HttpStatusCode.OK,
+                    ValueToPartitionKey = val => val.ToString(),
+                },
+                new QueryWithSpecialPartitionKeysArgs()
+                {
+                    Name = "ResourceId",
+                    Value = "testid",
+                    ValueToPartitionKey = val => val,
+                },
+                new QueryWithSpecialPartitionKeysArgs()
+                {
+                    Name = "CustomDateTime",
+                    Value = new DateTime(2016, 11, 12),
+                    ValueToPartitionKey = val => EpochDateTimeConverter.DateTimeToEpoch((DateTime)val),
+                },
+            };
+
+            foreach (QueryWithSpecialPartitionKeysArgs testArg in queryWithSpecialPartitionKeyArgsList)
+            {
+                // For this test we need to split direct and gateway runs into separate collections,
+                // since the query callback inserts some documents (thus has side effects).
+                await this.CreateIngestQueryDeleteAsync<QueryWithSpecialPartitionKeysArgs>(
+                    ConnectionModes.Direct,
+                    CollectionTypes.SinglePartition,
+                    QueryTestsBase.NoDocuments,
+                    ImplementationAsync,
+                    testArg,
+                    "/" + testArg.Name);
+
+                await this.CreateIngestQueryDeleteAsync<QueryWithSpecialPartitionKeysArgs>(
+                    ConnectionModes.Direct,
+                    CollectionTypes.MultiPartition,
+                    QueryTestsBase.NoDocuments,
+                    ImplementationAsync,
+                    testArg,
+                    "/" + testArg.Name);
+
+                await this.CreateIngestQueryDeleteAsync<QueryWithSpecialPartitionKeysArgs>(
+                    ConnectionModes.Gateway,
+                    CollectionTypes.SinglePartition,
+                    QueryTestsBase.NoDocuments,
+                    ImplementationAsync,
+                    testArg,
+                    "/" + testArg.Name);
+
+                await this.CreateIngestQueryDeleteAsync<QueryWithSpecialPartitionKeysArgs>(
+                    ConnectionModes.Gateway,
+                    CollectionTypes.MultiPartition,
+                    QueryTestsBase.NoDocuments,
+                    ImplementationAsync,
+                    testArg,
+                    "/" + testArg.Name);
+            }
+
             async Task ImplementationAsync(
                 Container container,
-                IEnumerable<Document> documents,
+                IReadOnlyList<CosmosObject> documents,
                 QueryWithSpecialPartitionKeysArgs testArgs)
             {
                 QueryWithSpecialPartitionKeysArgs args = testArgs;
@@ -227,91 +318,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
                     }).ReadNextAsync()).First();
 
                 Assert.AreEqual(args.Value, getPropertyValueFunction(returnedDoc));
-            }
-            QueryWithSpecialPartitionKeysArgs[] queryWithSpecialPartitionKeyArgsList = new QueryWithSpecialPartitionKeysArgs[]
-            {
-                new QueryWithSpecialPartitionKeysArgs()
-                {
-                    Name = "Guid",
-                    Value = Guid.NewGuid(),
-                    ValueToPartitionKey = val => val.ToString(),
-                },
-                //new QueryWithSpecialPartitionKeysArgs()
-                //{
-                //    Name = "DateTime",
-                //    Value = DateTime.Now,
-                //    ValueToPartitionKey = val =>
-                //    {
-                //        string str = JsonConvert.SerializeObject(
-                //            val,
-                //            new JsonSerializerSettings()
-                //            {
-                //                Converters = new List<JsonConverter> { new IsoDateTimeConverter() }
-                //            });
-                //        return str.Substring(1, str.Length - 2);
-                //    },
-                //},
-                new QueryWithSpecialPartitionKeysArgs()
-                {
-                    Name = "Enum",
-                    Value = HttpStatusCode.OK,
-                    ValueToPartitionKey = val => (int)val,
-                },
-                new QueryWithSpecialPartitionKeysArgs()
-                {
-                    Name = "CustomEnum",
-                    Value = HttpStatusCode.OK,
-                    ValueToPartitionKey = val => val.ToString(),
-                },
-                new QueryWithSpecialPartitionKeysArgs()
-                {
-                    Name = "ResourceId",
-                    Value = "testid",
-                    ValueToPartitionKey = val => val,
-                },
-                new QueryWithSpecialPartitionKeysArgs()
-                {
-                    Name = "CustomDateTime",
-                    Value = new DateTime(2016, 11, 12),
-                    ValueToPartitionKey = val => EpochDateTimeConverter.DateTimeToEpoch((DateTime)val),
-                },
-            };
-
-            foreach (QueryWithSpecialPartitionKeysArgs testArg in queryWithSpecialPartitionKeyArgsList)
-            {
-                // For this test we need to split direct and gateway runs into separate collections,
-                // since the query callback inserts some documents (thus has side effects).
-                await this.CreateIngestQueryDelete<QueryWithSpecialPartitionKeysArgs>(
-                    ConnectionModes.Direct,
-                    CollectionTypes.SinglePartition,
-                    QueryTestsBase.NoDocuments,
-                    ImplementationAsync,
-                    testArg,
-                    "/" + testArg.Name);
-
-                await this.CreateIngestQueryDelete<QueryWithSpecialPartitionKeysArgs>(
-                    ConnectionModes.Direct,
-                    CollectionTypes.MultiPartition,
-                    QueryTestsBase.NoDocuments,
-                    ImplementationAsync,
-                    testArg,
-                    "/" + testArg.Name);
-
-                await this.CreateIngestQueryDelete<QueryWithSpecialPartitionKeysArgs>(
-                    ConnectionModes.Gateway,
-                    CollectionTypes.SinglePartition,
-                    QueryTestsBase.NoDocuments,
-                    ImplementationAsync,
-                    testArg,
-                    "/" + testArg.Name);
-
-                await this.CreateIngestQueryDelete<QueryWithSpecialPartitionKeysArgs>(
-                    ConnectionModes.Gateway,
-                    CollectionTypes.MultiPartition,
-                    QueryTestsBase.NoDocuments,
-                    ImplementationAsync,
-                    testArg,
-                    "/" + testArg.Name);
             }
         }
 
@@ -430,7 +436,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
         }
 
         [TestMethod]
-        public async Task TestQueryCrossPartitionWithLargeNumberOfKeys()
+        public async Task TestQueryCrossPartitionWithLargeNumberOfKeysAsync()
         {
             int numberOfDocuments = 1000;
             string partitionKey = "key";
@@ -454,9 +460,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
                 ExpectedPartitionKeyValues = expectedPartitionKeyValues,
             };
 
+            await this.CreateIngestQueryDeleteAsync<QueryCrossPartitionWithLargeNumberOfKeysArgs>(
+                ConnectionModes.Direct | ConnectionModes.Gateway,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
+                documents,
+                ImplementationAsync,
+                args,
+                "/" + partitionKey);
+
             async Task ImplementationAsync(
                 Container container,
-                IEnumerable<Document> inputDocs,
+                IReadOnlyList<CosmosObject> inputDocs,
                 QueryCrossPartitionWithLargeNumberOfKeysArgs testArgs)
             {
                 QueryDefinition query = new QueryDefinition(
@@ -478,14 +492,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
 
                 Assert.IsTrue(actualPartitionKeyValues.SetEquals(args.ExpectedPartitionKeyValues));
             }
-
-            await this.CreateIngestQueryDelete<QueryCrossPartitionWithLargeNumberOfKeysArgs>(
-                ConnectionModes.Direct | ConnectionModes.Gateway,
-                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
-                documents,
-                ImplementationAsync,
-                args,
-                "/" + partitionKey);
         }
     }
 }

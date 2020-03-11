@@ -1,4 +1,4 @@
-﻿namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
+﻿namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 {
     using System;
     using System.Collections.Generic;
@@ -7,6 +7,7 @@
     using System.Globalization;
     using System.Linq;
     using System.Net;
+    using System.Runtime.ExceptionServices;
     using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
@@ -14,6 +15,7 @@
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -24,7 +26,7 @@
     public sealed class OrderByQueryTests : QueryTestsBase
     {
         [TestMethod]
-        public async Task TestQueryCrossPartitionTopOrderByDifferentDimension()
+        public async Task TestQueryCrossPartitionTopOrderByDifferentDimensionAsync()
         {
             string[] documents = new[]
             {
@@ -39,7 +41,7 @@
                 @"{""id"":""documentId9"",""key"":2}",
             };
 
-            await this.CreateIngestQueryDelete(
+            await this.CreateIngestQueryDeleteAsync(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
                 CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
@@ -47,12 +49,14 @@
                 "/key");
         }
 
-        private async Task TestQueryCrossPartitionTopOrderByDifferentDimensionHelper(Container container, IEnumerable<Document> documents)
+        private async Task TestQueryCrossPartitionTopOrderByDifferentDimensionHelper(
+            Container container,
+            IReadOnlyList<CosmosObject> documents)
         {
             await QueryTestsBase.NoOp();
 
             string[] expected = new[] { "documentId2", "documentId5", "documentId8" };
-            List<Document> query = await QueryTestsBase.RunQueryAsync<Document>(
+            List<CosmosElement> query = await QueryTestsBase.RunQueryAsync(
                 container,
                 "SELECT r.id FROM r ORDER BY r.prop DESC",
                 new QueryRequestOptions()
@@ -61,20 +65,22 @@
                     MaxConcurrency = 1,
                 });
 
-            Assert.AreEqual(string.Join(", ", expected), string.Join(", ", query.Select(doc => doc.Id)));
+            Assert.AreEqual(
+                string.Join(", ", expected),
+                string.Join(", ", query.Select(doc => ((CosmosString)(doc as CosmosObject)["id"]).Value)));
         }
 
         [TestMethod]
-        public async Task TestQueryCrossPartitionTopOrderBy()
+        public async Task TestQueryCrossPartitionTopOrderByAsync()
         {
             int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
             uint numberOfDocuments = 1000;
             string partitionKey = "field_0";
 
-            QueryOracle.QueryOracleUtil util = new QueryOracle.QueryOracle2(seed);
+            QueryOracleUtil util = new QueryOracle2(seed);
             IEnumerable<string> documents = util.GetDocuments(numberOfDocuments);
 
-            await this.CreateIngestQueryDelete<string>(
+            await this.CreateIngestQueryDeleteAsync<string>(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
                 CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
@@ -83,14 +89,14 @@
                 "/" + partitionKey);
         }
 
-        private async Task TestQueryCrossPartitionTopOrderByHelper(Container container, IEnumerable<Document> documents, string testArg)
+        private async Task TestQueryCrossPartitionTopOrderByHelper(Container container, IReadOnlyList<CosmosObject> documents, string testArg)
         {
             string partitionKey = testArg;
             IDictionary<string, string> idToRangeMinKeyMap = new Dictionary<string, string>();
             IRoutingMapProvider routingMapProvider = await this.Client.DocumentClient.GetPartitionKeyRangeCacheAsync();
 
             ContainerProperties containerSettings = await container.ReadContainerAsync();
-            foreach (Document document in documents)
+            foreach (CosmosObject document in documents)
             {
                 IReadOnlyList<PartitionKeyRange> targetRanges = await routingMapProvider.TryGetOverlappingRangesAsync(
                 containerSettings.ResourceId,
@@ -98,25 +104,31 @@
                     PartitionKeyInternal.FromObjectArray(
                         new object[]
                         {
-                            document.GetValue<int>(partitionKey)
+                            Number64.ToLong((document[partitionKey] as CosmosNumber).Value)
                         },
                         true).GetEffectivePartitionKeyString(containerSettings.PartitionKey)));
                 Debug.Assert(targetRanges.Count == 1);
-                idToRangeMinKeyMap.Add(document.Id, targetRanges[0].MinInclusive);
+                idToRangeMinKeyMap.Add(((CosmosString)document["id"]).Value, targetRanges[0].MinInclusive);
             }
 
-            IList<int> partitionKeyValues = new HashSet<int>(documents.Select(doc => doc.GetValue<int>(partitionKey))).ToList();
+            IList<int> partitionKeyValues = new HashSet<int>(documents.Select(doc => (int)Number64.ToLong((doc[partitionKey] as CosmosNumber).Value))).ToList();
 
             // Test Empty Results
             List<string> expectedResults = new List<string> { };
             List<string> computedResults = new List<string>();
 
-            string emptyQueryText = @"SELECT TOP 5 * FROM Root r WHERE r.partitionKey = 9991123 OR r.partitionKey = 9991124 OR r.partitionKey = 99991125";
-            List<Document> queryEmptyResult = await QueryTestsBase.RunQueryAsync<Document>(
+            string emptyQueryText = @"
+                SELECT TOP 5 *
+                FROM Root r
+                WHERE
+                    r.partitionKey = 9991123 OR
+                    r.partitionKey = 9991124 OR
+                    r.partitionKey = 99991125";
+            List<CosmosElement> queryEmptyResult = await QueryTestsBase.RunQueryAsync(
                 container,
                 emptyQueryText);
 
-            computedResults = queryEmptyResult.Select(doc => doc.Id).ToList();
+            computedResults = queryEmptyResult.Select(doc => (doc as CosmosObject)["id"].ToString()).ToList();
             computedResults.Sort();
             expectedResults.Sort();
 
@@ -140,7 +152,7 @@
                                     int top = rand.Next(4) * rand.Next(partitionKeyValues.Count);
                                     string queryText;
                                     string orderByField = "field_" + rand.Next(10);
-                                    IEnumerable<Document> filteredDocuments;
+                                    IEnumerable<CosmosObject> filteredDocuments;
 
                                     string getTop() =>
                                         hasTop ? string.Format(CultureInfo.InvariantCulture, "TOP {0} ", isParametrized ? topValueName : top.ToString()) : string.Empty;
@@ -176,8 +188,7 @@
                                             getOrderBy());
 
                                         filteredDocuments = documents
-                                            .AsParallel()
-                                            .Where(doc => selectedPartitionKeyValues.Contains(doc.GetValue<int>(partitionKey)));
+                                            .Where(doc => selectedPartitionKeyValues.Contains((int)Number64.ToLong((doc[partitionKey] as CosmosNumber).Value)));
                                     }
 
                                     if (hasOrderBy)
@@ -188,16 +199,16 @@
                                             case "ASC":
                                                 filteredDocuments = filteredDocuments
                                                     .AsParallel()
-                                                    .OrderBy(doc => doc.GetValue<int>(orderByField))
-                                                    .ThenBy(doc => idToRangeMinKeyMap[doc.Id])
-                                                    .ThenBy(doc => int.Parse(doc.Id, CultureInfo.InvariantCulture));
+                                                    .OrderBy(doc => (int)Number64.ToLong((doc[orderByField] as CosmosNumber).Value))
+                                                    .ThenBy(doc => idToRangeMinKeyMap[((CosmosString)doc["id"]).Value])
+                                                    .ThenBy(doc => int.Parse(((CosmosString)doc["id"]).Value, CultureInfo.InvariantCulture));
                                                 break;
                                             case "DESC":
                                                 filteredDocuments = filteredDocuments
                                                     .AsParallel()
-                                                    .OrderByDescending(doc => doc.GetValue<int>(orderByField))
-                                                    .ThenBy(doc => idToRangeMinKeyMap[doc.Id])
-                                                    .ThenByDescending(doc => int.Parse(doc.Id, CultureInfo.InvariantCulture));
+                                                    .OrderByDescending(doc => (int)Number64.ToLong((doc[orderByField] as CosmosNumber).Value))
+                                                    .ThenBy(doc => idToRangeMinKeyMap[((CosmosString)doc["id"]).Value])
+                                                    .ThenByDescending(doc => int.Parse(((CosmosString)doc["id"]).Value, CultureInfo.InvariantCulture));
                                                 break;
                                         }
                                     }
@@ -205,8 +216,8 @@
                                     {
                                         filteredDocuments = filteredDocuments
                                             .AsParallel()
-                                            .OrderBy(doc => idToRangeMinKeyMap[doc.Id])
-                                            .ThenBy(doc => int.Parse(doc.Id, CultureInfo.InvariantCulture));
+                                            .OrderBy(doc => idToRangeMinKeyMap[((CosmosString)doc["id"]).Value])
+                                            .ThenBy(doc => int.Parse(((CosmosString)doc["id"]).Value, CultureInfo.InvariantCulture));
                                     }
 
                                     if (hasTop)
@@ -215,7 +226,7 @@
                                     }
                                     #endregion
                                     #region Actual Documents
-                                    IEnumerable<Document> actualDocuments;
+                                    IEnumerable<CosmosObject> actualDocuments;
 
                                     int maxDegreeOfParallelism = hasTop ? rand.Next(4) : (rand.Next(2) == 0 ? -1 : (1 + rand.Next(0, 10)));
                                     int? maxItemCount = rand.Next(2) == 0 ? -1 : rand.Next(1, documents.Count());
@@ -241,14 +252,14 @@
                                     }
 
                                     DateTime startTime = DateTime.Now;
-                                    List<Document> result = new List<Document>();
-                                    FeedIterator<Document> query = container.GetItemQueryIterator<Document>(
+                                    List<CosmosObject> result = new List<CosmosObject>();
+                                    FeedIterator<CosmosObject> query = container.GetItemQueryIterator<CosmosObject>(
                                         querySpec,
                                         requestOptions: feedOptions);
 
                                     while (query.HasMoreResults)
                                     {
-                                        FeedResponse<Document> response = await query.ReadNextAsync();
+                                        FeedResponse<CosmosObject> response = await query.ReadNextAsync();
                                         result.AddRange(response);
                                     }
 
@@ -269,10 +280,10 @@
                                     string allDocs = JsonConvert.SerializeObject(documents);
 
                                     string expectedResultDocs = JsonConvert.SerializeObject(filteredDocuments);
-                                    IEnumerable<string> expectedResult = filteredDocuments.Select(doc => doc.Id);
+                                    IEnumerable<string> expectedResult = filteredDocuments.Select(doc => ((CosmosString)doc["id"]).Value);
 
                                     string actualResultDocs = JsonConvert.SerializeObject(actualDocuments);
-                                    IEnumerable<string> actualResult = actualDocuments.Select(doc => doc.Id);
+                                    IEnumerable<string> actualResult = actualDocuments.Select(doc => ((CosmosString)doc["id"]).Value);
 
                                     Assert.AreEqual(
                                         string.Join(", ", expectedResult),
@@ -298,7 +309,7 @@
         }
 
         [TestMethod]
-        public async Task TestQueryCrossPartitionWithContinuations()
+        public async Task TestQueryCrossPartitionWithContinuationsAsync()
         {
             int numberOfDocuments = 1 << 2;
             string partitionKey = "key";
@@ -332,7 +343,7 @@
                 Children = children,
             };
 
-            await this.CreateIngestQueryDelete<CrossPartitionWithContinuationsArgs>(
+            await this.CreateIngestQueryDeleteAsync<CrossPartitionWithContinuationsArgs>(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
                 CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
@@ -343,7 +354,7 @@
 
         private async Task TestQueryCrossPartitionWithContinuationsHelper(
             Container container,
-            IEnumerable<Document> documents,
+            IReadOnlyList<CosmosObject> documents,
             CrossPartitionWithContinuationsArgs args)
         {
             int documentCount = args.NumberOfDocuments;
@@ -444,7 +455,7 @@
             {
                 foreach (int pageSize in new int[] { 1, documentCount / 2, documentCount })
                 {
-                    await RunQueryAsync<Document>(
+                    await RunQueryAsync(
                         container,
                         query,
                         new QueryRequestOptions()
@@ -456,7 +467,7 @@
         }
 
         [TestMethod]
-        public async Task TestMultiOrderByQueries()
+        public async Task TestMultiOrderByQueriesAsync()
         {
             int numberOfDocuments = 4;
 
@@ -631,7 +642,7 @@
                 }
             };
 
-            await this.CreateIngestQueryDelete(
+            await this.CreateIngestQueryDeleteAsync(
                 ConnectionModes.Direct,
                 CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
@@ -684,7 +695,7 @@
 
         private async Task TestMultiOrderByQueriesHelper(
             Container container,
-            IEnumerable<Document> documents)
+            IReadOnlyList<CosmosObject> documents)
         {
             ContainerProperties containerSettings = await container.ReadContainerAsync();
             // For every composite index
@@ -718,9 +729,9 @@
                             string topString = hasTop ? $"TOP {topCount}" : string.Empty;
                             string whereString = hasFilter ? $"WHERE root.{nameof(MultiOrderByDocument.NumberField)} % 2 = 0" : string.Empty;
                             string query = $@"
-                                    SELECT { topString } VALUE [{string.Join(", ", selectItems)}] 
-                                    FROM root { whereString }
-                                    ORDER BY {string.Join(", ", orderByItems)}";
+                                SELECT { topString } VALUE [{string.Join(", ", selectItems)}] 
+                                FROM root { whereString }
+                                ORDER BY {string.Join(", ", orderByItems)}";
 #if false
                             // Used for debugging which partitions have which documents
                             IReadOnlyList<PartitionKeyRange> pkranges = GetPartitionKeyRanges(container);
@@ -736,7 +747,6 @@
                                     }).ToList();
                             }
 #endif
-
                             #region ExpectedUsingLinq
                             List<MultiOrderByDocument> castedDocuments = documents
                                 .Select(x => JsonConvert.DeserializeObject<MultiOrderByDocument>(JsonConvert.SerializeObject(x)))
@@ -783,16 +793,23 @@
                                 }
                             }
 
-                            List<List<object>> expected = new List<List<object>>();
+                            List<CosmosArray> expected = new List<CosmosArray>();
                             foreach (MultiOrderByDocument document in oracle)
                             {
                                 List<object> projectedItems = new List<object>();
                                 foreach (Cosmos.CompositePath compositePath in compositeIndex)
                                 {
-                                    projectedItems.Add(typeof(MultiOrderByDocument).GetProperty(compositePath.Path.Replace("/", "")).GetValue(document, null));
+                                    projectedItems.Add(
+                                        typeof(MultiOrderByDocument)
+                                        .GetProperty(compositePath.Path.Replace("/", ""))
+                                        .GetValue(document, null));
                                 }
 
-                                expected.Add(projectedItems);
+                                List<CosmosElement> cosmosProjectedItems = projectedItems
+                                    .Select(x => x == null ? CosmosNull.Create() : CosmosElement.Parse(JsonConvert.SerializeObject(x)))
+                                    .ToList();
+
+                                expected.Add(CosmosArray.Create(cosmosProjectedItems));
                             }
 
                             if (hasTop)
@@ -809,42 +826,43 @@
                                 MaxConcurrency = 10,
                             };
 
-                            List<List<object>> actual = await QueryTestsBase.RunQueryAsync<List<object>>(
+                            List<CosmosElement> actual = await QueryTestsBase.RunQueryAsync(
                                 container,
                                 query,
                                 queryRequestOptions: feedOptions);
-                            this.AssertMultiOrderByResults(expected, actual, query);
+                            List<CosmosArray> actualCasted = actual.Select(x => (CosmosArray)x).ToList();
+
+                            this.AssertMultiOrderByResults(expected, actualCasted, query);
                         }
                     }
                 }
             }
         }
 
-        private void AssertMultiOrderByResults(List<List<object>> expected, List<List<object>> actual, string query)
+        private void AssertMultiOrderByResults(
+            IReadOnlyList<CosmosArray> expected,
+            IReadOnlyList<CosmosArray> actual,
+            string query)
         {
-            IEnumerable<Tuple<List<JToken>, List<JToken>>> expectedZippedWithActual = expected
-                .Zip(actual, (first, second) =>
-                new Tuple<List<JToken>, List<JToken>>(
-                    first.Select(x => x == null ? null : JToken.FromObject(x)).ToList(),
-                    second.Select(x => x == null ? null : JToken.FromObject(x)).ToList()));
+            IEnumerable<(CosmosArray, CosmosArray)> expectedZippedWithActual = expected
+                .Zip(actual, (first, second) => (first, second));
 
-            foreach (Tuple<List<JToken>, List<JToken>> expectedAndActual in expectedZippedWithActual)
+            foreach ((CosmosArray first, CosmosArray second) in expectedZippedWithActual)
             {
-                List<JToken> first = expectedAndActual.Item1;
-                List<JToken> second = expectedAndActual.Item2;
-                Assert.IsTrue(
-                    first.SequenceEqual(second, JsonTokenEqualityComparer.Value),
-                    $@"
+                Assert.AreEqual(
+                    expected: first,
+                    actual: second,
+                    message: $@"
                         query: {query}: 
-                        first: {JsonConvert.SerializeObject(first)}
-                        second: {JsonConvert.SerializeObject(second)}
+                        first: {first}
+                        second: {second}
                         expected: {JsonConvert.SerializeObject(expected).Replace(".0", "")}
                         actual: {JsonConvert.SerializeObject(actual).Replace(".0", "")}");
             }
         }
 
         [TestMethod]
-        public async Task TestMixedTypeOrderBy()
+        public async Task TestMixedTypeOrderByAsync()
         {
             int numberOfDocuments = 1 << 4;
             int numberOfDuplicates = 1 << 2;
@@ -903,7 +921,7 @@
             OrderByTypes nonPrimitives = OrderByTypes.Array | OrderByTypes.Object;
             OrderByTypes all = primitives | nonPrimitives | OrderByTypes.Undefined;
 
-            await this.CreateIngestQueryDelete<OrderByTypes[]>(
+            await this.CreateIngestQueryDeleteAsync<OrderByTypes[]>(
                     ConnectionModes.Direct,
                     CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                     documents,
@@ -993,7 +1011,7 @@
 
         private async Task TestMixedTypeOrderByHelper(
             Container container,
-            IEnumerable<Document> documents,
+            IReadOnlyList<CosmosObject> documents,
             OrderByTypes[] args)
         {
             OrderByTypes[] orderByTypesList = args;

@@ -1,4 +1,4 @@
-﻿namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
+﻿namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 {
     using System;
     using System.Threading;

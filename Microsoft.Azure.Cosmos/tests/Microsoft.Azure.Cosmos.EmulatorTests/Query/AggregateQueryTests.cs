@@ -1,4 +1,4 @@
-﻿namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
+﻿namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 {
     using System;
     using System.Collections.Generic;
@@ -17,10 +17,10 @@
     using Newtonsoft.Json.Linq;
 
     [TestClass]
-    public sealed class AggregateQueryTests : QueryTestsBase
+    public sealed class AggregateCrossPartitionQueryTests : QueryTestsBase
     {
         [TestMethod]
-        public async Task TestQueryCrossPartitionAggregateFunctionsAsync()
+        public async Task TestAggregateFunctionsAsync()
         {
             AggregateTestArgs args = new AggregateTestArgs()
             {
@@ -58,7 +58,7 @@
                 documents.Add(doc.ToString());
             }
 
-            await this.CreateIngestQueryDelete<AggregateTestArgs>(
+            await this.CreateIngestQueryDeleteAsync<AggregateTestArgs>(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
                 CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
@@ -68,66 +68,72 @@
 
             async Task ImplementationAsync(
                 Container container,
-                IEnumerable<Document> inputDocuments,
+                IReadOnlyList<CosmosObject> inputDocuments,
                 AggregateTestArgs aggregateTestArgs)
             {
-                IEnumerable<Document> documentsWherePkIsANumber = inputDocuments
+                IReadOnlyList<CosmosObject> documentsWherePkIsANumber = inputDocuments
                     .Where(doc =>
                     {
                         return double.TryParse(
-                            JObject.Parse(doc.ToString())[aggregateTestArgs.PartitionKey].ToString(),
+                            doc[aggregateTestArgs.PartitionKey].ToString(),
                             out double result);
-                    });
+                    })
+                    .ToList();
                 double numberSum = documentsWherePkIsANumber
                     .Sum(doc =>
                     {
-                        return double.Parse(JObject.Parse(doc.ToString())[aggregateTestArgs.PartitionKey].ToString());
+                        if (!doc.TryGetValue(aggregateTestArgs.PartitionKey, out CosmosNumber number))
+                        {
+                            Assert.Fail("Failed to get partition key from document");
+                        }
+
+                        return Number64.ToDouble(number.Value);
                     });
                 double count = documentsWherePkIsANumber.Count();
                 AggregateQueryArguments[] aggregateQueryArgumentsList = new AggregateQueryArguments[]
                 {
-                    new AggregateQueryArguments()
-                    {
-                        AggregateOperator = "AVG",
-                        ExpectedValue = CosmosNumber64.Create(numberSum / count),
-                        Predicate = $"IS_NUMBER(r.{aggregateTestArgs.PartitionKey})",
-                    },
-                    new AggregateQueryArguments()
-                    {
-                        AggregateOperator = "AVG",
-                        ExpectedValue = null,
-                        Predicate = "true",
-                    },
-                    new AggregateQueryArguments()
-                    {
-                        AggregateOperator = "COUNT",
-                        ExpectedValue = CosmosNumber64.Create(documents.Count()),
-                        Predicate = "true",
-                    },
-                    new AggregateQueryArguments()
-                    {
-                        AggregateOperator = "MAX",
-                        ExpectedValue = CosmosString.Create("xyz"),
-                        Predicate = "true",
-                    },
-                    new AggregateQueryArguments()
-                    {
-                        AggregateOperator = "MIN",
-                        ExpectedValue = CosmosBoolean.Create(false),
-                        Predicate = "true",
-                    },
-                    new AggregateQueryArguments()
-                    {
-                        AggregateOperator = "SUM",
-                        ExpectedValue = CosmosNumber64.Create(numberSum),
-                        Predicate = $"IS_NUMBER(r.{aggregateTestArgs.PartitionKey})",
-                    },
-                    new AggregateQueryArguments()
-                    {
-                        AggregateOperator = "SUM",
-                        ExpectedValue = null,
-                        Predicate = $"true",
-                    },
+                new AggregateQueryArguments()
+                {
+                    AggregateOperator = "AVG",
+                    ExpectedValue = CosmosNumber64.Create(numberSum / count),
+                    Predicate = $"IS_NUMBER(r.{aggregateTestArgs.PartitionKey})",
+                },
+                new AggregateQueryArguments()
+                {
+                    AggregateOperator = "AVG",
+                    ExpectedValue = null,
+                    Predicate = "true",
+                },
+                new AggregateQueryArguments()
+                {
+                    AggregateOperator = "COUNT",
+                    ExpectedValue = CosmosNumber64.Create(documents.Count()),
+                    Predicate = "true",
+                },
+                new AggregateQueryArguments()
+                {
+                    AggregateOperator = "MAX",
+                    ExpectedValue = CosmosString.Create("xyz"),
+                    Predicate = "true",
+                },
+                new AggregateQueryArguments()
+                {
+                    AggregateOperator = "MIN",
+                    ExpectedValue = CosmosBoolean.Create(false),
+                    Predicate = "true",
+                },
+                new AggregateQueryArguments()
+                {
+                    AggregateOperator = "SUM",
+                    ExpectedValue = CosmosNumber64.Create(numberSum),
+                    Predicate = $"IS_NUMBER(r.{aggregateTestArgs.PartitionKey})",
+                },
+                new AggregateQueryArguments()
+                {
+                    AggregateOperator = "SUM",
+                    ExpectedValue = null,
+                    Predicate = $"true",
+                },
                 };
 
                 foreach (int maxDoP in new[] { 0, 10 })
@@ -136,9 +142,9 @@
                     {
                         string[] queryFormats = new[]
                         {
-                        "SELECT VALUE {0}(r.{1}) FROM r WHERE {2}",
-                        "SELECT VALUE {0}(r.{1}) FROM r WHERE {2} ORDER BY r.{1}"
-                    };
+                            "SELECT VALUE {0}(r.{1}) FROM r WHERE {2}",
+                            "SELECT VALUE {0}(r.{1}) FROM r WHERE {2} ORDER BY r.{1}"
+                        };
 
                         foreach (string queryFormat in queryFormats)
                         {
@@ -154,7 +160,7 @@
                                 query,
                                 JsonConvert.SerializeObject(argument));
 
-                            List<CosmosElement> items = await QueryTestsBase.RunQueryAsync<CosmosElement>(
+                            List<CosmosElement> items = await QueryTestsBase.RunQueryAsync(
                                 container,
                                 query,
                                 new QueryRequestOptions()
@@ -205,7 +211,7 @@
         }
 
         [TestMethod]
-        public async Task TestQueryCrossPartitionAggregateFunctionsEmptyPartitionsAsync()
+        public async Task TestAggregateFunctionsWithEmptyPartitionsAsync()
         {
             AggregateQueryEmptyPartitionsArgs testArgs = new AggregateQueryEmptyPartitionsArgs()
             {
@@ -223,7 +229,7 @@
                 inputDocuments.Add(doc.ToString());
             }
 
-            await this.CreateIngestQueryDelete<AggregateQueryEmptyPartitionsArgs>(
+            await this.CreateIngestQueryDeleteAsync<AggregateQueryEmptyPartitionsArgs>(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
                 CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 inputDocuments,
@@ -233,7 +239,7 @@
 
             async Task ImplementationAsync(
                 Container container,
-                IEnumerable<Document> documents,
+                IReadOnlyList<CosmosObject> documents,
                 AggregateQueryEmptyPartitionsArgs args)
             {
                 int numDocuments = args.NumDocuments;
@@ -256,7 +262,7 @@
                 {
                     try
                     {
-                        List<dynamic> items = await QueryTestsBase.RunQueryAsync<dynamic>(
+                        List<CosmosElement> items = await QueryTestsBase.RunQueryAsync(
                             container,
                             query,
                             new QueryRequestOptions()
@@ -264,7 +270,7 @@
                                 MaxConcurrency = 10,
                             });
 
-                        Assert.AreEqual(valueOfInterest, items.Single());
+                        Assert.AreEqual(valueOfInterest, items.Single().ToDouble());
                     }
                     catch (Exception ex)
                     {
@@ -282,7 +288,7 @@
         }
 
         [TestMethod]
-        public async Task TestQueryCrossPartitionAggregateFunctionsWithMixedTypes()
+        public async Task TestAggregateFunctionsWithMixedTypesAsync()
         {
             AggregateQueryMixedTypes args = new AggregateQueryMixedTypes()
             {
@@ -361,7 +367,7 @@
             // This doc does not have the field key set
             documents.Add(undefinedDoc.ToString());
 
-            await this.CreateIngestQueryDelete<AggregateQueryMixedTypes>(
+            await this.CreateIngestQueryDeleteAsync<AggregateQueryMixedTypes>(
                 ConnectionModes.Direct,
                 CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
@@ -387,7 +393,7 @@
 
         private async Task TestQueryCrossPartitionAggregateFunctionsWithMixedTypesHelper(
             Container container,
-            IEnumerable<Document> documents,
+            IReadOnlyList<CosmosObject> documents,
             AggregateQueryMixedTypes args)
         {
             await QueryTestsBase.NoOp();
@@ -470,7 +476,7 @@
                             StringSplitOptions.None)
                             .Select(x => x.Trim()));
 
-                    List<dynamic> items = await QueryTestsBase.RunQueryAsync<dynamic>(
+                    List<CosmosElement> items = await QueryTestsBase.RunQueryAsync(
                         container,
                         query,
                         new QueryRequestOptions()
@@ -485,7 +491,7 @@
                     writer.WriteStartElement("Aggregation");
                     if (items.Count > 0)
                     {
-                        writer.WriteCData(JsonConvert.SerializeObject(items.Single()));
+                        writer.WriteCData(items.Single().ToString());
                     }
                     writer.WriteEndElement();
                     writer.WriteEndElement();
@@ -503,7 +509,7 @@
 
         [TestMethod]
         [Owner("brchon")]
-        public async Task TestNonValueAggregates()
+        public async Task TestNonValueAggregatesAsync()
         {
             string[] documents = new string[]
             {
@@ -571,7 +577,7 @@
                 @"{""first"":""Brennan"",""last"":""Craig"",""age"":38,""height"":65,""income"":37445}"
             };
 
-            await this.CreateIngestQueryDelete(
+            await this.CreateIngestQueryDeleteAsync(
                 ConnectionModes.Direct,
                 /*CollectionTypes.SinglePartition |*/ CollectionTypes.MultiPartition,
                 documents,
@@ -580,199 +586,243 @@
 
         private async Task TestNonValueAggregates(
             Container container,
-            IEnumerable<Document> documents)
+            IReadOnlyList<CosmosObject> documents)
         {
-            IEnumerable<JToken> documentsAsJTokens = documents.Select(document => JToken.FromObject(document));
-
             // ------------------------------------------
             // Positive
             // ------------------------------------------
 
-            List<Tuple<string, JToken>> queryAndExpectedAggregation = new List<Tuple<string, JToken>>()
+            List<(string, CosmosElement)> queryAndExpectedAggregation = new List<(string, CosmosElement)>()
             {
                 // ------------------------------------------
                 // Simple Aggregates without a value
                 // ------------------------------------------
 
-                new Tuple<string, JToken>(
+                (
                     "SELECT SUM(c.age) FROM c",
-                    new JObject
-                    {
+                    CosmosObject.Create(
+                        new Dictionary<string, CosmosElement>()
                         {
-                            "$1",
-                            documentsAsJTokens.Sum(document => document["age"].Value<double>())
-                        }
-                    }),
+                            {
+                                "$1",
+                                CosmosNumber64.Create(
+                                    documents.Sum(document => document["age"].ToDouble()))
+                            }
+                        })
+                ),
 
-                new Tuple<string, JToken>(
+                (
                     "SELECT COUNT(c.age) FROM c",
-                    new JObject
-                    {
+                    CosmosObject.Create(
+                        new Dictionary<string, CosmosElement>()
                         {
-                            "$1",
-                            documentsAsJTokens.Where(document => document["age"] != null).Count()
-                        }
-                    }),
+                            {
+                                "$1",
+                                CosmosNumber64.Create(
+                                    documents.Where(document => document.TryGetValue("age", out _)).Count())
+                            }
+                        })
+                ),
 
-                new Tuple<string, JToken>(
+                (
                     "SELECT MIN(c.age) FROM c",
-                    new JObject
-                    {
+                    CosmosObject.Create(
+                        new Dictionary<string, CosmosElement>()
                         {
-                            "$1",
-                            documentsAsJTokens.Min(document => document["age"].Value<double>())
-                        }
-                    }),
+                            {
+                                "$1",
+                                CosmosNumber64.Create(
+                                    documents.Min(document => document["age"].ToDouble()))
+                            }
+                        })
+                ),
 
-                new Tuple<string, JToken>(
+                (
                     "SELECT MAX(c.age) FROM c",
-                    new JObject
-                    {
+                    CosmosObject.Create(
+                        new Dictionary<string, CosmosElement>()
                         {
-                            "$1",
-                            documentsAsJTokens.Max(document => document["age"].Value<double>())
-                        }
-                    }),
+                            {
+                                "$1",
+                                CosmosNumber64.Create(
+                                    documents.Max(document => document["age"].ToDouble()))
+                            }
+                        })
+                ),
 
-                new Tuple<string, JToken>(
+                (
                     "SELECT AVG(c.age) FROM c",
-                    new JObject
-                    {
+                    CosmosObject.Create(
+                        new Dictionary<string, CosmosElement>()
                         {
-                            "$1",
-                            documentsAsJTokens.Average(document => document["age"].Value<double>())
-                        }
-                    }),
+                            {
+                                "$1",
+                                CosmosNumber64.Create(
+                                    documents.Average(document => document["age"].ToDouble()))
+                            }
+                        })
+                ),
                 
                 // ------------------------------------------
                 // Simple aggregates with alias
                 // ------------------------------------------
 
-                new Tuple<string, JToken>(
+                (
                     "SELECT SUM(c.age) as sum_age FROM c",
-                    new JObject
-                    {
+                    CosmosObject.Create(
+                        new Dictionary<string, CosmosElement>()
                         {
-                            "sum_age",
-                            documentsAsJTokens.Sum(document => document["age"].Value<double>())
-                        }
-                    }),
+                            {
+                                "sum_age",
+                                CosmosNumber64.Create(
+                                    documents.Sum(document => document["age"].ToDouble()))
+                            }
+                        })
+                ),
 
-                new Tuple<string, JToken>(
+                (
                     "SELECT COUNT(c.age) as count_age FROM c",
-                    new JObject
-                    {
+                    CosmosObject.Create(
+                        new Dictionary<string, CosmosElement>()
                         {
-                            "count_age",
-                            documentsAsJTokens.Where(document => document["age"] != null).Count()
-                        }
-                    }),
+                            {
+                                "count_age",
+                                CosmosNumber64.Create(
+                                    documents.Where(document => document.TryGetValue("age", out _)).Count())
+                            }
+                        })
+                ),
 
-                new Tuple<string, JToken>(
+                (
                     "SELECT MIN(c.age) as min_age FROM c",
-                    new JObject
-                    {
+                    CosmosObject.Create(
+                        new Dictionary<string, CosmosElement>()
                         {
-                            "min_age",
-                            documentsAsJTokens.Min(document => document["age"].Value<double>())
-                        }
-                    }),
+                            {
+                                "min_age",
+                                CosmosNumber64.Create(
+                                    documents.Min(document => document["age"].ToDouble()))
+                            }
+                        })
+                ),
 
-                new Tuple<string, JToken>(
+                (
                     "SELECT MAX(c.age) as max_age FROM c",
-                    new JObject
-                    {
+                    CosmosObject.Create(
+                        new Dictionary<string, CosmosElement>()
                         {
-                            "max_age",
-                            documentsAsJTokens.Max(document => document["age"].Value<double>())
-                        }
-                    }),
+                            {
+                                "max_age",
+                                CosmosNumber64.Create(
+                                    documents.Max(document => document["age"].ToDouble()))
+                            }
+                        })
+                ),
 
-                new Tuple<string, JToken>(
+                (
                     "SELECT AVG(c.age) as avg_age FROM c",
-                    new JObject
-                    {
+                    CosmosObject.Create(
+                        new Dictionary<string, CosmosElement>()
                         {
-                            "avg_age",
-                            documentsAsJTokens.Average(document => document["age"].Value<double>())
-                        }
-                    }),
+                            {
+                                "avg_age",
+                                CosmosNumber64.Create(
+                                    documents.Average(document => document["age"].ToDouble()))
+                            }
+                        })
+                ),
                 
                 // ------------------------------------------
                 // Multiple Aggregates without alias
                 // ------------------------------------------
 
-                new Tuple<string, JToken>(
+                (
                     "SELECT MIN(c.age), MAX(c.age) FROM c",
-                    new JObject
-                    {
+                    CosmosObject.Create(
+                        new Dictionary<string, CosmosElement>()
                         {
-                            "$1",
-                            documentsAsJTokens.Min(document => document["age"].Value<double>())
-                        },
-                        {
-                            "$2",
-                            documentsAsJTokens.Max(document => document["age"].Value<double>())
-                        }
-                    }),
+                            {
+                                "$1",
+                                CosmosNumber64.Create(
+                                    documents.Min(document => document["age"].ToDouble()))
+                            },
+                            {
+                                "$2",
+                                CosmosNumber64.Create(
+                                    documents.Max(document => document["age"].ToDouble()))
+                            },
+                        })
+                ),
 
                 // ------------------------------------------
                 // Multiple Aggregates with alias
                 // ------------------------------------------
 
-                new Tuple<string, JToken>(
+                (
                     "SELECT MIN(c.age) as min_age, MAX(c.age) as max_age FROM c",
-                    new JObject
-                    {
+                    CosmosObject.Create(
+                        new Dictionary<string, CosmosElement>()
                         {
-                            "min_age",
-                            documentsAsJTokens.Min(document => document["age"].Value<double>())
-                        },
-                        {
-                            "max_age",
-                            documentsAsJTokens.Max(document => document["age"].Value<double>())
-                        }
-                    }),
+                            {
+                                "min_age",
+                                CosmosNumber64.Create(
+                                    documents.Min(document => document["age"].ToDouble()))
+                            },
+                            {
+                                "max_age",
+                                CosmosNumber64.Create(
+                                    documents.Max(document => document["age"].ToDouble()))
+                            },
+                        })
+                ),
 
                 // ------------------------------------------
                 // Multiple Aggregates with and without alias
                 // ------------------------------------------
 
-                new Tuple<string, JToken>(
+                (
                     "SELECT MIN(c.age), MAX(c.age) as max_age FROM c",
-                    new JObject
-                    {
+                    CosmosObject.Create(
+                        new Dictionary<string, CosmosElement>()
                         {
-                            "$1",
-                            documentsAsJTokens.Min(document => document["age"].Value<double>())
-                        },
-                        {
-                            "max_age",
-                            documentsAsJTokens.Max(document => document["age"].Value<double>())
-                        }
-                    }),
+                            {
+                                "$1",
+                                CosmosNumber64.Create(
+                                    documents.Min(document => document["age"].ToDouble()))
+                            },
+                            {
+                                "max_age",
+                                CosmosNumber64.Create(
+                                    documents.Max(document => document["age"].ToDouble()))
+                            },
+                        })
+                ),
 
-                new Tuple<string, JToken>(
+                (
                     "SELECT MIN(c.age) as min_age, MAX(c.age) FROM c",
-                    new JObject
-                    {
+                    CosmosObject.Create(
+                        new Dictionary<string, CosmosElement>()
                         {
-                            "min_age",
-                            documentsAsJTokens.Min(document => document["age"].Value<double>())
-                        },
-                        {
-                            "$1",
-                            documentsAsJTokens.Max(document => document["age"].Value<double>())
-                        }
-                    }),
+                            {
+                                "min_age",
+                                CosmosNumber64.Create(
+                                    documents.Min(document => document["age"].ToDouble()))
+                            },
+                            {
+                                "$1",
+                                CosmosNumber64.Create(
+                                    documents.Max(document => document["age"].ToDouble()))
+                            },
+                        })
+                ),
             };
 
             // Test query correctness.
-            foreach ((string query, JToken expectedAggregation) in queryAndExpectedAggregation)
+            foreach ((string query, CosmosElement expectedAggregation) in queryAndExpectedAggregation)
             {
                 foreach (int maxItemCount in new int[] { 1, 5, 10 })
                 {
-                    List<JToken> actual = await RunQueryAsync<JToken>(
+                    List<CosmosElement> actualAggregationQuery = await RunQueryAsync(
                         container: container,
                         query: query,
                         queryRequestOptions: new QueryRequestOptions()
@@ -782,13 +832,13 @@
                             MaxItemCount = maxItemCount,
                         });
 
-                    Assert.AreEqual(1, actual.Count());
-
-                    Assert.IsTrue(
-                       JsonTokenEqualityComparer.Value.Equals(actual.First(), expectedAggregation),
-                       $"Results did not match for query: {query} with maxItemCount: {maxItemCount}" +
-                       $"Actual: {JsonConvert.SerializeObject(actual.First())}" +
-                       $"Expected: {JsonConvert.SerializeObject(expectedAggregation)}");
+                    Assert.AreEqual(expected: 1, actual: actualAggregationQuery.Count());
+                    Assert.AreEqual(
+                        expected: expectedAggregation,
+                        actual: actualAggregationQuery.First(),
+                        message: $"Results did not match for query: {query} with maxItemCount: {maxItemCount}" +
+                        $"Actual: {actualAggregationQuery.First()}" +
+                        $"Expected: {expectedAggregation}");
                 }
             }
 

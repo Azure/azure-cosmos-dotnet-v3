@@ -1,8 +1,9 @@
-﻿namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
+﻿namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 {
     using System.Collections.Generic;
     using System.Net;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -12,7 +13,7 @@
         [TestMethod]
         public async Task TestBadQueriesOverMultiplePartitionsAsync()
         {
-            async Task ImplementationAsync(Container container, IEnumerable<Document> documents)
+            async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
             {
                 try
                 {
@@ -31,7 +32,7 @@
                 }
             }
 
-            await this.CreateIngestQueryDelete(
+            await this.CreateIngestQueryDeleteAsync(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
                 CollectionTypes.MultiPartition,
                 QueryTestsBase.NoDocuments,
@@ -43,9 +44,9 @@
         /// This test case just double checks that you get the appropriate document client exception instead of just failing.
         /// </summary>
         [TestMethod]
-        public async Task TestQueryCrossParitionPartitionProviderInvalid()
+        public async Task TestQueryCrossParitionPartitionProviderInvalidAsync()
         {
-            async Task ImplementationAsync(Container container, IEnumerable<Document> documents)
+            async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
             {
                 await QueryTestsBase.NoOp();
                 try
@@ -70,7 +71,7 @@
                 }
             }
 
-            await this.CreateIngestQueryDelete(
+            await this.CreateIngestQueryDeleteAsync(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
                 CollectionTypes.MultiPartition,
                 QueryTestsBase.NoDocuments,

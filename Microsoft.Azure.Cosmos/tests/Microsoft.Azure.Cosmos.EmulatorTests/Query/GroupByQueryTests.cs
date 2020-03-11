@@ -1,10 +1,11 @@
-﻿namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
+﻿namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 {
     using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -13,7 +14,7 @@
     public sealed class GroupByQueryTests : QueryTestsBase
     {
         [TestMethod]
-        public async Task TestGroupByQuery()
+        public async Task TestGroupByQueryAsync()
         {
             string[] documents = new string[]
             {
@@ -83,7 +84,7 @@
                 @" { ""id"": ""64"", ""name"": ""Gary"", ""age"": 14, ""gender"": ""M"", ""team"": ""C"", ""address"": { ""city"": ""Atlanta"", ""state"": ""GA"", ""zip"": 30301 }, ""scores"": [88, 47, 90, 76] } ",
             };
 
-            await this.CreateIngestQueryDelete(
+            await this.CreateIngestQueryDeleteAsync(
                 ConnectionModes.Direct,
                 CollectionTypes.MultiPartition,
                 documents,
@@ -92,131 +93,201 @@
 
         private async Task TestGroupByQueryHelper(
             Container container,
-            IEnumerable<Document> documents)
+            IReadOnlyList<CosmosObject> documents)
         {
-            IEnumerable<JToken> documentsAsJTokens = documents.Select(document => JToken.FromObject(document));
-            List<Tuple<string, IEnumerable<JToken>>> queryAndExpectedResultsList = new List<Tuple<string, IEnumerable<JToken>>>()
+            List<(string, IReadOnlyList<CosmosElement>)> queryAndExpectedResultsList = new List<(string, IReadOnlyList<CosmosElement>)>()
             {
                 // ------------------------------------------
                 // Simple property reference
                 // ------------------------------------------
 
-                new Tuple<string, IEnumerable<JToken>>(
+                (
                     "SELECT c.age FROM c GROUP BY c.age",
-                    documentsAsJTokens
-                        .GroupBy(document => document["age"], JsonTokenEqualityComparer.Value)
-                        .Select(grouping => new JObject(new JProperty("age", grouping.Key)))),
+                    documents
+                        .GroupBy(document => document["age"])
+                        .Select(grouping => CosmosObject.Create(
+                            new Dictionary<string, CosmosElement>()
+                            {
+                                { "age", grouping.Key }
+                            }))
+                        .ToList()
+                ),
 
-                 new Tuple<string, IEnumerable<JToken>>(
+                (
                     "SELECT c.name FROM c GROUP BY c.name",
-                    documentsAsJTokens
-                        .GroupBy(document => document["name"], JsonTokenEqualityComparer.Value).
-                        Select(grouping => new JObject(new JProperty("name", grouping.Key)))),
+                    documents
+                        .GroupBy(document => document["name"])
+                        .Select(grouping => CosmosObject.Create(
+                            new Dictionary<string, CosmosElement>()
+                            {
+                                { "name", grouping.Key }
+                            }))
+                        .ToList()
+                ),
 
-                 new Tuple<string, IEnumerable<JToken>>(
+                (
                     "SELECT c.team FROM c GROUP BY c.team",
-                    documentsAsJTokens
-                        .GroupBy(document => document["team"], JsonTokenEqualityComparer.Value)
-                        .Select(grouping => new JObject(new JProperty("team", grouping.Key)))),
+                    documents
+                        .GroupBy(document => document["team"])
+                        .Select(grouping => CosmosObject.Create(
+                            new Dictionary<string, CosmosElement>()
+                            {
+                                { "team", grouping.Key }
+                            }))
+                        .ToList()
+                ),
 
-                 new Tuple<string, IEnumerable<JToken>>(
+                (
                     "SELECT c.gender FROM c GROUP BY c.gender",
-                    documentsAsJTokens
-                        .GroupBy(document => document["gender"], JsonTokenEqualityComparer.Value)
-                        .Select(grouping => new JObject(new JProperty("gender", grouping.Key)))),
+                    documents
+                        .GroupBy(document => document["gender"])
+                        .Select(grouping => CosmosObject.Create(
+                            new Dictionary<string, CosmosElement>()
+                            {
+                                { "gender", grouping.Key }
+                            }))
+                        .ToList()
+                ),
 
-                 new Tuple<string, IEnumerable<JToken>>(
+                (
                     "SELECT c.id FROM c GROUP BY c.id",
-                    documentsAsJTokens
-                        .GroupBy(document => document["id"], JsonTokenEqualityComparer.Value)
-                        .Select(grouping => new JObject(new JProperty("id", grouping.Key)))),
+                    documents
+                        .GroupBy(document => document["id"])
+                        .Select(grouping => CosmosObject.Create(
+                            new Dictionary<string, CosmosElement>()
+                            {
+                                { "id", grouping.Key }
+                            }))
+                        .ToList()
+                ),
 
-                  new Tuple<string, IEnumerable<JToken>>(
+                (
                     "SELECT c.age, c.name FROM c GROUP BY c.age, c.name",
-                    documentsAsJTokens
-                        .GroupBy(document => new JObject(
-                            new JProperty("age", document["age"]),
-                            new JProperty("name", document["name"])),
-                            JsonTokenEqualityComparer.Value)
-                        .Select(grouping => new JObject(
-                            new JProperty("age", grouping.Key["age"]),
-                            new JProperty("name", grouping.Key["name"])))),
+                    documents
+                        .GroupBy(document => CosmosObject.Create(
+                            new Dictionary<string, CosmosElement>()
+                            {
+                                { "age", document["age"] },
+                                { "name", document["name"] },
+                            }))
+                        .Select(grouping => CosmosObject.Create(
+                            new Dictionary<string, CosmosElement>()
+                            {
+                                { "age", (grouping.Key as CosmosObject)["age"] },
+                                { "name", (grouping.Key as CosmosObject)["name"] }
+                            }))
+                        .ToList()
+                ),
 
-                 // ------------------------------------------
-                 // With Aggregates
-                 // ------------------------------------------
+                // ------------------------------------------
+                // With Aggregates
+                // ------------------------------------------
 
-                  new Tuple<string, IEnumerable<JToken>>(
+                (
                     "SELECT c.age, COUNT(1) as count FROM c GROUP BY c.age",
-                    documentsAsJTokens
-                        .GroupBy(document => document["age"], JsonTokenEqualityComparer.Value)
-                        .Select(grouping => new JObject(
-                            new JProperty("age", grouping.Key),
-                            new JProperty("count", grouping.Count())))),
+                    documents
+                        .GroupBy(document => document["age"])
+                        .Select(grouping => CosmosObject.Create(
+                            new Dictionary<string, CosmosElement>()
+                            {
+                                { "age", grouping.Key },
+                                { "count", CosmosNumber64.Create(grouping.Count()) }
+                            }))
+                        .ToList()
+                ),
 
-                  new Tuple<string, IEnumerable<JToken>>(
+                (
                     "SELECT c.name, MIN(c.age) AS min_age FROM c GROUP BY c.name",
-                    documentsAsJTokens
-                        .GroupBy(document => document["name"], JsonTokenEqualityComparer.Value)
-                        .Select(grouping => new JObject(
-                            new JProperty("name", grouping.Key),
-                            new JProperty("min_age", grouping.Select(document => document["age"]).Min(jToken => jToken.Value<double>()))))),
+                    documents
+                        .GroupBy(document => document["name"])
+                        .Select(grouping => CosmosObject.Create(
+                            new Dictionary<string, CosmosElement>()
+                            {
+                                { "name", grouping.Key },
+                                { "min_age", CosmosNumber64.Create(grouping.Min(document => document["age"].ToDouble())) }
+                            }))
+                        .ToList()
+                ),
 
-                 new Tuple<string, IEnumerable<JToken>>(
+                (
                     "SELECT c.name, MAX(c.age) AS max_age FROM c GROUP BY c.name",
-                    documentsAsJTokens
-                        .GroupBy(document => document["name"], JsonTokenEqualityComparer.Value)
-                        .Select(grouping => new JObject(
-                            new JProperty("name", grouping.Key),
-                            new JProperty("max_age", grouping.Select(document => document["age"]).Max(jToken => jToken.Value<double>()))))),
+                    documents
+                        .GroupBy(document => document["name"])
+                        .Select(grouping => CosmosObject.Create(
+                            new Dictionary<string, CosmosElement>()
+                            {
+                                { "name", grouping.Key },
+                                { "max_age", CosmosNumber64.Create(grouping.Max(document => document["age"].ToDouble())) }
+                            }))
+                        .ToList()
+                ),
 
-                 new Tuple<string, IEnumerable<JToken>>(
+                (
                     "SELECT c.name, SUM(c.age) AS sum_age FROM c GROUP BY c.name",
-                    documentsAsJTokens
-                        .GroupBy(document => document["name"], JsonTokenEqualityComparer.Value)
-                        .Select(grouping => new JObject(
-                            new JProperty("name", grouping.Key),
-                            new JProperty("sum_age", grouping.Select(document => document["age"]).Sum(jToken => jToken.Value<double>()))))),
+                    documents
+                        .GroupBy(document => document["name"])
+                        .Select(grouping => CosmosObject.Create(
+                            new Dictionary<string, CosmosElement>()
+                            {
+                                { "name", grouping.Key },
+                                { "sum_age", CosmosNumber64.Create(grouping.Sum(document => document["age"].ToDouble())) }
+                            }))
+                        .ToList()
+                ),
 
-                 new Tuple<string, IEnumerable<JToken>>(
+                (
                     "SELECT c.name, AVG(c.age) AS avg_age FROM c GROUP BY c.name",
-                    documentsAsJTokens
-                        .GroupBy(document => document["name"], JsonTokenEqualityComparer.Value)
-                        .Select(grouping => new JObject(
-                            new JProperty("name", grouping.Key),
-                            new JProperty("avg_age", grouping.Select(document => document["age"]).Average(jToken => jToken.Value<double>()))))),
+                    documents
+                        .GroupBy(document => document["name"])
+                        .Select(grouping => CosmosObject.Create(
+                            new Dictionary<string, CosmosElement>()
+                            {
+                                { "name", grouping.Key },
+                                { "avg_age", CosmosNumber64.Create(grouping.Average(document => document["age"].ToDouble())) }
+                            }))
+                        .ToList()
+                ),
 
-                  new Tuple<string, IEnumerable<JToken>>(
+                (
                     "SELECT c.name, Count(1) AS count, Min(c.age) AS min_age, Max(c.age) AS max_age FROM c GROUP BY c.name",
-                    documentsAsJTokens
-                        .GroupBy(document => document["name"], JsonTokenEqualityComparer.Value)
-                        .Select(grouping => new JObject(
-                            new JProperty("name", grouping.Key),
-                            new JProperty("count", grouping.Count()),
-                            new JProperty("min_age", grouping.Select(document => document["age"]).Min(jToken => jToken.Value<double>())),
-                            new JProperty("max_age", grouping.Select(document => document["age"]).Max(jToken => jToken.Value<double>()))))),
+                    documents
+                        .GroupBy(document => document["name"])
+                        .Select(grouping => CosmosObject.Create(
+                            new Dictionary<string, CosmosElement>()
+                            {
+                                { "name", grouping.Key },
+                                { "count", CosmosNumber64.Create(grouping.Count()) },
+                                { "min_age", CosmosNumber64.Create(grouping.Min(document => document["age"].ToDouble())) },
+                                { "max_age", CosmosNumber64.Create(grouping.Max(document => document["age"].ToDouble())) },
+                            }))
+                        .ToList()
+                ),
 
                 // ------------------------------------------
                 // SELECT VALUE
                 // ------------------------------------------
 
-                new Tuple<string, IEnumerable<JToken>>(
-                        "SELECT VALUE c.age FROM c GROUP BY c.age",
-                        documentsAsJTokens
-                            .GroupBy(document => document["age"], JsonTokenEqualityComparer.Value)
-                            .Select(grouping => grouping.Key)),
+                (
+                    "SELECT VALUE c.age FROM c GROUP BY c.age",
+                    documents
+                        .GroupBy(document => document["age"])
+                        .Select(grouping => grouping.Key)
+                        .ToList()
+                ),
 
                 // ------------------------------------------
                 // Corner Cases
                 // ------------------------------------------
 
-                new Tuple<string, IEnumerable<JToken>>(
+                (
                     "SELECT AVG(\"asdf\") as avg_asdf FROM c GROUP BY c.age",
-                        documentsAsJTokens
-                            .GroupBy(document => document["age"], JsonTokenEqualityComparer.Value)
-                            .Select(grouping => new JObject())),
+                    documents
+                        .GroupBy(document => document["age"])
+                        .Select(grouping => CosmosObject.Create(new Dictionary<string, CosmosElement>()))
+                        .ToList()
+                ),
 
-                new Tuple<string, IEnumerable<JToken>>(
+                (
                     @"SELECT 
                         c.age, 
                         AVG(c.doesNotExist) as undefined_avg,
@@ -226,35 +297,42 @@
                         SUM(c.doesNotExist) as undefined_sum
                     FROM c 
                     GROUP BY c.age",
-                        documentsAsJTokens
-                            .GroupBy(document => document["age"], JsonTokenEqualityComparer.Value)
-                            .Select(grouping => new JObject(
-                                new JProperty("age", grouping.Key),
+                    documents
+                        .GroupBy(document => document["age"])
+                        .Select(grouping => CosmosObject.Create(
+                            new Dictionary<string, CosmosElement>()
+                            {
+                                { "age", grouping.Key },
                                 // sum and count default the counter at 0
-                                new JProperty("undefined_sum", 0),
-                                new JProperty("undefined_count", 0)))),
+                                { "undefined_sum", CosmosNumber64.Create(0) },
+                                { "undefined_count", CosmosNumber64.Create(0) },
+                            }))
+                        .ToList()
+                ),
 
-                new Tuple<string, IEnumerable<JToken>>(
+                (
                     @"SELECT 
                         c.age, 
                         c.doesNotExist
                     FROM c 
                     GROUP BY c.age, c.doesNotExist",
-                        documentsAsJTokens
-                            .GroupBy(document => new JObject(
-                                new JProperty("age", document["age"]),
-                                new JProperty("doesNotExist", document["doesNotExist"])),
-                                JsonTokenEqualityComparer.Value)
-                            .Select(grouping => new JObject(
-                                new JProperty("age", grouping.Key["age"])))),
+                    documents
+                        .GroupBy(document => document["age"])
+                        .Select(grouping => CosmosObject.Create(
+                            new Dictionary<string, CosmosElement>()
+                            {
+                                { "age", grouping.Key }
+                            }))
+                        .ToList()
+                ),
             };
 
             // Test query correctness.
-            foreach ((string query, IEnumerable<JToken> expectedResults) in queryAndExpectedResultsList)
+            foreach ((string query, IReadOnlyList<CosmosElement> expectedResults) in queryAndExpectedResultsList)
             {
                 foreach (int maxItemCount in new int[] { 1, 5, 10 })
                 {
-                    List<JToken> actualWithoutContinuationTokens = await QueryTestsBase.QueryWithoutContinuationTokensAsync<JToken>(
+                    List<CosmosElement> actualWithoutContinuationTokens = await QueryTestsBase.QueryWithoutContinuationTokensAsync<CosmosElement>(
                         container,
                         query,
                         new QueryRequestOptions()
@@ -263,9 +341,9 @@
                             MaxItemCount = maxItemCount,
                             MaxBufferedItemCount = 100,
                         });
-                    HashSet<JToken> actualWithoutContinuationTokensSet = new HashSet<JToken>(actualWithoutContinuationTokens, JsonTokenEqualityComparer.Value);
+                    HashSet<CosmosElement> actualWithoutContinuationTokensSet = new HashSet<CosmosElement>(actualWithoutContinuationTokens);
 
-                    List<JToken> actualWithTryGetContinuationTokens = await QueryTestsBase.QueryWithCosmosElementContinuationTokenAsync<JToken>(
+                    List<CosmosElement> actualWithTryGetContinuationTokens = await QueryTestsBase.QueryWithCosmosElementContinuationTokenAsync<CosmosElement>(
                         container,
                         query,
                         new QueryRequestOptions()
@@ -274,7 +352,7 @@
                             MaxItemCount = maxItemCount,
                             MaxBufferedItemCount = 100,
                         });
-                    HashSet<JToken> actualWithTryGetContinuationTokensSet = new HashSet<JToken>(actualWithTryGetContinuationTokens, JsonTokenEqualityComparer.Value);
+                    HashSet<CosmosElement> actualWithTryGetContinuationTokensSet = new HashSet<CosmosElement>(actualWithTryGetContinuationTokens);
 
                     Assert.IsTrue(
                        actualWithoutContinuationTokensSet.SetEquals(actualWithTryGetContinuationTokensSet),
@@ -282,8 +360,7 @@
                        $"ActualWithoutContinuationTokens: {JsonConvert.SerializeObject(actualWithoutContinuationTokensSet)}" +
                        $"ActualWithTryGetContinuationTokens: {JsonConvert.SerializeObject(actualWithTryGetContinuationTokensSet)}");
 
-                    List<JToken> expected = expectedResults.ToList();
-                    HashSet<JToken> expectedSet = new HashSet<JToken>(expected, JsonTokenEqualityComparer.Value);
+                    HashSet<CosmosElement> expectedSet = new HashSet<CosmosElement>(expectedResults);
 
                     Assert.IsTrue(
                        actualWithoutContinuationTokensSet.SetEquals(expectedSet),

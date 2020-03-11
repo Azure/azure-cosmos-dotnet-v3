@@ -3,7 +3,7 @@
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
 //-----------------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
+namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 {
     using System;
     using System.Collections.Generic;
@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
@@ -29,10 +30,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
     [TestCategory("Query")]
     public abstract class QueryTestsBase
     {
-        protected static readonly string[] NoDocuments = new string[] { };
-        protected CosmosClient GatewayClient = TestCommon.CreateCosmosClient(true);
-        protected CosmosClient Client = TestCommon.CreateCosmosClient(false);
-        protected Cosmos.Database database;
+        internal static readonly string[] NoDocuments = new string[] { };
+        internal CosmosClient GatewayClient = TestCommon.CreateCosmosClient(true);
+        internal CosmosClient Client = TestCommon.CreateCosmosClient(false);
+        internal Cosmos.Database database;
 
         [FlagsAttribute]
         internal enum ConnectionModes
@@ -133,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
             return containerResponse;
         }
 
-        private async Task<Container> CreateNonPartitionedContainer(
+        private async Task<Container> CreateNonPartitionedContainerAsync(
             Microsoft.Azure.Cosmos.IndexingPolicy indexingPolicy = null)
         {
             string containerName = Guid.NewGuid().ToString() + "container";
@@ -191,42 +192,42 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
             return containerResponse;
         }
 
-        private async Task<Tuple<Container, List<Document>>> CreateNonPartitionedContainerAndIngestDocuments(
+        private Task<(Container, IReadOnlyList<CosmosObject>)> CreateNonPartitionedContainerAndIngestDocumentsAsync(
             IEnumerable<string> documents,
             Cosmos.IndexingPolicy indexingPolicy = null)
         {
-            return await this.CreateContainerAndIngestDocuments(
+            return this.CreateContainerAndIngestDocumentsAsync(
                 CollectionTypes.NonPartitioned,
                 documents,
                 partitionKey: null,
                 indexingPolicy: indexingPolicy);
         }
 
-        private async Task<Tuple<Container, List<Document>>> CreateSinglePartitionContainerAndIngestDocuments(
+        private Task<(Container, IReadOnlyList<CosmosObject>)> CreateSinglePartitionContainerAndIngestDocumentsAsync(
             IEnumerable<string> documents,
             string partitionKey = "/id",
             Cosmos.IndexingPolicy indexingPolicy = null)
         {
-            return await this.CreateContainerAndIngestDocuments(
+            return this.CreateContainerAndIngestDocumentsAsync(
                 CollectionTypes.SinglePartition,
                 documents,
                 partitionKey,
                 indexingPolicy);
         }
 
-        private async Task<Tuple<Container, List<Document>>> CreateMultiPartitionContainerAndIngestDocuments(
+        private Task<(Container, IReadOnlyList<CosmosObject>)> CreateMultiPartitionContainerAndIngestDocumentsAsync(
             IEnumerable<string> documents,
             string partitionKey = "/id",
             Cosmos.IndexingPolicy indexingPolicy = null)
         {
-            return await this.CreateContainerAndIngestDocuments(
+            return this.CreateContainerAndIngestDocumentsAsync(
                 CollectionTypes.MultiPartition,
                 documents,
                 partitionKey,
                 indexingPolicy);
         }
 
-        private async Task<Tuple<Container, List<Document>>> CreateContainerAndIngestDocuments(
+        private async Task<(Container, IReadOnlyList<CosmosObject>)> CreateContainerAndIngestDocumentsAsync(
             CollectionTypes collectionType,
             IEnumerable<string> documents,
             string partitionKey = "/id",
@@ -236,7 +237,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
             switch (collectionType)
             {
                 case CollectionTypes.NonPartitioned:
-                    container = await this.CreateNonPartitionedContainer(indexingPolicy);
+                    container = await this.CreateNonPartitionedContainerAsync(indexingPolicy);
                     break;
 
                 case CollectionTypes.SinglePartition:
@@ -251,7 +252,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
                     throw new ArgumentException($"Unknown {nameof(CollectionTypes)} : {collectionType}");
             }
 
-            List<Document> insertedDocuments = new List<Document>();
+            List<CosmosObject> insertedDocuments = new List<CosmosObject>();
             foreach (string document in documents)
             {
                 JObject documentObject = JsonConvert.DeserializeObject<JObject>(document);
@@ -298,12 +299,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
                     pkValue = Cosmos.PartitionKey.None;
                 }
 
-                JObject createdDocument = await container.CreateItemAsync<JObject>(documentObject, pkValue);
-                Document insertedDocument = Document.FromObject(createdDocument);
+                JObject createdDocument = await container.CreateItemAsync(documentObject, pkValue);
+                CosmosObject insertedDocument = CosmosObject.Parse<CosmosObject>(createdDocument.ToString());
                 insertedDocuments.Add(insertedDocument);
             }
 
-            return new Tuple<Container, List<Document>>(container, insertedDocuments);
+            return (container, insertedDocuments);
         }
 
         private static async Task CleanUp(CosmosClient client)
@@ -319,7 +320,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
             }
         }
 
-        protected async Task RunWithApiVersion(string apiVersion, Func<Task> function)
+        internal async Task RunWithApiVersion(string apiVersion, Func<Task> function)
         {
             string originalApiVersion = GetApiVersion();
             CosmosClient originalCosmosClient = this.Client;
@@ -349,16 +350,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
 
         internal delegate Task Query(
             Container container,
-            IEnumerable<Document> documents);
+            IReadOnlyList<CosmosObject> documents);
 
         internal delegate Task Query<T>(
             Container container,
-            IEnumerable<Document> documents,
+            IReadOnlyList<CosmosObject> documents,
             T testArgs);
 
         internal delegate CosmosClient CosmosClientFactory(ConnectionMode connectionMode);
 
-        internal Task CreateIngestQueryDelete(
+        internal Task CreateIngestQueryDeleteAsync(
             ConnectionModes connectionModes,
             CollectionTypes collectionTypes,
             IEnumerable<string> documents,
@@ -367,12 +368,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
             Cosmos.IndexingPolicy indexingPolicy = null,
             CosmosClientFactory cosmosClientFactory = null)
         {
-            Task queryWrapper(Container container, IEnumerable<Document> inputDocuments, object throwaway)
+            Task queryWrapper(Container container, IReadOnlyList<CosmosObject> inputDocuments, object throwaway)
             {
                 return query(container, inputDocuments);
             }
 
-            return this.CreateIngestQueryDelete<object>(
+            return this.CreateIngestQueryDeleteAsync<object>(
                 connectionModes,
                 collectionTypes,
                 documents,
@@ -383,7 +384,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
                 cosmosClientFactory);
         }
 
-        internal Task CreateIngestQueryDelete<T>(
+        internal Task CreateIngestQueryDeleteAsync<T>(
             ConnectionModes connectionModes,
             CollectionTypes collectionTypes,
             IEnumerable<string> documents,
@@ -393,7 +394,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
             Cosmos.IndexingPolicy indexingPolicy = null,
             CosmosClientFactory cosmosClientFactory = null)
         {
-            return this.CreateIngestQueryDelete(
+            return this.CreateIngestQueryDeleteAsync(
                 connectionModes,
                 collectionTypes,
                 documents,
@@ -422,19 +423,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
         /// <param name="partitionKey">The partition key for the partition container.</param>
         /// <param name="testArgs">The optional args that you want passed in to the query.</param>
         /// <returns>A task to await on.</returns>
-        internal async Task CreateIngestQueryDelete<T>(
-           ConnectionModes connectionModes,
-           CollectionTypes collectionTypes,
-           IEnumerable<string> documents,
-           Query<T> query,
-           CosmosClientFactory cosmosClientFactory,
-           T testArgs,
-           string partitionKey = "/id",
-           Cosmos.IndexingPolicy indexingPolicy = null)
+        internal async Task CreateIngestQueryDeleteAsync<T>(
+            ConnectionModes connectionModes,
+            CollectionTypes collectionTypes,
+            IEnumerable<string> documents,
+            Query<T> query,
+            CosmosClientFactory cosmosClientFactory,
+            T testArgs,
+            string partitionKey = "/id",
+            Cosmos.IndexingPolicy indexingPolicy = null)
         {
             try
             {
-                List<Tuple<Container, List<Document>>> collectionsAndDocuments = new List<Tuple<Container, List<Document>>>();
+                IList<(Container, IReadOnlyList<CosmosObject>)> collectionsAndDocuments = new List<(Container, IReadOnlyList<CosmosObject>)>();
                 foreach (CollectionTypes collectionType in Enum.GetValues(collectionTypes.GetType()).Cast<Enum>().Where(collectionTypes.HasFlag))
                 {
                     if (collectionType == CollectionTypes.None)
@@ -442,24 +443,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
                         continue;
                     }
 
-                    Task<Tuple<Container, List<Document>>> createContainerTask;
+                    Task<(Container, IReadOnlyList<CosmosObject>)> createContainerTask;
                     switch (collectionType)
                     {
                         case CollectionTypes.NonPartitioned:
-                            createContainerTask = this.CreateNonPartitionedContainerAndIngestDocuments(
+                            createContainerTask = this.CreateNonPartitionedContainerAndIngestDocumentsAsync(
                                 documents,
                                 indexingPolicy);
                             break;
 
                         case CollectionTypes.SinglePartition:
-                            createContainerTask = this.CreateSinglePartitionContainerAndIngestDocuments(
+                            createContainerTask = this.CreateSinglePartitionContainerAndIngestDocumentsAsync(
                                 documents,
                                 partitionKey,
                                 indexingPolicy);
                             break;
 
                         case CollectionTypes.MultiPartition:
-                            createContainerTask = this.CreateMultiPartitionContainerAndIngestDocuments(
+                            createContainerTask = this.CreateMultiPartitionContainerAndIngestDocumentsAsync(
                                 documents,
                                 partitionKey,
                                 indexingPolicy);
@@ -493,10 +494,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
                 List<Task> queryTasks = new List<Task>();
                 foreach (CosmosClient cosmosClient in cosmosClients)
                 {
-                    foreach (Tuple<Container, List<Document>> containerAndDocuments in collectionsAndDocuments)
+                    foreach ((Container container, IReadOnlyList<CosmosObject> insertedDocuments) in collectionsAndDocuments)
                     {
-                        Container container = cosmosClient.GetContainer(((ContainerCore)(ContainerInlineCore)containerAndDocuments.Item1).Database.Id, containerAndDocuments.Item1.Id);
-                        Task queryTask = Task.Run(() => query(container, containerAndDocuments.Item2, testArgs));
+                        Task queryTask = Task.Run(() => query(container, insertedDocuments, testArgs));
                         queryTasks.Add(queryTask);
                     }
                 }
@@ -539,7 +539,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
             return targetConnectionMode;
         }
 
-        protected CosmosClient CreateDefaultCosmosClient(ConnectionMode connectionMode)
+        internal CosmosClient CreateDefaultCosmosClient(ConnectionMode connectionMode)
         {
             switch (connectionMode)
             {
@@ -552,7 +552,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
             }
         }
 
-        protected CosmosClient CreateNewCosmosClient(ConnectionMode connectionMode)
+        internal CosmosClient CreateNewCosmosClient(ConnectionMode connectionMode)
         {
             switch (connectionMode)
             {
@@ -565,7 +565,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
             }
         }
 
-        protected static async Task<List<T>> QueryWithCosmosElementContinuationTokenAsync<T>(
+        internal static async Task<List<T>> QueryWithCosmosElementContinuationTokenAsync<T>(
             Container container,
             string query,
             QueryRequestOptions queryRequestOptions = null)
@@ -610,7 +610,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
             return resultsFromCosmosElementContinuationToken;
         }
 
-        protected static async Task<List<T>> QueryWithContinuationTokensAsync<T>(
+        internal static async Task<List<T>> QueryWithContinuationTokensAsync<T>(
             Container container,
             string query,
             QueryRequestOptions queryRequestOptions = null)
@@ -658,7 +658,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
             return resultsFromContinuationToken;
         }
 
-        protected static async Task<List<T>> QueryWithoutContinuationTokensAsync<T>(
+        internal static async Task<List<T>> QueryWithoutContinuationTokensAsync<T>(
             Container container,
             string query,
             QueryRequestOptions queryRequestOptions = null)
@@ -715,17 +715,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
             return results;
         }
 
-        protected static async Task NoOp()
+        internal static async Task NoOp()
         {
             await Task.Delay(0);
         }
 
-        protected static async Task<List<T>> RunQueryAsync<T>(
+        internal static Task<List<CosmosElement>> RunQueryAsync(
             Container container,
             string query,
             QueryRequestOptions queryRequestOptions = null)
         {
-            return await RunQueryCombinationsAsync<T>(
+            return RunQueryCombinationsAsync(
                 container,
                 query,
                 queryRequestOptions,
@@ -741,7 +741,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
             CosmosElementContinuationToken = 4,
         }
 
-        protected static async Task<List<T>> RunQueryCombinationsAsync<T>(
+        internal static async Task<List<CosmosElement>> RunQueryCombinationsAsync(
             Container container,
             string query,
             QueryRequestOptions queryRequestOptions,
@@ -752,11 +752,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
                 throw new ArgumentOutOfRangeException(nameof(queryDrainingMode));
             }
 
-            Dictionary<QueryDrainingMode, List<T>> queryExecutionResults = new Dictionary<QueryDrainingMode, List<T>>();
+            Dictionary<QueryDrainingMode, List<CosmosElement>> queryExecutionResults = new Dictionary<QueryDrainingMode, List<CosmosElement>>();
 
             if (queryDrainingMode.HasFlag(QueryDrainingMode.HoldState))
             {
-                List<T> queryResultsWithoutContinuationToken = await QueryWithoutContinuationTokensAsync<T>(
+                List<CosmosElement> queryResultsWithoutContinuationToken = await QueryWithoutContinuationTokensAsync<CosmosElement>(
                     container,
                     query,
                     queryRequestOptions);
@@ -766,7 +766,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
 
             if (queryDrainingMode.HasFlag(QueryDrainingMode.ContinuationToken))
             {
-                List<T> queryResultsWithContinuationTokens = await QueryWithContinuationTokensAsync<T>(
+                List<CosmosElement> queryResultsWithContinuationTokens = await QueryWithContinuationTokensAsync<CosmosElement>(
                     container,
                     query,
                     queryRequestOptions);
@@ -776,7 +776,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
 
             if (queryDrainingMode.HasFlag(QueryDrainingMode.CosmosElementContinuationToken))
             {
-                List<T> queryResultsWithCosmosElementContinuationToken = await QueryWithCosmosElementContinuationTokenAsync<T>(
+                List<CosmosElement> queryResultsWithCosmosElementContinuationToken = await QueryWithCosmosElementContinuationTokenAsync<CosmosElement>(
                     container,
                     query,
                     queryRequestOptions);
@@ -790,17 +790,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
                 {
                     if (queryDrainingMode1 != queryDrainingMode2)
                     {
-                        List<JToken> queryDrainingModeAsJTokens1 = queryExecutionResults[queryDrainingMode1]
-                            .Select(x => x == null ? JValue.CreateNull() : JToken.FromObject(x)).ToList();
-
-                        List<JToken> queryDrainingModeAsJTokens2 = queryExecutionResults[queryDrainingMode2]
-                            .Select(x => x == null ? JValue.CreateNull() : JToken.FromObject(x)).ToList();
-
+                        List<CosmosElement> first = queryExecutionResults[queryDrainingMode1];
+                        List<CosmosElement> second = queryExecutionResults[queryDrainingMode2];
                         Assert.IsTrue(
-                            queryDrainingModeAsJTokens1.SequenceEqual(queryDrainingModeAsJTokens2, JsonTokenEqualityComparer.Value),
+                            first.SequenceEqual(second),
                             $"{query} returned different results.\n" +
-                            $"{queryDrainingMode1}: {JsonConvert.SerializeObject(queryDrainingModeAsJTokens1)}\n" +
-                            $"{queryDrainingMode2}: {JsonConvert.SerializeObject(queryDrainingModeAsJTokens2)}\n");
+                            $"{queryDrainingMode1}: {JsonConvert.SerializeObject(first)}\n" +
+                            $"{queryDrainingMode2}: {JsonConvert.SerializeObject(second)}\n");
                     }
                 }
             }
@@ -808,7 +804,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query
             return queryExecutionResults.Values.First();
         }
 
-        protected async Task<List<T>> RunSinglePartitionQuery<T>(
+        internal async Task<List<T>> RunSinglePartitionQuery<T>(
             Container container,
             string query,
             QueryRequestOptions requestOptions = null)

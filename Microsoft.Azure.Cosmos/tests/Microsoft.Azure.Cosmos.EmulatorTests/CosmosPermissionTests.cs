@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.Generic;
     using System.Net;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.SDK.EmulatorTests.Query;
+    using Microsoft.Azure.Cosmos.EmulatorTests.Query;
     using Microsoft.Azure.Cosmos.Utils;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
