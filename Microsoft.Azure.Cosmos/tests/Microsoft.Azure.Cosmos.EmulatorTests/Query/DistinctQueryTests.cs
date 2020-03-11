@@ -1,22 +1,18 @@
-﻿
-
-namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
+﻿namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 {
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Security.Cryptography.X509Certificates;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public sealed class DistinctQueryTests : QueryTestsBase
     {
         [TestMethod]
-        public Task TestDistinct_ExecuteNextAsync()
+        public async Task TestDistinct_ExecuteNextAsync()
         {
             async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
             {
@@ -24,49 +20,49 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 // To verify distint queries you can run it once without the distinct clause and run it through a hash set 
                 // then compare to the query with the distinct clause.
                 List<string> queries = new List<string>()
-            {
-                // basic distinct queries
-                "SELECT {0} VALUE null",
+                {
+                    // basic distinct queries
+                    "SELECT {0} VALUE null",
 
-                // number value distinct queries
-                "SELECT {0} VALUE c.income from c",
+                    // number value distinct queries
+                    "SELECT {0} VALUE c.income from c",
 
-                // string value distinct queries
-                "SELECT {0} VALUE c.name from c",
+                    // string value distinct queries
+                    "SELECT {0} VALUE c.name from c",
 
-                // array value distinct queries
-                "SELECT {0} VALUE c.children from c",
+                    // array value distinct queries
+                    "SELECT {0} VALUE c.children from c",
 
-                // object value distinct queries
-                "SELECT {0} VALUE c.pet from c",
+                    // object value distinct queries
+                    "SELECT {0} VALUE c.pet from c",
 
-                // scalar expressions distinct query
-                "SELECT {0} VALUE c.age % 2 FROM c",
+                    // scalar expressions distinct query
+                    "SELECT {0} VALUE c.age % 2 FROM c",
 
-                // distinct queries with order by
-                "SELECT {0} VALUE c.age FROM c ORDER BY c.age",
+                    // distinct queries with order by
+                    "SELECT {0} VALUE c.age FROM c ORDER BY c.age",
 
-                // distinct queries with top and no matching order by
-                "SELECT {0} TOP 2147483647 VALUE c.age FROM c",
+                    // distinct queries with top and no matching order by
+                    "SELECT {0} TOP 2147483647 VALUE c.age FROM c",
 
-                // distinct queries with top and  matching order by
-                "SELECT {0} TOP 2147483647 VALUE c.age FROM c ORDER BY c.age",
+                    // distinct queries with top and  matching order by
+                    "SELECT {0} TOP 2147483647 VALUE c.age FROM c ORDER BY c.age",
 
-                // distinct queries with aggregates
-                "SELECT {0} VALUE MAX(c.age) FROM c",
+                    // distinct queries with aggregates
+                    "SELECT {0} VALUE MAX(c.age) FROM c",
 
-                // distinct queries with joins
-                "SELECT {0} VALUE c.age FROM p JOIN c IN p.children",
+                    // distinct queries with joins
+                    "SELECT {0} VALUE c.age FROM p JOIN c IN p.children",
 
-                // distinct queries in subqueries
-                "SELECT {0} r.age, s FROM r JOIN (SELECT DISTINCT VALUE c FROM (SELECT 1 a) c) s WHERE r.age > 25",
+                    // distinct queries in subqueries
+                    "SELECT {0} r.age, s FROM r JOIN (SELECT DISTINCT VALUE c FROM (SELECT 1 a) c) s WHERE r.age > 25",
 
-                // distinct queries in scalar subqeries
-                "SELECT {0} p.name, (SELECT DISTINCT VALUE p.age) AS Age FROM p",
+                    // distinct queries in scalar subqeries
+                    "SELECT {0} p.name, (SELECT DISTINCT VALUE p.age) AS Age FROM p",
 
-                // select *
-                "SELECT {0} * FROM c",
-            };
+                    // select *
+                    "SELECT {0} * FROM c",
+                };
                 #endregion
                 #region ExecuteNextAsync API
                 // run the query with distinct and without + MockDistinctMap
@@ -128,11 +124,11 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 #endregion
             }
 
-            return this.TestQueryDistinctBaseAsync(ImplementationAsync);
+            await this.TestQueryDistinctBaseAsync(ImplementationAsync);
         }
 
         [TestMethod]
-        public Task TestDistinct_ContinuationTokenSupportAsync()
+        public async Task TestDistinct_ContinuationTokenSupportAsync()
         {
             async Task ImplemenationAsync(Container container, IReadOnlyList<CosmosObject> documents)
             {
@@ -180,7 +176,64 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 }
             }
 
-            return this.TestQueryDistinctBaseAsync(ImplemenationAsync);
+            await this.TestQueryDistinctBaseAsync(ImplemenationAsync);
+        }
+
+        [TestMethod]
+        public async Task TestDistinct_TryGetContinuationTokenSupportAsync()
+        {
+            async Task ImplemenationAsync(Container container, IReadOnlyList<CosmosObject> documents)
+            {
+                // Run the ordered distinct query through the continuation api, should result in the same set
+                // since the previous hash is passed in the continuation token.
+                foreach (string query in new string[]
+                {
+                    "SELECT {0} VALUE c.age FROM c ORDER BY c.age",
+                    "SELECT {0} VALUE c.name FROM c ORDER BY c.name",
+                    "SELECT {0} VALUE c.name from c",
+                    "SELECT {0} VALUE c.age from c",
+                    "SELECT {0} VALUE c.mixedTypeField from c",
+                    "SELECT {0} TOP 2147483647 VALUE c.city from c",
+                    "SELECT {0} VALUE c.age from c ORDER BY c.name",
+                })
+                {
+                    string queryWithoutDistinct = string.Format(query, "");
+                    MockDistinctMap documentsSeen = new MockDistinctMap();
+                    List<CosmosElement> documentsFromWithoutDistinct = await QueryTestsBase.RunQueryCombinationsAsync(
+                        container,
+                        queryWithoutDistinct,
+                        new QueryRequestOptions()
+                        {
+                            MaxConcurrency = 10,
+                            MaxItemCount = 100,
+                        },
+                        QueryDrainingMode.HoldState | QueryDrainingMode.CosmosElementContinuationToken);
+                    documentsFromWithoutDistinct = documentsFromWithoutDistinct
+                        .Where(document => documentsSeen.Add(document, out Cosmos.Query.Core.UInt128 hash))
+                        .ToList();
+
+                    foreach (int pageSize in new int[] { 1, 10, 100 })
+                    {
+                        string queryWithDistinct = string.Format(query, "DISTINCT");
+                        List<CosmosElement> documentsFromWithDistinct = await QueryTestsBase.RunQueryCombinationsAsync(
+                            container,
+                            queryWithDistinct,
+                            new QueryRequestOptions()
+                            {
+                                MaxConcurrency = 10,
+                                MaxItemCount = pageSize
+                            },
+                            QueryDrainingMode.HoldState | QueryDrainingMode.CosmosElementContinuationToken);
+
+                        Assert.AreEqual(
+                            expected: CosmosArray.Create(documentsFromWithDistinct),
+                            actual: CosmosArray.Create(documentsFromWithoutDistinct),
+                            message: $"Documents didn't match for {queryWithDistinct} on a Partitioned container");
+                    }
+                }
+            }
+
+            await this.TestQueryDistinctBaseAsync(ImplemenationAsync);
         }
 
         private async Task TestQueryDistinctBaseAsync(Query query)
@@ -216,61 +269,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 documents,
                 query,
                 "/id");
-        }
-
-        private async Task TestQueryDistinct(Container container, IReadOnlyList<CosmosObject> documents)
-        {
-
-            
-            #region TryGetContinuationToken Support
-            // Run the ordered distinct query through the continuation api, should result in the same set
-            // since the previous hash is passed in the continuation token.
-            foreach (string query in new string[]
-            {
-                "SELECT {0} VALUE c.age FROM c ORDER BY c.age",
-                "SELECT {0} VALUE c.name FROM c ORDER BY c.name",
-                "SELECT {0} VALUE c.name from c",
-                "SELECT {0} VALUE c.age from c",
-                "SELECT {0} VALUE c.mixedTypeField from c",
-                "SELECT {0} TOP 2147483647 VALUE c.city from c",
-                "SELECT {0} VALUE c.age from c ORDER BY c.name",
-            })
-            {
-                string queryWithoutDistinct = string.Format(query, "");
-                MockDistinctMap documentsSeen = new MockDistinctMap();
-                List<CosmosElement> documentsFromWithoutDistinct = await QueryTestsBase.RunQueryCombinationsAsync(
-                    container,
-                    queryWithoutDistinct,
-                    new QueryRequestOptions()
-                    {
-                        MaxConcurrency = 10,
-                        MaxItemCount = 100,
-                    },
-                    QueryDrainingMode.HoldState | QueryDrainingMode.CosmosElementContinuationToken);
-                documentsFromWithoutDistinct = documentsFromWithoutDistinct
-                    .Where(document => documentsSeen.Add(document, out Cosmos.Query.Core.UInt128 hash))
-                    .ToList();
-
-                foreach (int pageSize in new int[] { 1, 10, 100 })
-                {
-                    string queryWithDistinct = string.Format(query, "DISTINCT");
-                    List<CosmosElement> documentsFromWithDistinct = await QueryTestsBase.RunQueryCombinationsAsync(
-                        container,
-                        queryWithDistinct,
-                        new QueryRequestOptions()
-                        {
-                            MaxConcurrency = 10,
-                            MaxItemCount = pageSize
-                        },
-                        QueryDrainingMode.HoldState | QueryDrainingMode.CosmosElementContinuationToken);
-
-                    Assert.AreEqual(
-                        expected: CosmosArray.Create(documentsFromWithDistinct),
-                        actual: CosmosArray.Create(documentsFromWithoutDistinct),
-                        message: $"Documents didn't match for {queryWithDistinct} on a Partitioned container");
-                }
-            }
-            #endregion
         }
 
         private sealed class MockDistinctMap
