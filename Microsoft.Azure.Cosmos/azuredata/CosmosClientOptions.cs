@@ -55,7 +55,6 @@ namespace Azure.Cosmos
         /// Default request timeout
         /// </summary>
         private static readonly CosmosSerializer propertiesSerializer = new CosmosJsonSerializerWrapper(new CosmosTextJsonSerializer());
-        private static readonly CosmosSerializationOptions defaultSerializerOptions = new CosmosSerializationOptions();
 
         private int gatewayModeMaxConnectionLimit;
         private CosmosSerializationOptions serializerOptions;
@@ -304,7 +303,7 @@ namespace Azure.Cosmos
         /// </example>
         public CosmosSerializationOptions DefaultSerializerOptions
         {
-            get => this.serializerOptions ?? CosmosClientOptions.defaultSerializerOptions;
+            get => this.serializerOptions ?? new CosmosSerializationOptions();
             set
             {
                 if (this.serializer != null)
