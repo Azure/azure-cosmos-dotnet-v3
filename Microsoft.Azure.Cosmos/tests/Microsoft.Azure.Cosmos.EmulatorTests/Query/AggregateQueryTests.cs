@@ -452,7 +452,7 @@
                 }
             }
 
-            string filename = $"CrossPartitionQueryTests.AggregateMixedTypes";
+            string filename = $"Query/AggregateQueryTests.AggregateMixedTypes";
             string baselinePath = $"{filename}_baseline.xml";
 
             XmlWriterSettings settings = new XmlWriterSettings()
