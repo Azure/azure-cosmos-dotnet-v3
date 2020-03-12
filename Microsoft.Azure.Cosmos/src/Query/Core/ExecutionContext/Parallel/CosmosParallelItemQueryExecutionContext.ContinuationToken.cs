@@ -69,8 +69,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
                     Range = new Documents.Routing.Range<string>(
                         min: activeItemProducer.PartitionKeyRange.MinInclusive,
                         max: activeItemProducer.PartitionKeyRange.MaxExclusive,
-                        isMinInclusive: false,
-                        isMaxInclusive: true)
+                        isMinInclusive: true,
+                        isMaxInclusive: false)
                 };
 
                 CosmosElement compositeContinuationToken = CompositeContinuationToken.ToCosmosElement(compositeToken);
