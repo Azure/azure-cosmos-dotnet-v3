@@ -6,7 +6,6 @@ namespace Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.IO;
     using System.Net;
     using System.Net.Http;
@@ -17,7 +16,6 @@ namespace Azure.Cosmos
     using Azure.Cosmos.Serialization;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Handlers;
-    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -129,16 +127,49 @@ namespace Azure.Cosmos
         /// performance guide at <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips"/>.
         /// </summary>
         /// <param name="connectionString">The connection string to the cosmos account. ex: https://mycosmosaccount.documents.azure.com:443/;AccountKey=SuperSecretKey; </param>
-        /// <param name="clientOptions">(Optional) client options</param>
         /// <example>
         /// The CosmosClient is created with the connection string and configured to use "East US 2" region.
         /// <code language="c#">
         /// <![CDATA[
-        /// using Microsoft.Azure.Cosmos;
+        /// using Azure.Cosmos;
         /// 
         /// CosmosClient cosmosClient = new CosmosClient(
-        ///             "account-endpoint-from-portal", 
-        ///             "account-key-from-portal", 
+        ///             "connection-string-from-azure-portal");
+        /// 
+        /// // Dispose cosmosClient at application exit
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <remarks>
+        /// <seealso cref="CosmosClientOptions"/>
+        /// <seealso cref="Fluent.CosmosClientBuilder"/>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/performance-tips"/>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/troubleshoot-dot-net-sdk"/>
+        /// </remarks>
+        public CosmosClient(string connectionString)
+            : this(
+                  CosmosClientOptions.GetAccountEndpoint(connectionString),
+                  CosmosClientOptions.GetAccountKey(connectionString))
+        {
+        }
+
+        /// <summary>
+        /// Create a new CosmosClient with the connection string
+        /// 
+        /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
+        /// of the application which enables efficient connection management and performance. Please refer to 
+        /// performance guide at <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips"/>.
+        /// </summary>
+        /// <param name="connectionString">The connection string to the cosmos account. ex: https://mycosmosaccount.documents.azure.com:443/;AccountKey=SuperSecretKey; </param>
+        /// <param name="clientOptions">Client options</param>
+        /// <example>
+        /// The CosmosClient is created with the connection string and configured to use "East US 2" region.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// using Azure.Cosmos;
+        /// 
+        /// CosmosClient cosmosClient = new CosmosClient(
+        ///             "connection-string-from-azure-portal",
         ///             new CosmosClientOptions()
         ///             {
         ///                 ApplicationRegion = Regions.EastUS2,
@@ -156,7 +187,7 @@ namespace Azure.Cosmos
         /// </remarks>
         public CosmosClient(
             string connectionString,
-            CosmosClientOptions clientOptions = null)
+            CosmosClientOptions clientOptions)
             : this(
                   CosmosClientOptions.GetAccountEndpoint(connectionString),
                   CosmosClientOptions.GetAccountKey(connectionString),
@@ -178,7 +209,7 @@ namespace Azure.Cosmos
         /// The CosmosClient is created with the AccountEndpoint, AccountKey or ResourceToken and configured to use "East US 2" region.
         /// <code language="c#">
         /// <![CDATA[
-        /// using Microsoft.Azure.Cosmos;
+        /// using Azure.Cosmos;
         /// 
         /// CosmosClient cosmosClient = new CosmosClient(
         ///             "account-endpoint-from-portal", 
