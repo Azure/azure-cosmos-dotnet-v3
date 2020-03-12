@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1242](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1242) Client encryption - Fix bug in read path without encrypted properties
 - [#1189](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1189) Query diagnostics shows correct overall time.
 - [#1189](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1189) Fixed a bug that caused duplicate information in diagnostic context.
+- [#1198](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1198) Fixes null reference exception when calling a disposed client
+- [#1274](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1274) ObjectDisposedException is thrown when calling a disposed client 
 
 ## <a name="3.7.0-preview2"/> [3.7.0-preview2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.7.0-preview2) - 2020-03-09
 
