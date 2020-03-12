@@ -1542,7 +1542,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsTrue(failedToManyRequests.Count > 0, "Rate limiting appears to be disabled");
                 ResponseMessage failedResponseMessage = failedToManyRequests.First();
                 Assert.AreEqual(failedResponseMessage.StatusCode, (HttpStatusCode)429);
-                Assert.IsNull(failedResponseMessage.ErrorMessage);
+                Assert.IsNotNull(failedResponseMessage.ErrorMessage);
                 string diagnostics = failedResponseMessage.Diagnostics.ToString();
                 Assert.IsNotNull(diagnostics);
             }

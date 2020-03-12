@@ -135,6 +135,7 @@ namespace Microsoft.Azure.Cosmos.Test.BaselineTest
             Assert.IsTrue(
                 matched,
                 $@"
+                    File: {filename},
                     Expected: {baselineTextSuffix},
                     Actual:   {outputTextSuffix}");
         }
