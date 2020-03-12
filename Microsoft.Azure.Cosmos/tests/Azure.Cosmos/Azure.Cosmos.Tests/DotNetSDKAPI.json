@@ -653,7 +653,7 @@
           "Attributes": [],
           "MethodInfo": "Azure.Cosmos.CosmosDatabase GetDatabase(System.String)"
         },
-        "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetDatabaseQueryStreamIterator(Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncIteratorStateMachineAttribute(typeof(Azure.Cosmos.CosmosClient+<GetDatabaseQueryStreamIterator>d__40))]": {
+        "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetDatabaseQueryStreamIterator(Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncIteratorStateMachineAttribute(typeof(Azure.Cosmos.CosmosClient+<GetDatabaseQueryStreamIterator>d__41))]": {
           "Type": "Method",
           "Attributes": [
             "AsyncIteratorStateMachineAttribute"
@@ -675,7 +675,7 @@
           "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.Task`1[Azure.Cosmos.DatabaseResponse] CreateDatabaseAsync(System.String, System.Nullable`1[System.Int32], Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[Azure.Cosmos.DatabaseResponse] CreateDatabaseIfNotExistsAsync(System.String, System.Nullable`1[System.Int32], Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Azure.Cosmos.CosmosClient+<CreateDatabaseIfNotExistsAsync>d__37))]": {
+        "System.Threading.Tasks.Task`1[Azure.Cosmos.DatabaseResponse] CreateDatabaseIfNotExistsAsync(System.String, System.Nullable`1[System.Int32], Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Azure.Cosmos.CosmosClient+<CreateDatabaseIfNotExistsAsync>d__38))]": {
           "Type": "Method",
           "Attributes": [
             "AsyncStateMachineAttribute"
@@ -698,6 +698,11 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "System.Uri get_Endpoint()"
+        },
+        "Void .ctor(System.String)": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "Void .ctor(System.String)"
         },
         "Void .ctor(System.String, Azure.Cosmos.CosmosClientOptions)": {
           "Type": "Constructor",
