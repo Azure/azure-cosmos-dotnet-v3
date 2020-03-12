@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 userAgent: null,
                 encryptionProcessor: null,
                 dekCache: null,
-                batchExecutorCache: null);
+                batchExecutorCache: new BatchAsyncContainerExecutorCache());
 
             DatabaseCore db = new DatabaseCore(context, "test");
 
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 userAgent: null,
                 encryptionProcessor: null,
                 dekCache: null,
-                batchExecutorCache: null);
+                batchExecutorCache: new BatchAsyncContainerExecutorCache());
 
             DatabaseCore db = new DatabaseCore(context, "test");
 

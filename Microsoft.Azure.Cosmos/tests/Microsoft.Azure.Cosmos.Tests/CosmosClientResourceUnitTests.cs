@@ -165,7 +165,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
                 userAgent: null,
                 encryptionProcessor: null,
                 dekCache: null,
-                batchExecutorCache: null);
+                batchExecutorCache: new BatchAsyncContainerExecutorCache());
 
             DatabaseCore db = new DatabaseCore(context, databaseId);
             ContainerCore container = new ContainerCore(context, db, crId);
