@@ -308,7 +308,7 @@ namespace Azure.Cosmos
         /// <summary>
         /// The <see cref="Cosmos.CosmosClientOptions"/> used initialize CosmosClient
         /// </summary>
-        public virtual CosmosClientOptions ClientOptions { get; private set; }
+        internal CosmosClientOptions ClientOptions { get; private set; }
 
         /// <summary>
         /// Gets the endpoint Uri for the Azure Cosmos DB service.
