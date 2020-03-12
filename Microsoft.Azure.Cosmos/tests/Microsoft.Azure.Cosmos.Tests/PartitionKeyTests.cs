@@ -115,29 +115,17 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void TestCosmosPartitionKeyComparison()
         {
-            Cosmos.PartitionKey pk = new Cosmos.PartitionKey("partition_key");
-            Cosmos.PartitionKey equal_to_pk = new Cosmos.PartitionKey("partition_key");
-            Cosmos.PartitionKey differs_from_pk = new Cosmos.PartitionKey("different_partition_key");
+            Assert.IsTrue(new Cosmos.PartitionKey("pk").Equals((object) new Cosmos.PartitionKey("pk")));
+            Assert.IsTrue(new Cosmos.PartitionKey("pk").Equals(new Cosmos.PartitionKey("pk")));
+            Assert.IsTrue(new Cosmos.PartitionKey("pk") == new Cosmos.PartitionKey("pk"));
+            Assert.IsTrue(new Cosmos.PartitionKey("pk") != new Cosmos.PartitionKey("other_pk"));
+            Assert.IsTrue(new Cosmos.PartitionKey("pk").CompareTo(new Cosmos.PartitionKey("pk")) == 0);
+            Assert.IsTrue(new Cosmos.PartitionKey("pk").GetHashCode() == new Cosmos.PartitionKey("pk").GetHashCode());
 
-            (Func<bool> testFunction, bool expectedResult)[] testcases =
-            {
-                (() => pk.Equals((object)equal_to_pk), true),
-                (() => pk.Equals((object)differs_from_pk), false),
-                (() => pk.Equals(equal_to_pk), true),
-                (() => pk.Equals(differs_from_pk), false),
-                (() => pk == equal_to_pk, true),
-                (() => pk == differs_from_pk, false),
-                (() => pk != equal_to_pk, false),
-                (() => pk != differs_from_pk, true),
-                (() => pk.CompareTo(equal_to_pk) == 0, true),
-                (() => pk.GetHashCode() == equal_to_pk.GetHashCode(), true),
-            };
-
-            foreach ((Func<bool> testFunction, bool expectedResult) in testcases)
-            {
-                bool result = testFunction();
-                Assert.AreEqual(result, expectedResult);
-            }
+            Assert.IsFalse(new Cosmos.PartitionKey("pk").Equals((object) new Cosmos.PartitionKey("other_pk")));
+            Assert.IsFalse(new Cosmos.PartitionKey("pk").Equals(new Cosmos.PartitionKey("other_pk")));
+            Assert.IsFalse(new Cosmos.PartitionKey("pk") == new Cosmos.PartitionKey("other_pk"));
+            Assert.IsFalse(new Cosmos.PartitionKey("pk") != new Cosmos.PartitionKey("pk"));
         }
     }
 }
