@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos
     {
         private readonly Uri DatabaseRootUri = new Uri(Paths.Databases_Root, UriKind.Relative);
         private ConsistencyLevel? accountConsistencyLevel;
-        private bool disposed;
+        private bool isDisposed = false;
 
         static CosmosClient()
         {
@@ -204,54 +204,12 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(authKeyOrResourceToken));
             }
 
-            if (clientOptions == null)
-            {
-                clientOptions = new CosmosClientOptions();
-            }
-
             this.Endpoint = new Uri(accountEndpoint);
             this.AccountKey = authKeyOrResourceToken;
-            CosmosClientOptions clientOptionsClone = clientOptions.Clone();
 
-            DocumentClient documentClient = new DocumentClient(
-                this.Endpoint,
-                this.AccountKey,
-                apitype: clientOptionsClone.ApiType,
-                sendingRequestEventArgs: clientOptionsClone.SendingRequestEventArgs,
-                transportClientHandlerFactory: clientOptionsClone.TransportClientHandlerFactory,
-                connectionPolicy: clientOptionsClone.GetConnectionPolicy(),
-                enableCpuMonitor: clientOptionsClone.EnableCpuMonitor,
-                storeClientFactory: clientOptionsClone.StoreClientFactory,
-                desiredConsistencyLevel: clientOptionsClone.GetDocumentsConsistencyLevel(),
-                handler: this.CreateHttpClientHandler(clientOptions),
-                sessionContainer: clientOptionsClone.SessionContainer);
-
-            this.ClientOptions = clientOptions;
-            this.DocumentClient = documentClient;
-
-            //Request pipeline 
-            ClientPipelineBuilder clientPipelineBuilder = new ClientPipelineBuilder(
+            this.ClientContext = ClientContextCore.Create(
                 this,
-                this.ClientOptions.CustomHandlers);
-
-            this.RequestHandler = clientPipelineBuilder.Build();
-
-            CosmosSerializerCore serializerCore = CosmosSerializerCore.Create(
-                this.ClientOptions.Serializer,
-                this.ClientOptions.SerializerOptions);
-
-            this.ResponseFactory = new CosmosResponseFactory(serializerCore);
-
-            this.ClientContext = new ClientContextCore(
-                client: this,
-                clientOptions: this.ClientOptions,
-                serializerCore: serializerCore,
-                cosmosResponseFactory: this.ResponseFactory,
-                requestHandler: this.RequestHandler,
-                documentClient: this.DocumentClient,
-                userAgent: this.DocumentClient.ConnectionPolicy.UserAgentContainer.UserAgent,
-                encryptionProcessor: new EncryptionProcessor(),
-                dekCache: new DekCache());
+                clientOptions);
         }
 
         /// <summary>
@@ -287,38 +245,16 @@ namespace Microsoft.Azure.Cosmos
             this.Endpoint = new Uri(accountEndpoint);
             this.AccountKey = authKeyOrResourceToken;
 
-            this.ClientOptions = cosmosClientOptions;
-            this.DocumentClient = documentClient;
-
-            //Request pipeline 
-            ClientPipelineBuilder clientPipelineBuilder = new ClientPipelineBuilder(
-                this,
-                this.ClientOptions.CustomHandlers);
-
-            this.RequestHandler = clientPipelineBuilder.Build();
-
-            CosmosSerializerCore serializerCore = CosmosSerializerCore.Create(
-                this.ClientOptions.Serializer,
-                this.ClientOptions.SerializerOptions);
-
-            this.ResponseFactory = new CosmosResponseFactory(serializerCore);
-
-            this.ClientContext = new ClientContextCore(
-                client: this,
-                clientOptions: this.ClientOptions,
-                serializerCore: serializerCore,
-                cosmosResponseFactory: this.ResponseFactory,
-                requestHandler: this.RequestHandler,
-                documentClient: this.DocumentClient,
-                userAgent: this.DocumentClient.ConnectionPolicy.UserAgentContainer.UserAgent,
-                encryptionProcessor: new EncryptionProcessor(),
-                dekCache: new DekCache());
+            this.ClientContext = ClientContextCore.Create(
+                 this,
+                 documentClient,
+                 cosmosClientOptions);
         }
 
         /// <summary>
         /// The <see cref="Cosmos.CosmosClientOptions"/> used initialize CosmosClient.
         /// </summary>
-        public virtual CosmosClientOptions ClientOptions { get; }
+        public virtual CosmosClientOptions ClientOptions => this.ClientContext.ClientOptions;
 
         /// <summary>
         /// Gets the endpoint Uri for the Azure Cosmos DB service.
@@ -337,11 +273,9 @@ namespace Microsoft.Azure.Cosmos
         /// </value>
         internal string AccountKey { get; }
 
-        internal DocumentClient DocumentClient { get; }
-        internal RequestInvokerHandler RequestHandler { get; }
-        internal CosmosResponseFactory ResponseFactory { get; }
+        internal DocumentClient DocumentClient => this.ClientContext.DocumentClient;
+        internal RequestInvokerHandler RequestHandler => this.ClientContext.RequestHandler;
         internal CosmosClientContext ClientContext { get; }
-        internal BatchAsyncContainerExecutorCache BatchExecutorCache { get; } = new BatchAsyncContainerExecutorCache();
 
         /// <summary>
         /// Reads the <see cref="Microsoft.Azure.Cosmos.AccountProperties"/> for the Azure Cosmos DB account.
@@ -351,7 +285,6 @@ namespace Microsoft.Azure.Cosmos
         /// </returns>
         public virtual Task<AccountProperties> ReadAccountAsync()
         {
-            this.ThrowIfDisposed();
             return ((IDocumentClientInternal)this.DocumentClient).GetDatabaseAccountInternalAsync(this.Endpoint);
         }
 
@@ -376,7 +309,6 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>Cosmos database proxy</returns>
         public virtual Database GetDatabase(string id)
         {
-            this.ThrowIfDisposed();
             return new DatabaseInlineCore(new DatabaseCore(this.ClientContext, id));
         }
 
@@ -394,7 +326,6 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>Cosmos container proxy</returns>
         public virtual Container GetContainer(string databaseId, string containerId)
         {
-            this.ThrowIfDisposed();
             if (string.IsNullOrEmpty(databaseId))
             {
                 throw new ArgumentNullException(nameof(databaseId));
@@ -431,7 +362,6 @@ namespace Microsoft.Azure.Cosmos
                 RequestOptions requestOptions = null,
                 CancellationToken cancellationToken = default(CancellationToken))
         {
-            this.ThrowIfDisposed();
             if (string.IsNullOrEmpty(id))
             {
                 throw new ArgumentNullException(nameof(id));
@@ -482,7 +412,6 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            this.ThrowIfDisposed();
             if (string.IsNullOrEmpty(id))
             {
                 throw new ArgumentNullException(nameof(id));
@@ -558,7 +487,6 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            this.ThrowIfDisposed();
             return new FeedIteratorInlineCore<T>(
                 this.GetDatabaseQueryIteratorHelper<T>(
                     queryDefinition,
@@ -608,7 +536,6 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            this.ThrowIfDisposed();
             return new FeedIteratorInlineCore(
                 this.GetDatabaseQueryStreamIteratorHelper(
                     queryDefinition,
@@ -652,7 +579,6 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            this.ThrowIfDisposed();
             QueryDefinition queryDefinition = null;
             if (queryText != null)
             {
@@ -706,7 +632,6 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            this.ThrowIfDisposed();
             QueryDefinition queryDefinition = null;
             if (queryText != null)
             {
@@ -743,7 +668,6 @@ namespace Microsoft.Azure.Cosmos
                 RequestOptions requestOptions = null,
                 CancellationToken cancellationToken = default(CancellationToken))
         {
-            this.ThrowIfDisposed();
             if (databaseProperties == null)
             {
                 throw new ArgumentNullException(nameof(databaseProperties));
@@ -761,7 +685,6 @@ namespace Microsoft.Azure.Cosmos
 
         internal virtual async Task<ConsistencyLevel> GetAccountConsistencyLevelAsync()
         {
-            this.ThrowIfDisposed();
             if (!this.accountConsistencyLevel.HasValue)
             {
                 this.accountConsistencyLevel = await this.DocumentClient.GetDefaultConsistencyLevelAsync();
@@ -772,7 +695,6 @@ namespace Microsoft.Azure.Cosmos
 
         internal DatabaseProperties PrepareDatabaseProperties(string id)
         {
-            this.ThrowIfDisposed();
             if (string.IsNullOrWhiteSpace(id))
             {
                 throw new ArgumentNullException(nameof(id));
@@ -793,7 +715,6 @@ namespace Microsoft.Azure.Cosmos
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            this.ThrowIfDisposed();
             Task<ResponseMessage> response = this.CreateDatabaseStreamInternalAsync(
                 streamPayload: this.ClientContext.SerializerCore.ToStream<DatabaseProperties>(databaseProperties),
                 throughput: throughput,
@@ -809,7 +730,6 @@ namespace Microsoft.Azure.Cosmos
                 RequestOptions requestOptions = null,
                 CancellationToken cancellationToken = default(CancellationToken))
         {
-            this.ThrowIfDisposed();
             return this.ClientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: this.DatabaseRootUri,
                 resourceType: ResourceType.Database,
@@ -823,26 +743,11 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        private HttpClientHandler CreateHttpClientHandler(CosmosClientOptions clientOptions)
-        {
-            this.ThrowIfDisposed();
-            if (clientOptions == null || (clientOptions.WebProxy == null))
-            {
-                return null;
-            }
-
-            HttpClientHandler httpClientHandler = new HttpClientHandler();
-            httpClientHandler.Proxy = clientOptions.WebProxy;
-
-            return httpClientHandler;
-        }
-
         private FeedIteratorInternal<T> GetDatabaseQueryIteratorHelper<T>(
            QueryDefinition queryDefinition,
            string continuationToken = null,
            QueryRequestOptions requestOptions = null)
         {
-            this.ThrowIfDisposed();
             if (!(this.GetDatabaseQueryStreamIteratorHelper(
                 queryDefinition,
                 continuationToken,
@@ -863,7 +768,6 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            this.ThrowIfDisposed();
             return new FeedIteratorCore(
                this.ClientContext,
                this.DatabaseRootUri,
@@ -887,21 +791,20 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="disposing">True if disposing</param>
         protected virtual void Dispose(bool disposing)
         {
-            if (!this.disposed)
+            if (!this.isDisposed)
             {
                 if (disposing)
                 {
-                    this.DocumentClient.Dispose();
-                    this.BatchExecutorCache.Dispose();
+                    this.ClientContext.Dispose();
                 }
 
-                this.disposed = true;
+                this.isDisposed = true;
             }
         }
 
         private void ThrowIfDisposed()
         {
-            if (this.disposed)
+            if (this.isDisposed)
             {
                 throw new ObjectDisposedException($"Accessing {nameof(CosmosClient)} after it is disposed is invalid.");
             }

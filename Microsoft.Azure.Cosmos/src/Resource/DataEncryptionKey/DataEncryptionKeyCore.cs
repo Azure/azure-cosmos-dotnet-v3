@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos
             string keyId)
         {
             this.Id = keyId;
-            this.ClientContext = clientContext;
+            this.ClientContext = clientContext.ThrowIfDisposed();
             this.LinkUri = DataEncryptionKeyCore.CreateLinkUri(clientContext, database, keyId);
 
             this.Database = database;

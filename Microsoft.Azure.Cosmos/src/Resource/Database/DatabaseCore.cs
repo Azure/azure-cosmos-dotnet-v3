@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos
             string databaseId)
         {
             this.Id = databaseId;
-            this.ClientContext = clientContext;
+            this.ClientContext = clientContext.ThrowIfDisposed();
             this.LinkUri = clientContext.CreateLink(
                 parentLink: null,
                 uriPathSegment: Paths.DatabasesPathSegment,

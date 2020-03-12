@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions options)
         {
             this.resourceLink = resourceLink;
-            this.clientContext = clientContext;
+            this.clientContext = clientContext.ThrowIfDisposed();
             this.resourceType = resourceType;
             this.querySpec = queryDefinition?.ToSqlQuerySpec();
             this.ContinuationToken = continuationToken;

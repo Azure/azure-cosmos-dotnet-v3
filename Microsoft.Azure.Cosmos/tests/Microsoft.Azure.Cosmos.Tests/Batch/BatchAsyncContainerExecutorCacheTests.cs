@@ -29,7 +29,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                 cosmosResponseFactory: null,
                 requestHandler: null,
                 documentClient: null,
-                userAgent: null);
+                userAgent: null,
+                encryptionProcessor: null,
+                dekCache: null,
+                batchExecutorCache: null);
 
             DatabaseCore db = new DatabaseCore(context, "test");
 
@@ -64,7 +67,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                 cosmosResponseFactory: null,
                 requestHandler: null,
                 documentClient: null,
-                userAgent: null);
+                userAgent: null,
+                encryptionProcessor: null,
+                dekCache: null,
+                batchExecutorCache: null);
 
             DatabaseCore db = new DatabaseCore(context, "test");
 
@@ -102,7 +108,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                 cosmosResponseFactory: null,
                 requestHandler: null,
                 documentClient: null,
-                userAgent: null);
+                userAgent: null,
+                encryptionProcessor: null,
+                dekCache: null,
+                batchExecutorCache: null);
 
             DatabaseCore db = new DatabaseCore(context, "test");
             ContainerCore container = new ContainerCore(context, db, "test");

@@ -23,10 +23,12 @@ namespace Microsoft.Azure.Cosmos.Handlers
         private Cosmos.ConsistencyLevel? AccountConsistencyLevel = null;
         private Cosmos.ConsistencyLevel? RequestedClientConsistencyLevel;
 
-        public RequestInvokerHandler(CosmosClient client)
+        public RequestInvokerHandler(
+            CosmosClient client,
+            Cosmos.ConsistencyLevel? requestedClientConsistencyLevel)
         {
             this.client = client;
-            this.RequestedClientConsistencyLevel = this.client.ClientOptions.ConsistencyLevel;
+            this.RequestedClientConsistencyLevel = requestedClientConsistencyLevel;
         }
 
         public override async Task<ResponseMessage> SendAsync(

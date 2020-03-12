@@ -126,7 +126,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                 cosmosResponseFactory: responseFactory,
                 requestHandler: client.RequestHandler,
                 documentClient: new MockDocumentClient(),
-                userAgent: null);
+                userAgent: null,
+                encryptionProcessor: null,
+                dekCache: null,
+                batchExecutorCache: null);
         }
     }
 }

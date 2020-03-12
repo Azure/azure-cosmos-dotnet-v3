@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.container = container;
-            this.clientContext = clientContext;
+            this.clientContext = clientContext.ThrowIfDisposed();
         }
 
         public override Task<ResponseMessage> DeleteAsync(

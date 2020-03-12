@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosQueryClient cosmosQueryClient = null)
         {
             this.Id = containerId;
-            this.ClientContext = clientContext;
+            this.ClientContext = clientContext.ThrowIfDisposed();
             this.LinkUri = clientContext.CreateLink(
                 parentLink: database.LinkUri.OriginalString,
                 uriPathSegment: Paths.CollectionsPathSegment,
@@ -465,7 +465,7 @@ namespace Microsoft.Azure.Cosmos
                 return null;
             }
 
-            return this.ClientContext.Client.BatchExecutorCache.GetExecutorForContainer(this, this.ClientContext);
+            return this.ClientContext.GetExecutorForContainer(this);
         }
 
         private Task<ResponseMessage> ReplaceStreamInternalAsync(

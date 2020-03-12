@@ -289,7 +289,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                 cosmosResponseFactory: null,
                 requestHandler: null,
                 documentClient: new MockDocumentClient(),
-                userAgent: null);
+                userAgent: null,
+                encryptionProcessor: null,
+                dekCache: null,
+                batchExecutorCache: null);
         }
     }
 }

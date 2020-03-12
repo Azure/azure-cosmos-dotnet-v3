@@ -483,10 +483,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                 cosmosClient,
                 new CosmosClientOptions() { AllowBulkExecution = true },
                 MockCosmosUtil.Serializer,
-                cosmosClient.ResponseFactory,
+                cosmosClient.ClientContext.ResponseFactory,
                 null,
                 new MockDocumentClient(),
-                "MockUserAgentString");
+                "MockUserAgentString",
+                encryptionProcessor: null,
+                dekCache: null,
+                batchExecutorCache: new BatchAsyncContainerExecutorCache());
 
             return clientContextCore;
         }
