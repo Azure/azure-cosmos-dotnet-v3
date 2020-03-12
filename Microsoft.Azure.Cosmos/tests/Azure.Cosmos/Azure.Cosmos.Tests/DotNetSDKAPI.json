@@ -735,15 +735,15 @@
           "Attributes": [],
           "MethodInfo": "Azure.Cosmos.ConnectionMode get_ConnectionMode()"
         },
-        "Azure.Cosmos.Serialization.CosmosSerializationOptions get_SerializerOptions()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Azure.Cosmos.Serialization.CosmosSerializationOptions get_SerializerOptions()"
-        },
-        "Azure.Cosmos.Serialization.CosmosSerializationOptions SerializerOptions": {
+        "Azure.Cosmos.Serialization.CosmosSerializationOptions DefaultSerializerOptions": {
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": null
+        },
+        "Azure.Cosmos.Serialization.CosmosSerializationOptions get_DefaultSerializerOptions()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Azure.Cosmos.Serialization.CosmosSerializationOptions get_DefaultSerializerOptions()"
         },
         "Azure.Cosmos.Serialization.CosmosSerializer get_Serializer()": {
           "Type": "Method",
@@ -926,6 +926,11 @@
           ],
           "MethodInfo": "Void set_ConsistencyLevel(System.Nullable`1[Azure.Cosmos.ConsistencyLevel])"
         },
+        "Void set_DefaultSerializerOptions(Azure.Cosmos.Serialization.CosmosSerializationOptions)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void set_DefaultSerializerOptions(Azure.Cosmos.Serialization.CosmosSerializationOptions)"
+        },
         "Void set_GatewayModeMaxConnectionLimit(Int32)": {
           "Type": "Method",
           "Attributes": [],
@@ -983,11 +988,6 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Void set_Serializer(Azure.Cosmos.Serialization.CosmosSerializer)"
-        },
-        "Void set_SerializerOptions(Azure.Cosmos.Serialization.CosmosSerializationOptions)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Void set_SerializerOptions(Azure.Cosmos.Serialization.CosmosSerializationOptions)"
         },
         "Void set_WebProxy(System.Net.IWebProxy)": {
           "Type": "Method",

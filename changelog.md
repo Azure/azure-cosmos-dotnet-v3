@@ -9,8 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- [#1258](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1258) Renamed CosmosClientOptions.SerializerOptions to CosmosClientOptions.DefaultSerializerOptions
 - [#1257](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1257) Explicit CosmosClient constructors for most common scenarios
-
 
 ### Fixed
 

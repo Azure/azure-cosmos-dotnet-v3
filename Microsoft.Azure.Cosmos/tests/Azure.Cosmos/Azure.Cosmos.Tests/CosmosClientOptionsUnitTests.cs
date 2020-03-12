@@ -66,7 +66,7 @@ namespace Azure.Cosmos.Tests
             Assert.AreNotEqual(apiType, clientOptions.ApiType);
             Assert.IsFalse(clientOptions.AllowBulkExecution);
             Assert.AreEqual(0, clientOptions.CustomHandlers.Count);
-            Assert.IsNull(clientOptions.SerializerOptions);
+            Assert.IsNotNull(clientOptions.DefaultSerializerOptions);
             Assert.IsNull(clientOptions.Serializer);
             Assert.IsNull(clientOptions.WebProxy);
             Assert.IsFalse(clientOptions.LimitToEndpoint);
@@ -106,9 +106,9 @@ namespace Azure.Cosmos.Tests
             Assert.AreEqual(apiType, clientOptions.ApiType);
             Assert.AreEqual(maxRetryAttemptsOnThrottledRequests, clientOptions.MaxRetryAttemptsOnRateLimitedRequests);
             Assert.AreEqual(maxRetryWaitTime, clientOptions.MaxRetryWaitTimeOnRateLimitedRequests);
-            Assert.AreEqual(cosmosSerializerOptions.IgnoreNullValues, clientOptions.SerializerOptions.IgnoreNullValues);
-            Assert.AreEqual(cosmosSerializerOptions.PropertyNamingPolicy, clientOptions.SerializerOptions.PropertyNamingPolicy);
-            Assert.AreEqual(cosmosSerializerOptions.Indented, clientOptions.SerializerOptions.Indented);
+            Assert.AreEqual(cosmosSerializerOptions.IgnoreNullValues, clientOptions.DefaultSerializerOptions.IgnoreNullValues);
+            Assert.AreEqual(cosmosSerializerOptions.PropertyNamingPolicy, clientOptions.DefaultSerializerOptions.PropertyNamingPolicy);
+            Assert.AreEqual(cosmosSerializerOptions.Indented, clientOptions.DefaultSerializerOptions.Indented);
             Assert.IsTrue(object.ReferenceEquals(webProxy, clientOptions.WebProxy));
             Assert.IsTrue(clientOptions.AllowBulkExecution);
 
@@ -219,7 +219,7 @@ namespace Azure.Cosmos.Tests
 
             CosmosClientOptions options = new CosmosClientOptions()
             {
-                SerializerOptions = new CosmosSerializationOptions()
+                DefaultSerializerOptions = new CosmosSerializationOptions()
                 {
                     IgnoreNullValues = true,
                     Indented = true,
@@ -256,7 +256,7 @@ namespace Azure.Cosmos.Tests
                 Serializer = new CosmosTextJsonSerializer()
             };
 
-            options.SerializerOptions = new CosmosSerializationOptions();
+            options.DefaultSerializerOptions = new CosmosSerializationOptions();
         }
 
         [TestMethod]
@@ -265,7 +265,7 @@ namespace Azure.Cosmos.Tests
         {
             CosmosClientOptions options = new CosmosClientOptions()
             {
-                SerializerOptions = new CosmosSerializationOptions()
+                DefaultSerializerOptions = new CosmosSerializationOptions()
             };
 
             options.Serializer = new CosmosTextJsonSerializer();
