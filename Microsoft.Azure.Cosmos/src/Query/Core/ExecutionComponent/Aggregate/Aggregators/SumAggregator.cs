@@ -86,7 +86,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
                 }
                 else if (requestContinuationToken is CosmosString cosmosString)
                 {
-                    if (!double.TryParse(cosmosString.Value, out partialSum))
+                    if (!double.TryParse(
+                        cosmosString.Value,
+                        NumberStyles.Float | NumberStyles.AllowThousands,
+                        CultureInfo.InvariantCulture,
+                        out partialSum))
                     {
                         return TryCatch<IAggregator>.FromException(
                             new MalformedContinuationTokenException(
