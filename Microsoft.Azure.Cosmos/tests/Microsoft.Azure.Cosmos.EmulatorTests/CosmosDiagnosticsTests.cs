@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Linq;
+    using System.Net;
     using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
@@ -316,6 +317,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(diagnostics.Contains("StatusCode"));
             Assert.IsTrue(diagnostics.Contains("SubStatusCode"));
             Assert.IsTrue(diagnostics.Contains("RequestUri"));
+
+            await databaseResponse.Database.DeleteAsync();
+
+            databaseResponse = await this.cosmosClient.CreateDatabaseIfNotExistsAsync(
+              id: Guid.NewGuid().ToString(),
+              requestOptions: requestOptions);
+            Assert.IsNotNull(databaseResponse.Diagnostics);
+            diagnostics = databaseResponse.Diagnostics.ToString();
+            if (disableDiagnostics)
+            {
+                Assert.AreEqual(string.Empty, diagnostics);
+                return;
+            }
+
+            Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
+
+            await databaseResponse.Database.DeleteAsync();
         }
 
         public static void VerifyQueryDiagnostics(
@@ -377,7 +395,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 contextList,
                 "PointOperationStatistics");
 
-            ValidatePointOperation(pointStatistics);
+            if (pointStatistics != null)
+            {
+                ValidatePointOperation(pointStatistics);
+            }
+            else
+            {
+                JObject storeResponseStatistics = GetJObjectInContextList(
+                    contextList,
+                    "StoreResponseStatistics");
+
+                ValidateStoreResponseStatistics(storeResponseStatistics);
+            }
         }
 
         public static void VerifyPointDiagnostics(CosmosDiagnostics diagnostics, bool disableDiagnostics)
@@ -396,57 +425,70 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(summary["UserAgent"].ToString());
             Assert.IsNotNull(summary["StartUtc"].ToString());
             Assert.IsNotNull(summary["ElapsedTime"].ToString());
-
+            Assert.IsNotNull(summary["TotalRequestCount"].ToString());
+            Assert.IsNotNull(summary["FailedRequestCount"].ToString());
             Assert.IsNotNull(jObject["Context"].ToString());
             JArray contextList = jObject["Context"].ToObject<JArray>();
             Assert.IsTrue(contextList.Count > 3);
+
+            JObject addressResolutionStatistics = GetJObjectInContextList(
+                contextList,
+                "AddressResolutionStatistics");
+
+            // Address resolution doesn't happen on every request.
+            if(addressResolutionStatistics != null)
+            {
+                ValidateAddressResolutionStatistics(addressResolutionStatistics);
+            }
 
             // Find the PointOperationStatistics object
             JObject pointStatistics = GetJObjectInContextList(
                 contextList,
                 "PointOperationStatistics");
 
-            ValidatePointOperation(pointStatistics);
+            if(pointStatistics != null)
+            {
+                ValidatePointOperation(pointStatistics);
+            }
+            else
+            {
+                JObject storeResponseStatistics = GetJObjectInContextList(
+                    contextList,
+                    "StoreResponseStatistics");
+
+                ValidateStoreResponseStatistics(storeResponseStatistics);
+            }
         }
 
-        private static void ValidatePointOperation(JObject pointStatistics)
+        private static int ValidatePointOperation(JObject pointStatistics)
         {
             Assert.IsNotNull(pointStatistics, $"Context list does not contain PointOperationStatistics.");
             int statusCode = pointStatistics["StatusCode"].ToObject<int>();
+            Assert.IsTrue(statusCode > 0);
             Assert.IsNotNull(pointStatistics["ActivityId"].ToString());
             Assert.IsNotNull(pointStatistics["StatusCode"].ToString());
             Assert.IsNotNull(pointStatistics["RequestCharge"].ToString());
             Assert.IsNotNull(pointStatistics["RequestUri"].ToString());
-            Assert.IsNotNull(pointStatistics["ClientRequestStats"].ToString());
-            JObject clientJObject = pointStatistics["ClientRequestStats"].ToObject<JObject>();
-            Assert.IsNotNull(clientJObject["RequestStartTimeUtc"].ToString());
-            Assert.IsNotNull(clientJObject["ContactedReplicas"].ToString());
-            Assert.IsNotNull(clientJObject["RequestLatency"].ToString());
 
-            // Not all request have these fields. If the field exists then it should not be null
-            if (clientJObject["EndpointToAddressResolutionStatistics"] != null)
-            {
-                Assert.IsNotNull(clientJObject["EndpointToAddressResolutionStatistics"].ToString());
-            }
+            return statusCode;
+        }
 
-            if (clientJObject["SupplementalResponseStatisticsListLast10"] != null)
-            {
-                Assert.IsNotNull(clientJObject["SupplementalResponseStatisticsListLast10"].ToString());
-            }
+        private static void ValidateStoreResponseStatistics(JObject storeResponseStatistics)
+        {
+            Assert.IsNotNull(storeResponseStatistics, $"Context list does not contain StoreResponseStatistics.");
+            Assert.IsNotNull(storeResponseStatistics["ResponseTimeUtc"].ToString());
+            Assert.IsNotNull(storeResponseStatistics["ResourceType"].ToString());
+            Assert.IsNotNull(storeResponseStatistics["OperationType"].ToString());
+            Assert.IsNotNull(storeResponseStatistics["LocationEndpoint"].ToString());
+            Assert.IsNotNull(storeResponseStatistics["StoreResult"].ToString());
+        }
 
-            if (clientJObject["FailedReplicas"] != null)
-            {
-                Assert.IsNotNull(clientJObject["FailedReplicas"].ToString());
-            }
-
-            // Session token only expected on success
-            if (statusCode >= 200 && statusCode < 300)
-            {
-                Assert.IsNotNull(clientJObject["ResponseStatisticsList"].ToString());
-                Assert.IsNotNull(clientJObject["RegionsContacted"].ToString());
-                Assert.IsNotNull(clientJObject["RequestEndTimeUtc"].ToString());
-                Assert.IsNotNull(pointStatistics["ResponseSessionToken"].ToString());
-            }
+        private static void ValidateAddressResolutionStatistics(JObject addressResolutionStatistics)
+        {
+            Assert.IsNotNull(addressResolutionStatistics, $"Context list does not contain AddressResolutionStatistics.");
+            Assert.IsNotNull(addressResolutionStatistics["StartTimeUtc"].ToString());
+            Assert.IsNotNull(addressResolutionStatistics["EndTimeUtc"].ToString());
+            Assert.IsNotNull(addressResolutionStatistics["TargetEndpoint"].ToString());
         }
 
         private static JObject GetJObjectInContextList(JArray contextList, string value, string key = "Id")

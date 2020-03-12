@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public RequestMessage()
         {
-            this.DiagnosticsContext = CosmosDiagnosticsContext.Create();
+            this.DiagnosticsContext = new CosmosDiagnosticsContextCore();
         }
 
         /// <summary>
@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.Method = method;
             this.RequestUri = requestUri;
-            this.DiagnosticsContext = CosmosDiagnosticsContext.Create();
+            this.DiagnosticsContext = new CosmosDiagnosticsContextCore();
         }
 
         /// <summary>
@@ -222,6 +222,7 @@ namespace Microsoft.Azure.Cosmos
                     serviceRequest.UseGatewayMode = this.UseGatewayMode.Value;
                 }
 
+                serviceRequest.RequestContext.ClientRequestStatistics = new CosmosClientSideRequestStatistics(this.DiagnosticsContext);
                 serviceRequest.UseStatusCodeForFailures = true;
                 serviceRequest.UseStatusCodeFor429 = true;
                 serviceRequest.Properties = this.Properties;

@@ -200,13 +200,14 @@ namespace Microsoft.Azure.Cosmos
             {
                 Code = System.Net.HttpStatusCode.BadRequest.ToString(),
                 Message = "Unsupported Query",
-                AdditionalErrorInfo = "Additional error info message"
+                AdditionalErrorInfo = "Additional error info message",
+                
             };
 
             CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContextCore();
 
             CosmosException cosmosException = CosmosExceptionFactory.CreateBadRequestException(
-                null,
+                error.ToString(),
                 error: error,
                 diagnosticsContext: diagnostics);
 

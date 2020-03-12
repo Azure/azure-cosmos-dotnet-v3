@@ -358,11 +358,17 @@ namespace Microsoft.Azure.Cosmos
                     DateTime sendTimeUtc = DateTime.UtcNow;
                     Guid localGuid = Guid.NewGuid();  // For correlating HttpRequest and HttpResponse Traces
 
-                    IClientSideRequestStatistics clientSideRequestStatistics = request.RequestContext.ClientRequestStatistics;
-                    if (clientSideRequestStatistics == null)
+                    // DEVNOTE: This is temporary until IClientSideRequestStats is modified to support gateway calls.
+                    CosmosDiagnosticsContext diagnosticsContext = null;
+                    if (request.RequestContext.ClientRequestStatistics is CosmosClientSideRequestStatistics clientSideRequestStatistics)
                     {
-                        clientSideRequestStatistics = new CosmosClientSideRequestStatistics();
-                        request.RequestContext.ClientRequestStatistics = clientSideRequestStatistics;
+                        diagnosticsContext = clientSideRequestStatistics.DiagnosticsContext;
+                    }
+                    else
+                    {
+                        // ClientRequestStatistics are not passed in use Empty to avoid null checks.
+                        // Caches do not pass in the ClientRequestStatistics
+                        diagnosticsContext = EmptyCosmosDiagnosticsContext.Singleton;
                     }
 
                     Guid requestedActivityId = Trace.CorrelationManager.ActivityId;
@@ -374,10 +380,13 @@ namespace Microsoft.Azure.Cosmos
                         requestMessage.Headers);
 
                     TimeSpan durationTimeSpan;
-                    string recordAddressResolutionId = clientSideRequestStatistics.RecordAddressResolutionStart(requestMessage.RequestUri);
                     try
                     {
-                        HttpResponseMessage responseMessage = await this.httpClient.SendAsync(requestMessage, cancellationToken);
+                        HttpResponseMessage responseMessage;
+                        using (diagnosticsContext.CreateScope("GatewayRequestTime"))
+                        {
+                            responseMessage = await this.httpClient.SendAsync(requestMessage, cancellationToken);
+                        }
 
                         DateTime receivedTimeUtc = DateTime.UtcNow;
                         durationTimeSpan = receivedTimeUtc - sendTimeUtc;
@@ -426,10 +435,6 @@ namespace Microsoft.Azure.Cosmos
                         {
                             throw;
                         }
-                    }
-                    finally
-                    {
-                        clientSideRequestStatistics.RecordAddressResolutionEnd(recordAddressResolutionId);
                     }
                 }
             };
