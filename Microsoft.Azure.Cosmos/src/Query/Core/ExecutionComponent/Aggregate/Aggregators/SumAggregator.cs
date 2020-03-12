@@ -35,20 +35,25 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
         /// <param name="localSum">The local sum.</param>
         public void Aggregate(CosmosElement localSum)
         {
+            if (double.IsNaN(this.globalSum))
+            {
+                // Global sum is undefined and nothing is going to change that.
+                return;
+            }
+
             // If someone tried to add an undefined just set the globalSum to NaN and it will stay that way for the duration of the aggregation.
             if (localSum == null)
             {
                 this.globalSum = double.NaN;
+                return;
             }
-            else
-            {
-                if (!(localSum is CosmosNumber cosmosNumber))
-                {
-                    throw new ArgumentException("localSum must be a number.");
-                }
 
-                this.globalSum += Number64.ToDouble(cosmosNumber.Value);
+            if (!(localSum is CosmosNumber cosmosNumber))
+            {
+                throw new ArgumentException("localSum must be a number.");
             }
+
+            this.globalSum += Number64.ToDouble(cosmosNumber.Value);
         }
 
         /// <summary>
@@ -75,13 +80,25 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
             double partialSum;
             if (requestContinuationToken != null)
             {
-                if (!(requestContinuationToken is CosmosNumber cosmosNumber))
+                if (requestContinuationToken is CosmosNumber cosmosNumber)
+                {
+                    partialSum = Number64.ToDouble(cosmosNumber.Value);
+                }
+                else if (requestContinuationToken is CosmosString cosmosString)
+                {
+                    if (!double.TryParse(cosmosString.Value, out partialSum))
+                    {
+                        return TryCatch<IAggregator>.FromException(
+                            new MalformedContinuationTokenException(
+                                $"Malformed {nameof(SumAggregator)} continuation token: {requestContinuationToken}"));
+                    }
+                }
+                else
                 {
                     return TryCatch<IAggregator>.FromException(
-                        new MalformedContinuationTokenException($"Malformed {nameof(SumAggregator)} continuation token: {requestContinuationToken}"));
+                        new MalformedContinuationTokenException(
+                            $"Malformed {nameof(SumAggregator)} continuation token: {requestContinuationToken}"));
                 }
-
-                partialSum = Number64.ToDouble(cosmosNumber.Value);
             }
             else
             {
