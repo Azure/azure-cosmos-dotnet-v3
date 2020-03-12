@@ -157,7 +157,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
             if (orderByItems.Count != orderByColumns.Count)
             {
                 return TryCatch.FromException(
-                    new MalformedContinuationTokenException("Order By Items from continuation token did not match the query text."));
+                    new MalformedContinuationTokenException($"Order By Items from continuation token did not match the query text. Order by item count: {orderByItems.Count()} did not match column count {orderByColumns.Count()}. Continuation token: {requestContinuation}"));
             }
 
             ReadOnlyMemory<(OrderByColumn, CosmosElement)> columnAndItems = orderByColumns.Zip(orderByItems, (column, item) => (column, item)).ToArray();
