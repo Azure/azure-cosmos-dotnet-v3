@@ -109,14 +109,16 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Determines whether the specified object is equal to the current object.
         /// </summary>
-        /// <param name="obj"></param>
+        /// <param name="obj">An object to compare.</param>
         /// <returns>true if the specified object is equal to the current object; otherwise, false.</returns>
         public override bool Equals(object obj)
         {
-            if (obj is null || this.GetType() != obj.GetType())
-                return false;
+            if (obj is PartitionKey partitionkey)
+            {
+                return this.Equals(partitionkey);
+            }
 
-            return this.Equals((PartitionKey)obj);
+            return false;
         }
 
         /// <summary>
