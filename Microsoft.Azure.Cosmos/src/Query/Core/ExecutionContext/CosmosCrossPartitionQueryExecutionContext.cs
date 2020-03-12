@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using Core.ExecutionComponent;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Diagnostics;
-    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Collections;
     using Microsoft.Azure.Cosmos.Query.Core.ComparableTask;
@@ -23,8 +22,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
-    using Microsoft.Azure.Cosmos.Sql;
-    using Microsoft.Azure.Documents.Routing;
     using PartitionKeyRange = Documents.PartitionKeyRange;
     using RequestChargeTracker = Documents.RequestChargeTracker;
     using RMResources = Documents.RMResources;
@@ -434,7 +431,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             return TryCatch.FromResult();
         }
 
-        protected static TryCatch<PartitionMapping<PartitionedToken>> TryGetInitializationInfo<PartitionedToken>(
+        public static TryCatch<PartitionMapping<PartitionedToken>> TryGetInitializationInfo<PartitionedToken>(
             IReadOnlyList<PartitionKeyRange> partitionKeyRanges,
             IReadOnlyList<PartitionedToken> partitionedContinuationTokens)
             where PartitionedToken : IPartitionedToken
@@ -490,7 +487,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                         $"{RMResources.InvalidContinuationToken} - Could not find continuation token: {firstContinuationToken}"));
             }
 
-            ReadOnlyMemory<PartitionKeyRange> partitionsLeftOfTarget = matchedIndex == 0 ? ReadOnlyMemory<PartitionKeyRange>.Empty : sortedRanges.Slice(start: 0, length: matchedIndex - 1);
+            ReadOnlyMemory<PartitionKeyRange> partitionsLeftOfTarget = matchedIndex == 0 ? ReadOnlyMemory<PartitionKeyRange>.Empty : sortedRanges.Slice(start: 0, length: matchedIndex);
             ReadOnlyMemory<PartitionKeyRange> targetPartition = sortedRanges.Slice(start: matchedIndex, length: 1);
             ReadOnlyMemory<PartitionKeyRange> partitionsRightOfTarget = matchedIndex == sortedRanges.Length - 1 ? ReadOnlyMemory<PartitionKeyRange>.Empty : sortedRanges.Slice(start: matchedIndex + 1);
 
@@ -521,7 +518,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         /// <param name="partitionKeyRanges">The partition key ranges to match.</param>
         /// <param name="partitionedContinuationTokens">The continuation tokens to match with.</param>
         /// <returns>A dictionary of ranges matched with their continuation tokens.</returns>
-        private static IReadOnlyDictionary<PartitionKeyRange, PartitionedToken> MatchRangesToContinuationTokens<PartitionedToken>(
+        public static IReadOnlyDictionary<PartitionKeyRange, PartitionedToken> MatchRangesToContinuationTokens<PartitionedToken>(
             ReadOnlyMemory<PartitionKeyRange> partitionKeyRanges,
             IReadOnlyList<PartitionedToken> partitionedContinuationTokens)
             where PartitionedToken : IPartitionedToken

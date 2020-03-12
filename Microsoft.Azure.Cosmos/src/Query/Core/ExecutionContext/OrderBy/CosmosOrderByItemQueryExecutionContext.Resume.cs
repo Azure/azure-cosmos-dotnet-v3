@@ -190,7 +190,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
                     tryFilterAsync: async (itemProducerTree) =>
                     {
                         if (!tokenMapping.TryGetValue(
-                            itemProducerTree.PartitionKeyRange,
+                            itemProducerTree.Root.PartitionKeyRange,
                             out OrderByContinuationToken continuationToken))
                         {
                             throw new InvalidOperationException($"Failed to retrieve {nameof(OrderByContinuationToken)}.");
@@ -473,7 +473,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
             StringBuilder target = new StringBuilder();
             StringBuilder right = new StringBuilder();
 
-            (StringBuilder, StringBuilder, StringBuilder) builders = (left, right, target);
+            (StringBuilder, StringBuilder, StringBuilder) builders = (left, target, right);
 
             if (isSingleOrderBy)
             {
