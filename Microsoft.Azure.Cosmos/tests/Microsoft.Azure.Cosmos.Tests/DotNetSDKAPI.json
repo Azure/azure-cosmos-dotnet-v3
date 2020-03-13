@@ -260,6 +260,63 @@
       },
       "NestedTypes": {}
     },
+    "ChangeFeedProcessor": {
+      "Subclasses": {},
+      "Members": {
+        "System.Threading.Tasks.Task StartAsync()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task StartAsync()"
+        },
+        "System.Threading.Tasks.Task StopAsync()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task StopAsync()"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "ChangeFeedProcessorBuilder": {
+      "Subclasses": {},
+      "Members": {
+        "Microsoft.Azure.Cosmos.ChangeFeedProcessor Build()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedProcessor Build()"
+        },
+        "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder WithInstanceName(System.String)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder WithInstanceName(System.String)"
+        },
+        "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder WithLeaseConfiguration(System.Nullable`1[System.TimeSpan], System.Nullable`1[System.TimeSpan], System.Nullable`1[System.TimeSpan])": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder WithLeaseConfiguration(System.Nullable`1[System.TimeSpan], System.Nullable`1[System.TimeSpan], System.Nullable`1[System.TimeSpan])"
+        },
+        "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder WithLeaseContainer(Microsoft.Azure.Cosmos.Container)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder WithLeaseContainer(Microsoft.Azure.Cosmos.Container)"
+        },
+        "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder WithMaxItems(Int32)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder WithMaxItems(Int32)"
+        },
+        "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder WithPollInterval(System.TimeSpan)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder WithPollInterval(System.TimeSpan)"
+        },
+        "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder WithStartTime(System.DateTime)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder WithStartTime(System.DateTime)"
+        }
+      },
+      "NestedTypes": {}
+    },
     "CompositePath": {
       "Subclasses": {},
       "Members": {
@@ -590,6 +647,16 @@
     "Container": {
       "Subclasses": {},
       "Members": {
+        "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder GetChangeFeedEstimatorBuilder(System.String, ChangesEstimationHandler, System.Nullable`1[System.TimeSpan])": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder GetChangeFeedEstimatorBuilder(System.String, ChangesEstimationHandler, System.Nullable`1[System.TimeSpan])"
+        },
+        "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder[T](System.String, ChangesHandler`1)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder[T](System.String, ChangesHandler`1)"
+        },
         "Microsoft.Azure.Cosmos.Conflicts Conflicts": {
           "Type": "Property",
           "Attributes": [],
@@ -629,16 +696,6 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator`1[T] GetItemQueryIterator[T](System.String, System.String, Microsoft.Azure.Cosmos.QueryRequestOptions)"
-        },
-        "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder GetChangeFeedEstimatorBuilder(System.String, ChangesEstimationHandler, System.Nullable`1[System.TimeSpan])": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder GetChangeFeedEstimatorBuilder(System.String, ChangesEstimationHandler, System.Nullable`1[System.TimeSpan])"
-        },
-        "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder[T](System.String, ChangesHandler`1)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder[T](System.String, ChangesHandler`1)"
         },
         "Microsoft.Azure.Cosmos.Scripts.Scripts get_Scripts()": {
           "Type": "Method",
@@ -2922,63 +2979,6 @@
       },
       "NestedTypes": {}
     },
-    "ChangeFeedProcessor": {
-      "Subclasses": {},
-      "Members": {
-        "System.Threading.Tasks.Task StartAsync()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "System.Threading.Tasks.Task StartAsync()"
-        },
-        "System.Threading.Tasks.Task StopAsync()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "System.Threading.Tasks.Task StopAsync()"
-        }
-      },
-      "NestedTypes": {}
-    },
-    "ChangeFeedProcessorBuilder": {
-      "Subclasses": {},
-      "Members": {
-        "Microsoft.Azure.Cosmos.ChangeFeedProcessor Build()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedProcessor Build()"
-        },
-        "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder WithInstanceName(System.String)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder WithInstanceName(System.String)"
-        },
-        "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder WithLeaseConfiguration(System.Nullable`1[System.TimeSpan], System.Nullable`1[System.TimeSpan], System.Nullable`1[System.TimeSpan])": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder WithLeaseConfiguration(System.Nullable`1[System.TimeSpan], System.Nullable`1[System.TimeSpan], System.Nullable`1[System.TimeSpan])"
-        },
-        "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder WithLeaseContainer(Microsoft.Azure.Cosmos.Container)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder WithLeaseContainer(Microsoft.Azure.Cosmos.Container)"
-        },
-        "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder WithMaxItems(Int32)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder WithMaxItems(Int32)"
-        },
-        "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder WithPollInterval(System.TimeSpan)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder WithPollInterval(System.TimeSpan)"
-        },
-        "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder WithStartTime(System.DateTime)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder WithStartTime(System.DateTime)"
-        }
-      },
-      "NestedTypes": {}
-    },
     "IncludedPath": {
       "Subclasses": {},
       "Members": {
@@ -4295,6 +4295,26 @@
           "Attributes": [],
           "MethodInfo": null
         },
+        "System.String ChinaEast": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String ChinaEast2": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String ChinaNorth": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String ChinaNorth2": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
         "System.String EastAsia": {
           "Type": "Field",
           "Attributes": [],
@@ -4341,26 +4361,6 @@
           "MethodInfo": null
         },
         "System.String GermanyWestCentral": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String ChinaEast": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String ChinaEast2": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String ChinaNorth": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String ChinaNorth2": {
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": null
