@@ -16,7 +16,11 @@ namespace Microsoft.Azure.Cosmos
         /// elapsed time since the start of the request.
         /// </summary>
         /// <returns>The end to end elapsed time of the request.</returns>
-        public abstract TimeSpan GetElapsedTime();
+        public virtual TimeSpan GetElapsedTime()
+        {
+            // Default implementation avoids breaking change for users upgrading.
+            throw new NotImplementedException($"CosmosDiagnostics.GetElapsedTime");
+        }
 
         /// <summary>
         /// Gets the string field <see cref="CosmosDiagnostics"/> instance in the Azure CosmosDB database service.
