@@ -6,10 +6,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using Microsoft.Azure.Cosmos.Diagnostics;
-    using Microsoft.Azure.Documents;
-    using static Microsoft.Azure.Cosmos.CosmosClientSideRequestStatistics;
 
     /// <summary>
     /// This represents the diagnostics interface used in the SDK.
@@ -47,7 +44,7 @@ namespace Microsoft.Azure.Cosmos
         internal abstract void AddDiagnosticsInternal(CosmosDiagnosticsContext newContext);
 
         internal abstract void SetSdkUserAgent(string userAgent);
-       
+
         public abstract IEnumerator<CosmosDiagnosticsInternal> GetEnumerator();
 
         IEnumerator IEnumerable.GetEnumerator()
