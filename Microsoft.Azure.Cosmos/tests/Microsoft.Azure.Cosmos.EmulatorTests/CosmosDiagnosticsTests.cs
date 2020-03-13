@@ -380,7 +380,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             JObject jObject = JObject.Parse(info);
 
             JArray contextList = jObject["Context"].ToObject<JArray>();
-            Assert.IsTrue(contextList.Count > 0);
 
             // Find the PointOperationStatistics object
             JObject page = GetJObjectInContextList(

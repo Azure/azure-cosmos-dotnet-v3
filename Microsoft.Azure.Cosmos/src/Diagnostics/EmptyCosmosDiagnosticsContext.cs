@@ -19,9 +19,7 @@ namespace Microsoft.Azure.Cosmos
 
         public static readonly CosmosDiagnosticsContext Singleton = new EmptyCosmosDiagnosticsContext();
 
-        private static readonly Stopwatch Stopwatch = new Stopwatch();
-
-        private static readonly DateTime DefaultStartUtc = new DateTime(0);
+        private static readonly DateTime DefaultStartUtc = DateTime.MinValue;
 
         private EmptyCosmosDiagnosticsContext()
         {
@@ -38,9 +36,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal override CosmosDiagnostics Diagnostics { get; }
 
-        public override Stopwatch OverallClientRequestTime => EmptyCosmosDiagnosticsContext.Stopwatch;
-
-        internal override CosmosDiagnosticScope CreateOverallScope(string name)
+        internal override CosmosDiagnosticScope GetOverallScope()
         {
             return EmptyCosmosDiagnosticsContext.DefaultScope;
         }
@@ -90,6 +86,16 @@ namespace Microsoft.Azure.Cosmos
         public override IEnumerator<CosmosDiagnosticsInternal> GetEnumerator()
         {
             return EmptyCosmosDiagnosticsContext.EmptyList.GetEnumerator();
+        }
+
+        internal override TimeSpan GetElapsedTime()
+        {
+            return TimeSpan.Zero;
+        }
+
+        internal override bool IsComplete()
+        {
+            return true;
         }
     }
 }

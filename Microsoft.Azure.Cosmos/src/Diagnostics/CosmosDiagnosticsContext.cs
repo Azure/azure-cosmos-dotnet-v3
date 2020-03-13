@@ -26,11 +26,13 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract CosmosDiagnostics Diagnostics { get; }
 
-        public abstract Stopwatch OverallClientRequestTime { get; }
-
-        internal abstract CosmosDiagnosticScope CreateOverallScope(string name);
+        internal abstract CosmosDiagnosticScope GetOverallScope();
 
         internal abstract CosmosDiagnosticScope CreateScope(string name);
+
+        internal abstract TimeSpan GetElapsedTime();
+
+        internal abstract bool IsComplete();
 
         internal abstract void AddDiagnosticsInternal(PointOperationStatistics pointOperationStatistics);
 

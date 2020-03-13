@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
 
@@ -107,20 +108,22 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 throw new ArgumentNullException(nameof(resourceUri));
             }
 
-            HttpMethod method = RequestInvokerHandler.GetHttpMethod(operationType);
-
+            // DEVNOTE: Non-Item operations need to be refactored to always pass
+            // the diagnostic context in. https://github.com/Azure/azure-cosmos-dotnet-v3/issues/1276
+            CosmosDiagnosticScope overallScope = null;
             if (diagnosticsContext == null)
             {
                 diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
+                overallScope = diagnosticsContext.GetOverallScope();
             }
 
-            diagnosticsContext.SetSdkUserAgent(this.client.ClientContext.UserAgent);
-            using (diagnosticsContext.CreateOverallScope("RequestInvokerHandler"))
-            {
+            using (overallScope)
+            { 
+                HttpMethod method = RequestInvokerHandler.GetHttpMethod(operationType);
                 RequestMessage request = new RequestMessage(
-                    method,
-                    resourceUri,
-                    diagnosticsContext)
+                        method,
+                        resourceUri,
+                        diagnosticsContext)
                 {
                     OperationType = operationType,
                     ResourceType = resourceType,

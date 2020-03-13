@@ -18,11 +18,10 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
         private bool isDisposed = false;
 
         public CosmosDiagnosticScope(
-            string name,
-            Stopwatch stopwatch = null)
+            string name)
         {
             this.Id = name;
-            this.ElapsedTimeStopWatch = stopwatch ?? Stopwatch.StartNew();
+            this.ElapsedTimeStopWatch = Stopwatch.StartNew();
         }
 
         public string Id { get; }
@@ -36,6 +35,16 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
             elapsedTime = this.ElapsedTimeStopWatch.Elapsed;
             return true;
+        }
+
+        internal TimeSpan GetElapsedTime()
+        {
+            return this.ElapsedTimeStopWatch.Elapsed;
+        }
+
+        internal bool IsComplete()
+        {
+            return this.ElapsedTimeStopWatch.IsRunning;
         }
 
         public void Dispose()

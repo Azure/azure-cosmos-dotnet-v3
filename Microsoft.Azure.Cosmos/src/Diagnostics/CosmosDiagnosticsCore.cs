@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos
         /// <inheritdoc/>
         public override TimeSpan GetElapsedTime()
         {
-            return this.Context.OverallClientRequestTime.Elapsed;
+            return this.Context.GetElapsedTime();
         }
 
         /// <inheritdoc/>

@@ -25,9 +25,9 @@ namespace Microsoft.Azure.Cosmos
 
         private static readonly string DefaultUserAgentString;
 
-        private readonly bool IsDefaultUserAgent = true;
+        private readonly CosmosDiagnosticScope overallScope;
 
-        private bool isOverallScopeSet = false;
+        private bool IsDefaultUserAgent = true;
 
         static CosmosDiagnosticsContextCore()
         {
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos
             this.StartUtc = DateTime.UtcNow;
             this.ContextList = new List<CosmosDiagnosticsInternal>();
             this.Diagnostics = new CosmosDiagnosticsCore(this);
-            this.OverallClientRequestTime = Stopwatch.StartNew();
+            this.overallScope = new CosmosDiagnosticScope("Overall");
         }
 
         public override DateTime StartUtc { get; }
@@ -54,24 +54,19 @@ namespace Microsoft.Azure.Cosmos
 
         internal override CosmosDiagnostics Diagnostics { get; }
 
-        public override Stopwatch OverallClientRequestTime { get; }
-
-        internal override CosmosDiagnosticScope CreateOverallScope(string name)
+        internal override TimeSpan GetElapsedTime()
         {
-            CosmosDiagnosticScope scope;
-            // If overall is already set then let the original set the elapsed time.
-            if (this.isOverallScopeSet)
-            {
-                scope = new CosmosDiagnosticScope(name);
-            }
-            else
-            {
-                this.isOverallScopeSet = true;
-                scope = new CosmosDiagnosticScope(name, this.OverallClientRequestTime);
-            }
+            return this.overallScope.GetElapsedTime();
+        }
 
-            this.ContextList.Add(scope);
-            return scope;
+        internal override bool IsComplete()
+        {
+            return this.overallScope.IsComplete();
+        }
+
+        internal override CosmosDiagnosticScope GetOverallScope()
+        {
+            return this.overallScope;
         }
 
         internal override CosmosDiagnosticScope CreateScope(string name)
@@ -138,6 +133,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal override void SetSdkUserAgent(string userAgent)
         {
+            this.IsDefaultUserAgent = false;
             this.UserAgent = userAgent;
         }
 
