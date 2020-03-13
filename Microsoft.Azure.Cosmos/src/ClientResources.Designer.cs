@@ -331,6 +331,24 @@ namespace Microsoft.Azure.Cosmos {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Cannot define EffectivePartitionKeyRouting and FeedToken simultaneously..
+        /// </summary>
+        internal static string FeedToken_EffectivePartitionKeyRouting {
+            get {
+                return ResourceManager.GetString("FeedToken_EffectivePartitionKeyRouting", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Expected FeedTokenInternal instance..
+        /// </summary>
+        internal static string FeedToken_InvalidImplementation {
+            get {
+                return ResourceManager.GetString("FeedToken_InvalidImplementation", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Provide a value greater than zero..
         /// </summary>
         internal static string FeedToken_MaxTokensOutOfRange {

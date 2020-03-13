@@ -12,6 +12,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Documents;
     using static Microsoft.Azure.Documents.RuntimeConstants;
 
@@ -20,13 +22,15 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal sealed class FeedIteratorCore : FeedIteratorInternal
     {
+        private readonly ContainerCore containerCore;
         private readonly CosmosClientContext clientContext;
         private readonly Uri resourceLink;
         private readonly ResourceType resourceType;
         private readonly SqlQuerySpec querySpec;
         private bool hasMoreResultsInternal;
+        private FeedTokenInternal feedTokenInternal;
 
-        public FeedIteratorCore(
+        internal static FeedIteratorCore CreateForNonPartitionedResource( 
             CosmosClientContext clientContext,
             Uri resourceLink,
             ResourceType resourceType,
@@ -34,11 +38,59 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken,
             QueryRequestOptions options)
         {
+            return new FeedIteratorCore(
+                clientContext: clientContext,
+                containerCore: null,
+                resourceLink: resourceLink,
+                resourceType: resourceType,
+                queryDefinition: queryDefinition,
+                continuationToken: continuationToken,
+                feedTokenInternal: null,
+                options: options);
+        }
+
+        internal static FeedIteratorCore CreateForPartitionedResource(
+            ContainerCore containerCore,
+            Uri resourceLink,
+            ResourceType resourceType,
+            QueryDefinition queryDefinition,
+            string continuationToken,
+            FeedTokenInternal feedTokenInternal,
+            QueryRequestOptions options)
+        {
+            if (containerCore == null)
+            {
+                throw new ArgumentNullException(nameof(containerCore));
+            }
+
+            return new FeedIteratorCore(
+                containerCore: containerCore,
+                clientContext: containerCore.ClientContext,
+                resourceLink: resourceLink,
+                resourceType: resourceType,
+                queryDefinition: queryDefinition,
+                continuationToken: continuationToken,
+                feedTokenInternal: feedTokenInternal,
+                options: options);
+        }
+
+        private FeedIteratorCore(
+            ContainerCore containerCore,
+            CosmosClientContext clientContext,
+            Uri resourceLink,
+            ResourceType resourceType,
+            QueryDefinition queryDefinition,
+            string continuationToken,
+            FeedTokenInternal feedTokenInternal,
+            QueryRequestOptions options)
+        {
             this.resourceLink = resourceLink;
+            this.containerCore = containerCore;
             this.clientContext = clientContext;
             this.resourceType = resourceType;
             this.querySpec = queryDefinition?.ToSqlQuerySpec();
-            this.ContinuationToken = continuationToken;
+            this.feedTokenInternal = feedTokenInternal;
+            this.ContinuationToken = continuationToken ?? this.feedTokenInternal?.GetContinuation();
             this.requestOptions = options;
             this.hasMoreResultsInternal = true;
         }
@@ -50,7 +102,7 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        FeedToken FeedToken => throw new NotImplementedException();
+        FeedToken FeedToken => this.feedTokenInternal;
 
         /// <summary>
         /// The query options for the result set
@@ -67,7 +119,18 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A query response from cosmos service</returns>
-        public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
+        public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
+        {
+            CosmosDiagnosticsContext diagnostics = CosmosDiagnosticsContext.Create(this.requestOptions);
+            using (diagnostics.CreateOverallScope("FeedReadNextAsync"))
+            {
+                return this.ReadNextInternalAsync(diagnostics, cancellationToken);
+            }
+        }
+
+        private async Task<ResponseMessage> ReadNextInternalAsync(
+            CosmosDiagnosticsContext diagnostics,
+            CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -75,8 +138,27 @@ namespace Microsoft.Azure.Cosmos
             OperationType operation = OperationType.ReadFeed;
             if (this.querySpec != null)
             {
-                stream = this.clientContext.SerializerCore.ToStreamSqlQuerySpec(this.querySpec, this.resourceType);    
+                stream = this.clientContext.SerializerCore.ToStreamSqlQuerySpec(this.querySpec, this.resourceType);
                 operation = OperationType.Query;
+            }
+
+            if (this.feedTokenInternal == null)
+            {
+                TryCatch<FeedTokenInternal> tryCatchFeedTokeninternal = await this.TryInitializeFeedTokenAsync(cancellationToken);
+                if (!tryCatchFeedTokeninternal.Succeeded)
+                {
+                    if (tryCatchFeedTokeninternal.Exception.InnerException is CosmosException cosmosException)
+                    {
+                        return cosmosException.ToCosmosResponseMessage(new RequestMessage(method: null, requestUri: null, diagnosticsContext: diagnostics));
+                    }
+
+                    return CosmosExceptionFactory.CreateInternalServerErrorException(
+                        message: tryCatchFeedTokeninternal.Exception.InnerException.Message,
+                        innerException: tryCatchFeedTokeninternal.Exception.InnerException,
+                        diagnosticsContext: diagnostics).ToCosmosResponseMessage(new RequestMessage(method: null, requestUri: null, diagnosticsContext: diagnostics));
+                }
+
+                this.feedTokenInternal = tryCatchFeedTokeninternal.Result;
             }
 
             ResponseMessage response = await this.clientContext.ProcessResourceOperationStreamAsync(
@@ -95,26 +177,63 @@ namespace Microsoft.Azure.Cosmos
                        request.Headers.Add(HttpConstants.HttpHeaders.ContentType, MediaTypes.QueryJson);
                        request.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
                    }
+
+                   this.feedTokenInternal?.EnrichRequest(request);
                },
-               diagnosticsScope: null,
+               diagnosticsScope: diagnostics,
                cancellationToken: cancellationToken);
 
-            this.ContinuationToken = response.Headers.ContinuationToken;
-            this.hasMoreResultsInternal = GetHasMoreResults(this.ContinuationToken, response.StatusCode);
+            // Retry in case of splits or other scenarios only on partitioned resources
+            if (this.containerCore != null
+                && await this.feedTokenInternal.ShouldRetryAsync(this.containerCore, response, cancellationToken))
+            {
+                return await this.ReadNextInternalAsync(diagnostics, cancellationToken);
+            }
+
+            if (response.IsSuccessStatusCode)
+            {
+                this.feedTokenInternal.UpdateContinuation(response.Headers.ContinuationToken);
+                this.ContinuationToken = this.feedTokenInternal.GetContinuation();
+                this.hasMoreResultsInternal = !this.feedTokenInternal.IsDone;
+            }
+            else
+            {
+                this.hasMoreResultsInternal = false;
+            }
+
             return response;
         }
 
-        internal static string GetContinuationToken(ResponseMessage httpResponseMessage)
+        private async Task<TryCatch<FeedTokenInternal>> TryInitializeFeedTokenAsync(CancellationToken cancellationToken)
         {
-            return httpResponseMessage.Headers.ContinuationToken;
-        }
+            string containerRId = string.Empty;
+            if (this.containerCore != null)
+            {
+                try
+                {
+                    containerRId = await this.containerCore.GetRIDAsync(cancellationToken);
+                }
+                catch (Exception cosmosException)
+                {
+                    return TryCatch<FeedTokenInternal>.FromException(cosmosException);
+                }
+            }
 
-        internal static bool GetHasMoreResults(string continuationToken, HttpStatusCode statusCode)
-        {
-            // this logic might not be sufficient composite continuation token https://msdata.visualstudio.com/CosmosDB/SDK/_workitems/edit/269099
-            // in the case where this is a result set iterator for a change feed, not modified indicates that
-            // the enumeration is done for now.
-            return continuationToken != null && statusCode != HttpStatusCode.NotModified;
+            // Create FeedToken for the full Range
+            FeedTokenEPKRange feedTokenInternal = new FeedTokenEPKRange(
+                containerRId,
+                new PartitionKeyRange()
+                {
+                    MinInclusive = Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
+                    MaxExclusive = Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey
+                });
+            // Initialize with the ContinuationToken that the user passed, if any
+            if (this.ContinuationToken != null)
+            {
+                feedTokenInternal.UpdateContinuation(this.ContinuationToken);
+            }
+
+            return TryCatch<FeedTokenInternal>.FromResult(feedTokenInternal);
         }
 
         public override CosmosElement GetCosmsoElementContinuationToken()
