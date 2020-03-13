@@ -864,13 +864,13 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions requestOptions = null)
         {
             this.ThrowIfDisposed();
-            return new FeedIteratorCore(
-               this.ClientContext,
-               this.DatabaseRootUri,
-               ResourceType.Database,
-               queryDefinition,
-               continuationToken,
-               requestOptions);
+            return FeedIteratorCore.CreateForNonPartitionedResource(
+               clientContext: this.ClientContext,
+               resourceLink: this.DatabaseRootUri,
+               resourceType: ResourceType.Database,
+               queryDefinition: queryDefinition,
+               continuationToken: continuationToken,
+               options: requestOptions);
         }
 
         /// <summary>

@@ -318,4 +318,10 @@
   <data name="FeedToken_CannotParse" xml:space="preserve">
     <value>Cannot parse '{0}' as a valid FeedToken.</value>
   </data>
+  <data name="FeedToken_EffectivePartitionKeyRouting" xml:space="preserve">
+    <value>Cannot define EffectivePartitionKeyRouting and FeedToken simultaneously.</value>
+  </data>
+  <data name="FeedToken_InvalidImplementation" xml:space="preserve">
+    <value>Expected FeedTokenInternal instance.</value>
+  </data>
 </root>

@@ -296,6 +296,7 @@ namespace Microsoft.Azure.Cosmos
                 sqlQuerySpec: queryDefinition?.ToSqlQuerySpec(),
                 isContinuationExcpected: true,
                 continuationToken: continuationToken,
+                feedToken: null,
                 requestOptions: requestOptions);
         }
 
@@ -439,6 +440,98 @@ namespace Microsoft.Azure.Cosmos
                 this.ClientContext.ClientOptions.SerializerOptions);
         }
 
+#if PREVIEW
+        public override
+#else
+        internal
+#endif
+        FeedIterator<T> GetItemQueryIterator<T>(
+            FeedToken feedToken,
+            QueryDefinition queryDefinition,
+            QueryRequestOptions requestOptions = null)
+        {
+            requestOptions = requestOptions ?? new QueryRequestOptions();
+
+            if (!(this.GetItemQueryStreamIterator(
+                feedToken,
+                queryDefinition,
+                requestOptions) is FeedIteratorInternal feedIterator))
+            {
+                throw new InvalidOperationException($"Expected a FeedIteratorInternal.");
+            }
+
+            return new FeedIteratorCore<T>(
+                feedIterator: feedIterator,
+                responseCreator: this.ClientContext.ResponseFactory.CreateQueryFeedUserTypeResponse<T>);
+        }
+
+#if PREVIEW
+        public override
+#else
+        internal
+#endif
+        FeedIterator GetItemQueryStreamIterator(
+            FeedToken feedToken,
+            QueryDefinition queryDefinition,            
+            QueryRequestOptions requestOptions = null)
+        {
+            if (feedToken is FeedTokenInternal feedTokenInternal)
+            {
+                return this.GetItemQueryStreamIteratorInternal(
+                sqlQuerySpec: queryDefinition?.ToSqlQuerySpec(),
+                isContinuationExcpected: true,
+                continuationToken: null,
+                feedToken: feedTokenInternal,
+                requestOptions: requestOptions);
+            }
+
+            throw new ArgumentException(nameof(feedToken), ClientResources.FeedToken_InvalidImplementation);
+        }
+
+#if PREVIEW
+        public override
+#else
+        internal
+#endif
+        FeedIterator<T> GetItemQueryIterator<T>(
+            FeedToken feedToken,
+            string queryText = null,
+            QueryRequestOptions requestOptions = null)
+        {
+            QueryDefinition queryDefinition = null;
+            if (queryText != null)
+            {
+                queryDefinition = new QueryDefinition(queryText);
+            }
+
+            return this.GetItemQueryIterator<T>(
+                feedToken,
+                queryDefinition,
+                requestOptions);
+        }
+
+#if PREVIEW
+        public override
+#else
+        internal
+#endif
+        FeedIterator GetItemQueryStreamIterator(
+            FeedToken feedToken,
+            string queryText = null,
+            QueryRequestOptions requestOptions = null)
+        {
+            QueryDefinition queryDefinition = null;
+            if (queryText != null)
+            {
+                queryDefinition = new QueryDefinition(queryText);
+            }
+
+            return this.GetItemQueryStreamIterator(
+                feedToken,
+                queryDefinition,
+                requestOptions);
+        }
+
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
             string processorName,
             ChangesHandler<T> onChangesDelegate)
@@ -531,23 +624,30 @@ namespace Microsoft.Azure.Cosmos
             SqlQuerySpec sqlQuerySpec,
             bool isContinuationExcpected,
             string continuationToken,
+            FeedTokenInternal feedToken,
             QueryRequestOptions requestOptions)
         {
             requestOptions = requestOptions ?? new QueryRequestOptions();
 
             if (requestOptions.IsEffectivePartitionKeyRouting)
             {
+                if (feedToken != null)
+                {
+                    throw new ArgumentException(nameof(feedToken), ClientResources.FeedToken_EffectivePartitionKeyRouting);
+                }
+
                 requestOptions.PartitionKey = null;
             }
 
             if (sqlQuerySpec == null)
             {
-                return new FeedIteratorCore(
-                    this.ClientContext,
+                return FeedIteratorCore.CreateForPartitionedResource(
+                    this,
                     this.LinkUri,
                     resourceType: ResourceType.Document,
                     queryDefinition: null,
                     continuationToken: continuationToken,
+                    feedTokenInternal: feedToken,
                     options: requestOptions);
             }
 

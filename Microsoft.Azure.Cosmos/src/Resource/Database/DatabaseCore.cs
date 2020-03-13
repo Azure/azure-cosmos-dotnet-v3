@@ -416,13 +416,13 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return new FeedIteratorCore(
-               this.ClientContext,
-               this.LinkUri,
-               ResourceType.Collection,
-               queryDefinition,
-               continuationToken,
-               requestOptions);
+            return FeedIteratorCore.CreateForNonPartitionedResource(
+               clientContext: this.ClientContext,
+               resourceLink: this.LinkUri,
+               resourceType: ResourceType.Collection,
+               queryDefinition: queryDefinition,
+               continuationToken: continuationToken,
+               options: requestOptions);
         }
 
         public override FeedIterator<T> GetContainerQueryIterator<T>(
@@ -470,13 +470,13 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return new FeedIteratorCore(
-               this.ClientContext,
-               this.LinkUri,
-               ResourceType.User,
-               queryDefinition,
-               continuationToken,
-               requestOptions);
+            return FeedIteratorCore.CreateForNonPartitionedResource(
+               clientContext: this.ClientContext,
+               resourceLink: this.LinkUri,
+               resourceType: ResourceType.User,
+               queryDefinition: queryDefinition,
+               continuationToken: continuationToken,
+               options: requestOptions);
         }
 
         public override FeedIterator<T> GetUserQueryIterator<T>(string queryText = null,
@@ -603,13 +603,13 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions.EnumerationDirection = isDescending ? EnumerationDirection.Reverse : EnumerationDirection.Forward;
             }
 
-            return new FeedIteratorCore(
-                clientContext: this.ClientContext,
-                resourceLink: this.LinkUri,
-                resourceType: ResourceType.ClientEncryptionKey,
-                queryDefinition: null,
-                continuationToken: continuationToken,
-                options: requestOptions);
+            return FeedIteratorCore.CreateForNonPartitionedResource(
+               clientContext: this.ClientContext,
+               resourceLink: this.LinkUri,
+               resourceType: ResourceType.ClientEncryptionKey,
+               queryDefinition: null,
+               continuationToken: continuationToken,
+               options: requestOptions);
         }
 
 #if PREVIEW

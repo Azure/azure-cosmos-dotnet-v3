@@ -19,11 +19,6 @@ namespace Microsoft.Azure.Cosmos
 
         public FeedTokenInternal(string containerRid)
         {
-            if (string.IsNullOrEmpty(containerRid))
-            {
-                throw new ArgumentNullException(nameof(containerRid));
-            }
-
             this.ContainerRid = containerRid;
         }
 
@@ -32,6 +27,8 @@ namespace Microsoft.Azure.Cosmos
         public abstract string GetContinuation();
 
         public abstract void UpdateContinuation(string continuationToken);
+
+        public abstract bool IsDone { get; }
 
         public static bool TryParse(
             string toStringValue,

@@ -6,13 +6,10 @@ namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.IO;
     using System.Linq;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -94,6 +91,20 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void FeedToken_EPK_NotEnrichRequest_IfEPKAlreadyExists()
+        {
+            const string containerRid = "containerRid";
+            string epkString = Guid.NewGuid().ToString();
+            FeedTokenEPKRange token = new FeedTokenEPKRange(containerRid, new Documents.PartitionKeyRange() { MinInclusive = "A", MaxExclusive = "B" });
+            RequestMessage requestMessage = new RequestMessage();
+            requestMessage.Properties[HandlerConstants.StartEpkString] = epkString;
+            requestMessage.Properties[HandlerConstants.EndEpkString] = epkString;
+            token.EnrichRequest(requestMessage);
+            Assert.AreEqual(epkString, requestMessage.Properties[HandlerConstants.StartEpkString]);
+            Assert.AreEqual(epkString, requestMessage.Properties[HandlerConstants.EndEpkString]);
+        }
+
+        [TestMethod]
         public void FeedToken_PartitionKey_TryParse()
         {
             FeedTokenPartitionKey token = new FeedTokenPartitionKey(new PartitionKey("test"));
@@ -172,8 +183,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             FeedTokenEPKRange feedTokenEPKRange = new FeedTokenEPKRange(Guid.NewGuid().ToString(), new Documents.Routing.Range<string>(compositeContinuationTokens[0].Range.Min, compositeContinuationTokens[1].Range.Min, true, false), compositeContinuationTokens);
 
             ContainerCore containerCore = Mock.Of<ContainerCore>();
-
-            Assert.IsFalse(await feedTokenEPKRange.ShouldRetryAsync(containerCore, new ResponseMessage(HttpStatusCode.OK)));
+            ResponseMessage okResponse = new ResponseMessage(HttpStatusCode.OK);
+            okResponse.Headers[Documents.HttpConstants.HttpHeaders.ItemCount] = "1";
+            Assert.IsFalse(await feedTokenEPKRange.ShouldRetryAsync(containerCore, okResponse));
 
             // A 304 on a multi Range token should cycle on all available ranges before stopping retrying
             Assert.IsTrue(await feedTokenEPKRange.ShouldRetryAsync(containerCore, new ResponseMessage(HttpStatusCode.NotModified)));
@@ -275,6 +287,75 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(continuation, continuationTokens[1].Token);
             Assert.AreEqual(documentClient.AvailablePartitionKeyRanges[1].MinInclusive, continuationTokens[1].Range.Min);
             Assert.AreEqual(documentClient.AvailablePartitionKeyRanges[1].MaxExclusive, continuationTokens[1].Range.Max);
+        }
+
+        [TestMethod]
+        public void FeedToken_PartitionKey_IsDone()
+        {
+            PartitionKey pk = new PartitionKey("test");
+            FeedTokenPartitionKey token = new FeedTokenPartitionKey(pk);
+            token.UpdateContinuation(Guid.NewGuid().ToString());
+            Assert.IsFalse(token.IsDone);
+            token.UpdateContinuation(null);
+            Assert.IsTrue(token.IsDone);
+        }
+
+        [TestMethod]
+        public void FeedToken_PartitionKeyRange_IsDone()
+        {
+            string pkrangeId = "0";
+            FeedTokenPartitionKeyRange token = new FeedTokenPartitionKeyRange(pkrangeId);
+            token.UpdateContinuation(Guid.NewGuid().ToString());
+            Assert.IsFalse(token.IsDone);
+            token.UpdateContinuation(null);
+            Assert.IsTrue(token.IsDone);
+        }
+
+        [TestMethod]
+        public void FeedToken_EPK_IsDone()
+        {
+            const string containerRid = "containerRid";
+            FeedTokenEPKRange token = new FeedTokenEPKRange(containerRid,
+                new Documents.PartitionKeyRange() { MinInclusive = "A", MaxExclusive = "B" });
+
+            token.UpdateContinuation(Guid.NewGuid().ToString());
+            Assert.IsFalse(token.IsDone);
+
+            token.UpdateContinuation(null);
+            Assert.IsTrue(token.IsDone);
+        }
+
+        [TestMethod]
+        public void FeedToken_EPK_IsDone_MultipleRanges()
+        {
+            const string containerRid = "containerRid";
+            FeedTokenEPKRange token = new FeedTokenEPKRange(containerRid,
+                new List<Documents.PartitionKeyRange>() {
+                    new Documents.PartitionKeyRange() { MinInclusive = "A", MaxExclusive = "B" },
+                    new Documents.PartitionKeyRange() { MinInclusive = "B", MaxExclusive = "C" },
+                    new Documents.PartitionKeyRange() { MinInclusive = "C", MaxExclusive = "D" }
+                });
+
+            // First range has continuation
+            token.UpdateContinuation(Guid.NewGuid().ToString());
+            Assert.IsFalse(token.IsDone);
+
+            // Second range is done
+            token.UpdateContinuation(null);
+            Assert.IsFalse(token.IsDone);
+
+            // Third range is done
+            token.UpdateContinuation(null);
+            Assert.IsFalse(token.IsDone);
+
+            // First range has continuation
+            token.UpdateContinuation(Guid.NewGuid().ToString());
+            Assert.IsFalse(token.IsDone);
+
+            // MoveNext should skip the second and third
+            // Finish first one
+            token.UpdateContinuation(null);
+            Assert.IsTrue(token.IsDone);
         }
 
         private static CompositeContinuationToken BuildTokenForRange(
