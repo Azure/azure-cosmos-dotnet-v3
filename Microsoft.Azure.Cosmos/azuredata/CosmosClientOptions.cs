@@ -24,7 +24,7 @@ namespace Azure.Cosmos
     /// An example on how to configure the serialization option to ignore null values
     /// CosmosClientOptions clientOptions = new CosmosClientOptions()
     /// {
-    ///     SerializerOptions = new CosmosSerializationOptions(){
+    ///     DefaultSerializerOptions = new CosmosSerializationOptions(){
     ///         IgnoreNullValues = true
     ///     },
     ///     ConnectionMode = ConnectionMode.Gateway,
@@ -292,22 +292,22 @@ namespace Azure.Cosmos
         /// An example on how to configure the serialization option to ignore null values
         /// CosmosClientOptions clientOptions = new CosmosClientOptions()
         /// {
-        ///     SerializerOptions = new CosmosSerializationOptions(){
+        ///     DefaultSerializerOptions = new CosmosSerializationOptions(){
         ///         IgnoreNullValues = true
         ///     }
         /// };
         /// 
         /// CosmosClient client = new CosmosClient("endpoint", "key", clientOptions);
         /// </example>
-        public CosmosSerializationOptions SerializerOptions
+        public CosmosSerializationOptions DefaultSerializerOptions
         {
-            get => this.serializerOptions;
+            get => this.serializerOptions ?? new CosmosSerializationOptions();
             set
             {
-                if (this.Serializer != null)
+                if (this.serializer != null)
                 {
                     throw new ArgumentException(
-                        $"{nameof(this.SerializerOptions)} is not compatible with {nameof(this.Serializer)}. Only one can be set.  ");
+                        $"{nameof(this.DefaultSerializerOptions)} is not compatible with {nameof(this.Serializer)}. Only one can be set.  ");
                 }
 
                 this.serializerOptions = value;
@@ -334,10 +334,10 @@ namespace Azure.Cosmos
             get => this.serializer;
             set
             {
-                if (this.SerializerOptions != null)
+                if (this.serializerOptions != null)
                 {
                     throw new ArgumentException(
-                        $"{nameof(this.Serializer)} is not compatible with {nameof(this.SerializerOptions)}. Only one can be set.  ");
+                        $"{nameof(this.Serializer)} is not compatible with {nameof(this.DefaultSerializerOptions)}. Only one can be set.  ");
                 }
 
                 this.serializer = value;
@@ -488,9 +488,9 @@ namespace Azure.Cosmos
         /// </summary>
         internal CosmosSerializer GetCosmosSerializerWithWrapperOrDefault()
         {
-            if (this.SerializerOptions != null)
+            if (this.serializerOptions != null)
             {
-                CosmosTextJsonSerializer cosmosJsonDotNetSerializer = CosmosTextJsonSerializer.CreateUserDefaultSerializer(this.SerializerOptions);
+                CosmosTextJsonSerializer cosmosJsonDotNetSerializer = CosmosTextJsonSerializer.CreateUserDefaultSerializer(this.serializerOptions);
                 return new CosmosJsonSerializerWrapper(cosmosJsonDotNetSerializer);
             }
             else

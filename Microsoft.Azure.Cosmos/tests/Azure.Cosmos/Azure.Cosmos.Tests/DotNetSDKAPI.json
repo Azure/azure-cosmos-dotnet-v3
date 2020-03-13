@@ -631,18 +631,6 @@
           "Attributes": [],
           "MethodInfo": "Azure.AsyncPageable`1[T] GetDatabaseQueryIterator[T](System.String, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)"
         },
-        "Azure.Cosmos.CosmosClientOptions ClientOptions": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "Azure.Cosmos.CosmosClientOptions get_ClientOptions()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Azure.Cosmos.CosmosClientOptions get_ClientOptions()"
-        },
         "Azure.Cosmos.CosmosContainer GetContainer(System.String, System.String)": {
           "Type": "Method",
           "Attributes": [],
@@ -653,7 +641,7 @@
           "Attributes": [],
           "MethodInfo": "Azure.Cosmos.CosmosDatabase GetDatabase(System.String)"
         },
-        "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetDatabaseQueryStreamIterator(Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncIteratorStateMachineAttribute(typeof(Azure.Cosmos.CosmosClient+<GetDatabaseQueryStreamIterator>d__40))]": {
+        "System.Collections.Generic.IAsyncEnumerable`1[Azure.Response] GetDatabaseQueryStreamIterator(Azure.Cosmos.QueryDefinition, System.String, Azure.Cosmos.QueryRequestOptions, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncIteratorStateMachineAttribute(typeof(Azure.Cosmos.CosmosClient+<GetDatabaseQueryStreamIterator>d__41))]": {
           "Type": "Method",
           "Attributes": [
             "AsyncIteratorStateMachineAttribute"
@@ -675,7 +663,7 @@
           "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.Task`1[Azure.Cosmos.DatabaseResponse] CreateDatabaseAsync(System.String, System.Nullable`1[System.Int32], Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[Azure.Cosmos.DatabaseResponse] CreateDatabaseIfNotExistsAsync(System.String, System.Nullable`1[System.Int32], Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Azure.Cosmos.CosmosClient+<CreateDatabaseIfNotExistsAsync>d__37))]": {
+        "System.Threading.Tasks.Task`1[Azure.Cosmos.DatabaseResponse] CreateDatabaseIfNotExistsAsync(System.String, System.Nullable`1[System.Int32], Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Azure.Cosmos.CosmosClient+<CreateDatabaseIfNotExistsAsync>d__38))]": {
           "Type": "Method",
           "Attributes": [
             "AsyncStateMachineAttribute"
@@ -698,6 +686,11 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "System.Uri get_Endpoint()"
+        },
+        "Void .ctor(System.String)": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "Void .ctor(System.String)"
         },
         "Void .ctor(System.String, Azure.Cosmos.CosmosClientOptions)": {
           "Type": "Constructor",
@@ -730,15 +723,15 @@
           "Attributes": [],
           "MethodInfo": "Azure.Cosmos.ConnectionMode get_ConnectionMode()"
         },
-        "Azure.Cosmos.Serialization.CosmosSerializationOptions get_SerializerOptions()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Azure.Cosmos.Serialization.CosmosSerializationOptions get_SerializerOptions()"
-        },
-        "Azure.Cosmos.Serialization.CosmosSerializationOptions SerializerOptions": {
+        "Azure.Cosmos.Serialization.CosmosSerializationOptions DefaultSerializerOptions": {
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": null
+        },
+        "Azure.Cosmos.Serialization.CosmosSerializationOptions get_DefaultSerializerOptions()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Azure.Cosmos.Serialization.CosmosSerializationOptions get_DefaultSerializerOptions()"
         },
         "Azure.Cosmos.Serialization.CosmosSerializer get_Serializer()": {
           "Type": "Method",
@@ -921,6 +914,11 @@
           ],
           "MethodInfo": "Void set_ConsistencyLevel(System.Nullable`1[Azure.Cosmos.ConsistencyLevel])"
         },
+        "Void set_DefaultSerializerOptions(Azure.Cosmos.Serialization.CosmosSerializationOptions)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void set_DefaultSerializerOptions(Azure.Cosmos.Serialization.CosmosSerializationOptions)"
+        },
         "Void set_GatewayModeMaxConnectionLimit(Int32)": {
           "Type": "Method",
           "Attributes": [],
@@ -978,11 +976,6 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Void set_Serializer(Azure.Cosmos.Serialization.CosmosSerializer)"
-        },
-        "Void set_SerializerOptions(Azure.Cosmos.Serialization.CosmosSerializationOptions)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Void set_SerializerOptions(Azure.Cosmos.Serialization.CosmosSerializationOptions)"
         },
         "Void set_WebProxy(System.Net.IWebProxy)": {
           "Type": "Method",
