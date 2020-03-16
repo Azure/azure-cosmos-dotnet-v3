@@ -119,12 +119,12 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A query response from cosmos service</returns>
-        public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
+        public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
             CosmosDiagnosticsContext diagnostics = CosmosDiagnosticsContext.Create(this.requestOptions);
             using (diagnostics.GetOverallScope())
             {
-                return this.ReadNextInternalAsync(diagnostics, cancellationToken);
+                return await this.ReadNextInternalAsync(diagnostics, cancellationToken);
             }
         }
 
@@ -180,7 +180,7 @@ namespace Microsoft.Azure.Cosmos
 
                    this.feedTokenInternal?.EnrichRequest(request);
                },
-               diagnosticsContext: null,
+               diagnosticsContext: diagnostics,
                cancellationToken: cancellationToken);
 
             // Retry in case of splits or other scenarios only on partitioned resources

@@ -271,7 +271,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [DataRow(true)]
-        [DataRow(false)]
+        //[DataRow(false)]
         public async Task QueryOperationDiagnostic(bool disableDiagnostics)
         {
             int totalItems = 3;
@@ -280,6 +280,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 pkCount: totalItems,
                 perPKItemCount: 1,
                 randomPartitionKey: true);
+
+            long readFeedTotalOutputDocumentCount = await this.ExecuteQueryAndReturnOutputDocumentCount(
+                queryText: null,
+                expectedItemCount: totalItems,
+                disableDiagnostics: disableDiagnostics);
+
+            Assert.AreEqual(totalItems, readFeedTotalOutputDocumentCount);
 
             //Checking query metrics on typed query
             long totalOutputDocumentCount = await this.ExecuteQueryAndReturnOutputDocumentCount(
@@ -437,7 +444,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int expectedItemCount,
             bool disableDiagnostics)
         {
-            QueryDefinition sql = new QueryDefinition(queryText);
+            QueryDefinition sql = null;
+            if (queryText != null)
+            {
+                sql = new QueryDefinition(queryText);
+            }
 
             QueryRequestOptions requestOptions = new QueryRequestOptions()
             {
@@ -462,10 +473,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 FeedResponse<ToDoActivity> response = await feedIterator.ReadNextAsync();
                 results.AddRange(response);
-                VerifyQueryDiagnostics(
-                    response.Diagnostics,
-                    isFirst,
-                    disableDiagnostics);
+                if(queryText == null)
+                {
+                    CosmosDiagnosticsTests.VerifyPointDiagnostics(
+                        response.Diagnostics,
+                        disableDiagnostics);
+                }
+                else
+                {
+                    VerifyQueryDiagnostics(
+                       response.Diagnostics,
+                       isFirst,
+                       disableDiagnostics);
+                }
+               
                 isFirst = false;
             }
 
@@ -484,10 +505,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ResponseMessage response = await streamIterator.ReadNextAsync();
                 Collection<ToDoActivity> result = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(response.Content).Data;
                 streamResults.AddRange(result);
-                VerifyQueryDiagnostics(
-                    response.Diagnostics,
-                    isFirst,
-                    disableDiagnostics);
+                if (queryText == null)
+                {
+                    CosmosDiagnosticsTests.VerifyPointDiagnostics(
+                        response.Diagnostics,
+                        disableDiagnostics);
+                }
+                else
+                {
+                    VerifyQueryDiagnostics(
+                       response.Diagnostics,
+                       isFirst,
+                       disableDiagnostics);
+                }
+
                 isFirst = false;
             }
 
