@@ -52,6 +52,36 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
             }
         }
 
+        /// <summary>
+        /// For parallel queries the continuation token semantically holds two pieces of information:
+        /// 1) What physical partition did the user read up to
+        /// 2) How far into said partition did they read up to
+        /// And since the client consumes queries strictly in a left to right order we can partition the documents:
+        /// 1) Documents left of the continuation token have been drained
+        /// 2) Documents to the right of the continuation token still need to be served.
+        /// This is useful since we can have a single continuation token for all partitions.
+        /// </summary>
+        protected override FeedToken FeedToken
+        {
+            get
+            {
+                IEnumerable<ItemProducer> allProducers = this.GetAllItemProducers();
+                if (!allProducers.Any())
+                {
+                    return null;
+                }
+
+                List<Documents.Routing.Range<string>> rangesList = allProducers.Select(producer => producer.PartitionKeyRange.ToRange()).ToList();
+                rangesList.Sort(Documents.Routing.Range<string>.MinComparer.Instance);
+                // Single FeedToken with the completeRange and continuation
+                FeedTokenEPKRange feedToken = new FeedTokenEPKRange(
+                    string.Empty, // Rid or container reference not available
+                    rangesList,
+                    this.ContinuationToken);
+                return feedToken;
+            }
+        }
+
         public override CosmosElement GetCosmosElementContinuationToken()
         {
             IEnumerable<ItemProducer> activeItemProducers = this.GetActiveItemProducers();
