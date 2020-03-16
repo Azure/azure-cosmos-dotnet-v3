@@ -9,6 +9,7 @@
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos.Diagnostics;
 
     /// <summary>
     /// A helper that forces the SDK to use the gateway or the service interop for the query plan
@@ -45,6 +46,7 @@
             SqlQuerySpec sqlQuerySpec,
             Cosmos.PartitionKey? partitionKey,
             string supportedQueryFeatures,
+            QueryPipelineDiagnosticsBuilder queryPipelineDiagnosticsBuilder,
             CancellationToken cancellationToken)
         {
             this.QueryPlanCalls++;
@@ -55,6 +57,7 @@
                 sqlQuerySpec,
                 partitionKey,
                 supportedQueryFeatures,
+                queryPipelineDiagnosticsBuilder,
                 cancellationToken);
         }
 

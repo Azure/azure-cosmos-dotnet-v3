@@ -173,6 +173,7 @@ namespace Microsoft.Azure.Cosmos
             SqlQuerySpec sqlQuerySpec,
             PartitionKey? partitionKey,
             string supportedQueryFeatures,
+            QueryPipelineDiagnosticsBuilder diagnosticsBuilder,
             CancellationToken cancellationToken)
         {
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
@@ -195,6 +196,8 @@ namespace Microsoft.Azure.Cosmos
                 diagnosticsScope: null,
                 cancellationToken: cancellationToken))
             {
+                diagnosticsBuilder.AddDiagnosticContext(message.DiagnosticsContext);
+
                 // Syntax exception are argument exceptions and thrown to the user.
                 message.EnsureSuccessStatusCode();
                 partitionedQueryExecutionInfo = this.clientContext.SerializerCore.FromStream<PartitionedQueryExecutionInfo>(message.Content);
