@@ -120,7 +120,18 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A query response from cosmos service</returns>
-        public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
+        public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
+        {
+            CosmosDiagnosticsContext diagnostics = CosmosDiagnosticsContext.Create(this.requestOptions);
+            using (diagnostics.CreateOverallScope("FeedReadNextAsync"))
+            {
+                return this.ReadNextInternalAsync(diagnostics, cancellationToken);
+            }
+        }
+
+        private async Task<ResponseMessage> ReadNextInternalAsync(
+            CosmosDiagnosticsContext diagnostics,
+            CancellationToken cancellationToken = default)
         {
             CosmosDiagnosticsContext diagnostics = CosmosDiagnosticsContext.Create(this.requestOptions);
             using (diagnostics.CreateOverallScope("FeedReadNextAsync"))
@@ -167,6 +178,25 @@ namespace Microsoft.Azure.Cosmos
             {
                 stream = this.clientContext.SerializerCore.ToStreamSqlQuerySpec(this.querySpec, this.resourceType);
                 operation = OperationType.Query;
+            }
+
+            if (this.feedTokenInternal == null)
+            {
+                TryCatch<FeedTokenInternal> tryCatchFeedTokeninternal = await this.TryInitializeFeedTokenAsync(cancellationToken);
+                if (!tryCatchFeedTokeninternal.Succeeded)
+                {
+                    if (tryCatchFeedTokeninternal.Exception.InnerException is CosmosException cosmosException)
+                    {
+                        return cosmosException.ToCosmosResponseMessage(new RequestMessage(method: null, requestUri: null, diagnosticsContext: diagnostics));
+                    }
+
+                    return CosmosExceptionFactory.CreateInternalServerErrorException(
+                        message: tryCatchFeedTokeninternal.Exception.InnerException.Message,
+                        innerException: tryCatchFeedTokeninternal.Exception.InnerException,
+                        diagnosticsContext: diagnostics).ToCosmosResponseMessage(new RequestMessage(method: null, requestUri: null, diagnosticsContext: diagnostics));
+                }
+
+                this.feedTokenInternal = tryCatchFeedTokeninternal.Result;
             }
 
             ResponseMessage response = await this.clientContext.ProcessResourceOperationStreamAsync(
@@ -218,7 +248,7 @@ namespace Microsoft.Azure.Cosmos
             return true;
         }
 
-        private async Task<TryCatch<string>> TryInitializeContainerRIdAsync(CancellationToken cancellationToken)
+        private async Task<TryCatch<FeedTokenInternal>> TryInitializeFeedTokenAsync(CancellationToken cancellationToken)
         {
             string containerRId = string.Empty;
             if (this.containerCore != null)
@@ -229,7 +259,7 @@ namespace Microsoft.Azure.Cosmos
                 }
                 catch (Exception cosmosException)
                 {
-                    return TryCatch<string>.FromException(cosmosException);
+                    return TryCatch<FeedTokenInternal>.FromException(cosmosException);
                 }
             }
 

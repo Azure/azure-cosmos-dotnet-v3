@@ -347,16 +347,18 @@ namespace Microsoft.Azure.Cosmos {
                 return ResourceManager.GetString("FeedToken_InvalidImplementation", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to The FeedToken was generated for container {0} but current container is {1}..
         /// </summary>
-        internal static string FeedToken_InvalidFeedTokenForContainer {
-            get {
+        internal static string FeedToken_InvalidFeedTokenForContainer
+        {
+            get
+            {
                 return ResourceManager.GetString("FeedToken_InvalidFeedTokenForContainer", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to Provide a value greater than zero..
         /// </summary>

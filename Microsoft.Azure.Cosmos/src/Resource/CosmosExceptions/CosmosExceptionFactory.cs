@@ -193,7 +193,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                         if (error != null)
                         {
                             // Error format is not consistent across modes
-                            return (error, null);
+                            return (error, error.ToString());
                         }
                     }
                     catch (Newtonsoft.Json.JsonReaderException)

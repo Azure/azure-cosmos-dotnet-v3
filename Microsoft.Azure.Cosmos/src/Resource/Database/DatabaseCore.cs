@@ -205,10 +205,14 @@ namespace Microsoft.Azure.Cosmos
             this.ValidateContainerProperties(containerProperties);
 
             Container container = this.GetContainer(containerProperties.Id);
-            ResponseMessage response = await container.ReadContainerStreamAsync(cancellationToken: cancellationToken);
-            if (response.StatusCode != HttpStatusCode.NotFound)
+            ResponseMessage readResponse = await container.ReadContainerStreamAsync(
+                cancellationToken: cancellationToken);
+
+            if (readResponse.StatusCode != HttpStatusCode.NotFound)
             {
-                ContainerResponse retrivedContainerResponse = await this.ClientContext.ResponseFactory.CreateContainerResponseAsync(container, Task.FromResult(response));
+                ContainerResponse retrivedContainerResponse = await this.ClientContext.ResponseFactory.CreateContainerResponseAsync(
+                    container,
+                    Task.FromResult(readResponse));
                 if (!retrivedContainerResponse.Resource.PartitionKeyPath.Equals(containerProperties.PartitionKeyPath))
                 {
                     throw new ArgumentException(
@@ -224,15 +228,28 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.ValidateContainerProperties(containerProperties);
-            response = await this.CreateContainerStreamAsync(containerProperties, throughput, requestOptions, cancellationToken);
-            if (response.StatusCode != HttpStatusCode.Conflict)
+            ResponseMessage createResponse = await this.CreateContainerStreamAsync(
+                containerProperties,
+                throughput,
+                requestOptions,
+                cancellationToken);
+
+            // Merge the previous message diagnostics
+            createResponse.DiagnosticsContext.AddDiagnosticsInternal(readResponse.DiagnosticsContext);
+
+            if (readResponse.StatusCode != HttpStatusCode.Conflict)
             {
-                return await this.ClientContext.ResponseFactory.CreateContainerResponseAsync(container, Task.FromResult(response));
+                return await this.ClientContext.ResponseFactory.CreateContainerResponseAsync(container, Task.FromResult(createResponse));
             }
 
             // This second Read is to handle the race condition when 2 or more threads have Read the database and only one succeeds with Create
             // so for the remaining ones we should do a Read instead of throwing Conflict exception
-            return await container.ReadContainerAsync(cancellationToken: cancellationToken);
+            ResponseMessage readResponseAfterCreate = await container.ReadContainerStreamAsync(
+                cancellationToken: cancellationToken);
+
+            // Merge the previous message diagnostics
+            createResponse.DiagnosticsContext.AddDiagnosticsInternal(readResponse.DiagnosticsContext);
+            return await this.ClientContext.ResponseFactory.CreateContainerResponseAsync(container, Task.FromResult(readResponseAfterCreate));
         }
 
         public override Task<ContainerResponse> CreateContainerIfNotExistsAsync(
@@ -763,6 +780,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ProcessResourceOperationStreamAsync(
                 streamPayload: null,
                 operationType: operationType,
+                requestOptions: requestOptions,
                 linkUri: this.LinkUri,
                 resourceType: ResourceType.Database,
                 cancellationToken: cancellationToken);
