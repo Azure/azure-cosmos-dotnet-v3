@@ -224,6 +224,17 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
             return cosmosElement;
         }
+
+        public static TCosmosElement Parse<TCosmosElement>(string json)
+            where TCosmosElement : CosmosElement
+        {
+            if (!CosmosElement.TryParse(json, out TCosmosElement cosmosElement))
+            {
+                throw new ArgumentException($"Failed to parse json: {json}.");
+            }
+
+            return cosmosElement;
+        }
     }
 #if INTERNAL
 #pragma warning restore SA1600 // Elements should be documented

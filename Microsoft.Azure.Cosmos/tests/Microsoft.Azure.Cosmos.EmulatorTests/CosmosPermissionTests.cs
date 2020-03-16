@@ -8,8 +8,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.Generic;
     using System.Net;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Fluent;
-    using Microsoft.Azure.Cosmos.Scripts;
+    using Microsoft.Azure.Cosmos.EmulatorTests.Query;
     using Microsoft.Azure.Cosmos.Utils;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -258,7 +257,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 // Test query with no service interop via gateway query plan to replicate x32 app
                 ContainerCore containerCore = (ContainerInlineCore)tokenContainer;
-                CrossPartitionQueryTests.MockCosmosQueryClient mock = new CrossPartitionQueryTests.MockCosmosQueryClient(
+                MockCosmosQueryClient mock = new MockCosmosQueryClient(
                     clientContext: containerCore.ClientContext,
                     cosmosContainerCore: containerCore,
                     forceQueryPlanGatewayElseServiceInterop: true);

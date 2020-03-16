@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     {
         internal readonly PartitionKey PartitionKey;
         private string continuationToken;
+        private bool isDone = false;
 
         public FeedTokenPartitionKey(PartitionKey partitionKey)
         {
@@ -30,6 +31,8 @@ namespace Microsoft.Azure.Cosmos
 
         public override string GetContinuation() => this.continuationToken;
 
+        public override bool IsDone => this.isDone;
+
         public override string ToString()
         {
             return JsonConvert.SerializeObject(this);
@@ -37,6 +40,15 @@ namespace Microsoft.Azure.Cosmos
 
         public override void UpdateContinuation(string continuationToken)
         {
+            if (continuationToken == null)
+            {
+                // Queries and normal ReadFeed can signal termination by CT null, not NotModified
+                // Change Feed never lands here, as it always provides a CT
+
+                // Consider current range done, if this FeedToken contains multiple ranges due to splits, all of them need to be considered done
+                this.isDone = true;
+            }
+
             this.continuationToken = continuationToken;
         }
 

@@ -25,6 +25,7 @@ namespace Microsoft.Azure.Cosmos
         internal readonly string PartitionKeyRangeId;
         internal FeedTokenEPKRange FeedTokenEPKRange; // If the initial token splits, it will use this token;
         private string continuationToken;
+        private bool isDone;
 
         public FeedTokenPartitionKeyRange(string partitionKeyRangeId)
         {
@@ -77,11 +78,33 @@ namespace Microsoft.Azure.Cosmos
         {
             if (this.FeedTokenEPKRange == null)
             {
+                if (continuationToken == null)
+                {
+                    // Queries and normal ReadFeed can signal termination by CT null, not NotModified
+                    // Change Feed never lands here, as it always provides a CT
+
+                    // Consider current range done, if this FeedToken contains multiple ranges due to splits, all of them need to be considered done
+                    this.isDone = true;
+                }
+
                 this.continuationToken = continuationToken;
             }
             else
             {
                 this.FeedTokenEPKRange.UpdateContinuation(continuationToken);
+            }
+        }
+
+        public override bool IsDone
+        {
+            get
+            {
+                if (this.FeedTokenEPKRange == null)
+                {
+                    return this.isDone;
+                }
+
+                return this.FeedTokenEPKRange.IsDone;
             }
         }
 
