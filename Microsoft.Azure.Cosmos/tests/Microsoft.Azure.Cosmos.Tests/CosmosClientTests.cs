@@ -28,26 +28,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             cosmosClient.Dispose();
             cosmosClient.Dispose();
 
-            // List of Get operations that should fail
-            List<Action> validate = new List<Action>()
-            {
-                () => cosmosClient.GetContainer("asdf", "asdf"),
-                () => cosmosClient.GetDatabase("asdf"),
-                () => database.GetContainer("asdf"),
-                () => database.GetUser("asdf"),
-                () => cosmosClient.GetDatabaseQueryStreamIterator(new QueryDefinition("select *"))
-            };
-
-            foreach(Action action in validate)
-            {
-                try
-                {
-                    action();
-                    Assert.Fail("Should throw ObjectDisposedException");
-                }
-                catch (ObjectDisposedException) { }
-            }
-
             List<Func<Task>> validateAsync = new List<Func<Task>>()
             {
                 () => cosmosClient.ReadAccountAsync(),
@@ -58,6 +38,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 () => container.Scripts.ReadTriggerAsync("asdf"),
                 () => container.Scripts.ReadUserDefinedFunctionAsync("asdf"),
                 () => batch.ExecuteAsync(),
+                () => container.GetItemQueryIterator<dynamic>(queryText: "select * from T").ReadNextAsync(),
+                () => container.GetItemQueryIterator<dynamic>().ReadNextAsync(),
             };
 
             foreach (Func<Task> asyncFunc in validateAsync)
