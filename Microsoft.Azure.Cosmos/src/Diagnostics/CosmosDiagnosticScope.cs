@@ -15,16 +15,13 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
     internal sealed class CosmosDiagnosticScope : CosmosDiagnosticsInternal, IDisposable
     {
         private readonly Stopwatch ElapsedTimeStopWatch;
-        private readonly Action<TimeSpan> ElapsedTimeCallback;
         private bool isDisposed = false;
 
         public CosmosDiagnosticScope(
-            string name,
-            Action<TimeSpan> elapsedTimeCallback = null)
+            string name)
         {
             this.Id = name;
             this.ElapsedTimeStopWatch = Stopwatch.StartNew();
-            this.ElapsedTimeCallback = elapsedTimeCallback;
         }
 
         public string Id { get; }
@@ -40,6 +37,16 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             return true;
         }
 
+        internal TimeSpan GetElapsedTime()
+        {
+            return this.ElapsedTimeStopWatch.Elapsed;
+        }
+
+        internal bool IsComplete()
+        {
+            return this.ElapsedTimeStopWatch.IsRunning;
+        }
+
         public void Dispose()
         {
             if (this.isDisposed)
@@ -48,7 +55,6 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             }
 
             this.ElapsedTimeStopWatch.Stop();
-            this.ElapsedTimeCallback?.Invoke(this.ElapsedTimeStopWatch.Elapsed);
             this.isDisposed = true;
         }
 

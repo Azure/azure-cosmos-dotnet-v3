@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos
 
         public async Task<TransactionalBatchResponse> ExecuteAsync(CancellationToken cancellationToken)
         {
-            using (this.diagnosticsContext.CreateOverallScope("BatchExecuteAsync"))
+            using (this.diagnosticsContext.GetOverallScope())
             {
                 BatchExecUtils.EnsureValid(this.inputOperations, this.batchOptions);
 
@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos
                         requestMessage.Headers.Add(HttpConstants.HttpHeaders.IsBatchAtomic, bool.TrueString);
                         requestMessage.Headers.Add(HttpConstants.HttpHeaders.IsBatchOrdered, bool.TrueString);
                     },
-                    diagnosticsScope: this.diagnosticsContext,
+                    diagnosticsContext: this.diagnosticsContext,
                     cancellationToken);
 
                 using (this.diagnosticsContext.CreateScope("TransactionalBatchResponse"))

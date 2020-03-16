@@ -184,15 +184,15 @@ namespace Microsoft.Azure.Cosmos.Linq
                 headers.RequestCharge += response.RequestCharge;
 
                 // If the first page has a diagnostic context use that. Else create a new one and add the diagnostic to it.
-                if (response.Diagnostics is CosmosDiagnosticsContext responseDiagnosticContext)
+                if (response.Diagnostics is CosmosDiagnosticsCore diagnosticsCore)
                 {
                     if (diagnosticsContext == null)
                     {
-                        diagnosticsContext = responseDiagnosticContext;
+                        diagnosticsContext = diagnosticsCore.Context;
                     }
                     else
                     {
-                        diagnosticsContext.AddDiagnosticsInternal(responseDiagnosticContext);
+                        diagnosticsContext.AddDiagnosticsInternal(diagnosticsCore.Context);
                     }
                     
                 }
@@ -208,7 +208,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 System.Net.HttpStatusCode.OK,
                 headers,
                 result.FirstOrDefault(),
-                diagnosticsContext);
+                diagnosticsContext.Diagnostics);
         }
 
         private FeedIteratorInternal CreateStreamIterator(bool isContinuationExcpected)

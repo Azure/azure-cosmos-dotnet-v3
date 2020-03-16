@@ -22,17 +22,18 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void ValidateDiagnosticsContext()
         {
             CosmosDiagnosticsContext cosmosDiagnostics = new CosmosDiagnosticsContextCore();
+            cosmosDiagnostics.GetOverallScope().Dispose();
             string diagnostics = cosmosDiagnostics.ToString();
 
             //Test the default user agent string
             JObject jObject = JObject.Parse(diagnostics);
             JToken summary = jObject["Summary"];
             Assert.IsTrue(summary["UserAgent"].ToString().Contains("cosmos-netstandard-sdk"), "Diagnostics should have user agent string");
-            Assert.AreEqual("[]", jObject["Context"].ToString());
 
-            // Test all the different operations on diagnostics context
-            using (cosmosDiagnostics.CreateOverallScope("OverallScope"))
+            cosmosDiagnostics = new CosmosDiagnosticsContextCore();
+            using (cosmosDiagnostics.GetOverallScope())
             {
+                // Test all the different operations on diagnostics context
                 Thread.Sleep(TimeSpan.FromSeconds(1));
                 using (cosmosDiagnostics.CreateScope("ValidateScope"))
                 {
@@ -70,39 +71,45 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             string result = cosmosDiagnostics.ToString();
 
-            string regex = @"\{""Summary"":\{""StartUtc"":"".+Z"",""ElapsedTime"":""00:00:.+"",""UserAgent"":""MyCustomUserAgentString"",""TotalRequestCount"":2,""FailedRequestCount"":1\},""Context"":\[\{""Id"":""OverallScope"",""ElapsedTime"":""00:00:0.+""\},\{""Id"":""ValidateScope"",""ElapsedTime"":""00:00:0.+""\},\{""Id"":""PointOperationStatistics"",""ActivityId"":""692ab2f2-41ba-486b-aad7-8c7c6c52379f"",""ResponseTimeUtc"":"".+Z"",""StatusCode"":429,""SubStatusCode"":0,""RequestCharge"":42.0,""RequestUri"":""http://MockUri.com"",""RequestSessionToken"":null,""ResponseSessionToken"":null\},\{""Id"":""SuccessScope"",""ElapsedTime"":""00:00:.+""\},\{""Id"":""PointOperationStatistics"",""ActivityId"":""de09baab-71a4-4897-a163-470711c93ed3"",""ResponseTimeUtc"":"".+Z"",""StatusCode"":200,""SubStatusCode"":0,""RequestCharge"":42.0,""RequestUri"":""http://MockUri.com"",""RequestSessionToken"":null,""ResponseSessionToken"":null\}\]\}";
+            string regex = @"\{""Summary"":\{""StartUtc"":"".+Z"",""TotalElapsedTime"":""00:00:.+"",""UserAgent"":""MyCustomUserAgentString"",""TotalRequestCount"":2,""FailedRequestCount"":1\},""Context"":\[\{""Id"":""ValidateScope"",""ElapsedTime"":""00:00:0.+""\},\{""Id"":""PointOperationStatistics"",""ActivityId"":""692ab2f2-41ba-486b-aad7-8c7c6c52379f"",""ResponseTimeUtc"":"".+Z"",""StatusCode"":429,""SubStatusCode"":0,""RequestCharge"":42.0,""RequestUri"":""http://MockUri.com"",""RequestSessionToken"":null,""ResponseSessionToken"":null\},\{""Id"":""SuccessScope"",""ElapsedTime"":""00:00:.+""\},\{""Id"":""PointOperationStatistics"",""ActivityId"":""de09baab-71a4-4897-a163-470711c93ed3"",""ResponseTimeUtc"":"".+Z"",""StatusCode"":200,""SubStatusCode"":0,""RequestCharge"":42.0,""RequestUri"":""http://MockUri.com"",""RequestSessionToken"":null,""ResponseSessionToken"":null\}\]\}";
             Assert.IsTrue(Regex.IsMatch(result, regex), result);
 
             JToken jToken = JToken.Parse(result);
-            TimeSpan total = jToken["Summary"]["ElapsedTime"].ToObject<TimeSpan>();
+            TimeSpan total = jToken["Summary"]["TotalElapsedTime"].ToObject<TimeSpan>();
             Assert.IsTrue(total > TimeSpan.FromSeconds(2));
             TimeSpan overalScope = jToken["Context"][0]["ElapsedTime"].ToObject<TimeSpan>();
-            Assert.IsTrue(total == overalScope);
-            TimeSpan innerScope = jToken["Context"][1]["ElapsedTime"].ToObject<TimeSpan>();
-            Assert.IsTrue(innerScope > TimeSpan.FromSeconds(1));
+            Assert.IsTrue(overalScope < total);
+            Assert.IsTrue(overalScope > TimeSpan.FromSeconds(1));
+            TimeSpan innerScope = jToken["Context"][2]["ElapsedTime"].ToObject<TimeSpan>();
+            Assert.IsTrue(innerScope > TimeSpan.Zero);
         }
 
         [TestMethod]
         public void ValidateDiagnosticsAppendContext()
         {
             CosmosDiagnosticsContext cosmosDiagnostics = new CosmosDiagnosticsContextCore();
+            CosmosDiagnosticsContext cosmosDiagnostics2;
 
-            // Test all the different operations on diagnostics context
-            using (cosmosDiagnostics.CreateScope("ValidateScope"))
+            using (cosmosDiagnostics.GetOverallScope())
             {
-                Thread.Sleep(TimeSpan.FromSeconds(2));
+                // Test all the different operations on diagnostics context
+                using (cosmosDiagnostics.CreateScope("ValidateScope"))
+                {
+                    Thread.Sleep(TimeSpan.FromSeconds(2));
+                }
+
+                cosmosDiagnostics.SetSdkUserAgent("MyCustomUserAgentString");
+
+                cosmosDiagnostics2 = new CosmosDiagnosticsContextCore();
+                cosmosDiagnostics2.GetOverallScope().Dispose();
+
+                using (cosmosDiagnostics.CreateScope("CosmosDiagnostics2Scope"))
+                {
+                    Thread.Sleep(TimeSpan.FromMilliseconds(100));
+                }
+
+                cosmosDiagnostics2.AddDiagnosticsInternal(cosmosDiagnostics);
             }
-
-            cosmosDiagnostics.SetSdkUserAgent("MyCustomUserAgentString");
-
-            CosmosDiagnosticsContext cosmosDiagnostics2 = new CosmosDiagnosticsContextCore();
-
-            using (cosmosDiagnostics.CreateScope("CosmosDiagnostics2Scope"))
-            {
-                Thread.Sleep(TimeSpan.FromMilliseconds(100));
-            }
-
-            cosmosDiagnostics2.AddDiagnosticsInternal(cosmosDiagnostics);
 
             string diagnostics = cosmosDiagnostics2.ToString();
             Assert.IsTrue(diagnostics.Contains("MyCustomUserAgentString"));
@@ -114,7 +121,10 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void ValidateClientSideRequestStatisticsToString()
         {
             // Verify that API using the interface get the older v2 string
-            CosmosClientSideRequestStatistics clientSideRequestStatistics = new CosmosClientSideRequestStatistics();
+            CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContextCore();
+            diagnosticsContext.GetOverallScope().Dispose();
+
+            CosmosClientSideRequestStatistics clientSideRequestStatistics = new CosmosClientSideRequestStatistics(diagnosticsContext);
             string noInfo = clientSideRequestStatistics.ToString();
             Assert.IsNotNull(noInfo);
 
