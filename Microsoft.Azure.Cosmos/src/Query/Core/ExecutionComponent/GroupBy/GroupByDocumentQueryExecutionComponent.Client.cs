@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
 
                 double requestCharge = 0.0;
                 long responseLengthBytes = 0;
-                List<QueryPageDiagnostics> queryPageDiagnostics = new List<QueryPageDiagnostics>();
+                List<CosmosDiagnosticsInternal> queryPageDiagnostics = new List<CosmosDiagnosticsInternal>();
                 while (!this.Source.IsDone)
                 {
                     // Stage 1: 

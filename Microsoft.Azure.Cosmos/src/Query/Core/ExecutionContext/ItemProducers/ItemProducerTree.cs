@@ -151,7 +151,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
             ItemProducerTree itemProducerTree,
             int numberOfDocuments,
             double requestCharge,
-            IReadOnlyCollection<QueryPageDiagnostics> diagnostics,
+            IReadOnlyCollection<CosmosDiagnosticsInternal> diagnostics,
             long responseLengthInBytes,
             CancellationToken token);
 

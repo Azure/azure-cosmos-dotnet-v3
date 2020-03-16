@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public static void DefaultProduceAsyncCompleteDelegate(
             int numberOfDocuments,
             double requestCharge,
-            IReadOnlyCollection<QueryPageDiagnostics> diagnostics,
+            IReadOnlyCollection<CosmosDiagnosticsInternal> diagnostics,
             long responseLengthInBytes,
             CancellationToken token)
         {
@@ -191,7 +191,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ItemProducerTree itemProducerTree,
             int numberOfDocuments,
             double requestCharge,
-            IReadOnlyCollection<QueryPageDiagnostics> diagnostics,
+            IReadOnlyCollection<CosmosDiagnosticsInternal> diagnostics,
             long responseLengthInBytes,
             CancellationToken token)
         {

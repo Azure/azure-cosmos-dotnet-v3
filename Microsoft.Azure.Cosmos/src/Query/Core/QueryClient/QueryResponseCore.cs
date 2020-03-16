@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
     {
         private static readonly IReadOnlyList<CosmosElement> EmptyList = new List<CosmosElement>().AsReadOnly();
         internal static readonly string EmptyGuidString = Guid.Empty.ToString();
-        internal static readonly IReadOnlyCollection<QueryPageDiagnostics> EmptyDiagnostics = new List<QueryPageDiagnostics>();
+        internal static readonly IReadOnlyCollection<CosmosDiagnosticsInternal> EmptyDiagnostics = new List<QueryPageDiagnostics>();
 
         private QueryResponseCore(
             IReadOnlyList<CosmosElement> result,
@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             HttpStatusCode statusCode,
             double requestCharge,
             string activityId,
-            IReadOnlyCollection<QueryPageDiagnostics> diagnostics,
+            IReadOnlyCollection<CosmosDiagnosticsInternal> diagnostics,
             long responseLengthBytes,
             string disallowContinuationTokenMessage,
             string continuationToken,
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
 
         internal string ActivityId { get; }
 
-        internal IReadOnlyCollection<QueryPageDiagnostics> Diagnostics { get; }
+        internal IReadOnlyCollection<CosmosDiagnosticsInternal> Diagnostics { get; }
 
         internal long ResponseLengthBytes { get; }
 
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             long responseLengthBytes,
             string disallowContinuationTokenMessage,
             string continuationToken,
-            IReadOnlyCollection<QueryPageDiagnostics> diagnostics)
+            IReadOnlyCollection<CosmosDiagnosticsInternal> diagnostics)
         {
             QueryResponseCore cosmosQueryResponse = new QueryResponseCore(
                result: result,
@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             CosmosException cosmosException,
             double requestCharge,
             string activityId,
-            IReadOnlyCollection<QueryPageDiagnostics> diagnostics)
+            IReadOnlyCollection<CosmosDiagnosticsInternal> diagnostics)
         {
             QueryResponseCore cosmosQueryResponse = new QueryResponseCore(
                 result: QueryResponseCore.EmptyList,

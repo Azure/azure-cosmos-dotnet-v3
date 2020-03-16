@@ -167,7 +167,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 ItemProducerTree producer,
                 int itemsBuffered,
                 double resourceUnitUsage,
-                IReadOnlyCollection<QueryPageDiagnostics> queryPageDiagnostics,
+                IReadOnlyCollection<CosmosDiagnosticsInternal> queryPageDiagnostics,
                 long responseLengthBytes,
                 CancellationToken token)
             { callBackCount++; }

@@ -610,7 +610,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             ItemProducerTree producer,
             int itemsBuffered,
             double resourceUnitUsage,
-            IReadOnlyCollection<QueryPageDiagnostics> diagnostics,
+            IReadOnlyCollection<CosmosDiagnosticsInternal> diagnostics,
             long responseLengthBytes,
             CancellationToken token)
         {
