@@ -15,8 +15,8 @@ namespace Microsoft.Azure.Cosmos
         /// If the request is still in progress it will return the current
         /// elapsed time since the start of the request.
         /// </summary>
-        /// <returns>The end to end elapsed time of the request.</returns>
-        public virtual TimeSpan GetElapsedTime()
+        /// <returns>The clients end to end elapsed time of the request.</returns>
+        public virtual TimeSpan GetClientElapsedTime()
         {
             // Default implementation avoids breaking change for users upgrading.
             throw new NotImplementedException($"CosmosDiagnostics.GetElapsedTime");

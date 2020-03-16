@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
                 this.jsonWriter.WritePropertyName("TotalElapsedTime");
             }
             
-            this.jsonWriter.WriteValue(cosmosDiagnosticsContext.GetElapsedTime());
+            this.jsonWriter.WriteValue(cosmosDiagnosticsContext.GetClientElapsedTime());
 
             this.jsonWriter.WritePropertyName("UserAgent");
             this.jsonWriter.WriteValue(cosmosDiagnosticsContext.UserAgent);

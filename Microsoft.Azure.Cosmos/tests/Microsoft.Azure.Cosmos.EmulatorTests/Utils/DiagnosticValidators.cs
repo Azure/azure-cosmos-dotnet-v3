@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos
             Assert.AreNotEqual(cosmosDiagnosticsContext.UserAgent.ToString(), new UserAgentContainer().UserAgent.ToString(), "User agent not set");
             Assert.IsTrue(cosmosDiagnosticsContext.TotalRequestCount > 0, "No request found");
             Assert.IsFalse(cosmosDiagnosticsContext.IsComplete(), "OverallClientRequestTime should be stopped");
-            Assert.IsTrue(cosmosDiagnosticsContext.GetElapsedTime() > TimeSpan.Zero, "OverallClientRequestTime should have time.");
+            Assert.IsTrue(cosmosDiagnosticsContext.GetClientElapsedTime() > TimeSpan.Zero, "OverallClientRequestTime should have time.");
 
             string info = cosmosDiagnosticsContext.ToString();
             Assert.IsNotNull(info);
@@ -162,7 +162,7 @@ namespace Microsoft.Azure.Cosmos
                 Assert.IsFalse(this.isContextVisited, "Point operations should only have a single context");
                 this.isContextVisited = true;
                 this.StartTimeUtc = cosmosDiagnosticsContext.StartUtc;
-                this.TotalElapsedTime = cosmosDiagnosticsContext.GetElapsedTime();
+                this.TotalElapsedTime = cosmosDiagnosticsContext.GetClientElapsedTime();
 
                 DiagnosticValidator.ValidateCosmosDiagnosticsContext(cosmosDiagnosticsContext);
 

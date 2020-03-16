@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract CosmosDiagnosticScope CreateScope(string name);
 
-        internal abstract TimeSpan GetElapsedTime();
+        internal abstract TimeSpan GetClientElapsedTime();
 
         internal abstract bool IsComplete();
 

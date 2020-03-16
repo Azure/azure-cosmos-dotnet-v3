@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos
             return EmptyCosmosDiagnosticsContext.EmptyList.GetEnumerator();
         }
 
-        internal override TimeSpan GetElapsedTime()
+        internal override TimeSpan GetClientElapsedTime()
         {
             return TimeSpan.Zero;
         }

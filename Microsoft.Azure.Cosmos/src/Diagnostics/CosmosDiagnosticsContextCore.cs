@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal override CosmosDiagnostics Diagnostics { get; }
 
-        internal override TimeSpan GetElapsedTime()
+        internal override TimeSpan GetClientElapsedTime()
         {
             return this.overallScope.GetElapsedTime();
         }
