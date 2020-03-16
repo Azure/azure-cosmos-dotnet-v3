@@ -5,6 +5,9 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
+    using System.Diagnostics;
+    using System.Linq;
     using Microsoft.Azure.Cosmos.Diagnostics;
 
     /// <summary>
@@ -22,9 +25,9 @@ namespace Microsoft.Azure.Cosmos
 
         private static readonly string DefaultUserAgentString;
 
-        private readonly bool IsDefaultUserAgent = true;
+        private readonly CosmosDiagnosticScope overallScope;
 
-        private bool isOverallScopeSet = false;
+        private bool IsDefaultUserAgent = true;
 
         static CosmosDiagnosticsContextCore()
         {
@@ -37,6 +40,8 @@ namespace Microsoft.Azure.Cosmos
         {
             this.StartUtc = DateTime.UtcNow;
             this.ContextList = new List<CosmosDiagnosticsInternal>();
+            this.Diagnostics = new CosmosDiagnosticsCore(this);
+            this.overallScope = new CosmosDiagnosticScope("Overall");
         }
 
         public override DateTime StartUtc { get; }
@@ -45,26 +50,23 @@ namespace Microsoft.Azure.Cosmos
 
         public override int FailedRequestCount { get; protected set; }
 
-        public override TimeSpan? TotalElapsedTime { get; protected set; }
-
         public override string UserAgent { get; protected set; } = CosmosDiagnosticsContextCore.DefaultUserAgentString;
 
-        internal override CosmosDiagnosticScope CreateOverallScope(string name)
-        {
-            CosmosDiagnosticScope scope;
-            // If overall is already set then let the original set the elapsed time.
-            if (this.isOverallScopeSet)
-            {
-                scope = new CosmosDiagnosticScope(name);
-            }
-            else
-            {
-                scope = new CosmosDiagnosticScope(name, this.SetElapsedTime);
-                this.isOverallScopeSet = true;
-            }
+        internal override CosmosDiagnostics Diagnostics { get; }
 
-            this.ContextList.Add(scope);
-            return scope;
+        internal override TimeSpan GetClientElapsedTime()
+        {
+            return this.overallScope.GetElapsedTime();
+        }
+
+        internal override bool IsComplete()
+        {
+            return this.overallScope.IsComplete();
+        }
+
+        internal override CosmosDiagnosticScope GetOverallScope()
+        {
+            return this.overallScope;
         }
 
         internal override CosmosDiagnosticScope CreateScope(string name)
@@ -131,6 +133,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal override void SetSdkUserAgent(string userAgent)
         {
+            this.IsDefaultUserAgent = false;
             this.UserAgent = userAgent;
         }
 
@@ -158,11 +161,6 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private void SetElapsedTime(TimeSpan totalElapsedTime)
-        {
-            this.TotalElapsedTime = totalElapsedTime;
-        }
-
         private void AddSummaryInfo(CosmosDiagnosticsContext newContext)
         {
             if (Object.ReferenceEquals(this, newContext))
@@ -173,12 +171,6 @@ namespace Microsoft.Azure.Cosmos
             if (this.IsDefaultUserAgent && newContext.UserAgent != null)
             {
                 this.SetSdkUserAgent(newContext.UserAgent);
-            }
-
-            // Use the larger of the total elapsed times
-            if (this.TotalElapsedTime < newContext.TotalElapsedTime)
-            {
-                this.TotalElapsedTime = newContext.TotalElapsedTime;
             }
 
             this.TotalRequestCount += newContext.TotalRequestCount;

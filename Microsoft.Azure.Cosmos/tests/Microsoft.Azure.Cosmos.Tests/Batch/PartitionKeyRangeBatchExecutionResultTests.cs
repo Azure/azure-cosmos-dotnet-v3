@@ -84,8 +84,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 requestUri: new Uri("http://localhost"),
                 requestSessionToken: null,
                 responseSessionToken: null);
-            CosmosDiagnosticsContext scope = new CosmosDiagnosticsContextCore();
-            scope.AddDiagnosticsInternal(pointOperationStatistics);
+            CosmosDiagnosticsContext context = new CosmosDiagnosticsContextCore();
+            context.AddDiagnosticsInternal(pointOperationStatistics);
 
             TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.OK)
             {
@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 SubStatusCode = SubStatusCodes.CompletingSplit,
                 RetryAfter = TimeSpan.FromSeconds(10),
                 RequestCharge = 4.3,
-                DiagnosticsContext = scope
+                DiagnosticsContext = context
             };
 
             ResponseMessage response = result.ToResponseMessage();
