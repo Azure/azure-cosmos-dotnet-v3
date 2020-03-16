@@ -6,11 +6,14 @@
 namespace Microsoft.Azure.Cosmos.Tests.Json
 {
     using System;
+    using System.Buffers.Text;
     using System.Collections.Generic;
     using System.Globalization;
     using System.Linq;
     using System.Reflection;
     using System.Text;
+    using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -1174,6 +1177,54 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             this.VerifyReader(binaryInput, expectedTokens);
         }
 
+        [TestMethod]
+        [Owner("brchon")]
+        public void ExtendedTypeArrayTest()
+        {
+            string input = @"[I1,H2,L3,LL4,UL5,S6,D7,BbilGgyjThtuSzs5Md/5Dew==,G00000000-0000-0000-0000-000000000000]";
+
+            List<byte> bytes = new List<byte>();
+            bytes.Add(BinaryFormat);
+            bytes.Add(JsonBinaryEncoding.TypeMarker.Array1ByteLength);
+            bytes.Add(JsonBinaryEncoding.TypeMarker.Int8);
+            bytes.Add((byte)1);
+            bytes.Add(JsonBinaryEncoding.TypeMarker.Int16);
+            bytes.AddRange(BitConverter.GetBytes((short)2));
+            bytes.Add(JsonBinaryEncoding.TypeMarker.Int32);
+            bytes.AddRange(BitConverter.GetBytes((int)3));
+            bytes.Add(JsonBinaryEncoding.TypeMarker.Int64);
+            bytes.AddRange(BitConverter.GetBytes((long)4));
+            bytes.Add(JsonBinaryEncoding.TypeMarker.UInt32);
+            bytes.AddRange(BitConverter.GetBytes((uint)5));
+            bytes.Add(JsonBinaryEncoding.TypeMarker.Float32);
+            bytes.AddRange(BitConverter.GetBytes((float)6));
+            bytes.Add(JsonBinaryEncoding.TypeMarker.Float64);
+            bytes.AddRange(BitConverter.GetBytes((double)7));
+            bytes.Add(JsonBinaryEncoding.TypeMarker.Binary1ByteLength);
+            bytes.Add((byte)Convert.FromBase64String("bilGgyjThtuSzs5Md/5Dew==").Length);
+            bytes.AddRange(Convert.FromBase64String("bilGgyjThtuSzs5Md/5Dew=="));
+            bytes.Add(JsonBinaryEncoding.TypeMarker.Guid);
+            bytes.AddRange(Guid.Empty.ToByteArray());
+            bytes.Insert(2, (byte)(bytes.Count - 2));
+
+            JsonToken[] expectedTokens =
+            {
+                JsonToken.ArrayStart(),
+                JsonToken.Int8(1),
+                JsonToken.Int16(2),
+                JsonToken.Int32(3),
+                JsonToken.Int64(4),
+                JsonToken.UInt32(5),
+                JsonToken.Float32(6),
+                JsonToken.Float64(7),
+                JsonToken.Binary(Convert.FromBase64String("bilGgyjThtuSzs5Md/5Dew==")),
+                JsonToken.Guid(Guid.Empty),
+                JsonToken.ArrayEnd(),
+            };
+
+            this.VerifyReader(input, expectedTokens);
+            this.VerifyReader(bytes.ToArray(), expectedTokens);
+        }
         #endregion
         #region Escaping
         [TestMethod]
@@ -2275,7 +2326,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 Encoding.UTF8);
         }
 
-        private void VerifyReader(byte[] input, JsonToken[] expectedTokens, JsonStringDictionary jsonStringDictionary = null, Exception expectedException = null)
+        private void VerifyReader(ReadOnlyMemory<byte> input, JsonToken[] expectedTokens, JsonStringDictionary jsonStringDictionary = null, Exception expectedException = null)
         {
             // Test binary reader created with the array API
             this.VerifyReader(() => JsonReader.Create(input, jsonStringDictionary), expectedTokens, expectedException, Encoding.UTF8);
