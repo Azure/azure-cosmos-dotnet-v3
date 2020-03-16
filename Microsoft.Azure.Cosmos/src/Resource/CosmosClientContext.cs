@@ -44,8 +44,6 @@ namespace Microsoft.Azure.Cosmos
         internal abstract BatchAsyncContainerExecutor GetExecutorForContainer(
             ContainerCore container);
 
-        internal abstract CosmosClientContext ThrowIfDisposed();
-
         /// <summary>
         /// Generates the URI link for the resource
         /// </summary>

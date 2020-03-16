@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosClientContext clientContext,
             ContainerCore cosmosContainerCore)
         {
-            this.clientContext = clientContext?.ThrowIfDisposed() ?? throw new ArgumentException(nameof(clientContext));
+            this.clientContext = clientContext ?? throw new ArgumentException(nameof(clientContext));
             this.cosmosContainerCore = cosmosContainerCore;
             this.documentClient = this.clientContext.DocumentClient;
             this.semaphore = new SemaphoreSlim(1, 1);

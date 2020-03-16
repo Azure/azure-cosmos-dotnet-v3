@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
+    using Newtonsoft.Json.Bson;
 
     internal class ClientContextCore : CosmosClientContext
     {
@@ -414,17 +415,17 @@ namespace Microsoft.Azure.Cosmos
 
         internal T ThrowIfDisposed<T>(T input)
         {
-            if (this.isDisposed)
-            {
-                throw new ObjectDisposedException($"Accessing {nameof(CosmosClient)} after it is disposed is invalid.");
-            }
+            this.ThrowIfDisposed();
 
             return input;
         }
 
-        internal override CosmosClientContext ThrowIfDisposed()
+        private void ThrowIfDisposed()
         {
-            return this.ThrowIfDisposed(this);
+            if (this.isDisposed)
+            {
+                throw new ObjectDisposedException($"Accessing {nameof(CosmosClient)} after it is disposed is invalid.");
+            }
         }
     }
 }

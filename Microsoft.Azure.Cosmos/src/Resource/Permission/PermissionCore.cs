@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos
             string userId)
         {
             this.Id = userId;
-            this.ClientContext = clientContext.ThrowIfDisposed();
+            this.ClientContext = clientContext;
             this.LinkUri = clientContext.CreateLink(
                 parentLink: user.LinkUri.OriginalString,
                 uriPathSegment: Paths.PermissionsPathSegment,

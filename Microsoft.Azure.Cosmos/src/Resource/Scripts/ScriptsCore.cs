@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             CosmosClientContext clientContext)
         {
             this.container = container;
-            this.clientContext = clientContext.ThrowIfDisposed();
+            this.clientContext = clientContext;
         }
 
         public override Task<StoredProcedureResponse> CreateStoredProcedureAsync(

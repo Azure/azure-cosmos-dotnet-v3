@@ -32,7 +32,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             mockContext.Setup(x => x.SerializerCore).Returns(MockCosmosUtil.Serializer);
             mockContext.Setup(x => x.Client).Returns(client);
             mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(new Uri("/dbs/test/colls/test", UriKind.Relative));
-            mockContext.Setup(x => x.ThrowIfDisposed()).Returns(mockContext.Object);
 
             ResponseMessage firstResponse = new ResponseMessage(HttpStatusCode.NotModified);
             firstResponse.Headers.ETag = "FirstContinuation";
@@ -96,7 +95,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             mockContext.Setup(x => x.SerializerCore).Returns(MockCosmosUtil.Serializer);
             mockContext.Setup(x => x.Client).Returns(client);
             mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(new Uri("/dbs/test/colls/test", UriKind.Relative));
-            mockContext.Setup(x => x.ThrowIfDisposed()).Returns(mockContext.Object);
 
             ResponseMessage firstResponse = new ResponseMessage(HttpStatusCode.NotModified);
             firstResponse.Headers.ETag = "FirstContinuation";
@@ -153,7 +151,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             mockContext.Setup(x => x.SerializerCore).Returns(MockCosmosUtil.Serializer);
             mockContext.Setup(x => x.Client).Returns(client);
             mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(new Uri("/dbs/test/colls/test", UriKind.Relative));
-            mockContext.Setup(x => x.ThrowIfDisposed()).Returns(mockContext.Object);
 
             ResponseMessage firstResponse = new ResponseMessage(HttpStatusCode.NotModified);
             firstResponse.Headers.ETag = "FirstContinuation";
@@ -214,7 +211,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             mockContext.Setup(x => x.SerializerCore).Returns(MockCosmosUtil.Serializer);
             mockContext.Setup(x => x.Client).Returns(client);
             mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(new Uri("/dbs/test/colls/test", UriKind.Relative));
-            mockContext.Setup(x => x.ThrowIfDisposed()).Returns(mockContext.Object);
 
             ResponseMessage firstResponse = new ResponseMessage(HttpStatusCode.NotModified);
             firstResponse.Headers.ETag = "FirstContinuation";
@@ -267,7 +263,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             mockContext.Setup(x => x.SerializerCore).Returns(MockCosmosUtil.Serializer);
             mockContext.Setup(x => x.Client).Returns(client);
             mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(UriFactory.CreateDocumentCollectionUri("test", "test"));
-            mockContext.Setup(x => x.ThrowIfDisposed()).Returns(mockContext.Object);
 
             DatabaseCore db = new DatabaseCore(mockContext.Object, "test");
             ContainerCore container = new ContainerCore(mockContext.Object, db, "test");

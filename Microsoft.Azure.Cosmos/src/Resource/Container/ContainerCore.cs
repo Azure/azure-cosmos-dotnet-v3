@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosQueryClient cosmosQueryClient = null)
         {
             this.Id = containerId;
-            this.ClientContext = clientContext.ThrowIfDisposed();
+            this.ClientContext = clientContext;
             this.LinkUri = clientContext.CreateLink(
                 parentLink: database.LinkUri.OriginalString,
                 uriPathSegment: Paths.CollectionsPathSegment,
