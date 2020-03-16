@@ -354,11 +354,28 @@
                         });
                     HashSet<CosmosElement> actualWithTryGetContinuationTokensSet = new HashSet<CosmosElement>(actualWithTryGetContinuationTokens);
 
+                    List<CosmosElement> actualWithTryGetFeedToken = await QueryTestsBase.QueryWithTryGetFeedToken<CosmosElement>(
+                        container,
+                        query,
+                        new QueryRequestOptions()
+                        {
+                            MaxConcurrency = 2,
+                            MaxItemCount = maxItemCount,
+                            MaxBufferedItemCount = 100,
+                        });
+                    HashSet<CosmosElement> actualWithTryGetFeedTokenSet = new HashSet<CosmosElement>(actualWithTryGetFeedToken);
+
                     Assert.IsTrue(
                        actualWithoutContinuationTokensSet.SetEquals(actualWithTryGetContinuationTokensSet),
                        $"Results did not match for query: {query} with maxItemCount: {maxItemCount}" +
                        $"ActualWithoutContinuationTokens: {JsonConvert.SerializeObject(actualWithoutContinuationTokensSet)}" +
                        $"ActualWithTryGetContinuationTokens: {JsonConvert.SerializeObject(actualWithTryGetContinuationTokensSet)}");
+
+                    Assert.IsTrue(
+                       actualWithoutContinuationTokensSet.SetEquals(actualWithTryGetFeedToken),
+                       $"Results did not match for query: {query} with maxItemCount: {maxItemCount}" +
+                       $"ActualWithoutContinuationTokens: {JsonConvert.SerializeObject(actualWithoutContinuationTokensSet)}" +
+                       $"ActualWithTryGetFeedToken: {JsonConvert.SerializeObject(actualWithTryGetFeedToken)}");
 
                     HashSet<CosmosElement> expectedSet = new HashSet<CosmosElement>(expectedResults);
 
