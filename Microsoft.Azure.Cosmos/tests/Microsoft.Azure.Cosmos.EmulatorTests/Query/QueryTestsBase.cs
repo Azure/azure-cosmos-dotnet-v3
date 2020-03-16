@@ -597,7 +597,19 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     }
 
                     resultsFromCosmosElementContinuationToken.AddRange(cosmosQueryResponse);
-                    continuationToken = itemQuery.GetCosmosElementContinuationToken();
+
+                    // Force a rewrite of the continuation token, so that we test the case where we roundtrip it over the wire.
+                    // There was a bug where resuming from double.NaN lead to an exception,
+                    // since we parsed the type assuming it was always a double and not a string.
+                    CosmosElement originalContinuationToken = itemQuery.GetCosmosElementContinuationToken();
+                    if(originalContinuationToken != null)
+                    {
+                        continuationToken = CosmosElement.Parse(originalContinuationToken.ToString());
+                    }
+                    else
+                    {
+                        continuationToken = null;
+                    }
                 }
                 catch (CosmosException cosmosException) when (cosmosException.StatusCode == (HttpStatusCode)429)
                 {

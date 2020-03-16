@@ -180,7 +180,7 @@
         }
 
         [TestMethod]
-        public async Task TestDistinct_TryGetContinuationTokenSupportAsync()
+        public async Task TestDistinct_CosmosElementContinuationTokenAsync()
         {
             async Task ImplemenationAsync(Container container, IReadOnlyList<CosmosObject> documents)
             {
