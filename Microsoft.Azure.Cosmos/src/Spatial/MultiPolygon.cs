@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
     /// </summary>
     /// <seealso cref="Polygon"/>
     [DataContract]
-    internal sealed class MultiPolygon : Geometry, IEquatable<MultiPolygon>
+    public sealed class MultiPolygon : Geometry, IEquatable<MultiPolygon>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="MultiPolygon"/> class.
