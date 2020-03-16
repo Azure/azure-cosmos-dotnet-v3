@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 cosmosQueryExecutionContextFactory: () =>
                 {
                     // Query Iterator requires that the creation of the query context is defered until the user calls ReadNextAsync
-                    AsyncLazy<(TryCatch<CosmosQueryExecutionContext>, IReadOnlyList<CosmosDiagnosticsInternal>)> lazyTryCreateCosmosQueryExecutionContext = new AsyncLazy<(TryCatch<CosmosQueryExecutionContext>, IReadOnlyList<CosmosDiagnosticsInternal>)>(valueFactory: (innerCancellationToken) =>
+                    AsyncLazy<(TryCatch<CosmosQueryExecutionContext>, IReadOnlyCollection<CosmosDiagnosticsInternal>)> lazyTryCreateCosmosQueryExecutionContext = new AsyncLazy<(TryCatch<CosmosQueryExecutionContext>, IReadOnlyCollection<CosmosDiagnosticsInternal>)>(valueFactory: (innerCancellationToken) =>
                     {
                         innerCancellationToken.ThrowIfCancellationRequested();
                         return CosmosQueryExecutionContextFactory.TryCreateCoreContextAsync(
@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             return catchAllCosmosQueryExecutionContext;
         }
 
-        private static async Task<(TryCatch<CosmosQueryExecutionContext>, IReadOnlyList<CosmosDiagnosticsInternal>)> TryCreateCoreContextAsync(
+        private static async Task<(TryCatch<CosmosQueryExecutionContext>, IReadOnlyCollection<CosmosDiagnosticsInternal>)> TryCreateCoreContextAsync(
             CosmosQueryContext cosmosQueryContext,
             InputParameters inputParameters,
             CancellationToken cancellationToken)

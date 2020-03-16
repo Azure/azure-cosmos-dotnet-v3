@@ -5,7 +5,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
+    using System.Linq;
     using System.Net;
+    using System.Runtime.CompilerServices;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
@@ -72,6 +75,38 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
         internal long ResponseLengthBytes { get; }
 
         internal bool IsSuccess { get; }
+
+        internal static QueryResponseCore AppendDiagnostics(
+            QueryResponseCore queryResponseCore,
+            IReadOnlyCollection<CosmosDiagnosticsInternal> diagnostics)
+        {
+            IReadOnlyCollection<CosmosDiagnosticsInternal> merged;
+            if (diagnostics == null)
+            {
+                return queryResponseCore;
+            }
+            else if (queryResponseCore.Diagnostics == null || queryResponseCore.Diagnostics.Count == 0)
+            {
+                merged = diagnostics;
+            }
+            else
+            {
+                merged = new List<CosmosDiagnosticsInternal>(queryResponseCore.Diagnostics.Concat(diagnostics)).AsReadOnly();
+            }
+
+            return new QueryResponseCore(
+                queryResponseCore.CosmosElements,
+                queryResponseCore.IsSuccess,
+                queryResponseCore.StatusCode,
+                queryResponseCore.RequestCharge,
+                queryResponseCore.ActivityId,
+                merged,
+                queryResponseCore.ResponseLengthBytes,
+                queryResponseCore.DisallowContinuationTokenMessage,
+                queryResponseCore.ContinuationToken,
+                queryResponseCore.CosmosException,
+                queryResponseCore.SubStatusCode);
+        }
 
         internal static QueryResponseCore CreateSuccess(
             IReadOnlyList<CosmosElement> result,

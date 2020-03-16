@@ -130,7 +130,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 QueryResponseCore responseCore = await this.cosmosQueryExecutionContext.ExecuteNextAsync(cancellationToken);
                 CosmosQueryContext cosmosQueryContext = this.cosmosQueryContext;
 
-                foreach (QueryPageDiagnostics queryPage in responseCore.Diagnostics)
+                foreach (CosmosDiagnosticsInternal queryPage in responseCore.Diagnostics)
                 {
                     diagnostics.AddDiagnosticsInternal(queryPage);
                 }

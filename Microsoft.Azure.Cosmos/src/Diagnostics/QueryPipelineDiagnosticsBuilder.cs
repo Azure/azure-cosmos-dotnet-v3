@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             this.Diagnostics.Add(diagnosticsContext);
         }
 
-        internal IReadOnlyList<CosmosDiagnosticsInternal> Build()
+        internal IReadOnlyCollection<CosmosDiagnosticsInternal> Build()
         {
             return this.Diagnostics.AsReadOnly();
         }
