@@ -1715,6 +1715,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "System.String ToString()"
+        },
+        "System.TimeSpan GetClientElapsedTime()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.TimeSpan GetClientElapsedTime()"
         }
       },
       "NestedTypes": {}

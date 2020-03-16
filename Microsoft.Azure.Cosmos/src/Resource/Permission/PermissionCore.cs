@@ -189,7 +189,7 @@ namespace Microsoft.Azure.Cosmos
                       requestMessage.Headers.Add(HttpConstants.HttpHeaders.ResourceTokenExpiry, tokenExpiryInSeconds.Value.ToString());
                   }
               },
-              diagnosticsScope: null,
+              diagnosticsContext: null,
               cancellationToken: cancellationToken);
         }
     }

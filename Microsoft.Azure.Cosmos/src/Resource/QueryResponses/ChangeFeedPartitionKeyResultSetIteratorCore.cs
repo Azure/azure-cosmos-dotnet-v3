@@ -115,7 +115,7 @@ namespace Microsoft.Azure.Cosmos
                },
                partitionKey: null,
                streamPayload: null,
-               diagnosticsScope: null,
+               diagnosticsContext: null,
                cancellationToken: cancellationToken);
 
         }

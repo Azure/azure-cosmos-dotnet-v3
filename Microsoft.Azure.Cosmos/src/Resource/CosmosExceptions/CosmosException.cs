@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the diagnostics for the request
         /// </summary>
-        public virtual CosmosDiagnostics Diagnostics => this.DiagnosticsContext;
+        public virtual CosmosDiagnostics Diagnostics => this.DiagnosticsContext.Diagnostics;
 
         /// <inheritdoc/>
         public override string StackTrace
