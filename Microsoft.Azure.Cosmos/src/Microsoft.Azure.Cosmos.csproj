@@ -59,6 +59,11 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>ClientResources.resx</DependentUpon>
     </Compile>
+    <Compile Update="Resource\CosmosExceptions\Http\HttpExceptionCodeGenerator.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>HttpExceptionCodeGenerator.tt</DependentUpon>
+    </Compile>
   </ItemGroup>
 
   <ItemGroup>
@@ -71,7 +76,7 @@
   <ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
     <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[$(DirectVersion)]" PrivateAssets="All" />
     <PackageReference Include="Microsoft.Azure.Cosmos.Serialization.HybridRow" Version="[$(HybridRowVersion)]" PrivateAssets="All" />
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All"/>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>
@@ -100,6 +105,17 @@
     <None Include="$(MSBuildThisFileDirectory)\Microsoft.Azure.Cosmos.targets" Pack="true" PackagePath="build\netstandard2.0">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Resource\CosmosExceptions\Http\HttpExceptionCodeGenerator.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>HttpExceptionCodeGenerator.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
   </ItemGroup>
 
   <PropertyGroup Condition=" '$(ProjectRef)' != 'True' ">

@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos
     {
         private readonly string stackTrace;
 
+        [Obsolete("Go through a factory method or derived class instead.")]
         internal CosmosException(
             HttpStatusCode statusCodes,
             string message,
@@ -51,21 +52,28 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="subStatusCode">A sub status code associated with the exception.</param>
         /// <param name="activityId">An ActivityId associated with the operation that generated the exception.</param>
         /// <param name="requestCharge">A request charge associated with the operation that generated the exception.</param>
+        /// <param name="innerException">The inner exception.</param>
+        [Obsolete("Go through a factory method or derived class instead.")]
         public CosmosException(
             string message,
             HttpStatusCode statusCode,
             int subStatusCode,
             string activityId,
-            double requestCharge)
-            : base(message)
+            double requestCharge,
+            Exception innerException = null)
+            : this(
+                  statusCode,
+                  message,
+                  subStatusCode,
+                  stackTrace: null,
+                  activityId,
+                  requestCharge,
+                  retryAfter: null,
+                  headers: new Headers(),
+                  diagnosticsContext: new CosmosDiagnosticsContextCore(),
+                  error: null,
+                  innerException: null)
         {
-            this.stackTrace = null;
-            this.SubStatusCode = subStatusCode;
-            this.StatusCode = statusCode;
-            this.RequestCharge = requestCharge;
-            this.ActivityId = activityId;
-            this.Headers = new Headers();
-            this.DiagnosticsContext = new CosmosDiagnosticsContextCore();
         }
 
         /// <summary>

@@ -1,0 +1,216 @@
+﻿<#@ template language="C#" hostspecific="true" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Net" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System" #>
+<#@ import namespace="System.IO" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ output extension=".cs" #>
+<# // Generate base exceptions: #>
+<# HttpStatusCode[] httpStatusCodes = new HttpStatusCode[] 
+{
+    HttpStatusCode.BadRequest,
+    HttpStatusCode.Forbidden,
+    HttpStatusCode.NotFound,
+    HttpStatusCode.RequestTimeout,
+    HttpStatusCode.Conflict,
+    HttpStatusCode.Gone,
+    HttpStatusCode.RequestEntityTooLarge,
+    HttpStatusCode.InternalServerError,
+    HttpStatusCode.ServiceUnavailable,
+}; #>
+<#  foreach (HttpStatusCode httpStatusCode in httpStatusCodes) { #>
+// ------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+// ------------------------------------------------------------
+
+// This is generated code:
+
+namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.<#= httpStatusCode #>
+{
+    using System;
+    using System.Net;
+
+    internal abstract class <#= httpStatusCode #>Exception : CosmosHttpWithSubstatusCodeException
+    {
+        protected <#= httpStatusCode #>Exception(int subStatusCode)
+            : this(subStatusCode, message: null)
+        {
+        }
+
+        protected <#= httpStatusCode #>Exception(int subStatusCode, string message)
+            : this(subStatusCode, message: message, innerException: null)
+        {
+        }
+
+        protected <#= httpStatusCode #>Exception(int subStatusCode, string message, Exception innerException)
+            : base(statusCode: HttpStatusCode.<#= httpStatusCode #>, subStatusCode: subStatusCode, message: message, innerException: innerException)
+        {
+        }
+    }
+}
+<#
+
+  //SaveOutput(httpStatusCode.ToString() + ".cs");
+  //Uncomment following to write to separate folder 1,2,3
+  SaveOutputToSubFolder(httpStatusCode.ToString(), httpStatusCode.ToString() + "Exception.cs");
+}
+#>
+<# // Generate SubExceptions: #>
+<# Dictionary<HttpStatusCode, Type> statusCodeToEnumType = new Dictionary<HttpStatusCode, Type>()
+{
+    { HttpStatusCode.BadRequest, typeof(BadRequestSubStatusCode) },
+    { HttpStatusCode.Forbidden, typeof(ForbiddenSubStatusCode) },
+    { HttpStatusCode.NotFound, typeof(NotFoundSubStatusCode) },
+    { HttpStatusCode.RequestTimeout, typeof(RequestTimeoutSubStatusCode) },
+    { HttpStatusCode.Conflict, typeof(ConflictSubStatusCode) },
+    { HttpStatusCode.Gone, typeof(GoneSubStatusCode) },
+    { HttpStatusCode.RequestEntityTooLarge, typeof(RequestEntityTooLargeSubStatusCode) },
+    { HttpStatusCode.InternalServerError, typeof(InternalServerErrorSubStatusCode) },
+    { HttpStatusCode.ServiceUnavailable, typeof(ServiceUnavailableSubStatusCode) },
+}; #>
+<#  foreach (KeyValuePair<HttpStatusCode, Type> statusCodeToEnum in statusCodeToEnumType) { #>
+<#  foreach (Enum subStatusCode in Enum.GetValues(statusCodeToEnum.Value)) { #>
+// ------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+// ------------------------------------------------------------
+
+// This is generated code:
+
+namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.<#= statusCodeToEnum.Key #>
+{
+    using System;
+
+    internal sealed class <#= subStatusCode #>Exception : <#= statusCodeToEnum.Key #>Exception
+    {
+        public <#= subStatusCode #>Exception()
+            : this(message: null)
+        {
+        }
+
+        public <#= subStatusCode #>Exception(string message)
+            : this(message: message, innerException: null)
+        {
+        }
+
+        public <#= subStatusCode #>Exception(string message, Exception innerException)
+            : base(subStatusCode: (int)<#= statusCodeToEnum.Key #>SubStatusCode.<#= subStatusCode #>, message: message, innerException: innerException)
+        {
+        }
+    }
+}
+<# SaveOutputToSubFolder(statusCodeToEnum.Key.ToString(), $"{subStatusCode}Exception.cs"); #>
+<# } #>
+<# } #>
+<# // Generate SubStatusCode Enums: #>
+<#  foreach (KeyValuePair<HttpStatusCode, Type> statusCodeToEnum in statusCodeToEnumType) { #>
+// ------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+// ------------------------------------------------------------
+
+// This is generated code:
+
+namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.<#= statusCodeToEnum.Key #>
+{
+    internal enum <#= statusCodeToEnum.Key #>SubStatusCode
+    {
+<#  foreach (var subStatusCode in Enum.GetValues(statusCodeToEnum.Value)) { #>
+        <#= subStatusCode #> = <#= (int)subStatusCode #>,
+<# } #>
+    }
+}
+<# SaveOutputToSubFolder(statusCodeToEnum.Key.ToString(), $"{statusCodeToEnum.Key}SubStatusCode.cs"); #>
+<# } #>
+<#+
+enum BadRequestSubStatusCode
+{
+    PartitionKeyMismatch = 1001,
+    CrossPartitionQueryNotServable = 1004,
+    ScriptCompileError = 0xFFFF,    // From ExecuteStoredProcedure.
+    AnotherOfferReplaceOperationIsInProgress = 3205,
+}
+#>
+<#+
+enum GoneSubStatusCode
+{
+    NameCacheIsStale = 1000,
+    PartitionKeyRangeGone = 1002,
+    CompletingSplit = 1007,
+    CompletingPartitionMigration = 1008,
+}
+#>
+<#+
+enum ForbiddenSubStatusCode
+{
+    NWriteForbidden = 3,
+    ProvisionLimitReached = 1005,
+    DatabaseAccountNotFound = 1008,
+    RedundantCollectionPut = 1009,
+    SharedThroughputDatabaseQuotaExceeded = 1010,
+    SharedThroughputOfferGrowNotNeeded = 1011,
+    SharedThroughputDatabaseCollectionCountExceeded = 1019,
+    SharedThroughputDatabaseCountExceeded = 1020,
+}
+#>
+<#+
+enum NotFoundSubStatusCode
+{
+    ReadSessionNotAvailable = 1002,
+    OwnerResourceNotFound = 1003,
+    ConfigurationNameNotFound = 1004,
+    ConfigurationPropertyNotFound = 1005,
+    CollectionCreateInProgress = 1013,
+}
+#>
+<#+
+enum RequestTimeoutSubStatusCode
+{
+}
+#>
+<#+
+enum RequestEntityTooLargeSubStatusCode
+{
+}
+#>
+<#+
+enum ConflictSubStatusCode
+{
+    ConflictWithControlPlane = 1006,
+    DatabaseNameAlreadyExists = 3206,
+    ConfigurationNameAlreadyExists = 3207,
+    PartitionkeyHashCollisionForId = 3302,
+}
+#>
+<#+
+enum ServiceUnavailableSubStatusCode
+{
+    InsufficientBindablePartitions = 1007,
+    ComputeFederationNotFound = 1012,
+    OperationPaused = 9001,
+}
+#>
+<#+
+enum InternalServerErrorSubStatusCode
+{
+    ConfigurationNameNotEmpty = 3001,
+}
+#>
+<#+
+private void SaveOutput(string outputFileName) {
+  string templateDirectory = Path.GetDirectoryName(Host.TemplateFile);
+  string outputFilePath = Path.Combine(templateDirectory, outputFileName);
+  File.WriteAllText(outputFilePath, this.GenerationEnvironment.ToString()); 
+  this.GenerationEnvironment.Remove(0, this.GenerationEnvironment.Length);
+}
+
+private void SaveOutputToSubFolder(string folderName, string outputFileName) {
+  string templateDirectory = Path.GetDirectoryName(Host.TemplateFile);
+  string newDirectoryName = Path.Combine(templateDirectory,folderName);
+  if(!Directory.Exists(newDirectoryName))
+    Directory.CreateDirectory(newDirectoryName);
+  string outputFilePath = Path.Combine(newDirectoryName, outputFileName);
+  File.WriteAllText(outputFilePath, this.GenerationEnvironment.ToString()); 
+  this.GenerationEnvironment.Remove(0, this.GenerationEnvironment.Length);
+}
+#>

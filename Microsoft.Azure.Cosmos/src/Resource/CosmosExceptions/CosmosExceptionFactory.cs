@@ -355,6 +355,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
             Error error,
             Exception innerException)
         {
+#pragma warning disable CS0618 // Type or member is obsolete
             return new CosmosException(
                 statusCode,
                 message,
@@ -367,6 +368,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 diagnosticsContext,
                 error,
                 innerException);
+#pragma warning restore CS0618 // Type or member is obsolete
         }
     }
 }
