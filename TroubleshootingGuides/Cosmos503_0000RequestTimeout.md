@@ -45,7 +45,7 @@ These are the known causes for this issue.
   <td>Check the [portal metrics](monitor-accounts.md) for 429 throttled requests</td>
 </tr>
 <tr>
-  <td>Hot partition key. Azure Cosmos DB distributes the overall provisioned throughput evenly across physical partitions. Check portal metrics to see if the workload is encountering a hot [partition key](partition-data.md). This will cause the aggregate consumed throughput (RU/s) to be appear to be under the provisioned RUs, but a single partition consumed throughput (RU/s) will exceed the provisioned throughput.</td>
+  <td>Hot partition key. Azure Cosmos DB distributes the overall provisioned throughput evenly across physical partitions. Check portal metrics to see if the workload is encountering a hot [partition key](https://docs.microsoft.com/azure/cosmos-db/partition-data). This will cause the aggregate consumed throughput (RU/s) to be appear to be under the provisioned RUs, but a single partition consumed throughput (RU/s) will exceed the provisioned throughput.</td>
   <td>The partition key should be changed to avoid the heavily used value.</td>
 </tr>
 <tr>
