@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Net;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
@@ -151,6 +152,72 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             finally
             {
                 await container?.DeleteContainerAsync();
+            }
+        }
+
+        [TestMethod]
+        public async Task CannotMixFeedTokenAmongContainers()
+        {
+            ContainerCore container = null;
+            ContainerCore container2 = null;
+            try
+            {
+                // Create a container large enough to have at least 2 partitions
+                ContainerResponse containerResponse = await this.database.CreateContainerAsync(
+                    id: Guid.NewGuid().ToString(),
+                    partitionKeyPath: "/id",
+                    throughput: 15000);
+                container = (ContainerInlineCore)containerResponse;
+
+                containerResponse = await this.database.CreateContainerAsync(
+                    id: Guid.NewGuid().ToString(),
+                    partitionKeyPath: "/id",
+                    throughput: 15000);
+                container2 = (ContainerInlineCore)containerResponse;
+
+                List<string> generatedIds = Enumerable.Range(0, 1000).Select(n => $"BasicItem{n}").ToList();
+                foreach (string id in generatedIds)
+                {
+                    string item = $@"
+                    {{    
+                        ""id"": ""{id}""
+                    }}";
+
+                    using (ResponseMessage createResponse = await container.CreateItemStreamAsync(
+                            QueryFeedTokenTests.GenerateStreamFromString(item),
+                            new Cosmos.PartitionKey(id)))
+                    {
+                        Assert.IsTrue(createResponse.IsSuccessStatusCode);
+                    }
+                }
+
+                IReadOnlyList<FeedToken> feedTokens = await container.GetFeedTokensAsync();
+                FeedIteratorInternal feedIterator = container.GetItemQueryStreamIterator(queryText: "select * from T where STARTSWITH(T.id, \"BasicItem\")", feedToken: feedTokens[0], requestOptions: new QueryRequestOptions() { MaxItemCount = 10 }) as FeedIteratorInternal;
+                FeedToken feedTokenFromContainer1 = null;
+                while (feedIterator.HasMoreResults)
+                {
+                    using (ResponseMessage responseMessage =
+                        await feedIterator.ReadNextAsync(this.cancellationToken))
+                    {
+                        Assert.IsTrue(feedIterator.TryGetFeedToken(out feedTokenFromContainer1));
+                    }
+
+                    break;
+                }
+
+                FeedIteratorInternal feedIterator2 = container2.GetItemQueryStreamIterator(queryText: "select * from T where STARTSWITH(T.id, \"BasicItem\")", feedToken: feedTokenFromContainer1, requestOptions: new QueryRequestOptions() { MaxItemCount = 10 }) as FeedIteratorInternal;
+                while (feedIterator2.HasMoreResults)
+                {
+                    ResponseMessage responseMessage = await feedIterator2.ReadNextAsync(this.cancellationToken);
+                    Assert.IsNotNull(responseMessage.CosmosException);
+                    Assert.AreEqual(HttpStatusCode.InternalServerError, responseMessage.StatusCode);
+                    break;
+                }
+            }
+            finally
+            {
+                await container?.DeleteContainerAsync();
+                await container2?.DeleteContainerAsync();
             }
         }
 

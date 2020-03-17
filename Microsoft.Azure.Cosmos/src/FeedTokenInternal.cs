@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Routing;
 
     internal abstract class FeedTokenInternal : FeedToken
@@ -41,7 +42,7 @@ namespace Microsoft.Azure.Cosmos
             Documents.PartitionKeyDefinition partitionKeyDefinition,
             CancellationToken cancellationToken);
 
-        public abstract void ValidateContainer(string containerRid);
+        public abstract TryCatch ValidateContainer(string containerRid);
 
         public static bool TryParse(
             string toStringValue,

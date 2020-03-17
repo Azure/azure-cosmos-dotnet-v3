@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Routing;
     using Newtonsoft.Json;
 
@@ -187,13 +188,15 @@ namespace Microsoft.Azure.Cosmos
             return partitionKeyRanges.Select(partitionKeyRange => partitionKeyRange.Id);
         }
 
-        public override void ValidateContainer(string containerRid)
+        public override TryCatch ValidateContainer(string containerRid)
         {
             if (!string.IsNullOrEmpty(this.ContainerRid) &&
-                this.ContainerRid != containerRid)
+                !this.ContainerRid.Equals(containerRid, StringComparison.Ordinal))
             {
-                throw new ArgumentException(string.Format(ClientResources.FeedToken_InvalidFeedTokenForContainer, this.ContainerRid, containerRid));
+                return TryCatch.FromException(new ArgumentException(string.Format(ClientResources.FeedToken_InvalidFeedTokenForContainer, this.ContainerRid, containerRid)));
             }
+
+            return TryCatch.FromResult();
         }
 
         /// <summary>

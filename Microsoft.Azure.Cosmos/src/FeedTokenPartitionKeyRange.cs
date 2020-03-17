@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Routing;
     using Newtonsoft.Json;
 
@@ -135,9 +136,14 @@ namespace Microsoft.Azure.Cosmos
             return Task.FromResult(result);
         }
 
-        public override void ValidateContainer(string containerRid)
+        public override TryCatch ValidateContainer(string containerRid)
         {
-            // Current implementation cannot validate ContainerRid
+            if (this.FeedTokenEPKRange != null)
+            {
+                return this.FeedTokenEPKRange.ValidateContainer(containerRid);
+            }
+
+            return TryCatch.FromResult();
         }
 
         public override bool IsDone

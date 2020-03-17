@@ -109,6 +109,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 cancellationToken);
             cosmosQueryContext.ContainerResourceId = containerQueryProperties.ResourceId;
 
+            if (inputParameters.InitialFeedToken != null)
+            {
+                TryCatch validateContainer = inputParameters.InitialFeedToken.ValidateContainer(cosmosQueryContext.ContainerResourceId);
+                if (!validateContainer.Succeeded)
+                {
+                    return TryCatch<CosmosQueryExecutionContext>.FromException(validateContainer.Exception.InnerException);
+                }
+            }
+
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
             if (queryPlanFromContinuationToken != null)
             {

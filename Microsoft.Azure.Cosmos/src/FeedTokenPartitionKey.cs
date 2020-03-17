@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Routing;
     using Newtonsoft.Json;
 
@@ -60,10 +61,7 @@ namespace Microsoft.Azure.Cosmos
             return result;
         }
 
-        public override void ValidateContainer(string containerRid)
-        {
-            // Current implementation cannot validate ContainerRid
-        }
+        public override TryCatch ValidateContainer(string containerRid) => TryCatch.FromResult();
 
         public override string ToString()
         {

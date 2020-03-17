@@ -143,7 +143,17 @@ namespace Microsoft.Azure.Cosmos
 
                     this.containerRId = tryInitializeContainerRId.Result;
                     // If there is an initial FeedToken, validate Container
-                    this.feedTokenInternal?.ValidateContainer(this.containerRId);
+                    if (this.feedTokenInternal != null)
+                    {
+                        TryCatch validateContainer = this.feedTokenInternal.ValidateContainer(this.containerRId);
+                        if (!validateContainer.Succeeded)
+                        {
+                            return CosmosExceptionFactory.CreateInternalServerErrorException(
+                                message: validateContainer.Exception.InnerException.Message,
+                                innerException: validateContainer.Exception.InnerException,
+                                diagnosticsContext: diagnostics).ToCosmosResponseMessage(new RequestMessage(method: null, requestUri: null, diagnosticsContext: diagnostics));
+                        }
+                    }
                 }
 
                 if (this.feedTokenInternal == null)
