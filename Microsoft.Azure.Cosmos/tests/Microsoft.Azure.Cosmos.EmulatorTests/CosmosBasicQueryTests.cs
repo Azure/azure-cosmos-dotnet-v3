@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private static CosmosClient DirectCosmosClient;
         private static CosmosClient GatewayCosmosClient;
         private const string DatabaseId = "CosmosBasicQueryTests";
-        private const string ContainerId = "ContainerBasicQueryTests";
+        private static readonly string ContainerId = "ContainerBasicQueryTests" + Guid.NewGuid();
 
         [ClassInitialize]
         public static async Task TestInit(TestContext textContext)
@@ -290,7 +290,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task ItemTest(bool directMode)
         {
             CosmosClient client = directMode ? DirectCosmosClient : GatewayCosmosClient;
-            Container container = client.GetContainer(DatabaseId, ContainerId);
+            Database database = client.GetDatabase(DatabaseId);
+            Container container = await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/pk");
+
             List<string> createdIds = new List<string>()
             {
                 "BasicQueryItem",
@@ -387,7 +389,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task ScriptsStoredProcedureTest(bool directMode)
         {
             CosmosClient client = directMode ? DirectCosmosClient : GatewayCosmosClient;
-            Scripts scripts = client.GetContainer(DatabaseId, ContainerId).Scripts;
+            Database database = client.GetDatabase(DatabaseId);
+            Container container = await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/pk");
+            Scripts scripts = container.Scripts;
 
             List<string> createdIds = new List<string>()
             {
@@ -439,7 +443,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task ScriptsUserDefinedFunctionTest(bool directMode)
         {
             CosmosClient client = directMode ? DirectCosmosClient : GatewayCosmosClient;
-            Scripts scripts = client.GetContainer(DatabaseId, ContainerId).Scripts;
+            Database database = client.GetDatabase(DatabaseId);
+            Container container = await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/pk");
+            Scripts scripts = container.Scripts;
 
             List<string> createdIds = new List<string>()
             {
@@ -491,7 +497,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task ScriptsTriggerTest(bool directMode)
         {
             CosmosClient client = directMode ? DirectCosmosClient : GatewayCosmosClient;
-            Scripts scripts = client.GetContainer(DatabaseId, ContainerId).Scripts;
+            Database database = client.GetDatabase(DatabaseId);
+            Container container = await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/pk");
+            Scripts scripts = container.Scripts;
 
             List<string> createdIds = new List<string>()
             {
