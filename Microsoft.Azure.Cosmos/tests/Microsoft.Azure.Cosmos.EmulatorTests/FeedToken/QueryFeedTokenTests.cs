@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         }
 
         [TestMethod]
-        public async Task CannotMixFeedTokenAmongContainers()
+        public async Task CannotMixTokensFromOtherContainers()
         {
             ContainerCore container = null;
             ContainerCore container2 = null;
@@ -165,17 +165,15 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 // Create a container large enough to have at least 2 partitions
                 ContainerResponse containerResponse = await this.database.CreateContainerAsync(
                     id: Guid.NewGuid().ToString(),
-                    partitionKeyPath: "/id",
-                    throughput: 15000);
+                    partitionKeyPath: "/id");
                 container = (ContainerInlineCore)containerResponse;
 
                 containerResponse = await this.database.CreateContainerAsync(
                     id: Guid.NewGuid().ToString(),
-                    partitionKeyPath: "/id",
-                    throughput: 15000);
+                    partitionKeyPath: "/id");
                 container2 = (ContainerInlineCore)containerResponse;
 
-                List<string> generatedIds = Enumerable.Range(0, 1000).Select(n => $"BasicItem{n}").ToList();
+                List<string> generatedIds = Enumerable.Range(0, 30).Select(n => $"BasicItem{n}").ToList();
                 foreach (string id in generatedIds)
                 {
                     string item = $@"

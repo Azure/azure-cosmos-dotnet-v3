@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.ObjectModel;
     using System.Globalization;
     using System.Linq;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query;
@@ -611,7 +612,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             IReadOnlyList<FeedToken> tokens = await this.LargerContainer.GetFeedTokensAsync();
             FeedIterator iterator = this.Container.GetChangeFeedStreamIterator(tokens[0]);
-            await Assert.ThrowsExceptionAsync<ArgumentException>(() => iterator.ReadNextAsync());
+            ResponseMessage responseMessage = await iterator.ReadNextAsync();
+            Assert.IsNotNull(responseMessage.CosmosException);
+            Assert.AreEqual(HttpStatusCode.InternalServerError, responseMessage.StatusCode);
         }
 
         private async Task<IList<ToDoActivity>> CreateRandomItems(ContainerCore container, int pkCount, int perPKItemCount = 1, bool randomPartitionKey = true)
