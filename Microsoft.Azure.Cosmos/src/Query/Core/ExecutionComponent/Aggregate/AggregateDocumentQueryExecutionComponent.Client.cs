@@ -122,7 +122,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
                 throw new NotImplementedException();
             }
 
-            public override bool TryGetFeedToken(out FeedToken state)
+            public override bool TryGetFeedToken(
+                string containerResourceId,
+                out FeedToken state)
             {
                 // Since we block until we get the final result the continuation token is always null.
                 state = null;

@@ -155,7 +155,7 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             get
             {
-                if (this.cosmosQueryExecutionContext.TryGetFeedToken(out FeedToken feedToken))
+                if (this.TryGetFeedToken(out FeedToken feedToken))
                 {
                     return feedToken;
                 }
@@ -228,7 +228,9 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public override bool TryGetFeedToken(out FeedToken feedToken)
         {
-            return this.cosmosQueryExecutionContext.TryGetFeedToken(out feedToken);
+            return this.cosmosQueryExecutionContext.TryGetFeedToken(
+                this.cosmosQueryContext.ContainerResourceId,
+                out feedToken);
         }
     }
 }

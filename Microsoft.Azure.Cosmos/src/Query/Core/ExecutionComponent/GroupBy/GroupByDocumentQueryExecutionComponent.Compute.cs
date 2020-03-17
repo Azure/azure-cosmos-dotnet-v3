@@ -162,7 +162,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                 return GroupByContinuationToken.ToCosmosElement(groupByContinuationToken);
             }
 
-            public override bool TryGetFeedToken(out FeedToken feedToken)
+            public override bool TryGetFeedToken(
+                string containerResourceId,
+                out FeedToken feedToken)
             {
                 if (this.IsDone)
                 {
@@ -170,30 +172,42 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                     return true;
                 }
 
-                if (!this.Source.TryGetFeedToken(out feedToken))
+                if (!this.Source.TryGetFeedToken(containerResourceId, out feedToken))
                 {
                     feedToken = null;
                     return false;
                 }
 
+                CosmosElement sourceContinuationToken;
+                if (this.Source.IsDone)
+                {
+                    sourceContinuationToken = DoneCosmosElementToken;
+                }
+                else
+                {
+                    sourceContinuationToken = this.Source.GetCosmosElementContinuationToken();
+                }
+
+                GroupByContinuationToken groupByContinuationToken = new GroupByContinuationToken(
+                    groupingTableContinuationToken: this.groupingTable.GetCosmosElementContinuationToken(),
+                    sourceContinuationToken: sourceContinuationToken);
+
                 if (feedToken is FeedTokenEPKRange feedTokenInternal)
                 {
-                    CosmosElement sourceContinuationToken;
-                    if (this.Source.IsDone)
-                    {
-                        sourceContinuationToken = DoneCosmosElementToken;
-                    }
-                    else
-                    {
-                        sourceContinuationToken = this.Source.GetCosmosElementContinuationToken();
-                    }
-
-                    GroupByContinuationToken groupByContinuationToken = new GroupByContinuationToken(
-                        groupingTableContinuationToken: this.groupingTable.GetCosmosElementContinuationToken(),
-                        sourceContinuationToken: sourceContinuationToken);
-
                     feedToken = FeedTokenEPKRange.Copy(
                             feedTokenInternal,
+                            GroupByContinuationToken.ToCosmosElement(groupByContinuationToken).ToString());
+                }
+                else if (this.Source.IsDone)
+                {
+                    // If source is done, feedToken is null, there are no more ranges but GroupBy requires one more iteration
+                    feedToken = new FeedTokenEPKRange(
+                            containerResourceId,
+                            new Documents.Routing.Range<string>(
+                                Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
+                                Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
+                                isMinInclusive: true,
+                                isMaxInclusive: false),
                             GroupByContinuationToken.ToCosmosElement(groupByContinuationToken).ToString());
                 }
 
@@ -303,7 +317,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                 {
                 }
 
-                public bool TryGetFeedToken(out FeedToken feedToken)
+                public bool TryGetFeedToken(
+                    string containerResourceId,
+                    out FeedToken feedToken)
                 {
                     feedToken = null;
                     return true;

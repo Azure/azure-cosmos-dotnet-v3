@@ -93,7 +93,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             return tryCreateCosmosQueryExecutionContext.Result.GetCosmosElementContinuationToken();
         }
 
-        public override bool TryGetFeedToken(out FeedToken feedToken)
+        public override bool TryGetFeedToken(
+            string containerResourceId,
+            out FeedToken feedToken)
         {
             if (!this.lazyTryCreateCosmosQueryExecutionContext.ValueInitialized)
             {
@@ -108,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 return false;
             }
 
-            return tryCreateCosmosQueryExecutionContext.Result.TryGetFeedToken(out feedToken);
+            return tryCreateCosmosQueryExecutionContext.Result.TryGetFeedToken(containerResourceId, out feedToken);
         }
     }
 }

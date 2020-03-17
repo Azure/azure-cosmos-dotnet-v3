@@ -191,7 +191,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                 }
             }
 
-            public override bool TryGetFeedToken(out FeedToken feedToken)
+            public override bool TryGetFeedToken(
+                string containerResourceId,
+                out FeedToken feedToken)
             {
                 if (this.IsDone)
                 {
@@ -199,7 +201,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                     return true;
                 }
 
-                if (!this.Source.TryGetFeedToken(out feedToken))
+                if (!this.Source.TryGetFeedToken(containerResourceId, out feedToken))
                 {
                     feedToken = null;
                     return false;

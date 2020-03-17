@@ -117,7 +117,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                 throw new NotImplementedException();
             }
 
-            public override bool TryGetFeedToken(out FeedToken feedToken)
+            public override bool TryGetFeedToken(
+                string containerResourceId,
+                out FeedToken feedToken)
             {
                 feedToken = null;
                 return false;

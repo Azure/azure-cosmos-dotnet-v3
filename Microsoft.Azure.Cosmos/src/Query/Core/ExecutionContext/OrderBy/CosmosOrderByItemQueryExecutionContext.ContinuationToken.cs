@@ -69,35 +69,26 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
         /// <summary>
         /// Gets the FeedToken for an order by query
         /// </summary>
-        protected override FeedToken FeedToken
+        public override bool TryGetFeedToken(
+            string containerResourceId,
+            out FeedToken feedToken)
         {
-            // In general the continuation token for order by queries contains the following information:
-            // 1) What partition did we leave off on
-            // 2) What value did we leave off 
-            // Along with the constraints that we get from how we drain the documents:
-            //      Let <x, y> mean that the last item we drained was item x from partition y.
-            //      Then we know that for all partitions
-            //          * < y that we have drained all items <= x
-            //          * > y that we have drained all items < x
-            //          * = y that we have drained all items <= x based on the backend continuation token for y
-            // With this information we have captured the progress for all partitions in a single continuation token.
-            get
+            // FeedToken will represent the range of the active and pending Producers
+            IEnumerable<ItemProducer> allProducers = this.GetAllItemProducers();
+            if (!allProducers.Any())
             {
-                IEnumerable<ItemProducer> allProducers = this.GetAllItemProducers();
-                if (!allProducers.Any())
-                {
-                    return null;
-                }
-
-                List<Documents.Routing.Range<string>> rangesList = allProducers.Select(producer => producer.PartitionKeyRange.ToRange()).ToList();
-                rangesList.Sort(Documents.Routing.Range<string>.MinComparer.Instance);
-                // Single FeedToken with the completeRange and continuation
-                FeedTokenEPKRange feedToken = new FeedTokenEPKRange(
-                    string.Empty, // Rid or container reference not available
-                    rangesList,
-                    this.ContinuationToken);
-                return feedToken;
+                feedToken = null;
+                return true;
             }
+
+            List<Documents.Routing.Range<string>> rangesList = allProducers.Select(producer => producer.PartitionKeyRange.ToRange()).ToList();
+            rangesList.Sort(Documents.Routing.Range<string>.MinComparer.Instance);
+            // Single FeedToken with the completeRange and continuation
+            feedToken = new FeedTokenEPKRange(
+                containerResourceId,
+                rangesList,
+                this.ContinuationToken);
+            return true;
         }
 
         public override CosmosElement GetCosmosElementContinuationToken()

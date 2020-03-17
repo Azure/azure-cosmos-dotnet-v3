@@ -34,6 +34,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
         public abstract CosmosElement GetCosmosElementContinuationToken();
 
-        public abstract bool TryGetFeedToken(out FeedToken feedToken);
+        public abstract bool TryGetFeedToken(
+            string containerResourceId,
+            out FeedToken feedToken);
     }
 }

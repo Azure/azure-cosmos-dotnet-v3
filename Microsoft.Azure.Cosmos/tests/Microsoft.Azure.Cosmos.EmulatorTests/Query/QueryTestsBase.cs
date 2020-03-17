@@ -644,7 +644,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
             List<T> resultsFromTryGetContinuationToken = new List<T>();
             FeedToken feedToken = null;
-            bool hasMoreResults = true;
             do
             {
                 QueryRequestOptions computeRequestOptions = queryRequestOptions.Clone();
@@ -678,7 +677,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     Assert.IsTrue(
                         itemQuery.TryGetFeedToken(out feedToken),
                         "Failed to get state for query");
-                    hasMoreResults = itemQuery.HasMoreResults;
                 }
                 catch (CosmosException cosmosException) when (cosmosException.StatusCode == (HttpStatusCode)429)
                 {
@@ -690,7 +688,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                        requestOptions: computeRequestOptions,
                        feedToken: feedToken) as FeedIteratorInternal;
                 }
-            } while (hasMoreResults);
+            } while (feedToken != null);
 
             return resultsFromTryGetContinuationToken;
         }
