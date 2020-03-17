@@ -125,11 +125,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                             OffsetContinuationToken.ToCosmosElement(new OffsetContinuationToken(
                                 this.skipCount,
                                 this.Source.GetCosmosElementContinuationToken())).ToString());
-                    return true;
                 }
 
-                feedToken = null;
-                return false;
+                return true;
             }
 
             /// <summary>

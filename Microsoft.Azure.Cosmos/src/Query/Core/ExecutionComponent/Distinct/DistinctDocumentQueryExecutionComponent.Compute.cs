@@ -205,13 +205,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                     return false;
                 }
 
-                FeedTokenEPKRange feedTokenInternal = feedToken as FeedTokenEPKRange;
-                DistinctContinuationToken distinctContinuationToken = new DistinctContinuationToken(
+                if (feedToken is FeedTokenEPKRange feedTokenInternal)
+                {
+                    DistinctContinuationToken distinctContinuationToken = new DistinctContinuationToken(
                     sourceToken: this.Source.GetCosmosElementContinuationToken(),
                     distinctMapToken: this.distinctMap.GetCosmosElementContinuationToken());
-                feedToken = FeedTokenEPKRange.Copy(
-                    feedTokenInternal,
-                    DistinctContinuationToken.ToCosmosElement(distinctContinuationToken).ToString());
+                    feedToken = FeedTokenEPKRange.Copy(
+                        feedTokenInternal,
+                        DistinctContinuationToken.ToCosmosElement(distinctContinuationToken).ToString());
+                }
+
                 return true;
             }
         }

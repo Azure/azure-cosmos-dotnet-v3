@@ -123,11 +123,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                     feedToken = FeedTokenEPKRange.Copy(
                             feedTokenInternal,
                             TakeContinuationToken.ToCosmosElement(takeContinuationToken).ToString());
-                    return true;
                 }
 
-                feedToken = null;
-                return false;
+                return true;
             }
 
             private readonly struct TakeContinuationToken

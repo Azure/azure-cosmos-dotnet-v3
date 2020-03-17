@@ -191,11 +191,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
                     feedToken = FeedTokenEPKRange.Copy(
                         feedTokenInternal,
                         AggregateContinuationToken.ToCosmosElement(aggregateContinuationToken).ToString());
-                    return true;
                 }
 
-                feedToken = null;
-                return false;
+                return true;
             }
 
             private readonly struct AggregateContinuationToken

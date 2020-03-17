@@ -195,11 +195,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                     feedToken = FeedTokenEPKRange.Copy(
                             feedTokenInternal,
                             GroupByContinuationToken.ToCosmosElement(groupByContinuationToken).ToString());
-                    return true;
                 }
 
-                feedToken = null;
-                return false;
+                return true;
             }
 
             private readonly struct GroupByContinuationToken

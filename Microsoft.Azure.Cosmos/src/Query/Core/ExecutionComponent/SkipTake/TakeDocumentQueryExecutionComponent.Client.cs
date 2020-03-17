@@ -205,29 +205,32 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                     return false;
                 }
 
-                FeedTokenEPKRange feedTokenInternal = feedToken as FeedTokenEPKRange;
-                TakeContinuationToken takeContinuationToken;
-                switch (this.takeEnum)
+                if (feedToken is FeedTokenEPKRange feedTokenInternal)
                 {
-                    case TakeEnum.Limit:
-                        takeContinuationToken = new LimitContinuationToken(
-                            this.takeCount,
-                            feedTokenInternal.GetContinuation());
-                        break;
+                    TakeContinuationToken takeContinuationToken;
+                    switch (this.takeEnum)
+                    {
+                        case TakeEnum.Limit:
+                            takeContinuationToken = new LimitContinuationToken(
+                                this.takeCount,
+                                feedTokenInternal.GetContinuation());
+                            break;
 
-                    case TakeEnum.Top:
-                        takeContinuationToken = new TopContinuationToken(
-                            this.takeCount,
-                            feedTokenInternal.GetContinuation());
-                        break;
+                        case TakeEnum.Top:
+                            takeContinuationToken = new TopContinuationToken(
+                                this.takeCount,
+                                feedTokenInternal.GetContinuation());
+                            break;
 
-                    default:
-                        throw new ArgumentException($"Unknown {nameof(TakeEnum)}: {this.takeEnum}");
+                        default:
+                            throw new ArgumentException($"Unknown {nameof(TakeEnum)}: {this.takeEnum}");
+                    }
+
+                    feedToken = FeedTokenEPKRange.Copy(
+                            feedTokenInternal,
+                            takeContinuationToken.ToString());
                 }
 
-                feedToken = FeedTokenEPKRange.Copy(
-                        feedTokenInternal,
-                        takeContinuationToken.ToString());
                 return true;
             }
 
