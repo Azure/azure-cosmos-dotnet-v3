@@ -20,7 +20,7 @@ namespace Azure.Cosmos.Test.Spatial
         public MultiPointTest()
         {
             this.restContractOptions = new JsonSerializerOptions();
-            CosmosTextJsonSerializer.InitializeRESTConverters(this.restContractOptions);
+            CosmosTextJsonSerializer.InitializeDataContractConverters(this.restContractOptions);
         }
 
         /// <summary>

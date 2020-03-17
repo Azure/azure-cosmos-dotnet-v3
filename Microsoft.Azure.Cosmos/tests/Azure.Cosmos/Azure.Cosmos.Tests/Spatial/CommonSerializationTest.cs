@@ -18,7 +18,7 @@ namespace Azure.Cosmos.Test.Spatial
         public CommonSerializationTest()
         {
             this.restContractOptions = new JsonSerializerOptions();
-            CosmosTextJsonSerializer.InitializeRESTConverters(this.restContractOptions);
+            CosmosTextJsonSerializer.InitializeDataContractConverters(this.restContractOptions);
         }
 
         /// <summary>
