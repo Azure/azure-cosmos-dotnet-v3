@@ -19,10 +19,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     /// </summary>
     internal sealed class LazyCosmosQueryExecutionContext : CosmosQueryExecutionContext
     {
-        private readonly AsyncLazy<(TryCatch<CosmosQueryExecutionContext> Context, IReadOnlyCollection<CosmosDiagnosticsInternal> diagnostics)> lazyTryCreateCosmosQueryExecutionContext;
-        private bool isFirstExecuteNext = true;
+        private readonly AsyncLazy<TryCatch<CosmosQueryExecutionContext>> lazyTryCreateCosmosQueryExecutionContext;
 
-        public LazyCosmosQueryExecutionContext(AsyncLazy<(TryCatch<CosmosQueryExecutionContext>, IReadOnlyCollection<CosmosDiagnosticsInternal>)> lazyTryCreateCosmosQueryExecutionContext)
+        public LazyCosmosQueryExecutionContext(AsyncLazy<TryCatch<CosmosQueryExecutionContext>> lazyTryCreateCosmosQueryExecutionContext)
         {
             this.lazyTryCreateCosmosQueryExecutionContext = lazyTryCreateCosmosQueryExecutionContext ?? throw new ArgumentNullException(nameof(lazyTryCreateCosmosQueryExecutionContext));
         }
@@ -34,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 bool isDone;
                 if (this.lazyTryCreateCosmosQueryExecutionContext.ValueInitialized)
                 {
-                    TryCatch<CosmosQueryExecutionContext> tryCreateCosmosQueryExecutionContext = this.lazyTryCreateCosmosQueryExecutionContext.Result.Context;
+                    TryCatch<CosmosQueryExecutionContext> tryCreateCosmosQueryExecutionContext = this.lazyTryCreateCosmosQueryExecutionContext.Result;
                     if (tryCreateCosmosQueryExecutionContext.Succeeded)
                     {
                         isDone = tryCreateCosmosQueryExecutionContext.Result.IsDone;
@@ -57,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         {
             if (this.lazyTryCreateCosmosQueryExecutionContext.ValueInitialized)
             {
-                TryCatch<CosmosQueryExecutionContext> tryCreateCosmosQueryExecutionContext = this.lazyTryCreateCosmosQueryExecutionContext.Result.Context;
+                TryCatch<CosmosQueryExecutionContext> tryCreateCosmosQueryExecutionContext = this.lazyTryCreateCosmosQueryExecutionContext.Result;
                 if (tryCreateCosmosQueryExecutionContext.Succeeded)
                 {
                     tryCreateCosmosQueryExecutionContext.Result.Dispose();
@@ -69,25 +68,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            (TryCatch<CosmosQueryExecutionContext> Context, IReadOnlyCollection<CosmosDiagnosticsInternal> diagnostics) tryCreateCosmosQueryExecutionContext = await this.lazyTryCreateCosmosQueryExecutionContext.GetValueAsync(cancellationToken);
-            if (!tryCreateCosmosQueryExecutionContext.Context.Succeeded)
+            TryCatch<CosmosQueryExecutionContext> tryCreateCosmosQueryExecutionContext = await this.lazyTryCreateCosmosQueryExecutionContext.GetValueAsync(cancellationToken);
+            if (!tryCreateCosmosQueryExecutionContext.Succeeded)
             {
-                return QueryResponseFactory.CreateFromException(tryCreateCosmosQueryExecutionContext.Context.Exception);
+                return QueryResponseFactory.CreateFromException(tryCreateCosmosQueryExecutionContext.Exception);
             }
 
-            CosmosQueryExecutionContext cosmosQueryExecutionContext = tryCreateCosmosQueryExecutionContext.Context.Result;
+            CosmosQueryExecutionContext cosmosQueryExecutionContext = tryCreateCosmosQueryExecutionContext.Result;
             QueryResponseCore queryResponseCore = await cosmosQueryExecutionContext.ExecuteNextAsync(cancellationToken);
-
-            if (this.isFirstExecuteNext)
-            {
-                if (tryCreateCosmosQueryExecutionContext.diagnostics == null)
-                {
-                    throw new ArgumentNullException(nameof(tryCreateCosmosQueryExecutionContext.diagnostics));
-                }
-
-                return QueryResponseCore.AppendDiagnostics(queryResponseCore, tryCreateCosmosQueryExecutionContext.diagnostics);
-            }
-
             return queryResponseCore;
         }
 
@@ -98,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 throw new InvalidOperationException();
             }
 
-            TryCatch<CosmosQueryExecutionContext> tryCreateCosmosQueryExecutionContext = this.lazyTryCreateCosmosQueryExecutionContext.Result.Context;
+            TryCatch<CosmosQueryExecutionContext> tryCreateCosmosQueryExecutionContext = this.lazyTryCreateCosmosQueryExecutionContext.Result;
             if (!tryCreateCosmosQueryExecutionContext.Succeeded)
             {
                 throw tryCreateCosmosQueryExecutionContext.Exception;

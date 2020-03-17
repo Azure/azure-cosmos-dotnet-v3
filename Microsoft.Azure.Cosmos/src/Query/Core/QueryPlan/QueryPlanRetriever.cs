@@ -78,16 +78,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
         }
 
         public static Task<PartitionedQueryExecutionInfo> GetQueryPlanThroughGatewayAsync(
-            CosmosQueryClient client,
+            CosmosQueryContext queryContext,
             SqlQuerySpec sqlQuerySpec,
             Uri resourceLink,
             PartitionKey? partitionKey,
-            QueryPipelineDiagnosticsBuilder diagnosticsBuilder,
             CancellationToken cancellationToken = default)
         {
-            if (client == null)
+            if (queryContext == null)
             {
-                throw new ArgumentNullException(nameof(client));
+                throw new ArgumentNullException(nameof(queryContext));
             }
 
             if (sqlQuerySpec == null)
@@ -102,14 +101,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
             cancellationToken.ThrowIfCancellationRequested();
 
-            return client.ExecuteQueryPlanRequestAsync(
+            return queryContext.ExecuteQueryPlanRequestAsync(
                 resourceLink,
                 ResourceType.Document,
                 OperationType.QueryPlan,
                 sqlQuerySpec,
                 partitionKey,
                 QueryPlanRetriever.SupportedQueryFeaturesString,
-                diagnosticsBuilder,
                 cancellationToken);
         }
     }

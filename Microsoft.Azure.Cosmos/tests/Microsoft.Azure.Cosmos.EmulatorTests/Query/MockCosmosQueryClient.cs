@@ -46,7 +46,7 @@
             SqlQuerySpec sqlQuerySpec,
             Cosmos.PartitionKey? partitionKey,
             string supportedQueryFeatures,
-            QueryPipelineDiagnosticsBuilder queryPipelineDiagnosticsBuilder,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             this.QueryPlanCalls++;
@@ -57,7 +57,7 @@
                 sqlQuerySpec,
                 partitionKey,
                 supportedQueryFeatures,
-                queryPipelineDiagnosticsBuilder,
+                diagnosticsContext,
                 cancellationToken);
         }
 

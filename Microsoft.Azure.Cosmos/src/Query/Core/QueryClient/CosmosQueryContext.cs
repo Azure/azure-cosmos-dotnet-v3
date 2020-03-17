@@ -6,7 +6,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using OperationType = Documents.OperationType;
     using PartitionKeyRangeIdentity = Documents.PartitionKeyRangeIdentity;
     using ResourceType = Documents.ResourceType;
@@ -22,6 +24,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
         public virtual Uri ResourceLink { get; }
         public virtual string ContainerResourceId { get; set; }
         public virtual Guid CorrelatedActivityId { get; }
+        public virtual QueryPipelineDiagnostics QueryPipelineDiagnostics { get; }
 
         internal CosmosQueryContext()
         {
@@ -36,6 +39,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             Guid correlatedActivityId,
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
+            QueryPipelineDiagnostics queryPipelineDiagnostics,
             string containerResourceId = null)
         {
             this.OperationTypeEnum = operationType;
@@ -46,6 +50,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             this.ContainerResourceId = containerResourceId;
             this.IsContinuationExpected = isContinuationExpected;
             this.AllowNonValueAggregateQuery = allowNonValueAggregateQuery;
+            this.QueryPipelineDiagnostics = queryPipelineDiagnostics ?? throw new ArgumentNullException(nameof(queryPipelineDiagnostics));
             this.CorrelatedActivityId = (correlatedActivityId == Guid.Empty) ? throw new ArgumentOutOfRangeException(nameof(correlatedActivityId)) : correlatedActivityId;
         }
 
@@ -56,6 +61,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             bool isContinuationExpected,
             int pageSize,
             SchedulingStopwatch schedulingStopwatch,
+            CancellationToken cancellationToken);
+
+        internal abstract Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
+            Uri resourceUri,
+            Documents.ResourceType resourceType,
+            Documents.OperationType operationType,
+            SqlQuerySpec sqlQuerySpec,
+            PartitionKey? partitionKey,
+            string supportedQueryFeatures,
             CancellationToken cancellationToken);
     }
 }

@@ -55,10 +55,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 this.alreadyRetried = true;
                 this.currentCosmosQueryExecutionContext.Dispose();
                 this.currentCosmosQueryExecutionContext = this.cosmosQueryExecutionContextFactory();
-                QueryResponseCore queryResponseFromNewContext = await this.ExecuteNextAsync(cancellationToken);
-
-                // Append the original response diagnostics to the updated one to not loose any information.
-                return QueryResponseCore.AppendDiagnostics(queryResponseFromNewContext, queryResponse.Diagnostics);
+                return await this.ExecuteNextAsync(cancellationToken);
             }
 
             return queryResponse;

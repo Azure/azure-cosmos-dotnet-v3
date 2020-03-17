@@ -41,8 +41,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 cosmosQueryContext: cosmosQueryContext,
                 cosmosQueryExecutionContextFactory: () =>
                 {
-                    // Query Iterator requires that the creation of the query context is defered until the user calls ReadNextAsync
-                    AsyncLazy<(TryCatch<CosmosQueryExecutionContext>, IReadOnlyCollection<CosmosDiagnosticsInternal>)> lazyTryCreateCosmosQueryExecutionContext = new AsyncLazy<(TryCatch<CosmosQueryExecutionContext>, IReadOnlyCollection<CosmosDiagnosticsInternal>)>(valueFactory: (innerCancellationToken) =>
+                    // Query Iterator requires that the creation of the query context is deferred until the user calls ReadNextAsync
+                    AsyncLazy<TryCatch<CosmosQueryExecutionContext>> lazyTryCreateCosmosQueryExecutionContext = new AsyncLazy<TryCatch<CosmosQueryExecutionContext>>(valueFactory: (innerCancellationToken) =>
                     {
                         innerCancellationToken.ThrowIfCancellationRequested();
                         return CosmosQueryExecutionContextFactory.TryCreateCoreContextAsync(
@@ -59,13 +59,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             return catchAllCosmosQueryExecutionContext;
         }
 
-        private static async Task<(TryCatch<CosmosQueryExecutionContext>, IReadOnlyCollection<CosmosDiagnosticsInternal>)> TryCreateCoreContextAsync(
+        private static async Task<TryCatch<CosmosQueryExecutionContext>> TryCreateCoreContextAsync(
             CosmosQueryContext cosmosQueryContext,
             InputParameters inputParameters,
             CancellationToken cancellationToken)
         {
-            // The default 
-            QueryPipelineDiagnosticsBuilder diagnosticsBuilder = QueryPipelineDiagnosticsBuilder.Create();
+            // The default
+            QueryPipelineDiagnostics diagnosticsBuilder = cosmosQueryContext.QueryPipelineDiagnostics;
             using (diagnosticsBuilder.CreateScope("CreateQueryPipeline"))
             {
                 // Try to parse the continuation token.
@@ -77,30 +77,27 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                         continuationToken,
                         out PipelineContinuationToken pipelineContinuationToken))
                     {
-                        TryCatch<CosmosQueryExecutionContext> tryCatch = TryCatch<CosmosQueryExecutionContext>.FromException(
+                        return TryCatch<CosmosQueryExecutionContext>.FromException(
                             new MalformedContinuationTokenException(
                                 $"Malformed {nameof(PipelineContinuationToken)}: {continuationToken}."));
-                        return (tryCatch, diagnosticsBuilder.Build());
                     }
 
                     if (PipelineContinuationToken.IsTokenFromTheFuture(pipelineContinuationToken))
                     {
-                        TryCatch<CosmosQueryExecutionContext> tryCatch = TryCatch<CosmosQueryExecutionContext>.FromException(
+                        return TryCatch<CosmosQueryExecutionContext>.FromException(
                             new MalformedContinuationTokenException(
                                 $"{nameof(PipelineContinuationToken)} Continuation token is from a newer version of the SDK. " +
                                 $"Upgrade the SDK to avoid this issue." +
                                 $"{continuationToken}."));
-                        return (tryCatch, diagnosticsBuilder.Build());
                     }
 
                     if (!PipelineContinuationToken.TryConvertToLatest(
                         pipelineContinuationToken,
                         out PipelineContinuationTokenV1_1 latestVersionPipelineContinuationToken))
                     {
-                        TryCatch<CosmosQueryExecutionContext> tryCatch = TryCatch<CosmosQueryExecutionContext>.FromException(
+                        return TryCatch<CosmosQueryExecutionContext>.FromException(
                             new MalformedContinuationTokenException(
                                 $"{nameof(PipelineContinuationToken)}: '{continuationToken}' is no longer supported."));
-                        return (tryCatch, diagnosticsBuilder.Build());
                     }
 
                     continuationToken = latestVersionPipelineContinuationToken.SourceContinuationToken;
@@ -129,11 +126,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                         // For non-Windows platforms(like Linux and OSX) in .NET Core SDK, we cannot use ServiceInterop, so need to bypass in that case.
                         // We are also now bypassing this for 32 bit host process running even on Windows as there are many 32 bit apps that will not work without this
                         partitionedQueryExecutionInfo = await QueryPlanRetriever.GetQueryPlanThroughGatewayAsync(
-                            cosmosQueryContext.QueryClient,
+                            cosmosQueryContext,
                             inputParameters.SqlQuerySpec,
                             cosmosQueryContext.ResourceLink,
                             inputParameters.PartitionKey,
-                            diagnosticsBuilder,
                             cancellationToken);
                     }
                     else
@@ -173,14 +169,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     }
                 }
 
-                TryCatch<CosmosQueryExecutionContext> tryCatchExecutionContext = await TryCreateFromPartitionedQuerExecutionInfoAsync(
+                return await TryCreateFromPartitionedQuerExecutionInfoAsync(
                     partitionedQueryExecutionInfo,
                     containerQueryProperties,
                     cosmosQueryContext,
                     inputParameters,
                     cancellationToken);
-
-                return (tryCatchExecutionContext, diagnosticsBuilder.Build());
             }
         }
 

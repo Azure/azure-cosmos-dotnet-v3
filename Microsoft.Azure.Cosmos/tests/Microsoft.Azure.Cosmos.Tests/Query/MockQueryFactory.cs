@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
@@ -216,6 +217,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 correlatedActivityId: Guid.NewGuid(),
                 isContinuationExpected: true,
                 allowNonValueAggregateQuery: true,
+                diagnosticsContext: new CosmosDiagnosticsContextCore(),
+                queryPipelineDiagnostics: new QueryPipelineDiagnosticsCore(new CosmosDiagnosticsContextCore()),
                 containerResourceId: DefaultCollectionRid);
         }
 

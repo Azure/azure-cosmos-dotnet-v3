@@ -276,6 +276,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 resourceLink: new Uri("dbs/mockdb/colls/mockColl", UriKind.Relative),
                 isContinuationExpected: isContinuationExpected,
                 allowNonValueAggregateQuery: allowNonValueAggregateQuery,
+                diagnosticsContext: new CosmosDiagnosticsContextCore(),
+                queryPipelineDiagnostics: new QueryPipelineDiagnosticsCore(new CosmosDiagnosticsContextCore()),
                 correlatedActivityId: new Guid("221FC86C-1825-4284-B10E-A6029652CCA6"));
 
             CosmosQueryExecutionContext context = CosmosQueryExecutionContextFactory.Create(

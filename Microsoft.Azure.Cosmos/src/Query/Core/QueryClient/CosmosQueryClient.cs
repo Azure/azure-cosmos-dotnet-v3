@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             SqlQuerySpec sqlQuerySpec,
             PartitionKey? partitionKey,
             string supportedQueryFeatures,
-            QueryPipelineDiagnosticsBuilder diagnosticsBuilder,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken);
 
         internal abstract void ClearSessionTokenCache(string collectionFullName);
