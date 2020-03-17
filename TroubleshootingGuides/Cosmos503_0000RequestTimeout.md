@@ -38,7 +38,7 @@ These are the known causes for this issue.
 </tr>
 <tr>
   <td>Creating multiple DocumentClient instances might lead to connection contention and timeout issues.</td>
-  <td>Follow the [performance tips](performance-tips.md), and use a single DocumentClient instance across an entire process.</td>
+  <td>Follow the [performance tips](https://docs.microsoft.com/azure/cosmos-db/performance-tips), and use a single CosmosClient instance across an entire process.</td>
 </tr>
 <tr>
   <td>Retries occur from throttled requests. The SDK retries internally without surfacing this to the caller. </td>
