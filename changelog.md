@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1242](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1242) Client encryption - Fix bug in read path without encrypted properties
 - [#1189](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1189) Query diagnostics shows correct overall time.
 - [#1189](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1189) Fixed a bug that caused duplicate information in diagnostic context.
+- [#1263](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1263) Fix a bug where retry after internval did not get set on query stream responses
 - [#1198](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1198) Fixes null reference exception when calling a disposed CosmosClient
 - [#1274](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1274) ObjectDisposedException is thrown when calling all SDK objects like Database and Container that reference a disposed client 
 - [#1268](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1268) Fix bug where Request Options was getting lost for Database.ReadStreamAsync and Database.DeleteStreamAsync  
