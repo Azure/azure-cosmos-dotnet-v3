@@ -42,7 +42,7 @@ These are the known causes for this issue.
 </tr>
 <tr>
   <td>Retries occur from throttled requests. The SDK retries internally without surfacing this to the caller. </td>
-  <td>Check the [portal metrics](monitor-accounts.md) for 429 throttled requests</td>
+  <td>Check the [portal metrics](https://docs.microsoft.com/azure/cosmos-db/monitor-cosmos-db) for 429 throttled requests</td>
 </tr>
 <tr>
   <td>Hot partition key. Azure Cosmos DB distributes the overall provisioned throughput evenly across physical partitions. Check portal metrics to see if the workload is encountering a hot [partition key](https://docs.microsoft.com/azure/cosmos-db/partition-data). This will cause the aggregate consumed throughput (RU/s) to be appear to be under the provisioned RUs, but a single partition consumed throughput (RU/s) will exceed the provisioned throughput.</td>
