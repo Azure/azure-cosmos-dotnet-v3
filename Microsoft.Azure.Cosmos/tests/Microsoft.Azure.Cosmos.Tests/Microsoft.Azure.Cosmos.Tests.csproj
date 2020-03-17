@@ -100,13 +100,13 @@
     <None Update="TestJsons\CombinedScriptsData.Json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="TestJsons\countries\*.json">
+    <None Update="TestJsons\countries\*.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="TestJsons\devtestcoll.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="TestJsons\lastfm\*.json">
+    <None Update="TestJsons\lastfm\*.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="TestJsons\LogData.json">
@@ -118,31 +118,31 @@
     <None Update="TestJsons\MsnCollection.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="TestJsons\NutritionData\*.json">
+    <None Update="TestJsons\NutritionData\*.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="TestJsons\runsCollection\*.json">
+    <None Update="TestJsons\runsCollection\*.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="TestJsons\states_committees.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="TestJsons\states_legislators\*.json">
+    <None Update="TestJsons\states_legislators\*.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="TestJsons\store01C.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="TestJsons\TicinoErrorBuckets\*.json">
+    <None Update="TestJsons\TicinoErrorBuckets\*.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="TestJsons\twitter_data\*.json">
+    <None Update="TestJsons\twitter_data\*.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="TestJsons\ups1\*.json">
+    <None Update="TestJsons\ups1\*.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="TestJsons\XpertEvents\*.json">
+    <None Update="TestJsons\XpertEvents\*.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
