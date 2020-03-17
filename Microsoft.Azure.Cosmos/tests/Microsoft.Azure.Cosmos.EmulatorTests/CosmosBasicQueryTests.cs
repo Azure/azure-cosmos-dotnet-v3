@@ -155,34 +155,55 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(true)]
         public async Task QueryRequestRateTest(bool directMode)
         {
-            CosmosClient client = directMode ? DirectCosmosClient : GatewayCosmosClient;
-            Container container = client.GetContainer(DatabaseId, ContainerId);
-            List<string> createdIds = new List<string>()
-            {
-                "BasicQueryItem" + Guid.NewGuid(),
-                "BasicQueryItem2"+ Guid.NewGuid(),
-                "BasicQueryItem3"+ Guid.NewGuid()
-            };
+            string firstItemIdAndPk = "BasicQueryItem" + Guid.NewGuid();
 
-            foreach (string id in createdIds)
+            // Prevent the test from changing the static client
             {
-                dynamic item = new
+                CosmosClient client = directMode ? DirectCosmosClient : GatewayCosmosClient;
+                Container container = client.GetContainer(DatabaseId, ContainerId);
+
+                List<string> createdIds = new List<string>()
                 {
-                    id = id,
-                    pk = id,
+                    firstItemIdAndPk,
+                    "BasicQueryItem2"+ Guid.NewGuid(),
+                    "BasicQueryItem3"+ Guid.NewGuid()
                 };
 
-                await container.CreateItemAsync<dynamic>(item: item);
+                foreach (string id in createdIds)
+                {
+                    dynamic item = new
+                    {
+                        id = id,
+                        pk = id,
+                    };
+
+                    await container.CreateItemAsync<dynamic>(item: item);
+                }
             }
 
-            Documents.IStoreModel storeModel = client.ClientContext.DocumentClient.StoreModel;
+            CosmosClient clientWithThrottle;
+            if (directMode)
+            {
+                clientWithThrottle = TestCommon.CreateCosmosClient();
+            }
+            else
+            {
+                clientWithThrottle = TestCommon.CreateCosmosClient((builder) => builder.WithConnectionModeGateway());
+            }
+
+            Container containerWithThrottle = clientWithThrottle.GetContainer(DatabaseId, ContainerId);
+
+            // Do a read to warm up all the caches to prevent them from getting the throttle errors
+            using (await containerWithThrottle.ReadItemStreamAsync(firstItemIdAndPk, new PartitionKey(firstItemIdAndPk))) { }
+
+            Documents.IStoreModel storeModel = clientWithThrottle.ClientContext.DocumentClient.StoreModel;
             Mock<Documents.IStoreModel> mockStore = new Mock<Documents.IStoreModel>();
-            client.ClientContext.DocumentClient.StoreModel = mockStore.Object;
+            clientWithThrottle.ClientContext.DocumentClient.StoreModel = mockStore.Object;
 
             // Cause 429 after the first call
             int callCount = 0;
             string activityId = null;
-            string errorMessage = "Resource Not Found";
+            string errorMessage = "QueryRequestRateTest Resource Not Found";
             mockStore.Setup(x => x.ProcessMessageAsync(It.IsAny<Documents.DocumentServiceRequest>(), It.IsAny<CancellationToken>()))
                 .Returns<Documents.DocumentServiceRequest, CancellationToken>((dsr, token) =>
                 {
@@ -209,7 +230,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<dynamic> results = new List<dynamic>();
             try
             {
-                FeedIterator<dynamic> feedIterator = container.GetItemQueryIterator<dynamic>(
+                FeedIterator<dynamic> feedIterator = containerWithThrottle.GetItemQueryIterator<dynamic>(
                     "select * from T where STARTSWITH(T.id, \"BasicQueryItem\")",
                     requestOptions: new QueryRequestOptions()
                     {
@@ -237,7 +258,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             callCount = 0;
-            FeedIterator streamIterator = container.GetItemQueryStreamIterator(
+            FeedIterator streamIterator = containerWithThrottle.GetItemQueryStreamIterator(
                 "select * from T where STARTSWITH(T.id, \"BasicQueryItem\")",
                 requestOptions: new QueryRequestOptions()
                 {
