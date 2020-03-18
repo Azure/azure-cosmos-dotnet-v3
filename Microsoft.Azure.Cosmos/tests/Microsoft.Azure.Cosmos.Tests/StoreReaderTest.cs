@@ -489,7 +489,6 @@ namespace Microsoft.Azure.Cosmos
         /// Tests for <see cref="StoreReader"/>
         /// </summary>
         [TestMethod]
-        [Owner("pasharma")]
         public void StoreReaderBarrierTest()
         {
             // create a real document service request
@@ -571,7 +570,6 @@ namespace Microsoft.Azure.Cosmos
         /// test consistency writer for global strong
         /// </summary>
         [TestMethod]
-        [Owner("pasharma")]
         public void GlobalStrongConsistentWriteMockTest()
         {
             // create a real document service request (with auth token level = god)
@@ -666,7 +664,6 @@ namespace Microsoft.Azure.Cosmos
         /// Mocking Consistency
         /// </summary>
         [TestMethod]
-        [Owner("pasharma")]
         public void GlobalStrongConsistencyMockTest()
         {
             // create a real document service request (with auth token level = god)
