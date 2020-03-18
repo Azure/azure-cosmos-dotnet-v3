@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.NotFound;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Newtonsoft.Json;
@@ -42,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 {
                     ETag = "ShouldNotContainThis"
                 },
-                cosmosException: CosmosExceptionFactory.CreateNotFoundException("something"),
+                cosmosException: NotFoundExceptionFactory.Create(message: "something"),
                 diagnostics: new CosmosDiagnosticsContextCore());
 
             mockContext.SetupSequence(x => x.ProcessResourceOperationAsync<ResponseMessage>(

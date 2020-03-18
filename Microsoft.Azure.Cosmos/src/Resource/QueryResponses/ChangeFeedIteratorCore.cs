@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.InternalServerError;
 
     /// <summary>
     /// Cosmos Change Feed iterator using FeedToken
@@ -90,10 +91,19 @@ namespace Microsoft.Azure.Cosmos
                         return cosmosException.ToCosmosResponseMessage(new RequestMessage(method: null, requestUri: null, diagnosticsContext: diagnosticsScope));
                     }
 
-                    return CosmosExceptionFactory.CreateInternalServerErrorException(
-                        message: tryCatchFeedTokeninternal.Exception.InnerException.Message,
-                        innerException: tryCatchFeedTokeninternal.Exception.InnerException,
-                        diagnosticsContext: diagnosticsScope).ToCosmosResponseMessage(new RequestMessage(method: null, requestUri: null, diagnosticsContext: diagnosticsScope));
+                    CosmosException cosmosExceptionWithDiagnostics = new CosmosExceptionWithDiagnosticsContextException(
+                        tryCatchFeedTokeninternal.Exception.InnerException,
+                        diagnosticsScope);
+
+                    CosmosException internalServerErrorException = InternalServerErrorExceptionFactory.Create(
+                        message: $"{nameof(ChangeFeedIteratorCore)}.{nameof(this.ReadNextInternalAsync)}({nameof(diagnosticsScope)}:{diagnosticsScope}, {nameof(cancellationToken)}: {cancellationToken}) encountered an unknown exception.",
+                        innerException: cosmosExceptionWithDiagnostics);
+
+                    return internalServerErrorException.ToCosmosResponseMessage(
+                        new RequestMessage(
+                            method: null,
+                            requestUri: null,
+                            diagnosticsContext: diagnosticsScope));
                 }
 
                 this.feedTokenInternal = tryCatchFeedTokeninternal.Result;

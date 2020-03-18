@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.IO;
     using System.Net;
+    using System.ServiceModel.Channels;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -14,6 +15,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.InternalServerError;
     using Microsoft.Azure.Documents;
     using static Microsoft.Azure.Documents.RuntimeConstants;
 
@@ -152,10 +154,18 @@ namespace Microsoft.Azure.Cosmos
                         return cosmosException.ToCosmosResponseMessage(new RequestMessage(method: null, requestUri: null, diagnosticsContext: diagnostics));
                     }
 
-                    return CosmosExceptionFactory.CreateInternalServerErrorException(
-                        message: tryCatchFeedTokeninternal.Exception.InnerException.Message,
-                        innerException: tryCatchFeedTokeninternal.Exception.InnerException,
-                        diagnosticsContext: diagnostics).ToCosmosResponseMessage(new RequestMessage(method: null, requestUri: null, diagnosticsContext: diagnostics));
+                    CosmosException cosmosExceptionWithDiagnostics = new CosmosExceptionWithDiagnosticsContextException(
+                        tryCatchFeedTokeninternal.Exception.InnerException,
+                        diagnostics);
+
+                    CosmosException internalServerErrorException = InternalServerErrorExceptionFactory.Create(
+                        message: $"{nameof(FeedIteratorCore)}.{nameof(this.ReadNextInternalAsync)}(diagnostics:{diagnostics}, cancellationToken: {cancellationToken}) encountered an unknown exception.",
+                        innerException: cosmosExceptionWithDiagnostics);
+                    return internalServerErrorException.ToCosmosResponseMessage(
+                        new RequestMessage(
+                            method: null,
+                            requestUri: null,
+                            diagnosticsContext: diagnostics));
                 }
 
                 this.feedTokenInternal = tryCatchFeedTokeninternal.Result;

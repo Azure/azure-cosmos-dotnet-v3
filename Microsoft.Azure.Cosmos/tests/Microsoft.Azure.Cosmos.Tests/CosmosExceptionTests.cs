@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.NotFound;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -54,7 +55,7 @@ namespace Microsoft.Azure.Cosmos
                     responseMessage.EnsureSuccessStatusCode();
                     Assert.Fail("Should have thrown");
                 }
-                catch(CosmosException exception)
+                catch (CosmosException exception)
                 {
                     Assert.IsTrue(exception.Message.Contains(testContent));
                 }
@@ -148,36 +149,16 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        public void EnsureCorrectStatusCode()
-        {
-            string testMessage = "Test" + Guid.NewGuid().ToString();
-
-            List<(HttpStatusCode statusCode, CosmosException exception)> exceptionsToStatusCodes = new List<(HttpStatusCode, CosmosException)>()
-            {
-                (HttpStatusCode.NotFound, CosmosExceptionFactory.CreateNotFoundException(testMessage)),
-                (HttpStatusCode.InternalServerError, CosmosExceptionFactory.CreateInternalServerErrorException(testMessage)),
-                (HttpStatusCode.BadRequest, CosmosExceptionFactory.CreateBadRequestException(testMessage)),
-                (HttpStatusCode.RequestTimeout,CosmosExceptionFactory.CreateRequestTimeoutException(testMessage)),
-                ((HttpStatusCode)429, CosmosExceptionFactory.CreateThrottledException(testMessage)),
-            };
-
-            foreach((HttpStatusCode statusCode, CosmosException exception) item in exceptionsToStatusCodes)
-            {
-                this.ValidateExceptionInfo(item.exception, item.statusCode, testMessage);
-            }
-        }
-
-        [TestMethod]
         public void ValidateExceptionStackTraceHandling()
         {
-            CosmosException cosmosException = CosmosExceptionFactory.CreateNotFoundException("TestMessage");
+            CosmosException cosmosException = NotFoundExceptionFactory.Create(message: "TestMessage");
             Assert.AreEqual(null, cosmosException.StackTrace);
             Assert.IsFalse(cosmosException.ToString().Contains(nameof(ValidateExceptionStackTraceHandling)));
             try
             {
                 throw cosmosException;
             }
-            catch(CosmosException ce)
+            catch (CosmosException ce)
             {
                 Assert.IsTrue(ce.StackTrace.Contains(nameof(ValidateExceptionStackTraceHandling)), ce.StackTrace);
             }
@@ -185,7 +166,7 @@ namespace Microsoft.Azure.Cosmos
             string stackTrace = "OriginalDocumentClientExceptionStackTrace";
             try
             {
-                throw CosmosExceptionFactory.CreateNotFoundException("TestMessage", stackTrace: stackTrace);
+                throw new TestCosmosException(stackTrace: stackTrace);
             }
             catch (CosmosException ce)
             {
@@ -201,22 +182,28 @@ namespace Microsoft.Azure.Cosmos
                 Code = System.Net.HttpStatusCode.BadRequest.ToString(),
                 Message = "Unsupported Query",
                 AdditionalErrorInfo = "Additional error info message",
-                
+
             };
 
-            CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContextCore();
-
-            CosmosException cosmosException = CosmosExceptionFactory.CreateBadRequestException(
-                error.ToString(),
+            CosmosException cosmosException = CosmosExceptionFactory.Create(
+                message: error.ToString(),
                 error: error,
-                diagnosticsContext: diagnostics);
+                statusCode: HttpStatusCode.BadRequest,
+                subStatusCode: default,
+                stackTrace: default,
+                activityId: default,
+                requestCharge: default,
+                retryAfter: default,
+                headers: default,
+                diagnosticsContext: default,
+                innerException: default);
 
             ResponseMessage responseMessage = QueryResponse.CreateFailure(
                 statusCode: System.Net.HttpStatusCode.BadRequest,
                 cosmosException: cosmosException,
-                requestMessage: null,
-                diagnostics: diagnostics,
-                responseHeaders: null);
+                requestMessage: default,
+                diagnostics: default,
+                responseHeaders: default);
 
             Assert.AreEqual(error, responseMessage.CosmosException.Error);
             Assert.IsTrue(responseMessage.ErrorMessage.Contains(error.Message));
@@ -226,7 +213,8 @@ namespace Microsoft.Azure.Cosmos
             {
                 responseMessage.EnsureSuccessStatusCode();
                 Assert.Fail("Should throw exception");
-            }catch(CosmosException ce ) when (ce.StatusCode == HttpStatusCode.BadRequest)
+            }
+            catch (CosmosException ce) when (ce.StatusCode == HttpStatusCode.BadRequest)
             {
                 Assert.IsTrue(ce.Message.Contains(error.Message));
                 Assert.IsTrue(ce.ToString().Contains(error.Message));

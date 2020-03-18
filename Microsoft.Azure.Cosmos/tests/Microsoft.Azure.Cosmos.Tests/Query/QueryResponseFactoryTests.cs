@@ -12,6 +12,8 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.BadRequest;
+    using Moq;
     using VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -20,8 +22,7 @@ namespace Microsoft.Azure.Cosmos.Query
         [TestMethod]
         public void CosmosException()
         {
-            CosmosException cosmosException = CosmosExceptionFactory.CreateBadRequestException(
-                message: "asdf");
+            CosmosException cosmosException = BadRequestExceptionFactory.Create();
             QueryResponseCore queryResponse = QueryResponseFactory.CreateFromException(cosmosException);
             Assert.AreEqual(HttpStatusCode.BadRequest, queryResponse.StatusCode);
             Assert.IsNotNull(queryResponse.CosmosException);
@@ -69,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.Query
             CosmosException cosmosException;
             try
             {
-                throw CosmosExceptionFactory.CreateBadRequestException("InternalServerTestMessage");
+                throw BadRequestExceptionFactory.Create(message: "InternalServerTestMessage");
             }
             catch (CosmosException ce)
             {

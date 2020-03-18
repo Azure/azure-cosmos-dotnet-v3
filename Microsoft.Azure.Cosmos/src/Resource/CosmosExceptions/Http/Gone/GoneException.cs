@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.Gone
     using System;
     using System.Net;
 
-    internal abstract class GoneException : CosmosHttpWithSubstatusCodeException
+    internal abstract class GoneException : CosmosHttpException
     {
         protected GoneException(int subStatusCode)
             : this(subStatusCode, message: null)

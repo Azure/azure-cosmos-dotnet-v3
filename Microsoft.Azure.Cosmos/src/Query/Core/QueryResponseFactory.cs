@@ -5,12 +5,13 @@
 namespace Microsoft.Azure.Cosmos.Query.Core
 {
     using System;
-    using System.Diagnostics;
-    using System.Runtime.CompilerServices;
+    using System.ServiceModel.Channels;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.BadRequest;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.InternalServerError;
     using Microsoft.Azure.Documents;
 
     internal static class QueryResponseFactory
@@ -46,18 +47,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                 }
                 else
                 {
-                    CosmosException unkownCosmosException = CosmosExceptionFactory.CreateInternalServerErrorException(
-                        subStatusCode: default,
-                        message: exception.Message,
-                        stackTrace: exception.StackTrace,
-                        activityId: QueryResponseCore.EmptyGuidString,
-                        requestCharge: 0,
-                        retryAfter: null,
-                        headers: null,
-                        diagnosticsContext: null,
+                    // Unknown exception type should become a 500
+                    CosmosException unkownCosmosException = InternalServerErrorExceptionFactory.Create(
+                        message: "Query encountered unknown exception.",
                         innerException: exception);
 
-                    // Unknown exception type should become a 500
                     queryResponseCore = QueryResponseCore.CreateFailure(
                         statusCode: System.Net.HttpStatusCode.InternalServerError,
                         subStatusCodes: null,
@@ -145,24 +139,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
             public override CosmosException Visit(MalformedContinuationTokenException malformedContinuationTokenException)
             {
-                return CosmosExceptionFactory.CreateBadRequestException(
-                    message: malformedContinuationTokenException.Message,
-                    stackTrace: malformedContinuationTokenException.StackTrace,
+                return BadRequestExceptionFactory.Create(
+                    message: $"{nameof(CosmosException)} created due to {nameof(MalformedContinuationTokenException)}.",
                     innerException: malformedContinuationTokenException);
             }
 
             public override CosmosException Visit(UnexpectedQueryPartitionProviderException unexpectedQueryPartitionProviderException)
             {
-                return CosmosExceptionFactory.CreateInternalServerErrorException(
-                    message: $"{nameof(CosmosException)} due to {nameof(UnexpectedQueryPartitionProviderException)}",
+                return InternalServerErrorExceptionFactory.Create(
+                    message: $"{nameof(CosmosException)} created due to {nameof(UnexpectedQueryPartitionProviderException)}",
                     innerException: unexpectedQueryPartitionProviderException);
             }
 
             public override CosmosException Visit(ExpectedQueryPartitionProviderException expectedQueryPartitionProviderException)
             {
-                return CosmosExceptionFactory.CreateBadRequestException(
-                    message: expectedQueryPartitionProviderException.Message,
-                    stackTrace: expectedQueryPartitionProviderException.StackTrace,
+                return BadRequestExceptionFactory.Create(
+                    message: $"{nameof(CosmosException)} created due to {nameof(ExpectedQueryPartitionProviderException)}.",
                     innerException: expectedQueryPartitionProviderException);
             }
         }

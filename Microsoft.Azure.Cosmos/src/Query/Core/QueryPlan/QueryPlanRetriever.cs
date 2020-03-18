@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.BadRequest;
     using OperationType = Documents.OperationType;
     using PartitionKeyDefinition = Documents.PartitionKeyDefinition;
     using ResourceType = Documents.ResourceType;
@@ -68,9 +69,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                     throw tryGetQueryPlan.Exception;
                 }
 
-                throw CosmosExceptionFactory.CreateBadRequestException(
-                    message: tryGetQueryPlan.Exception.ToString(),
-                    stackTrace: tryGetQueryPlan.Exception.StackTrace);
+                throw BadRequestExceptionFactory.Create(
+                    message: $"{nameof(QueryPlanRetriever)}.{nameof(GetQueryPlanWithServiceInteropAsync)}({nameof(queryClient)}: {queryClient}, {nameof(sqlQuerySpec)}: {sqlQuerySpec}, {nameof(partitionKeyDefinition)}: {partitionKeyDefinition}, {nameof(hasLogicalPartitionKey)}: {hasLogicalPartitionKey}, {nameof(cancellationToken)}: {cancellationToken}) encountered an exception.",
+                    innerException: tryGetQueryPlan.Exception);
             }
 
             return tryGetQueryPlan.Result;

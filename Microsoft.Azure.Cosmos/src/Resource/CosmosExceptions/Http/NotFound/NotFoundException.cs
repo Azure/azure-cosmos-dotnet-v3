@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.NotFound
     using System;
     using System.Net;
 
-    internal abstract class NotFoundException : CosmosHttpWithSubstatusCodeException
+    internal abstract class NotFoundException : CosmosHttpException
     {
         protected NotFoundException(int subStatusCode)
             : this(subStatusCode, message: null)

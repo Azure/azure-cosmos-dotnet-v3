@@ -40,22 +40,24 @@ namespace Microsoft.Azure.Cosmos.Tests
             string errorMessage = "TestErrorMessage";
             string activityId = "TestActivityId";
             double requestCharge = 42.42;
-            CosmosException cosmosException = CosmosExceptionFactory.CreateBadRequestException(errorMessage);
+            Mock<CosmosException> mockCosmosException = new Mock<CosmosException>();
+            mockCosmosException.Setup(mock => mock.ToString(false)).Returns(errorMessage);
+            CosmosException cosmosException = mockCosmosException.Object;
             CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContextCore();
             QueryResponse queryResponse = QueryResponse.CreateFailure(
-                        statusCode: HttpStatusCode.NotFound,
-                        cosmosException: cosmosException,
-                        requestMessage: null,
-                        responseHeaders: new CosmosQueryResponseMessageHeaders(
-                            null,
-                            null,
-                            ResourceType.Document,
-                            contianerRid)
-                        {
-                            RequestCharge = requestCharge,
-                            ActivityId = activityId
-                        },
-                        diagnostics: diagnostics);
+                statusCode: HttpStatusCode.NotFound,
+                cosmosException: cosmosException,
+                requestMessage: null,
+                responseHeaders: new CosmosQueryResponseMessageHeaders(
+                    null,
+                    null,
+                    ResourceType.Document,
+                    contianerRid)
+                {
+                    RequestCharge = requestCharge,
+                    ActivityId = activityId
+                },
+                diagnostics: diagnostics);
 
             Assert.AreEqual(HttpStatusCode.NotFound, queryResponse.StatusCode);
             Assert.AreEqual(cosmosException.ToString(includeDiagnostics: false), queryResponse.ErrorMessage);

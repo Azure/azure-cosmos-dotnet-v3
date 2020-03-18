@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.RequestTimeout
     using System;
     using System.Net;
 
-    internal abstract class RequestTimeoutException : CosmosHttpWithSubstatusCodeException
+    internal abstract class RequestTimeoutException : CosmosHttpException
     {
         protected RequestTimeoutException(int subStatusCode)
             : this(subStatusCode, message: null)

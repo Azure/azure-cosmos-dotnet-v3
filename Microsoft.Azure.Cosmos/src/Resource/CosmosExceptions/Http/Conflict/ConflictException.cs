@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.Conflict
     using System;
     using System.Net;
 
-    internal abstract class ConflictException : CosmosHttpWithSubstatusCodeException
+    internal abstract class ConflictException : CosmosHttpException
     {
         protected ConflictException(int subStatusCode)
             : this(subStatusCode, message: null)

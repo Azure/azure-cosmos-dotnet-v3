@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.BadRequest
     using System;
     using System.Net;
 
-    internal abstract class BadRequestException : CosmosHttpWithSubstatusCodeException
+    internal abstract class BadRequestException : CosmosHttpException
     {
         protected BadRequestException(int subStatusCode)
             : this(subStatusCode, message: null)

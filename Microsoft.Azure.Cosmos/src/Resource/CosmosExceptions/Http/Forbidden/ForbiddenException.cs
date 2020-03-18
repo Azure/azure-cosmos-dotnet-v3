@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.Forbidden
     using System;
     using System.Net;
 
-    internal abstract class ForbiddenException : CosmosHttpWithSubstatusCodeException
+    internal abstract class ForbiddenException : CosmosHttpException
     {
         protected ForbiddenException(int subStatusCode)
             : this(subStatusCode, message: null)

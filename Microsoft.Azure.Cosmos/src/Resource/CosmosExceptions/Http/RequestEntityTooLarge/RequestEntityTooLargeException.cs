@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.RequestEntityToo
     using System;
     using System.Net;
 
-    internal abstract class RequestEntityTooLargeException : CosmosHttpWithSubstatusCodeException
+    internal abstract class RequestEntityTooLargeException : CosmosHttpException
     {
         protected RequestEntityTooLargeException(int subStatusCode)
             : this(subStatusCode, message: null)

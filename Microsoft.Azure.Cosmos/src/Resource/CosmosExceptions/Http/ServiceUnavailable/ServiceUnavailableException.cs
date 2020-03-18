@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.ServiceUnavailab
     using System;
     using System.Net;
 
-    internal abstract class ServiceUnavailableException : CosmosHttpWithSubstatusCodeException
+    internal abstract class ServiceUnavailableException : CosmosHttpException
     {
         protected ServiceUnavailableException(int subStatusCode)
             : this(subStatusCode, message: null)

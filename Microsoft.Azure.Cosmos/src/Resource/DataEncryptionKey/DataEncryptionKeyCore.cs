@@ -12,6 +12,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.BadRequest;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.NotFound;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -123,8 +125,9 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            DataEncryptionKeyProperties dekProperties = null;
+            cancellationToken.ThrowIfCancellationRequested();
 
+            DataEncryptionKeyProperties dekProperties;
             try
             {
                 dekProperties = await this.ClientContext.DekCache.GetOrAddByNameLinkUriAsync(
@@ -134,12 +137,11 @@ namespace Microsoft.Azure.Cosmos
                     diagnosticsContext,
                     cancellationToken);
             }
-            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+            catch (Resource.CosmosExceptions.Http.NotFound.NotFoundException notFoundException)
             {
-                throw CosmosExceptionFactory.CreateNotFoundException(
-                    ClientResources.DataEncryptionKeyNotFound,
-                    diagnosticsContext: diagnosticsContext,
-                    innerException: ex);
+                throw NotFoundExceptionFactory.Create(
+                    message: ClientResources.DataEncryptionKeyNotFound,
+                    innerException: notFoundException);
             }
 
             InMemoryRawDek inMemoryRawDek = await this.ClientContext.DekCache.GetOrAddRawDekAsync(
@@ -174,12 +176,11 @@ namespace Microsoft.Azure.Cosmos
                     diagnosticsContext,
                     cancellationToken);
             }
-            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+            catch (Resource.CosmosExceptions.Http.NotFound.NotFoundException notFoundException)
             {
-                throw CosmosExceptionFactory.CreateNotFoundException(
-                    ClientResources.DataEncryptionKeyNotFound,
-                    diagnosticsContext: diagnosticsContext,
-                    innerException: ex);
+                throw NotFoundExceptionFactory.Create(
+                    message: ClientResources.DataEncryptionKeyNotFound,
+                    innerException: notFoundException);
             }
 
             InMemoryRawDek inMemoryRawDek = await this.ClientContext.DekCache.GetOrAddRawDekAsync(
@@ -230,8 +231,10 @@ namespace Microsoft.Azure.Cosmos
             InMemoryRawDek roundTripResponse = await this.UnwrapAsync(tempDekProperties, diagnosticsContext, cancellationToken);
             if (!roundTripResponse.RawDek.SequenceEqual(key))
             {
-                throw CosmosExceptionFactory.CreateBadRequestException(ClientResources.KeyWrappingDidNotRoundtrip,
-                    diagnosticsContext: diagnosticsContext);
+                CosmosException exceptionWithDiagnostics = new CosmosExceptionWithDiagnosticsContextException(exception: null, diagnosticsContext);
+                throw BadRequestExceptionFactory.Create(
+                    message: ClientResources.KeyWrappingDidNotRoundtrip,
+                    innerException: exceptionWithDiagnostics);
             }
 
             return (keyWrapResponse.WrappedDataEncryptionKey, keyWrapResponse.EncryptionKeyWrapMetadata, roundTripResponse);

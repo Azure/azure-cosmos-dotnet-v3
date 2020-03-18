@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.RequestRateTooLarge;
     using Microsoft.Azure.Documents;
     using PartitionKeyRange = Documents.PartitionKeyRange;
     using PartitionKeyRangeIdentity = Documents.PartitionKeyRangeIdentity;
@@ -291,7 +292,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
                         feedResponse = QueryResponseCore.CreateFailure(
                             statusCode: (System.Net.HttpStatusCode)429,
                             subStatusCodes: null,
-                            cosmosException: CosmosExceptionFactory.CreateThrottledException("Request Rate Too Large"),
+                            cosmosException: RequestRateTooLargeExceptionFactory.Create(
+                                TimeSpan.Zero,
+                                message: "Request Rate Too Large"),
                             requestCharge: 0,
                             activityId: QueryResponseCore.EmptyGuidString,
                             diagnostics: QueryResponseCore.EmptyDiagnostics);

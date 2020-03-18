@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.InternalServerEr
     using System;
     using System.Net;
 
-    internal abstract class InternalServerErrorException : CosmosHttpWithSubstatusCodeException
+    internal abstract class InternalServerErrorException : CosmosHttpException
     {
         protected InternalServerErrorException(int subStatusCode)
             : this(subStatusCode, message: null)
