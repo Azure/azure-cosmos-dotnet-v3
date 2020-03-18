@@ -1295,11 +1295,9 @@
           "Attributes": [],
           "MethodInfo": null
         },
-        "Microsoft.Azure.Cosmos.CosmosClientOptions get_ClientOptions()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Microsoft.Azure.Cosmos.CosmosClientOptions get_ClientOptions()": {
           "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.CosmosClientOptions get_ClientOptions()"
         },
         "Microsoft.Azure.Cosmos.Database GetDatabase(System.String)": {
