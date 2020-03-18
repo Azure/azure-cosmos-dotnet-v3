@@ -167,10 +167,10 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task AllowBatchingRequestsSendsToExecutor_CreateStream()
         {
-            ClientContextCore clientContextCore = this.CreateMockBulkClientContextCore();
+            CosmosClientContext cosmosClientContext = this.CreateMockBulkCosmosClientContext();
 
-            DatabaseCore db = new DatabaseCore(clientContextCore, "test");
-            ExecutorContainerCore container = new ExecutorContainerCore(clientContextCore, db, "test");
+            DatabaseCore db = new DatabaseCore(cosmosClientContext, "test");
+            ExecutorContainerCore container = new ExecutorContainerCore(cosmosClientContext, db, "test");
 
             dynamic testItem = new
             {
@@ -194,10 +194,10 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task AllowBatchingRequestsSendsToExecutor_UpsertStream()
         {
-            ClientContextCore clientContextCore = this.CreateMockBulkClientContextCore();
+            CosmosClientContext cosmosClientContext = this.CreateMockBulkCosmosClientContext();
 
-            DatabaseCore db = new DatabaseCore(clientContextCore, "test");
-            ExecutorContainerCore container = new ExecutorContainerCore(clientContextCore, db, "test");
+            DatabaseCore db = new DatabaseCore(cosmosClientContext, "test");
+            ExecutorContainerCore container = new ExecutorContainerCore(cosmosClientContext, db, "test");
 
             dynamic testItem = new
             {
@@ -221,10 +221,10 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task AllowBatchingRequestsSendsToExecutor_ReplaceStream()
         {
-            ClientContextCore clientContextCore = this.CreateMockBulkClientContextCore();
+            CosmosClientContext cosmosClientContext = this.CreateMockBulkCosmosClientContext();
 
-            DatabaseCore db = new DatabaseCore(clientContextCore, "test");
-            ExecutorContainerCore container = new ExecutorContainerCore(clientContextCore, db, "test");
+            DatabaseCore db = new DatabaseCore(cosmosClientContext, "test");
+            ExecutorContainerCore container = new ExecutorContainerCore(cosmosClientContext, db, "test");
 
             dynamic testItem = new
             {
@@ -249,10 +249,10 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task AllowBatchingRequestsSendsToExecutor_ReadStream()
         {
-            ClientContextCore clientContextCore = this.CreateMockBulkClientContextCore();
+            CosmosClientContext cosmosClientContext = this.CreateMockBulkCosmosClientContext();
 
-            DatabaseCore db = new DatabaseCore(clientContextCore, "test");
-            ExecutorContainerCore container = new ExecutorContainerCore(clientContextCore, db, "test");
+            DatabaseCore db = new DatabaseCore(cosmosClientContext, "test");
+            ExecutorContainerCore container = new ExecutorContainerCore(cosmosClientContext, db, "test");
 
             dynamic testItem = new
             {
@@ -276,10 +276,10 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task AllowBatchingRequestsSendsToExecutor_DeleteStream()
         {
-            ClientContextCore clientContextCore = this.CreateMockBulkClientContextCore();
+            CosmosClientContext cosmosClientContext = this.CreateMockBulkCosmosClientContext();
 
-            DatabaseCore db = new DatabaseCore(clientContextCore, "test");
-            ExecutorContainerCore container = new ExecutorContainerCore(clientContextCore, db, "test");
+            DatabaseCore db = new DatabaseCore(cosmosClientContext, "test");
+            ExecutorContainerCore container = new ExecutorContainerCore(cosmosClientContext, db, "test");
 
             dynamic testItem = new
             {
@@ -300,10 +300,10 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task AllowBatchingRequestsSendsToExecutor_Create()
         {
-            ClientContextCore clientContextCore = this.CreateMockBulkClientContextCore();
+            CosmosClientContext cosmosClientContext = this.CreateMockBulkCosmosClientContext();
 
-            DatabaseCore db = new DatabaseCore(clientContextCore, "test");
-            ExecutorContainerCore container = new ExecutorContainerCore(clientContextCore, db, "test");
+            DatabaseCore db = new DatabaseCore(cosmosClientContext, "test");
+            ExecutorContainerCore container = new ExecutorContainerCore(cosmosClientContext, db, "test");
 
             dynamic testItem = new
             {
@@ -321,10 +321,10 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task AllowBatchingRequestsSendsToExecutor_Upsert()
         {
-            ClientContextCore clientContextCore = this.CreateMockBulkClientContextCore();
+            CosmosClientContext cosmosClientContext = this.CreateMockBulkCosmosClientContext();
 
-            DatabaseCore db = new DatabaseCore(clientContextCore, "test");
-            ExecutorContainerCore container = new ExecutorContainerCore(clientContextCore, db, "test");
+            DatabaseCore db = new DatabaseCore(cosmosClientContext, "test");
+            ExecutorContainerCore container = new ExecutorContainerCore(cosmosClientContext, db, "test");
 
             dynamic testItem = new
             {
@@ -342,10 +342,10 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task AllowBatchingRequestsSendsToExecutor_Replace()
         {
-            ClientContextCore clientContextCore = this.CreateMockBulkClientContextCore();
+            CosmosClientContext cosmosClientContext = this.CreateMockBulkCosmosClientContext();
 
-            DatabaseCore db = new DatabaseCore(clientContextCore, "test");
-            ExecutorContainerCore container = new ExecutorContainerCore(clientContextCore, db, "test");
+            DatabaseCore db = new DatabaseCore(cosmosClientContext, "test");
+            ExecutorContainerCore container = new ExecutorContainerCore(cosmosClientContext, db, "test");
 
             dynamic testItem = new
             {
@@ -363,10 +363,10 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task AllowBatchingRequestsSendsToExecutor_Read()
         {
-            ClientContextCore clientContextCore = this.CreateMockBulkClientContextCore();
+            CosmosClientContext cosmosClientContext = this.CreateMockBulkCosmosClientContext();
 
-            DatabaseCore db = new DatabaseCore(clientContextCore, "test");
-            ExecutorContainerCore container = new ExecutorContainerCore(clientContextCore, db, "test");
+            DatabaseCore db = new DatabaseCore(cosmosClientContext, "test");
+            ExecutorContainerCore container = new ExecutorContainerCore(cosmosClientContext, db, "test");
 
             dynamic testItem = new
             {
@@ -384,10 +384,10 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task AllowBatchingRequestsSendsToExecutor_Delete()
         {
-            ClientContextCore clientContextCore = this.CreateMockBulkClientContextCore();
+            CosmosClientContext cosmosClientContext = this.CreateMockBulkCosmosClientContext();
 
-            DatabaseCore db = new DatabaseCore(clientContextCore, "test");
-            ExecutorContainerCore container = new ExecutorContainerCore(clientContextCore, db, "test");
+            DatabaseCore db = new DatabaseCore(cosmosClientContext, "test");
+            ExecutorContainerCore container = new ExecutorContainerCore(cosmosClientContext, db, "test");
 
             dynamic testItem = new
             {
@@ -476,22 +476,13 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
-        private ClientContextCore CreateMockBulkClientContextCore()
+        private CosmosClientContext CreateMockBulkCosmosClientContext()
         {
             CosmosClient cosmosClient = MockCosmosUtil.CreateMockCosmosClient();
-            ClientContextCore clientContextCore = new ClientContextCore(
-                cosmosClient,
-                new CosmosClientOptions() { AllowBulkExecution = true },
-                MockCosmosUtil.Serializer,
-                cosmosClient.ClientContext.ResponseFactory,
-                null,
-                new MockDocumentClient(),
-                "MockUserAgentString",
-                encryptionProcessor: null,
-                dekCache: null,
-                batchExecutorCache: new BatchAsyncContainerExecutorCache());
-
-            return clientContextCore;
+            return ClientContextCore.Create(
+               cosmosClient,
+               new MockDocumentClient(),
+               new CosmosClientOptions() { AllowBulkExecution = true });
         }
 
         private async Task VerifyItemNullPartitionKeyExpectations(

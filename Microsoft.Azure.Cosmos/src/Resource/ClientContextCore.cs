@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly DekCache dekCache;
         private bool isDisposed = false;
 
-        internal ClientContextCore(
+        private ClientContextCore(
             CosmosClient client,
             CosmosClientOptions clientOptions,
             CosmosSerializerCore serializerCore,
@@ -87,7 +87,8 @@ namespace Microsoft.Azure.Cosmos
         internal static CosmosClientContext Create(
             CosmosClient cosmosClient,
             DocumentClient documentClient,
-            CosmosClientOptions clientOptions)
+            CosmosClientOptions clientOptions,
+            RequestInvokerHandler requestInvokerHandler = null)
         {
             if (cosmosClient == null)
             {
@@ -101,13 +102,16 @@ namespace Microsoft.Azure.Cosmos
 
             clientOptions = ClientContextCore.CreateOrCloneClientOptions(clientOptions);
 
-            //Request pipeline 
-            ClientPipelineBuilder clientPipelineBuilder = new ClientPipelineBuilder(
-                cosmosClient,
-                clientOptions.ConsistencyLevel,
-                clientOptions.CustomHandlers);
+            if (requestInvokerHandler == null)
+            {
+                //Request pipeline 
+                ClientPipelineBuilder clientPipelineBuilder = new ClientPipelineBuilder(
+                    cosmosClient,
+                    clientOptions.ConsistencyLevel,
+                    clientOptions.CustomHandlers);
 
-            RequestInvokerHandler requestHandler = clientPipelineBuilder.Build();
+                requestInvokerHandler = clientPipelineBuilder.Build();
+            }
 
             CosmosSerializerCore serializerCore = CosmosSerializerCore.Create(
                 clientOptions.Serializer,
@@ -120,7 +124,7 @@ namespace Microsoft.Azure.Cosmos
                 clientOptions: clientOptions,
                 serializerCore: serializerCore,
                 cosmosResponseFactory: responseFactory,
-                requestHandler: requestHandler,
+                requestHandler: requestInvokerHandler,
                 documentClient: documentClient,
                 userAgent: documentClient.ConnectionPolicy.UserAgentContainer.UserAgent,
                 encryptionProcessor: new EncryptionProcessor(),

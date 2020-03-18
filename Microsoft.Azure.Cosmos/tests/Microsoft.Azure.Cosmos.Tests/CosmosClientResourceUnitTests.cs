@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
     using System;
     using System.Collections.Generic;
     using System.Net.Http;
+    using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -20,21 +21,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             string databaseId = "db1234";
             string crId = "cr42";
 
-            Mock<CosmosClient> mockClient = new Mock<CosmosClient>();
-            mockClient.Setup(x => x.Endpoint).Returns(new Uri("http://localhost"));
-
-            CosmosClientContext context = new ClientContextCore(
-                client: mockClient.Object,
-                clientOptions: new CosmosClientOptions(),
-                serializerCore: null,
-                cosmosResponseFactory: null,
-                requestHandler: null,
-                documentClient: null,
-                userAgent: null,
-                encryptionProcessor: null,
-                dekCache: null,
-                batchExecutorCache: null);
-
+            CosmosClientContext context = this.CreateMockClientContext();
             DatabaseCore db = new DatabaseCore(context, databaseId);
             Assert.AreEqual(db.LinkUri.OriginalString, "dbs/" + databaseId);
 
@@ -126,21 +113,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             string databaseId = "db1234";
             string crId = "cr42";
 
-            Mock<CosmosClient> mockClient = new Mock<CosmosClient>();
-            mockClient.Setup(x => x.Endpoint).Returns(new Uri("http://localhost"));
-
-            CosmosClientContext context = new ClientContextCore(
-                client: mockClient.Object,
-                clientOptions: new CosmosClientOptions(),
-                serializerCore: null,
-                cosmosResponseFactory: null,
-                requestHandler: null,
-                documentClient: null,
-                userAgent: null,
-                encryptionProcessor: null,
-                dekCache: null,
-                batchExecutorCache: null);
-
+            CosmosClientContext context = this.CreateMockClientContext();
             DatabaseCore db = new DatabaseCore(context, databaseId);
             ContainerCore container = new ContainerCore(context, db, crId);
             Assert.IsNull(container.BatchExecutor);
@@ -152,25 +125,22 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             string databaseId = "db1234";
             string crId = "cr42";
 
-            Mock<CosmosClient> mockClient = new Mock<CosmosClient>();
-            mockClient.Setup(x => x.Endpoint).Returns(new Uri("http://localhost"));
-
-            CosmosClientContext context = new ClientContextCore(
-                client: mockClient.Object,
-                clientOptions: new CosmosClientOptions() { AllowBulkExecution = true },
-                serializerCore: null,
-                cosmosResponseFactory: null,
-                requestHandler: null,
-                documentClient: null,
-                userAgent: null,
-                encryptionProcessor: null,
-                dekCache: null,
-                batchExecutorCache: new BatchAsyncContainerExecutorCache());
+            CosmosClientContext context = this.CreateMockClientContext(allowBulkExecution: true);
 
             DatabaseCore db = new DatabaseCore(context, databaseId);
             ContainerCore container = new ContainerCore(context, db, crId);
             Assert.IsNotNull(container.BatchExecutor);
         }
 
+        private CosmosClientContext CreateMockClientContext(bool allowBulkExecution = false)
+        {
+            Mock<CosmosClient> mockClient = new Mock<CosmosClient>();
+            mockClient.Setup(x => x.Endpoint).Returns(new Uri("http://localhost"));
+
+            return ClientContextCore.Create(
+                mockClient.Object,
+                new MockDocumentClient(),
+                new CosmosClientOptions() { AllowBulkExecution = allowBulkExecution });
+        }
     }
 }
