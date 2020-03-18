@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Represents a partition key value in the Azure Cosmos DB service.
     /// </summary>
-    public readonly struct PartitionKey : IComparable<PartitionKey>, IEquatable<PartitionKey>
+    public readonly struct PartitionKey : IEquatable<PartitionKey>
     {
         private static readonly PartitionKeyInternal NullPartitionKeyInternal = new Documents.PartitionKey(null).InternalKey;
         private static readonly PartitionKeyInternal TruePartitionKeyInternal = new Documents.PartitionKey(true).InternalKey;
@@ -138,16 +138,6 @@ namespace Microsoft.Azure.Cosmos
         public bool Equals(PartitionKey other)
         {
             return this.InternalKey.Equals(other.InternalKey);
-        }
-
-        /// <summary>
-        /// Compares this instance to a specified partition key and returns an indication of their relative values.
-        /// </summary>
-        /// <param name="other">A partition key to compare.</param>
-        /// <returns>A 32-bit signed integer that indicates whether this instance precedes, follows, or appears in the same position in the sort order as the <paramref name="other"/> parameter.</returns>
-        public int CompareTo(PartitionKey other)
-        {
-            return this.InternalKey.CompareTo(other.InternalKey);
         }
 
         /// <summary>
