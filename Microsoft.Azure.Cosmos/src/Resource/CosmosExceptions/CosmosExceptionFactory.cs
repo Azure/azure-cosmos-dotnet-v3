@@ -163,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
             }
 
             (Error error, string errorMessage) = CosmosExceptionFactory.GetErrorFromStream(storeResponse.ResponseBody);
-            Headers headers = storeResponse.ToCosmosHeaders();
+            Headers headers = storeResponse.Headers.ToCosmosHeaders();
 
             return CosmosExceptionFactory.Create(
                 statusCode: storeResponse.StatusCode,

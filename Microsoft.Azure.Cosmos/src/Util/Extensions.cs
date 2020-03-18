@@ -125,17 +125,6 @@ namespace Microsoft.Azure.Cosmos
             return responseMessage;
         }
 
-        internal static Headers ToCosmosHeaders(this StoreResponse storeResponse)
-        {
-            Headers headers = new Headers();
-            for (int i = 0; i < storeResponse.ResponseHeaderNames.Length; i++)
-            {
-                headers.Add(storeResponse.ResponseHeaderNames[i], storeResponse.ResponseHeaderValues[i]);
-            }
-
-            return headers;
-        }
-
         internal static Headers ToCosmosHeaders(this INameValueCollection nameValueCollection)
         {
             Headers headers = new Headers();
