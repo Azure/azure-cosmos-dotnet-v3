@@ -3655,11 +3655,6 @@
           "Attributes": [],
           "MethodInfo": "Boolean op_Inequality(Microsoft.Azure.Cosmos.PartitionKey, Microsoft.Azure.Cosmos.PartitionKey)"
         },
-        "Int32 CompareTo(Microsoft.Azure.Cosmos.PartitionKey)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Int32 CompareTo(Microsoft.Azure.Cosmos.PartitionKey)"
-        },
         "Int32 GetHashCode()": {
           "Type": "Method",
           "Attributes": [],
