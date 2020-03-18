@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             this.jsonWriter.WriteValue(pointOperationStatistics.ActivityId);
 
             this.jsonWriter.WritePropertyName("ResponseTimeUtc");
-            this.jsonWriter.WriteValue(pointOperationStatistics.ResponseTimeUtc);
+            this.jsonWriter.WriteValue(pointOperationStatistics.ResponseTimeUtc.ToString("o", CultureInfo.InvariantCulture));
 
             this.jsonWriter.WritePropertyName("StatusCode");
             this.jsonWriter.WriteValue((int)pointOperationStatistics.StatusCode);
@@ -130,14 +130,14 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             this.jsonWriter.WritePropertyName("PKRangeId");
             this.jsonWriter.WriteValue(queryPageDiagnostics.PartitionKeyRangeId);
 
+            this.jsonWriter.WritePropertyName("StartUtc");
+            this.jsonWriter.WriteValue(queryPageDiagnostics.DiagnosticsContext.StartUtc.ToString("o", CultureInfo.InvariantCulture));
+
             this.jsonWriter.WritePropertyName("QueryMetric");
             this.jsonWriter.WriteValue(queryPageDiagnostics.QueryMetricText);
 
             this.jsonWriter.WritePropertyName("IndexUtilization");
             this.jsonWriter.WriteValue(queryPageDiagnostics.IndexUtilizationText);
-
-            this.jsonWriter.WritePropertyName("SchedulingTimeSpan");
-            queryPageDiagnostics.SchedulingTimeSpan.WriteJsonObject(this.jsonWriter);
 
             this.jsonWriter.WritePropertyName("Context");
             this.jsonWriter.WriteStartArray();

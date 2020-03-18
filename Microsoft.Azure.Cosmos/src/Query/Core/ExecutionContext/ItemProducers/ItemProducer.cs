@@ -49,11 +49,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
         private readonly ProduceAsyncCompleteDelegate produceAsyncCompleteCallback;
 
         /// <summary>
-        /// Keeps track of when a fetch happens and ends to calculate scheduling metrics.
-        /// </summary>
-        private readonly SchedulingStopwatch fetchSchedulingMetrics;
-
-        /// <summary>
         /// Equality comparer to determine if you have come across a distinct document according to the sort order.
         /// </summary>
         private readonly IEqualityComparer<CosmosElement> equalityComparer;
@@ -136,9 +131,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
                 this.hasStartedFetching = true;
                 this.IsActive = true;
             }
-
-            this.fetchSchedulingMetrics = new SchedulingStopwatch();
-            this.fetchSchedulingMetrics.Ready();
 
             this.testFlags = testFlags;
 
@@ -279,7 +271,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
                             this.PartitionKeyRange.Id),
                     isContinuationExpected: this.queryContext.IsContinuationExpected,
                     pageSize: pageSize,
-                    schedulingStopwatch: this.fetchSchedulingMetrics,
                     cancellationToken: token);
 
                 if ((this.testFlags != null) && this.testFlags.SimulateThrottles)
@@ -337,7 +328,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
             }
             finally
             {
-                this.fetchSchedulingMetrics.Stop();
                 this.fetchSemaphore.Release();
             }
         }

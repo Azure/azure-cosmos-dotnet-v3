@@ -279,7 +279,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [DataRow(true)]
-        //[DataRow(false)]
+        [DataRow(false)]
         public async Task QueryOperationDiagnostic(bool disableDiagnostics)
         {
             int totalItems = 3;
@@ -392,28 +392,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 DiagnosticValidator.ValidateCosmosDiagnosticsContext(diagnosticsContext);
             }
 
-            Assert.IsNotNull(info);
-            JObject jObject = JObject.Parse(info);
-
-            JArray contextList = jObject["Context"].ToObject<JArray>();
-
-            // Find the PointOperationStatistics object
-            JObject page = GetJObjectInContextList(
-                contextList,
-                "0",
-                "PKRangeId");
-
-            // First page will have a request
-            // Query might use cache pages which don't have the following info. It was returned in the previous call.
-            if(isFirstPage || page != null)
-            {
-                string queryMetrics = page["QueryMetric"].ToString();
-                Assert.IsNotNull(queryMetrics);
-                Assert.IsNotNull(page["IndexUtilization"].ToString());
-                Assert.IsNotNull(page["PKRangeId"].ToString());
-                JArray requestDiagnostics = page["Context"].ToObject<JArray>();
-                Assert.IsNotNull(requestDiagnostics);
-            }
+            DiagnosticValidator.ValidateQueryDiagnostics(diagnosticsContext, isFirstPage);
         }
 
         public static void VerifyPointDiagnostics(

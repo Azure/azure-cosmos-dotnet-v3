@@ -75,7 +75,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
 
                 double requestCharge = 0;
                 long responseLengthBytes = 0;
-                List<CosmosDiagnosticsInternal> diagnosticsPages = new List<CosmosDiagnosticsInternal>();
                 while (!this.Source.IsDone)
                 {
                     QueryResponseCore sourceResponse = await this.Source.DrainAsync(int.MaxValue, cancellationToken);

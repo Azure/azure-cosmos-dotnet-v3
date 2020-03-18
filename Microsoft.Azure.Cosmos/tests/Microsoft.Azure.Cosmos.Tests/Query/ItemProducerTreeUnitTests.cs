@@ -197,8 +197,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 partitionKeyRangeId: "0",
                 queryMetricText: "SomeRandomQueryMetricText",
                 indexUtilizationText: null,
-                diagnosticsContext: diagnosticsContext,
-                schedulingStopwatch: new SchedulingStopwatch());
+                diagnosticsContext: diagnosticsContext);
             IReadOnlyCollection<QueryPageDiagnostics> pageDiagnostics = new List<QueryPageDiagnostics>() { diagnostics };
 
             mockQueryContext.Setup(x => x.ContainerResourceId).Returns("MockCollectionRid");
@@ -208,7 +207,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<PartitionKeyRangeIdentity>(),
                 It.IsAny<bool>(),
                 It.IsAny<int>(),
-                It.IsAny<SchedulingStopwatch>(),
                 cancellationTokenSource.Token)).Returns(
                 Task.FromResult(QueryResponseCore.CreateSuccess(
                     result: cosmosElements,
@@ -252,8 +250,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 partitionKeyRangeId: "0",
                 queryMetricText: null,
                 indexUtilizationText: null,
-                diagnosticsContext: diagnosticsContextInternalServerError,
-                schedulingStopwatch: new SchedulingStopwatch());
+                diagnosticsContext: diagnosticsContextInternalServerError);
             pageDiagnostics = new List<QueryPageDiagnostics>() { diagnostics };
 
             // Buffer a failure
@@ -263,7 +260,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<PartitionKeyRangeIdentity>(),
                 It.IsAny<bool>(),
                 It.IsAny<int>(),
-                It.IsAny<SchedulingStopwatch>(),
                 cancellationTokenSource.Token)).Returns(
                 Task.FromResult(QueryResponseCore.CreateFailure(
                     statusCode: HttpStatusCode.InternalServerError,
@@ -310,7 +306,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<PartitionKeyRangeIdentity>(),
                 It.IsAny<bool>(),
                 It.IsAny<int>(),
-                It.IsAny<SchedulingStopwatch>(),
                 cancellationTokenSource.Token)).
                 Throws(new Exception("Previous buffer failed. Operation should return original failure and not try again"));
 

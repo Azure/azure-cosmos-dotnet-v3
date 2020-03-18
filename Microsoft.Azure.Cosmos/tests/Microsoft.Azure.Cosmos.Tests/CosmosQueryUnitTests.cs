@@ -361,8 +361,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     "0",
                     "SomeQueryMetricText",
                     "SomeIndexUtilText",
-                diagnosticsContext,
-                new SchedulingStopwatch())
+                diagnosticsContext)
             };
 
             QueryResponseCore failure = QueryResponseCore.CreateFailure(

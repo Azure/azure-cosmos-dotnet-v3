@@ -72,7 +72,6 @@
             PartitionKeyRangeIdentity partitionKeyRange,
             bool isContinuationExpected,
             int pageSize,
-            SchedulingStopwatch schedulingStopwatch,
             CancellationToken cancellationToken)
         {
             Assert.IsFalse(
@@ -89,7 +88,6 @@
                 partitionKeyRange: partitionKeyRange,
                 isContinuationExpected: isContinuationExpected,
                 pageSize: pageSize,
-                schedulingStopwatch: schedulingStopwatch,
                 cancellationToken: cancellationToken);
         }
     }

@@ -21,6 +21,14 @@ namespace Microsoft.Azure.Cosmos
             validator.Validate();
         }
 
+        public static void ValidateQueryDiagnostics(CosmosDiagnosticsContext diagnosticsContext, bool isFirstPage)
+        {
+            JObject jObject = JObject.Parse(diagnosticsContext.ToString());
+            QueryDiagnosticValidatorHelper validator = new QueryDiagnosticValidatorHelper();
+            validator.Visit(diagnosticsContext);
+            validator.Validate(isFirstPage);
+        }
+
         internal static void ValidateCosmosDiagnosticsContext(
             CosmosDiagnosticsContext cosmosDiagnosticsContext)
         {
@@ -75,6 +83,23 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsNotNull(jObject["TargetEndpoint"].ToString());
         }
 
+        private static void ValidateQueryPageDiagnostics(QueryPageDiagnostics stats)
+        {
+            Assert.IsNotNull(stats.PartitionKeyRangeId);
+            Assert.IsNotNull(stats.DiagnosticsContext);
+
+            PointDiagnosticValidatorHelper pointDiagnosticValidatorHelper = new PointDiagnosticValidatorHelper();
+            pointDiagnosticValidatorHelper.Visit(stats.DiagnosticsContext);
+
+            string info = stats.ToString();
+            Assert.IsNotNull(info);
+            JObject jObject = JObject.Parse(info.ToString());
+            Assert.IsNotNull(jObject["StartUtc"].ToString());
+            Assert.IsNotNull(jObject["PKRangeId"].ToString());
+            Assert.IsNotNull(jObject["QueryMetric"].ToString());
+            Assert.IsNotNull(jObject["Context"].ToString());
+        }
+
         private static void ValidateClientSideRequestStatistics(CosmosClientSideRequestStatistics stats)
         {
             Assert.IsNotNull(stats.ContactedReplicas);
@@ -83,7 +108,7 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsNotNull(stats.FailedReplicas);
 
             // If all the request failed it's possible to not contact a region or replica.
-            if(stats.DiagnosticsContext.TotalRequestCount < stats.DiagnosticsContext.FailedRequestCount)
+            if (stats.DiagnosticsContext.TotalRequestCount < stats.DiagnosticsContext.FailedRequestCount)
             {
                 Assert.IsTrue(stats.RegionsContacted.Count > 0);
                 Assert.IsTrue(stats.ContactedReplicas.Count > 0);
@@ -133,6 +158,79 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsNotNull(jObject["StatusCode"].ToString());
             Assert.IsNotNull(jObject["RequestCharge"].ToString());
             Assert.IsNotNull(jObject["RequestUri"].ToString());
+        }
+
+        private sealed class QueryDiagnosticValidatorHelper : CosmosDiagnosticsInternalVisitor
+        {
+            private DateTime? StartTimeUtc = null;
+            private TimeSpan? TotalElapsedTime = null;
+            private bool isScopeVisited = false;
+            private bool isContextVisited = false;
+            private bool isQueryPageVisited = false;
+
+            public override void Visit(PointOperationStatistics pointOperationStatistics)
+            {
+                throw new ArgumentException($"Point Operation should not have {nameof(pointOperationStatistics)}");
+            }
+
+            public override void Visit(CosmosDiagnosticsContext cosmosDiagnosticsContext)
+            {
+                this.isContextVisited = true;
+                this.StartTimeUtc = cosmosDiagnosticsContext.StartUtc;
+                this.TotalElapsedTime = cosmosDiagnosticsContext.GetClientElapsedTime();
+
+                // Buffered pages are normal and have 0 request. This causes most validation to fail.
+                if(cosmosDiagnosticsContext.TotalRequestCount > 0)
+                {
+                    DiagnosticValidator.ValidateCosmosDiagnosticsContext(cosmosDiagnosticsContext);
+                }
+                
+                foreach (CosmosDiagnosticsInternal diagnosticsInternal in cosmosDiagnosticsContext)
+                {
+                    diagnosticsInternal.Accept(this);
+                }
+            }
+
+            public override void Visit(CosmosDiagnosticScope cosmosDiagnosticScope)
+            {
+                this.isScopeVisited = true;
+                ValidateScope(cosmosDiagnosticScope, this.TotalElapsedTime.Value);
+            }
+
+            public override void Visit(QueryPageDiagnostics queryPageDiagnostics)
+            {
+                this.isQueryPageVisited = true;
+                ValidateQueryPageDiagnostics(queryPageDiagnostics);
+            }
+
+            public override void Visit(AddressResolutionStatistics addressResolutionStatistics)
+            {
+                throw new ArgumentException($"Point Operation should not have {nameof(addressResolutionStatistics)}");
+            }
+
+            public override void Visit(StoreResponseStatistics storeResponseStatistics)
+            {
+                throw new ArgumentException($"Point Operation should not have {nameof(storeResponseStatistics)}");
+            }
+
+            public override void Visit(CosmosClientSideRequestStatistics clientSideRequestStatistics)
+            {
+                throw new ArgumentException($"Point Operation should not have {nameof(clientSideRequestStatistics)}");
+            }
+
+            public void Validate(bool isFirstPage)
+            {
+                Assert.IsTrue(this.isContextVisited);
+                Assert.IsNotNull(this.StartTimeUtc);
+                Assert.IsNotNull(this.TotalElapsedTime);
+
+                // Only first page will have a scope for the query pipeline creation
+                if (isFirstPage)
+                {
+                    Assert.IsTrue(this.isScopeVisited);
+                    Assert.IsTrue(this.isQueryPageVisited);
+                }
+            }
         }
 
         private sealed class PointDiagnosticValidatorHelper : CosmosDiagnosticsInternalVisitor

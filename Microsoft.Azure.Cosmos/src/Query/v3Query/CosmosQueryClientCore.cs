@@ -123,12 +123,10 @@ namespace Microsoft.Azure.Cosmos
             PartitionKeyRangeIdentity partitionKeyRange,
             bool isContinuationExpected,
             int pageSize,
-            SchedulingStopwatch schedulingStopwatch,
             CancellationToken cancellationToken)
         {
             requestOptions.MaxItemCount = pageSize;
 
-            schedulingStopwatch.Start();
             ResponseMessage message = await this.clientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: resourceUri,
                 resourceType: resourceType,
@@ -152,14 +150,11 @@ namespace Microsoft.Azure.Cosmos
                 diagnosticsContext: null,
                 cancellationToken: cancellationToken);
 
-            schedulingStopwatch.Stop();
-
             return this.GetCosmosElementResponse(
                 requestOptions,
                 resourceType,
                 message,
                 partitionKeyRange,
-                schedulingStopwatch,
                 diagnosticsContext);
         }
 
@@ -270,7 +265,6 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             ResponseMessage cosmosResponseMessage,
             PartitionKeyRangeIdentity partitionKeyRangeIdentity,
-            SchedulingStopwatch schedulingStopwatch,
             CosmosDiagnosticsContext diagnosticsContext)
         {
             using (cosmosResponseMessage)
@@ -279,8 +273,7 @@ namespace Microsoft.Azure.Cosmos
                     partitionKeyRangeId: partitionKeyRangeIdentity.PartitionKeyRangeId,
                     queryMetricText: cosmosResponseMessage.Headers.QueryMetricsText,
                     indexUtilizationText: cosmosResponseMessage.Headers[HttpConstants.HttpHeaders.IndexUtilization],
-                    diagnosticsContext: cosmosResponseMessage.DiagnosticsContext,
-                    schedulingStopwatch: schedulingStopwatch);
+                    diagnosticsContext: cosmosResponseMessage.DiagnosticsContext);
 
                 diagnosticsContext.AddDiagnosticsInternal(queryPage);
                 if (!cosmosResponseMessage.IsSuccessStatusCode)

@@ -61,8 +61,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new QueryPageDiagnostics("0",
                 "SomeQueryMetricText",
                 "SomeIndexUtilText",
-                diagnosticsContext,
-                new SchedulingStopwatch())
+                diagnosticsContext)
             };
 
             QueryResponseCore message = QueryResponseCore.CreateSuccess(
@@ -119,8 +118,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new QueryPageDiagnostics("0",
                 "SomeQueryMetricText",
                 "SomeIndexUtilText",
-                diagnosticsContext,
-                new SchedulingStopwatch())
+                diagnosticsContext)
             };
 
             QueryResponseCore message = QueryResponseCore.CreateSuccess(
@@ -163,8 +161,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new QueryPageDiagnostics("0",
                 "SomeQueryMetricText",
                 "SomeIndexUtilText",
-                diagnosticsContext,
-                new SchedulingStopwatch())
+                diagnosticsContext)
             };
 
             QueryResponseCore splitResponse = QueryResponseCore.CreateFailure(
