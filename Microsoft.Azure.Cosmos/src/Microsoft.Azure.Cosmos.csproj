@@ -57,7 +57,10 @@
   <ItemGroup>
     <None Include="Resource\CosmosExceptions\Http\RequestRateTooLarge\RequestRateTooLargeException.cs">
       <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>RequestRateTooLargeException.txt</LastGenOutput>
+      <LastGenOutput>RequestRateTooLargeException.cs</LastGenOutput>
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>RequestRateTooLargeException.cs</DependentUpon>
     </None>
   </ItemGroup>
 
@@ -119,11 +122,6 @@
     <None Update="Resource\CosmosExceptions\Http\HttpExceptionCodeGenerator.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>HttpExceptionCodeGenerator.cs</LastGenOutput>
-    </None>
-    <None Update="Resource\CosmosExceptions\Http\RequestRateTooLarge\RequestRateTooLargeException.txt">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>RequestRateTooLargeException.cs</DependentUpon>
     </None>
   </ItemGroup>
 

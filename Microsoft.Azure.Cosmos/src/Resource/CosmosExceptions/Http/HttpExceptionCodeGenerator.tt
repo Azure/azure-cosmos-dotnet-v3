@@ -102,6 +102,104 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.<#= statusCodeTo
 }
 <# SaveOutputToSubFolder(statusCodeToEnum.Key.ToString(), $"{subStatusCode}Exception.cs"); #>
 <# } #>
+// ------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+// ------------------------------------------------------------
+
+// This is generated code:
+
+namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.<#= statusCodeToEnum.Key #>
+{
+    using System;
+
+    internal sealed class Default<#= statusCodeToEnum.Key #>Exception : <#= statusCodeToEnum.Key #>Exception
+    {
+        public Default<#= statusCodeToEnum.Key #>Exception()
+            : this(message: null)
+        {
+        }
+
+        public Default<#= statusCodeToEnum.Key #>Exception(string message)
+            : this(message: message, innerException: null)
+        {
+        }
+
+        public Default<#= statusCodeToEnum.Key #>Exception(string message, Exception innerException)
+            : base(subStatusCode: 0, message: message, innerException: innerException)
+        {
+        }
+    }
+}
+<# SaveOutputToSubFolder(statusCodeToEnum.Key.ToString(), $"Default{statusCodeToEnum.Key}Exception.cs"); #>
+// ------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+// ------------------------------------------------------------
+
+// This is generated code:
+
+namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.<#= statusCodeToEnum.Key #>
+{
+    using System;
+
+    internal sealed class Unknown<#= statusCodeToEnum.Key #>Exception : <#= statusCodeToEnum.Key #>Exception
+    {
+        public Unknown<#= statusCodeToEnum.Key #>Exception(int subStatusCode)
+            : this(subStatusCode: subStatusCode, message: null)
+        {
+        }
+
+        public Unknown<#= statusCodeToEnum.Key #>Exception(int subStatusCode, string message)
+            : this(subStatusCode: subStatusCode, message: message, innerException: null)
+        {
+        }
+
+        public Unknown<#= statusCodeToEnum.Key #>Exception(int subStatusCode, string message, Exception innerException)
+            : base(subStatusCode: subStatusCode, message: message, innerException: innerException)
+        {
+        }
+    }
+}
+<# SaveOutputToSubFolder(statusCodeToEnum.Key.ToString(), $"Unknown{statusCodeToEnum.Key}Exception.cs"); #>
+<# } #>
+<# // Generate Factories: #>
+<#  foreach (KeyValuePair<HttpStatusCode, Type> statusCodeToEnum in statusCodeToEnumType) { #>
+<#  HttpStatusCode statusCode = statusCodeToEnum.Key;#>
+<#  Type subStatusCodeType = statusCodeToEnum.Value;#>
+// ------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+// ------------------------------------------------------------
+
+// This is generated code:
+
+namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.<#= statusCode #>
+{
+    using System;
+
+    internal static class <#= statusCode #>ExceptionFactory
+    {
+        public static <#= statusCode #>Exception Create(
+            int? subStatusCode = null,
+            string message = null,
+            Exception innerException = null)
+        {
+            if (!subStatusCode.HasValue)
+            {
+                return new Default<#= statusCode #>Exception(message, innerException);
+            }
+
+            switch (subStatusCode.Value)
+            {
+<#  foreach (var subStatusCode in Enum.GetValues(statusCodeToEnum.Value)) { #>
+                case <#= (int)subStatusCode #>:
+                    return new <#= subStatusCode #>Exception(message, innerException);
+<# } #>
+                default:
+                    return new Unknown<#= statusCode #>Exception(subStatusCode.Value, message, innerException);
+            }
+        }
+    }
+}
+<# SaveOutputToSubFolder(statusCode.ToString(), $"{statusCode}ExceptionFactory.cs"); #>
 <# } #>
 <# // Generate SubStatusCode Enums: #>
 <#  foreach (KeyValuePair<HttpStatusCode, Type> statusCodeToEnum in statusCodeToEnumType) { #>
