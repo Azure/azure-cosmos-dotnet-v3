@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Represents a partition key value in the Azure Cosmos DB service.
     /// </summary>
-    public struct PartitionKey
+    public readonly struct PartitionKey : IEquatable<PartitionKey>
     {
         private static readonly PartitionKeyInternal NullPartitionKeyInternal = new Microsoft.Azure.Documents.PartitionKey(null).InternalKey;
         private static readonly PartitionKeyInternal TruePartitionKeyInternal = new Microsoft.Azure.Documents.PartitionKey(true).InternalKey;
@@ -111,6 +111,40 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Determines whether the specified object is equal to the current object.
+        /// </summary>
+        /// <param name="obj">An object to compare.</param>
+        /// <returns>true if the specified object is equal to the current object; otherwise, false.</returns>
+        public override bool Equals(object obj)
+        {
+            if (obj is PartitionKey partitionkey)
+            {
+                return this.Equals(partitionkey);
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Returns the hash code for this partition key.
+        /// </summary>
+        /// <returns>A 32-bit signed integer hash code.</returns>
+        public override int GetHashCode()
+        {
+            return this.InternalKey.GetHashCode();
+        }
+
+        /// <summary>
+        /// Returns a value indicating whether this instance is equal to a specified partition key.
+        /// </summary>
+        /// <param name="other">A partition key value to compare to this instance.</param>
+        /// <returns>true if <paramref name="other"/> has the same value as this instance; otherwise, false.</returns>
+        public bool Equals(PartitionKey other)
+        {
+            return this.InternalKey.Equals(other.InternalKey);
+        }
+
+        /// <summary>
         /// Gets the string representation of the partition key value.
         /// </summary>
         /// <returns>The string representation of the partition key value</returns>
@@ -150,6 +184,28 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey = default(PartitionKey);
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Determines whether two specified instances of the PartitionKey are equal.
+        /// </summary>
+        /// <param name="left">The first object to compare.</param>
+        /// <param name="right">The second object to compare.</param>
+        /// <returns>true if <paramref name="left"/> and <paramref name="right"/> represent the same partition key; otherwise, false.</returns>
+        public static bool operator ==(PartitionKey left, PartitionKey right)
+        {
+            return left.Equals(right);
+        }
+
+        /// <summary>
+        /// Determines whether two specified instances of the PartitionKey are not equal.
+        /// </summary>
+        /// <param name="left">The first object to compare.</param>
+        /// <param name="right">The second object to compare.</param>
+        /// <returns>true if <paramref name="left"/> and <paramref name="right"/> do not represent the same partition key; otherwise, false.</returns>
+        public static bool operator !=(PartitionKey left, PartitionKey right)
+        {
+            return !left.Equals(right);
         }
     }
 }
