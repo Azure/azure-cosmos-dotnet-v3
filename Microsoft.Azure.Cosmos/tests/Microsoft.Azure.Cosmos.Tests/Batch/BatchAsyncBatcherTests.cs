@@ -254,7 +254,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     operationIndex: i,
                     partitionKey: new Cosmos.PartitionKey(i.ToString()),
                     id: i.ToString(),
-                    diagnosticsContext: CosmosDiagnosticsContext.Create());
+                    diagnosticsContext: new CosmosDiagnosticsContextCore());
 
                 ItemBatchOperationContext context = new ItemBatchOperationContext(string.Empty);
                 operation.AttachContext(context);
@@ -272,7 +272,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.AreEqual(i.ToString(), result.ETag);
 
                 Assert.IsNotNull(operation.DiagnosticsContext);
-                Assert.AreEqual(operation.DiagnosticsContext.ToString(), result.DiagnosticsContext.ToString());
+                Assert.AreEqual(operation.DiagnosticsContext, result.DiagnosticsContext);
                 Assert.IsFalse(string.IsNullOrEmpty(operation.DiagnosticsContext.ToString()));
             }
         }

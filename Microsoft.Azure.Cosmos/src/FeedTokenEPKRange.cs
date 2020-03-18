@@ -18,14 +18,16 @@ namespace Microsoft.Azure.Cosmos
     {
         internal readonly Queue<CompositeContinuationToken> CompositeContinuationTokens;
         internal readonly Documents.Routing.Range<string> CompleteRange;
+        private readonly HashSet<string> doneRanges;
         private CompositeContinuationToken currentToken;
-        private string initialNotModifiedRange;
+        private string initialNoResultsRange;
 
         private FeedTokenEPKRange(
             string containerRid)
             : base(containerRid)
         {
             this.CompositeContinuationTokens = new Queue<CompositeContinuationToken>();
+            this.doneRanges = new HashSet<string>();
         }
 
         private FeedTokenEPKRange(
@@ -122,8 +124,12 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(request));
             }
 
-            request.Properties[HandlerConstants.StartEpkString] = this.currentToken.Range.Min;
-            request.Properties[HandlerConstants.EndEpkString] = this.currentToken.Range.Max;
+            // in case EPK has already been set
+            if (!request.Properties.ContainsKey(HandlerConstants.StartEpkString))
+            {
+                request.Properties[HandlerConstants.StartEpkString] = this.currentToken.Range.Min;
+                request.Properties[HandlerConstants.EndEpkString] = this.currentToken.Range.Max;
+            }
         }
 
         public override string GetContinuation() => this.currentToken.Token;
@@ -135,9 +141,22 @@ namespace Microsoft.Azure.Cosmos
 
         public override void UpdateContinuation(string continuationToken)
         {
+            if (continuationToken == null)
+            {
+                // Queries and normal ReadFeed can signal termination by CT null, not NotModified
+                // Change Feed never lands here, as it always provides a CT
+                // Consider current range done, if this FeedToken contains multiple ranges due to splits, all of them need to be considered done
+                this.doneRanges.Add(this.currentToken.Range.Min);
+            }
+
             this.currentToken.Token = continuationToken;
             this.MoveToNextToken();
         }
+
+        /// <summary>
+        /// The concept of Done is only for Query and ReadFeed. Change Feed is never done, it is an infinite stream.
+        /// </summary>
+        public override bool IsDone => this.doneRanges.Count == this.CompositeContinuationTokens.Count;
 
         public override async Task<bool> ShouldRetryAsync(
             ContainerCore containerCore,
@@ -146,22 +165,24 @@ namespace Microsoft.Azure.Cosmos
         {
             if (responseMessage.IsSuccessStatusCode)
             {
-                this.initialNotModifiedRange = null;
+                this.initialNoResultsRange = null;
                 return false;
             }
 
+            // If the current response is NotModified (ChangeFeed), try and skip to a next one
             if (responseMessage.StatusCode == HttpStatusCode.NotModified
                 && this.CompositeContinuationTokens.Count > 1)
             {
-                if (this.initialNotModifiedRange == null)
+                if (this.initialNoResultsRange == null)
                 {
-                    this.initialNotModifiedRange = this.currentToken.Range.Min;
+                    this.initialNoResultsRange = this.currentToken.Range.Min;
                     return true;
                 }
 
-                return !this.initialNotModifiedRange.Equals(this.currentToken.Range.Min, StringComparison.OrdinalIgnoreCase);
+                return !this.initialNoResultsRange.Equals(this.currentToken.Range.Min, StringComparison.OrdinalIgnoreCase);
             }
 
+            // Split handling
             bool partitionSplit = responseMessage.StatusCode == HttpStatusCode.Gone
                 && (responseMessage.Headers.SubStatusCode == Documents.SubStatusCodes.PartitionKeyRangeGone || responseMessage.Headers.SubStatusCode == Documents.SubStatusCodes.CompletingSplit);
             if (partitionSplit)
@@ -220,6 +241,13 @@ namespace Microsoft.Azure.Cosmos
             CompositeContinuationToken recentToken = this.CompositeContinuationTokens.Dequeue();
             this.CompositeContinuationTokens.Enqueue(recentToken);
             this.currentToken = this.CompositeContinuationTokens.Peek();
+
+            // In a Query / ReadFeed not Change Feed, skip ranges that are done to avoid requests
+            while (!this.IsDone &&
+                this.doneRanges.Contains(this.currentToken.Range.Min))
+            {
+                this.MoveToNextToken();
+            }
         }
 
         private void HandleSplit(IReadOnlyList<Documents.PartitionKeyRange> keyRanges)

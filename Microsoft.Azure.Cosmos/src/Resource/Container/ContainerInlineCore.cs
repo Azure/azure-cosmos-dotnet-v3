@@ -312,6 +312,38 @@ namespace Microsoft.Azure.Cosmos
         {
             return TaskHelper.RunInlineIfNeededAsync(() => this.container.GetPartitionKeyRangesAsync(feedToken, cancellationToken));
         }
+
+        public override FeedIterator GetItemQueryStreamIterator(
+            FeedToken feedToken,
+            string queryText = null,
+            QueryRequestOptions requestOptions = null)
+        {
+            return this.container.GetItemQueryStreamIterator(feedToken, queryText, requestOptions);
+        }
+
+        public override FeedIterator<T> GetItemQueryIterator<T>(
+            FeedToken feedToken,
+            string queryText = null,
+            QueryRequestOptions requestOptions = null)
+        {
+            return this.container.GetItemQueryIterator<T>(feedToken, queryText, requestOptions);
+        }
+
+        public override FeedIterator GetItemQueryStreamIterator(
+            FeedToken feedToken,
+            QueryDefinition queryDefinition,
+            QueryRequestOptions requestOptions = null)
+        {
+            return this.container.GetItemQueryStreamIterator(feedToken, queryDefinition, requestOptions);
+        }
+
+        public override FeedIterator<T> GetItemQueryIterator<T>(
+            FeedToken feedToken,
+            QueryDefinition queryDefinition,
+            QueryRequestOptions requestOptions = null)
+        {
+            return this.container.GetItemQueryIterator<T>(feedToken, queryDefinition, requestOptions);
+        }
 #endif
         public static implicit operator ContainerCore(ContainerInlineCore containerInlineCore) => containerInlineCore.container;
     }

@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct;
@@ -24,6 +25,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -38,13 +40,12 @@ namespace Microsoft.Azure.Cosmos.Tests
             string errorMessage = "TestErrorMessage";
             string activityId = "TestActivityId";
             double requestCharge = 42.42;
-
-            CosmosDiagnosticsContext diagnostics = CosmosDiagnosticsContext.Create();
+            CosmosException cosmosException = CosmosExceptionFactory.CreateBadRequestException(errorMessage);
+            CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContextCore();
             QueryResponse queryResponse = QueryResponse.CreateFailure(
                         statusCode: HttpStatusCode.NotFound,
-                        errorMessage: errorMessage,
+                        cosmosException: cosmosException,
                         requestMessage: null,
-                        error: null,
                         responseHeaders: new CosmosQueryResponseMessageHeaders(
                             null,
                             null,
@@ -57,10 +58,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                         diagnostics: diagnostics);
 
             Assert.AreEqual(HttpStatusCode.NotFound, queryResponse.StatusCode);
-            Assert.AreEqual(errorMessage, queryResponse.ErrorMessage);
+            Assert.AreEqual(cosmosException.ToString(includeDiagnostics: false), queryResponse.ErrorMessage);
             Assert.AreEqual(requestCharge, queryResponse.Headers.RequestCharge);
             Assert.AreEqual(activityId, queryResponse.Headers.ActivityId);
-            Assert.AreEqual(diagnostics, queryResponse.Diagnostics);
+            Assert.AreEqual(diagnostics, queryResponse.DiagnosticsContext);
             Assert.IsNull(queryResponse.Content);
         }
 
@@ -90,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                             RequestCharge = responseCore.RequestCharge,
                             ActivityId = responseCore.ActivityId
                         },
-                        diagnostics: CosmosDiagnosticsContext.Create());
+                        diagnostics: new CosmosDiagnosticsContextCore());
 
             using (Stream stream = queryResponse.Content)
             {
@@ -128,7 +129,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                             RequestCharge = responseCore.RequestCharge,
                             ActivityId = responseCore.ActivityId
                         },
-                        diagnostics: CosmosDiagnosticsContext.Create());
+                        diagnostics: new CosmosDiagnosticsContextCore());
 
             QueryResponse<ToDoItem> itemQueryResponse = QueryResponseMessageFactory.CreateQueryResponse<ToDoItem>(queryResponse);
             List<ToDoItem> resultItems = new List<ToDoItem>(itemQueryResponse.Resource);
@@ -169,7 +170,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                             RequestCharge = responseCore.RequestCharge,
                             ActivityId = responseCore.ActivityId
                         },
-                        diagnostics: CosmosDiagnosticsContext.Create());
+                        diagnostics: new CosmosDiagnosticsContextCore());
 
             QueryResponse<CosmosElement> itemQueryResponse = QueryResponseMessageFactory.CreateQueryResponse<CosmosElement>(queryResponse);
             List<CosmosElement> resultItems = new List<CosmosElement>(itemQueryResponse.Resource);
@@ -283,12 +284,12 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             QueryResponseCore queryResponse = await context.ExecuteNextAsync(cancellationtoken);
             Assert.AreEqual(HttpStatusCode.BadRequest, queryResponse.StatusCode);
-            Assert.IsTrue(queryResponse.ErrorMessage.Contains(exceptionMessage), "response error message did not contain the proper substring.");
+            Assert.IsTrue(queryResponse.CosmosException.ToString().Contains(exceptionMessage), "response error message did not contain the proper substring.");
         }
 
         private async Task<(IList<IDocumentQueryExecutionComponent> components, QueryResponseCore response)> GetAllExecutionComponents()
         {
-            (Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> func, QueryResponseCore response) = this.SetupBaseContextToVerifyFailureScenario();
+            (Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> func, QueryResponseCore response) = this.SetupBaseContextToVerifyFailureScenario();
 
             List<IDocumentQueryExecutionComponent> components = new List<IDocumentQueryExecutionComponent>();
             List<AggregateOperator> operators = new List<AggregateOperator>()
@@ -319,16 +320,19 @@ namespace Microsoft.Azure.Cosmos.Tests
                 DistinctQueryType.Ordered)).Result);
 
             components.Add((await SkipDocumentQueryExecutionComponent.TryCreateAsync(
+                ExecutionEnvironment.Client,
                 5,
                 null,
                 func)).Result);
 
             components.Add((await TakeDocumentQueryExecutionComponent.TryCreateLimitDocumentQueryExecutionComponentAsync(
+                ExecutionEnvironment.Client,
                 5,
                 null,
                 func)).Result);
 
             components.Add((await TakeDocumentQueryExecutionComponent.TryCreateTopDocumentQueryExecutionComponentAsync(
+                ExecutionEnvironment.Client,
                 5,
                 null,
                 func)).Result);
@@ -336,20 +340,20 @@ namespace Microsoft.Azure.Cosmos.Tests
             return (components, response);
         }
 
-        private (Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>>, QueryResponseCore) SetupBaseContextToVerifyFailureScenario()
-        { 
-            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create();
+        private (Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>>, QueryResponseCore) SetupBaseContextToVerifyFailureScenario()
+        {
+            CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContextCore();
             diagnosticsContext.AddDiagnosticsInternal( new PointOperationStatistics(
                     Guid.NewGuid().ToString(),
                     System.Net.HttpStatusCode.Unauthorized,
                     subStatusCode: SubStatusCodes.PartitionKeyMismatch,
+                    responseTimeUtc: DateTime.UtcNow,
                     requestCharge: 4,
                     errorMessage: null,
                     method: HttpMethod.Post,
                     requestUri: new Uri("http://localhost.com"),
                     requestSessionToken: null,
-                    responseSessionToken: null,
-                    clientSideRequestStatistics: null));
+                    responseSessionToken: null));
             IReadOnlyCollection<QueryPageDiagnostics> diagnostics = new List<QueryPageDiagnostics>()
             {
                 new QueryPageDiagnostics(
@@ -363,14 +367,25 @@ namespace Microsoft.Azure.Cosmos.Tests
             QueryResponseCore failure = QueryResponseCore.CreateFailure(
                 System.Net.HttpStatusCode.Unauthorized,
                 SubStatusCodes.PartitionKeyMismatch,
-                "Random error message",
+                new CosmosException(
+                    statusCodes: HttpStatusCode.Unauthorized,
+                    message: "Random error message",
+                    subStatusCode: default,
+                    stackTrace: default,
+                    activityId: "TestActivityId",
+                    requestCharge: 42.89,
+                    retryAfter: default,
+                    headers: default,
+                    diagnosticsContext: default,
+                    error: default,
+                    innerException: default),
                 42.89,
                 "TestActivityId",
                 diagnostics);
 
             Mock<IDocumentQueryExecutionComponent> baseContext = new Mock<IDocumentQueryExecutionComponent>();
             baseContext.Setup(x => x.DrainAsync(It.IsAny<int>(), It.IsAny<CancellationToken>())).Returns(Task.FromResult<QueryResponseCore>(failure));
-            Task<TryCatch<IDocumentQueryExecutionComponent>> callBack(string x) => Task.FromResult<TryCatch<IDocumentQueryExecutionComponent>>(TryCatch<IDocumentQueryExecutionComponent>.FromResult(baseContext.Object));
+            Task<TryCatch<IDocumentQueryExecutionComponent>> callBack(CosmosElement x) => Task.FromResult<TryCatch<IDocumentQueryExecutionComponent>>(TryCatch<IDocumentQueryExecutionComponent>.FromResult(baseContext.Object));
             return (callBack, failure);
         }
     }

@@ -153,7 +153,7 @@ namespace Microsoft.Azure.Cosmos
                     cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.ContentType, MediaTypes.QueryJson);
                     cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
                 },
-                diagnosticsScope: queryRequestOptions?.DiagnosticContext,
+                diagnosticsContext: null,
                 cancellationToken: cancellationToken);
 
             schedulingStopwatch.Stop();
@@ -192,7 +192,7 @@ namespace Microsoft.Azure.Cosmos
                     requestMessage.Headers.Add(HttpConstants.HttpHeaders.QueryVersion, new Version(major: 1, minor: 0).ToString());
                     requestMessage.UseGatewayMode = true;
                 },
-                diagnosticsScope: null,
+                diagnosticsContext: null,
                 cancellationToken: cancellationToken))
             {
                 // Syntax exception are argument exceptions and thrown to the user.
@@ -289,7 +289,7 @@ namespace Microsoft.Azure.Cosmos
                     return QueryResponseCore.CreateFailure(
                         statusCode: cosmosResponseMessage.StatusCode,
                         subStatusCodes: cosmosResponseMessage.Headers.SubStatusCode,
-                        errorMessage: cosmosResponseMessage.ErrorMessage,
+                        cosmosException: cosmosResponseMessage.CosmosException,
                         requestCharge: cosmosResponseMessage.Headers.RequestCharge,
                         activityId: cosmosResponseMessage.Headers.ActivityId,
                         diagnostics: pageDiagnostics);

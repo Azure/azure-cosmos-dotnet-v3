@@ -77,15 +77,15 @@ namespace Microsoft.Azure.Cosmos.Tests
                 activityId: Guid.NewGuid().ToString(),
                 statusCode: HttpStatusCode.OK,
                 subStatusCode: SubStatusCodes.Unknown,
+                responseTimeUtc: DateTime.UtcNow,
                 requestCharge: 0,
                 errorMessage: string.Empty,
                 method: HttpMethod.Get,
                 requestUri: new Uri("http://localhost"),
                 requestSessionToken: null,
-                responseSessionToken: null,
-                clientSideRequestStatistics: new CosmosClientSideRequestStatistics());
-            CosmosDiagnosticsContext scope = CosmosDiagnosticsContext.Create();
-            scope.AddDiagnosticsInternal(pointOperationStatistics);
+                responseSessionToken: null);
+            CosmosDiagnosticsContext context = new CosmosDiagnosticsContextCore();
+            context.AddDiagnosticsInternal(pointOperationStatistics);
 
             TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.OK)
             {
@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 SubStatusCode = SubStatusCodes.CompletingSplit,
                 RetryAfter = TimeSpan.FromSeconds(10),
                 RequestCharge = 4.3,
-                DiagnosticsContext = scope
+                DiagnosticsContext = context
             };
 
             ResponseMessage response = result.ToResponseMessage();

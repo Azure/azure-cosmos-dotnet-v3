@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Documents;
@@ -234,7 +235,6 @@ namespace Microsoft.Azure.Cosmos
         FeedIterator GetChangeFeedStreamIterator(ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
             return new ChangeFeedIteratorCore(
-                this.ClientContext,
                 this,
                 changeFeedRequestOptions);
         }
@@ -250,7 +250,6 @@ namespace Microsoft.Azure.Cosmos
         {
             FeedTokenInternal feedTokenInternal = feedToken as FeedTokenInternal;
             return new ChangeFeedIteratorCore(
-                this.ClientContext,
                 this,
                 feedTokenInternal,
                 changeFeedRequestOptions);
@@ -266,7 +265,6 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
             return new ChangeFeedIteratorCore(
-                this.ClientContext,
                 this,
                 new FeedTokenPartitionKey(partitionKey),
                 changeFeedRequestOptions);
@@ -280,7 +278,6 @@ namespace Microsoft.Azure.Cosmos
         FeedIterator<T> GetChangeFeedIterator<T>(ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
             ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
-                this.ClientContext,
                 this,
                 changeFeedRequestOptions);
 
@@ -298,7 +295,6 @@ namespace Microsoft.Azure.Cosmos
         {
             FeedTokenInternal feedTokenInternal = feedToken as FeedTokenInternal;
             ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
-                this.ClientContext,
                 this,
                 feedTokenInternal,
                 changeFeedRequestOptions);
@@ -316,7 +312,6 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
             ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
-                this.ClientContext,
                 this,
                 new FeedTokenPartitionKey(partitionKey),
                 changeFeedRequestOptions);
@@ -379,7 +374,9 @@ namespace Microsoft.Azure.Cosmos
             }
             catch (DocumentClientException ex)
             {
-                throw new CosmosException(ex.ToCosmosResponseMessage(null), ex.Message, ex.Error);
+                throw CosmosExceptionFactory.Create(
+                    dce: ex,
+                    diagnosticsContext: null);
             }
         }
 
@@ -509,7 +506,7 @@ namespace Microsoft.Azure.Cosmos
               streamPayload: streamPayload,
               requestOptions: requestOptions,
               requestEnricher: null,
-              diagnosticsScope: null,
+              diagnosticsContext: null,
               cancellationToken: cancellationToken);
         }
     }

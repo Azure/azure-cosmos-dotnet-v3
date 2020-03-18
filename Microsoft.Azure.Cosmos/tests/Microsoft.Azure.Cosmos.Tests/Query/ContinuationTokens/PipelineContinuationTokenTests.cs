@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query
 {
     using System.Collections.Generic;
     using System.Xml;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Test.BaselineTest;
     using VisualStudio.TestTools.UnitTesting;
@@ -47,9 +48,6 @@ namespace Microsoft.Azure.Cosmos.Query
                 new PipelineContinuationTokenTestsInput(
                     description: "V1 No Source Continuation Token",
                     continuationToken: "{\"Version\":\"1.0\"}"),
-                new PipelineContinuationTokenTestsInput(
-                    description: "V1 Source Continuation Token Is Not A String",
-                    continuationToken: "{\"Version\":\"1.0\", \"SourceContinuationToken\": 42}"),
 
                 // Version 1.1 Negative Tests
                 new PipelineContinuationTokenTestsInput(
@@ -61,9 +59,6 @@ namespace Microsoft.Azure.Cosmos.Query
                 new PipelineContinuationTokenTestsInput(
                     description: "V1.1 No Source Continuation",
                     continuationToken: "{\"Version\":\"1.1\",\"QueryPlan\": null}"),
-                new PipelineContinuationTokenTestsInput(
-                    description: "V1.1 Source Continuation Is Not A String",
-                    continuationToken: "{\"Version\":\"1.1\",\"QueryPlan\": null,\"SourceContinuationToken\": 42}"),
             };
 
             this.ExecuteTestSuite(pipelineContinuationTokenTestsInputs);
@@ -72,13 +67,17 @@ namespace Microsoft.Azure.Cosmos.Query
         public override PipelineContinuationTokenTestsOutput ExecuteTest(
             PipelineContinuationTokenTestsInput input)
         {
-            if (!PipelineContinuationToken.TryParse(
-                input.ContinuationToken,
-                out PipelineContinuationToken pipelineContinuationToken))
+            if (!CosmosElement.TryParse(input.ContinuationToken, out CosmosElement cosmosElementContinuationToken))
             {
                 return new PipelineContinuationTokenTestsOutputNegative("Failed to parse token.");
             }
 
+            if (!PipelineContinuationToken.TryCreateFromCosmosElement(
+                cosmosElementContinuationToken,
+                out PipelineContinuationToken pipelineContinuationToken))
+            {
+                return new PipelineContinuationTokenTestsOutputNegative("Failed to parse token.");
+            }
 
             if (!PipelineContinuationToken.TryConvertToLatest(
                 pipelineContinuationToken,

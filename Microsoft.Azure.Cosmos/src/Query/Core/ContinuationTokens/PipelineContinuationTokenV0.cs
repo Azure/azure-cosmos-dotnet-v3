@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
 {
     using System;
+    using Microsoft.Azure.Cosmos.CosmosElements;
 
     /// <summary>
     /// Pipelined continuation token before we started versioning continuation tokens.
@@ -13,29 +14,29 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
     {
         public static readonly Version VersionNumber = new Version(major: 0, minor: 0);
 
-        public PipelineContinuationTokenV0(string sourceContinuationToken)
+        public PipelineContinuationTokenV0(CosmosElement sourceContinuationToken)
             : base(PipelineContinuationTokenV0.VersionNumber)
         {
             this.SourceContinuationToken = sourceContinuationToken ?? throw new ArgumentNullException(nameof(sourceContinuationToken));
         }
 
-        public string SourceContinuationToken { get; }
+        public CosmosElement SourceContinuationToken { get; }
 
         public override string ToString()
         {
-            return this.SourceContinuationToken;
+            return this.SourceContinuationToken.ToString();
         }
 
-        public static bool TryParse(
-            string rawContinuationToken,
-            out PipelineContinuationTokenV0 pipelinedContinuationTokenV0)
+        public static bool TryCreateFromCosmosElement(
+            CosmosElement cosmosElement,
+            out PipelineContinuationTokenV0 pipelineContinuationTokenV0)
         {
-            if (rawContinuationToken == null)
+            if (cosmosElement == null)
             {
-                throw new ArgumentNullException(nameof(rawContinuationToken));
+                throw new ArgumentNullException(nameof(cosmosElement));
             }
 
-            pipelinedContinuationTokenV0 = new PipelineContinuationTokenV0(rawContinuationToken);
+            pipelineContinuationTokenV0 = new PipelineContinuationTokenV0(cosmosElement);
             return true;
         }
     }

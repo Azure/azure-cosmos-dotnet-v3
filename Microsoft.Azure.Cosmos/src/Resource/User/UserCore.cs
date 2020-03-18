@@ -228,13 +228,13 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return new FeedIteratorCore(
-               this.ClientContext,
+            return FeedIteratorCore.CreateForNonPartitionedResource(
+               clientContext: this.ClientContext,
                this.LinkUri,
-               ResourceType.Permission,
-               queryDefinition,
-               continuationToken,
-               requestOptions);
+               resourceType: ResourceType.Permission,
+               queryDefinition: queryDefinition,
+               continuationToken: continuationToken,
+               options: requestOptions);
         }
 
         public override FeedIterator<T> GetPermissionQueryIterator<T>(string queryText = null,
@@ -290,7 +290,7 @@ namespace Microsoft.Azure.Cosmos
                        requestMessage.Headers.Add(HttpConstants.HttpHeaders.ResourceTokenExpiry, tokenExpiryInSeconds.Value.ToString());
                    }
                },
-               diagnosticsScope: null,
+               diagnosticsContext: null,
                cancellationToken: cancellationToken);
         }
 
@@ -315,7 +315,7 @@ namespace Microsoft.Azure.Cosmos
                        requestMessage.Headers.Add(HttpConstants.HttpHeaders.ResourceTokenExpiry, tokenExpiryInSeconds.Value.ToString());
                    }
                },
-               diagnosticsScope: null,
+               diagnosticsContext: null,
                cancellationToken: cancellationToken);
         }
 
@@ -363,7 +363,7 @@ namespace Microsoft.Azure.Cosmos
               streamPayload: streamPayload,
               requestOptions: requestOptions,
               requestEnricher: null,
-              diagnosticsScope: null,
+              diagnosticsContext: null,
               cancellationToken: cancellationToken);
         }
 
