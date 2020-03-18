@@ -151,6 +151,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                           ResourceType.Document,
                           OperationType.Query,
                           It.IsAny<QueryRequestOptions>(),
+                          It.IsAny<CosmosDiagnosticsContext>(),
                           It.Is<SqlQuerySpec>(specInput => MockItemProducerFactory.IsSqlQuerySpecEqual(sqlQuerySpec, specInput)),
                           previousContinuationToken,
                           It.Is<PartitionKeyRangeIdentity>(rangeId => string.Equals(rangeId.PartitionKeyRangeId, partitionKeyRange.Id) && string.Equals(rangeId.CollectionRid, containerRid)),
@@ -179,6 +180,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                          ResourceType.Document,
                          OperationType.Query,
                          It.IsAny<QueryRequestOptions>(),
+                         It.IsAny<CosmosDiagnosticsContext>(),
                          It.Is<SqlQuerySpec>(specInput => MockItemProducerFactory.IsSqlQuerySpecEqual(sqlQuerySpec, specInput)),
                          previousContinuationToken,
                          It.Is<PartitionKeyRangeIdentity>(rangeId => string.Equals(rangeId.PartitionKeyRangeId, partitionKeyRange.Id) && string.Equals(rangeId.CollectionRid, containerRid)),
@@ -218,7 +220,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 isContinuationExpected: true,
                 allowNonValueAggregateQuery: true,
                 diagnosticsContext: new CosmosDiagnosticsContextCore(),
-                queryPipelineDiagnostics: new QueryPipelineDiagnosticsCore(new CosmosDiagnosticsContextCore()),
                 containerResourceId: DefaultCollectionRid);
         }
 

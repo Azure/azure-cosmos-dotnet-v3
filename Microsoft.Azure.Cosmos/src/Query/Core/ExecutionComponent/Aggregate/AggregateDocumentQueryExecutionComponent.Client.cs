@@ -86,10 +86,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
 
                     requestCharge += sourceResponse.RequestCharge;
                     responseLengthBytes += sourceResponse.ResponseLengthBytes;
-                    if (sourceResponse.Diagnostics != null)
-                    {
-                        diagnosticsPages.AddRange(sourceResponse.Diagnostics);
-                    }
 
                     foreach (CosmosElement element in sourceResponse.CosmosElements)
                     {
@@ -113,7 +109,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
                     activityId: null,
                     disallowContinuationTokenMessage: null,
                     requestCharge: requestCharge,
-                    diagnostics: diagnosticsPages,
                     responseLengthBytes: responseLengthBytes);
             }
 

@@ -24,7 +24,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
         public virtual Uri ResourceLink { get; }
         public virtual string ContainerResourceId { get; set; }
         public virtual Guid CorrelatedActivityId { get; }
-        public virtual QueryPipelineDiagnostics QueryPipelineDiagnostics { get; }
 
         internal CosmosQueryContext()
         {
@@ -39,7 +38,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             Guid correlatedActivityId,
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
-            QueryPipelineDiagnostics queryPipelineDiagnostics,
             string containerResourceId = null)
         {
             this.OperationTypeEnum = operationType;
@@ -50,9 +48,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             this.ContainerResourceId = containerResourceId;
             this.IsContinuationExpected = isContinuationExpected;
             this.AllowNonValueAggregateQuery = allowNonValueAggregateQuery;
-            this.QueryPipelineDiagnostics = queryPipelineDiagnostics ?? throw new ArgumentNullException(nameof(queryPipelineDiagnostics));
             this.CorrelatedActivityId = (correlatedActivityId == Guid.Empty) ? throw new ArgumentOutOfRangeException(nameof(correlatedActivityId)) : correlatedActivityId;
         }
+
+        internal abstract IDisposable CreateDiagnosticScope(string name);
 
         internal abstract Task<QueryResponseCore> ExecuteQueryAsync(
             SqlQuerySpec querySpecForInit,

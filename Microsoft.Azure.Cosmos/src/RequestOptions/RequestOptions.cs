@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// This disables all diagnostics for the CosmosDiagnostic in the response.
         /// </summary>
-        internal CosmosDiagnosticsContext DiagnosticContext { get; set; }
+        internal Func<CosmosDiagnosticsContext> DiagnosticContextFactory { get; set; }
 
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties

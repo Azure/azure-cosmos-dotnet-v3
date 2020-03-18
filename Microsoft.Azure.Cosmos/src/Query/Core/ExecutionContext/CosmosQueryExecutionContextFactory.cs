@@ -65,8 +65,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             CancellationToken cancellationToken)
         {
             // The default
-            QueryPipelineDiagnostics diagnosticsBuilder = cosmosQueryContext.QueryPipelineDiagnostics;
-            using (diagnosticsBuilder.CreateScope("CreateQueryPipeline"))
+            using (cosmosQueryContext.CreateDiagnosticScope("CreateQueryPipeline"))
             {
                 // Try to parse the continuation token.
                 CosmosElement continuationToken = inputParameters.InitialUserContinuationToken;
@@ -134,7 +133,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     }
                     else
                     {
-                        using (diagnosticsBuilder.CreateScope("ServiceInterop"))
+                        using (cosmosQueryContext.CreateDiagnosticScope("ServiceInterop"))
                         {
                             //todo:elasticcollections this may rely on information from collection cache which is outdated
                             //if collection is deleted/created with same name.

@@ -61,11 +61,12 @@
                 cancellationToken);
         }
 
-        internal override Task<QueryResponseCore> ExecuteItemQueryAsync<RequestOptionType>(
+        internal override Task<QueryResponseCore> ExecuteItemQueryAsync(
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
-            RequestOptionType requestOptions,
+            QueryRequestOptions requestOptions,
+            CosmosDiagnosticsContext diagnosticsContext,
             SqlQuerySpec sqlQuerySpec,
             string continuationToken,
             PartitionKeyRangeIdentity partitionKeyRange,
@@ -82,6 +83,7 @@
                 resourceType: resourceType,
                 operationType: operationType,
                 requestOptions: requestOptions,
+                diagnosticsContext: diagnosticsContext,
                 sqlQuerySpec: sqlQuerySpec,
                 continuationToken: continuationToken,
                 partitionKeyRange: partitionKeyRange,

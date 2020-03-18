@@ -34,7 +34,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             HttpStatusCode statusCode,
             double requestCharge,
             string activityId,
-            IReadOnlyCollection<CosmosDiagnosticsInternal> diagnostics,
             long responseLengthBytes,
             string disallowContinuationTokenMessage,
             string continuationToken,
@@ -45,7 +44,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             this.CosmosElements = result;
             this.StatusCode = statusCode;
             this.ActivityId = activityId;
-            this.Diagnostics = diagnostics ?? throw new ArgumentNullException(nameof(diagnostics));
             this.ResponseLengthBytes = responseLengthBytes;
             this.RequestCharge = requestCharge;
             this.DisallowContinuationTokenMessage = disallowContinuationTokenMessage;
@@ -70,43 +68,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
 
         internal string ActivityId { get; }
 
-        internal IReadOnlyCollection<CosmosDiagnosticsInternal> Diagnostics { get; }
-
         internal long ResponseLengthBytes { get; }
 
         internal bool IsSuccess { get; }
-
-        internal static QueryResponseCore AppendDiagnostics(
-            QueryResponseCore queryResponseCore,
-            IReadOnlyCollection<CosmosDiagnosticsInternal> diagnostics)
-        {
-            IReadOnlyCollection<CosmosDiagnosticsInternal> merged;
-            if (diagnostics == null)
-            {
-                return queryResponseCore;
-            }
-            else if (queryResponseCore.Diagnostics == null || queryResponseCore.Diagnostics.Count == 0)
-            {
-                merged = diagnostics;
-            }
-            else
-            {
-                merged = new List<CosmosDiagnosticsInternal>(queryResponseCore.Diagnostics.Concat(diagnostics)).AsReadOnly();
-            }
-
-            return new QueryResponseCore(
-                queryResponseCore.CosmosElements,
-                queryResponseCore.IsSuccess,
-                queryResponseCore.StatusCode,
-                queryResponseCore.RequestCharge,
-                queryResponseCore.ActivityId,
-                merged,
-                queryResponseCore.ResponseLengthBytes,
-                queryResponseCore.DisallowContinuationTokenMessage,
-                queryResponseCore.ContinuationToken,
-                queryResponseCore.CosmosException,
-                queryResponseCore.SubStatusCode);
-        }
 
         internal static QueryResponseCore CreateSuccess(
             IReadOnlyList<CosmosElement> result,
@@ -114,8 +78,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             string activityId,
             long responseLengthBytes,
             string disallowContinuationTokenMessage,
-            string continuationToken,
-            IReadOnlyCollection<CosmosDiagnosticsInternal> diagnostics)
+            string continuationToken)
         {
             QueryResponseCore cosmosQueryResponse = new QueryResponseCore(
                result: result,
@@ -123,7 +86,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
                statusCode: HttpStatusCode.OK,
                requestCharge: requestCharge,
                activityId: activityId,
-               diagnostics: diagnostics,
                responseLengthBytes: responseLengthBytes,
                disallowContinuationTokenMessage: disallowContinuationTokenMessage,
                continuationToken: continuationToken,
@@ -138,8 +100,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             SubStatusCodes? subStatusCodes,
             CosmosException cosmosException,
             double requestCharge,
-            string activityId,
-            IReadOnlyCollection<CosmosDiagnosticsInternal> diagnostics)
+            string activityId)
         {
             QueryResponseCore cosmosQueryResponse = new QueryResponseCore(
                 result: QueryResponseCore.EmptyList,
@@ -147,7 +108,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
                 statusCode: statusCode,
                 requestCharge: requestCharge,
                 activityId: activityId,
-                diagnostics: diagnostics,
                 responseLengthBytes: 0,
                 disallowContinuationTokenMessage: null,
                 continuationToken: null,

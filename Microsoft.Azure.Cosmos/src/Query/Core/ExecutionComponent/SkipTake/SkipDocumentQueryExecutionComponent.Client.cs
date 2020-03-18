@@ -108,7 +108,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                     disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,
                     activityId: sourcePage.ActivityId,
                     requestCharge: sourcePage.RequestCharge,
-                    diagnostics: sourcePage.Diagnostics,
                     responseLengthBytes: sourcePage.ResponseLengthBytes);
             }
 

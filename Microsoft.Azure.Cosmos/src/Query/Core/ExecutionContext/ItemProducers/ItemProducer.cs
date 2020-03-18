@@ -148,7 +148,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
         public delegate void ProduceAsyncCompleteDelegate(
             int numberOfDocuments,
             double requestCharge,
-            IReadOnlyCollection<CosmosDiagnosticsInternal> diagnostics,
             long responseLengthInBytes,
             CancellationToken token);
 
@@ -293,8 +292,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
                             subStatusCodes: null,
                             cosmosException: CosmosExceptionFactory.CreateThrottledException("Request Rate Too Large"),
                             requestCharge: 0,
-                            activityId: QueryResponseCore.EmptyGuidString,
-                            diagnostics: QueryResponseCore.EmptyDiagnostics);
+                            activityId: QueryResponseCore.EmptyGuidString);
                     }
                 }
 
@@ -310,8 +308,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
                             activityId: QueryResponseCore.EmptyGuidString,
                             responseLengthBytes: 0,
                             disallowContinuationTokenMessage: null,
-                            continuationToken: this.BackendContinuationToken,
-                            diagnostics: QueryResponseCore.EmptyDiagnostics);
+                            continuationToken: this.BackendContinuationToken);
                     }
                 }
 
@@ -334,7 +331,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
                 this.produceAsyncCompleteCallback(
                     feedResponse.CosmosElements.Count,
                     feedResponse.RequestCharge,
-                    feedResponse.Diagnostics,
                     feedResponse.ResponseLengthBytes,
                     token);
 

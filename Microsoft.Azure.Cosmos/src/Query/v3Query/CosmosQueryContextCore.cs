@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Query
     internal class CosmosQueryContextCore : CosmosQueryContext
     {
         private readonly QueryRequestOptions queryRequestOptions;
-        private readonly CosmosDiagnosticsContext diagnosticsContext;
+        private CosmosDiagnosticsContext diagnosticsContext;
 
         public CosmosQueryContextCore(
             CosmosQueryClient client,
@@ -29,7 +29,6 @@ namespace Microsoft.Azure.Cosmos.Query
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
             CosmosDiagnosticsContext diagnosticsContext,
-            QueryPipelineDiagnostics queryPipelineDiagnostics,
             string containerResourceId = null)
             : base(
                 client,
@@ -40,11 +39,23 @@ namespace Microsoft.Azure.Cosmos.Query
                 correlatedActivityId,
                 isContinuationExpected,
                 allowNonValueAggregateQuery,
-                queryPipelineDiagnostics,
                 containerResourceId)
         {
             this.queryRequestOptions = queryRequestOptions;
-            this.diagnosticsContext = diagnosticsContext ?? throw new ArgumentNullException(nameof(queryPipelineDiagnostics));
+            this.diagnosticsContext = diagnosticsContext;
+        }
+
+        internal override IDisposable CreateDiagnosticScope(string name)
+        {
+            return this.diagnosticsContext.CreateScope(name);
+        }
+
+        internal CosmosDiagnosticsContext GetAndResetDiagnostics()
+        {
+            // Safely swap the current diagnostics for the new diagnostics.
+            return Interlocked.Exchange(
+                ref this.diagnosticsContext,
+                CosmosDiagnosticsContext.Create(this.queryRequestOptions));
         }
 
         internal override Task<QueryResponseCore> ExecuteQueryAsync(
@@ -73,6 +84,7 @@ namespace Microsoft.Azure.Cosmos.Query
                            isContinuationExpected: isContinuationExpected,
                            pageSize: pageSize,
                            schedulingStopwatch: schedulingStopwatch,
+                           diagnosticsContext: this.diagnosticsContext,
                            cancellationToken: cancellationToken);
         }
 

@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private ContainerProperties containerSettings = null;
         private static RequestOptions DisableDiagnosticOptions = new RequestOptions()
         {
-            DiagnosticContext = EmptyCosmosDiagnosticsContext.Singleton
+            DiagnosticContextFactory = () => EmptyCosmosDiagnosticsContext.Singleton
         };
 
         [TestInitialize]
@@ -78,9 +78,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(false)]
         public async Task PointOperationRequestTimeoutDiagnostic(bool disableDiagnostics)
         {
-            ItemRequestOptions requestOptions = new ItemRequestOptions()
+            ItemRequestOptions requestOptions = new ItemRequestOptions();
+            if (disableDiagnostics)
             {
-                DiagnosticContext = disableDiagnostics ? EmptyCosmosDiagnosticsContext.Singleton : null
+                requestOptions.DiagnosticContextFactory = () => EmptyCosmosDiagnosticsContext.Singleton;
             };
 
             Guid exceptionActivityId = Guid.NewGuid();
@@ -125,9 +126,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(false)]
         public async Task PointOperationDiagnostic(bool disableDiagnostics)
         {
-            ItemRequestOptions requestOptions = new ItemRequestOptions()
+            ItemRequestOptions requestOptions = new ItemRequestOptions();
+            if (disableDiagnostics)
             {
-                DiagnosticContext = disableDiagnostics ? EmptyCosmosDiagnosticsContext.Singleton : null
+                requestOptions.DiagnosticContextFactory = () => EmptyCosmosDiagnosticsContext.Singleton;
             };
 
             //Checking point operation diagnostics on typed operations
@@ -297,9 +299,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(false)]
         public async Task NonDataPlaneDiagnosticTest(bool disableDiagnostics)
         {
-            RequestOptions requestOptions = new RequestOptions()
+            RequestOptions requestOptions = new RequestOptions();
+            if (disableDiagnostics)
             {
-                DiagnosticContext = disableDiagnostics ? EmptyCosmosDiagnosticsContext.Singleton : null
+                requestOptions.DiagnosticContextFactory = () => EmptyCosmosDiagnosticsContext.Singleton;
             };
 
             DatabaseResponse databaseResponse = await this.cosmosClient.CreateDatabaseAsync(
@@ -525,7 +528,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 MaxItemCount = 1,
                 MaxConcurrency = 1,
-                DiagnosticContext = disableDiagnostics ? EmptyCosmosDiagnosticsContext.Singleton : null
+            };
+
+            if (disableDiagnostics)
+            {
+                requestOptions.DiagnosticContextFactory = () => EmptyCosmosDiagnosticsContext.Singleton;
             };
 
             // Verify the typed query iterator

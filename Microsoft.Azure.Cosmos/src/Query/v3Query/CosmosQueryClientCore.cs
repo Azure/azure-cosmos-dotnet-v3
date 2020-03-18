@@ -112,11 +112,12 @@ namespace Microsoft.Azure.Cosmos
                 hasLogicalPartitionKey);
         }
 
-        internal override async Task<QueryResponseCore> ExecuteItemQueryAsync<RequestOptionType>(
+        internal override async Task<QueryResponseCore> ExecuteItemQueryAsync(
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
-            RequestOptionType requestOptions,
+            QueryRequestOptions requestOptions,
+            CosmosDiagnosticsContext diagnosticsContext,
             SqlQuerySpec sqlQuerySpec,
             string continuationToken,
             PartitionKeyRangeIdentity partitionKeyRange,
@@ -125,20 +126,15 @@ namespace Microsoft.Azure.Cosmos
             SchedulingStopwatch schedulingStopwatch,
             CancellationToken cancellationToken)
         {
-            if (!(requestOptions is QueryRequestOptions queryRequestOptions))
-            {
-                throw new InvalidOperationException($"CosmosQueryClientCore.ExecuteItemQueryAsync only supports RequestOptionType of QueryRequestOptions");
-            }
-
-            queryRequestOptions.MaxItemCount = pageSize;
+            requestOptions.MaxItemCount = pageSize;
 
             schedulingStopwatch.Start();
             ResponseMessage message = await this.clientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: resourceUri,
                 resourceType: resourceType,
                 operationType: operationType,
-                requestOptions: queryRequestOptions,
-                partitionKey: queryRequestOptions.PartitionKey,
+                requestOptions: requestOptions,
+                partitionKey: requestOptions.PartitionKey,
                 cosmosContainerCore: this.cosmosContainerCore,
                 streamPayload: this.clientContext.SerializerCore.ToStreamSqlQuerySpec(sqlQuerySpec, resourceType),
                 requestEnricher: (cosmosRequestMessage) =>
@@ -153,17 +149,18 @@ namespace Microsoft.Azure.Cosmos
                     cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.ContentType, MediaTypes.QueryJson);
                     cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
                 },
-                diagnosticsScope: queryRequestOptions?.DiagnosticContext,
+                diagnosticsScope: null,
                 cancellationToken: cancellationToken);
 
             schedulingStopwatch.Stop();
 
             return this.GetCosmosElementResponse(
-                queryRequestOptions,
+                requestOptions,
                 resourceType,
                 message,
                 partitionKeyRange,
-                schedulingStopwatch);
+                schedulingStopwatch,
+                diagnosticsContext);
         }
 
         internal override async Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
@@ -173,7 +170,7 @@ namespace Microsoft.Azure.Cosmos
             SqlQuerySpec sqlQuerySpec,
             PartitionKey? partitionKey,
             string supportedQueryFeatures,
-            CosmosDiagnosticsContext diagnosticsContext,
+            CosmosDiagnosticsContext diagnosticsContextFactory,
             CancellationToken cancellationToken)
         {
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
@@ -193,7 +190,7 @@ namespace Microsoft.Azure.Cosmos
                     requestMessage.Headers.Add(HttpConstants.HttpHeaders.QueryVersion, new Version(major: 1, minor: 0).ToString());
                     requestMessage.UseGatewayMode = true;
                 },
-                diagnosticsScope: diagnosticsContext,
+                diagnosticsScope: diagnosticsContextFactory,
                 cancellationToken: cancellationToken))
             {
                 // Syntax exception are argument exceptions and thrown to the user.
@@ -273,18 +270,19 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             ResponseMessage cosmosResponseMessage,
             PartitionKeyRangeIdentity partitionKeyRangeIdentity,
-            SchedulingStopwatch schedulingStopwatch)
+            SchedulingStopwatch schedulingStopwatch,
+            CosmosDiagnosticsContext diagnosticsContext)
         {
             using (cosmosResponseMessage)
             {
-                QueryPageDiagnostics diagnostics = new QueryPageDiagnostics(
+                QueryPageDiagnostics queryPage = new QueryPageDiagnostics(
                     partitionKeyRangeId: partitionKeyRangeIdentity.PartitionKeyRangeId,
                     queryMetricText: cosmosResponseMessage.Headers.QueryMetricsText,
                     indexUtilizationText: cosmosResponseMessage.Headers[HttpConstants.HttpHeaders.IndexUtilization],
                     diagnosticsContext: cosmosResponseMessage.DiagnosticsContext,
                     schedulingStopwatch: schedulingStopwatch);
 
-                IReadOnlyCollection<QueryPageDiagnostics> pageDiagnostics = new List<QueryPageDiagnostics>() { diagnostics };
+                diagnosticsContext.AddDiagnosticsInternal(queryPage);
                 if (!cosmosResponseMessage.IsSuccessStatusCode)
                 {
                     return QueryResponseCore.CreateFailure(
@@ -292,8 +290,7 @@ namespace Microsoft.Azure.Cosmos
                         subStatusCodes: cosmosResponseMessage.Headers.SubStatusCode,
                         cosmosException: cosmosResponseMessage.CosmosException,
                         requestCharge: cosmosResponseMessage.Headers.RequestCharge,
-                        activityId: cosmosResponseMessage.Headers.ActivityId,
-                        diagnostics: pageDiagnostics);
+                        activityId: cosmosResponseMessage.Headers.ActivityId);
                 }
 
                 if (!(cosmosResponseMessage.Content is MemoryStream memoryStream))
@@ -313,7 +310,6 @@ namespace Microsoft.Azure.Cosmos
                     result: cosmosArray,
                     requestCharge: cosmosResponseMessage.Headers.RequestCharge,
                     activityId: cosmosResponseMessage.Headers.ActivityId,
-                    diagnostics: pageDiagnostics,
                     responseLengthBytes: responseLengthBytes,
                     disallowContinuationTokenMessage: null,
                     continuationToken: cosmosResponseMessage.Headers.ContinuationToken);

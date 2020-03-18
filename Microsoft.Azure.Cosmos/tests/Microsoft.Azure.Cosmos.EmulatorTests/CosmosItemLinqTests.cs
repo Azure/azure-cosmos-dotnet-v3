@@ -288,9 +288,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //Creating items for query.
             IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(container: this.Container, pkCount: 10, perPKItemCount: 1, randomPartitionKey: true);
 
-            QueryRequestOptions queryRequestOptions = new QueryRequestOptions()
+            QueryRequestOptions queryRequestOptions = new QueryRequestOptions();
+            if (disableDiagnostic)
             {
-                DiagnosticContext = disableDiagnostic ? EmptyCosmosDiagnosticsContext.Singleton : null
+                queryRequestOptions.DiagnosticContextFactory = () => EmptyCosmosDiagnosticsContext.Singleton;
             };
 
             IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(

@@ -106,7 +106,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         public static void DefaultProduceAsyncCompleteDelegate(
             int numberOfDocuments,
             double requestCharge,
-            IReadOnlyCollection<CosmosDiagnosticsInternal> diagnostics,
             long responseLengthInBytes,
             CancellationToken token)
         {
@@ -191,7 +190,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             ItemProducerTree itemProducerTree,
             int numberOfDocuments,
             double requestCharge,
-            IReadOnlyCollection<CosmosDiagnosticsInternal> diagnostics,
             long responseLengthInBytes,
             CancellationToken token)
         {
@@ -236,6 +234,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         ResourceType.Document,
                         OperationType.Query,
                         It.IsAny<QueryRequestOptions>(),
+                        It.IsAny<CosmosDiagnosticsContext>(),
                         It.Is<SqlQuerySpec>(specInput => IsSqlQuerySpecEqual(sqlQuerySpec, specInput)),
                         previousContinuationToken,
                         It.Is<PartitionKeyRangeIdentity>(rangeId => string.Equals(rangeId.PartitionKeyRangeId, partitionKeyRange.Id) && string.Equals(rangeId.CollectionRid, collectionRid)),

@@ -167,7 +167,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 ItemProducerTree producer,
                 int itemsBuffered,
                 double resourceUnitUsage,
-                IReadOnlyCollection<CosmosDiagnosticsInternal> queryPageDiagnostics,
                 long responseLengthBytes,
                 CancellationToken token)
             { callBackCount++; }
@@ -215,7 +214,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                     result: cosmosElements,
                     requestCharge: 42,
                     activityId: "AA470D71-6DEF-4D61-9A08-272D8C9ABCFE",
-                    diagnostics: pageDiagnostics,
                     responseLengthBytes: 500,
                     disallowContinuationTokenMessage: null,
                     continuationToken: "TestToken")));
@@ -273,8 +271,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     cosmosException: CosmosExceptionFactory.CreateInternalServerErrorException(
                         "Error message"),
                     requestCharge: 10.2,
-                    activityId: Guid.NewGuid().ToString(),
-                    diagnostics: pageDiagnostics)));
+                    activityId: Guid.NewGuid().ToString())));
 
             await itemProducerTree.BufferMoreDocumentsAsync(cancellationTokenSource.Token);
 
