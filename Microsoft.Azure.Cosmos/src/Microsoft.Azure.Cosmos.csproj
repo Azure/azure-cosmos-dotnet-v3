@@ -44,6 +44,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="Resource\CosmosExceptions\Http\RequestRateTooLarge\RequestRateTooLargeException.cs" />
     <Compile Remove="RuntimePerfCounters.cs" />
   </ItemGroup>
 
@@ -51,6 +52,13 @@
     <EmbeddedResource Include="Batch\HybridRowBatchSchemas.json">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Resource\CosmosExceptions\Http\RequestRateTooLarge\RequestRateTooLargeException.cs">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>RequestRateTooLargeException.txt</LastGenOutput>
+    </None>
   </ItemGroup>
 
   <ItemGroup>
@@ -111,6 +119,11 @@
     <None Update="Resource\CosmosExceptions\Http\HttpExceptionCodeGenerator.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>HttpExceptionCodeGenerator.cs</LastGenOutput>
+    </None>
+    <None Update="Resource\CosmosExceptions\Http\RequestRateTooLarge\RequestRateTooLargeException.txt">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>RequestRateTooLargeException.cs</DependentUpon>
     </None>
   </ItemGroup>
 
