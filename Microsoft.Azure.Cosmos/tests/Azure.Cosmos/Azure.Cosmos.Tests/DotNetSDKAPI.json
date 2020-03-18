@@ -4344,11 +4344,10 @@
           "Attributes": [],
           "MethodInfo": "Int32 GetHashCode()"
         },
-        "System.Collections.Generic.IDictionary`2[System.String,System.Object] AdditionalProperties[System.Text.Json.Serialization.JsonExtensionDataAttribute()]-[System.Runtime.Serialization.DataMemberAttribute(Name = \"properties\")]": {
+        "System.Collections.Generic.IDictionary`2[System.String,System.Object] AdditionalProperties[System.Runtime.Serialization.DataMemberAttribute(Name = \"properties\")]": {
           "Type": "Property",
           "Attributes": [
-            "DataMemberAttribute",
-            "JsonExtensionDataAttribute"
+            "DataMemberAttribute"
           ],
           "MethodInfo": null
         },
@@ -4393,11 +4392,10 @@
           ],
           "MethodInfo": "Azure.Cosmos.Spatial.Crs get_Crs()"
         },
-        "System.Collections.Generic.IDictionary`2[System.String,System.Object] AdditionalProperties[System.Text.Json.Serialization.JsonExtensionDataAttribute()]-[System.Runtime.Serialization.DataMemberAttribute(Name = \"properties\")]": {
+        "System.Collections.Generic.IDictionary`2[System.String,System.Object] AdditionalProperties[System.Runtime.Serialization.DataMemberAttribute(Name = \"properties\")]": {
           "Type": "Property",
           "Attributes": [
-            "DataMemberAttribute",
-            "JsonExtensionDataAttribute"
+            "DataMemberAttribute"
           ],
           "MethodInfo": null
         },

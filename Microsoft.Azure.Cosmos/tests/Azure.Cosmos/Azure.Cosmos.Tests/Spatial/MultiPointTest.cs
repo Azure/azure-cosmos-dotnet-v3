@@ -16,6 +16,13 @@ namespace Azure.Cosmos.Test.Spatial
     [TestClass]
     public class MultiPointTest
     {
+        private JsonSerializerOptions restContractOptions;
+        public MultiPointTest()
+        {
+            this.restContractOptions = new JsonSerializerOptions();
+            CosmosTextJsonSerializer.InitializeDataContractConverters(this.restContractOptions);
+        }
+
         /// <summary>
         /// Tests serialization/deserialization
         /// </summary>
@@ -29,7 +36,7 @@ namespace Azure.Cosmos.Test.Spatial
                     ""bbox"":[20, 20, 30, 30],
                     ""extra"":1,
                     ""crs"":{""type"":""name"", ""properties"":{""name"":""hello""}}}";
-            var multiPoint = JsonSerializer.Deserialize<MultiPoint>(json);
+            var multiPoint = JsonSerializer.Deserialize<MultiPoint>(json, this.restContractOptions);
 
             Assert.AreEqual(new Position(20, 30), multiPoint.Points[0]);
             Assert.AreEqual(new Position(30, 40), multiPoint.Points[1]);
@@ -40,13 +47,13 @@ namespace Azure.Cosmos.Test.Spatial
             Assert.AreEqual(1, multiPoint.AdditionalProperties.Count);
             Assert.AreEqual(1L, multiPoint.AdditionalProperties["extra"]);
 
-            var geom = JsonSerializer.Deserialize<Geometry>(json);
+            var geom = JsonSerializer.Deserialize<Geometry>(json, this.restContractOptions);
             Assert.AreEqual(GeometryType.MultiPoint, geom.Type);
 
             Assert.AreEqual(geom, multiPoint);
 
-            string json1 = JsonSerializer.Serialize(multiPoint);
-            var geom1 = JsonSerializer.Deserialize<Geometry>(json1);
+            string json1 = JsonSerializer.Serialize(multiPoint, this.restContractOptions);
+            var geom1 = JsonSerializer.Deserialize<Geometry>(json1, this.restContractOptions);
             Assert.AreEqual(geom1, geom);
         }
 

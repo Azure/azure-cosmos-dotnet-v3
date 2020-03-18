@@ -4,7 +4,6 @@
 namespace Azure.Cosmos
 {
     using System.Collections.ObjectModel;
-    using System.Text.Json.Serialization;
 
     /// <summary>
     /// Represents the unique key policy configuration for specifying uniqueness constraints on documents in the collection in the Azure Cosmos DB service.
@@ -57,7 +56,6 @@ namespace Azure.Cosmos
     /// }
     /// ]]>
     /// </example>
-    [JsonConverter(typeof(TextJsonUniqueKeyPolicyConverter))]
     public sealed class UniqueKeyPolicy
     {
         /// <summary>

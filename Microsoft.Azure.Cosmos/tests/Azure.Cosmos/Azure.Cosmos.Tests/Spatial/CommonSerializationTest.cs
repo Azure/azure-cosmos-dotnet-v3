@@ -14,6 +14,13 @@ namespace Azure.Cosmos.Test.Spatial
     [TestClass]
     public class CommonSerializationTest
     {
+        private JsonSerializerOptions restContractOptions;
+        public CommonSerializationTest()
+        {
+            this.restContractOptions = new JsonSerializerOptions();
+            CosmosTextJsonSerializer.InitializeDataContractConverters(this.restContractOptions);
+        }
+
         /// <summary>
         /// Tests that incorrect JSON throws exception.
         /// </summary>
@@ -22,7 +29,7 @@ namespace Azure.Cosmos.Test.Spatial
         public void TestInvalidJson()
         {
             string json = @"{""type"":""Poi}";
-            var point = JsonSerializer.Deserialize<Point>(json);
+            var point = JsonSerializer.Deserialize<Point>(json, this.restContractOptions);
         }
 
         /// <summary>
@@ -33,7 +40,7 @@ namespace Azure.Cosmos.Test.Spatial
         public void TestNullCoordinates()
         {
             string json = @"{""type"":""Point"",""coordinates"":null}";
-            var point = JsonSerializer.Deserialize<Point>(json);
+            var point = JsonSerializer.Deserialize<Point>(json, this.restContractOptions);
         }
 
         /// <summary>
@@ -44,7 +51,7 @@ namespace Azure.Cosmos.Test.Spatial
         public void TestNullType()
         {
             string json = @"{""type"":null, ""coordinates"":[20, 30]}";
-            var point = JsonSerializer.Deserialize<Point>(json);
+            var point = JsonSerializer.Deserialize<Point>(json, this.restContractOptions);
         }
 
         /// <summary>
@@ -55,7 +62,7 @@ namespace Azure.Cosmos.Test.Spatial
         public void TestNullTypeGeometry()
         {
             string json = @"{""type"":null, ""coordinates"":[20, 30]}";
-            var point = JsonSerializer.Deserialize<Geometry>(json);
+            var point = JsonSerializer.Deserialize<Geometry>(json, this.restContractOptions);
         }
 
         /// <summary>
@@ -66,7 +73,7 @@ namespace Azure.Cosmos.Test.Spatial
         public void TestBoundingBoxWithNonEvenNumberOfCoordinates()
         {
             string json = @"{""type"":""Point"", ""coordinates"":[20, 30], ""bbox"":[0, 0, 0, 5, 5]}";
-            var point = JsonSerializer.Deserialize<Point>(json);
+            var point = JsonSerializer.Deserialize<Point>(json, this.restContractOptions);
         }
 
         /// <summary>
@@ -77,7 +84,7 @@ namespace Azure.Cosmos.Test.Spatial
         public void TestBoundingBoxWithNotEnoughCoordinates()
         {
             string json = @"{""type"":""Point"", ""coordinates"":[20, 30], ""bbox"":[0, 0]}";
-            var point = JsonSerializer.Deserialize<Point>(json);
+            var point = JsonSerializer.Deserialize<Point>(json, this.restContractOptions);
         }
 
         /// <summary>
@@ -87,7 +94,7 @@ namespace Azure.Cosmos.Test.Spatial
         public void TestNullBoundingBox()
         {
             string json = @"{""type"":""Point"", ""coordinates"":[20, 30], ""bbox"":null}";
-            var point = JsonSerializer.Deserialize<Point>(json);
+            var point = JsonSerializer.Deserialize<Point>(json, this.restContractOptions);
             Assert.IsNull(point.BoundingBox);
         }
 
@@ -102,7 +109,7 @@ namespace Azure.Cosmos.Test.Spatial
                     ""type"":""Point"",
                     ""coordinates"":[],
                     }";
-            JsonSerializer.Deserialize<Point>(json);
+            JsonSerializer.Deserialize<Point>(json, this.restContractOptions);
         }
     }
 }

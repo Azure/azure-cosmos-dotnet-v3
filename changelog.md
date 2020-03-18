@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1256](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1256) Removed public accessor to CosmosClient.CosmosClientOptions to avoid mutation after pipeline is created
 - [#1258](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1258) Renamed CosmosClientOptions.SerializerOptions to CosmosClientOptions.DefaultSerializerOptions
 - [#1257](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1257) Explicit CosmosClient constructors for most common scenarios
+- [#1283](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1283) Removed JsonConverter from the public API surface
 
 ### Fixed
 

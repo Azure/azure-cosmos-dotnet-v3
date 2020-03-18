@@ -455,7 +455,7 @@ namespace Azure.Cosmos.EmulatorTests
                     requestOptions: new QueryRequestOptions() { MaxItemCount = 1 }))
              {
                 Assert.AreEqual((int)HttpStatusCode.OK, message.Status);
-                CosmosTextJsonSerializer defaultJsonSerializer = new CosmosTextJsonSerializer();
+                CosmosTextJsonSerializer defaultJsonSerializer = CosmosTextJsonSerializer.CreateUserDefaultSerializer();
                 Dictionary<string, JsonElement> containers = defaultJsonSerializer.FromStream<Dictionary<string, JsonElement>>(message.ContentStream);
                 foreach (JsonElement container in containers["DocumentCollections"].EnumerateArray())
                 {

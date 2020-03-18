@@ -8,14 +8,12 @@ namespace Azure.Cosmos.Spatial
     using System.Collections.Generic;
     using System.Linq;
     using System.Runtime.Serialization;
-    using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Base class for spatial geometry objects in the Azure Cosmos DB service.
     /// </summary>
     [DataContract]
-    [JsonConverter(typeof(TextJsonGeometryConverterFactory))]
     public abstract class Geometry
     {
         /// <summary>
@@ -87,7 +85,6 @@ namespace Azure.Cosmos.Spatial
         /// <value>
         /// Additional geometry properties.
         /// </value>
-        [JsonExtensionData]
         [DataMember(Name = "properties")]
         public IDictionary<string, object> AdditionalProperties { get; private set; }
 

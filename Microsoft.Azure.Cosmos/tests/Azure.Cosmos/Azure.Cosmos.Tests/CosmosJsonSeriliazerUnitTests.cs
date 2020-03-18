@@ -36,7 +36,7 @@ namespace Azure.Cosmos.Tests
         [TestMethod]
         public void ValidateSerializer()
         {
-            CosmosTextJsonSerializer cosmosDefaultJsonSerializer = new CosmosTextJsonSerializer();
+            CosmosTextJsonSerializer cosmosDefaultJsonSerializer = CosmosTextJsonSerializer.CreateUserDefaultSerializer(new CosmosSerializationOptions());
             using (Stream stream = cosmosDefaultJsonSerializer.ToStream<ToDoActivity>(this.toDoActivity))
             {
                 Assert.IsNotNull(stream);
@@ -53,7 +53,7 @@ namespace Azure.Cosmos.Tests
         [TestMethod]
         public void ValidateJson()
         {
-            CosmosTextJsonSerializer cosmosDefaultJsonSerializer = new CosmosTextJsonSerializer();
+            CosmosTextJsonSerializer cosmosDefaultJsonSerializer = CosmosTextJsonSerializer.CreateUserDefaultSerializer(new CosmosSerializationOptions());
             using (Stream stream = cosmosDefaultJsonSerializer.ToStream<ToDoActivity>(this.toDoActivity))
             {
                 Assert.IsNotNull(stream);
@@ -206,8 +206,8 @@ namespace Azure.Cosmos.Tests
                 Parameters = sqlParameters
             });
 
-            CosmosTextJsonSerializer userSerializer = new CosmosTextJsonSerializer();
-            CosmosTextJsonSerializer propertiesSerializer = new CosmosTextJsonSerializer();
+            CosmosTextJsonSerializer userSerializer = CosmosTextJsonSerializer.CreateUserDefaultSerializer(new CosmosSerializationOptions());
+            CosmosTextJsonSerializer propertiesSerializer = CosmosTextJsonSerializer.CreatePropertiesSerializer();
 
             CosmosSerializer sqlQuerySpecSerializer = TextJsonCosmosSqlQuerySpecConverter.CreateSqlQuerySpecSerializer(
                 userSerializer,

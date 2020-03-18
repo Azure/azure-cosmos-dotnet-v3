@@ -54,6 +54,8 @@ namespace Azure.Cosmos.EmulatorTests
             jsonSerializerOptions.Converters.Add(new TextJsonCosmosElementListConverter());
             jsonSerializerOptions.Converters.Add(new TextJsonJObjectConverter());
             jsonSerializerOptions.Converters.Add(new TextJsonJTokenListConverter());
+            CosmosTextJsonSerializer.InitializeRESTConverters(jsonSerializerOptions);
+            CosmosTextJsonSerializer.InitializeDataContractConverters(jsonSerializerOptions);
             return new CosmosTextJsonSerializer(jsonSerializerOptions);
         });
 

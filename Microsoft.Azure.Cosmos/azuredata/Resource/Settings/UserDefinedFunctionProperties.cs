@@ -4,7 +4,6 @@
 
 namespace Azure.Cosmos.Scripts
 {
-    using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -40,7 +39,6 @@ namespace Azure.Cosmos.Scripts
     /// ]]>
     /// </code>
     /// </example>
-    [JsonConverter(typeof(TextJsonUserDefinedFunctionPropertiesConverter))]
     public class UserDefinedFunctionProperties
     {
         /// <summary>

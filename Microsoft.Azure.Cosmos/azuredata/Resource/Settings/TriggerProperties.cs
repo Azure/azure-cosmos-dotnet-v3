@@ -4,7 +4,6 @@
 
 namespace Azure.Cosmos.Scripts
 {
-    using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -14,7 +13,6 @@ namespace Azure.Cosmos.Scripts
     /// Azure Cosmos DB supports pre and post triggers written in JavaScript to be executed on creates, updates and deletes. 
     /// For additional details, refer to the server-side JavaScript API documentation.
     /// </remarks>
-    [JsonConverter(typeof(TextJsonTriggerPropertiesConverter))]
     public class TriggerProperties
     {
         /// <summary>

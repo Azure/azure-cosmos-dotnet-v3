@@ -9,14 +9,12 @@ namespace Azure.Cosmos.Spatial
     using System.Collections.ObjectModel;
     using System.Linq;
     using System.Runtime.Serialization;
-    using System.Text.Json.Serialization;
-
+    
     /// <summary>
     /// Geometry which is comprised of multiple polygons.
     /// </summary>
     /// <seealso cref="Polygon"/>
     [DataContract]
-    [JsonConverter(typeof(TextJsonGeometryConverterFactory))]
     internal sealed class MultiPolygon : Geometry, IEquatable<MultiPolygon>
     {
         /// <summary>

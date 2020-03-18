@@ -15,6 +15,13 @@ namespace Azure.Cosmos.Test.Spatial
     [TestClass]
     public class CrsTest
     {
+        private JsonSerializerOptions restContractOptions;
+        public CrsTest()
+        {
+            this.restContractOptions = new JsonSerializerOptions();
+            CosmosTextJsonSerializer.InitializeDataContractConverters(this.restContractOptions);
+        }
+
         /// <summary>
         /// Tests serialization of ""unspecified"" CRS.
         /// </summary>
@@ -23,12 +30,12 @@ namespace Azure.Cosmos.Test.Spatial
         [TestCategory("Quarantine")] // TODO: System.Text.Json does not apply converters when the value is null
         public void UnspecifiedCrsSerialization()
         {
-            Crs crs = JsonSerializer.Deserialize<Crs>(@"null");
+            Crs crs = JsonSerializer.Deserialize<Crs>(@"null", this.restContractOptions);
             Assert.AreEqual(CrsType.Unspecified, crs.Type);
             Assert.AreEqual(Crs.Unspecified, crs);
 
-            string json = JsonSerializer.Serialize(crs);
-            Crs crs1 = JsonSerializer.Deserialize<Crs>(json);
+            string json = JsonSerializer.Serialize(crs, this.restContractOptions);
+            Crs crs1 = JsonSerializer.Deserialize<Crs>(json, this.restContractOptions);
             Assert.AreEqual(crs1, crs);
         }
 
@@ -55,12 +62,12 @@ namespace Azure.Cosmos.Test.Spatial
         [Owner("laviswa")]
         public void LinkedCrsSerialization()
         {
-            LinkedCrs linkedCrs = (LinkedCrs)JsonSerializer.Deserialize<Crs>(@"{""type"":""link"", ""properties"":{""href"":""http://foo"", ""type"":""link""}}");
+            LinkedCrs linkedCrs = (LinkedCrs)JsonSerializer.Deserialize<Crs>(@"{""type"":""link"", ""properties"":{""href"":""http://foo"", ""type"":""link""}}", this.restContractOptions);
             Assert.AreEqual("http://foo", linkedCrs.Href);
             Assert.AreEqual(CrsType.Linked, linkedCrs.Type);
 
-            string json = JsonSerializer.Serialize(linkedCrs);
-            LinkedCrs linkedCrs1 = (LinkedCrs)JsonSerializer.Deserialize<Crs>(json);
+            string json = JsonSerializer.Serialize(linkedCrs, this.restContractOptions);
+            LinkedCrs linkedCrs1 = (LinkedCrs)JsonSerializer.Deserialize<Crs>(json, this.restContractOptions);
             Assert.AreEqual(linkedCrs1, linkedCrs);
         }
 
@@ -72,7 +79,7 @@ namespace Azure.Cosmos.Test.Spatial
         [ExpectedException(typeof(JsonException))]
         public void LinkedCrsSerializationNoHref()
         {
-            JsonSerializer.Deserialize<Crs>(@"{""type"":""linked"", ""properties"":{""href"":null}}");
+            JsonSerializer.Deserialize<Crs>(@"{""type"":""linked"", ""properties"":{""href"":null}}", this.restContractOptions);
         }
 
         /// <summary>
@@ -130,11 +137,11 @@ namespace Azure.Cosmos.Test.Spatial
         [Owner("laviswa")]
         public void NamedCrsSerialization()
         {
-            NamedCrs namedCrs = (NamedCrs)JsonSerializer.Deserialize<Crs>(@"{""type"":""name"", ""properties"":{""name"":""AName""}}");
+            NamedCrs namedCrs = (NamedCrs)JsonSerializer.Deserialize<Crs>(@"{""type"":""name"", ""properties"":{""name"":""AName""}}", this.restContractOptions);
             Assert.AreEqual("AName", namedCrs.Name);
 
-            string json = JsonSerializer.Serialize(namedCrs);
-            NamedCrs namedCrs1 = (NamedCrs)JsonSerializer.Deserialize<Crs>(json);
+            string json = JsonSerializer.Serialize(namedCrs, this.restContractOptions);
+            NamedCrs namedCrs1 = (NamedCrs)JsonSerializer.Deserialize<Crs>(json, this.restContractOptions);
             Assert.AreEqual(namedCrs1, namedCrs);
         }
 

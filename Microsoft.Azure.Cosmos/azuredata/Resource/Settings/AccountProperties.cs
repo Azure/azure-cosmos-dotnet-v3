@@ -7,14 +7,11 @@ namespace Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.Text.Json;
-    using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
 
     /// <summary> 
     /// Represents a <see cref="AccountProperties"/>. A AccountProperties is the container for databases in the Azure Cosmos DB service.
     /// </summary>
-    [JsonConverter(typeof(TextJsonAccountPropertiesConverter))]
     public class AccountProperties
     {
         private Collection<AccountRegion> readRegions;

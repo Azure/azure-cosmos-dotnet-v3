@@ -6,13 +6,11 @@ namespace Azure.Cosmos.Spatial
 {
     using System;
     using System.Runtime.Serialization;
-    using System.Text.Json.Serialization;
 
     /// <summary>
     /// Represents a coordinate range for geometries in the Azure Cosmos DB service.
     /// </summary>
     [DataContract]
-    [JsonConverter(typeof(TextJsonBoundingBoxConverter))]
     public sealed class BoundingBox : IEquatable<BoundingBox>
     {
         /// <summary>

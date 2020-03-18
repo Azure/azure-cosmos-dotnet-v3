@@ -5,12 +5,10 @@
 namespace Azure.Cosmos
 {
     using System;
-    using System.Text.Json.Serialization;
 
     /// <summary> 
     /// Represents a user in the Azure Cosmos DB service.
     /// </summary>
-    [JsonConverter(typeof(TextJsonUserPropertiesConverter))]
     public class UserProperties
     {
         private string id;

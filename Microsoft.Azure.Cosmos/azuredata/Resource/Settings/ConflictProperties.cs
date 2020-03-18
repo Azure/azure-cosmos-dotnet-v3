@@ -5,7 +5,6 @@
 namespace Azure.Cosmos
 {
     using System;
-    using System.Text.Json.Serialization;
 
     /// <summary>
     /// Represents a conflict in the Azure Cosmos DB service.
@@ -16,7 +15,6 @@ namespace Azure.Cosmos
     /// Inspecting Conflict resources will allow you to determine which operations and resources resulted in conflicts.
     /// This is not related to operations returning a Conflict status code.
     /// </remarks>
-    [JsonConverter(typeof(TextJsonConflictPropertiesConverter))]
     public class ConflictProperties
     {
         /// <summary>

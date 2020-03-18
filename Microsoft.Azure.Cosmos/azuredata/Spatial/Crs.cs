@@ -5,13 +5,11 @@
 namespace Azure.Cosmos.Spatial
 {
     using System.Runtime.Serialization;
-    using System.Text.Json.Serialization;
 
     /// <summary>
     /// Represents Coordinate Reference System in the Azure Cosmos DB service.
     /// </summary>
     [DataContract]
-    [JsonConverter(typeof(TextJsonCrsConverterFactory))]
     public abstract class Crs
     {
         /// <summary>

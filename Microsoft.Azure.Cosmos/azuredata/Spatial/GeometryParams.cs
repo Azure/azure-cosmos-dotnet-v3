@@ -6,13 +6,11 @@ namespace Azure.Cosmos.Spatial
 {
     using System.Collections.Generic;
     using System.Runtime.Serialization;
-    using System.Text.Json.Serialization;
-
+    
     /// <summary>
     /// Not frequently used geometry parameters in the Azure Cosmos DB service.
     /// </summary>
     [DataContract]
-    [JsonConverter(typeof(TextJsonGeometryParamsJsonConverter))]
     public class GeometryParams
     {
         /// <summary>
@@ -21,7 +19,6 @@ namespace Azure.Cosmos.Spatial
         /// <value>
         /// Additional geometry properties.
         /// </value>
-        [JsonExtensionData]
         [DataMember(Name = "properties")]
         public IDictionary<string, object> AdditionalProperties { get; set; }
 

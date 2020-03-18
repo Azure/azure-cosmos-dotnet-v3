@@ -5,8 +5,7 @@
 namespace Azure.Cosmos.Spatial
 {
     using System.Runtime.Serialization;
-    using System.Text.Json.Serialization;
-
+    
     /// <summary>
     /// <para>
     /// Return value of <see cref="Geometry.IsValidDetailed"/> in the Azure Cosmos DB service.
@@ -16,7 +15,6 @@ namespace Azure.Cosmos.Spatial
     /// </para>
     /// </summary>
     [DataContract]
-    [JsonConverter(typeof(TextJsonGeometryValidationResultConverter))]
     public class GeometryValidationResult
     {
         /// <summary>

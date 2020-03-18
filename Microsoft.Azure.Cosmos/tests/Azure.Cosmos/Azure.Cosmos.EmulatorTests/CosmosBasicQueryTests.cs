@@ -540,7 +540,7 @@ namespace Azure.Cosmos.EmulatorTests
 
                 StreamReader sr = new StreamReader(response.ContentStream);
                 string result = await sr.ReadToEndAsync();
-                ICollection<T> responseResults = JsonSerializer.Deserialize<CosmosFeedResponseUtil<T>>(result).Data;
+                ICollection<T> responseResults = JsonSerializer.Deserialize<CosmosFeedResponseUtil<T>>(result, this.jsonSerializerOptions.Value).Data;
                 Assert.IsTrue(responseResults.Count <= 1);
 
                 streamResults.AddRange(responseResults);
@@ -571,8 +571,8 @@ namespace Azure.Cosmos.EmulatorTests
             Assert.AreEqual(pagedStreamResults.Count, streamResults.Count);
 
             // Both lists should be the same if not PermssionsProperties. PermissionProperties will have a different ResouceToken in the payload when read.
-            string streamResultString = JsonSerializer.Serialize(streamResults);
-            string streamPagedResultString = JsonSerializer.Serialize(pagedStreamResults);
+            string streamResultString = JsonSerializer.Serialize(streamResults, this.jsonSerializerOptions.Value);
+            string streamPagedResultString = JsonSerializer.Serialize(pagedStreamResults, this.jsonSerializerOptions.Value);
 
             if (typeof(T) != typeof(PermissionProperties))
             {
@@ -607,8 +607,8 @@ namespace Azure.Cosmos.EmulatorTests
             Assert.AreEqual(pagedResults.Count, results.Count);
 
             // Both lists should be the same
-            string resultString = JsonSerializer.Serialize(results);
-            string pagedResultString = JsonSerializer.Serialize(pagedResults);
+            string resultString = JsonSerializer.Serialize(results, this.jsonSerializerOptions.Value);
+            string pagedResultString = JsonSerializer.Serialize(pagedResults, this.jsonSerializerOptions.Value);
 
             if (typeof(T) != typeof(PermissionProperties))
             {
@@ -624,6 +624,13 @@ namespace Azure.Cosmos.EmulatorTests
         public const string DefaultKey = "objectKey";
         public const string TestCollection = "testcollection";
         private static readonly Random Random = new Random();
+
+        private Lazy<JsonSerializerOptions> jsonSerializerOptions = new Lazy<JsonSerializerOptions>(() =>
+        {
+            JsonSerializerOptions options = new JsonSerializerOptions();
+            CosmosTextJsonSerializer.InitializeRESTConverters(options);
+            return options;
+        });
 
         //[TestMethod]
         //public async Task InvalidRangesOnQuery()
