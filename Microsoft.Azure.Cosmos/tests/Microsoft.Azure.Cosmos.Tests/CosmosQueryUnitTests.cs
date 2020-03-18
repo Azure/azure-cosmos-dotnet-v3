@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(cosmosException.ToString(includeDiagnostics: false), queryResponse.ErrorMessage);
             Assert.AreEqual(requestCharge, queryResponse.Headers.RequestCharge);
             Assert.AreEqual(activityId, queryResponse.Headers.ActivityId);
-            Assert.AreEqual(diagnostics, queryResponse.Diagnostics);
+            Assert.AreEqual(diagnostics, queryResponse.DiagnosticsContext);
             Assert.IsNull(queryResponse.Content);
         }
 

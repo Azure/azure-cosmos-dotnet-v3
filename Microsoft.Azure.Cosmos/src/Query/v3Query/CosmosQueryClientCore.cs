@@ -149,7 +149,7 @@ namespace Microsoft.Azure.Cosmos
                     cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.ContentType, MediaTypes.QueryJson);
                     cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
                 },
-                diagnosticsScope: null,
+                diagnosticsContext: null,
                 cancellationToken: cancellationToken);
 
             schedulingStopwatch.Stop();
@@ -190,7 +190,7 @@ namespace Microsoft.Azure.Cosmos
                     requestMessage.Headers.Add(HttpConstants.HttpHeaders.QueryVersion, new Version(major: 1, minor: 0).ToString());
                     requestMessage.UseGatewayMode = true;
                 },
-                diagnosticsScope: diagnosticsContextFactory,
+                diagnosticsContext: null,
                 cancellationToken: cancellationToken))
             {
                 // Syntax exception are argument exceptions and thrown to the user.

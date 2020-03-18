@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Diagnostics;
-    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
@@ -126,9 +125,8 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
-            // For the first request include the pipeline creation diagnostics
-            CosmosDiagnosticsContext diagnostics = CosmosDiagnosticsContextCore.Create(this.requestOptions);
-            using (diagnostics.CreateOverallScope("QueryReadNextAsync"))
+            CosmosDiagnosticsContext diagnostics = CosmosDiagnosticsContext.Create(this.requestOptions);
+            using (diagnostics.GetOverallScope())
             {
                 // This catches exception thrown by the pipeline and converts it to QueryResponse
                 QueryResponseCore responseCore = await this.cosmosQueryExecutionContext.ExecuteNextAsync(cancellationToken);
@@ -136,10 +134,9 @@ namespace Microsoft.Azure.Cosmos.Query
                 // This swaps the diagnostics in the context. This shows all the page reads between the previous ReadNextAsync and the current ReadNextAsync
                 diagnostics.AddDiagnosticsInternal(this.cosmosQueryContext.GetAndResetDiagnostics());
 
-                QueryResponse queryResponse;
                 if (responseCore.IsSuccess)
                 {
-                    queryResponse = QueryResponse.CreateSuccess(
+                    return QueryResponse.CreateSuccess(
                         result: responseCore.CosmosElements,
                         count: responseCore.CosmosElements.Count,
                         responseLengthBytes: responseCore.ResponseLengthBytes,
@@ -156,26 +153,27 @@ namespace Microsoft.Azure.Cosmos.Query
                             SubStatusCode = responseCore.SubStatusCode ?? Documents.SubStatusCodes.Unknown
                         });
                 }
-                else
+
+                if (responseCore.CosmosException != null)
                 {
-                    queryResponse = QueryResponse.CreateFailure(
-                        statusCode: responseCore.StatusCode,
-                        cosmosException: responseCore.CosmosException,
-                        requestMessage: null,
-                        diagnostics: diagnostics,
-                        responseHeaders: new CosmosQueryResponseMessageHeaders(
-                            responseCore.ContinuationToken,
-                            responseCore.DisallowContinuationTokenMessage,
-                            this.cosmosQueryContext.ResourceTypeEnum,
-                            this.cosmosQueryContext.ContainerResourceId)
-                        {
-                            RequestCharge = responseCore.RequestCharge,
-                            ActivityId = responseCore.ActivityId,
-                            SubStatusCode = responseCore.SubStatusCode ?? Documents.SubStatusCodes.Unknown
-                        });
+                    return responseCore.CosmosException.ToCosmosResponseMessage(null);
                 }
 
-                return queryResponse;
+                return QueryResponse.CreateFailure(
+                    statusCode: responseCore.StatusCode,
+                    cosmosException: responseCore.CosmosException,
+                    requestMessage: null,
+                    diagnostics: diagnostics,
+                    responseHeaders: new CosmosQueryResponseMessageHeaders(
+                        responseCore.ContinuationToken,
+                        responseCore.DisallowContinuationTokenMessage,
+                        cosmosQueryContext.ResourceTypeEnum,
+                        cosmosQueryContext.ContainerResourceId)
+                    {
+                        RequestCharge = responseCore.RequestCharge,
+                        ActivityId = responseCore.ActivityId,
+                        SubStatusCode = responseCore.SubStatusCode ?? Documents.SubStatusCodes.Unknown,
+                    });
             }
         }
 

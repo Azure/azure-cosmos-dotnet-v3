@@ -75,13 +75,13 @@ namespace Microsoft.Azure.Cosmos.Scripts
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return new FeedIteratorCore(
-               this.clientContext,
+            return FeedIteratorCore.CreateForNonPartitionedResource(
+               clientContext: this.clientContext,
                this.container.LinkUri,
-               ResourceType.StoredProcedure,
-               queryDefinition,
-               continuationToken,
-               requestOptions);
+               resourceType: ResourceType.StoredProcedure,
+               queryDefinition: queryDefinition,
+               continuationToken: continuationToken,
+               options: requestOptions);
         }
 
         public override FeedIterator<T> GetStoredProcedureQueryIterator<T>(
@@ -287,13 +287,13 @@ namespace Microsoft.Azure.Cosmos.Scripts
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return new FeedIteratorCore(
-               this.clientContext,
+            return FeedIteratorCore.CreateForNonPartitionedResource(
+               clientContext: this.clientContext,
                this.container.LinkUri,
-               ResourceType.Trigger,
-               queryDefinition,
-               continuationToken,
-               requestOptions);
+               resourceType: ResourceType.Trigger,
+               queryDefinition: queryDefinition,
+               continuationToken: continuationToken,
+               options: requestOptions);
         }
 
         public override FeedIterator<T> GetTriggerQueryIterator<T>(
@@ -447,13 +447,13 @@ namespace Microsoft.Azure.Cosmos.Scripts
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return new FeedIteratorCore(
-               this.clientContext,
+            return FeedIteratorCore.CreateForNonPartitionedResource(
+               clientContext: this.clientContext,
                this.container.LinkUri,
-               ResourceType.UserDefinedFunction,
-               queryDefinition,
-               continuationToken,
-               requestOptions);
+               resourceType: ResourceType.UserDefinedFunction,
+               queryDefinition: queryDefinition,
+               continuationToken: continuationToken,
+               options: requestOptions);
         }
 
         public override FeedIterator<T> GetUserDefinedFunctionQueryIterator<T>(
@@ -636,7 +636,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 partitionKey: partitionKey,
                 streamPayload: streamPayload,
                 requestEnricher: null,
-                diagnosticsScope: null,
+                diagnosticsContext: null,
                 cancellationToken: cancellationToken);
         }
 

@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Specialized;
     using System.Globalization;
     using System.Threading;
     using System.Threading.Tasks;
@@ -38,13 +39,16 @@ namespace Microsoft.Azure.Cosmos
             receivedResponse = this.ReceivedRequestEventHandler;
             ServerStoreModel storeModel = new ServerStoreModel(GetMockStoreClient(), sendingRequest, receivedResponse);
 
-            using (DocumentServiceRequest request = DocumentServiceRequest.Create(
-                    OperationType.Read,
-                    ResourceType.Document,
-                    AuthorizationTokenType.PrimaryMasterKey))
+            using (new ActivityScope(Guid.NewGuid()))
             {
-                DocumentServiceResponse result = await storeModel.ProcessMessageAsync(request);
-                Assert.IsTrue(request.Headers.Get(newHeaderKey) != null);
+                using (DocumentServiceRequest request = DocumentServiceRequest.Create(
+                        OperationType.Read,
+                        ResourceType.Document,
+                        AuthorizationTokenType.PrimaryMasterKey))
+                {
+                    DocumentServiceResponse result = await storeModel.ProcessMessageAsync(request);
+                    Assert.IsTrue(request.Headers.Get(newHeaderKey) != null);
+                }
             }
         }
 
@@ -58,13 +62,16 @@ namespace Microsoft.Azure.Cosmos
             EventHandler<ReceivedResponseEventArgs> receivedResponse = null;
             ServerStoreModel storeModel = new ServerStoreModel(GetMockStoreClient(), sendingRequest, receivedResponse);
 
-            using (DocumentServiceRequest request = DocumentServiceRequest.Create(
-                    OperationType.Read,
-                    ResourceType.Document,
-                    AuthorizationTokenType.PrimaryMasterKey))
+            using (new ActivityScope(Guid.NewGuid()))
             {
-                DocumentServiceResponse result = await storeModel.ProcessMessageAsync(request);
-                Assert.IsTrue(request.Headers.Get(newHeaderKey) == null);
+                using (DocumentServiceRequest request = DocumentServiceRequest.Create(
+                        OperationType.Read,
+                        ResourceType.Document,
+                        AuthorizationTokenType.PrimaryMasterKey))
+                {
+                    DocumentServiceResponse result = await storeModel.ProcessMessageAsync(request);
+                    Assert.IsTrue(request.Headers.Get(newHeaderKey) == null);
+                }
             }
         }
 
@@ -74,10 +81,14 @@ namespace Microsoft.Azure.Cosmos
             AddressSelector addressSelector = new AddressSelector(mockAddressCache.Object, Protocol.Tcp);
             TransportClient mockTransportClient = this.GetMockTransportClient();
             ISessionContainer sessionContainer = new SessionContainer(string.Empty);
+            var connectionStateListener = new ConnectionStateListener(null);
 
-            StoreReader storeReader = new StoreReader(mockTransportClient, addressSelector, sessionContainer);
+            StoreReader storeReader = new StoreReader(mockTransportClient, addressSelector, sessionContainer, connectionStateListener);
 
             Mock<IAuthorizationTokenProvider> mockAuthorizationTokenProvider = new Mock<IAuthorizationTokenProvider>();
+            mockAuthorizationTokenProvider.Setup(provider => provider.AddSystemAuthorizationHeaderAsync(
+                It.IsAny<DocumentServiceRequest>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+                .Returns(Task.FromResult(0));
 
             // setup max replica set size on the config reader
             ReplicationPolicy replicationPolicy = new ReplicationPolicy();
@@ -101,8 +112,12 @@ namespace Microsoft.Azure.Cosmos
 
             // setup mock to return respone
             StoreResponse mockStoreResponse = new StoreResponse();
-            mockStoreResponse.ResponseHeaderNames = new string[2] { WFConstants.BackendHeaders.LSN, WFConstants.BackendHeaders.ActivityId };
-            mockStoreResponse.ResponseHeaderValues = new string[2] { "110", "ACTIVITYID1_1" };
+            mockStoreResponse.Headers = new DictionaryNameValueCollection(
+                new NameValueCollection()
+                {
+                    { WFConstants.BackendHeaders.LSN, "110" },
+                    { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_1" }
+                });
             mockTransportClient.Setup(
                 client => client.InvokeResourceOperationAsync(
                     It.IsAny<Uri>(),
@@ -132,9 +147,9 @@ namespace Microsoft.Azure.Cosmos
             mockAddressCache.Setup(
                 cache => cache.ResolveAsync(
                     It.IsAny<DocumentServiceRequest>(),
-                    false /*forceRefresh*/,
+                    It.IsAny<bool>(),
                     new CancellationToken()))
-                    .ReturnsAsync(new PartitionAddressInformation(addressInformation));
+                    .ReturnsAsync(new PartitionAddressInformation(addressInformation, null, null));
 
             return mockAddressCache;
         }

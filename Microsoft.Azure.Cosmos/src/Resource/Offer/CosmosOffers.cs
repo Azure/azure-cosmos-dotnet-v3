@@ -181,7 +181,7 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return new FeedIteratorCore(
+            return FeedIteratorCore.CreateForNonPartitionedResource(
                clientContext: this.ClientContext,
                resourceLink: this.OfferRootUri,
                resourceType: ResourceType.Offer,
@@ -223,7 +223,7 @@ namespace Microsoft.Azure.Cosmos
               streamPayload: streamPayload,
               requestOptions: requestOptions,
               requestEnricher: null,
-              diagnosticsScope: null,
+              diagnosticsContext: null,
               cancellationToken: cancellationToken);
             return await this.ClientContext.ResponseFactory.CreateThroughputResponseAsync(responseMessage);
         }

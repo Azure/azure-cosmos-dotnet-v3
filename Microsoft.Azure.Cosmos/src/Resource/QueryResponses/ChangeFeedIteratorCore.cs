@@ -10,6 +10,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
 
     /// <summary>
     /// Cosmos Change Feed iterator using FeedToken
@@ -23,22 +25,19 @@ namespace Microsoft.Azure.Cosmos
         private bool hasMoreResults = true;
 
         internal ChangeFeedIteratorCore(
-            CosmosClientContext clientContext,
             ContainerCore container,
             FeedTokenInternal feedTokenInternal,
             ChangeFeedRequestOptions changeFeedRequestOptions)
-            : this(clientContext, container, changeFeedRequestOptions)
+            : this(container, changeFeedRequestOptions)
         {
             if (feedTokenInternal == null) throw new ArgumentNullException(nameof(feedTokenInternal));
             this.feedTokenInternal = feedTokenInternal;
         }
 
         internal ChangeFeedIteratorCore(
-            CosmosClientContext clientContext,
             ContainerCore container,
             ChangeFeedRequestOptions changeFeedRequestOptions)
         {
-            if (clientContext == null) throw new ArgumentNullException(nameof(clientContext));
             if (container == null) throw new ArgumentNullException(nameof(container));
             if (changeFeedRequestOptions != null
                 && changeFeedRequestOptions.MaxItemCount.HasValue
@@ -47,7 +46,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentOutOfRangeException(nameof(changeFeedRequestOptions.MaxItemCount));
             }
 
-            this.clientContext = clientContext;
+            this.clientContext = container.ClientContext;
             this.container = container;
             this.changeFeedOptions = changeFeedRequestOptions ?? new ChangeFeedRequestOptions();
         }
@@ -69,7 +68,7 @@ namespace Microsoft.Azure.Cosmos
         public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             CosmosDiagnosticsContext diagnostics = CosmosDiagnosticsContext.Create(this.changeFeedOptions);
-            using (diagnostics.CreateScope("ChangeFeedReadNextAsync"))
+            using (diagnostics.GetOverallScope())
             {
                 return this.ReadNextInternalAsync(diagnostics, cancellationToken);
             }
@@ -83,18 +82,21 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.feedTokenInternal == null)
             {
-                Routing.PartitionKeyRangeCache partitionKeyRangeCache = await this.clientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
-                string containerRId = await this.container.GetRIDAsync(cancellationToken);
-                IReadOnlyList<Documents.PartitionKeyRange> partitionKeyRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
-                        containerRId,
-                        new Documents.Routing.Range<string>(
-                            Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
-                            Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
-                            isMinInclusive: true,
-                            isMaxInclusive: false),
-                        forceRefresh: true);
-                // ReadAll scenario, initialize with one token for all
-                this.feedTokenInternal = new FeedTokenEPKRange(containerRId, partitionKeyRanges);
+                TryCatch<FeedTokenInternal> tryCatchFeedTokeninternal = await this.TryInitializeFeedTokenAsync(cancellationToken);
+                if (!tryCatchFeedTokeninternal.Succeeded)
+                {
+                    if (tryCatchFeedTokeninternal.Exception.InnerException is CosmosException cosmosException)
+                    {
+                        return cosmosException.ToCosmosResponseMessage(new RequestMessage(method: null, requestUri: null, diagnosticsContext: diagnosticsScope));
+                    }
+
+                    return CosmosExceptionFactory.CreateInternalServerErrorException(
+                        message: tryCatchFeedTokeninternal.Exception.InnerException.Message,
+                        innerException: tryCatchFeedTokeninternal.Exception.InnerException,
+                        diagnosticsContext: diagnosticsScope).ToCosmosResponseMessage(new RequestMessage(method: null, requestUri: null, diagnosticsContext: diagnosticsScope));
+                }
+
+                this.feedTokenInternal = tryCatchFeedTokeninternal.Result;
             }
 
             Uri resourceUri = this.container.LinkUri;
@@ -111,7 +113,7 @@ namespace Microsoft.Azure.Cosmos
                 },
                 partitionKey: null,
                 streamPayload: null,
-                diagnosticsScope: diagnosticsScope,
+                diagnosticsContext: diagnosticsScope,
                 cancellationToken: cancellationToken);
 
             // Retry in case of splits or other scenarios
@@ -136,6 +138,31 @@ namespace Microsoft.Azure.Cosmos
 
             this.hasMoreResults = responseMessage.IsSuccessStatusCode;
             return responseMessage;
+        }
+
+        private async Task<TryCatch<FeedTokenInternal>> TryInitializeFeedTokenAsync(CancellationToken cancellationToken)
+        {
+            Routing.PartitionKeyRangeCache partitionKeyRangeCache = await this.clientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
+            string containerRId = string.Empty;
+            try
+            {
+                containerRId = await this.container.GetRIDAsync(cancellationToken);
+            }
+            catch (Exception cosmosException)
+            {
+                return TryCatch<FeedTokenInternal>.FromException(cosmosException);
+            }
+
+            IReadOnlyList<Documents.PartitionKeyRange> partitionKeyRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
+                    containerRId,
+                    new Documents.Routing.Range<string>(
+                        Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
+                        Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
+                        isMinInclusive: true,
+                        isMaxInclusive: false),
+                    forceRefresh: true);
+            // ReadAll scenario, initialize with one token for all
+            return TryCatch<FeedTokenInternal>.FromResult(new FeedTokenEPKRange(containerRId, partitionKeyRanges));
         }
 
         public override CosmosElement GetCosmsoElementContinuationToken()

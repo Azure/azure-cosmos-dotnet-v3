@@ -7,8 +7,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections;
     using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Diagnostics;
-    using Microsoft.Azure.Documents;
-    using static Microsoft.Azure.Cosmos.CosmosClientSideRequestStatistics;
 
     /// <summary>
     /// This represents the diagnostics interface used in the SDK.
@@ -21,13 +19,17 @@ namespace Microsoft.Azure.Cosmos
 
         public abstract int FailedRequestCount { get; protected set; }
 
-        public abstract TimeSpan? TotalElapsedTime { get; protected set; }
-
         public abstract string UserAgent { get; protected set; }
 
-        internal abstract CosmosDiagnosticScope CreateOverallScope(string name);
+        internal abstract CosmosDiagnostics Diagnostics { get; }
+
+        internal abstract CosmosDiagnosticScope GetOverallScope();
 
         internal abstract CosmosDiagnosticScope CreateScope(string name);
+
+        internal abstract TimeSpan GetClientElapsedTime();
+
+        internal abstract bool IsComplete();
 
         internal abstract void AddDiagnosticsInternal(PointOperationStatistics pointOperationStatistics);
 
