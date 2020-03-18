@@ -172,18 +172,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             QueryResponseCore splitResponse = QueryResponseCore.CreateFailure(
                statusCode: httpStatusCode,
                subStatusCodes: subStatusCodes,
-               cosmosException: CosmosExceptionFactory.Create(
-                   statusCode: httpStatusCode,
-                   subStatusCode: (int)subStatusCodes,
-                   message: errorMessage,
-                   stackTrace: new System.Diagnostics.StackTrace().ToString(),
-                   activityId: acitivityId,
-                   requestCharge: 10.4,
-                   retryAfter: default,
-                   headers: default,
-                   diagnosticsContext: diagnosticsContext,
-                   error: default,
-                   innerException: default),
+               cosmosException: CosmosHttpExceptionFactory.Create(
+                   httpStatusCode,
+                   (int)subStatusCodes,
+                   errorMessage),
                requestCharge: 10.4,
                activityId: acitivityId,
                diagnostics: diagnostics);

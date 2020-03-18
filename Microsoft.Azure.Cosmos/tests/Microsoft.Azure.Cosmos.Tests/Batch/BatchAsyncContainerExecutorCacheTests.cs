@@ -19,17 +19,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task ConcurrentGet_ReturnsSameExecutorInstance()
         {
-            Mock<CosmosClient> mockClient = new Mock<CosmosClient>();
-            mockClient.Setup(x => x.Endpoint).Returns(new Uri("http://localhost"));
-
-            CosmosClientContext context = new ClientContextCore(
-                client: mockClient.Object,
-                clientOptions: new CosmosClientOptions() { AllowBulkExecution = true },
-                serializerCore: null,
-                cosmosResponseFactory: null,
-                requestHandler: null,
-                documentClient: null,
-                userAgent: null);
+            CosmosClientContext context = this.MockClientContext();
 
             DatabaseCore db = new DatabaseCore(context, "test");
 
@@ -54,17 +44,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [Timeout(60000)]
         public async Task SingleTaskScheduler_ExecutorTest()
         {
-            Mock<CosmosClient> mockClient = new Mock<CosmosClient>();
-            mockClient.Setup(x => x.Endpoint).Returns(new Uri("http://localhost"));
-
-            CosmosClientContext context = new ClientContextCore(
-                client: mockClient.Object,
-                clientOptions: new CosmosClientOptions() { AllowBulkExecution = true },
-                serializerCore: null,
-                cosmosResponseFactory: null,
-                requestHandler: null,
-                documentClient: null,
-                userAgent: null);
+            CosmosClientContext context = this.MockClientContext();
 
             DatabaseCore db = new DatabaseCore(context, "test");
 
@@ -92,21 +72,22 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void Null_When_OptionsOff()
         {
-            Mock<CosmosClient> mockClient = new Mock<CosmosClient>();
-            mockClient.Setup(x => x.Endpoint).Returns(new Uri("http://localhost"));
-
-            CosmosClientContext context = new ClientContextCore(
-                client: mockClient.Object,
-                clientOptions: new CosmosClientOptions() { },
-                serializerCore: null,
-                cosmosResponseFactory: null,
-                requestHandler: null,
-                documentClient: null,
-                userAgent: null);
+            CosmosClientContext context = this.MockClientContext(allowBulkExecution: false);
 
             DatabaseCore db = new DatabaseCore(context, "test");
             ContainerCore container = new ContainerCore(context, db, "test");
             Assert.IsNull(container.BatchExecutor);
+        }
+
+        private CosmosClientContext MockClientContext(bool allowBulkExecution = true)
+        {
+            Mock<CosmosClient> mockClient = new Mock<CosmosClient>();
+            mockClient.Setup(x => x.Endpoint).Returns(new Uri("http://localhost"));
+
+            return ClientContextCore.Create(
+                mockClient.Object,
+                new MockDocumentClient(),
+                new CosmosClientOptions() { AllowBulkExecution = allowBulkExecution });
         }
     }
 }

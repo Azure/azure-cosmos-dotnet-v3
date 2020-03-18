@@ -7,12 +7,10 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System;
     using System.Collections;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
     using System.IO;
     using System.Linq;
     using System.Net;
     using System.Net.Http;
-    using System.Runtime.ConstrainedExecution;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -20,13 +18,11 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Moq;
     using Newtonsoft.Json;
 
     [TestClass]
     public class HandlerTests
     {
-
         [TestMethod]
         public void HandlerOrder()
         {
@@ -116,7 +112,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
 
-            RequestInvokerHandler invoker = new RequestInvokerHandler(client);
+            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null);
             invoker.InnerHandler = testHandler;
             RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"));
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[]");
@@ -162,7 +158,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         return TestHandler.ReturnSuccess();
                     });
 
-                    RequestInvokerHandler invoker = new RequestInvokerHandler(client);
+                    RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null);
                     invoker.InnerHandler = testHandler;
 
                     RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"));
@@ -193,7 +189,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
 
-            RequestInvokerHandler invoker = new RequestInvokerHandler(client);
+            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null);
             invoker.InnerHandler = testHandler;
             RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"));
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[]");
@@ -217,7 +213,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return TestHandler.ReturnSuccess();
             });
 
-            RequestInvokerHandler invoker = new RequestInvokerHandler(client);
+            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: client.ClientOptions.ConsistencyLevel);
             invoker.InnerHandler = testHandler;
 
             RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"));
@@ -242,7 +238,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return TestHandler.ReturnSuccess();
             });
 
-            RequestInvokerHandler invoker = new RequestInvokerHandler(client);
+            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null);
             invoker.InnerHandler = testHandler;
 
             RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"));
@@ -276,7 +272,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
 
-            RequestInvokerHandler invoker = new RequestInvokerHandler(client);
+            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null);
             invoker.InnerHandler = testHandler;
             RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"));
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[]");

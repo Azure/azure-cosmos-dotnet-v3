@@ -39,6 +39,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 httpStatusCode = HttpStatusCode.InternalServerError;
             }
 
+#pragma warning disable CS0612 // Type or member is obsolete
             return CosmosExceptionFactory.Create(
                 httpStatusCode,
                 (int)dce.GetSubStatus(),
@@ -51,6 +52,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 diagnosticsContext,
                 dce.Error,
                 dce.InnerException);
+#pragma warning restore CS0612 // Type or member is obsolete
         }
 
         internal static CosmosException Create(
@@ -58,6 +60,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
             RequestMessage requestMessage,
             string errorMessage)
         {
+#pragma warning disable CS0612 // Type or member is obsolete
             return CosmosExceptionFactory.Create(
                 statusCode: statusCode,
                 subStatusCode: default,
@@ -70,6 +73,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 diagnosticsContext: default,
                 error: default,
                 innerException: default);
+#pragma warning restore CS0612 // Type or member is obsolete
         }
 
         internal static CosmosException Create(
@@ -99,6 +103,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 }
             }
 
+#pragma warning disable CS0612 // Type or member is obsolete
             return CosmosExceptionFactory.Create(
                 responseMessage.StatusCode,
                 (int)responseMessage.Headers.SubStatusCode,
@@ -111,6 +116,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 responseMessage.DiagnosticsContext,
                 error,
                 responseMessage.CosmosException?.InnerException);
+#pragma warning restore CS0612 // Type or member is obsolete
         }
 
         internal static CosmosException Create(
@@ -135,6 +141,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
 
             (Error error, string errorMessage) = CosmosExceptionFactory.GetErrorFromStream(documentServiceResponse.ResponseBody);
 
+#pragma warning disable CS0612 // Type or member is obsolete
             return CosmosExceptionFactory.Create(
                 statusCode: documentServiceResponse.StatusCode,
                 subStatusCode: (int)responseHeaders.SubStatusCode,
@@ -147,8 +154,10 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 diagnosticsContext: requestMessage.DiagnosticsContext,
                 error: error,
                 innerException: null);
+#pragma warning restore CS0612 // Type or member is obsolete
         }
 
+        [Obsolete]
         internal static CosmosException Create(
             HttpStatusCode statusCode,
             int subStatusCode,
@@ -183,7 +192,6 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
             }
             else
             {
-#pragma warning disable CS0618 // Type or member is obsolete
                 // We are defaulting to this constructor, since we don't want to break callers.
                 // In the future CosmosException will be purely abstract with no members and the user will just have to cast down to get extra info like requestCharge.
                 cosmosException = new CosmosException(
@@ -198,7 +206,6 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                     diagnosticsContext,
                     error,
                     innerException);
-#pragma warning restore CS0618 // Type or member is obsolete
             }
 
             return cosmosException;

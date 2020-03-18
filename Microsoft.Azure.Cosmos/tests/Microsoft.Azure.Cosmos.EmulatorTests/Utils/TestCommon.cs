@@ -53,6 +53,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             TestCommon.masterStalenessIntervalInSeconds = int.Parse(ConfigurationManager.AppSettings["MasterStalenessIntervalInSeconds"], CultureInfo.InvariantCulture);
         }
 
+        internal static MemoryStream GenerateStreamFromString(string s)
+        {
+            MemoryStream stream = new MemoryStream();
+            StreamWriter writer = new StreamWriter(stream);
+            writer.Write(s);
+            writer.Flush();
+            stream.Position = 0;
+            return stream;
+        }
+
         internal static (string endpoint, string authKey) GetAccountInfo()
         {
             string authKey = ConfigurationManager.AppSettings["MasterKey"];

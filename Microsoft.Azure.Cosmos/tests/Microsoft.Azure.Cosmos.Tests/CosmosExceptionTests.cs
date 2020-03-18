@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.BadRequest;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.NotFound;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
@@ -185,19 +186,7 @@ namespace Microsoft.Azure.Cosmos
 
             };
 
-            CosmosException cosmosException = CosmosExceptionFactory.Create(
-                message: error.ToString(),
-                error: error,
-                statusCode: HttpStatusCode.BadRequest,
-                subStatusCode: default,
-                stackTrace: default,
-                activityId: default,
-                requestCharge: default,
-                retryAfter: default,
-                headers: default,
-                diagnosticsContext: default,
-                innerException: default);
-
+            CosmosException cosmosException = BadRequestExceptionFactory.Create(message: error.ToString());
             ResponseMessage responseMessage = QueryResponse.CreateFailure(
                 statusCode: System.Net.HttpStatusCode.BadRequest,
                 cosmosException: cosmosException,

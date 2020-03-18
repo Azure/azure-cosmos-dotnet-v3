@@ -110,6 +110,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             queryResponseCore = QueryResponseCore.CreateFailure(
                 statusCode: queryResponseCore.StatusCode,
                 subStatusCodes: queryResponseCore.SubStatusCode,
+#pragma warning disable CS0612 // Type or member is obsolete
                 cosmosException: CosmosExceptionFactory.Create(
                     cosmosException.StatusCode,
                     cosmosException.SubStatusCode,
@@ -122,6 +123,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                     cosmosException.DiagnosticsContext,
                     cosmosException.Error,
                     cosmosException.InnerException),
+#pragma warning restore CS0612 // Type or member is obsolete
                 requestCharge: queryResponseCore.RequestCharge,
                 activityId: queryResponseCore.ActivityId,
                 diagnostics: queryResponseCore.Diagnostics);
