@@ -16,7 +16,7 @@ namespace Azure.Cosmos
     /// Indexing policies can used to configure which properties (JSON paths) are included/excluded, whether the index is updated consistently
     /// or offline (lazy), automatic vs. opt-in per-document, as well as the precision and type of index per path.
     /// <para>
-    /// Refer to <see>http://azure.microsoft.com/documentation/articles/documentdb-indexing-policies/</see> for additional information on how to specify
+    /// Refer to <see>https://docs.microsoft.com/azure/cosmos-db/index-policy</see> for additional information on how to specify
     /// indexing policies.
     /// </para>
     /// </remarks>

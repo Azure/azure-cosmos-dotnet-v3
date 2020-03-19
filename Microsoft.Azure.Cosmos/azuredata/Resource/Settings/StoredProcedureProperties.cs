@@ -13,15 +13,12 @@ namespace Azure.Cosmos.Scripts
     /// Azure Cosmos DB allows application logic written entirely in JavaScript to be executed directly inside the database engine under the database transaction.
     /// For additional details, refer to the server-side JavaScript API documentation.
     /// </remarks>
-    public class StoredProcedureProperties
+    public sealed class StoredProcedureProperties
     {
         private string id;
         private string body;
 
-        /// <summary>
-        /// Initializes a new instance of the Stored Procedure class for the Azure Cosmos DB service.
-        /// </summary>
-        public StoredProcedureProperties()
+        internal StoredProcedureProperties()
         {
         }
 

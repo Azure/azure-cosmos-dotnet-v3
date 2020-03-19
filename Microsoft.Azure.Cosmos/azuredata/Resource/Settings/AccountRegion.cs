@@ -6,8 +6,12 @@ namespace Azure.Cosmos
     /// <summary>
     /// The AccountLocation class represents an Azure Cosmos DB database account in a specific region.
     /// </summary>
-    public class AccountRegion
+    public sealed class AccountRegion
     {
+        internal AccountRegion()
+        {
+        }
+
         /// <summary>
         /// Gets the name of the database account location in the Azure Cosmos DB service. For example,
         /// "West US" as the name of the database account location in the West US region.

@@ -9,7 +9,7 @@ namespace Azure.Cosmos
     /// <summary> 
     /// Represents a user in the Azure Cosmos DB service.
     /// </summary>
-    public class UserProperties
+    public sealed class UserProperties
     {
         private string id;
 
