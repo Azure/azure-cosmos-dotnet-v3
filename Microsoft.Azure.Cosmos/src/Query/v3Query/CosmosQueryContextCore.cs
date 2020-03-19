@@ -56,9 +56,9 @@ namespace Microsoft.Azure.Cosmos.Query
             // Safely swap the current diagnostics for the new diagnostics.
             lock (this.diagnosticLock)
             {
-                CosmosDiagnosticsContext old = this.diagnosticsContext;
+                CosmosDiagnosticsContext current = this.diagnosticsContext;
                 this.diagnosticsContext = CosmosDiagnosticsContext.Create(this.queryRequestOptions);
-                return old;
+                return current;
             }
         }
 
