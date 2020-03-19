@@ -8,32 +8,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider
     using System.Threading.Tasks;
 
     /// <summary>
-    /// Container for data encryption keys. Provides methods to create and enumerate data encryption keys.
-    /// See <see cref="DataEncryptionKey"/> for reading, re-wrapping, or deleting a specific data encryption key by Id.
+    /// Container for data encryption keys. Provides methods to create, read, re-wrap and enumerate data encryption keys.
     /// See https://aka.ms/CosmosClientEncryption for more information on client-side encryption support in Azure Cosmos DB.
     /// </summary>
     public abstract class DataEncryptionKeyContainer
     {
-        /// <summary>
-        /// Returns a reference to a data encryption key object.
-        /// </summary>
-        /// <param name="id">Unique identifier for the data encryption key.</param>
-        /// <returns>Data encryption key reference.</returns>
-        /// <remarks>
-        /// The reference returned doesn't guarantee existence of the data encryption key.
-        /// Please ensure it already exists or is created through <see cref="CreateDataEncryptionKeyAsync"/>.
-        /// </remarks>
-        /// <example>
-        /// <code language="c#">
-        /// <![CDATA[
-        /// Database db = this.cosmosClient.GetDatabase("myDatabaseId");
-        /// DataEncryptionKey key = await db.GetDataEncryptionKey("keyId");
-        /// DataEncryptionKeyProperties keyProperties = await key.ReadAsync();
-        /// ]]>
-        /// </code>
-        /// </example>
-        public abstract DataEncryptionKey GetDataEncryptionKey(string id);
-
         /// <summary>
         /// Returns an iterator that can be iterated to get properties of data encryption keys.
         /// </summary>
@@ -59,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider
         /// </code>
         /// </example>
         /// <remarks>
-        /// <see cref="DataEncryptionKey.ReadAsync" /> is recommended for single data encryption key look-up.
+        /// <see cref="DataEncryptionKey.ReadDataEncryptionKeyAsync" /> is recommended for single data encryption key look-up.
         /// </remarks>
         public abstract FeedIterator<DataEncryptionKeyProperties> GetDataEncryptionKeyIterator(
             string startId = null,
@@ -109,6 +88,100 @@ namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider
             string id,
             CosmosEncryptionAlgorithm encryptionAlgorithm,
             EncryptionKeyWrapMetadata encryptionKeyWrapMetadata,
+            ItemRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken));
+
+
+        /// <summary>
+        /// Reads the properties of a data encryption key from the Azure Cosmos service as an asynchronous operation.
+        /// </summary>
+        /// <param name="id">Unique identifier of the data encryption key.</param>
+        /// <param name="requestOptions">(Optional) The options for the request.</param>
+        /// <param name="cancellationToken">(Optional) Token representing request cancellation.</param>
+        /// <returns>An awaitable response which wraps a <see cref="DataEncryptionKeyProperties"/> containing details of the data encryption key that was read.</returns>
+        /// <exception cref="CosmosException">
+        /// This exception can encapsulate many different types of errors.
+        /// To determine the specific error always look at the StatusCode property.
+        /// Some common codes you may get when reading a data encryption key are:
+        /// <list type="table">
+        ///     <listheader>
+        ///         <term>StatusCode</term>
+        ///         <description>Reason for exception</description>
+        ///     </listheader>
+        ///     <item>
+        ///         <term>404</term>
+        ///         <description>
+        ///         NotFound - This means the resource or parent resource you tried to read did not exist.
+        ///         </description>
+        ///     </item>
+        ///     <item>
+        ///         <term>429</term>
+        ///         <description>
+        ///         TooManyRequests - This means you have exceeded the number of request units per second.
+        ///         Consult the CosmosException.RetryAfter value to see how long you should wait before retrying this operation.
+        ///         </description>
+        ///     </item>
+        /// </list>
+        /// </exception>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// DataEncryptionKey key = this.database.GetDataEncryptionKey("keyId");
+        /// DataEncryptionKeyProperties keyProperties = await key.ReadAsync();
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract Task<ItemResponse<DataEncryptionKeyProperties>> ReadDataEncryptionKeyAsync(
+            string id,
+            ItemRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
+        /// Wraps the raw data encryption key (after unwrapping using the old metadata if needed) using the provided
+        /// metadata with the help of the key wrapping provider in the EncryptionSerializer configured on the client via
+        /// <see cref="CosmosClientBuilder.WithCustomSerializer"/>, and saves the re-wrapped data encryption key as an asynchronous
+        /// operation in the Azure Cosmos service.
+        /// </summary>
+        /// <param name="id">Unique identifier of the data encryption key.</param>
+        /// <param name="newWrapMetadata">The metadata using which the data encryption key needs to now be wrapped.</param>
+        /// <param name="requestOptions">(Optional) The options for the request.</param>
+        /// <param name="cancellationToken">(Optional) Token representing request cancellation.</param>
+        /// <returns>An awaitable response which wraps a <see cref="DataEncryptionKeyProperties"/> containing details of the data encryption key that was re-wrapped.</returns>
+        /// <exception cref="CosmosException">
+        /// This exception can encapsulate many different types of errors.
+        /// To determine the specific error always look at the StatusCode property.
+        /// Some common codes you may get when re-wrapping a data encryption key are:
+        /// <list type="table">
+        ///     <listheader>
+        ///         <term>StatusCode</term>
+        ///         <description>Reason for exception</description>
+        ///     </listheader>
+        ///     <item>
+        ///         <term>404</term>
+        ///         <description>
+        ///         NotFound - This means the resource or parent resource you tried to replace did not exist.
+        ///         </description>
+        ///     </item>
+        ///     <item>
+        ///         <term>429</term>
+        ///         <description>
+        ///         TooManyRequests - This means you have exceeded the number of request units per second.
+        ///         Consult the CosmosException.RetryAfter value to see how long you should wait before retrying this operation.
+        ///         </description>
+        ///     </item>
+        /// </list>
+        /// </exception>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// AzureKeyVaultKeyWrapMetadata v2Metadata = new AzureKeyVaultKeyWrapMetadata("/path/to/my/master/key/v2");
+        /// await key.RewrapAsync(v2Metadata);
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract Task<ItemResponse<DataEncryptionKeyProperties>> RewrapDataEncryptionKeyAsync(
+            string id,
+            EncryptionKeyWrapMetadata newWrapMetadata,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
     }

@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Use different DEK provider to avoid (unintentional) cache impact
             CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(new TestKeyWrapProvider());
             dekProvider.Initialize(EncryptionTests.keyContainer);
-            DataEncryptionKeyProperties readProperties = await dekProvider.DataEncryptionKeyContainer.GetDataEncryptionKey(dekId).ReadAsync();
+            DataEncryptionKeyProperties readProperties = await dekProvider.DataEncryptionKeyContainer.GetDataEncryptionKey(dekId).ReadDataEncryptionKeyAsync();
             Assert.AreEqual(dekProperties, readProperties);
         }
 
@@ -311,7 +311,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Container containerForTokenClient = databaseForTokenClient.GetContainer(EncryptionTests.itemContainer.Id);
 
             await EncryptionTests.PerformForbiddenOperationAsync(() =>
-                dekProvider.DataEncryptionKeyContainer.GetDataEncryptionKey(EncryptionTests.dekId).ReadAsync(), "DEK.ReadAsync");
+                dekProvider.DataEncryptionKeyContainer.GetDataEncryptionKey(EncryptionTests.dekId).ReadDataEncryptionKeyAsync(), "DEK.ReadAsync");
 
             await EncryptionTests.PerformForbiddenOperationAsync(() =>
                 containerForTokenClient.ReadItemAsync<TestDoc>(testDoc.Id, new PartitionKey(testDoc.PK)), "ReadItemAsync");

@@ -32,14 +32,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider
 
         public async Task<DataEncryptionKeyProperties> GetOrAddDekPropertiesAsync(
             string dekId,
-            Func<CosmosDiagnosticsContext, CancellationToken, Task<DataEncryptionKeyProperties>> fetcher,
+            Func<string, CosmosDiagnosticsContext, CancellationToken, Task<DataEncryptionKeyProperties>> fetcher,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         { 
             CachedDekProperties cachedDekProperties = await this.DekPropertiesCache.GetAsync(
                     dekId,
                     null,
-                    () => this.FetchAsync(fetcher, diagnosticsContext, cancellationToken),
+                    () => this.FetchAsync(dekId, fetcher, diagnosticsContext, cancellationToken),
                     cancellationToken);
 
             if (cachedDekProperties.ServerPropertiesExpiryUtc <= DateTime.UtcNow)
@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider
                 cachedDekProperties = await this.DekPropertiesCache.GetAsync(
                     dekId,
                     null,
-                    () => this.FetchAsync(fetcher, diagnosticsContext, cancellationToken),
+                    () => this.FetchAsync(dekId, fetcher, diagnosticsContext, cancellationToken),
                     cancellationToken,
                     forceRefresh: true);
             }
@@ -101,11 +101,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider
         }
 
         private async Task<CachedDekProperties> FetchAsync(
-            Func<CosmosDiagnosticsContext, CancellationToken, Task<DataEncryptionKeyProperties>> fetcher,
+            string dekId,
+            Func<string, CosmosDiagnosticsContext, CancellationToken, Task<DataEncryptionKeyProperties>> fetcher,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            DataEncryptionKeyProperties serverProperties = await fetcher(diagnosticsContext, cancellationToken);
+            DataEncryptionKeyProperties serverProperties = await fetcher(dekId, diagnosticsContext, cancellationToken);
             return new CachedDekProperties(serverProperties, DateTime.UtcNow + this.dekPropertiesTimeToLive);
         }
     }

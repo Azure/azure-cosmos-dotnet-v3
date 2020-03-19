@@ -22,11 +22,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider
             this.dataEncryptionKeyContainerCore = dataEncryptionKeyContainerCore;
         }
 
-        public override DataEncryptionKey GetDataEncryptionKey(string id)
-        {
-            return this.dataEncryptionKeyContainerCore.GetDataEncryptionKey(id);
-        }
-
         public override FeedIterator<DataEncryptionKeyProperties> GetDataEncryptionKeyIterator(
             string startId = null,
             string endId = null,
@@ -45,6 +40,42 @@ namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider
             CancellationToken cancellationToken = default)
         {
             return TaskHelper.RunInlineIfNeededAsync(() => this.dataEncryptionKeyContainerCore.CreateDataEncryptionKeyAsync(id, encryptionAlgorithm, encryptionKeyWrapMetadata, requestOptions, cancellationToken));
+        }
+
+        /// <inheritdoc/>
+        public override Task<ItemResponse<DataEncryptionKeyProperties>> ReadDataEncryptionKeyAsync(
+            string id,
+            ItemRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
+            return TaskHelper.RunInlineIfNeededAsync(() =>
+                this.dataEncryptionKeyContainerCore.ReadDataEncryptionKeyAsync(id, requestOptions, cancellationToken));
+        }
+
+        /// <inheritdoc/>
+        public override Task<ItemResponse<DataEncryptionKeyProperties>> RewrapDataEncryptionKeyAsync(
+           string id,
+           EncryptionKeyWrapMetadata newWrapMetadata,
+           ItemRequestOptions requestOptions = null,
+           CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
+            if (newWrapMetadata == null)
+            {
+                throw new ArgumentNullException(nameof(newWrapMetadata));
+            }
+
+            return TaskHelper.RunInlineIfNeededAsync(() =>
+                this.dataEncryptionKeyContainerCore.RewrapDataEncryptionKeyAsync(id, newWrapMetadata, requestOptions, cancellationToken));
         }
     }
 }
