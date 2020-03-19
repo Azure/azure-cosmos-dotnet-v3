@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.Query
                            partitionKeyRange: partitionKeyRange,
                            isContinuationExpected: isContinuationExpected,
                            pageSize: pageSize,
-                           diagnosticsContext: this.diagnosticsContext,
+                           queryPageDiagnostics: this.AddQueryPageDiagnostic,
                            cancellationToken: cancellationToken);
         }
 
@@ -104,6 +104,11 @@ namespace Microsoft.Azure.Cosmos.Query
                 supportedQueryFeatures,
                 this.diagnosticsContext,
                 cancellationToken);
+        }
+
+        private void AddQueryPageDiagnostic(QueryPageDiagnostics queryPageDiagnostics)
+        {
+            this.diagnosticsContext.AddDiagnosticsInternal(queryPageDiagnostics);
         }
     }
 }

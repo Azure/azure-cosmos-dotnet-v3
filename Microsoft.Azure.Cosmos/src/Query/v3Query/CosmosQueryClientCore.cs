@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             OperationType operationType,
             QueryRequestOptions requestOptions,
-            CosmosDiagnosticsContext diagnosticsContext,
+            Action<QueryPageDiagnostics> queryPageDiagnostics,
             SqlQuerySpec sqlQuerySpec,
             string continuationToken,
             PartitionKeyRangeIdentity partitionKeyRange,
@@ -155,7 +155,7 @@ namespace Microsoft.Azure.Cosmos
                 resourceType,
                 message,
                 partitionKeyRange,
-                diagnosticsContext);
+                queryPageDiagnostics);
         }
 
         internal override async Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
@@ -265,7 +265,7 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             ResponseMessage cosmosResponseMessage,
             PartitionKeyRangeIdentity partitionKeyRangeIdentity,
-            CosmosDiagnosticsContext diagnosticsContext)
+            Action<QueryPageDiagnostics> queryPageDiagnostics)
         {
             using (cosmosResponseMessage)
             {
@@ -274,8 +274,8 @@ namespace Microsoft.Azure.Cosmos
                     queryMetricText: cosmosResponseMessage.Headers.QueryMetricsText,
                     indexUtilizationText: cosmosResponseMessage.Headers[HttpConstants.HttpHeaders.IndexUtilization],
                     diagnosticsContext: cosmosResponseMessage.DiagnosticsContext);
+                queryPageDiagnostics(queryPage);
 
-                diagnosticsContext.AddDiagnosticsInternal(queryPage);
                 if (!cosmosResponseMessage.IsSuccessStatusCode)
                 {
                     return QueryResponseCore.CreateFailure(

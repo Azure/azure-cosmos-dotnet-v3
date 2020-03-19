@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             Documents.ResourceType resourceType,
             Documents.OperationType operationType,
             QueryRequestOptions requestOptions,
-            CosmosDiagnosticsContext diagnosticsContext,
+            Action<QueryPageDiagnostics> queryPageDiagnostics,
             SqlQuerySpec sqlQuerySpec,
             string continuationToken,
             Documents.PartitionKeyRangeIdentity partitionKeyRange,
