@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.Query
     internal class CosmosQueryContextCore : CosmosQueryContext
     {
         private readonly QueryRequestOptions queryRequestOptions;
+        private readonly object diagnosticLock = new object();
         private CosmosDiagnosticsContext diagnosticsContext;
 
         public CosmosQueryContextCore(
@@ -53,9 +54,12 @@ namespace Microsoft.Azure.Cosmos.Query
         internal CosmosDiagnosticsContext GetAndResetDiagnostics()
         {
             // Safely swap the current diagnostics for the new diagnostics.
-            return Interlocked.Exchange(
-                ref this.diagnosticsContext,
-                CosmosDiagnosticsContext.Create(this.queryRequestOptions));
+            lock (this.diagnosticLock)
+            {
+                CosmosDiagnosticsContext old = this.diagnosticsContext;
+                this.diagnosticsContext = CosmosDiagnosticsContext.Create(this.queryRequestOptions);
+                return old;
+            }
         }
 
         internal override Task<QueryResponseCore> ExecuteQueryAsync(
@@ -108,7 +112,11 @@ namespace Microsoft.Azure.Cosmos.Query
 
         private void AddQueryPageDiagnostic(QueryPageDiagnostics queryPageDiagnostics)
         {
-            this.diagnosticsContext.AddDiagnosticsInternal(queryPageDiagnostics);
+            // Prevent a swap while adding context
+            lock (this.diagnosticLock)
+            {
+                this.diagnosticsContext.AddDiagnosticsInternal(queryPageDiagnostics);
+            }
         }
     }
 }
