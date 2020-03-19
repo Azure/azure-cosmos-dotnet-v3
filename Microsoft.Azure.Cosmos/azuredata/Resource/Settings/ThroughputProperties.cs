@@ -27,7 +27,6 @@ namespace Azure.Cosmos
     {
         internal ThroughputProperties()
         {
-
         }
 
         /// <summary>

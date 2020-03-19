@@ -38,11 +38,6 @@
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": null
-        },
-        "Void .ctor()": {
-          "Type": "Constructor",
-          "Attributes": [],
-          "MethodInfo": "Void .ctor()"
         }
       },
       "NestedTypes": {}
@@ -135,11 +130,6 @@
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": null
-        },
-        "Void .ctor()": {
-          "Type": "Constructor",
-          "Attributes": [],
-          "MethodInfo": "Void .ctor()"
         }
       },
       "NestedTypes": {}
@@ -244,11 +234,6 @@
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": null
-        },
-        "Void .ctor()": {
-          "Type": "Constructor",
-          "Attributes": [],
-          "MethodInfo": "Void .ctor()"
         }
       },
       "NestedTypes": {}
@@ -2245,13 +2230,6 @@
           "Attributes": [],
           "MethodInfo": null
         },
-        "Azure.Cosmos.OperationKind Read[System.ObsoleteAttribute(\"This item is obsolete as it does not apply to Conflict.\")]": {
-          "Type": "Field",
-          "Attributes": [
-            "ObsoleteAttribute"
-          ],
-          "MethodInfo": null
-        },
         "Azure.Cosmos.OperationKind Replace": {
           "Type": "Field",
           "Attributes": [],
@@ -3556,11 +3534,6 @@
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": null
-        },
-        "Void .ctor()": {
-          "Type": "Constructor",
-          "Attributes": [],
-          "MethodInfo": "Void .ctor()"
         },
         "Void .ctor(System.String, System.String)": {
           "Type": "Constructor",
@@ -5086,11 +5059,6 @@
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": null
-        },
-        "Void .ctor()": {
-          "Type": "Constructor",
-          "Attributes": [],
-          "MethodInfo": "Void .ctor()"
         }
       },
       "NestedTypes": {}
