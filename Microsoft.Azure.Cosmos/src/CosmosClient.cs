@@ -250,8 +250,7 @@ namespace Microsoft.Azure.Cosmos
                 requestHandler: this.RequestHandler,
                 documentClient: this.DocumentClient,
                 userAgent: this.DocumentClient.ConnectionPolicy.UserAgentContainer.UserAgent,
-                encryptionProcessor: new EncryptionProcessor(),
-                dekCache: new DekCache());
+                encryptionProcessor: new EncryptionProcessor());
         }
 
         /// <summary>
@@ -311,8 +310,7 @@ namespace Microsoft.Azure.Cosmos
                 requestHandler: this.RequestHandler,
                 documentClient: this.DocumentClient,
                 userAgent: this.DocumentClient.ConnectionPolicy.UserAgentContainer.UserAgent,
-                encryptionProcessor: new EncryptionProcessor(),
-                dekCache: new DekCache());
+                encryptionProcessor: new EncryptionProcessor());
         }
 
         /// <summary>

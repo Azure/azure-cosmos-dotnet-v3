@@ -25,8 +25,7 @@ namespace Microsoft.Azure.Cosmos
             RequestInvokerHandler requestHandler,
             DocumentClient documentClient,
             string userAgent,
-            EncryptionProcessor encryptionProcessor = null,
-            DekCache dekCache = null)
+            EncryptionProcessor encryptionProcessor = null)
         {
             this.Client = client;
             this.ClientOptions = clientOptions;
@@ -36,7 +35,6 @@ namespace Microsoft.Azure.Cosmos
             this.DocumentClient = documentClient;
             this.UserAgent = userAgent;
             this.EncryptionProcessor = encryptionProcessor;
-            this.DekCache = dekCache;
         }
 
         /// <summary>
@@ -57,8 +55,6 @@ namespace Microsoft.Azure.Cosmos
         internal override string UserAgent { get; }
 
         internal override EncryptionProcessor EncryptionProcessor { get; }
-
-        internal override DekCache DekCache { get; }
 
         /// <summary>
         /// Generates the URI link for the resource

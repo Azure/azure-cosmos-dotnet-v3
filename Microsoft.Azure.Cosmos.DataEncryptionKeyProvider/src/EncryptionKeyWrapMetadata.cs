@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider
 {
     using System;
     using System.Collections.Generic;
@@ -12,12 +12,7 @@ namespace Microsoft.Azure.Cosmos
     /// Metadata that a key wrapping provider can use to wrap/unwrap data encryption keys.
     /// <seealso cref="EncryptionKeyWrapProvider" />
     /// </summary>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-         class EncryptionKeyWrapMetadata : IEquatable<EncryptionKeyWrapMetadata>
+    public class EncryptionKeyWrapMetadata : IEquatable<EncryptionKeyWrapMetadata>
     {
         // For JSON deserialize
         private EncryptionKeyWrapMetadata()

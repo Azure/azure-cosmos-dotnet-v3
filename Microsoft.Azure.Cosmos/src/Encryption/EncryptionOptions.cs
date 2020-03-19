@@ -17,11 +17,18 @@ namespace Microsoft.Azure.Cosmos
         class EncryptionOptions
     {
         /// <summary>
-        /// Reference to encryption key to be used for encryption of data in the request payload.
-        /// The key must already be created using Database.CreateDataEncryptionKeyAsync
-        /// before using it in encryption options.
+        /// Algorithm to be used for encrypting the data in the request payload.
         /// </summary>
-        public DataEncryptionKey DataEncryptionKey { get; set; }
+        public CosmosEncryptionAlgorithm EncryptionAlgorithm { get; set; }
+
+        /// <summary>
+        /// Identifier of the data encryption key to be used for encrypting the data in the request payload.
+        /// The data encryption key must be suitable for use with the <see cref="EncryptionAlgorithm"/> provided.
+        /// </summary>
+        /// <remarks>
+        /// The <see cref="DataEncryptionKeyProvider"/> configured on the client is used to retrieve the actual data encryption key.
+        /// </remarks>
+        public string DataEncryptionKeyId { get; set; }
 
         /// <summary>
         /// For the request payload, list of JSON paths to encrypt.

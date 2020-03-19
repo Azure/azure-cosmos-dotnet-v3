@@ -277,11 +277,11 @@ namespace Microsoft.Azure.Cosmos {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The client was not configured to allow for encryption. Create the client by using cosmosClientBuilder.WithEncryptionKeyWrapProvider..
+        ///   Looks up a localized string similar to The client was not configured to allow for encryption. Create the client by using cosmosClientBuilder.WithDataEncryptionKeyProvider..
         /// </summary>
-        internal static string EncryptionKeyWrapProviderNotConfigured {
+        internal static string DataEncryptionKeyProviderNotConfigured {
             get {
-                return ResourceManager.GetString("EncryptionKeyWrapProviderNotConfigured", resourceCulture);
+                return ResourceManager.GetString("DataEncryptionKeyProviderNotConfigured", resourceCulture);
             }
         }
         

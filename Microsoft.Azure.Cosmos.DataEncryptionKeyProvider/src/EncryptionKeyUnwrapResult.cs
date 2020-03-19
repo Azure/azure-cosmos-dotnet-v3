@@ -2,19 +2,14 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider
 {
     using System;
 
     /// <summary>
     /// Result from a <see cref="EncryptionKeyWrapProvider"/> on unwrapping a wrapped data encryption key.
     /// </summary>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-        class EncryptionKeyUnwrapResult
+    public class EncryptionKeyUnwrapResult
     {
         /// <summary>
         /// Initializes a new instance of the result of unwrapping a wrapped data encryption key.

@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider
 {
     using System;
     using System.Threading;
@@ -28,11 +28,9 @@ namespace Microsoft.Azure.Cosmos
         /// <inheritdoc/>
         public override string Id => this.dataEncryptionKey.Id;
 
-        internal Uri LinkUri => this.dataEncryptionKey.LinkUri;
-
         /// <inheritdoc/>
-        public override Task<DataEncryptionKeyResponse> ReadAsync(
-            RequestOptions requestOptions = null,
+        public override Task<ItemResponse<DataEncryptionKeyProperties>> ReadAsync(
+            ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             return TaskHelper.RunInlineIfNeededAsync(() =>
@@ -40,9 +38,9 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <inheritdoc/>
-        public override Task<DataEncryptionKeyResponse> RewrapAsync(
+        public override Task<ItemResponse<DataEncryptionKeyProperties>> RewrapAsync(
            EncryptionKeyWrapMetadata newWrapMetadata,
-           RequestOptions requestOptions = null,
+           ItemRequestOptions requestOptions = null,
            CancellationToken cancellationToken = default(CancellationToken))
         {
             if (newWrapMetadata == null)

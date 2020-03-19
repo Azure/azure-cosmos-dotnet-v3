@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos
             }
             catch (ArgumentException ex)
             {
-                Assert.AreEqual(ClientResources.EncryptionKeyWrapProviderNotConfigured, ex.Message);
+                Assert.AreEqual(ClientResources.DataEncryptionKeyProviderNotConfigured, ex.Message);
             }
 
         }
@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos
             }
             catch (ArgumentException ex)
             {
-                Assert.AreEqual(ClientResources.EncryptionKeyWrapProviderNotConfigured, ex.Message);
+                Assert.AreEqual(ClientResources.DataEncryptionKeyProviderNotConfigured, ex.Message);
             }
         }
 

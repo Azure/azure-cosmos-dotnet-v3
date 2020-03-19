@@ -2,23 +2,18 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider
 {
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Fluent;
 
     /// <summary>
-    /// Provides operations for reading, re-wrapping, or deleting a specific data encryption key by Id.
-    /// See <see cref="Database"/> for operations to create and enumerate data encryption keys.
+    /// Provides operations for reading or re-wrapping a specific data encryption key by Id.
+    /// See <see cref="DataEncryptionKeyContainer"/> for operations to create and enumerate data encryption keys.
     /// See https://aka.ms/CosmosClientEncryption for more information on client-side encryption support in Azure Cosmos DB.
     /// </summary>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-        abstract class DataEncryptionKey
+    public abstract class DataEncryptionKey
     {
         /// <summary>
         /// The unique identifier of the data encryption key.
@@ -63,8 +58,8 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<DataEncryptionKeyResponse> ReadAsync(
-            RequestOptions requestOptions = null,
+        public abstract Task<ItemResponse<DataEncryptionKeyProperties>> ReadAsync(
+            ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
@@ -109,9 +104,9 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<DataEncryptionKeyResponse> RewrapAsync(
+        public abstract Task<ItemResponse<DataEncryptionKeyProperties>> RewrapAsync(
             EncryptionKeyWrapMetadata newWrapMetadata,
-            RequestOptions requestOptions = null,
+            ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
     }
 }
