@@ -14,20 +14,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider
     /// </summary>
     public class CosmosDataEncryptionKeyProvider : Cosmos.DataEncryptionKeyProvider
     {
+        private DataEncryptionKeyContainerCore dataEncryptionKeyContainerCore;
+
         internal DekCache DekCache { get; }
 
         internal Container Container { get; private set; }
 
         public EncryptionKeyWrapProvider EncryptionKeyWrapProvider { get; }
 
-        public DataEncryptionKeyContainer DataEncryptionKeyContainer { get; }
+        public DataEncryptionKeyContainer DataEncryptionKeyContainer => dataEncryptionKeyContainerCore;
 
         public CosmosDataEncryptionKeyProvider(
             EncryptionKeyWrapProvider encryptionKeyWrapProvider,
             TimeSpan? dekPropertiesTimeToLive = null)
         {
             this.EncryptionKeyWrapProvider = encryptionKeyWrapProvider;
-            this.DataEncryptionKeyContainer = new DataEncryptionKeyContainerCore(this);
+            this.dataEncryptionKeyContainerCore = new DataEncryptionKeyContainerCore(this);
             this.DekCache = new DekCache(dekPropertiesTimeToLive);
         }
 
@@ -50,8 +52,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider
                 throw new InvalidOperationException($"The {nameof(CosmosDataEncryptionKeyProvider)} was not initialized.");
             }
 
-            DataEncryptionKeyCore dekCore = (DataEncryptionKeyInlineCore)this.DataEncryptionKeyContainer.GetDataEncryptionKey(id);
-            (DataEncryptionKeyProperties _, InMemoryRawDek inMemoryRawDek) = await dekCore.FetchUnwrappedAsync(null, cancellationToken);
+            (DataEncryptionKeyProperties _, InMemoryRawDek inMemoryRawDek) = await this.dataEncryptionKeyContainerCore.FetchUnwrappedAsync(
+                id, 
+                diagnosticsContext: null, 
+                cancellationToken: cancellationToken);
+
             return inMemoryRawDek.RawDek;
         }
     }

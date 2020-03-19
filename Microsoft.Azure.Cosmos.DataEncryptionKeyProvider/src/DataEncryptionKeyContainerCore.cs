@@ -19,19 +19,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider
             this.DekProvider = dekProvider;
         }
 
-        public override DataEncryptionKey GetDataEncryptionKey(string id)
-        {
-            if (string.IsNullOrEmpty(id))
-            {
-                throw new ArgumentNullException(nameof(id));
-            }
-
-            return new DataEncryptionKeyInlineCore(
-                new DataEncryptionKeyCore(
-                    this.DekProvider,
-                    id));
-        }
-
         public override FeedIterator<DataEncryptionKeyProperties> GetDataEncryptionKeyIterator(
                 string startId = null,
                 string endId = null,
