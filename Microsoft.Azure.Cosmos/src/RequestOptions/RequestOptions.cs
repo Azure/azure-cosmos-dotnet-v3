@@ -51,7 +51,9 @@ namespace Microsoft.Azure.Cosmos
         internal virtual ConsistencyLevel? BaseConsistencyLevel { get; set; }
 
         /// <summary>
-        /// This disables all diagnostics for the CosmosDiagnostic in the response.
+        /// This allows user to pass in a custom factory for the diagnostic context.
+        /// A custom implementation can ignore certain calls to avoid additional overhead
+        /// when the information is not required.
         /// </summary>
         internal Func<CosmosDiagnosticsContext> DiagnosticContextFactory { get; set; }
 
