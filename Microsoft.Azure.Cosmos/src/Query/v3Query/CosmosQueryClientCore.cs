@@ -112,33 +112,27 @@ namespace Microsoft.Azure.Cosmos
                 hasLogicalPartitionKey);
         }
 
-        internal override async Task<QueryResponseCore> ExecuteItemQueryAsync<RequestOptionType>(
+        internal override async Task<QueryResponseCore> ExecuteItemQueryAsync(
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
-            RequestOptionType requestOptions,
+            QueryRequestOptions requestOptions,
+            Action<QueryPageDiagnostics> queryPageDiagnostics,
             SqlQuerySpec sqlQuerySpec,
             string continuationToken,
             PartitionKeyRangeIdentity partitionKeyRange,
             bool isContinuationExpected,
             int pageSize,
-            SchedulingStopwatch schedulingStopwatch,
             CancellationToken cancellationToken)
         {
-            if (!(requestOptions is QueryRequestOptions queryRequestOptions))
-            {
-                throw new InvalidOperationException($"CosmosQueryClientCore.ExecuteItemQueryAsync only supports RequestOptionType of QueryRequestOptions");
-            }
+            requestOptions.MaxItemCount = pageSize;
 
-            queryRequestOptions.MaxItemCount = pageSize;
-
-            schedulingStopwatch.Start();
             ResponseMessage message = await this.clientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: resourceUri,
                 resourceType: resourceType,
                 operationType: operationType,
-                requestOptions: queryRequestOptions,
-                partitionKey: queryRequestOptions.PartitionKey,
+                requestOptions: requestOptions,
+                partitionKey: requestOptions.PartitionKey,
                 cosmosContainerCore: this.cosmosContainerCore,
                 streamPayload: this.clientContext.SerializerCore.ToStreamSqlQuerySpec(sqlQuerySpec, resourceType),
                 requestEnricher: (cosmosRequestMessage) =>
@@ -156,14 +150,12 @@ namespace Microsoft.Azure.Cosmos
                 diagnosticsContext: null,
                 cancellationToken: cancellationToken);
 
-            schedulingStopwatch.Stop();
-
             return this.GetCosmosElementResponse(
-                queryRequestOptions,
+                requestOptions,
                 resourceType,
                 message,
                 partitionKeyRange,
-                schedulingStopwatch);
+                queryPageDiagnostics);
         }
 
         internal override async Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
@@ -173,6 +165,7 @@ namespace Microsoft.Azure.Cosmos
             SqlQuerySpec sqlQuerySpec,
             PartitionKey? partitionKey,
             string supportedQueryFeatures,
+            CosmosDiagnosticsContext diagnosticsContextFactory,
             CancellationToken cancellationToken)
         {
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
@@ -272,18 +265,17 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             ResponseMessage cosmosResponseMessage,
             PartitionKeyRangeIdentity partitionKeyRangeIdentity,
-            SchedulingStopwatch schedulingStopwatch)
+            Action<QueryPageDiagnostics> queryPageDiagnostics)
         {
             using (cosmosResponseMessage)
             {
-                QueryPageDiagnostics diagnostics = new QueryPageDiagnostics(
+                QueryPageDiagnostics queryPage = new QueryPageDiagnostics(
                     partitionKeyRangeId: partitionKeyRangeIdentity.PartitionKeyRangeId,
                     queryMetricText: cosmosResponseMessage.Headers.QueryMetricsText,
                     indexUtilizationText: cosmosResponseMessage.Headers[HttpConstants.HttpHeaders.IndexUtilization],
-                    diagnosticsContext: cosmosResponseMessage.DiagnosticsContext,
-                    schedulingStopwatch: schedulingStopwatch);
+                    diagnosticsContext: cosmosResponseMessage.DiagnosticsContext);
+                queryPageDiagnostics(queryPage);
 
-                IReadOnlyCollection<QueryPageDiagnostics> pageDiagnostics = new List<QueryPageDiagnostics>() { diagnostics };
                 if (!cosmosResponseMessage.IsSuccessStatusCode)
                 {
                     return QueryResponseCore.CreateFailure(
@@ -291,8 +283,7 @@ namespace Microsoft.Azure.Cosmos
                         subStatusCodes: cosmosResponseMessage.Headers.SubStatusCode,
                         cosmosException: cosmosResponseMessage.CosmosException,
                         requestCharge: cosmosResponseMessage.Headers.RequestCharge,
-                        activityId: cosmosResponseMessage.Headers.ActivityId,
-                        diagnostics: pageDiagnostics);
+                        activityId: cosmosResponseMessage.Headers.ActivityId);
                 }
 
                 if (!(cosmosResponseMessage.Content is MemoryStream memoryStream))
@@ -312,7 +303,6 @@ namespace Microsoft.Azure.Cosmos
                     result: cosmosArray,
                     requestCharge: cosmosResponseMessage.Headers.RequestCharge,
                     activityId: cosmosResponseMessage.Headers.ActivityId,
-                    diagnostics: pageDiagnostics,
                     responseLengthBytes: responseLengthBytes,
                     disallowContinuationTokenMessage: null,
                     continuationToken: cosmosResponseMessage.Headers.ContinuationToken);

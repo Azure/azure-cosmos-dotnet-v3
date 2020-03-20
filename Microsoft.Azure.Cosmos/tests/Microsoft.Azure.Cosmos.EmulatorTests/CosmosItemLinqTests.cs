@@ -291,8 +291,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             QueryRequestOptions queryRequestOptions = new QueryRequestOptions();
             if (disableDiagnostic)
             {
-                queryRequestOptions.DiagnosticContext = EmptyCosmosDiagnosticsContext.Singleton;
-            }
+                queryRequestOptions.DiagnosticContextFactory = () => EmptyCosmosDiagnosticsContext.Singleton;
+            };
 
             IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(
                 requestOptions: queryRequestOptions);
@@ -754,7 +754,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual<T>(expectedValue, response.Resource);
             Assert.IsTrue(response.RequestCharge > 0);
 
-            bool disableDiagnostics = (queryRequestOptions.DiagnosticContext as EmptyCosmosDiagnosticsContext) != null;
+            bool disableDiagnostics = queryRequestOptions.DiagnosticContextFactory != null;
             CosmosDiagnosticsTests.VerifyQueryDiagnostics(
                 diagnostics: response.Diagnostics,
                 isFirstPage: false,

@@ -32,7 +32,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         /// <returns>A <see cref="DocumentServiceResponse"/> instance.</returns>
         public static DocumentServiceResponse GetDocumentServiceResponse(DocumentServiceRequest request)
         {
-            DocumentServiceResponse response = null;
             if (request.OperationType == OperationType.Read)
             {
                 if (request.ResourceAddress.EndsWith(Constants.ValidOperationId))
@@ -91,7 +90,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         /// <returns>A <see cref="StoreResponse"/> instance.</returns>
         public static StoreResponse GetStoreResponse(DocumentServiceRequest request)
         {
-            StoreResponse response = null;
             DictionaryNameValueCollection headers = new DictionaryNameValueCollection();
             if (request.OperationType == OperationType.Read)
             {

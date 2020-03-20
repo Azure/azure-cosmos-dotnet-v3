@@ -565,20 +565,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         }
 
         /// <summary>
-        /// Since query metrics are being aggregated asynchronously to the feed responses as explained in the member documentation,
-        /// this function allows us to take a snapshot of the query metrics.
-        /// </summary>
-        protected IReadOnlyCollection<QueryPageDiagnostics> GetAndResetDiagnostics()
-        {
-            // Safely swap the current ConcurrentBag<QueryPageDiagnostics> for a new instance. 
-            ConcurrentBag<QueryPageDiagnostics> queryPageDiagnostics = Interlocked.Exchange(
-                ref this.diagnosticsPages,
-                new ConcurrentBag<QueryPageDiagnostics>());
-
-            return queryPageDiagnostics;
-        }
-
-        /// <summary>
         /// Tries to schedule a fetch from the document producer tree.
         /// </summary>
         /// <param name="itemProducerTree">The document producer tree to schedule a fetch for.</param>
@@ -599,7 +585,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         /// <param name="producer">The document producer that just finished fetching.</param>
         /// <param name="itemsBuffered">The number of items that the producer just fetched.</param>
         /// <param name="resourceUnitUsage">The amount of RUs that the producer just consumed.</param>
-        /// <param name="diagnostics">The query metrics that the producer just got back from the backend.</param>
         /// <param name="responseLengthBytes">The length of the response the producer just got back in bytes.</param>
         /// <param name="token">The cancellation token.</param>
         /// <remarks>
@@ -610,7 +595,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             ItemProducerTree producer,
             int itemsBuffered,
             double resourceUnitUsage,
-            IReadOnlyCollection<QueryPageDiagnostics> diagnostics,
             long responseLengthBytes,
             CancellationToken token)
         {
@@ -618,12 +602,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             this.requestChargeTracker.AddCharge(resourceUnitUsage);
             Interlocked.Add(ref this.totalBufferedItems, itemsBuffered);
             this.IncrementResponseLengthBytes(responseLengthBytes);
-
-            // Add the pages to the concurrent bag to safely merge all the list together.
-            foreach (QueryPageDiagnostics diagnosticPage in diagnostics)
-            {
-                this.diagnosticsPages.Add(diagnosticPage);
-            }
 
             // Adjust the producer page size so that we reach the optimal page size.
             producer.PageSize = Math.Min((long)(producer.PageSize * DynamicPageSizeAdjustmentFactor), this.actualMaxPageSize);
