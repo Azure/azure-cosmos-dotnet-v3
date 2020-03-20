@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             | QueryFeatures.Top
             | QueryFeatures.NonValueAggregate;
 
-        private static readonly string SupportedQueryFeaturesString = SupportedQueryFeatures.ToString();
+        internal static readonly string SupportedQueryFeaturesString = SupportedQueryFeatures.ToString();
 
         public static async Task<PartitionedQueryExecutionInfo> GetQueryPlanWithServiceInteropAsync(
             CosmosQueryClient queryClient,

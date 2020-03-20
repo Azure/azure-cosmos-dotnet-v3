@@ -258,12 +258,30 @@ namespace Microsoft.Azure.Cosmos
 
             if (queryDefinition != null)
             {
-                Query.Core.QueryPlan.PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = await Query.Core.QueryPlan.QueryPlanRetriever.GetQueryPlanThroughGatewayAsync(
+                Query.Core.QueryPlan.PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = null;
+                if (this.queryClient.ByPassQueryParsing())
+                {
+                    partitionedQueryExecutionInfo = await this.queryClient.ExecuteQueryPlanRequestAsync(
+                        this.LinkUri,
+                        ResourceType.Document,
+                        OperationType.QueryPlan,
+                        queryDefinition.ToSqlQuerySpec(),
+                        partitionKey: null,
+                        Query.Core.QueryPlan.QueryPlanRetriever.SupportedQueryFeaturesString,
+                        CosmosDiagnosticsContext.Create(queryRequestOptions),
+                        cancellationToken);
+                }
+                else
+                {
+                    PartitionKeyDefinition partitionKeyDefinition = await this.GetPartitionKeyDefinitionAsync(cancellationToken);
+                    partitionedQueryExecutionInfo = await Query.Core.QueryPlan.QueryPlanRetriever.GetQueryPlanWithServiceInteropAsync(
                             this.queryClient,
                             queryDefinition.ToSqlQuerySpec(),
-                            this.LinkUri,
-                            partitionKey: null,
+                            partitionKeyDefinition: partitionKeyDefinition,
+                            hasLogicalPartitionKey: false,
                             cancellationToken);
+                }
+
                 if (partitionedQueryExecutionInfo.QueryInfo.HasAggregates
                     || partitionedQueryExecutionInfo.QueryInfo.HasDistinct
                     || partitionedQueryExecutionInfo.QueryInfo.HasGroupBy)
