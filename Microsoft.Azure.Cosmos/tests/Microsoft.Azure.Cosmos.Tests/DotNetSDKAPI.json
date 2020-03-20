@@ -1295,11 +1295,9 @@
           "Attributes": [],
           "MethodInfo": null
         },
-        "Microsoft.Azure.Cosmos.CosmosClientOptions get_ClientOptions()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Microsoft.Azure.Cosmos.CosmosClientOptions get_ClientOptions()": {
           "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.CosmosClientOptions get_ClientOptions()"
         },
         "Microsoft.Azure.Cosmos.Database GetDatabase(System.String)": {
@@ -1715,6 +1713,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "System.String ToString()"
+        },
+        "System.TimeSpan GetClientElapsedTime()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.TimeSpan GetClientElapsedTime()"
         }
       },
       "NestedTypes": {}
@@ -3635,6 +3638,31 @@
     "PartitionKey": {
       "Subclasses": {},
       "Members": {
+        "Boolean Equals(Microsoft.Azure.Cosmos.PartitionKey)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Boolean Equals(Microsoft.Azure.Cosmos.PartitionKey)"
+        },
+        "Boolean Equals(System.Object)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Boolean Equals(System.Object)"
+        },
+        "Boolean op_Equality(Microsoft.Azure.Cosmos.PartitionKey, Microsoft.Azure.Cosmos.PartitionKey)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Boolean op_Equality(Microsoft.Azure.Cosmos.PartitionKey, Microsoft.Azure.Cosmos.PartitionKey)"
+        },
+        "Boolean op_Inequality(Microsoft.Azure.Cosmos.PartitionKey, Microsoft.Azure.Cosmos.PartitionKey)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Boolean op_Inequality(Microsoft.Azure.Cosmos.PartitionKey, Microsoft.Azure.Cosmos.PartitionKey)"
+        },
+        "Int32 GetHashCode()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Int32 GetHashCode()"
+        },
         "Microsoft.Azure.Cosmos.PartitionKey None": {
           "Type": "Field",
           "Attributes": [],
@@ -6477,6 +6505,52 @@
           },
           "NestedTypes": {}
         },
+        "MultiPolygon": {
+          "Subclasses": {},
+          "Members": {
+            "Boolean Equals(Microsoft.Azure.Cosmos.Spatial.MultiPolygon)": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "Boolean Equals(Microsoft.Azure.Cosmos.Spatial.MultiPolygon)"
+            },
+            "Boolean Equals(System.Object)": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "Boolean Equals(System.Object)"
+            },
+            "Int32 GetHashCode()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "Int32 GetHashCode()"
+            },
+            "System.Collections.ObjectModel.ReadOnlyCollection`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates] get_Polygons()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "System.Collections.ObjectModel.ReadOnlyCollection`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates] get_Polygons()"
+            },
+            "System.Collections.ObjectModel.ReadOnlyCollection`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates] Polygons[System.Runtime.Serialization.DataMemberAttribute(Name = \"coordinates\")]-[Newtonsoft.Json.JsonPropertyAttribute(\"coordinates\", Order = 1, Required = 2)]": {
+              "Type": "Property",
+              "Attributes": [
+                "DataMemberAttribute",
+                "JsonPropertyAttribute"
+              ],
+              "MethodInfo": null
+            },
+            "Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates])": {
+              "Type": "Constructor",
+              "Attributes": [],
+              "MethodInfo": "Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates])"
+            },
+            "Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates], Microsoft.Azure.Cosmos.Spatial.GeometryParams)": {
+              "Type": "Constructor",
+              "Attributes": [],
+              "MethodInfo": "Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates], Microsoft.Azure.Cosmos.Spatial.GeometryParams)"
+            }
+          },
+          "NestedTypes": {}
+        },
         "Point": {
           "Subclasses": {},
           "Members": {
@@ -7017,6 +7091,52 @@
       },
       "NestedTypes": {}
     },
+    "MultiPolygon": {
+      "Subclasses": {},
+      "Members": {
+        "Boolean Equals(Microsoft.Azure.Cosmos.Spatial.MultiPolygon)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Boolean Equals(Microsoft.Azure.Cosmos.Spatial.MultiPolygon)"
+        },
+        "Boolean Equals(System.Object)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Boolean Equals(System.Object)"
+        },
+        "Int32 GetHashCode()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Int32 GetHashCode()"
+        },
+        "System.Collections.ObjectModel.ReadOnlyCollection`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates] get_Polygons()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Collections.ObjectModel.ReadOnlyCollection`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates] get_Polygons()"
+        },
+        "System.Collections.ObjectModel.ReadOnlyCollection`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates] Polygons[System.Runtime.Serialization.DataMemberAttribute(Name = \"coordinates\")]-[Newtonsoft.Json.JsonPropertyAttribute(\"coordinates\", Order = 1, Required = 2)]": {
+          "Type": "Property",
+          "Attributes": [
+            "DataMemberAttribute",
+            "JsonPropertyAttribute"
+          ],
+          "MethodInfo": null
+        },
+        "Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates])": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates])"
+        },
+        "Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates], Microsoft.Azure.Cosmos.Spatial.GeometryParams)": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates], Microsoft.Azure.Cosmos.Spatial.GeometryParams)"
+        }
+      },
+      "NestedTypes": {}
+    },
     "NamedCrs": {
       "Subclasses": {},
       "Members": {
@@ -7150,6 +7270,46 @@
           "Type": "Constructor",
           "Attributes": [],
           "MethodInfo": "Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.Position])"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "PolygonCoordinates": {
+      "Subclasses": {},
+      "Members": {
+        "Boolean Equals(Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Boolean Equals(Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates)"
+        },
+        "Boolean Equals(System.Object)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Boolean Equals(System.Object)"
+        },
+        "Int32 GetHashCode()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Int32 GetHashCode()"
+        },
+        "System.Collections.ObjectModel.ReadOnlyCollection`1[Microsoft.Azure.Cosmos.Spatial.LinearRing] get_Rings()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Collections.ObjectModel.ReadOnlyCollection`1[Microsoft.Azure.Cosmos.Spatial.LinearRing] get_Rings()"
+        },
+        "System.Collections.ObjectModel.ReadOnlyCollection`1[Microsoft.Azure.Cosmos.Spatial.LinearRing] Rings[System.Runtime.Serialization.DataMemberAttribute(Name = \"rings\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "DataMemberAttribute"
+          ],
+          "MethodInfo": null
+        },
+        "Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.LinearRing])": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.LinearRing])"
         }
       },
       "NestedTypes": {}

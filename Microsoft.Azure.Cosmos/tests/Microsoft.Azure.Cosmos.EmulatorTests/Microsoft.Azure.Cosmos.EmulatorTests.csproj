@@ -216,7 +216,7 @@
       <Link>Documents\2MBDocument.json</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Documents\MillionSong1KDocuments.json">
+    <None Include="Documents\MillionSong1KDocuments.txt">
       <Link>Documents\MillionSong1KDocuments.json</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

@@ -276,7 +276,7 @@ namespace Microsoft.Azure.Cosmos
              streamPayload: null,
              requestOptions: null,
              requestEnricher: null,
-             diagnosticsScope: diagnosticsContext,
+             diagnosticsContext: diagnosticsContext,
              cancellationToken: cancellationToken);
 
             DataEncryptionKeyResponse response = await this.ClientContext.ResponseFactory.CreateDataEncryptionKeyResponseAsync(this, responseMessage);
@@ -330,7 +330,7 @@ namespace Microsoft.Azure.Cosmos
              streamPayload: streamPayload,
              requestOptions: requestOptions,
              requestEnricher: null,
-             diagnosticsScope: diagnosticsContext,
+             diagnosticsContext: diagnosticsContext,
              cancellationToken: cancellationToken);
         }
     }

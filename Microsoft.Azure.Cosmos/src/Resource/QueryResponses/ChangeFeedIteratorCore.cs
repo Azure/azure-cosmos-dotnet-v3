@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos
         public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             CosmosDiagnosticsContext diagnostics = CosmosDiagnosticsContext.Create(this.changeFeedOptions);
-            using (diagnostics.CreateOverallScope("ChangeFeedReadNextAsync"))
+            using (diagnostics.GetOverallScope())
             {
                 if (this.containerRId == null)
                 {
@@ -126,7 +126,7 @@ namespace Microsoft.Azure.Cosmos
                 },
                 partitionKey: null,
                 streamPayload: null,
-                diagnosticsScope: diagnosticsScope,
+                diagnosticsContext: diagnosticsScope,
                 cancellationToken: cancellationToken);
 
             // Retry in case of splits or other scenarios

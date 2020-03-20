@@ -393,7 +393,10 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedToken
             Func<RequestMessage, CancellationToken, Task<ResponseMessage>> handlerFunc)
         {
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
-
+            CosmosClientContext clientContext = ClientContextCore.Create(
+               client,
+               new MockDocumentClient(),
+               new CosmosClientOptions());
             Mock<PartitionRoutingHelper> partitionRoutingHelperMock = MockCosmosUtil.GetPartitionRoutingHelperMock("0");
 
             TestHandler testHandler = new TestHandler(handlerFunc);
@@ -408,7 +411,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedToken
 
             RequestHandler feedHandler =  ClientPipelineBuilder.CreatePipeline(feedPipeline);
 
-            RequestHandler handler = client.RequestHandler.InnerHandler;
+            RequestHandler handler = clientContext.RequestHandler.InnerHandler;
             while (handler != null)
             {
                 if (handler.InnerHandler is RouterHandler)
@@ -420,16 +423,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedToken
                 handler = handler.InnerHandler;
             }
 
-            CosmosResponseFactory responseFactory = new CosmosResponseFactory(MockCosmosUtil.Serializer);
-
-            return new ClientContextCore(
-                client: client,
-                clientOptions: new CosmosClientOptions(),
-                serializerCore: MockCosmosUtil.Serializer,
-                cosmosResponseFactory: responseFactory,
-                requestHandler: client.RequestHandler,
-                documentClient: new MockDocumentClient(),
-                userAgent: null);
+            return clientContext;
         }
     }
 }

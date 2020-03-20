@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Diagnostics;
-    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
@@ -19,14 +18,14 @@ namespace Microsoft.Azure.Cosmos.Query
 
     internal sealed class QueryIterator : FeedIteratorInternal
     {
-        private readonly CosmosQueryContext cosmosQueryContext;
+        private readonly CosmosQueryContextCore cosmosQueryContext;
         private readonly CosmosQueryExecutionContext cosmosQueryExecutionContext;
         private readonly CosmosSerializationFormatOptions cosmosSerializationFormatOptions;
         private readonly RequestOptions requestOptions;
         private readonly SqlQuerySpec initialSqlQuerySpec;
 
         private QueryIterator(
-            CosmosQueryContext cosmosQueryContext,
+            CosmosQueryContextCore cosmosQueryContext,
             CosmosQueryExecutionContext cosmosQueryExecutionContext,
             CosmosSerializationFormatOptions cosmosSerializationFormatOptions,
             RequestOptions requestOptions,
@@ -55,7 +54,9 @@ namespace Microsoft.Azure.Cosmos.Query
                 queryRequestOptions = new QueryRequestOptions();
             }
 
-            CosmosQueryContext cosmosQueryContext = new CosmosQueryContextCore(
+            CosmosDiagnosticsContext queryPipelineCreationDiagnostics = CosmosDiagnosticsContext.Create(queryRequestOptions);
+
+            CosmosQueryContextCore cosmosQueryContext = new CosmosQueryContextCore(
                 client: client,
                 queryRequestOptions: queryRequestOptions,
                 resourceTypeEnum: Documents.ResourceType.Document,
@@ -64,6 +65,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 resourceLink: resourceLink,
                 isContinuationExpected: isContinuationExpected,
                 allowNonValueAggregateQuery: allowNonValueAggregateQuery,
+                diagnosticsContext: queryPipelineCreationDiagnostics,
                 correlatedActivityId: Guid.NewGuid());
 
             CosmosElement requestContinuationToken;
@@ -177,21 +179,17 @@ namespace Microsoft.Azure.Cosmos.Query
         public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
             CosmosDiagnosticsContext diagnostics = CosmosDiagnosticsContext.Create(this.requestOptions);
-            using (diagnostics.CreateOverallScope("QueryReadNextAsync"))
+            using (diagnostics.GetOverallScope())
             {
                 // This catches exception thrown by the pipeline and converts it to QueryResponse
                 QueryResponseCore responseCore = await this.cosmosQueryExecutionContext.ExecuteNextAsync(cancellationToken);
-                CosmosQueryContext cosmosQueryContext = this.cosmosQueryContext;
 
-                foreach (QueryPageDiagnostics queryPage in responseCore.Diagnostics)
-                {
-                    diagnostics.AddDiagnosticsInternal(queryPage);
-                }
+                // This swaps the diagnostics in the context. This shows all the page reads between the previous ReadNextAsync and the current ReadNextAsync
+                diagnostics.AddDiagnosticsInternal(this.cosmosQueryContext.GetAndResetDiagnostics());
 
-                QueryResponse queryResponse;
                 if (responseCore.IsSuccess)
                 {
-                    queryResponse = QueryResponse.CreateSuccess(
+                    return QueryResponse.CreateSuccess(
                         result: responseCore.CosmosElements,
                         count: responseCore.CosmosElements.Count,
                         responseLengthBytes: responseCore.ResponseLengthBytes,
@@ -200,26 +198,8 @@ namespace Microsoft.Azure.Cosmos.Query
                         responseHeaders: new CosmosQueryResponseMessageHeaders(
                             responseCore.ContinuationToken,
                             responseCore.DisallowContinuationTokenMessage,
-                            cosmosQueryContext.ResourceTypeEnum,
-                            cosmosQueryContext.ContainerResourceId)
-                        {
-                            RequestCharge = responseCore.RequestCharge,
-                            ActivityId = responseCore.ActivityId,
-                            SubStatusCode = responseCore.SubStatusCode ?? Documents.SubStatusCodes.Unknown
-                        });
-                }
-                else
-                {
-                    queryResponse = QueryResponse.CreateFailure(
-                        statusCode: responseCore.StatusCode,
-                        cosmosException: responseCore.CosmosException,
-                        requestMessage: null,
-                        diagnostics: diagnostics,
-                        responseHeaders: new CosmosQueryResponseMessageHeaders(
-                            responseCore.ContinuationToken,
-                            responseCore.DisallowContinuationTokenMessage,
-                            cosmosQueryContext.ResourceTypeEnum,
-                            cosmosQueryContext.ContainerResourceId)
+                            this.cosmosQueryContext.ResourceTypeEnum,
+                            this.cosmosQueryContext.ContainerResourceId)
                         {
                             RequestCharge = responseCore.RequestCharge,
                             ActivityId = responseCore.ActivityId,
@@ -227,7 +207,26 @@ namespace Microsoft.Azure.Cosmos.Query
                         });
                 }
 
-                return queryResponse;
+                if (responseCore.CosmosException != null)
+                {
+                    return responseCore.CosmosException.ToCosmosResponseMessage(null);
+                }
+
+                return QueryResponse.CreateFailure(
+                    statusCode: responseCore.StatusCode,
+                    cosmosException: responseCore.CosmosException,
+                    requestMessage: null,
+                    diagnostics: diagnostics,
+                    responseHeaders: new CosmosQueryResponseMessageHeaders(
+                        responseCore.ContinuationToken,
+                        responseCore.DisallowContinuationTokenMessage,
+                        cosmosQueryContext.ResourceTypeEnum,
+                        cosmosQueryContext.ContainerResourceId)
+                    {
+                        RequestCharge = responseCore.RequestCharge,
+                        ActivityId = responseCore.ActivityId,
+                        SubStatusCode = responseCore.SubStatusCode ?? Documents.SubStatusCodes.Unknown,
+                    });
             }
         }
 

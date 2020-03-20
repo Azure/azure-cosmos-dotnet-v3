@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             this.jsonWriter.WriteValue(pointOperationStatistics.ActivityId);
 
             this.jsonWriter.WritePropertyName("ResponseTimeUtc");
-            this.jsonWriter.WriteValue(pointOperationStatistics.ResponseTimeUtc);
+            this.jsonWriter.WriteValue(pointOperationStatistics.ResponseTimeUtc.ToString("o", CultureInfo.InvariantCulture));
 
             this.jsonWriter.WritePropertyName("StatusCode");
             this.jsonWriter.WriteValue((int)pointOperationStatistics.StatusCode);
@@ -67,16 +67,16 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             this.jsonWriter.WritePropertyName("StartUtc");
             this.jsonWriter.WriteValue(cosmosDiagnosticsContext.StartUtc.ToString("o", CultureInfo.InvariantCulture));
 
-            this.jsonWriter.WritePropertyName("ElapsedTime");
-
-            if (cosmosDiagnosticsContext.TotalElapsedTime.HasValue)
+            if (cosmosDiagnosticsContext.IsComplete())
             {
-                this.jsonWriter.WriteValue(cosmosDiagnosticsContext.TotalElapsedTime.Value);
+                this.jsonWriter.WritePropertyName("RunningElapsedTime");
             }
             else
             {
-                this.jsonWriter.WriteValue("Timer Never Stopped.");
+                this.jsonWriter.WritePropertyName("TotalElapsedTime");
             }
+            
+            this.jsonWriter.WriteValue(cosmosDiagnosticsContext.GetClientElapsedTime());
 
             this.jsonWriter.WritePropertyName("UserAgent");
             this.jsonWriter.WriteValue(cosmosDiagnosticsContext.UserAgent);
@@ -109,15 +109,16 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             this.jsonWriter.WritePropertyName("Id");
             this.jsonWriter.WriteValue(cosmosDiagnosticScope.Id);
 
-            this.jsonWriter.WritePropertyName("ElapsedTime");
-            if (cosmosDiagnosticScope.TryGetElapsedTime(out TimeSpan elapsedTime))
+            if (cosmosDiagnosticScope.IsComplete())
             {
-                this.jsonWriter.WriteValue(elapsedTime);
+                this.jsonWriter.WritePropertyName("RunningElapsedTime");
             }
             else
             {
-                this.jsonWriter.WriteValue("Timer Never Stopped.");
+                this.jsonWriter.WritePropertyName("ElapsedTime");
             }
+
+            this.jsonWriter.WriteValue(cosmosDiagnosticScope.GetElapsedTime());
 
             this.jsonWriter.WriteEndObject();
         }
@@ -129,14 +130,14 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             this.jsonWriter.WritePropertyName("PKRangeId");
             this.jsonWriter.WriteValue(queryPageDiagnostics.PartitionKeyRangeId);
 
+            this.jsonWriter.WritePropertyName("StartUtc");
+            this.jsonWriter.WriteValue(queryPageDiagnostics.DiagnosticsContext.StartUtc.ToString("o", CultureInfo.InvariantCulture));
+
             this.jsonWriter.WritePropertyName("QueryMetric");
             this.jsonWriter.WriteValue(queryPageDiagnostics.QueryMetricText);
 
             this.jsonWriter.WritePropertyName("IndexUtilization");
             this.jsonWriter.WriteValue(queryPageDiagnostics.IndexUtilizationText);
-
-            this.jsonWriter.WritePropertyName("SchedulingTimeSpan");
-            queryPageDiagnostics.SchedulingTimeSpan.WriteJsonObject(this.jsonWriter);
 
             this.jsonWriter.WritePropertyName("Context");
             this.jsonWriter.WriteStartArray();

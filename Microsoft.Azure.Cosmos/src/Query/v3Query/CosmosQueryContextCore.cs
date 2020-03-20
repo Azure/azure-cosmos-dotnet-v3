@@ -6,14 +6,18 @@ namespace Microsoft.Azure.Cosmos.Query
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Documents;
 
     internal class CosmosQueryContextCore : CosmosQueryContext
     {
         private readonly QueryRequestOptions queryRequestOptions;
+        private readonly object diagnosticLock = new object();
+        private CosmosDiagnosticsContext diagnosticsContext;
 
         public CosmosQueryContextCore(
             CosmosQueryClient client,
@@ -25,6 +29,7 @@ namespace Microsoft.Azure.Cosmos.Query
             Guid correlatedActivityId,
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
+            CosmosDiagnosticsContext diagnosticsContext,
             string containerResourceId = null)
             : base(
                 client,
@@ -38,6 +43,23 @@ namespace Microsoft.Azure.Cosmos.Query
                 containerResourceId)
         {
             this.queryRequestOptions = queryRequestOptions;
+            this.diagnosticsContext = diagnosticsContext;
+        }
+
+        internal override IDisposable CreateDiagnosticScope(string name)
+        {
+            return this.diagnosticsContext.CreateScope(name);
+        }
+
+        internal CosmosDiagnosticsContext GetAndResetDiagnostics()
+        {
+            // Safely swap the current diagnostics for the new diagnostics.
+            lock (this.diagnosticLock)
+            {
+                CosmosDiagnosticsContext current = this.diagnosticsContext;
+                this.diagnosticsContext = CosmosDiagnosticsContext.Create(this.queryRequestOptions);
+                return current;
+            }
         }
 
         internal override Task<QueryResponseCore> ExecuteQueryAsync(
@@ -46,7 +68,6 @@ namespace Microsoft.Azure.Cosmos.Query
             PartitionKeyRangeIdentity partitionKeyRange,
             bool isContinuationExpected,
             int pageSize,
-            SchedulingStopwatch schedulingStopwatch,
             CancellationToken cancellationToken)
         {
             QueryRequestOptions requestOptions = null;
@@ -65,8 +86,37 @@ namespace Microsoft.Azure.Cosmos.Query
                            partitionKeyRange: partitionKeyRange,
                            isContinuationExpected: isContinuationExpected,
                            pageSize: pageSize,
-                           schedulingStopwatch: schedulingStopwatch,
+                           queryPageDiagnostics: this.AddQueryPageDiagnostic,
                            cancellationToken: cancellationToken);
+        }
+
+        internal override Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
+            Uri resourceUri,
+            Documents.ResourceType resourceType,
+            Documents.OperationType operationType,
+            SqlQuerySpec sqlQuerySpec,
+            Cosmos.PartitionKey? partitionKey,
+            string supportedQueryFeatures,
+            CancellationToken cancellationToken)
+        {
+            return this.QueryClient.ExecuteQueryPlanRequestAsync(
+                resourceUri,
+                resourceType,
+                operationType,
+                sqlQuerySpec,
+                partitionKey,
+                supportedQueryFeatures,
+                this.diagnosticsContext,
+                cancellationToken);
+        }
+
+        private void AddQueryPageDiagnostic(QueryPageDiagnostics queryPageDiagnostics)
+        {
+            // Prevent a swap while adding context
+            lock (this.diagnosticLock)
+            {
+                this.diagnosticsContext.AddDiagnosticsInternal(queryPageDiagnostics);
+            }
         }
     }
 }

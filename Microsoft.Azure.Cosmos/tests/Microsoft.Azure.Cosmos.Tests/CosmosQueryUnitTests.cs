@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(cosmosException.ToString(includeDiagnostics: false), queryResponse.ErrorMessage);
             Assert.AreEqual(requestCharge, queryResponse.Headers.RequestCharge);
             Assert.AreEqual(activityId, queryResponse.Headers.ActivityId);
-            Assert.AreEqual(diagnostics, queryResponse.Diagnostics);
+            Assert.AreEqual(diagnostics, queryResponse.DiagnosticsContext);
             Assert.IsNull(queryResponse.Content);
         }
 
@@ -277,6 +277,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 resourceLink: new Uri("dbs/mockdb/colls/mockColl", UriKind.Relative),
                 isContinuationExpected: isContinuationExpected,
                 allowNonValueAggregateQuery: allowNonValueAggregateQuery,
+                diagnosticsContext: new CosmosDiagnosticsContextCore(),
                 correlatedActivityId: new Guid("221FC86C-1825-4284-B10E-A6029652CCA6"));
 
             CosmosQueryExecutionContext context = CosmosQueryExecutionContextFactory.Create(
@@ -361,8 +362,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     "0",
                     "SomeQueryMetricText",
                     "SomeIndexUtilText",
-                diagnosticsContext,
-                new SchedulingStopwatch())
+                diagnosticsContext)
             };
 
             QueryResponseCore failure = QueryResponseCore.CreateFailure(
@@ -381,8 +381,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     error: default,
                     innerException: default),
                 42.89,
-                "TestActivityId",
-                diagnostics);
+                "TestActivityId");
 
             Mock<IDocumentQueryExecutionComponent> baseContext = new Mock<IDocumentQueryExecutionComponent>();
             baseContext.Setup(x => x.DrainAsync(It.IsAny<int>(), It.IsAny<CancellationToken>())).Returns(Task.FromResult<QueryResponseCore>(failure));

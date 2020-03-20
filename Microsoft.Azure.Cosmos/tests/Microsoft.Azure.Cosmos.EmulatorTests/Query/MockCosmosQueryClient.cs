@@ -9,6 +9,7 @@
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos.Diagnostics;
 
     /// <summary>
     /// A helper that forces the SDK to use the gateway or the service interop for the query plan
@@ -45,6 +46,7 @@
             SqlQuerySpec sqlQuerySpec,
             Cosmos.PartitionKey? partitionKey,
             string supportedQueryFeatures,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             this.QueryPlanCalls++;
@@ -55,20 +57,21 @@
                 sqlQuerySpec,
                 partitionKey,
                 supportedQueryFeatures,
+                diagnosticsContext,
                 cancellationToken);
         }
 
-        internal override Task<QueryResponseCore> ExecuteItemQueryAsync<RequestOptionType>(
+        internal override Task<QueryResponseCore> ExecuteItemQueryAsync(
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
-            RequestOptionType requestOptions,
+            QueryRequestOptions requestOptions,
+            Action<QueryPageDiagnostics> queryPageDiagnostics,
             SqlQuerySpec sqlQuerySpec,
             string continuationToken,
             PartitionKeyRangeIdentity partitionKeyRange,
             bool isContinuationExpected,
             int pageSize,
-            SchedulingStopwatch schedulingStopwatch,
             CancellationToken cancellationToken)
         {
             Assert.IsFalse(
@@ -79,12 +82,12 @@
                 resourceType: resourceType,
                 operationType: operationType,
                 requestOptions: requestOptions,
+                queryPageDiagnostics: queryPageDiagnostics,
                 sqlQuerySpec: sqlQuerySpec,
                 continuationToken: continuationToken,
                 partitionKeyRange: partitionKeyRange,
                 isContinuationExpected: isContinuationExpected,
                 pageSize: pageSize,
-                schedulingStopwatch: schedulingStopwatch,
                 cancellationToken: cancellationToken);
         }
     }

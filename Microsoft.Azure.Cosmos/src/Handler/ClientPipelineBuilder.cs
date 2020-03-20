@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos
     internal class ClientPipelineBuilder
     {
         private readonly CosmosClient client;
+        private readonly ConsistencyLevel? requestedClientConsistencyLevel;
         private readonly RequestHandler invalidPartitionExceptionRetryHandler;
         private readonly RequestHandler transportHandler;
         private IReadOnlyCollection<RequestHandler> customHandlers;
@@ -20,9 +21,11 @@ namespace Microsoft.Azure.Cosmos
 
         public ClientPipelineBuilder(
             CosmosClient client,
+            ConsistencyLevel? requestedClientConsistencyLevel,
             IReadOnlyCollection<RequestHandler> customHandlers)
         {
-            this.client = client;
+            this.client = client ?? throw new ArgumentNullException(nameof(client));
+            this.requestedClientConsistencyLevel = requestedClientConsistencyLevel;
             this.transportHandler = new TransportHandler(client);
             Debug.Assert(this.transportHandler.InnerHandler == null, nameof(this.transportHandler));
 
@@ -112,7 +115,9 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>The request invoker handler used to do calls to Cosmos DB</returns>
         public RequestInvokerHandler Build()
         {
-            RequestInvokerHandler root = new RequestInvokerHandler(this.client);
+            RequestInvokerHandler root = new RequestInvokerHandler(
+                this.client,
+                this.requestedClientConsistencyLevel);
 
             RequestHandler current = root;
             if (this.CustomHandlers != null && this.CustomHandlers.Any())

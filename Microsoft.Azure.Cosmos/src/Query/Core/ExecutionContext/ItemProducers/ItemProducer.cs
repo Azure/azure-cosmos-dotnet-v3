@@ -49,11 +49,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
         private readonly ProduceAsyncCompleteDelegate produceAsyncCompleteCallback;
 
         /// <summary>
-        /// Keeps track of when a fetch happens and ends to calculate scheduling metrics.
-        /// </summary>
-        private readonly SchedulingStopwatch fetchSchedulingMetrics;
-
-        /// <summary>
         /// Equality comparer to determine if you have come across a distinct document according to the sort order.
         /// </summary>
         private readonly IEqualityComparer<CosmosElement> equalityComparer;
@@ -137,9 +132,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
                 this.IsActive = true;
             }
 
-            this.fetchSchedulingMetrics = new SchedulingStopwatch();
-            this.fetchSchedulingMetrics.Ready();
-
             this.testFlags = testFlags;
 
             this.HasMoreResults = true;
@@ -148,7 +140,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
         public delegate void ProduceAsyncCompleteDelegate(
             int numberOfDocuments,
             double requestCharge,
-            IReadOnlyCollection<QueryPageDiagnostics> diagnostics,
             long responseLengthInBytes,
             CancellationToken token);
 
@@ -280,7 +271,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
                             this.PartitionKeyRange.Id),
                     isContinuationExpected: this.queryContext.IsContinuationExpected,
                     pageSize: pageSize,
-                    schedulingStopwatch: this.fetchSchedulingMetrics,
                     cancellationToken: token);
 
                 if ((this.testFlags != null) && this.testFlags.SimulateThrottles)
@@ -293,8 +283,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
                             subStatusCodes: null,
                             cosmosException: CosmosExceptionFactory.CreateThrottledException("Request Rate Too Large"),
                             requestCharge: 0,
-                            activityId: QueryResponseCore.EmptyGuidString,
-                            diagnostics: QueryResponseCore.EmptyDiagnostics);
+                            activityId: QueryResponseCore.EmptyGuidString);
                     }
                 }
 
@@ -310,8 +299,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
                             activityId: QueryResponseCore.EmptyGuidString,
                             responseLengthBytes: 0,
                             disallowContinuationTokenMessage: null,
-                            continuationToken: this.BackendContinuationToken,
-                            diagnostics: QueryResponseCore.EmptyDiagnostics);
+                            continuationToken: this.BackendContinuationToken);
                     }
                 }
 
@@ -334,14 +322,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
                 this.produceAsyncCompleteCallback(
                     feedResponse.CosmosElements.Count,
                     feedResponse.RequestCharge,
-                    feedResponse.Diagnostics,
                     feedResponse.ResponseLengthBytes,
                     token);
 
             }
             finally
             {
-                this.fetchSchedulingMetrics.Stop();
                 this.fetchSemaphore.Release();
             }
         }
