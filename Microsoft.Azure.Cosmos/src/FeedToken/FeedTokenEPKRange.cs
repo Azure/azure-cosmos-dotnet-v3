@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos
     using Newtonsoft.Json;
 
     [JsonConverter(typeof(FeedTokenInternalConverter))]
-    internal sealed class FeedTokenEPKRange : FeedTokenInternal
+    internal sealed class FeedTokenEPKRange : FeedToken, IChangeFeedToken, IQueryFeedToken
     {
         internal readonly Queue<CompositeContinuationToken> CompositeContinuationTokens;
         internal readonly Documents.Routing.Range<string> CompleteRange;
@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Cosmos
             this.currentToken = this.CompositeContinuationTokens.Peek();
         }
 
-        public override void EnrichRequest(RequestMessage request)
+        public void EnrichRequest(RequestMessage request)
         {
             if (request == null)
             {
@@ -149,14 +149,14 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public override string GetContinuation() => this.currentToken.Token;
+        public string GetContinuation() => this.currentToken.Token;
 
         public override string ToString()
         {
             return JsonConvert.SerializeObject(this);
         }
 
-        public override void UpdateContinuation(string continuationToken)
+        public void UpdateContinuation(string continuationToken)
         {
             if (continuationToken == null)
             {
@@ -170,7 +170,7 @@ namespace Microsoft.Azure.Cosmos
             this.MoveToNextToken();
         }
 
-        public override Task<List<Documents.Routing.Range<string>>> GetAffectedRangesAsync(
+        public Task<List<Documents.Routing.Range<string>>> GetAffectedRangesAsync(
             IRoutingMapProvider routingMapProvider,
             string containerRid,
             Documents.PartitionKeyDefinition partitionKeyDefinition)
@@ -178,7 +178,7 @@ namespace Microsoft.Azure.Cosmos
             return Task.FromResult(this.CompositeContinuationTokens.Select(token => token.Range).ToList());
         }
 
-        public override async Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
+        public async Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
             IRoutingMapProvider routingMapProvider,
             string containerRid,
             Documents.PartitionKeyDefinition partitionKeyDefinition,
@@ -188,7 +188,7 @@ namespace Microsoft.Azure.Cosmos
             return partitionKeyRanges.Select(partitionKeyRange => partitionKeyRange.Id);
         }
 
-        public override TryCatch ValidateContainer(string containerRid)
+        public TryCatch ValidateContainer(string containerRid)
         {
             if (!string.IsNullOrEmpty(this.ContainerRid) &&
                 !this.ContainerRid.Equals(containerRid, StringComparison.Ordinal))
@@ -202,7 +202,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// The concept of Done is only for Query and ReadFeed. Change Feed is never done, it is an infinite stream.
         /// </summary>
-        public override bool IsDone => this.doneRanges.Count == this.CompositeContinuationTokens.Count;
+        public bool IsDone => this.doneRanges.Count == this.CompositeContinuationTokens.Count;
 
         public override async Task<bool> ShouldRetryAsync(
             ContainerCore containerCore,
@@ -246,17 +246,17 @@ namespace Microsoft.Azure.Cosmos
             return false;
         }
 
-        public override IReadOnlyList<FeedToken> Scale()
+        public override IReadOnlyList<FeedTokenEPKRange> Scale()
         {
             if (this.CompositeContinuationTokens.Count <= 1)
             {
-                return new List<FeedToken>();
+                return new List<FeedTokenEPKRange>();
             }
 
             return this.CompositeContinuationTokens.Select(token => new FeedTokenEPKRange(this.ContainerRid, token)).ToList();
         }
 
-        public static bool TryParseInstance(string toStringValue, out FeedToken feedToken)
+        public static bool TryParseInstance(string toStringValue, out FeedTokenEPKRange feedToken)
         {
             try
             {

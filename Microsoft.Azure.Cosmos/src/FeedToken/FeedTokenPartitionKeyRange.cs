@@ -22,19 +22,22 @@ namespace Microsoft.Azure.Cosmos
     /// Not split proof. 
     /// </remarks>
     [JsonConverter(typeof(FeedTokenInternalConverter))]
-    internal sealed class FeedTokenPartitionKeyRange : FeedTokenInternal
+    internal sealed class FeedTokenPartitionKeyRange : FeedToken, IChangeFeedToken, IQueryFeedToken
     {
         internal readonly string PartitionKeyRangeId;
         internal FeedTokenEPKRange FeedTokenEPKRange; // If the initial token splits, it will use this token;
         private string continuationToken;
         private bool isDone;
 
-        public FeedTokenPartitionKeyRange(string partitionKeyRangeId)
+        public FeedTokenPartitionKeyRange(
+            string partitionKeyRangeId,
+            string continuationToken)
         {
             this.PartitionKeyRangeId = partitionKeyRangeId;
+            this.continuationToken = continuationToken;
         }
 
-        public override void EnrichRequest(RequestMessage request)
+        public void EnrichRequest(RequestMessage request)
         {
             if (request == null)
             {
@@ -51,7 +54,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public override string GetContinuation()
+        public string GetContinuation()
         {
             if (this.FeedTokenEPKRange == null)
             {
@@ -76,7 +79,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public override void UpdateContinuation(string continuationToken)
+        public void UpdateContinuation(string continuationToken)
         {
             if (this.FeedTokenEPKRange == null)
             {
@@ -97,7 +100,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public override async Task<List<Documents.Routing.Range<string>>> GetAffectedRangesAsync(
+        public async Task<List<Documents.Routing.Range<string>>> GetAffectedRangesAsync(
             IRoutingMapProvider routingMapProvider,
             string containerRid,
             Documents.PartitionKeyDefinition partitionKeyDefinition)
@@ -121,7 +124,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public override Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
+        public Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
             IRoutingMapProvider routingMapProvider,
             string containerRid,
             Documents.PartitionKeyDefinition partitionKeyDefinition,
@@ -136,7 +139,7 @@ namespace Microsoft.Azure.Cosmos
             return Task.FromResult(result);
         }
 
-        public override TryCatch ValidateContainer(string containerRid)
+        public TryCatch ValidateContainer(string containerRid)
         {
             if (this.FeedTokenEPKRange != null)
             {
@@ -146,7 +149,7 @@ namespace Microsoft.Azure.Cosmos
             return TryCatch.FromResult();
         }
 
-        public override bool IsDone
+        public bool IsDone
         {
             get
             {
@@ -159,7 +162,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public static bool TryParseInstance(string toStringValue, out FeedToken feedToken)
+        public static bool TryParseInstance(string toStringValue, out FeedTokenPartitionKeyRange feedToken)
         {
             try
             {
@@ -171,7 +174,7 @@ namespace Microsoft.Azure.Cosmos
                 // Special case, for backward compatibility, if the string represents a PKRangeId
                 if (int.TryParse(toStringValue, out int pkRangeId))
                 {
-                    feedToken = new FeedTokenPartitionKeyRange(pkRangeId.ToString());
+                    feedToken = new FeedTokenPartitionKeyRange(pkRangeId.ToString(), continuationToken: null);
                     return true;
                 }
 
@@ -226,7 +229,7 @@ namespace Microsoft.Azure.Cosmos
             return false;
         }
 
-        public override IReadOnlyList<FeedToken> Scale()
+        public override IReadOnlyList<FeedTokenEPKRange> Scale()
         {
             if (this.FeedTokenEPKRange == null)
             {

@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.CreateRandomItems(this.LargerContainer, batchSize, randomPartitionKey: true);
             ContainerCore itemsCore = this.LargerContainer;
-            IReadOnlyList<FeedToken> tokens = await itemsCore.GetFeedTokensAsync();
+            IReadOnlyList<QueryFeedToken> tokens = await itemsCore.GetQueryFeedTokensAsync(queryDefinition: null);
 
             List<Task<int>> tasks = tokens.Select(token => Task.Run(async () =>
             {
@@ -188,7 +188,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             // Use the previous iterators FeedToken to continue
-            FeedIteratorCore feedIterator = itemsCore.GetItemQueryStreamIterator(queryDefinition: null, feedToken: initialFeedIterator.FeedToken) as FeedIteratorCore;
+            FeedIteratorCore feedIterator = itemsCore.GetItemQueryStreamIterator(feedToken: initialFeedIterator.FeedToken) as FeedIteratorCore;
             while (feedIterator.HasMoreResults)
             {
                 using (ResponseMessage responseMessage =
@@ -259,9 +259,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task CannotMixTokensFromOtherContainers()
         {
-            IReadOnlyList<FeedToken> tokens = await this.LargerContainer.GetFeedTokensAsync();
+            IReadOnlyList<QueryFeedToken> tokens = await this.LargerContainer.GetQueryFeedTokensAsync(queryDefinition: null);
             FeedIterator iterator = this.Container.GetItemQueryStreamIterator(tokens[0]);
-            await Assert.ThrowsExceptionAsync<ArgumentException>(() => iterator.ReadNextAsync());
+            ResponseMessage responseMessage = await iterator.ReadNextAsync();
+            Assert.IsNotNull(responseMessage.CosmosException);
         }
 
         [DataRow(false)]
@@ -303,16 +304,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
                 }
 
-                FeedToken lastKnownFeedToken = null;
+                QueryFeedToken lastKnownFeedToken = null;
                 FeedIteratorCore iter = container.GetItemQueryStreamIterator(
-                    feedToken: lastKnownFeedToken,
                     requestOptions: requestOptions) as FeedIteratorCore;
 
                 int count = 0;
                 List<string> forwardOrder = new List<string>();
                 while (iter.HasMoreResults)
                 {
-                    if (useStatelessIteration)
+                    if (useStatelessIteration
+                        && lastKnownFeedToken != null)
                     {
                         iter = container.GetItemQueryStreamIterator(
                             feedToken: lastKnownFeedToken,
@@ -350,13 +351,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 lastKnownFeedToken = null;
                 iter = container
-                        .GetItemQueryStreamIterator(queryDefinition: null, feedToken: lastKnownFeedToken, requestOptions: requestOptions) as FeedIteratorCore;
+                        .GetItemQueryStreamIterator(requestOptions: requestOptions) as FeedIteratorCore;
                 while (iter.HasMoreResults)
                 {
-                    if (useStatelessIteration)
+                    if (useStatelessIteration
+                        && lastKnownFeedToken != null)
                     {
                         iter = container
-                                .GetItemQueryStreamIterator(queryDefinition: null, feedToken: lastKnownFeedToken, requestOptions: requestOptions) as FeedIteratorCore;
+                                .GetItemQueryStreamIterator(feedToken: lastKnownFeedToken, requestOptions: requestOptions) as FeedIteratorCore;
                     }
 
                     using (ResponseMessage response = await iter.ReadNextAsync())

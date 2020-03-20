@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        FeedToken FeedToken => throw new NotImplementedException();
+        QueryFeedToken FeedToken => throw new NotImplementedException();
 
         /// <summary>
         /// Get the next set of results from the cosmos service
@@ -96,12 +96,6 @@ namespace Microsoft.Azure.Cosmos
             // Send to the user the composite state for all ranges
             response.Headers.ContinuationToken = this.compositeContinuationToken.ToString();
             return response;
-        }
-
-        public override bool TryGetFeedToken(out FeedToken feedToken)
-        {
-            feedToken = this.FeedToken;
-            return true;
         }
 
         internal async Task<Tuple<string, ResponseMessage>> ReadNextInternalAsync(CancellationToken cancellationToken)

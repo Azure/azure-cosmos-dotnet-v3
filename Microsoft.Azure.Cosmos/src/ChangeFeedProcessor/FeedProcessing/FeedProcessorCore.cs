@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
     using System.Diagnostics;
     using System.Linq;
     using System.Net;
@@ -17,19 +16,18 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Cosmos.Query.Core;
 
     internal sealed class FeedProcessorCore<T> : FeedProcessor
     {
         private readonly ProcessorOptions options;
         private readonly PartitionCheckpointer checkpointer;
         private readonly ChangeFeedObserver<T> observer;
-        private readonly FeedIterator resultSetIterator;
+        private readonly ChangeFeedIterator resultSetIterator;
         private readonly CosmosSerializerCore serializerCore;
 
         public FeedProcessorCore(
             ChangeFeedObserver<T> observer,
-            FeedIterator resultSetIterator,
+            ChangeFeedIterator resultSetIterator,
             ProcessorOptions options,
             PartitionCheckpointer checkpointer,
             CosmosSerializerCore serializerCore)

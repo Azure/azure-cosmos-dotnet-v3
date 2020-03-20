@@ -1122,22 +1122,34 @@ namespace Microsoft.Azure.Cosmos
 
 #if PREVIEW
         /// <summary>
-        /// Obtains a list of <see cref="FeedToken"/> that can be used to parallelize Read Feed operations.
+        /// Obtains a list of <see cref="ChangeFeedToken"/> that can be used to parallelize Change Feed operations.
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>A list of <see cref="FeedToken"/>.</returns>
-        public abstract Task<IReadOnlyList<FeedToken>> GetFeedTokensAsync(CancellationToken cancellationToken = default(CancellationToken));
+        /// <returns>A list of <see cref="ChangeFeedToken"/>.</returns>
+        public abstract Task<IReadOnlyList<ChangeFeedToken>> GetChangeFeedTokensAsync(CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
+        /// Obtains a list of <see cref="QueryFeedToken"/> that can be used to parallelize a query operations.
+        /// </summary>
+        /// <param name="queryDefinition">The definition of the query to parallelize.</param>
+        /// <param name="queryRequestOptions">(Optional) The options for the item query request.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>A list of <see cref="QueryFeedToken"/>.</returns>
+        public abstract Task<IReadOnlyList<QueryFeedToken>> GetQueryFeedTokensAsync(
+            QueryDefinition queryDefinition,
+            QueryRequestOptions queryRequestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         ///  This method creates an iterator to consume the container's Change Feed.
-        ///  The iterator exposes mechanisms to save and resume state through <see cref="FeedIterator.FeedToken"/>.
+        ///  The iterator exposes mechanisms to save and resume state through <see cref="ChangeFeedIterator.FeedToken"/>.
         /// </summary>
         /// <param name="changeFeedRequestOptions">(Optional) The options for the Change Feed consumption.</param>
         /// <returns>An iterator to go through the Change Feed.</returns>
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator feedIterator = this.Container.GetChangeFeedStreamIterator();
+        /// ChangeFeedIterator feedIterator = this.Container.GetChangeFeedStreamIterator();
         ///
         /// while (feedIterator.HasMoreResults)
         /// {
@@ -1153,21 +1165,21 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract FeedIterator GetChangeFeedStreamIterator(ChangeFeedRequestOptions changeFeedRequestOptions = null);
+        public abstract ChangeFeedIterator GetChangeFeedStreamIterator(ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
         /// <summary>
         ///  This method creates an iterator to consume a FeedToken's Change Feed.
-        ///  The iterator exposes mechanisms to save and resume state through <see cref="FeedIterator.FeedToken"/>.
+        ///  The iterator exposes mechanisms to save and resume state through <see cref="ChangeFeedIterator.FeedToken"/>.
         /// </summary>
-        /// <param name="feedToken">A FeedToken obtained from <see cref="Container.GetFeedTokensAsync(CancellationToken)"/> or from a previous FeedIterator</param>
+        /// <param name="feedToken">A FeedToken obtained from <see cref="Container.GetChangeFeedTokensAsync(CancellationToken)"/> or from a previous FeedIterator</param>
         /// <param name="changeFeedRequestOptions">(Optional) The options for the Change Feed consumption.</param>
-        /// <seealso cref="Container.GetFeedTokensAsync(CancellationToken)"/>
+        /// <seealso cref="Container.GetChangeFeedTokensAsync(CancellationToken)"/>
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// IReadOnlyList<FeedToken> feedTokens = await this.Container.GetFeedTokensAsync();
+        /// IReadOnlyList<ChangeFeedToken> feedTokens = await this.Container.GetChangeFeedTokensAsync();
         /// // Distribute feedTokens across multiple compute units and pass each one to a different iterator
-        /// FeedIterator feedIterator = this.Container.GetChangeFeedStreamIterator(feedToken[0]);
+        /// ChangeFeedIterator feedIterator = this.Container.GetChangeFeedStreamIterator(feedToken[0]);
         ///
         /// while (feedIterator.HasMoreResults)
         /// {
@@ -1184,8 +1196,8 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <returns>An iterator to go through the Change Feed for a particular FeedToken.</returns>
-        public abstract FeedIterator GetChangeFeedStreamIterator(
-            FeedToken feedToken,
+        public abstract ChangeFeedIterator GetChangeFeedStreamIterator(
+            ChangeFeedToken feedToken,
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
         /// <summary>
@@ -1197,7 +1209,7 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator feedIterator = this.Container.GetChangeFeedStreamIterator(new PartitionKey("myPartitionKey"));
+        /// ChangeFeedIterator feedIterator = this.Container.GetChangeFeedStreamIterator(new PartitionKey("myPartitionKey"));
         ///
         /// while (feedIterator.HasMoreResults)
         /// {
@@ -1214,7 +1226,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <returns>An iterator to go through the Change Feed for a particular FeedToken.</returns>
-        public abstract FeedIterator GetChangeFeedStreamIterator(
+        public abstract ChangeFeedIterator GetChangeFeedStreamIterator(
             PartitionKey partitionKey,
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
@@ -1227,8 +1239,8 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator<MyItem> feedIterator = this.Container.GetChangeFeedIterator<MyItem>();
-        /// FeedToken lastFeedTokenState;
+        /// ChangeFeedIterator<MyItem> feedIterator = this.Container.GetChangeFeedIterator<MyItem>();
+        /// ChangeFeedToken lastFeedTokenState;
         /// while (feedIterator.HasMoreResults)
         /// {
         ///     FeedResponse<MyItem> response = await feedIterator.ReadNextAsync();
@@ -1238,27 +1250,29 @@ namespace Microsoft.Azure.Cosmos
         ///     }
         ///     
         ///     // if saving state is needed, the FeedToken can be saved and stored
-        ///     lastFeedTokenState = feedIterator.FeedToken;
         /// }
+        ///
+        /// // if saving state is needed, the FeedToken can be saved and stored
+        /// lastFeedTokenState = feedIterator.FeedToken;
         /// ]]>
         /// </code>
         /// </example>
-        public abstract FeedIterator<T> GetChangeFeedIterator<T>(ChangeFeedRequestOptions changeFeedRequestOptions = null);
+        public abstract ChangeFeedIterator<T> GetChangeFeedIterator<T>(ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
         /// <summary>
         ///  This method creates an iterator to consume a FeedToken's Change Feed.
         ///  The iterator exposes mechanisms to save and resume state through <see cref="FeedIterator.FeedToken"/>.
         /// </summary>
-        /// <param name="feedToken">A FeedToken obtained from <see cref="Container.GetFeedTokensAsync(CancellationToken)"/> or from a previous FeedIterator</param>
+        /// <param name="feedToken">A FeedToken obtained from <see cref="Container.GetChangeFeedTokensAsync(CancellationToken)"/> or from a previous FeedIterator</param>
         /// <param name="changeFeedRequestOptions">(Optional) The options for the Change Feed consumption.</param>
-        /// <seealso cref="Container.GetFeedTokensAsync(CancellationToken)"/>
+        /// <seealso cref="Container.GetChangeFeedTokensAsync(CancellationToken)"/>
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// IReadOnlyList<FeedToken> feedTokens = await this.Container.GetFeedTokensAsync();
+        /// IReadOnlyList<ChangeFeedToken> feedTokens = await this.Container.GetChangeFeedTokensAsync();
         /// // Distribute feedTokens across multiple compute units and pass each one to a different iterator
-        /// FeedIterator<MyItem> feedIterator = this.Container.GetChangeFeedIterator<MyItem>(feedToken[0]);
-        /// FeedToken lastFeedTokenState;
+        /// ChangeFeedIterator<MyItem> feedIterator = this.Container.GetChangeFeedIterator<MyItem>(feedToken[0]);
+        /// ChangeFeedToken lastFeedTokenState;
         /// while (feedIterator.HasMoreResults)
         /// {
         ///     FeedResponse<MyItem> response = await feedIterator.ReadNextAsync();
@@ -1266,16 +1280,16 @@ namespace Microsoft.Azure.Cosmos
         ///     {
         ///         Console.WriteLine(item);
         ///     }
-        ///     
-        ///     // if saving state is needed, the FeedToken can be saved and stored
-        ///     lastFeedTokenState = feedIterator.FeedToken;
         /// }
+        /// 
+        /// // if saving state is needed, the FeedToken can be saved and stored
+        /// lastFeedTokenState = feedIterator.FeedToken;
         /// ]]>
         /// </code>
         /// </example>
         /// <returns>An iterator to go through the Change Feed for a particular FeedToken.</returns>
-        public abstract FeedIterator<T> GetChangeFeedIterator<T>(
-            FeedToken feedToken,
+        public abstract ChangeFeedIterator<T> GetChangeFeedIterator<T>(
+            ChangeFeedToken feedToken,
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
         /// <summary>
@@ -1287,8 +1301,8 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator<MyItem> feedIterator = this.Container.GetChangeFeedIterator<MyItem>(new PartitionKey("myPartitionKey"));
-        /// FeedToken lastFeedTokenState;
+        /// ChangeFeedIterator<MyItem> feedIterator = this.Container.GetChangeFeedIterator<MyItem>(new PartitionKey("myPartitionKey"));
+        /// ChangeFeedToken lastFeedTokenState;
         /// while (feedIterator.HasMoreResults)
         /// {
         ///     FeedResponse<MyItem> response = await feedIterator.ReadNextAsync();
@@ -1297,34 +1311,45 @@ namespace Microsoft.Azure.Cosmos
         ///         Console.WriteLine(item);
         ///     }
         ///     
-        ///     // if saving state is needed, the FeedToken can be saved and stored
-        ///     lastFeedTokenState = feedIterator.FeedToken;
         /// }
+        ///
+        /// // if saving state is needed, the FeedToken can be saved and stored
+        /// lastFeedTokenState = feedIterator.FeedToken;
         /// ]]>
         /// </code>
         /// </example>
         /// <returns>An iterator to go through the Change Feed for a Partition Key.</returns>
-        public abstract FeedIterator<T> GetChangeFeedIterator<T>(
+        public abstract ChangeFeedIterator<T> GetChangeFeedIterator<T>(
             PartitionKey partitionKey,
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
         /// <summary>
-        /// Gets the list of Partition Key Range identifiers for a <see cref="FeedToken"/>.
+        /// Gets the list of Partition Key Range identifiers for a <see cref="ChangeFeedToken"/>.
         /// </summary>
-        /// <param name="feedToken">A <see cref="FeedToken"/></param>
+        /// <param name="feedToken">A <see cref="ChangeFeedToken"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The list of Partition Key Range identifiers affected by a particular FeedToken.</returns>
-        /// <seealso cref="Container.GetFeedTokensAsync(CancellationToken)"/>
+        /// <seealso cref="Container.GetChangeFeedTokensAsync(CancellationToken)"/>
         public abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
-            FeedToken feedToken,
+            ChangeFeedToken feedToken,
+            CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
+        /// Gets the list of Partition Key Range identifiers for a <see cref="QueryFeedToken"/>.
+        /// </summary>
+        /// <param name="feedToken">A <see cref="QueryFeedToken"/></param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>The list of Partition Key Range identifiers affected by a particular FeedToken.</returns>
+        /// <seealso cref="Container.GetQueryFeedTokensAsync(QueryDefinition, QueryRequestOptions, CancellationToken)"/>
+        public abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
+            QueryFeedToken feedToken,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         ///  This method creates a query for items under a container in an Azure Cosmos database using a SQL statement with parameterized values. It returns a FeedIterator.
         ///  For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/>.
         /// </summary>
-        /// <param name="feedToken">A FeedToken obtained from <see cref="Container.GetFeedTokensAsync(CancellationToken)"/> or from a previous FeedTokenIterator</param>
-        /// <param name="queryDefinition">The Cosmos SQL query definition.</param>
+        /// <param name="feedToken">A FeedToken obtained from <see cref="Container.GetQueryFeedTokensAsync(QueryDefinition, QueryRequestOptions, CancellationToken)"/> or from a previous FeedTokenIterator</param>
         /// <param name="requestOptions">(Optional) The options for the item query request.</param>
         /// <returns>An iterator to go through the items.</returns>
         /// <remarks>
@@ -1339,12 +1364,11 @@ namespace Microsoft.Azure.Cosmos
         ///     public string status {get; set;}
         ///     public int cost {get; set;}
         /// }
-        /// IReadOnlyList<FeedToken> feedTokens = await this.Container.GetFeedTokensAsync();
         /// // Distribute feedTokens across multiple compute units and pass each one to a different iterator
         /// QueryDefinition queryDefinition = new QueryDefinition("select * from ToDos t where t.cost > @expensive")
         ///     .WithParameter("@expensive", 9000);
+        /// IReadOnlyList<QueryFeedToken> feedTokens = await this.Container.GetQueryFeedTokensAsync(queryDefinition);
         /// FeedIterator feedIterator = this.Container.GetItemQueryStreamIterator(
-        ///     queryDefinition,
         ///     feedTokens[0],
         ///     new QueryRequestOptions() { });
         ///
@@ -1363,16 +1387,14 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         public abstract FeedIterator GetItemQueryStreamIterator(
-            FeedToken feedToken,
-            QueryDefinition queryDefinition,
+            QueryFeedToken feedToken,
             QueryRequestOptions requestOptions = null);
 
         /// <summary>
         ///  This method creates a query for items under a container in an Azure Cosmos database using a SQL statement with parameterized values. It returns a FeedIterator.
         ///  For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/>.
         /// </summary>
-        /// <param name="feedToken">A FeedToken obtained from <see cref="Container.GetFeedTokensAsync(CancellationToken)"/> or from a previous FeedTokenIterator</param>
-        /// <param name="queryDefinition">The Cosmos SQL query definition.</param>
+        /// <param name="feedToken">A FeedToken obtained from <see cref="Container.GetQueryFeedTokensAsync(QueryDefinition, QueryRequestOptions, CancellationToken)"/> or from a previous FeedTokenIterator</param>
         /// <param name="requestOptions">(Optional) The options for the item query request.</param>
         /// <returns>An iterator to go through the items.</returns>
         /// <remarks>
@@ -1387,13 +1409,13 @@ namespace Microsoft.Azure.Cosmos
         ///     public string status {get; set;}
         ///     public int cost {get; set;}
         /// }
-        /// IReadOnlyList<FeedToken> feedTokens = await this.Container.GetFeedTokensAsync();
+        ///
         /// // Distribute feedTokens across multiple compute units and pass each one to a different iterator
         /// QueryDefinition queryDefinition = new QueryDefinition("select * from ToDos t where t.cost > @expensive")
         ///     .WithParameter("@expensive", 9000);
+        /// IReadOnlyList<QueryToken> feedTokens = await this.Container.GetQueryFeedTokensAsync(queryDefinition);
         /// FeedIterator<ToDoActivity> feedIterator = this.Container.GetItemQueryIterator<ToDoActivity>(
         ///     feedTokens[0],
-        ///     queryDefinition,
         ///     new QueryRequestOptions() { });
         ///
         /// while (feedIterator.HasMoreResults)
@@ -1407,100 +1429,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         public abstract FeedIterator<T> GetItemQueryIterator<T>(
-            FeedToken feedToken,
-            QueryDefinition queryDefinition,
-            QueryRequestOptions requestOptions = null);
-
-        /// <summary>
-        ///  This method creates a query for items under a container in an Azure Cosmos database using a SQL statement with parameterized values. It returns a FeedIterator.
-        ///  For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/>.
-        /// </summary>
-        /// <param name="feedToken">A FeedToken obtained from <see cref="Container.GetFeedTokensAsync(CancellationToken)"/> or from a previous FeedTokenIterator</param>
-        /// <param name="queryText">The Cosmos SQL query text.</param>
-        /// <param name="requestOptions">(Optional) The options for the item query request.</param>
-        /// <returns>An iterator to go through the items.</returns>
-        /// <remarks>
-        /// Query as a stream only supports single partition queries 
-        /// </remarks>
-        /// <example>
-        /// Create a query to get all the ToDoActivity that have a cost greater than 9000 for the specified partition
-        /// <code language="c#">
-        /// <![CDATA[
-        /// public class ToDoActivity{
-        ///     public string id {get; set;}
-        ///     public string status {get; set;}
-        ///     public int cost {get; set;}
-        /// }
-        /// IReadOnlyList<FeedToken> feedTokens = await this.Container.GetFeedTokensAsync();
-        /// // Distribute feedTokens across multiple compute units and pass each one to a different iterator
-        /// QueryDefinition queryDefinition = new QueryDefinition("select * from ToDos t where t.cost > @expensive")
-        ///     .WithParameter("@expensive", 9000);
-        /// FeedIterator feedIterator = this.Container.GetItemQueryStreamIterator(
-        ///     queryDefinition,
-        ///     feedTokens[0],
-        ///     new QueryRequestOptions() { });
-        ///
-        /// while (feedIterator.HasMoreResults)
-        /// {
-        ///     using (ResponseMessage response = await feedIterator.ReadNextAsync())
-        ///     {
-        ///         using (StreamReader sr = new StreamReader(response.Content))
-        ///         using (JsonTextReader jtr = new JsonTextReader(sr))
-        ///         {
-        ///             JObject result = JObject.Load(jtr);
-        ///         }
-        ///     }
-        /// }
-        /// ]]>
-        /// </code>
-        /// </example>
-        public abstract FeedIterator GetItemQueryStreamIterator(
-            FeedToken feedToken,
-            string queryText = null,
-            QueryRequestOptions requestOptions = null);
-
-        /// <summary>
-        ///  This method creates a query for items under a container in an Azure Cosmos database using a SQL statement with parameterized values. It returns a FeedIterator.
-        ///  For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/>.
-        /// </summary>
-        /// <param name="feedToken">A FeedToken obtained from <see cref="Container.GetFeedTokensAsync(CancellationToken)"/> or from a previous FeedTokenIterator</param>
-        /// <param name="queryText">The Cosmos SQL query text.</param>
-        /// <param name="requestOptions">(Optional) The options for the item query request.</param>
-        /// <returns>An iterator to go through the items.</returns>
-        /// <remarks>
-        /// Query as a stream only supports single partition queries 
-        /// </remarks>
-        /// <example>
-        /// Create a query to get all the ToDoActivity that have a cost greater than 9000 for the specified partition
-        /// <code language="c#">
-        /// <![CDATA[
-        /// public class ToDoActivity{
-        ///     public string id {get; set;}
-        ///     public string status {get; set;}
-        ///     public int cost {get; set;}
-        /// }
-        /// IReadOnlyList<FeedToken> feedTokens = await this.Container.GetFeedTokensAsync();
-        /// // Distribute feedTokens across multiple compute units and pass each one to a different iterator
-        /// QueryDefinition queryDefinition = new QueryDefinition("select * from ToDos t where t.cost > @expensive")
-        ///     .WithParameter("@expensive", 9000);
-        /// FeedIterator<ToDoActivity> feedIterator = this.Container.GetItemQueryIterator<ToDoActivity>(
-        ///     feedTokens[0],
-        ///     queryDefinition,
-        ///     new QueryRequestOptions() { });
-        ///
-        /// while (feedIterator.HasMoreResults)
-        /// {
-        ///     foreach(var item in await feedIterator.ReadNextAsync()){
-        ///     {
-        ///         Console.WriteLine(item.cost); 
-        ///     }
-        /// }
-        /// ]]>
-        /// </code>
-        /// </example>
-        public abstract FeedIterator<T> GetItemQueryIterator<T>(
-            FeedToken feedToken,
-            string queryText = null,
+            QueryFeedToken feedToken,
             QueryRequestOptions requestOptions = null);
 #endif
     }

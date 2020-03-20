@@ -266,7 +266,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             DatabaseCore db = new DatabaseCore(mockContext.Object, "test");
             ContainerCore container = new ContainerCore(mockContext.Object, db, "test");
-            IEnumerable<string> tokens = await container.GetChangeFeedTokensAsync();
+            IEnumerable<string> tokens = await container.GetStandByTokensAsync();
             Assert.AreEqual(3, tokens.Count());
 
             Routing.PartitionKeyRangeCache pkRangeCache = await documentClient.GetPartitionKeyRangeCacheAsync();

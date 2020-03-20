@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Tests
+namespace Microsoft.Azure.Cosmos.Tests.FeedToken
 {
     using System;
     using System.Collections.Generic;
@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new Documents.Routing.Range<string>("D", "E", true, false),
             };
             FeedTokenEPKRange token = new FeedTokenEPKRange(containerRid, keyRanges, continuationToken: null);
-            IReadOnlyList<FeedToken> splitTokens = token.Scale();
+            IReadOnlyList<FeedTokenEPKRange> splitTokens = token.Scale();
             Assert.AreEqual(keyRanges.Count, splitTokens.Count);
 
             List<FeedTokenEPKRange> feedTokenEPKRanges = splitTokens.Select(t => t as FeedTokenEPKRange).ToList();
@@ -73,8 +73,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new Documents.Routing.Range<string>("D", "E", true, false),
             };
             FeedTokenEPKRange token = new FeedTokenEPKRange(containerRid, keyRanges, continuationToken: null);
-            Assert.IsTrue(FeedTokenEPKRange.TryParseInstance(token.ToString(), out FeedToken parsed));
-            Assert.IsFalse(FeedTokenEPKRange.TryParseInstance("whatever", out FeedToken _));
+            Assert.IsTrue(FeedTokenEPKRange.TryParseInstance(token.ToString(), out FeedTokenEPKRange parsed));
+            Assert.IsFalse(FeedTokenEPKRange.TryParseInstance("whatever", out FeedTokenEPKRange _));
         }
 
         [TestMethod]
@@ -108,17 +108,17 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void FeedToken_PartitionKey_TryParse()
         {
             FeedTokenPartitionKey token = new FeedTokenPartitionKey(new PartitionKey("test"));
-            Assert.IsTrue(FeedTokenPartitionKey.TryParseInstance(token.ToString(), out FeedToken parsed));
-            Assert.IsFalse(FeedTokenPartitionKey.TryParseInstance("whatever", out FeedToken _));
+            Assert.IsTrue(FeedTokenPartitionKey.TryParseInstance(token.ToString(), out FeedTokenPartitionKey parsed));
+            Assert.IsFalse(FeedTokenPartitionKey.TryParseInstance("whatever", out FeedTokenPartitionKey _));
         }
 
         [TestMethod]
         public void FeedToken_PartitionKeyRange_TryParse()
         {
-            FeedTokenPartitionKeyRange token = new FeedTokenPartitionKeyRange("0");
-            Assert.IsTrue(FeedTokenPartitionKeyRange.TryParseInstance(token.ToString(), out FeedToken parsed));
-            Assert.IsTrue(FeedTokenPartitionKeyRange.TryParseInstance("1", out FeedToken _));
-            Assert.IsFalse(FeedTokenPartitionKey.TryParseInstance("whatever", out FeedToken _));
+            FeedTokenPartitionKeyRange token = new FeedTokenPartitionKeyRange("0", null);
+            Assert.IsTrue(FeedTokenPartitionKeyRange.TryParseInstance(token.ToString(), out FeedTokenPartitionKeyRange parsed));
+            Assert.IsTrue(FeedTokenPartitionKeyRange.TryParseInstance("1", out FeedTokenPartitionKeyRange _));
+            Assert.IsFalse(FeedTokenPartitionKey.TryParseInstance("whatever", out FeedTokenPartitionKey _));
         }
 
         [TestMethod]
@@ -137,7 +137,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void FeedToken_PartitionKeyRange_EnrichRequest()
         {
             string pkrangeId = "0";
-            FeedTokenPartitionKeyRange token = new FeedTokenPartitionKeyRange(pkrangeId);
+            FeedTokenPartitionKeyRange token = new FeedTokenPartitionKeyRange(pkrangeId, null);
             RequestMessage requestMessage = new RequestMessage();
             token.EnrichRequest(requestMessage);
             Assert.AreEqual(pkrangeId, requestMessage.PartitionKeyRangeId.PartitionKeyRangeId);
@@ -248,8 +248,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             string containerRid = Guid.NewGuid().ToString();
             string continuation = Guid.NewGuid().ToString();
 
-            FeedTokenPartitionKeyRange feedTokenPartitionKeyRange = new FeedTokenPartitionKeyRange("0");
-            feedTokenPartitionKeyRange.UpdateContinuation(continuation);
+            FeedTokenPartitionKeyRange feedTokenPartitionKeyRange = new FeedTokenPartitionKeyRange("0", continuation);
             PKRangeSplitMockDocumentClient documentClient = new PKRangeSplitMockDocumentClient();
 
             Mock<CosmosClientContext> cosmosClientContext = new Mock<CosmosClientContext>();
@@ -271,7 +270,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             // FeedToken should have converted to EPKRange token
 
             string serialization = feedTokenPartitionKeyRange.ToString();
-            FeedTokenEPKRange feedTokenEPKRange = FeedToken.FromString(serialization) as FeedTokenEPKRange;
+            FeedTokenEPKRange feedTokenEPKRange = (ChangeFeedToken.FromString(serialization) as ChangeFeedTokenInternal).ChangeFeedToken as FeedTokenEPKRange;
             Assert.IsNotNull(feedTokenEPKRange, "FeedTokenPartitionKeyRange did not convert to FeedTokenEPKRange after split");
             Assert.AreEqual(containerRid, feedTokenEPKRange.ContainerRid);
 
@@ -304,7 +303,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void FeedToken_PartitionKeyRange_IsDone()
         {
             string pkrangeId = "0";
-            FeedTokenPartitionKeyRange token = new FeedTokenPartitionKeyRange(pkrangeId);
+            FeedTokenPartitionKeyRange token = new FeedTokenPartitionKeyRange(pkrangeId, null);
             token.UpdateContinuation(Guid.NewGuid().ToString());
             Assert.IsFalse(token.IsDone);
             token.UpdateContinuation(null);

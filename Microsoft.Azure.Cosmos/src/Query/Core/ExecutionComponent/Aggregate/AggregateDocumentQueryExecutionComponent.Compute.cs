@@ -170,7 +170,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
 
             public override bool TryGetFeedToken(
                 string containerResourceId,
-                out FeedToken feedToken)
+                SqlQuerySpec sqlQuerySpec,
+                out QueryFeedToken feedToken)
             {
                 if (this.IsDone)
                 {
@@ -178,21 +179,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
                     return true;
                 }
 
-                if (!this.Source.TryGetFeedToken(containerResourceId, out feedToken))
+                if (!this.Source.TryGetFeedToken(containerResourceId, sqlQuerySpec, out feedToken))
                 {
                     feedToken = null;
                     return false;
                 }
 
-                if (feedToken is FeedTokenEPKRange feedTokenInternal)
+                if (feedToken is QueryFeedTokenInternal feedTokenInternal
+                    && feedTokenInternal.QueryFeedToken is FeedTokenEPKRange tokenEPKRange)
                 {
                     AggregateContinuationToken aggregateContinuationToken = new AggregateContinuationToken(
                         singleGroupAggregatorContinuationToken: this.singleGroupAggregator.GetCosmosElementContinuationToken(),
                         sourceContinuationToken: this.Source.GetCosmosElementContinuationToken());
 
-                    feedToken = FeedTokenEPKRange.Copy(
-                        feedTokenInternal,
-                        AggregateContinuationToken.ToCosmosElement(aggregateContinuationToken).ToString());
+                    feedToken = new QueryFeedTokenInternal(FeedTokenEPKRange.Copy(
+                        tokenEPKRange,
+                        AggregateContinuationToken.ToCosmosElement(aggregateContinuationToken).ToString()),
+                        feedTokenInternal.QueryDefinition);
                 }
 
                 return true;

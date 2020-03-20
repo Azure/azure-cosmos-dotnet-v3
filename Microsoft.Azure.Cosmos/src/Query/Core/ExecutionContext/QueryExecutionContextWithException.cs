@@ -45,7 +45,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
         public override bool TryGetFeedToken(
             string containerResourceId,
-            out FeedToken feedToken)
+            SqlQuerySpec sqlQuerySpec,
+            out QueryFeedToken feedToken)
         {
             throw new NotImplementedException();
         }

@@ -300,7 +300,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
             ContainerQueryProperties containerQueryProperties,
             IReadOnlyDictionary<string, object> properties,
-            FeedTokenInternal feedTokenInternal)
+            IQueryFeedToken queryFeedToken)
         {
             List<Documents.PartitionKeyRange> targetRanges;
             if (containerQueryProperties.EffectivePartitionKeyString != null)
@@ -317,13 +317,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     containerQueryProperties.ResourceId,
                     effectivePartitionKeyString);
             }
-            else if (feedTokenInternal != null)
+            else if (queryFeedToken != null)
             {
                 targetRanges = await queryClient.GetTargetPartitionKeyRangeByFeedTokenAsync(
                     resourceLink,
                     containerQueryProperties.ResourceId,
                     containerQueryProperties.PartitionKeyDefinition,
-                    feedTokenInternal);
+                    queryFeedToken);
             }
             else
             {
@@ -369,7 +369,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             public InputParameters(
                 SqlQuerySpec sqlQuerySpec,
                 CosmosElement initialUserContinuationToken,
-                FeedTokenInternal initialFeedToken,
+                IQueryFeedToken initialFeedToken,
                 int? maxConcurrency,
                 int? maxItemCount,
                 int? maxBufferedItemCount,
@@ -415,7 +415,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
             public SqlQuerySpec SqlQuerySpec { get; }
             public CosmosElement InitialUserContinuationToken { get; }
-            public FeedTokenInternal InitialFeedToken { get; }
+            public IQueryFeedToken InitialFeedToken { get; }
             public int MaxConcurrency { get; }
             public int MaxItemCount { get; }
             public int MaxBufferedItemCount { get; }

@@ -27,8 +27,8 @@ namespace Microsoft.Azure.Cosmos
         private readonly Uri resourceLink;
         private readonly ResourceType resourceType;
         private readonly SqlQuerySpec querySpec;
+        private IQueryFeedToken queryFeedToken;
         private bool hasMoreResultsInternal;
-        private FeedTokenInternal feedTokenInternal;
         private string containerRId = null;
 
         internal static FeedIteratorCore CreateForNonPartitionedResource( 
@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos
                 resourceType: resourceType,
                 queryDefinition: queryDefinition,
                 continuationToken: continuationToken,
-                feedTokenInternal: null,
+                queryFeedToken: null,
                 options: options);
         }
 
@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             QueryDefinition queryDefinition,
             string continuationToken,
-            FeedTokenInternal feedTokenInternal,
+            IQueryFeedToken queryFeedToken,
             QueryRequestOptions options)
         {
             if (containerCore == null)
@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos
                 resourceType: resourceType,
                 queryDefinition: queryDefinition,
                 continuationToken: continuationToken,
-                feedTokenInternal: feedTokenInternal,
+                queryFeedToken: queryFeedToken,
                 options: options);
         }
 
@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             QueryDefinition queryDefinition,
             string continuationToken,
-            FeedTokenInternal feedTokenInternal,
+            IQueryFeedToken queryFeedToken,
             QueryRequestOptions options)
         {
             this.resourceLink = resourceLink;
@@ -90,8 +90,8 @@ namespace Microsoft.Azure.Cosmos
             this.clientContext = clientContext;
             this.resourceType = resourceType;
             this.querySpec = queryDefinition?.ToSqlQuerySpec();
-            this.feedTokenInternal = feedTokenInternal;
-            this.ContinuationToken = continuationToken ?? this.feedTokenInternal?.GetContinuation();
+            this.queryFeedToken = queryFeedToken;
+            this.ContinuationToken = continuationToken ?? this.queryFeedToken?.GetContinuation();
             this.requestOptions = options;
             this.hasMoreResultsInternal = true;
         }
@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        FeedToken FeedToken => this.feedTokenInternal;
+        QueryFeedToken FeedToken => new QueryFeedTokenInternal(this.queryFeedToken, queryDefinition: null);
 
         /// <summary>
         /// The query options for the result set
@@ -143,9 +143,9 @@ namespace Microsoft.Azure.Cosmos
 
                     this.containerRId = tryInitializeContainerRId.Result;
                     // If there is an initial FeedToken, validate Container
-                    if (this.feedTokenInternal != null)
+                    if (this.queryFeedToken != null)
                     {
-                        TryCatch validateContainer = this.feedTokenInternal.ValidateContainer(this.containerRId);
+                        TryCatch validateContainer = this.queryFeedToken.ValidateContainer(this.containerRId);
                         if (!validateContainer.Succeeded)
                         {
                             return CosmosExceptionFactory.CreateInternalServerErrorException(
@@ -156,9 +156,9 @@ namespace Microsoft.Azure.Cosmos
                     }
                 }
 
-                if (this.feedTokenInternal == null)
+                if (this.queryFeedToken == null)
                 {
-                    this.feedTokenInternal = this.InitializeFeedToken();
+                    this.queryFeedToken = this.InitializeFeedToken();
                 }
 
                 return await this.ReadNextInternalAsync(diagnostics, cancellationToken);
@@ -196,23 +196,23 @@ namespace Microsoft.Azure.Cosmos
                        request.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
                    }
 
-                   this.feedTokenInternal?.EnrichRequest(request);
+                   this.queryFeedToken?.EnrichRequest(request);
                },
                diagnosticsScope: diagnostics,
                cancellationToken: cancellationToken);
 
             // Retry in case of splits or other scenarios only on partitioned resources
             if (this.containerCore != null
-                && await this.feedTokenInternal.ShouldRetryAsync(this.containerCore, response, cancellationToken))
+                && await this.queryFeedToken.ShouldRetryAsync(this.containerCore, response, cancellationToken))
             {
                 return await this.ReadNextInternalAsync(diagnostics, cancellationToken);
             }
 
             if (response.IsSuccessStatusCode)
             {
-                this.feedTokenInternal.UpdateContinuation(response.Headers.ContinuationToken);
-                this.ContinuationToken = this.feedTokenInternal.GetContinuation();
-                this.hasMoreResultsInternal = !this.feedTokenInternal.IsDone;
+                this.queryFeedToken.UpdateContinuation(response.Headers.ContinuationToken);
+                this.ContinuationToken = this.queryFeedToken.GetContinuation();
+                this.hasMoreResultsInternal = !this.queryFeedToken.IsDone;
             }
             else
             {
@@ -220,12 +220,6 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return response;
-        }
-
-        public override bool TryGetFeedToken(out FeedToken feedToken)
-        {
-            feedToken = this.feedTokenInternal;
-            return true;
         }
 
         private async Task<TryCatch<string>> TryInitializeContainerRIdAsync(CancellationToken cancellationToken)
@@ -246,7 +240,7 @@ namespace Microsoft.Azure.Cosmos
             return TryCatch<string>.FromResult(containerRId);
         }
 
-        private FeedTokenInternal InitializeFeedToken()
+        private IQueryFeedToken InitializeFeedToken()
         {
             // Create FeedToken for the full Range
             FeedTokenEPKRange feedTokenInternal = new FeedTokenEPKRange(
@@ -288,7 +282,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
 #if PREVIEW
-        public override FeedToken FeedToken => this.feedIterator.FeedToken;
+        public override QueryFeedToken FeedToken => this.feedIterator.FeedToken;
 #endif
 
         /// <summary>

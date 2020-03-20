@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             RequestMessage request = new RequestMessage();
             request.OperationType = OperationType.ReadFeed;
             request.ResourceType = ResourceType.Document;
-            FeedTokenInternal feedTokenEPKRange = new FeedTokenEPKRange(Guid.NewGuid().ToString(), new Documents.Routing.Range<string>("A", "B", true, false), continuationToken: null);
+            FeedTokenEPKRange feedTokenEPKRange = new FeedTokenEPKRange(Guid.NewGuid().ToString(), new Documents.Routing.Range<string>("A", "B", true, false), continuationToken: null);
             feedTokenEPKRange.EnrichRequest(request);
             Assert.IsTrue(request.IsPartitionKeyRangeHandlerRequired);
         }
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             RequestMessage request = new RequestMessage();
             request.OperationType = OperationType.ReadFeed;
             request.ResourceType = ResourceType.Document;
-            FeedTokenInternal feedTokenEPKRange = new FeedTokenPartitionKeyRange("0");
+            FeedTokenPartitionKeyRange feedTokenEPKRange = new FeedTokenPartitionKeyRange("0", null);
             feedTokenEPKRange.EnrichRequest(request);
             Assert.IsFalse(request.IsPartitionKeyRangeHandlerRequired);
         }
@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             RequestMessage request = new RequestMessage();
             request.OperationType = OperationType.ReadFeed;
             request.ResourceType = ResourceType.Document;
-            FeedTokenInternal feedTokenEPKRange = new FeedTokenPartitionKey(new Cosmos.PartitionKey("0"));
+            FeedTokenPartitionKey feedTokenEPKRange = new FeedTokenPartitionKey(new Cosmos.PartitionKey("0"));
             feedTokenEPKRange.EnrichRequest(request);
             Assert.IsFalse(request.IsPartitionKeyRangeHandlerRequired);
         }

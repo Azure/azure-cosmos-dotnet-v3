@@ -643,19 +643,18 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             }
 
             List<T> resultsFromTryGetContinuationToken = new List<T>();
-            FeedToken feedToken = null;
+            QueryFeedToken feedToken = null;
             do
             {
                 QueryRequestOptions computeRequestOptions = queryRequestOptions.Clone();
                 computeRequestOptions.ExecutionEnvironment = Cosmos.Query.Core.ExecutionContext.ExecutionEnvironment.Compute;
 
-                FeedIteratorInternal itemQuery = feedToken == null ? containerCore.GetItemQueryStreamIterator(
+                Cosmos.Query.QueryIterator itemQuery = feedToken == null ? containerCore.GetItemQueryStreamIterator(
                    queryText: query,
-                   requestOptions: computeRequestOptions) as FeedIteratorInternal
+                   requestOptions: computeRequestOptions) as Cosmos.Query.QueryIterator
                    : containerCore.GetItemQueryStreamIterator(
-                   queryText: query,
                    requestOptions: computeRequestOptions,
-                   feedToken: feedToken) as FeedIteratorInternal;
+                   feedToken: feedToken) as Cosmos.Query.QueryIterator;
                 try
                 {
                     ResponseMessage cosmosQueryResponse = await itemQuery.ReadNextAsync();
@@ -674,19 +673,16 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     }
 
                     resultsFromTryGetContinuationToken.AddRange(response);
-                    Assert.IsTrue(
-                        itemQuery.TryGetFeedToken(out feedToken),
-                        "Failed to get state for query");
+                    feedToken = itemQuery.FeedToken;
                 }
                 catch (CosmosException cosmosException) when (cosmosException.StatusCode == (HttpStatusCode)429)
                 {
                     itemQuery = feedToken == null ? containerCore.GetItemQueryStreamIterator(
                        queryText: query,
-                       requestOptions: computeRequestOptions) as FeedIteratorInternal
+                       requestOptions: computeRequestOptions) as Cosmos.Query.QueryIterator
                        : containerCore.GetItemQueryStreamIterator(
-                       queryText: query,
                        requestOptions: computeRequestOptions,
-                       feedToken: feedToken) as FeedIteratorInternal;
+                       feedToken: feedToken) as Cosmos.Query.QueryIterator;
                 }
             } while (feedToken != null);
 

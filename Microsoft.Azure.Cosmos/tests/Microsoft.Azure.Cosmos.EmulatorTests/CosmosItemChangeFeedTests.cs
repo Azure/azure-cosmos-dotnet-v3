@@ -323,7 +323,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             int pkRangesCount = (await this.LargerContainer.ClientContext.DocumentClient.ReadPartitionKeyRangeFeedAsync(this.LargerContainer.LinkUri)).Count;
             ContainerCore itemsCore = this.LargerContainer;
-            IEnumerable<string> tokens = await itemsCore.GetChangeFeedTokensAsync();
+            IEnumerable<string> tokens = await itemsCore.GetStandByTokensAsync();
             Assert.AreEqual(pkRangesCount, tokens.Count());
         }
 
@@ -332,7 +332,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             int pkRangesCount = (await this.LargerContainer.ClientContext.DocumentClient.ReadPartitionKeyRangeFeedAsync(this.LargerContainer.LinkUri)).Count;
             ContainerCore itemsCore = this.LargerContainer;
-            IEnumerable<string> tokens = await itemsCore.GetChangeFeedTokensAsync();
+            IEnumerable<string> tokens = await itemsCore.GetStandByTokensAsync();
             Assert.IsTrue(pkRangesCount > 1, "Should have created a multi partition container.");
             Assert.AreEqual(pkRangesCount, tokens.Count());
             int totalDocuments = 200;

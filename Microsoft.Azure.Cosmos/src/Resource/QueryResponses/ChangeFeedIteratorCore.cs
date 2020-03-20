@@ -10,25 +10,24 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
 
     /// <summary>
     /// Cosmos Change Feed iterator using FeedToken
     /// </summary>
-    internal sealed class ChangeFeedIteratorCore : FeedIteratorInternal
+    internal sealed class ChangeFeedIteratorCore : ChangeFeedIterator
     {
         private readonly ChangeFeedRequestOptions changeFeedOptions;
         private readonly CosmosClientContext clientContext;
         private readonly ContainerCore container;
-        private FeedTokenInternal feedTokenInternal;
+        private ChangeFeedTokenInternal feedTokenInternal;
         private bool hasMoreResults = true;
         private string containerRId = null;
 
         internal ChangeFeedIteratorCore(
             ContainerCore container,
-            FeedTokenInternal feedTokenInternal,
+            ChangeFeedTokenInternal feedTokenInternal,
             ChangeFeedRequestOptions changeFeedRequestOptions)
             : this(container, changeFeedRequestOptions)
         {
@@ -55,12 +54,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override bool HasMoreResults => this.hasMoreResults;
 
-#if PREVIEW
-        public override
-#else
-        internal
-#endif
-        FeedToken FeedToken => this.feedTokenInternal; 
+        public override ChangeFeedToken FeedToken => this.feedTokenInternal; 
 
         /// <summary>
         /// Get the next set of results from the cosmos service
@@ -92,7 +86,7 @@ namespace Microsoft.Azure.Cosmos
                     // If there is an initial FeedToken, validate Container
                     if (this.feedTokenInternal != null)
                     {
-                        TryCatch validateContainer = this.feedTokenInternal.ValidateContainer(this.containerRId);
+                        TryCatch validateContainer = this.feedTokenInternal.ChangeFeedToken.ValidateContainer(this.containerRId);
                         if (!validateContainer.Succeeded)
                         {
                             return CosmosExceptionFactory.CreateInternalServerErrorException(
@@ -112,12 +106,6 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public override bool TryGetFeedToken(out FeedToken feedToken)
-        {
-            feedToken = this.feedTokenInternal;
-            return true;
-        }
-
         private async Task<ResponseMessage> ReadNextInternalAsync(
             CosmosDiagnosticsContext diagnosticsScope,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -133,8 +121,8 @@ namespace Microsoft.Azure.Cosmos
                 cosmosContainerCore: this.container,
                 requestEnricher: request =>
                 {
-                    ChangeFeedRequestOptions.FillContinuationToken(request, this.feedTokenInternal.GetContinuation());
-                    this.feedTokenInternal.EnrichRequest(request);
+                    ChangeFeedRequestOptions.FillContinuationToken(request, this.feedTokenInternal.ChangeFeedToken.GetContinuation());
+                    this.feedTokenInternal.ChangeFeedToken.EnrichRequest(request);
                 },
                 partitionKey: null,
                 streamPayload: null,
@@ -142,13 +130,13 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
 
             // Retry in case of splits or other scenarios
-            if (await this.feedTokenInternal.ShouldRetryAsync(this.container, responseMessage, cancellationToken))
+            if (await this.feedTokenInternal.ChangeFeedToken.ShouldRetryAsync(this.container, responseMessage, cancellationToken))
             {
                 if (responseMessage.IsSuccessStatusCode
                     || responseMessage.StatusCode == HttpStatusCode.NotModified)
                 {
                     // Change Feed read uses Etag for continuation
-                    this.feedTokenInternal.UpdateContinuation(responseMessage.Headers.ETag);
+                    this.feedTokenInternal.ChangeFeedToken.UpdateContinuation(responseMessage.Headers.ETag);
                 }
 
                 return await this.ReadNextInternalAsync(diagnosticsScope, cancellationToken);
@@ -158,7 +146,7 @@ namespace Microsoft.Azure.Cosmos
                 || responseMessage.StatusCode == HttpStatusCode.NotModified)
             {
                 // Change Feed read uses Etag for continuation
-                this.feedTokenInternal.UpdateContinuation(responseMessage.Headers.ETag);
+                this.feedTokenInternal.ChangeFeedToken.UpdateContinuation(responseMessage.Headers.ETag);
             }
 
             this.hasMoreResults = responseMessage.IsSuccessStatusCode;
@@ -178,7 +166,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private async Task<FeedTokenInternal> InitializeFeedTokenAsync(CancellationToken cancellationToken)
+        private async Task<ChangeFeedTokenInternal> InitializeFeedTokenAsync(CancellationToken cancellationToken)
         {
             Routing.PartitionKeyRangeCache partitionKeyRangeCache = await this.clientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
             IReadOnlyList<Documents.PartitionKeyRange> partitionKeyRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
@@ -190,12 +178,42 @@ namespace Microsoft.Azure.Cosmos
                         isMaxInclusive: false),
                     forceRefresh: true);
             // ReadAll scenario, initialize with one token for all
-            return new FeedTokenEPKRange(this.containerRId, partitionKeyRanges.Select(pkRange => pkRange.ToRange()).ToList(), continuationToken: null);
+            return new ChangeFeedTokenInternal(new FeedTokenEPKRange(this.containerRId, partitionKeyRanges.Select(pkRange => pkRange.ToRange()).ToList(), continuationToken: null));
+        }
+    }
+
+    /// <summary>
+    /// Cosmos feed iterator that keeps track of the continuation token when retrieving results form a query.
+    /// </summary>
+    /// <typeparam name="T">The response object type that can be deserialized</typeparam>
+    internal sealed class ChangeFeedIteratorCore<T> : ChangeFeedIterator<T>
+    {
+        private readonly ChangeFeedIterator feedIterator;
+        private readonly Func<ResponseMessage, FeedResponse<T>> responseCreator;
+
+        internal ChangeFeedIteratorCore(
+            ChangeFeedIterator feedIterator,
+            Func<ResponseMessage, FeedResponse<T>> responseCreator)
+        {
+            this.responseCreator = responseCreator;
+            this.feedIterator = feedIterator;
         }
 
-        public override CosmosElement GetCosmsoElementContinuationToken()
+        public override bool HasMoreResults => this.feedIterator.HasMoreResults;
+
+        public override ChangeFeedToken FeedToken => this.feedIterator.FeedToken;
+
+        /// <summary>
+        /// Get the next set of results from the cosmos service
+        /// </summary>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>A query response from cosmos service</returns>
+        public override async Task<FeedResponse<T>> ReadNextAsync(CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            cancellationToken.ThrowIfCancellationRequested();
+
+            ResponseMessage response = await this.feedIterator.ReadNextAsync(cancellationToken);
+            return this.responseCreator(response);
         }
     }
 }

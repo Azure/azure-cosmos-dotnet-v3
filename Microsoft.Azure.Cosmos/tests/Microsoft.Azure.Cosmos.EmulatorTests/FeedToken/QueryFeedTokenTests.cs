@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     using System.Linq;
     using System.Net;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Routing;
@@ -34,6 +35,42 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         }
 
         [TestMethod]
+        public async Task GetQueryFeedTokens()
+        {
+            ContainerCore container = null;
+            try
+            {
+                // Create a container large enough to have at least 2 partitions
+                ContainerResponse containerResponse = await this.database.CreateContainerAsync(
+                    id: Guid.NewGuid().ToString(),
+                    partitionKeyPath: "/pk",
+                    throughput: 15000);
+                container = (ContainerInlineCore)containerResponse;
+
+                int pkRangesCount = (await container.ClientContext.DocumentClient.ReadPartitionKeyRangeFeedAsync(container.LinkUri)).Count;
+
+                await QueryFeedTokenTests.GetQueryFeedTokens(container, null, null, pkRangesCount);
+                await QueryFeedTokenTests.GetQueryFeedTokens(container, new QueryDefinition("select * from c"), null, pkRangesCount);
+                await QueryFeedTokenTests.GetQueryFeedTokens(container, new QueryDefinition("select * from c"), new QueryRequestOptions() { PartitionKey = new Cosmos.PartitionKey("value") }, 1);
+                await QueryFeedTokenTests.GetQueryFeedTokens(container, new QueryDefinition("SELECT VALUE AVG(c.age) FROM c"), null, 1);
+                await QueryFeedTokenTests.GetQueryFeedTokens(container, new QueryDefinition("SELECT DISTINCT VALUE c.age FROM c ORDER BY c.age"), null, 1);
+                await QueryFeedTokenTests.GetQueryFeedTokens(container, new QueryDefinition("SELECT c.age, c.name FROM c GROUP BY c.age, c.name"), null, 1);
+                await QueryFeedTokenTests.GetQueryFeedTokens(container, new QueryDefinition("select TOP 10 * FROM C"), null, pkRangesCount);
+                await QueryFeedTokenTests.GetQueryFeedTokens(container, new QueryDefinition("select * FROM C OFFSET 10 LIMIT 5"), null, pkRangesCount);
+            }
+            finally
+            {
+                await container?.DeleteContainerAsync();
+            }
+        }
+
+        private static async Task GetQueryFeedTokens(ContainerCore container, QueryDefinition query, QueryRequestOptions queryRequestOptions,int expectedCount)
+        {
+            IReadOnlyList<QueryFeedToken> feedTokens = await container.GetQueryFeedTokensAsync(query, queryRequestOptions);
+            Assert.AreEqual(expectedCount, feedTokens.Count, $"For query {query?.QueryText}, expected {expectedCount}");
+        }
+
+        [TestMethod]
         public async Task GetTargetPartitionKeyRangesAsyncWithFeedToken()
         {
             ContainerCore container = null;
@@ -54,12 +91,12 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     null,
                     containerResponse.Resource.PartitionKey);
 
-                IReadOnlyList<FeedToken> feedTokens = await container.GetFeedTokensAsync();
+                IReadOnlyList<QueryFeedToken> feedTokens = await container.GetQueryFeedTokensAsync(new QueryDefinition("select * from c"));
 
                 Assert.IsTrue(feedTokens.Count > 1, " RUs of the container needs to be increased to ensure at least 2 partitions.");
 
                 // There should only be one range since we get 1 FeedToken per range
-                foreach (FeedToken feedToken in feedTokens)
+                foreach (QueryFeedToken feedToken in feedTokens)
                 {
                     List<PartitionKeyRange> partitionKeyRanges = await CosmosQueryExecutionContextFactory.GetTargetPartitionKeyRangesAsync(
                         queryClient: new CosmosQueryClientCore(container.ClientContext, container),
@@ -67,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                         partitionedQueryExecutionInfo: null,
                         containerQueryProperties: containerQueryProperties,
                         properties: null,
-                        feedTokenInternal: feedToken as FeedTokenInternal);
+                        queryFeedToken: (feedToken as QueryFeedTokenInternal).QueryFeedToken);
 
                     Assert.IsTrue(partitionKeyRanges.Count == 1, "Only 1 partition key range should be selected since the FeedToken represents a single range.");
                 }
@@ -107,14 +144,14 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     }
                 }
 
-                IReadOnlyList<FeedToken> feedTokens = await container.GetFeedTokensAsync();
+                IReadOnlyList<QueryFeedToken> feedTokens = await container.GetQueryFeedTokensAsync(new QueryDefinition("select * from T where STARTSWITH(T.id, \"BasicItem\")"));
 
                 Assert.IsTrue(feedTokens.Count > 1, " RUs of the container needs to be increased to ensure at least 2 partitions.");
 
                 List<Task<List<string>>> tasks = feedTokens.Select(async feedToken =>
                 {
                     List<string> results = new List<string>();
-                    FeedIteratorInternal feedIterator = container.GetItemQueryStreamIterator(queryText: "select * from T where STARTSWITH(T.id, \"BasicItem\")", feedToken: feedToken, requestOptions: new QueryRequestOptions() { MaxItemCount = 10 }) as FeedIteratorInternal;
+                    QueryIterator feedIterator = container.GetItemQueryStreamIterator(feedToken: feedToken, requestOptions: new QueryRequestOptions() { MaxItemCount = 10 }) as QueryIterator;
                     while (feedIterator.HasMoreResults)
                     {
                         using (ResponseMessage responseMessage =
@@ -133,7 +170,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                                 }
                             }
 
-                            Assert.IsTrue(feedIterator.TryGetFeedToken(out FeedToken finalFeedToken));
+                            QueryFeedToken finalFeedToken = feedIterator.FeedToken;
                             if (finalFeedToken != null)
                             {
                                 // Since we are using FeedTokens for each PKRange, they shouldn't be able to scale
@@ -189,21 +226,22 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     }
                 }
 
-                IReadOnlyList<FeedToken> feedTokens = await container.GetFeedTokensAsync();
-                FeedIteratorInternal feedIterator = container.GetItemQueryStreamIterator(queryText: "select * from T where STARTSWITH(T.id, \"BasicItem\")", feedToken: feedTokens[0], requestOptions: new QueryRequestOptions() { MaxItemCount = 10 }) as FeedIteratorInternal;
-                FeedToken feedTokenFromContainer1 = null;
+                IReadOnlyList<QueryFeedToken> feedTokens = await container.GetQueryFeedTokensAsync(new QueryDefinition("select * from T where STARTSWITH(T.id, \"BasicItem\")"));
+                QueryIterator feedIterator = container.GetItemQueryStreamIterator(feedToken: feedTokens[0], requestOptions: new QueryRequestOptions() { MaxItemCount = 10 }) as QueryIterator;
+                QueryFeedToken feedTokenFromContainer1 = null;
                 while (feedIterator.HasMoreResults)
                 {
                     using (ResponseMessage responseMessage =
                         await feedIterator.ReadNextAsync(this.cancellationToken))
                     {
-                        Assert.IsTrue(feedIterator.TryGetFeedToken(out feedTokenFromContainer1));
+                        feedTokenFromContainer1 = feedIterator.FeedToken;
+                        Assert.IsNotNull(feedTokenFromContainer1);
                     }
 
                     break;
                 }
 
-                FeedIteratorInternal feedIterator2 = container2.GetItemQueryStreamIterator(queryText: "select * from T where STARTSWITH(T.id, \"BasicItem\")", feedToken: feedTokenFromContainer1, requestOptions: new QueryRequestOptions() { MaxItemCount = 10 }) as FeedIteratorInternal;
+                FeedIteratorInternal feedIterator2 = container2.GetItemQueryStreamIterator(feedToken: feedTokenFromContainer1, requestOptions: new QueryRequestOptions() { MaxItemCount = 10 }) as FeedIteratorInternal;
                 while (feedIterator2.HasMoreResults)
                 {
                     ResponseMessage responseMessage = await feedIterator2.ReadNextAsync(this.cancellationToken);
@@ -252,7 +290,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 }
 
                 List<string> results = new List<string>();
-                FeedIteratorInternal initialIterator = container.GetItemQueryStreamIterator(queryText: "select * from T where STARTSWITH(T.id, \"BasicItem\")") as FeedIteratorInternal;
+                QueryIterator initialIterator = container.GetItemQueryStreamIterator(queryText: "select * from T where STARTSWITH(T.id, \"BasicItem\")") as QueryIterator;
                 while (initialIterator.HasMoreResults)
                 {
                     using (ResponseMessage responseMessage =
@@ -275,8 +313,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     }
                 }
 
-                Assert.IsTrue(initialIterator.TryGetFeedToken(out FeedToken baseFeedToken));
-                IReadOnlyList<FeedToken> feedTokens = baseFeedToken.Scale();
+                QueryFeedToken baseFeedToken = initialIterator.FeedToken;
+                IReadOnlyList<QueryFeedToken> feedTokens = baseFeedToken.Scale();
                 Assert.IsTrue(feedTokens.Count > 0, "Should be able to scale");
             }
             finally

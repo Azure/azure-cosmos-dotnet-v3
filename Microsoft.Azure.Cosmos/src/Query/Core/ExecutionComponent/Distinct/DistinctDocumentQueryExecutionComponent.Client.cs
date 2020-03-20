@@ -255,7 +255,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
 
             public override bool TryGetFeedToken(
                 string containerResourceId,
-                out FeedToken feedToken)
+                SqlQuerySpec sqlQuerySpec,
+                out QueryFeedToken feedToken)
             {
                 if (this.distinctQueryType != DistinctQueryType.Ordered)
                 {
@@ -269,19 +270,21 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                     return true;
                 }
 
-                if (!this.Source.TryGetFeedToken(containerResourceId, out feedToken))
+                if (!this.Source.TryGetFeedToken(containerResourceId, sqlQuerySpec, out feedToken))
                 {
                     feedToken = null;
                     return false;
                 }
 
-                if (feedToken is FeedTokenEPKRange feedTokenInternal)
+                if (feedToken is QueryFeedTokenInternal feedTokenInternal
+                    && feedTokenInternal.QueryFeedToken is FeedTokenEPKRange tokenEPKRange)
                 {
-                    feedToken = FeedTokenEPKRange.Copy(
-                        feedTokenInternal,
+                    feedToken = new QueryFeedTokenInternal(FeedTokenEPKRange.Copy(
+                        tokenEPKRange,
                         new DistinctContinuationToken(
-                            feedTokenInternal.GetContinuation(),
-                            this.distinctMap.GetContinuationToken()).ToString());
+                            tokenEPKRange.GetContinuation(),
+                            this.distinctMap.GetContinuationToken()).ToString()),
+                            feedTokenInternal.QueryDefinition);
                 }
 
                 return true;

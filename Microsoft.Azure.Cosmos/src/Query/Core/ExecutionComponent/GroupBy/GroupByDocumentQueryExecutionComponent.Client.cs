@@ -109,7 +109,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
 
             public override bool TryGetFeedToken(
                 string containerResourceId,
-                out FeedToken feedToken)
+                SqlQuerySpec sqlQuerySpec,
+                out QueryFeedToken feedToken)
             {
                 feedToken = null;
                 return false;

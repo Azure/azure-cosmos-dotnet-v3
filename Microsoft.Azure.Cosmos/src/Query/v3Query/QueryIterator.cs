@@ -23,24 +23,27 @@ namespace Microsoft.Azure.Cosmos.Query
         private readonly CosmosQueryExecutionContext cosmosQueryExecutionContext;
         private readonly CosmosSerializationFormatOptions cosmosSerializationFormatOptions;
         private readonly RequestOptions requestOptions;
+        private readonly SqlQuerySpec initialSqlQuerySpec;
 
         private QueryIterator(
             CosmosQueryContext cosmosQueryContext,
             CosmosQueryExecutionContext cosmosQueryExecutionContext,
             CosmosSerializationFormatOptions cosmosSerializationFormatOptions,
-            RequestOptions requestOptions)
+            RequestOptions requestOptions,
+            SqlQuerySpec initialSqlQuerySpec)
         {
             this.cosmosQueryContext = cosmosQueryContext ?? throw new ArgumentNullException(nameof(cosmosQueryContext));
             this.cosmosQueryExecutionContext = cosmosQueryExecutionContext ?? throw new ArgumentNullException(nameof(cosmosQueryExecutionContext));
             this.cosmosSerializationFormatOptions = cosmosSerializationFormatOptions;
             this.requestOptions = requestOptions;
+            this.initialSqlQuerySpec = initialSqlQuerySpec;
         }
 
         public static QueryIterator Create(
             CosmosQueryClient client,
             SqlQuerySpec sqlQuerySpec,
             string continuationToken,
-            FeedTokenInternal feedTokenInternal,
+            IQueryFeedToken queryFeedToken,
             QueryRequestOptions queryRequestOptions,
             Uri resourceLink,
             bool isContinuationExpected,
@@ -77,21 +80,23 @@ namespace Microsoft.Azure.Cosmos.Query
                                     new MalformedContinuationTokenException(
                                         $"Malformed Continuation Token: {requestContinuationToken}")),
                                 queryRequestOptions.CosmosSerializationFormatOptions,
-                                queryRequestOptions);
+                                queryRequestOptions,
+                                sqlQuerySpec);
                         }
                     }
-                    else if (feedTokenInternal != null
-                        && feedTokenInternal.GetContinuation() != null)
+                    else if (queryFeedToken != null
+                        && queryFeedToken.GetContinuation() != null)
                     {
-                        if (!CosmosElement.TryParse(feedTokenInternal.GetContinuation(), out requestContinuationToken))
+                        if (!CosmosElement.TryParse(queryFeedToken.GetContinuation(), out requestContinuationToken))
                         {
                             return new QueryIterator(
                                 cosmosQueryContext,
                                 new QueryExecutionContextWithException(
                                     new MalformedContinuationTokenException(
-                                        $"Malformed Continuation Token: {feedTokenInternal.GetContinuation()}")),
+                                        $"Malformed Continuation Token: {queryFeedToken.GetContinuation()}")),
                                 queryRequestOptions.CosmosSerializationFormatOptions,
-                                queryRequestOptions);
+                                queryRequestOptions,
+                                sqlQuerySpec);
                         }
                     }
                     else
@@ -103,18 +108,19 @@ namespace Microsoft.Azure.Cosmos.Query
                 case ExecutionEnvironment.Compute:
                     requestContinuationToken = queryRequestOptions.CosmosElementContinuationToken;
                     if (requestContinuationToken == null
-                        && feedTokenInternal != null
-                        && feedTokenInternal.GetContinuation() != null)
+                        && queryFeedToken != null
+                        && queryFeedToken.GetContinuation() != null)
                     {
-                        if (!CosmosElement.TryParse(feedTokenInternal.GetContinuation(), out requestContinuationToken))
+                        if (!CosmosElement.TryParse(queryFeedToken.GetContinuation(), out requestContinuationToken))
                         {
                             return new QueryIterator(
                                 cosmosQueryContext,
                                 new QueryExecutionContextWithException(
                                     new MalformedContinuationTokenException(
-                                        $"Malformed Continuation Token: {feedTokenInternal.GetContinuation()}")),
+                                        $"Malformed Continuation Token: {queryFeedToken.GetContinuation()}")),
                                 queryRequestOptions.CosmosSerializationFormatOptions,
-                                queryRequestOptions);
+                                queryRequestOptions,
+                                sqlQuerySpec);
                         }
                     }
                     break;
@@ -126,7 +132,7 @@ namespace Microsoft.Azure.Cosmos.Query
             CosmosQueryExecutionContextFactory.InputParameters inputParameters = new CosmosQueryExecutionContextFactory.InputParameters(
                 sqlQuerySpec: sqlQuerySpec,
                 initialUserContinuationToken: requestContinuationToken,
-                initialFeedToken: feedTokenInternal,
+                initialFeedToken: queryFeedToken,
                 maxConcurrency: queryRequestOptions.MaxConcurrency,
                 maxItemCount: queryRequestOptions.MaxItemCount,
                 maxBufferedItemCount: queryRequestOptions.MaxBufferedItemCount,
@@ -141,7 +147,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 cosmosQueryContext,
                 CosmosQueryExecutionContextFactory.Create(cosmosQueryContext, inputParameters),
                 queryRequestOptions.CosmosSerializationFormatOptions,
-                queryRequestOptions);
+                queryRequestOptions,
+                inputParameters.SqlQuerySpec);
         }
 
         public override bool HasMoreResults => !this.cosmosQueryExecutionContext.IsDone;
@@ -151,11 +158,14 @@ namespace Microsoft.Azure.Cosmos.Query
 #else
         internal
 #endif
-        FeedToken FeedToken
+        QueryFeedToken FeedToken
         {
             get
             {
-                if (this.TryGetFeedToken(out FeedToken feedToken))
+                if (this.cosmosQueryExecutionContext.TryGetFeedToken(
+                    this.cosmosQueryContext.ContainerResourceId,
+                    this.initialSqlQuerySpec,
+                    out QueryFeedToken feedToken))
                 {
                     return feedToken;
                 }
@@ -224,13 +234,6 @@ namespace Microsoft.Azure.Cosmos.Query
         public override CosmosElement GetCosmsoElementContinuationToken()
         {
             return this.cosmosQueryExecutionContext.GetCosmosElementContinuationToken();
-        }
-
-        public override bool TryGetFeedToken(out FeedToken feedToken)
-        {
-            return this.cosmosQueryExecutionContext.TryGetFeedToken(
-                this.cosmosQueryContext.ContainerResourceId,
-                out feedToken);
         }
     }
 }

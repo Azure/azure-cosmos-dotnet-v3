@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -16,20 +16,29 @@ namespace Microsoft.Azure.Cosmos
     /// <![CDATA[
     /// QueryDefinition queryDefinition = new QueryDefinition("select c.id From c where c.status = @status")
     ///               .WithParameter("@status", "Failure");
-    /// FeedIterator<MyItem> feedIterator = this.Container.GetItemQueryIterator<MyItem>(
+    /// FeedIterator feedIterator = this.Container.GetItemQueryStreamIterator(
     ///     queryDefinition);
     /// while (feedIterator.HasMoreResults)
     /// {
-    ///     FeedResponse<MyItem> response = await feedIterator.ReadNextAsync();
-    ///     foreach (var item in response)
+    ///     // Stream iterator returns a response with status code
+    ///     using(ResponseMessage response = await feedIterator.ReadNextAsync())
     ///     {
-    ///         Console.WriteLine(item);
+    ///         // Handle failure scenario
+    ///         if(!response.IsSuccessStatusCode)
+    ///         {
+    ///             // Log the response.Diagnostics and handle the error
+    ///         }
     ///     }
     /// }
     /// ]]>
     /// </code>
     /// </example>
-    public abstract class FeedIterator<T>
+#if PREVIEW
+    public
+#else
+    internal
+#endif
+    abstract class ChangeFeedIterator
     {
         /// <summary>
         /// Tells if there is more results that need to be retrieved from the service
@@ -40,14 +49,18 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         /// QueryDefinition queryDefinition = new QueryDefinition("select c.id From c where c.status = @status")
         ///               .WithParameter("@status", "Failure");
-        /// FeedIterator<MyItem> feedIterator = this.Container.GetItemQueryIterator<MyItem>(
+        /// FeedIterator feedIterator = this.Container.GetItemQueryStreamIterator(
         ///     queryDefinition);
         /// while (feedIterator.HasMoreResults)
         /// {
-        ///     FeedResponse<MyItem> response = await feedIterator.ReadNextAsync();
-        ///     foreach (var item in response)
+        ///     // Stream iterator returns a response with status code
+        ///     using(ResponseMessage response = await feedIterator.ReadNextAsync())
         ///     {
-        ///         Console.WriteLine(item);
+        ///         // Handle failure scenario
+        ///         if(!response.IsSuccessStatusCode)
+        ///         {
+        ///             // Log the response.Diagnostics and handle the error
+        ///         }
         ///     }
         /// }
         /// ]]>
@@ -66,26 +79,28 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         /// QueryDefinition queryDefinition = new QueryDefinition("select c.id From c where c.status = @status")
         ///               .WithParameter("@status", "Failure");
-        /// FeedIterator<MyItem> feedIterator = this.Container.GetItemQueryIterator<MyItem>(
+        /// FeedIterator feedIterator = this.Container.GetItemQueryStreamIterator(
         ///     queryDefinition);
         /// while (feedIterator.HasMoreResults)
         /// {
-        ///     FeedResponse<MyItem> response = await feedIterator.ReadNextAsync();
-        ///     foreach (var item in response)
+        ///     // Stream iterator returns a response with status code
+        ///     using(ResponseMessage response = await feedIterator.ReadNextAsync())
         ///     {
-        ///         Console.WriteLine(item);
+        ///         // Handle failure scenario
+        ///         if(!response.IsSuccessStatusCode)
+        ///         {
+        ///             // Log the response.Diagnostics and handle the error
+        ///         }
         ///     }
         /// }
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<FeedResponse<T>> ReadNextAsync(CancellationToken cancellationToken = default);
+        public abstract Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default);
 
-#if PREVIEW
         /// <summary>
         /// Current QueryFeedToken for the iterator.
         /// </summary>
-        public abstract QueryFeedToken FeedToken { get; }
-#endif
+        public abstract ChangeFeedToken FeedToken { get; }
     }
 }

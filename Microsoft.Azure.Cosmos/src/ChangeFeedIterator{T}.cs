@@ -29,7 +29,12 @@ namespace Microsoft.Azure.Cosmos
     /// ]]>
     /// </code>
     /// </example>
-    public abstract class FeedIterator<T>
+#if PREVIEW
+    public
+#else
+    internal
+#endif
+    abstract class ChangeFeedIterator<T>
     {
         /// <summary>
         /// Tells if there is more results that need to be retrieved from the service
@@ -81,11 +86,9 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public abstract Task<FeedResponse<T>> ReadNextAsync(CancellationToken cancellationToken = default);
 
-#if PREVIEW
         /// <summary>
-        /// Current QueryFeedToken for the iterator.
+        /// Current ChangeFeedToken for the iterator.
         /// </summary>
-        public abstract QueryFeedToken FeedToken { get; }
-#endif
+        public abstract ChangeFeedToken FeedToken { get; }
     }
 }

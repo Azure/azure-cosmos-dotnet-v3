@@ -164,7 +164,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
 
             public override bool TryGetFeedToken(
                 string containerResourceId,
-                out FeedToken feedToken)
+                SqlQuerySpec sqlQuerySpec,
+                out QueryFeedToken feedToken)
             {
                 if (this.IsDone)
                 {
@@ -172,7 +173,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                     return true;
                 }
 
-                if (!this.Source.TryGetFeedToken(containerResourceId, out feedToken))
+                if (!this.Source.TryGetFeedToken(containerResourceId, sqlQuerySpec, out feedToken))
                 {
                     feedToken = null;
                     return false;
@@ -192,23 +193,26 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                     groupingTableContinuationToken: this.groupingTable.GetCosmosElementContinuationToken(),
                     sourceContinuationToken: sourceContinuationToken);
 
-                if (feedToken is FeedTokenEPKRange feedTokenInternal)
+                if (feedToken is QueryFeedTokenInternal feedTokenInternal
+                    && feedTokenInternal.QueryFeedToken is FeedTokenEPKRange tokenEPKRange)
                 {
-                    feedToken = FeedTokenEPKRange.Copy(
-                            feedTokenInternal,
-                            GroupByContinuationToken.ToCosmosElement(groupByContinuationToken).ToString());
+                    feedToken = new QueryFeedTokenInternal(FeedTokenEPKRange.Copy(
+                            tokenEPKRange,
+                            GroupByContinuationToken.ToCosmosElement(groupByContinuationToken).ToString()),
+                            feedTokenInternal.QueryDefinition);
                 }
                 else if (this.Source.IsDone)
                 {
                     // If source is done, feedToken is null, there are no more ranges but GroupBy requires one more iteration
-                    feedToken = new FeedTokenEPKRange(
+                    feedToken = new QueryFeedTokenInternal(new FeedTokenEPKRange(
                             containerResourceId,
                             new Documents.Routing.Range<string>(
                                 Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
                                 Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
                                 isMinInclusive: true,
                                 isMaxInclusive: false),
-                            GroupByContinuationToken.ToCosmosElement(groupByContinuationToken).ToString());
+                            GroupByContinuationToken.ToCosmosElement(groupByContinuationToken).ToString()),
+                            new QueryDefinition(sqlQuerySpec));
                 }
 
                 return true;
@@ -319,7 +323,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
 
                 public bool TryGetFeedToken(
                     string containerResourceId,
-                    out FeedToken feedToken)
+                    SqlQuerySpec sqlQuerySpec,
+                    out QueryFeedToken feedToken)
                 {
                     feedToken = null;
                     return true;

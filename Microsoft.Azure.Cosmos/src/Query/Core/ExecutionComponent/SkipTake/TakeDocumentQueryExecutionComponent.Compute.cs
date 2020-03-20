@@ -102,7 +102,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
 
             public override bool TryGetFeedToken(
                 string containerResourceId,
-                out FeedToken feedToken)
+                SqlQuerySpec sqlQuerySpec,
+                out QueryFeedToken feedToken)
             {
                 if (this.IsDone)
                 {
@@ -110,21 +111,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                     return true;
                 }
 
-                if (!this.Source.TryGetFeedToken(containerResourceId, out feedToken))
+                if (!this.Source.TryGetFeedToken(containerResourceId, sqlQuerySpec, out feedToken))
                 {
                     feedToken = null;
                     return false;
                 }
 
-                if (feedToken is FeedTokenEPKRange feedTokenInternal)
+                if (feedToken is QueryFeedTokenInternal feedTokenInternal
+                    && feedTokenInternal.QueryFeedToken is FeedTokenEPKRange tokenEPKRange)
                 {
                     TakeContinuationToken takeContinuationToken = new TakeContinuationToken(
                         takeCount: this.takeCount,
                         sourceToken: this.Source.GetCosmosElementContinuationToken());
 
-                    feedToken = FeedTokenEPKRange.Copy(
-                            feedTokenInternal,
-                            TakeContinuationToken.ToCosmosElement(takeContinuationToken).ToString());
+                    feedToken = new QueryFeedTokenInternal(FeedTokenEPKRange.Copy(
+                            tokenEPKRange,
+                            TakeContinuationToken.ToCosmosElement(takeContinuationToken).ToString()),
+                            feedTokenInternal.QueryDefinition);
                 }
 
                 return true;

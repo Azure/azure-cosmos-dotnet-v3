@@ -258,7 +258,7 @@ namespace Microsoft.Azure.Cosmos
             QueryFeatures supportedQueryFeatures,
             QueryDefinition queryDefinition,
             string continuationToken,
-            FeedTokenInternal feedTokenInternal,
+            IQueryFeedToken queryFeedToken,
             QueryRequestOptions requestOptions,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -319,7 +319,7 @@ namespace Microsoft.Azure.Cosmos
                     client: this.queryClient,
                     sqlQuerySpec: queryDefinition.ToSqlQuerySpec(),
                     continuationToken: continuationToken,
-                    feedTokenInternal: feedTokenInternal,
+                    queryFeedToken: queryFeedToken,
                     queryRequestOptions: requestOptions,
                     resourceLink: this.LinkUri,
                     isContinuationExpected: false,
@@ -399,15 +399,18 @@ namespace Microsoft.Azure.Cosmos
         internal
 #endif
         FeedIterator<T> GetItemQueryIterator<T>(
-            FeedToken feedToken,
-            QueryDefinition queryDefinition,
+            QueryFeedToken feedToken,
             QueryRequestOptions requestOptions = null)
         {
+            if (feedToken == null)
+            {
+                throw new ArgumentNullException(nameof(feedToken));
+            }
+
             requestOptions = requestOptions ?? new QueryRequestOptions();
 
             if (!(this.GetItemQueryStreamIterator(
                 feedToken,
-                queryDefinition,
                 requestOptions) is FeedIteratorInternal feedIterator))
             {
                 throw new InvalidOperationException($"Expected a FeedIteratorInternal.");
@@ -423,62 +426,22 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        FeedIterator<T> GetItemQueryIterator<T>(
-            FeedToken feedToken,
-            string queryText = null,
+        FeedIterator GetItemQueryStreamIterator(
+            QueryFeedToken feedToken,
             QueryRequestOptions requestOptions = null)
         {
-            QueryDefinition queryDefinition = null;
-            if (queryText != null)
+            if (feedToken == null)
             {
-                queryDefinition = new QueryDefinition(queryText);
+                throw new ArgumentNullException(nameof(feedToken));
             }
 
-            return this.GetItemQueryIterator<T>(
-                feedToken,
-                queryDefinition,
-                requestOptions);
-        }
-
-#if PREVIEW
-        public override
-#else
-        internal
-#endif
-        FeedIterator GetItemQueryStreamIterator(
-            FeedToken feedToken,
-            QueryDefinition queryDefinition,
-            QueryRequestOptions requestOptions = null)
-        {
-            FeedTokenInternal feedTokenInternal = feedToken as FeedTokenInternal;
+            QueryFeedTokenInternal feedTokenInternal = feedToken as QueryFeedTokenInternal;
             return this.GetItemQueryStreamIteratorInternal(
-                sqlQuerySpec: queryDefinition?.ToSqlQuerySpec(),
+                sqlQuerySpec: feedTokenInternal.QueryDefinition?.ToSqlQuerySpec(),
                 isContinuationExcpected: true,
                 continuationToken: null,
-                feedToken: feedTokenInternal,
+                feedToken: feedTokenInternal.QueryFeedToken,
                 requestOptions: requestOptions);
-        }
-
-#if PREVIEW
-        public override
-#else
-        internal
-#endif
-        FeedIterator GetItemQueryStreamIterator(
-            FeedToken feedToken,
-            string queryText = null,
-            QueryRequestOptions requestOptions = null)
-        {
-            QueryDefinition queryDefinition = null;
-            if (queryText != null)
-            {
-                queryDefinition = new QueryDefinition(queryText);
-            }
-
-            return this.GetItemQueryStreamIterator(
-                feedToken,
-                queryDefinition,
-                requestOptions);
         }
 
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
@@ -532,7 +495,7 @@ namespace Microsoft.Azure.Cosmos
             return new BatchCore(this, partitionKey);
         }
 
-        internal async Task<IEnumerable<string>> GetChangeFeedTokensAsync(CancellationToken cancellationToken = default(CancellationToken))
+        internal async Task<IEnumerable<string>> GetStandByTokensAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             Routing.PartitionKeyRangeCache pkRangeCache = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
             string containerRid = await this.GetRIDAsync(cancellationToken);
@@ -573,7 +536,7 @@ namespace Microsoft.Azure.Cosmos
             SqlQuerySpec sqlQuerySpec,
             bool isContinuationExcpected,
             string continuationToken,
-            FeedTokenInternal feedToken,
+            IQueryFeedToken feedToken,
             QueryRequestOptions requestOptions)
         {
             requestOptions = requestOptions ?? new QueryRequestOptions();
@@ -596,7 +559,7 @@ namespace Microsoft.Azure.Cosmos
                     resourceType: ResourceType.Document,
                     queryDefinition: null,
                     continuationToken: continuationToken,
-                    feedTokenInternal: feedToken,
+                    queryFeedToken: feedToken,
                     options: requestOptions);
             }
 
@@ -604,7 +567,7 @@ namespace Microsoft.Azure.Cosmos
                 client: this.queryClient,
                 sqlQuerySpec: sqlQuerySpec,
                 continuationToken: continuationToken,
-                feedTokenInternal: feedToken,
+                queryFeedToken: feedToken,
                 queryRequestOptions: requestOptions,
                 resourceLink: this.LinkUri,
                 isContinuationExpected: isContinuationExcpected,

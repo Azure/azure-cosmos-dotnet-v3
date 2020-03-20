@@ -71,7 +71,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
         /// </summary>
         public override bool TryGetFeedToken(
             string containerResourceId,
-            out FeedToken feedToken)
+            SqlQuerySpec sqlQuerySpec,
+            out QueryFeedToken feedToken)
         {
             // FeedToken will represent the range of the active and pending Producers
             IEnumerable<ItemProducer> allProducers = this.GetAllItemProducers();
@@ -83,11 +84,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
 
             List<Documents.Routing.Range<string>> rangesList = allProducers.Select(producer => producer.PartitionKeyRange.ToRange()).ToList();
             rangesList.Sort(Documents.Routing.Range<string>.MinComparer.Instance);
-            // Single FeedToken with the completeRange and continuation
-            feedToken = new FeedTokenEPKRange(
+            
+            feedToken = new QueryFeedTokenInternal(new FeedTokenEPKRange(
                 containerResourceId,
                 rangesList,
-                this.ContinuationToken);
+                this.ContinuationToken),
+                new QueryDefinition(sqlQuerySpec));
             return true;
         }
 

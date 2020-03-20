@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Tests
+namespace Microsoft.Azure.Cosmos.Tests.FeedToken
 {
     using System;
     using System.IO;
@@ -27,16 +27,17 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void ReadFeedIteratorCore_FeedToken()
         {
-            FeedTokenInternal feedToken = Mock.Of<FeedTokenInternal>();
+            IQueryFeedToken feedToken = Mock.Of<IQueryFeedToken>();
             FeedIteratorCore feedTokenIterator = FeedIteratorCore.CreateForPartitionedResource(Mock.Of<ContainerCore>(), new Uri("http://localhost"), Documents.ResourceType.Document, null, null, feedToken, new QueryRequestOptions());
-            Assert.AreEqual(feedToken, feedTokenIterator.FeedToken);
+            Assert.IsNotNull(feedTokenIterator.FeedToken);
+            Assert.AreEqual(feedToken, (feedTokenIterator.FeedToken as QueryFeedTokenInternal).QueryFeedToken);
         }
 
         [TestMethod]
         public void ReadFeedIteratorCore_TryGetContinuation()
         {
             string continuation = Guid.NewGuid().ToString();
-            FeedTokenInternal feedToken = Mock.Of<FeedTokenInternal>();
+            IQueryFeedToken feedToken = Mock.Of<IQueryFeedToken>();
             Mock.Get(feedToken)
                 .Setup(f => f.GetContinuation()).Returns(continuation);
             FeedIteratorCore feedTokenIterator = FeedIteratorCore.CreateForPartitionedResource(Mock.Of<ContainerCore>(), new Uri("http://localhost"), Documents.ResourceType.Document, null, null, feedToken, new QueryRequestOptions());
@@ -71,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock.Get(containerCore)
                 .Setup(c => c.ClientContext)
                 .Returns(cosmosClientContext.Object);
-            FeedTokenInternal feedToken = Mock.Of<FeedTokenInternal>();
+            IQueryFeedToken feedToken = Mock.Of<IQueryFeedToken>();
             Mock.Get(feedToken)
                 .Setup(f => f.EnrichRequest(It.IsAny<RequestMessage>()));
             Mock.Get(feedToken)
@@ -87,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             FeedIteratorCore feedTokenIterator = FeedIteratorCore.CreateForPartitionedResource(containerCore, new Uri("http://localhost"), Documents.ResourceType.Document, null, null, feedToken, new QueryRequestOptions());
             ResponseMessage response = await feedTokenIterator.ReadNextAsync();
 
-            Assert.AreEqual(feedToken, feedTokenIterator.FeedToken);
+            Assert.AreEqual(feedToken, (feedTokenIterator.FeedToken as QueryFeedTokenInternal).QueryFeedToken);
             Mock.Get(feedToken)
                 .Verify(f => f.UpdateContinuation(It.Is<string>(ct => ct == continuation)), Times.Once);
 
@@ -126,7 +127,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock.Get(containerCore)
                 .Setup(c => c.ClientContext)
                 .Returns(cosmosClientContext.Object);
-            FeedTokenInternal feedToken = Mock.Of<FeedTokenInternal>();
+            IQueryFeedToken feedToken = Mock.Of<IQueryFeedToken>();
             Mock.Get(feedToken)
                 .Setup(f => f.EnrichRequest(It.IsAny<RequestMessage>()));
             Mock.Get(feedToken)
@@ -189,7 +190,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock.Get(containerCore)
                 .Setup(c => c.ClientContext)
                 .Returns(cosmosClientContext.Object);
-            FeedTokenInternal feedToken = Mock.Of<FeedTokenInternal>();
+            IQueryFeedToken feedToken = Mock.Of<IQueryFeedToken>();
             Mock.Get(feedToken)
                 .Setup(f => f.EnrichRequest(It.IsAny<RequestMessage>()));
             Mock.Get(feedToken)
@@ -243,7 +244,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock.Get(containerCore)
                 .Setup(c => c.ClientContext)
                 .Returns(cosmosClientContext.Object);
-            FeedTokenInternal feedToken = Mock.Of<FeedTokenInternal>();
+            IQueryFeedToken feedToken = Mock.Of<IQueryFeedToken>();
             Mock.Get(feedToken)
                 .Setup(f => f.EnrichRequest(It.IsAny<RequestMessage>()));
             Mock.Get(feedToken)
@@ -301,10 +302,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             FeedIteratorCore feedTokenIterator = FeedIteratorCore.CreateForPartitionedResource(containerCore, new Uri("http://localhost"), Documents.ResourceType.Document, null, null, null, new QueryRequestOptions());
             ResponseMessage response = await feedTokenIterator.ReadNextAsync();
 
-            FeedToken feedTokenOut = feedTokenIterator.FeedToken;
+            QueryFeedToken feedTokenOut = feedTokenIterator.FeedToken;
             Assert.IsNotNull(feedTokenOut);
 
-            FeedTokenEPKRange feedTokenEPKRange = feedTokenOut as FeedTokenEPKRange;
+            FeedTokenEPKRange feedTokenEPKRange = (feedTokenOut as QueryFeedTokenInternal).QueryFeedToken as FeedTokenEPKRange;
             // Assert that a FeedToken for the entire range is used
             Assert.AreEqual(Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey, feedTokenEPKRange.CompleteRange.Min);
             Assert.AreEqual(Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey, feedTokenEPKRange.CompleteRange.Max);
@@ -339,10 +340,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             FeedIteratorCore feedTokenIterator = FeedIteratorCore.CreateForNonPartitionedResource(cosmosClientContext.Object, new Uri("http://localhost"), Documents.ResourceType.Document, null, null, new QueryRequestOptions());
             ResponseMessage response = await feedTokenIterator.ReadNextAsync();
 
-            FeedToken feedTokenOut = feedTokenIterator.FeedToken;
+            QueryFeedToken feedTokenOut = feedTokenIterator.FeedToken;
             Assert.IsNotNull(feedTokenOut);
 
-            FeedTokenEPKRange feedTokenEPKRange = feedTokenOut as FeedTokenEPKRange;
+            FeedTokenEPKRange feedTokenEPKRange = (feedTokenOut as QueryFeedTokenInternal).QueryFeedToken as FeedTokenEPKRange;
             // Assert that a FeedToken for the entire range is used
             Assert.AreEqual(Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey, feedTokenEPKRange.CompleteRange.Min);
             Assert.AreEqual(Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey, feedTokenEPKRange.CompleteRange.Max);
@@ -373,7 +374,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock.Get(containerCore)
                 .Setup(c => c.LinkUri)
                 .Returns(new Uri($"/dbs/db/colls/colls", UriKind.Relative));
-            FeedTokenInternal feedToken = Mock.Of<FeedTokenInternal>();
+            IQueryFeedToken feedToken = Mock.Of<IQueryFeedToken>();
             Mock.Get(feedToken)
                 .Setup(f => f.EnrichRequest(It.IsAny<RequestMessage>()));
             Mock.Get(feedToken)

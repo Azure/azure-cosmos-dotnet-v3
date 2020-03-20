@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
 
     /// <summary>
-    /// Represents a unit of feed consumption that can be used as unit of parallelism.
+    /// Represents a unit of change feed consumption that can be used as unit of parallelism.
     /// </summary>
     [Serializable]
 #if PREVIEW
@@ -16,16 +16,16 @@ namespace Microsoft.Azure.Cosmos
 #else
     internal
 #endif
-    abstract class FeedToken
+    abstract class ChangeFeedToken
     {
         /// <summary>
-        /// Creates a <see cref="FeedToken"/> from a previously serialized instance.
+        /// Creates a <see cref="ChangeFeedToken"/> from a previously serialized instance.
         /// </summary>
-        /// <param name="toStringValue">A string representation obtained from <see cref="FeedToken.ToString()"/>.</param>
-        /// <returns>A <see cref="FeedToken"/> instance.</returns>
-        public static FeedToken FromString(string toStringValue)
+        /// <param name="toStringValue">A string representation obtained from <see cref="ChangeFeedToken.ToString()"/>.</param>
+        /// <returns>A <see cref="ChangeFeedToken"/> instance.</returns>
+        public static ChangeFeedToken FromString(string toStringValue)
         {
-            if (FeedTokenInternal.TryParse(toStringValue, out FeedToken feedToken))
+            if (ChangeFeedTokenInternal.TryParse(toStringValue, out ChangeFeedToken feedToken))
             {
                 return feedToken;
             }
@@ -40,13 +40,13 @@ namespace Microsoft.Azure.Cosmos
         public abstract override string ToString();
 
         /// <summary>
-        /// Attempts to scale an existing <see cref="FeedToken"/> into more granular FeedTokens if-possible
+        /// Attempts to scale an existing <see cref="ChangeFeedToken"/> into more granular FeedTokens if-possible
         /// </summary>
         /// <remarks>
         /// It is not always possible to scale a token, but when it is, the list of resulting tokens is returned.
         /// Each token then can be used to start its own read process in parallel and the current token that originated the scale can be discarded.
         /// </remarks>
-        /// <returns>The resulting list of individual <see cref="FeedToken"/> instances.</returns>
-        public abstract IReadOnlyList<FeedToken> Scale();
+        /// <returns>The resulting list of individual <see cref="ChangeFeedToken"/> instances.</returns>
+        public abstract IReadOnlyList<ChangeFeedToken> Scale();
     }
 }

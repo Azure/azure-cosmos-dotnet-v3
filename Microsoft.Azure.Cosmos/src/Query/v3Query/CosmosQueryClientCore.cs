@@ -221,10 +221,10 @@ namespace Microsoft.Azure.Cosmos
             string resourceLink,
             string collectionResourceId,
             PartitionKeyDefinition partitionKeyDefinition,
-            FeedTokenInternal feedTokenInternal)
+            IQueryFeedToken queryFeedToken)
         {
             IRoutingMapProvider routingMapProvider = await this.GetRoutingMapProviderAsync();
-            List<Range<string>> ranges = await feedTokenInternal.GetAffectedRangesAsync(routingMapProvider, collectionResourceId, partitionKeyDefinition);
+            List<Range<string>> ranges = await queryFeedToken.GetAffectedRangesAsync(routingMapProvider, collectionResourceId, partitionKeyDefinition);
 
             return await this.GetTargetPartitionKeyRangesAsync(
                 resourceLink,

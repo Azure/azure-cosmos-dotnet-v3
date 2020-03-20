@@ -64,9 +64,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
         public override bool TryGetFeedToken(
             string containerResourceId,
-            out FeedToken feedToken)
+            SqlQuerySpec sqlQuerySpec,
+            out QueryFeedToken feedToken)
         {
-            return this.cosmosQueryExecutionContext.TryGetFeedToken(containerResourceId, out feedToken);
+            return this.cosmosQueryExecutionContext.TryGetFeedToken(containerResourceId, sqlQuerySpec, out feedToken);
         }
     }
 }

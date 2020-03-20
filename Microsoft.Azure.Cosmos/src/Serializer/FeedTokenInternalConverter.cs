@@ -45,6 +45,65 @@ namespace Microsoft.Azure.Cosmos
 
             JObject jObject = JObject.Load(reader);
 
+            return FeedTokenInternalConverter.ReadJObject(jObject, serializer);
+        }
+
+        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        {
+            if (value is FeedTokenEPKRange feedTokenEPKRange)
+            {
+                writer.WriteStartObject();
+                writer.WritePropertyName(FeedTokenInternalConverter.TypePropertyName);
+                writer.WriteValue(FeedTokenType.EPKRange);
+                writer.WritePropertyName(FeedTokenInternalConverter.VersionPropertyName);
+                writer.WriteValue(FeedTokenVersion.V1);
+                writer.WritePropertyName(FeedTokenInternalConverter.RidPropertyName);
+                writer.WriteValue(feedTokenEPKRange.ContainerRid);
+                writer.WritePropertyName(FeedTokenInternalConverter.ContinuationPropertyName);
+                serializer.Serialize(writer, feedTokenEPKRange.CompositeContinuationTokens.ToArray());
+                writer.WritePropertyName(FeedTokenInternalConverter.RangePropertyName);
+                serializer.Serialize(writer, feedTokenEPKRange.CompleteRange);
+                writer.WriteEndObject();
+                return;
+            }
+
+            if (value is FeedTokenPartitionKey feedTokenPartitionKey)
+            {
+                writer.WriteStartObject();
+                writer.WritePropertyName(FeedTokenInternalConverter.TypePropertyName);
+                writer.WriteValue(FeedTokenType.PartitionKeyValue);
+                writer.WritePropertyName(FeedTokenInternalConverter.VersionPropertyName);
+                writer.WriteValue(FeedTokenVersion.V1);
+                writer.WritePropertyName(FeedTokenInternalConverter.PartitionKeyPropertyName);
+                writer.WriteValue(feedTokenPartitionKey.PartitionKey.ToJsonString());
+                writer.WritePropertyName(FeedTokenInternalConverter.ContinuationPropertyName);
+                serializer.Serialize(writer, feedTokenPartitionKey.GetContinuation());
+                writer.WriteEndObject();
+                return;
+            }
+
+            if (value is FeedTokenPartitionKeyRange feedTokenPartitionKeyRange)
+            {
+                writer.WriteStartObject();
+                writer.WritePropertyName(FeedTokenInternalConverter.TypePropertyName);
+                writer.WriteValue(FeedTokenType.PartitionKeyRangeId);
+                writer.WritePropertyName(FeedTokenInternalConverter.VersionPropertyName);
+                writer.WriteValue(FeedTokenVersion.V1);
+                writer.WritePropertyName(FeedTokenInternalConverter.PartitionKeyRangeIdPropertyName);
+                serializer.Serialize(writer, feedTokenPartitionKeyRange.PartitionKeyRangeId);
+                writer.WritePropertyName(FeedTokenInternalConverter.ContinuationPropertyName);
+                serializer.Serialize(writer, feedTokenPartitionKeyRange.GetContinuation());
+                writer.WriteEndObject();
+                return;
+            }
+
+            throw new JsonSerializationException(ClientResources.FeedToken_UnrecognizedFeedToken);
+        }
+
+        public static object ReadJObject(
+            JObject jObject,
+            JsonSerializer serializer)
+        {
             if (!jObject.TryGetValue(FeedTokenInternalConverter.TypePropertyName, out JToken typeJtoken)
                 || !Enum.TryParse(typeJtoken.Value<int>().ToString(), ignoreCase: true, out FeedTokenType feedTokenType))
             {
@@ -108,65 +167,11 @@ namespace Microsoft.Azure.Cosmos
                             throw new JsonSerializationException(ClientResources.FeedToken_UnknownFormat);
                         }
 
-                        FeedTokenPartitionKeyRange feedTokenPartitionKeyRange = new FeedTokenPartitionKeyRange(pkJToken.Value<string>());
-                        feedTokenPartitionKeyRange.UpdateContinuation(continuationJToken.Value<string>());
-                        return feedTokenPartitionKeyRange;
+                        return new FeedTokenPartitionKeyRange(pkJToken.Value<string>(), continuationJToken.Value<string>());
                     }
             }
 
             throw new JsonSerializationException(ClientResources.FeedToken_UnknownFormat);
-        }
-
-        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
-        {
-            if (value is FeedTokenEPKRange feedTokenEPKRange)
-            {
-                writer.WriteStartObject();
-                writer.WritePropertyName(FeedTokenInternalConverter.TypePropertyName);
-                writer.WriteValue(FeedTokenType.EPKRange);
-                writer.WritePropertyName(FeedTokenInternalConverter.VersionPropertyName);
-                writer.WriteValue(FeedTokenVersion.V1);
-                writer.WritePropertyName(FeedTokenInternalConverter.RidPropertyName);
-                writer.WriteValue(feedTokenEPKRange.ContainerRid);
-                writer.WritePropertyName(FeedTokenInternalConverter.ContinuationPropertyName);
-                serializer.Serialize(writer, feedTokenEPKRange.CompositeContinuationTokens.ToArray());
-                writer.WritePropertyName(FeedTokenInternalConverter.RangePropertyName);
-                serializer.Serialize(writer, feedTokenEPKRange.CompleteRange);
-                writer.WriteEndObject();
-                return;
-            }
-
-            if (value is FeedTokenPartitionKey feedTokenPartitionKey)
-            {
-                writer.WriteStartObject();
-                writer.WritePropertyName(FeedTokenInternalConverter.TypePropertyName);
-                writer.WriteValue(FeedTokenType.PartitionKeyValue);
-                writer.WritePropertyName(FeedTokenInternalConverter.VersionPropertyName);
-                writer.WriteValue(FeedTokenVersion.V1);
-                writer.WritePropertyName(FeedTokenInternalConverter.PartitionKeyPropertyName);
-                writer.WriteValue(feedTokenPartitionKey.PartitionKey.ToJsonString());
-                writer.WritePropertyName(FeedTokenInternalConverter.ContinuationPropertyName);
-                serializer.Serialize(writer, feedTokenPartitionKey.GetContinuation());
-                writer.WriteEndObject();
-                return;
-            }
-
-            if (value is FeedTokenPartitionKeyRange feedTokenPartitionKeyRange)
-            {
-                writer.WriteStartObject();
-                writer.WritePropertyName(FeedTokenInternalConverter.TypePropertyName);
-                writer.WriteValue(FeedTokenType.PartitionKeyRangeId);
-                writer.WritePropertyName(FeedTokenInternalConverter.VersionPropertyName);
-                writer.WriteValue(FeedTokenVersion.V1);
-                writer.WritePropertyName(FeedTokenInternalConverter.PartitionKeyRangeIdPropertyName);
-                serializer.Serialize(writer, feedTokenPartitionKeyRange.PartitionKeyRangeId);
-                writer.WritePropertyName(FeedTokenInternalConverter.ContinuationPropertyName);
-                serializer.Serialize(writer, feedTokenPartitionKeyRange.GetContinuation());
-                writer.WriteEndObject();
-                return;
-            }
-
-            throw new JsonSerializationException(ClientResources.FeedToken_UnrecognizedFeedToken);
         }
     }
 }

@@ -95,7 +95,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
         public override bool TryGetFeedToken(
             string containerResourceId,
-            out FeedToken feedToken)
+            SqlQuerySpec sqlQuerySpec,
+            out QueryFeedToken feedToken)
         {
             if (!this.lazyTryCreateCosmosQueryExecutionContext.ValueInitialized)
             {
@@ -110,7 +111,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 return false;
             }
 
-            return tryCreateCosmosQueryExecutionContext.Result.TryGetFeedToken(containerResourceId, out feedToken);
+            return tryCreateCosmosQueryExecutionContext.Result.TryGetFeedToken(containerResourceId, sqlQuerySpec, out feedToken);
         }
     }
 }

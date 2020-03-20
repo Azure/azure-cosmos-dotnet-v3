@@ -26,13 +26,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
         private const char PKRangeIdSeparator = ':';
         private const char SegmentSeparator = '#';
         private const string LSNPropertyName = "_lsn";
-        private readonly Func<string, string, bool, FeedIterator> feedCreator;
+        private readonly Func<string, string, bool, ChangeFeedIterator> feedCreator;
         private readonly DocumentServiceLeaseContainer leaseContainer;
         private readonly int degreeOfParallelism;
 
         public RemainingWorkEstimatorCore(
             DocumentServiceLeaseContainer leaseContainer,
-            Func<string, string, bool, FeedIterator> feedCreator,
+            Func<string, string, bool, ChangeFeedIterator> feedCreator,
             int degreeOfParallelism)
         {
             if (leaseContainer == null)
@@ -184,7 +184,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
         {
             // Current lease schema maps Token to PKRangeId
             string partitionKeyRangeId = existingLease.CurrentLeaseToken;
-            FeedIterator iterator = this.feedCreator(
+            ChangeFeedIterator iterator = this.feedCreator(
                 partitionKeyRangeId,
                 existingLease.ContinuationToken,
                 string.IsNullOrEmpty(existingLease.ContinuationToken));

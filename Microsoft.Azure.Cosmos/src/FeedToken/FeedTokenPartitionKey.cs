@@ -13,18 +13,17 @@ namespace Microsoft.Azure.Cosmos
     using Newtonsoft.Json;
 
     [JsonConverter(typeof(FeedTokenInternalConverter))]
-    internal sealed class FeedTokenPartitionKey : FeedTokenInternal
+    internal sealed class FeedTokenPartitionKey : FeedToken, IChangeFeedToken
     {
         internal readonly PartitionKey PartitionKey;
         private string continuationToken;
-        private bool isDone = false;
 
         public FeedTokenPartitionKey(PartitionKey partitionKey)
         {
             this.PartitionKey = partitionKey;
         }
 
-        public override void EnrichRequest(RequestMessage request)
+        public void EnrichRequest(RequestMessage request)
         {
             if (request == null)
             {
@@ -34,11 +33,11 @@ namespace Microsoft.Azure.Cosmos
             request.Headers.PartitionKey = this.PartitionKey.ToJsonString();
         }
 
-        public override string GetContinuation() => this.continuationToken;
+        public string GetContinuation() => this.continuationToken;
 
-        public override bool IsDone => this.isDone;
+        public bool IsDone { get; private set; } = false;
 
-        public override Task<List<Documents.Routing.Range<string>>> GetAffectedRangesAsync(
+        public Task<List<Documents.Routing.Range<string>>> GetAffectedRangesAsync(
             IRoutingMapProvider routingMapProvider,
             string containerRid,
             Documents.PartitionKeyDefinition partitionKeyDefinition)
@@ -49,7 +48,7 @@ namespace Microsoft.Azure.Cosmos
                 });
         }
 
-        public override async Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
+        public async Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
             IRoutingMapProvider routingMapProvider,
             string containerRid,
             Documents.PartitionKeyDefinition partitionKeyDefinition,
@@ -61,14 +60,14 @@ namespace Microsoft.Azure.Cosmos
             return result;
         }
 
-        public override TryCatch ValidateContainer(string containerRid) => TryCatch.FromResult();
+        public TryCatch ValidateContainer(string containerRid) => TryCatch.FromResult();
 
         public override string ToString()
         {
             return JsonConvert.SerializeObject(this);
         }
 
-        public override void UpdateContinuation(string continuationToken)
+        public void UpdateContinuation(string continuationToken)
         {
             if (continuationToken == null)
             {
@@ -76,13 +75,13 @@ namespace Microsoft.Azure.Cosmos
                 // Change Feed never lands here, as it always provides a CT
 
                 // Consider current range done, if this FeedToken contains multiple ranges due to splits, all of them need to be considered done
-                this.isDone = true;
+                this.IsDone = true;
             }
 
             this.continuationToken = continuationToken;
         }
 
-        public static bool TryParseInstance(string toStringValue, out FeedToken feedToken)
+        public static bool TryParseInstance(string toStringValue, out FeedTokenPartitionKey feedToken)
         {
             try
             {

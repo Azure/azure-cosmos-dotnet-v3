@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Tests
+namespace Microsoft.Azure.Cosmos.Tests.FeedToken
 {
     using System;
     using System.Collections.Generic;
@@ -51,9 +51,9 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void ChangeFeedIteratorCore_FeedToken()
         {
-            FeedTokenInternal feedToken = Mock.Of<FeedTokenInternal>();
-            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(Mock.Of<ContainerCore>(), feedToken, null);
-            Assert.AreEqual(feedToken, changeFeedIteratorCore.FeedToken);
+            IChangeFeedToken feedToken = Mock.Of<IChangeFeedToken>();
+            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(Mock.Of<ContainerCore>(), new ChangeFeedTokenInternal(feedToken), null);
+            Assert.AreEqual(feedToken, (changeFeedIteratorCore.FeedToken as ChangeFeedTokenInternal).ChangeFeedToken);
         }
 
         [TestMethod]
@@ -84,17 +84,17 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock.Get(containerCore)
                 .Setup(c => c.ClientContext)
                 .Returns(cosmosClientContext.Object);
-            FeedTokenInternal feedToken = Mock.Of<FeedTokenInternal>();
+            IChangeFeedToken feedToken = Mock.Of<IChangeFeedToken>();
             Mock.Get(feedToken)
                 .Setup(f => f.EnrichRequest(It.IsAny<RequestMessage>()));
             Mock.Get(feedToken)
                 .Setup(f => f.ShouldRetryAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(false));
 
-            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(containerCore, feedToken, null);
+            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(containerCore, new ChangeFeedTokenInternal(feedToken), null);
             ResponseMessage response = await changeFeedIteratorCore.ReadNextAsync();
 
-            Assert.AreEqual(feedToken, changeFeedIteratorCore.FeedToken);
+            Assert.AreEqual(feedToken, (changeFeedIteratorCore.FeedToken as ChangeFeedTokenInternal).ChangeFeedToken);
             Mock.Get(feedToken)
                 .Verify(f => f.UpdateContinuation(It.Is<string>(ct => ct == continuation)), Times.Once);
 
@@ -130,14 +130,14 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock.Get(containerCore)
                 .Setup(c => c.ClientContext)
                 .Returns(cosmosClientContext.Object);
-            FeedTokenInternal feedToken = Mock.Of<FeedTokenInternal>();
+            IChangeFeedToken feedToken = Mock.Of<IChangeFeedToken>();
             Mock.Get(feedToken)
                 .Setup(f => f.EnrichRequest(It.IsAny<RequestMessage>()));
             Mock.Get(feedToken)
                 .Setup(f => f.ShouldRetryAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(false));
 
-            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(containerCore, feedToken, null);
+            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(containerCore, new ChangeFeedTokenInternal(feedToken), null);
 
             bool creatorCalled = false;
             Func<ResponseMessage, FeedResponse<dynamic>> creator = (ResponseMessage r) =>
@@ -146,7 +146,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return Mock.Of<FeedResponse<dynamic>>();
             };
 
-            FeedIteratorCore<dynamic> changeFeedIteratorCoreOfT = new FeedIteratorCore<dynamic>(changeFeedIteratorCore, creator);
+            ChangeFeedIteratorCore<dynamic> changeFeedIteratorCoreOfT = new ChangeFeedIteratorCore<dynamic>(changeFeedIteratorCore, creator);
             FeedResponse<dynamic> response = await changeFeedIteratorCoreOfT.ReadNextAsync();
 
             Mock.Get(feedToken)
@@ -185,14 +185,14 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock.Get(containerCore)
                 .Setup(c => c.ClientContext)
                 .Returns(cosmosClientContext.Object);
-            FeedTokenInternal feedToken = Mock.Of<FeedTokenInternal>();
+            IChangeFeedToken feedToken = Mock.Of<IChangeFeedToken>();
             Mock.Get(feedToken)
                 .Setup(f => f.EnrichRequest(It.IsAny<RequestMessage>()));
             Mock.Get(feedToken)
                 .Setup(f => f.ShouldRetryAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(false));
 
-            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(containerCore, feedToken, null);
+            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(containerCore, new ChangeFeedTokenInternal(feedToken), null);
             ResponseMessage response = await changeFeedIteratorCore.ReadNextAsync();
 
             Mock.Get(feedToken)
@@ -229,14 +229,14 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock.Get(containerCore)
                 .Setup(c => c.ClientContext)
                 .Returns(cosmosClientContext.Object);
-            FeedTokenInternal feedToken = Mock.Of<FeedTokenInternal>();
+            IChangeFeedToken feedToken = Mock.Of<IChangeFeedToken>();
             Mock.Get(feedToken)
                 .Setup(f => f.EnrichRequest(It.IsAny<RequestMessage>()));
             Mock.Get(feedToken)
                 .Setup(f => f.ShouldRetryAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(false));
 
-            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(containerCore, feedToken, null);
+            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(containerCore, new ChangeFeedTokenInternal(feedToken), null);
             ResponseMessage response = await changeFeedIteratorCore.ReadNextAsync();
 
             Assert.IsFalse(changeFeedIteratorCore.HasMoreResults);
@@ -276,7 +276,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock.Get(containerCore)
                 .Setup(c => c.ClientContext)
                 .Returns(cosmosClientContext.Object);
-            FeedTokenInternal feedToken = Mock.Of<FeedTokenInternal>();
+            IChangeFeedToken feedToken = Mock.Of<IChangeFeedToken>();
             Mock.Get(feedToken)
                 .Setup(f => f.EnrichRequest(It.IsAny<RequestMessage>()));
             Mock.Get(feedToken)
@@ -284,7 +284,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .Returns(Task.FromResult(true))
                 .Returns(Task.FromResult(false));
 
-            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(containerCore, feedToken, null);
+            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(containerCore, new ChangeFeedTokenInternal(feedToken), null);
             ResponseMessage response = await changeFeedIteratorCore.ReadNextAsync();
 
             Mock.Get(feedToken)
@@ -330,14 +330,14 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock.Get(containerCore)
                 .Setup(c => c.LinkUri)
                 .Returns(new Uri("https://dummy.documents.azure.com:443/dbs"));
-            FeedTokenInternal feedToken = Mock.Of<FeedTokenInternal>();
+            IChangeFeedToken feedToken = Mock.Of<IChangeFeedToken>();
             Mock.Get(feedToken)
                 .Setup(f => f.EnrichRequest(It.IsAny<RequestMessage>()));
             Mock.Get(feedToken)
                 .Setup(f => f.ShouldRetryAsync(It.Is<ContainerCore>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(false));
 
-            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(containerCore, feedToken, null);
+            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(containerCore, new ChangeFeedTokenInternal(feedToken), null);
 
             ResponseMessage response = await changeFeedIteratorCore.ReadNextAsync();
 

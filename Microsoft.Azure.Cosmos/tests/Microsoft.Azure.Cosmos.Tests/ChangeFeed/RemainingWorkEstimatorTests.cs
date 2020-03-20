@@ -31,14 +31,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 LeaseToken = pkRangeId
             }).ToList();
 
-            Mock<FeedIterator> mockIterator = new Mock<FeedIterator>();
+            Mock<ChangeFeedIterator> mockIterator = new Mock<ChangeFeedIterator>();
             mockIterator.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>())).ReturnsAsync(GetResponse(HttpStatusCode.NotModified, "0:1"));
             Mock<DocumentServiceLeaseContainer> mockContainer = new Mock<DocumentServiceLeaseContainer>();
             mockContainer.Setup(c => c.GetAllLeasesAsync()).ReturnsAsync(leases);
 
             List<string> requestedPKRanges = new List<string>();
 
-            Func<string, string, bool, FeedIterator> feedCreator = (string partitionKeyRangeId, string continuationToken, bool startFromBeginning) =>
+            Func<string, string, bool, ChangeFeedIterator> feedCreator = (string partitionKeyRangeId, string continuationToken, bool startFromBeginning) =>
             {
                 requestedPKRanges.Add(partitionKeyRangeId);
                 return mockIterator.Object;
@@ -61,11 +61,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             List<DocumentServiceLeaseCore> leases = new List<DocumentServiceLeaseCore>();
 
-            Mock<FeedIterator> mockIterator = new Mock<FeedIterator>();
+            Mock<ChangeFeedIterator> mockIterator = new Mock<ChangeFeedIterator>();
             Mock<DocumentServiceLeaseContainer> mockContainer = new Mock<DocumentServiceLeaseContainer>();
             mockContainer.Setup(c => c.GetAllLeasesAsync()).ReturnsAsync(leases);
 
-            Func<string, string, bool, FeedIterator> feedCreator = (string partitionKeyRangeId, string continuationToken, bool startFromBeginning) =>
+            Func<string, string, bool, ChangeFeedIterator> feedCreator = (string partitionKeyRangeId, string continuationToken, bool startFromBeginning) =>
             {
                 return mockIterator.Object;
             };
@@ -98,18 +98,18 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 }
             };
 
-            Mock<FeedIterator> mockIteratorPKRange0 = new Mock<FeedIterator>();
+            Mock<ChangeFeedIterator> mockIteratorPKRange0 = new Mock<ChangeFeedIterator>();
             mockIteratorPKRange0.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(GetResponse(HttpStatusCode.NotModified, "0:" + globalLsnPKRange0.ToString()));
 
-            Mock<FeedIterator> mockIteratorPKRange1 = new Mock<FeedIterator>();
+            Mock<ChangeFeedIterator> mockIteratorPKRange1 = new Mock<ChangeFeedIterator>();
             mockIteratorPKRange1.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(GetResponse(HttpStatusCode.NotModified, "1:" + globalLsnPKRange1.ToString()));
 
             Mock<DocumentServiceLeaseContainer> mockContainer = new Mock<DocumentServiceLeaseContainer>();
             mockContainer.Setup(c => c.GetAllLeasesAsync()).ReturnsAsync(leases);
 
-            Func<string, string, bool, FeedIterator> feedCreator = (string partitionKeyRangeId, string continuationToken, bool startFromBeginning) =>
+            Func<string, string, bool, ChangeFeedIterator> feedCreator = (string partitionKeyRangeId, string continuationToken, bool startFromBeginning) =>
             {
                 if (partitionKeyRangeId == "0")
                 {
@@ -149,18 +149,18 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 }
             };
 
-            Mock<FeedIterator> mockIteratorPKRange0 = new Mock<FeedIterator>();
+            Mock<ChangeFeedIterator> mockIteratorPKRange0 = new Mock<ChangeFeedIterator>();
             mockIteratorPKRange0.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(GetResponse(HttpStatusCode.OK, "0:" + globalLsnPKRange0.ToString(), processedLsnPKRange0.ToString()));
 
-            Mock<FeedIterator> mockIteratorPKRange1 = new Mock<FeedIterator>();
+            Mock<ChangeFeedIterator> mockIteratorPKRange1 = new Mock<ChangeFeedIterator>();
             mockIteratorPKRange1.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(GetResponse(HttpStatusCode.OK, "1:" + globalLsnPKRange1.ToString(), processedLsnPKRange1.ToString()));
 
             Mock<DocumentServiceLeaseContainer> mockContainer = new Mock<DocumentServiceLeaseContainer>();
             mockContainer.Setup(c => c.GetAllLeasesAsync()).ReturnsAsync(leases);
 
-            Func<string, string, bool, FeedIterator> feedCreator = (string partitionKeyRangeId, string continuationToken, bool startFromBeginning) =>
+            Func<string, string, bool, ChangeFeedIterator> feedCreator = (string partitionKeyRangeId, string continuationToken, bool startFromBeginning) =>
             {
                 if (partitionKeyRangeId == "0")
                 {
