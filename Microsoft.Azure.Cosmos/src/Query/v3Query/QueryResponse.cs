@@ -68,9 +68,9 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal virtual IReadOnlyList<CosmosElement> CosmosElements { get; }
+        public virtual IReadOnlyList<CosmosElement> CosmosElements { get; }
 
-        internal virtual CosmosQueryResponseMessageHeaders QueryHeaders => (CosmosQueryResponseMessageHeaders)this.Headers;
+        public virtual CosmosQueryResponseMessageHeaders QueryHeaders => (CosmosQueryResponseMessageHeaders)this.Headers;
 
         /// <summary>
         /// Gets the response length in bytes
@@ -78,16 +78,16 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// This value is only set for Direct mode.
         /// </remarks>
-        internal long ResponseLengthBytes { get; }
+        public long ResponseLengthBytes { get; }
 
-        internal virtual CosmosSerializationFormatOptions CosmosSerializationOptions { get; }
+        public virtual CosmosSerializationFormatOptions CosmosSerializationOptions { get; }
 
-        internal bool GetHasMoreResults()
+        public bool GetHasMoreResults()
         {
             return !string.IsNullOrEmpty(this.Headers.ContinuationToken);
         }
 
-        internal static QueryResponse CreateSuccess(
+        public static QueryResponse CreateSuccess(
             IReadOnlyList<CosmosElement> result,
             int count,
             long responseLengthBytes,
@@ -126,7 +126,7 @@ namespace Microsoft.Azure.Cosmos
             return cosmosQueryResponse;
         }
 
-        internal static QueryResponse CreateFailure(
+        public static QueryResponse CreateFailure(
             CosmosQueryResponseMessageHeaders responseHeaders,
             HttpStatusCode statusCode,
             RequestMessage requestMessage,
@@ -200,7 +200,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override int Count { get; }
 
-        internal CosmosQueryResponseMessageHeaders QueryHeaders { get; }
+        public CosmosQueryResponseMessageHeaders QueryHeaders { get; }
 
         public override IEnumerator<T> GetEnumerator()
         {
@@ -209,7 +209,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override IEnumerable<T> Resource { get; }
 
-        internal static QueryResponse<TInput> CreateResponse<TInput>(
+        public static QueryResponse<TInput> CreateResponse<TInput>(
             QueryResponse cosmosQueryResponse,
             CosmosSerializerCore serializerCore)
         {

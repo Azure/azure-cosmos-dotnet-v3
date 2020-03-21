@@ -170,8 +170,4 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return 0;
         }
     }
-#if INTERNAL
-#pragma warning restore SA1600 // Elements should be documented
-#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-#endif
 }

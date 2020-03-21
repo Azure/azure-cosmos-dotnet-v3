@@ -10,7 +10,13 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// HTTP headers in a <see cref="ResponseMessage"/>.
     /// </summary>
-    internal class CosmosQueryResponseMessageHeaders : Headers
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+    public
+#else
+    internal
+#endif
+        class CosmosQueryResponseMessageHeaders : Headers
     {
         public CosmosQueryResponseMessageHeaders(
             string continauationToken,
@@ -24,7 +30,7 @@ namespace Microsoft.Azure.Cosmos
             this.ContainerRid = containerRid;
         }
 
-        internal string DisallowContinuationTokenMessage { get; }
+        public string DisallowContinuationTokenMessage { get; }
 
         public override string ContinuationToken
         {
@@ -44,20 +50,20 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal virtual string ContainerRid { get; }
+        public virtual string ContainerRid { get; }
 
-        internal virtual ResourceType ResourceType { get; }
+        public virtual ResourceType ResourceType { get; }
 
-        internal string InternalContinuationToken => base.ContinuationToken;
+        public string InternalContinuationToken => base.ContinuationToken;
 
-        internal CosmosQueryResponseMessageHeaders CloneKnownProperties()
+        public CosmosQueryResponseMessageHeaders CloneKnownProperties()
         {
             return this.CloneKnownProperties(
                 this.InternalContinuationToken,
                 this.DisallowContinuationTokenMessage);
         }
 
-        internal CosmosQueryResponseMessageHeaders CloneKnownProperties(
+        public CosmosQueryResponseMessageHeaders CloneKnownProperties(
             string continauationToken,
             string disallowContinuationTokenMessage)
         {
@@ -79,7 +85,7 @@ namespace Microsoft.Azure.Cosmos
             };
         }
 
-        internal static CosmosQueryResponseMessageHeaders ConvertToQueryHeaders(
+        public static CosmosQueryResponseMessageHeaders ConvertToQueryHeaders(
             Headers sourceHeaders,
             ResourceType resourceType,
             string containerRid)

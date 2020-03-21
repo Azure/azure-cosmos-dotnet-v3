@@ -66,8 +66,4 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
             }
         }
     }
-#if INTERNAL
-#pragma warning restore SA1601 // Partial elements should be documented
-#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-#endif
 }

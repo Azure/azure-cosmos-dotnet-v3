@@ -18,8 +18,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             this.PartitionKeyDefinition = partitionKeyDefinition;
         }
 
-        internal string ResourceId { get; }
-        internal string EffectivePartitionKeyString { get; }
+        public string ResourceId { get; }
+        public string EffectivePartitionKeyString { get; }
         internal PartitionKeyDefinition PartitionKeyDefinition { get; }
     }
 }

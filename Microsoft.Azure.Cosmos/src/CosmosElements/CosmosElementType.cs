@@ -22,9 +22,4 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         Guid,
         Binary,
     }
-#if INTERNAL
-#pragma warning restore SA1602 // Enumeration items should be documented
-#pragma warning restore SA1600 // Elements should be documented
-#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-#endif
 }

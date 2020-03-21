@@ -51,27 +51,27 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             this.SubStatusCode = subStatusCode;
         }
 
-        internal IReadOnlyList<CosmosElement> CosmosElements { get; }
+        public IReadOnlyList<CosmosElement> CosmosElements { get; }
 
-        internal CosmosException CosmosException { get; }
+        public CosmosException CosmosException { get; }
 
-        internal SubStatusCodes? SubStatusCode { get; }
+        public SubStatusCodes? SubStatusCode { get; }
 
-        internal HttpStatusCode StatusCode { get; }
+        public HttpStatusCode StatusCode { get; }
 
-        internal string DisallowContinuationTokenMessage { get; }
+        public string DisallowContinuationTokenMessage { get; }
 
-        internal string ContinuationToken { get; }
+        public string ContinuationToken { get; }
 
-        internal double RequestCharge { get; }
+        public double RequestCharge { get; }
 
-        internal string ActivityId { get; }
+        public string ActivityId { get; }
 
-        internal long ResponseLengthBytes { get; }
+        public long ResponseLengthBytes { get; }
 
-        internal bool IsSuccess { get; }
+        public bool IsSuccess { get; }
 
-        internal static QueryResponseCore CreateSuccess(
+        public static QueryResponseCore CreateSuccess(
             IReadOnlyList<CosmosElement> result,
             double requestCharge,
             string activityId,
@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             return cosmosQueryResponse;
         }
 
-        internal static QueryResponseCore CreateFailure(
+        public static QueryResponseCore CreateFailure(
             HttpStatusCode statusCode,
             SubStatusCodes? subStatusCodes,
             CosmosException cosmosException,
