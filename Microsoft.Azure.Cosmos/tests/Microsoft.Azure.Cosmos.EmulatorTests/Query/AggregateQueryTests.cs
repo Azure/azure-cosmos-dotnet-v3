@@ -22,15 +22,13 @@
         [TestMethod]
         public async Task TestAggregateFunctionsAsync()
         {
-            AggregateTestArgs args = new AggregateTestArgs()
-            {
-                NumberOfDocsWithSamePartitionKey = 37,
-                NumberOfDocumentsDifferentPartitionKey = 43,
-                PartitionKey = "key",
-                UniquePartitionKey = "uniquePartitionKey",
-                Field = "field",
-                Values = new object[] { false, true, "abc", "cdfg", "opqrs", "ttttttt", "xyz" },
-            };
+            AggregateTestArgs args = new AggregateTestArgs(
+                numberOfDocumentsDifferentPartitionKey: 43,
+                numberOfDocsWithSamePartitionKey: 37,
+                partitionKey: "key",
+                uniquePartitionKey: "uniquePartitionKey",
+                field: "field",
+                values: new List<object>() { false, true, "abc", "cdfg", "opqrs", "ttttttt", "xyz" });
 
             List<string> documents = new List<string>(args.NumberOfDocumentsDifferentPartitionKey + args.NumberOfDocsWithSamePartitionKey);
             foreach (object val in args.Values)
@@ -92,48 +90,34 @@
                 double count = documentsWherePkIsANumber.Count();
                 AggregateQueryArguments[] aggregateQueryArgumentsList = new AggregateQueryArguments[]
                 {
-                new AggregateQueryArguments()
-                {
-                    AggregateOperator = "AVG",
-                    ExpectedValue = CosmosNumber64.Create(numberSum / count),
-                    Predicate = $"IS_NUMBER(r.{aggregateTestArgs.PartitionKey})",
-                },
-                new AggregateQueryArguments()
-                {
-                    AggregateOperator = "AVG",
-                    ExpectedValue = null,
-                    Predicate = "true",
-                },
-                new AggregateQueryArguments()
-                {
-                    AggregateOperator = "COUNT",
-                    ExpectedValue = CosmosNumber64.Create(documents.Count()),
-                    Predicate = "true",
-                },
-                new AggregateQueryArguments()
-                {
-                    AggregateOperator = "MAX",
-                    ExpectedValue = CosmosString.Create("xyz"),
-                    Predicate = "true",
-                },
-                new AggregateQueryArguments()
-                {
-                    AggregateOperator = "MIN",
-                    ExpectedValue = CosmosBoolean.Create(false),
-                    Predicate = "true",
-                },
-                new AggregateQueryArguments()
-                {
-                    AggregateOperator = "SUM",
-                    ExpectedValue = CosmosNumber64.Create(numberSum),
-                    Predicate = $"IS_NUMBER(r.{aggregateTestArgs.PartitionKey})",
-                },
-                new AggregateQueryArguments()
-                {
-                    AggregateOperator = "SUM",
-                    ExpectedValue = null,
-                    Predicate = $"true",
-                },
+                    new AggregateQueryArguments(
+                        aggregateOperator: "AVG",
+                        expectedValue: CosmosNumber64.Create(numberSum / count),
+                        predicate: $"IS_NUMBER(r.{aggregateTestArgs.PartitionKey})"),
+                    new AggregateQueryArguments(
+                        aggregateOperator: "AVG",
+                        expectedValue: null,
+                        predicate: "true"),
+                    new AggregateQueryArguments(
+                        aggregateOperator: "COUNT",
+                        expectedValue: CosmosNumber64.Create(documents.Count()),
+                        predicate: "true"),
+                    new AggregateQueryArguments(
+                        aggregateOperator: "MAX",
+                        expectedValue: CosmosString.Create("xyz"),
+                        predicate: "true"),
+                    new AggregateQueryArguments(
+                        aggregateOperator: "MIN",
+                        expectedValue: CosmosBoolean.Create(false),
+                        predicate: "true"),
+                    new AggregateQueryArguments(
+                        aggregateOperator: "SUM",
+                        expectedValue: CosmosNumber64.Create(numberSum),
+                        predicate: $"IS_NUMBER(r.{aggregateTestArgs.PartitionKey})"),
+                    new AggregateQueryArguments(
+                        aggregateOperator: "SUM",
+                        expectedValue: null,
+                        predicate: $"true"),
                 };
 
                 foreach (int maxDoP in new[] { 0, 10 })
@@ -193,21 +177,44 @@
             }
         }
 
-        private struct AggregateTestArgs
+        private readonly struct AggregateTestArgs
         {
-            public int NumberOfDocumentsDifferentPartitionKey;
-            public int NumberOfDocsWithSamePartitionKey;
-            public string PartitionKey;
-            public string UniquePartitionKey;
-            public string Field;
-            public object[] Values;
+            public AggregateTestArgs(
+                int numberOfDocumentsDifferentPartitionKey,
+                int numberOfDocsWithSamePartitionKey,
+                string partitionKey,
+                string uniquePartitionKey,
+                string field,
+                IReadOnlyList<object> values)
+            {
+                this.NumberOfDocumentsDifferentPartitionKey = numberOfDocumentsDifferentPartitionKey;
+                this.NumberOfDocsWithSamePartitionKey = numberOfDocsWithSamePartitionKey;
+                this.PartitionKey = partitionKey;
+                this.UniquePartitionKey = uniquePartitionKey;
+                this.Field = field;
+                this.Values = values;
+            }
+
+            public int NumberOfDocumentsDifferentPartitionKey { get; }
+            public int NumberOfDocsWithSamePartitionKey { get; }
+            public string PartitionKey { get; }
+            public string UniquePartitionKey { get; }
+            public string Field { get; }
+            public IReadOnlyList<object> Values { get; }
         }
 
-        private struct AggregateQueryArguments
+        private readonly struct AggregateQueryArguments
         {
-            public string AggregateOperator;
-            public CosmosElement ExpectedValue;
-            public string Predicate;
+            public AggregateQueryArguments(string aggregateOperator, CosmosElement expectedValue, string predicate)
+            {
+                this.AggregateOperator = aggregateOperator;
+                this.ExpectedValue = expectedValue;
+                this.Predicate = predicate;
+            }
+
+            public string AggregateOperator { get; }
+            public CosmosElement ExpectedValue { get; }
+            public string Predicate { get; }
         }
 
         [TestMethod]
