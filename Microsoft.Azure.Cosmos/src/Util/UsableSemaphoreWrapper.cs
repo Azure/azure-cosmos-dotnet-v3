@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Threading;
 
-    internal class UsableSemaphoreWrapper : IDisposable
+    internal sealed class UsableSemaphoreWrapper : IDisposable
     {
         private readonly SemaphoreSlim semaphore;
         private bool disposed;

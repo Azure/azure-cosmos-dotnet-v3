@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Moq;
     using static Microsoft.Azure.Cosmos.Routing.PartitionRoutingHelper;
 
-    internal class MockCosmosUtil
+    internal sealed class MockCosmosUtil
     {
         public static readonly CosmosSerializerCore Serializer = new CosmosSerializerCore();
 

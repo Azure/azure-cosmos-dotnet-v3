@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Exceptions
     /// Exception occurred during feed processing because of a split.
     /// </summary>
     [Serializable]
-    internal class FeedSplitException : Exception
+    internal sealed class FeedSplitException : Exception
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="FeedSplitException"/> class using error message and last continuation token.
@@ -22,17 +22,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Exceptions
             : base(message)
         {
             this.LastContinuation = lastContinuation;
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="FeedSplitException" /> class using default values.
-        /// </summary>
-        /// <param name="info">The SerializationInfo object that holds serialized object data for the exception being thrown.</param>
-        /// <param name="context">The StreamingContext that contains contextual information about the source or destination.</param>
-        protected FeedSplitException(SerializationInfo info, StreamingContext context)
-            : base(info, context)
-        {
-            this.LastContinuation = (string)info.GetValue("LastContinuation", typeof(string));
         }
 
         /// <summary>

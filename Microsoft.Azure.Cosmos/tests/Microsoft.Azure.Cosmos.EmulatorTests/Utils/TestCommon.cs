@@ -1682,7 +1682,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        private class DisposableList : IDisposable
+        private sealed class DisposableList : IDisposable
         {
             private readonly List<IDisposable> disposableList;
 
@@ -1707,7 +1707,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        private class RestoreNamingConfigurations : IDisposable
+        private sealed class RestoreNamingConfigurations : IDisposable
         {
             private readonly Uri parentName;
             private readonly List<KeyValuePair<string, string>> keyValues;

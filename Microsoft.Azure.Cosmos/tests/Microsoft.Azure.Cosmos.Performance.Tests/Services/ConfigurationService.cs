@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Services
             }
         }
 
-        private static Lazy<CosmosDBConfiguration> cosmosDBConfiguration = new Lazy<CosmosDBConfiguration>(CreateConfiguration);
+        private static readonly Lazy<CosmosDBConfiguration> cosmosDBConfiguration = new Lazy<CosmosDBConfiguration>(CreateConfiguration);
 
         private static CosmosDBConfiguration CreateConfiguration()
         {

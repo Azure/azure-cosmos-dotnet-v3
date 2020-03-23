@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     /// This represent a single partition and the list of messages
     /// the partition should receive
     /// </summary>
-    internal class MockPartitionResponse
+    internal sealed class MockPartitionResponse
     {
         internal const int MessageWithToManyRequestFailure = -1;
 

@@ -19,13 +19,13 @@ namespace Microsoft.Azure.Cosmos.Tests
         private const int DispatchTimerInSeconds = 5;
         private const int MaxBatchByteSize = 100000;
         private const int defaultMaxDegreeOfConcurrency = 10;
-        private static Exception expectedException = new Exception();
-        private ItemBatchOperation ItemBatchOperation = new ItemBatchOperation(OperationType.Create, 0, "0");
-        private TimerPool TimerPool = new TimerPool(1);
-        private SemaphoreSlim limiter = new SemaphoreSlim(1, defaultMaxDegreeOfConcurrency);
+        private static readonly Exception expectedException = new Exception();
+        private readonly ItemBatchOperation ItemBatchOperation = new ItemBatchOperation(OperationType.Create, 0, "0");
+        private readonly TimerPool TimerPool = new TimerPool(1);
+        private readonly SemaphoreSlim limiter = new SemaphoreSlim(1, defaultMaxDegreeOfConcurrency);
 
         // Executor just returns a reponse matching the Id with Etag
-        private BatchAsyncBatcherExecuteDelegate Executor
+        private readonly BatchAsyncBatcherExecuteDelegate Executor
             = async (PartitionKeyRangeServerBatchRequest request, CancellationToken cancellationToken) =>
             {
                 List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
@@ -61,12 +61,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return new PartitionKeyRangeBatchExecutionResult(request.PartitionKeyRangeId, request.Operations, batchresponse);
             };
 
-        private BatchAsyncBatcherExecuteDelegate ExecutorWithFailure = (PartitionKeyRangeServerBatchRequest request, CancellationToken cancellationToken) =>
+        private readonly BatchAsyncBatcherExecuteDelegate ExecutorWithFailure = (PartitionKeyRangeServerBatchRequest request, CancellationToken cancellationToken) =>
         {
             throw expectedException;
         };
 
-        private BatchAsyncBatcherRetryDelegate Retrier = (ItemBatchOperation operation, CancellationToken cancellation) =>
+        private readonly BatchAsyncBatcherRetryDelegate Retrier = (ItemBatchOperation operation, CancellationToken cancellation) =>
         {
             return Task.CompletedTask;
         };

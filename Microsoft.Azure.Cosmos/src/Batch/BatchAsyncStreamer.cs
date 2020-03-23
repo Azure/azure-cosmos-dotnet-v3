@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos
     /// The current batch is dispatched and a new one is readied to be filled by new operations, the dispatched batch runs independently through a fire and forget pattern.
     /// </remarks>
     /// <seealso cref="BatchAsyncBatcher"/>
-    internal class BatchAsyncStreamer : IDisposable
+    internal sealed class BatchAsyncStreamer : IDisposable
     {
         private readonly object dispatchLimiter = new object();
         private readonly int maxBatchOperationCount;
@@ -35,18 +35,24 @@ namespace Microsoft.Azure.Cosmos
         private readonly int maxDegreeOfConcurrency;
 
         private volatile BatchAsyncBatcher currentBatcher;
-        private TimerPool timerPool;
+#pragma warning disable SA1214 // Readonly fields should appear before non-readonly fields
+        private readonly TimerPool timerPool;
+#pragma warning restore SA1214 // Readonly fields should appear before non-readonly fields
         private PooledTimer currentTimer;
         private Task timerTask;
 
         private PooledTimer congestionControlTimer;
         private Task congestionControlTask;
-        private SemaphoreSlim limiter;
+#pragma warning disable SA1214 // Readonly fields should appear before non-readonly fields
+        private readonly SemaphoreSlim limiter;
+#pragma warning restore SA1214 // Readonly fields should appear before non-readonly fields
 
         private int congestionDegreeOfConcurrency = 1;
         private long congestionWaitTimeInMilliseconds = 1000;
-        private BatchPartitionMetric oldPartitionMetric;
-        private BatchPartitionMetric partitionMetric;
+#pragma warning disable SA1214 // Readonly fields should appear before non-readonly fields
+        private readonly BatchPartitionMetric oldPartitionMetric;
+#pragma warning restore SA1214 // Readonly fields should appear before non-readonly fields
+        private readonly BatchPartitionMetric partitionMetric;
 
         public BatchAsyncStreamer(
             int maxBatchOperationCount,

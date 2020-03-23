@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     [TestClass]
     public class IRoutingMapProviderExtensionsTest
     {
-        private class MockRoutingMapProvider : IRoutingMapProvider
+        private sealed class MockRoutingMapProvider : IRoutingMapProvider
         {
             readonly CollectionRoutingMap routingMap;
 

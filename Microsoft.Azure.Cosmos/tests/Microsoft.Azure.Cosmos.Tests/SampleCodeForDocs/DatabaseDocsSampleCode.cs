@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos.SampleCodeForDocs
 {
     using System.Threading.Tasks;
 
-    internal class DatabaseDocsSampleCode
+    internal sealed class DatabaseDocsSampleCode
     {
         private CosmosClient cosmosClient;
 

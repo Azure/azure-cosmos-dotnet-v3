@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     /// </summary>
     internal sealed class RequestChargeHelper
     {
-        private Dictionary<DocumentClientType, double> chargeStore;
+        private readonly Dictionary<DocumentClientType, double> chargeStore;
 
         internal RequestChargeHelper()
         {

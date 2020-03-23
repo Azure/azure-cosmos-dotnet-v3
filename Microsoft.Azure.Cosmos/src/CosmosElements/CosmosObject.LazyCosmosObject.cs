@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #endif
     abstract partial class CosmosObject : CosmosElement, IReadOnlyDictionary<string, CosmosElement>
     {
-        private class LazyCosmosObject : CosmosObject
+        private sealed class LazyCosmosObject : CosmosObject
         {
             private readonly IJsonNavigator jsonNavigator;
             private readonly IJsonNavigatorNode jsonNavigatorNode;

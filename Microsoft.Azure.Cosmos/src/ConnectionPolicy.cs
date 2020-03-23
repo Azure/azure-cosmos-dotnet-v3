@@ -24,8 +24,8 @@ namespace Microsoft.Azure.Cosmos
 
         private static ConnectionPolicy defaultPolicy;
 
+        private readonly ObservableCollection<string> preferredLocations;
         private Protocol connectionProtocol;
-        private ObservableCollection<string> preferredLocations;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ConnectionPolicy"/> class to connect to the Azure Cosmos DB service.

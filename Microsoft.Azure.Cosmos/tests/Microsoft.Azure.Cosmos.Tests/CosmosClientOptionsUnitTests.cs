@@ -349,7 +349,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsFalse(connectionPolicy.EnableEndpointDiscovery);
         }
 
-        private class TestWebProxy : IWebProxy
+        private sealed class TestWebProxy : IWebProxy
         {
             public ICredentials Credentials { get; set; }
 

@@ -344,7 +344,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
             } while (true);
         }
 
-        private class SqlKeyValueQueryBuilder : IEquatable<SqlKeyValueQueryBuilder>
+        private sealed class SqlKeyValueQueryBuilder : IEquatable<SqlKeyValueQueryBuilder>
         {
             private readonly string strKey;
             private readonly string strValue;

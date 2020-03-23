@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Documents;
 
-    internal class NullRequestSigner : IRequestSigner
+    internal sealed class NullRequestSigner : IRequestSigner
     {
         public Task SignRequestAsync(DocumentServiceRequest request, CancellationToken cancellationToken)
         {

@@ -507,16 +507,16 @@ namespace Microsoft.Azure.Cosmos.Common
 
             public override bool Equals(object obj)
             {
-                if (obj == null || GetType() != obj.GetType())
+                if (obj == null || this.GetType() != obj.GetType())
                 {
                     return false;
                 }
 
                 SessionContainerSnapshot sibling = (SessionContainerSnapshot)obj;
 
-                if (!AreDictionariesEqual(collectionNameByResourceId, sibling.collectionNameByResourceId, (x, y) => x == y)) return false;
-                if (!AreDictionariesEqual(collectionResourceIdByName, sibling.collectionResourceIdByName, (x, y) => x == y)) return false;
-                if (!AreDictionariesEqual(sessionTokensRIDBased, sibling.sessionTokensRIDBased, (x, y) => AreDictionariesEqual(x, y, (a, b) => a.Equals(b)))) return false;
+                if (!AreDictionariesEqual(this.collectionNameByResourceId, sibling.collectionNameByResourceId, (x, y) => x == y)) return false;
+                if (!AreDictionariesEqual(this.collectionResourceIdByName, sibling.collectionResourceIdByName, (x, y) => x == y)) return false;
+                if (!AreDictionariesEqual(this.sessionTokensRIDBased, sibling.sessionTokensRIDBased, (x, y) => AreDictionariesEqual(x, y, (a, b) => a.Equals(b)))) return false;
 
                 return true;
             }

@@ -11,13 +11,13 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
 
-    internal class BatchCore : TransactionalBatch
+    internal sealed class BatchCore : TransactionalBatch
     {
         private readonly PartitionKey partitionKey;
 
         private readonly ContainerCore container;
 
-        private List<ItemBatchOperation> operations;
+        private readonly List<ItemBatchOperation> operations;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="BatchCore"/> class.
@@ -205,7 +205,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestOptions">Options that apply to the batch. Used only for EPK routing.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>An awaitable <see cref="TransactionalBatchResponse"/> which contains the completion status and results of each operation.</returns>
-        public virtual Task<TransactionalBatchResponse> ExecuteAsync(
+        public Task<TransactionalBatchResponse> ExecuteAsync(
             RequestOptions requestOptions,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -217,7 +217,7 @@ namespace Microsoft.Azure.Cosmos
                 batchOptions: requestOptions,
                 diagnosticsContext: diagnosticsContext);
 
-            this.operations = new List<ItemBatchOperation>();
+            this.operations.Clear();
             return executor.ExecuteAsync(cancellationToken);
         }
 
@@ -228,7 +228,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="patchStream">A <see cref="Stream"/> containing the patch specification.</param>
         /// <param name="requestOptions">(Optional) The options for the item request. <see cref="TransactionalBatchItemRequestOptions"/>.</param>
         /// <returns>The <see cref="TransactionalBatch"/> instance with the operation added.</returns>
-        public virtual TransactionalBatch PatchItemStream(
+        public TransactionalBatch PatchItemStream(
             string id,
             Stream patchStream,
             TransactionalBatchItemRequestOptions requestOptions = null)

@@ -144,7 +144,7 @@
             }
         }
 
-        private class InvariantComparer : IComparer<string>
+        private sealed class InvariantComparer : IComparer<string>
         {
             public int Compare(string a, string b) => Comparer.DefaultInvariant.Compare(a, b);
         }

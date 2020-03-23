@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos
                     }
 
                     // Ensure space in the byte buffer attempting to write to it.
-                    if (currentWriteOffset + (nBits / 8) > (allocationSize))
+                    if (currentWriteOffset + (nBits / 8) > allocationSize)
                     {
                         throw new ArgumentException("allocationSize");
                     }

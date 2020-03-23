@@ -5,9 +5,9 @@ namespace Microsoft.Azure.Cosmos.Sql
 {
     using System;
 
-    internal class SqlQuery : SqlObject
+    internal sealed class SqlQuery : SqlObject
     {
-        protected SqlQuery(
+        private SqlQuery(
             SqlSelectClause selectClause,
             SqlFromClause fromClause,
             SqlWhereClause whereClause,

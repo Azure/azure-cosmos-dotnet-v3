@@ -300,19 +300,19 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
         }
 
-        private class Address
+        private sealed class Address
         {
             [JsonProperty("Country")]
             public object Country { get; set; }
         }
 
-        private class Entity
+        private sealed class Entity
         {
             [JsonProperty("address")]
             public Address Address { get; set; }
         }
 
-        private class DocumentEntity : Document
+        private sealed class DocumentEntity : Document
         {
             [JsonProperty("address")]
             public Address Address { get; set; }

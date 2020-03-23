@@ -170,10 +170,10 @@ namespace Microsoft.Azure.Cosmos
         private DocumentClientEventSource eventSource;
         internal Task initializeTask;
 
-        private JsonSerializerSettings serializerSettings;
+        private readonly JsonSerializerSettings serializerSettings;
         private event EventHandler<SendingRequestEventArgs> sendingRequest;
         private event EventHandler<ReceivedResponseEventArgs> receivedResponse;
-        private Func<TransportClient, TransportClient> transportClientHandlerFactory;
+        private readonly Func<TransportClient, TransportClient> transportClientHandlerFactory;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DocumentClient"/> class using the
@@ -7217,7 +7217,7 @@ namespace Microsoft.Azure.Cosmos
             return headers;
         }
 
-        private class ResetSessionTokenRetryPolicyFactory : IRetryPolicyFactory
+        private sealed class ResetSessionTokenRetryPolicyFactory : IRetryPolicyFactory
         {
             private readonly IRetryPolicyFactory retryPolicy;
             private readonly ISessionContainer sessionContainer;
@@ -7236,7 +7236,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private class HttpRequestMessageHandler : DelegatingHandler
+        private sealed class HttpRequestMessageHandler : DelegatingHandler
         {
             private readonly EventHandler<SendingRequestEventArgs> sendingRequest;
             private readonly EventHandler<ReceivedResponseEventArgs> receivedResponse;

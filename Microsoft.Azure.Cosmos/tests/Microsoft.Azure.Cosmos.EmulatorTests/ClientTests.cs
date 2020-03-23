@@ -311,7 +311,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
     }
 
-    internal class TestWebProxy : IWebProxy
+    internal sealed class TestWebProxy : IWebProxy
     {
         public ICredentials Credentials { get; set; }
 

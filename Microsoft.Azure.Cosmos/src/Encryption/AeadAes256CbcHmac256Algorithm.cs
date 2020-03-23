@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
     /// This (and AeadAes256CbcHmac256EncryptionKey) implementation for Cosmos DB is same as the existing
     /// SQL client implementation with StyleCop related changes - also, we restrict to randomized encryption to start with.
     /// </summary>
-    internal class AeadAes256CbcHmac256Algorithm : EncryptionAlgorithm
+    internal sealed class AeadAes256CbcHmac256Algorithm : EncryptionAlgorithm
     {
         internal const string AlgorithmNameConstant = @"AEAD_AES_256_CBC_HMAC_SHA256";
 
@@ -144,7 +144,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="plainText">Plaintext data to be encrypted</param>
         /// <param name="hasAuthenticationTag">Does the algorithm require authentication tag.</param>
         /// <returns>Returns the ciphertext corresponding to the plaintext.</returns>
-        protected byte[] EncryptData(byte[] plainText, bool hasAuthenticationTag)
+        public byte[] EncryptData(byte[] plainText, bool hasAuthenticationTag)
         {
             // Empty values get encrypted and decrypted properly for both Deterministic and Randomized encryptions.
             Debug.Assert(plainText != null);
@@ -269,7 +269,7 @@ namespace Microsoft.Azure.Cosmos
         /// 2. (optional) Validate Authentication tag
         /// 3. Decrypt the message
         /// </summary>
-        protected byte[] DecryptData(byte[] cipherText, bool hasAuthenticationTag)
+        public byte[] DecryptData(byte[] cipherText, bool hasAuthenticationTag)
         {
             Debug.Assert(cipherText != null);
 

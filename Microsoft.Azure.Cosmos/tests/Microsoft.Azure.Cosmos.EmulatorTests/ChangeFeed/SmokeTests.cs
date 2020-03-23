@@ -224,7 +224,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             Assert.AreEqual("0.1.2.3.4.5.6.7.8.9.", accumulator);
         }
 
-        private class FailedUserSerializer : CosmosSerializer
+        private sealed class FailedUserSerializer : CosmosSerializer
         {
             private readonly CosmosSerializer cosmosSerializer = new CosmosJsonDotNetSerializer();
             public override T FromStream<T>(Stream stream)

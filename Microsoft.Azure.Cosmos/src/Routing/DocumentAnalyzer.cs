@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json.Linq;
 
-    internal class DocumentAnalyzer
+    internal sealed class DocumentAnalyzer
     {
         /// <summary>
         /// Extracts effective <see cref="PartitionKeyInternal"/> from deserialized document.

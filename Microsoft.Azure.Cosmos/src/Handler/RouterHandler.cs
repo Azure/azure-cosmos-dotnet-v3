@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     /// <summary>
     /// Handler which selects the piepline for the requested resource operation
     /// </summary>
-    internal class RouterHandler : RequestHandler
+    internal sealed class RouterHandler : RequestHandler
     {
         private readonly RequestHandler documentFeedHandler;
         private readonly RequestHandler pointOperationHandler;
@@ -41,11 +41,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
             RequestHandler targetHandler = null;
             if (request.IsPartitionKeyRangeHandlerRequired)
             {
-                targetHandler = documentFeedHandler;
+                targetHandler = this.documentFeedHandler;
             }
             else
             {
-                targetHandler = pointOperationHandler;
+                targetHandler = this.pointOperationHandler;
             }
 
             return targetHandler.SendAsync(request, cancellationToken);

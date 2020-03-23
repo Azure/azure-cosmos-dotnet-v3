@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
     using Microsoft.Azure.Documents.Collections;
     using Moq;
 
-    internal class MockDocumentClient : DocumentClient, IAuthorizationTokenProvider
+    internal sealed class MockDocumentClient : DocumentClient, IAuthorizationTokenProvider
     {
         Mock<ClientCollectionCache> collectionCache;
         Mock<PartitionKeyRangeCache> partitionKeyRangeCache;

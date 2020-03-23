@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents.Routing;
     using static Microsoft.Azure.Documents.RuntimeConstants;
 
-    internal class CosmosQueryClientCore : CosmosQueryClient
+    internal sealed class CosmosQueryClientCore : CosmosQueryClient
     {
         private readonly CosmosClientContext clientContext;
         private readonly ContainerCore cosmosContainerCore;

@@ -178,7 +178,7 @@
             Assert.AreEqual(HttpStatusCode.NoContent, deleteResponse.StatusCode);
         }
 
-        internal class SpatialItem
+        internal sealed class SpatialItem
         {
             [JsonProperty("name")]
             public string Name { get; set; }

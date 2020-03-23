@@ -2831,7 +2831,7 @@ function sproc(feed) {
             }
         }
 
-        internal class QueryDocument : Document
+        internal sealed class QueryDocument : Document
         {
             public int NumericField
             {

@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Internal header class with priority access for known headers and support for dictionary-based access to other headers.
     /// </summary>
-    internal class CosmosMessageHeadersInternal : INameValueCollection
+    internal sealed class CosmosMessageHeadersInternal : INameValueCollection
     {
         private readonly Lazy<Dictionary<string, string>> headers = new Lazy<Dictionary<string, string>>(CosmosMessageHeadersInternal.CreateDictionary);
 

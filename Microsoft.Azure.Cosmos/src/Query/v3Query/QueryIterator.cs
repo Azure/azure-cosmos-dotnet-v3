@@ -167,8 +167,8 @@ namespace Microsoft.Azure.Cosmos.Query
                     responseHeaders: new CosmosQueryResponseMessageHeaders(
                         responseCore.ContinuationToken,
                         responseCore.DisallowContinuationTokenMessage,
-                        cosmosQueryContext.ResourceTypeEnum,
-                        cosmosQueryContext.ContainerResourceId)
+                        this.cosmosQueryContext.ResourceTypeEnum,
+                        this.cosmosQueryContext.ContainerResourceId)
                     {
                         RequestCharge = responseCore.RequestCharge,
                         ActivityId = responseCore.ActivityId,

@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using Microsoft.Azure.Cosmos.Handlers;
 
-    internal class ClientPipelineBuilder
+    internal sealed class ClientPipelineBuilder
     {
         private readonly CosmosClient client;
         private readonly ConsistencyLevel? requestedClientConsistencyLevel;

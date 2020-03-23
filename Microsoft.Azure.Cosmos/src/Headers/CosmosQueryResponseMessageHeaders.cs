@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// HTTP headers in a <see cref="ResponseMessage"/>.
     /// </summary>
-    internal class CosmosQueryResponseMessageHeaders : Headers
+    internal sealed class CosmosQueryResponseMessageHeaders : Headers
     {
         public CosmosQueryResponseMessageHeaders(
             string continauationToken,
@@ -44,9 +44,9 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal virtual string ContainerRid { get; }
+        internal string ContainerRid { get; }
 
-        internal virtual ResourceType ResourceType { get; }
+        internal ResourceType ResourceType { get; }
 
         internal string InternalContinuationToken => base.ContinuationToken;
 

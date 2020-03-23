@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos
     [TestClass]
     public class GatewayStoreModelTest
     {
-        private class TestTraceListener : TraceListener
+        private sealed class TestTraceListener : TraceListener
         {
             public Action<string> Callback { get; set; }
             public override bool IsThreadSafe => true;
@@ -344,7 +344,7 @@ namespace Microsoft.Azure.Cosmos
         [TestMethod]
         public async Task TestSessionTokenForSessionConsistentResourceType()
         {
-            GatewayStoreModel storeModel = GetGatewayStoreModelForConsistencyTest();
+            GatewayStoreModel storeModel = this.GetGatewayStoreModelForConsistencyTest();
 
             using (DocumentServiceRequest request =
                 DocumentServiceRequest.Create(
@@ -355,7 +355,7 @@ namespace Microsoft.Azure.Cosmos
                     AuthorizationTokenType.PrimaryMasterKey,
                     null))
             {
-                await TestGatewayStoreModelProcessMessageAsync(storeModel, request);
+                await this.TestGatewayStoreModelProcessMessageAsync(storeModel, request);
             }
         }
 
@@ -366,7 +366,7 @@ namespace Microsoft.Azure.Cosmos
         [TestMethod]
         public async Task TestSessionTokenForSessionInconsistentResourceType()
         {
-            GatewayStoreModel storeModel = GetGatewayStoreModelForConsistencyTest();
+            GatewayStoreModel storeModel = this.GetGatewayStoreModelForConsistencyTest();
 
             using (DocumentServiceRequest request =
                 DocumentServiceRequest.Create(
@@ -377,7 +377,7 @@ namespace Microsoft.Azure.Cosmos
                     AuthorizationTokenType.PrimaryMasterKey,
                     null))
             {
-                await TestGatewayStoreModelProcessMessageAsync(storeModel, request);
+                await this.TestGatewayStoreModelProcessMessageAsync(storeModel, request);
             }
         }
 
@@ -388,7 +388,7 @@ namespace Microsoft.Azure.Cosmos
         [TestMethod]
         public async Task TestSessionTokenAvailability()
         {
-            GatewayStoreModel storeModel = GetGatewayStoreModelForConsistencyTest();
+            GatewayStoreModel storeModel = this.GetGatewayStoreModelForConsistencyTest();
 
             using (DocumentServiceRequest request =
                 DocumentServiceRequest.Create(
@@ -399,7 +399,7 @@ namespace Microsoft.Azure.Cosmos
                     AuthorizationTokenType.PrimaryMasterKey,
                     null))
             {
-                await TestGatewayStoreModelProcessMessageAsync(storeModel, request);
+                await this.TestGatewayStoreModelProcessMessageAsync(storeModel, request);
             }
 
             using (DocumentServiceRequest request =
@@ -411,7 +411,7 @@ namespace Microsoft.Azure.Cosmos
                     AuthorizationTokenType.PrimaryMasterKey,
                     null))
             {
-                await TestGatewayStoreModelProcessMessageAsync(storeModel, request);
+                await this.TestGatewayStoreModelProcessMessageAsync(storeModel, request);
             }
 
         }
@@ -547,7 +547,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private class MockMessageHandler : HttpMessageHandler
+        private sealed class MockMessageHandler : HttpMessageHandler
         {
             private readonly Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc;
 

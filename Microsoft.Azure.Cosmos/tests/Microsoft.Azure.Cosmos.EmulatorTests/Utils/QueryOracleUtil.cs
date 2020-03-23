@@ -616,7 +616,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
             return valid;
         }
 
-        internal virtual async Task<int> QueryAndVerifyDocuments(DocumentClient client, string collectionLink, IEnumerable<Query> queries, int pageSize = 1000, int retries = 0, bool allowScan = false)
+        internal  async Task<int> QueryAndVerifyDocuments(DocumentClient client, string collectionLink, IEnumerable<Query> queries, int pageSize = 1000, int retries = 0, bool allowScan = false)
         {
             // First we make sure that all the queries are inserted
             {

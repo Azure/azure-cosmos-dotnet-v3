@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
     /// Unspecified CRS. If a geometry has this CRS, no CRS can be assumed for it according to GeoJSON spec.
     /// </summary>
     [DataContract]
-    internal class UnspecifiedCrs : Crs, IEquatable<UnspecifiedCrs>
+    internal sealed class UnspecifiedCrs : Crs, IEquatable<UnspecifiedCrs>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="UnspecifiedCrs"/> class.
@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <returns><c>true</c> if CRSs are equal. <c>false</c> otherwise.</returns>
         public bool Equals(UnspecifiedCrs other)
         {
-            if (object.ReferenceEquals(null, other))
+            if (other is null)
             {
                 return false;
             }

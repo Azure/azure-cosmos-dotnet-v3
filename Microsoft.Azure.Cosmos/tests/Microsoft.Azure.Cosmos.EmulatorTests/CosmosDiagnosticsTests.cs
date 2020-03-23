@@ -516,7 +516,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return results.Count;
         }
 
-        private class RequestHandlerSleepHelper : RequestHandler
+        private sealed class RequestHandlerSleepHelper : RequestHandler
         {
             TimeSpan timeToSleep;
 

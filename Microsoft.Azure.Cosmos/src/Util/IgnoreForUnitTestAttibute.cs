@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
 
 #pragma warning disable SA1649 // File name should match first type name
-    internal class IgnoreForUnitTest : Attribute
+    internal sealed class IgnoreForUnitTest : Attribute
 #pragma warning restore SA1649 // File name should match first type name
     {
     }

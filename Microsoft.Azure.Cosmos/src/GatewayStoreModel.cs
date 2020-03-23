@@ -18,8 +18,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents.Collections;
     using Newtonsoft.Json;
 
-    // Marking it as non-sealed in order to unit test it using Moq framework
-    internal class GatewayStoreModel : IStoreModel, IDisposable
+    internal sealed class GatewayStoreModel : IStoreModel, IDisposable
     {
         // Gateway has backoff/retry logic to hide transient errors.
         private readonly TimeSpan requestTimeout = TimeSpan.FromSeconds(65);
@@ -28,8 +27,8 @@ namespace Microsoft.Azure.Cosmos
         private readonly ISessionContainer sessionContainer;
         private readonly ConsistencyLevel defaultConsistencyLevel;
 
+        private readonly CookieContainer cookieJar;
         private GatewayStoreClient gatewayStoreClient;
-        private CookieContainer cookieJar;
 
         public GatewayStoreModel(
             GlobalEndpointManager endpointManager,
@@ -73,7 +72,7 @@ namespace Microsoft.Azure.Cosmos
 
         }
 
-        public virtual async Task<DocumentServiceResponse> ProcessMessageAsync(DocumentServiceRequest request, CancellationToken cancellationToken = default(CancellationToken))
+        public async Task<DocumentServiceResponse> ProcessMessageAsync(DocumentServiceRequest request, CancellationToken cancellationToken = default(CancellationToken))
         {
             this.ApplySessionToken(request);
 
@@ -99,7 +98,7 @@ namespace Microsoft.Azure.Cosmos
             return response;
         }
 
-        public virtual async Task<AccountProperties> GetDatabaseAccountAsync(HttpRequestMessage requestMessage, CancellationToken cancellationToken = default(CancellationToken))
+        public async Task<AccountProperties> GetDatabaseAccountAsync(HttpRequestMessage requestMessage, CancellationToken cancellationToken = default(CancellationToken))
         {
             AccountProperties databaseAccount = null;
 

@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos
     /// Provides operations for reading, re-wrapping, or deleting a specific data encryption key by Id.
     /// See <see cref="Cosmos.Database"/> for operations to create a data encryption key.
     /// </summary>
-    internal class DataEncryptionKeyCore : DataEncryptionKey
+    internal sealed class DataEncryptionKeyCore : DataEncryptionKey
     {
         /// <summary>
         /// Only used for unit testing
@@ -47,9 +47,9 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public Database Database { get; }
 
-        internal virtual Uri LinkUri { get; }
+        internal Uri LinkUri { get; }
 
-        internal virtual CosmosClientContext ClientContext { get; }
+        internal CosmosClientContext ClientContext { get; }
 
         /// <inheritdoc/>
         public override async Task<DataEncryptionKeyResponse> ReadAsync(
@@ -191,14 +191,14 @@ namespace Microsoft.Azure.Cosmos
             return (dekProperties, inMemoryRawDek);
         }
 
-        internal virtual EncryptionAlgorithm GetEncryptionAlgorithm(byte[] rawDek, CosmosEncryptionAlgorithm encryptionAlgorithmId)
+        internal EncryptionAlgorithm GetEncryptionAlgorithm(byte[] rawDek, CosmosEncryptionAlgorithm encryptionAlgorithmId)
         {
             Debug.Assert(encryptionAlgorithmId == CosmosEncryptionAlgorithm.AE_AES_256_CBC_HMAC_SHA_256_RANDOMIZED, "Unexpected encryption algorithm id");
             AeadAes256CbcHmac256EncryptionKey key = new AeadAes256CbcHmac256EncryptionKey(rawDek, AeadAes256CbcHmac256Algorithm.AlgorithmNameConstant);
             return new AeadAes256CbcHmac256Algorithm(key, EncryptionType.Randomized, algorithmVersion: 1);
         }
 
-        internal virtual byte[] GenerateKey(CosmosEncryptionAlgorithm encryptionAlgorithmId)
+        internal byte[] GenerateKey(CosmosEncryptionAlgorithm encryptionAlgorithmId)
         {
             Debug.Assert(encryptionAlgorithmId == CosmosEncryptionAlgorithm.AE_AES_256_CBC_HMAC_SHA_256_RANDOMIZED, "Unexpected encryption algorithm id");
             byte[] rawDek = new byte[32];

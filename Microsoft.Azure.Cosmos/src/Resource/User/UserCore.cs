@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
     /// 
     /// <see cref="Cosmos.User"/> for creating new users, and reading/querying all user;
     /// </summary>
-    internal class UserCore : User
+    internal sealed class UserCore : User
     {
         /// <summary>
         /// Only used for unit testing
@@ -47,9 +47,9 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public Database Database { get; }
 
-        internal virtual Uri LinkUri { get; }
+        internal Uri LinkUri { get; }
 
-        internal virtual CosmosClientContext ClientContext { get; }
+        internal CosmosClientContext ClientContext { get; }
 
         /// <inheritdoc/>
         public override Task<UserResponse> ReadAsync(RequestOptions requestOptions = null,

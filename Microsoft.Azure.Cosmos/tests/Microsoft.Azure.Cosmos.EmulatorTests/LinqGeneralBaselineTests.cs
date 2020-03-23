@@ -1888,19 +1888,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        public void ValidateDynamicLinq()
-        {
-            List<LinqTestInput> inputs = new List<LinqTestInput>();
-            inputs.Add(new LinqTestInput("Select", b => getQuery(b).Select("FamilyId")));
-            inputs.Add(new LinqTestInput("Where", b => getQuery(b).Where("FamilyId = \"some id\"")));
-            inputs.Add(new LinqTestInput("Where longer", b => getQuery(b).Where("FamilyId = \"some id\" AND IsRegistered = True OR Int > 101")));
-            // with parameters
-            inputs.Add(new LinqTestInput("Where w/ parameters", b => getQuery(b).Where("FamilyId = @0 AND IsRegistered = @1 OR Int > @2", "some id", true, 101)));
-            inputs.Add(new LinqTestInput("Where -> Select", b => getQuery(b).Where("FamilyId = \"some id\"").Select("Int")));
-            this.ExecuteTestSuite(inputs);
-        }
-
-        [TestMethod]
         public async Task ValidateLinqQueries()
         {
             Container container = await testDb.CreateContainerAsync(new ContainerProperties (id : Guid.NewGuid().ToString("N"), partitionKeyPath : "/id" ));
@@ -2364,7 +2351,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             public int Number { get; set; }
         }
 
-        private class QueryHelper
+        private sealed class QueryHelper
         {
             private readonly Container container;
 

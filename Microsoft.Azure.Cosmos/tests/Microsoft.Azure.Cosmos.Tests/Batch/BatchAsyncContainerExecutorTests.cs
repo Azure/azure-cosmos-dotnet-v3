@@ -432,7 +432,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 diagnosticsContext: new CosmosDiagnosticsContextCore());
         }
 
-        private class MyDocument
+        private sealed class MyDocument
         {
             public string id { get; set; }
 

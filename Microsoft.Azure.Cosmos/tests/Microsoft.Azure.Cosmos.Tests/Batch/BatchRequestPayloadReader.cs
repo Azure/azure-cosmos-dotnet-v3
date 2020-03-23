@@ -14,9 +14,9 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-    internal class BatchRequestPayloadReader
+    internal sealed class BatchRequestPayloadReader
     {
-        private List<ItemBatchOperation> operations = new List<ItemBatchOperation>();
+        private readonly List<ItemBatchOperation> operations = new List<ItemBatchOperation>();
 
         internal async Task<List<ItemBatchOperation>> ReadPayloadAsync(Stream payload)
         {

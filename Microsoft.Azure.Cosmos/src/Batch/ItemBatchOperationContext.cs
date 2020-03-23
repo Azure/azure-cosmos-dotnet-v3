@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Context for a particular Batch operation.
     /// </summary>
-    internal class ItemBatchOperationContext : IDisposable
+    internal sealed class ItemBatchOperationContext : IDisposable
     {
         public string PartitionKeyRangeId { get; }
 
@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly IDocumentClientRetryPolicy retryPolicy;
 
-        private TaskCompletionSource<TransactionalBatchOperationResult> taskCompletionSource = new TaskCompletionSource<TransactionalBatchOperationResult>();
+        private readonly TaskCompletionSource<TransactionalBatchOperationResult> taskCompletionSource = new TaskCompletionSource<TransactionalBatchOperationResult>();
 
         public ItemBatchOperationContext(
             string partitionKeyRangeId,

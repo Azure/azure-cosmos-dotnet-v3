@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/Pk" }), Kind = PartitionKind.Hash };
             // The test collection should have range index on string properties
             // for the orderby tests
-            var newCol = new ContainerProperties()
+            ContainerProperties newCol = new ContainerProperties()
             {
                 Id = Guid.NewGuid().ToString(),
                 PartitionKey = partitionKeyDefinition,
@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             const int MaxStringLength = 100;
             Func<Random, Datum> createDataFunc = random =>
             {
-                var obj = new Datum();
+                Datum obj = new Datum();
                 obj.Id = Guid.NewGuid().ToString();
                 obj.Pk = "Test";
                 obj.JsonProperty = random.NextDouble() < 0.3 ? "Hello" : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
@@ -183,7 +183,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestMethod]
         public void TestWhereAttributeContract()
         {
-            var inputs = new List<LinqTestInput>();
+            List<LinqTestInput> inputs = new List<LinqTestInput>();
             inputs.Add(new LinqTestInput("Filter by JsonProperty", b => getQuery(b).Where(doc => doc.JsonProperty == "Hello")));
             inputs.Add(new LinqTestInput("Filter by DataMember", b => getQuery(b).Where(doc => doc.DataMember == "Hello")));
             inputs.Add(new LinqTestInput("Filter by Default", b => getQuery(b).Where(doc => doc.Default == "Hello")));
@@ -197,7 +197,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestMethod]
         public void TestSelectAttributeContract()
         {
-            var inputs = new List<LinqTestInput>();
+            List<LinqTestInput> inputs = new List<LinqTestInput>();
             inputs.Add(new LinqTestInput("Select JsonProperty", b => getQuery(b).Select(doc => doc.JsonProperty)));
             inputs.Add(new LinqTestInput("Select DataMember", b => getQuery(b).Select(doc => doc.DataMember)));
             inputs.Add(new LinqTestInput("Select Default", b => getQuery(b).Select(doc => doc.Default)));
@@ -211,7 +211,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestMethod]
         public void TestOrderByAttributeContract()
         {
-            var inputs = new List<LinqTestInput>();
+            List<LinqTestInput> inputs = new List<LinqTestInput>();
             inputs.Add(new LinqTestInput("OrderBy JsonProperty", b => getQuery(b).OrderBy(doc => doc.JsonProperty)));
             inputs.Add(new LinqTestInput("OrderByDescending JsonProperty", b => getQuery(b).OrderByDescending(doc => doc.JsonProperty)));
             inputs.Add(new LinqTestInput("OrderBy DataMember", b => getQuery(b).OrderBy(doc => doc.DataMember)));
@@ -229,7 +229,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestMethod]
         public void TestMemberAssignmentAttributeContract()
         {
-            var inputs = new List<LinqTestInput>();
+            List<LinqTestInput> inputs = new List<LinqTestInput>();
             inputs.Add(new LinqTestInput("MemberAssignment",
                 b => getQuery(b).Select(doc => new Datum()
                 {
@@ -247,7 +247,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestMethod]
         public void TestNewAttributeContract()
         {
-            var inputs = new List<LinqTestInput>();
+            List<LinqTestInput> inputs = new List<LinqTestInput>();
             inputs.Add(new LinqTestInput("New", b => getQuery(b).Select(doc => new Datum2(doc.JsonProperty, doc.DataMember, doc.Default, doc.JsonPropertyAndDataMember))));
             this.ExecuteTestSuite(inputs);
         }

@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Net;
 
-    internal class PartitionKeyRangeBatchExecutionResult
+    internal sealed class PartitionKeyRangeBatchExecutionResult
     {
         public string PartitionKeyRangeId { get; }
 

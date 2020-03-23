@@ -11,6 +11,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
@@ -415,22 +417,25 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
         }
 
-        private class CosmosChangeFeedResultSetIteratorCoreMock : StandByFeedIteratorCore
+        private sealed class CosmosChangeFeedResultSetIteratorCoreMock : FeedIteratorInternal
         {
             public int Iteration = 0;
             public bool HasCalledForceRefresh = false;
+            private readonly StandByFeedIteratorCore standByFeedIteratorCore;
 
-            internal CosmosChangeFeedResultSetIteratorCoreMock(
+            public CosmosChangeFeedResultSetIteratorCoreMock(
                 ContainerCore container,
                 string continuationToken,
                 int? maxItemCount,
-                ChangeFeedRequestOptions options) : base(
-                    clientContext: container.ClientContext,
-                    container: container,
-                    continuationToken: continuationToken,
-                    maxItemCount: maxItemCount,
-                    options: options)
+                ChangeFeedRequestOptions options)
             {
+                this.standByFeedIteratorCore = new StandByFeedIteratorCore(
+                    container.ClientContext,
+                    container,
+                    continuationToken,
+                    maxItemCount,
+                    options);
+
                 List<CompositeContinuationToken> compositeContinuationTokens = new List<CompositeContinuationToken>()
                 {
                     new CompositeContinuationToken()
@@ -442,7 +447,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 string serialized = JsonConvert.SerializeObject(compositeContinuationTokens);
 
-                this.compositeContinuationToken = StandByFeedContinuationToken.CreateAsync("containerRid", serialized, (string containerRid, Documents.Routing.Range<string> ranges, bool forceRefresh) =>
+                this.standByFeedIteratorCore.compositeContinuationToken = StandByFeedContinuationToken.CreateAsync("containerRid", serialized, (string containerRid, Documents.Routing.Range<string> ranges, bool forceRefresh) =>
                 {
                     IReadOnlyList<Documents.PartitionKeyRange> filteredRanges = new List<Documents.PartitionKeyRange>()
                     {
@@ -458,12 +463,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }).Result;
             }
 
-            internal override Task<ResponseMessage> NextResultSetDelegateAsync(
-                string continuationToken,
-                string partitionKeyRangeId,
-                int? maxItemCount,
-                ChangeFeedRequestOptions options,
-                CancellationToken cancellationToken)
+            public override bool HasMoreResults => this.standByFeedIteratorCore.HasMoreResults;
+
+            public override CosmosElement GetCosmsoElementContinuationToken() => this.standByFeedIteratorCore.GetCosmsoElementContinuationToken();
+
+            public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
             {
                 if (this.Iteration++ == 0)
                 {

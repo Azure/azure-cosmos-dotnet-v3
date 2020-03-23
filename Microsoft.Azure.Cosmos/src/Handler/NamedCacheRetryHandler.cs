@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     /// <summary>
     /// Refreshed named cache in-case of Gone with NameCacheIsStale
     /// </summary>
-    internal class NamedCacheRetryHandler : AbstractRetryHandler
+    internal sealed class NamedCacheRetryHandler : AbstractRetryHandler
     {
         public NamedCacheRetryHandler()
         {

@@ -85,24 +85,24 @@ namespace Microsoft.Azure.Cosmos
                     subStatusCode.Value == SubStatusCodes.ReadSessionNotAvailable)
                 {
                     // Clear the session token, because the collection name might be reused.
-                    DefaultTrace.TraceWarning("Clear the the token for named base request {0}", request.ResourceAddress);
+                    DefaultTrace.TraceWarning("Clear the the token for named base request {0}", this.request.ResourceAddress);
 
-                    this.sessionContainer.ClearTokenByCollectionFullname(request.ResourceAddress);
+                    this.sessionContainer.ClearTokenByCollectionFullname(this.request.ResourceAddress);
 
                     this.hasTriggered = true;
 
-                    string oldCollectionRid = request.RequestContext.ResolvedCollectionRid;
+                    string oldCollectionRid = this.request.RequestContext.ResolvedCollectionRid;
 
-                    request.ForceNameCacheRefresh = true;
-                    request.RequestContext.ResolvedCollectionRid = null;
+                    this.request.ForceNameCacheRefresh = true;
+                    this.request.RequestContext.ResolvedCollectionRid = null;
 
                     try
                     {
-                        ContainerProperties collectionInfo = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken);
+                        ContainerProperties collectionInfo = await this.collectionCache.ResolveCollectionAsync(this.request, cancellationToken);
 
                         if (collectionInfo == null)
                         {
-                            DefaultTrace.TraceCritical("Can't recover from session unavailable exception because resolving collection name {0} returned null", request.ResourceAddress);
+                            DefaultTrace.TraceCritical("Can't recover from session unavailable exception because resolving collection name {0} returned null", this.request.ResourceAddress);
                         }
                         else if (!string.IsNullOrEmpty(oldCollectionRid) && !string.IsNullOrEmpty(collectionInfo.ResourceId))
                         {
@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos
                         // When ResolveCollectionAsync throws an exception ignore it because it's an attempt to recover an existing
                         // error. When the recovery fails we return ShouldRetryResult.NoRetry and propaganate the original exception to the client
 
-                        DefaultTrace.TraceCritical("Can't recover from session unavailable exception because resolving collection name {0} failed with {1}", request.ResourceAddress, e.ToString());
+                        DefaultTrace.TraceCritical("Can't recover from session unavailable exception because resolving collection name {0} failed with {1}", this.request.ResourceAddress, e.ToString());
                     }
                 }
             }

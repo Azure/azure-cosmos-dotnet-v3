@@ -649,69 +649,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
         }
 
-        private class CosmosChangeFeedResultSetIteratorCoreMock : StandByFeedIteratorCore
-        {
-            public int Iteration = 0;
-            public bool HasCalledForceRefresh = false;
-
-            internal CosmosChangeFeedResultSetIteratorCoreMock(
-                ContainerCore container,
-                string continuationToken,
-                int? maxItemCount,
-                ChangeFeedRequestOptions options) : base(
-                    clientContext: container.ClientContext,
-                    container: container,
-                    continuationToken: continuationToken,
-                    maxItemCount: maxItemCount,
-                    options: options)
-            {
-                List<CompositeContinuationToken> compositeContinuationTokens = new List<CompositeContinuationToken>()
-                {
-                    new CompositeContinuationToken()
-                    {
-                        Token = null,
-                        Range = new Documents.Routing.Range<string>("A", "B", true, false)
-                    }
-                };
-
-                string serialized = JsonConvert.SerializeObject(compositeContinuationTokens);
-
-                this.compositeContinuationToken = StandByFeedContinuationToken.CreateAsync("containerRid", serialized, (string containerRid, Documents.Routing.Range<string> ranges, bool forceRefresh) =>
-                {
-                    IReadOnlyList<Documents.PartitionKeyRange> filteredRanges = new List<Documents.PartitionKeyRange>()
-                    {
-                        new Documents.PartitionKeyRange() { MinInclusive = "A", MaxExclusive ="B", Id = "0" }
-                    };
-
-                    if (forceRefresh)
-                    {
-                        this.HasCalledForceRefresh = true;
-                    }
-
-                    return Task.FromResult(filteredRanges);
-                }).Result;
-            }
-
-            internal override Task<ResponseMessage> NextResultSetDelegateAsync(
-                string continuationToken,
-                string partitionKeyRangeId,
-                int? maxItemCount,
-                ChangeFeedRequestOptions options,
-                CancellationToken cancellationToken)
-            {
-                if (this.Iteration++ == 0)
-                {
-                    ResponseMessage httpResponse = new ResponseMessage(System.Net.HttpStatusCode.Gone);
-                    httpResponse.Headers.Add(Documents.WFConstants.BackendHeaders.SubStatus, ((uint)Documents.SubStatusCodes.PartitionKeyRangeGone).ToString(CultureInfo.InvariantCulture));
-
-                    return Task.FromResult(httpResponse);
-                }
-
-                return Task.FromResult(new ResponseMessage(System.Net.HttpStatusCode.NotModified));
-            }
-        }
-
-
         public class ToDoActivity
         {
             public string id { get; set; }

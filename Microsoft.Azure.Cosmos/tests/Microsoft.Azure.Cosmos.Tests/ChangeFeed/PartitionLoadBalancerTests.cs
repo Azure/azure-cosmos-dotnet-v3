@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Assert.AreEqual(2, controller.HitCount);
         }
 
-        private class FailingPartitionController : PartitionController
+        private sealed class FailingPartitionController : PartitionController
         {
             public int HitCount { get; private set; }
 

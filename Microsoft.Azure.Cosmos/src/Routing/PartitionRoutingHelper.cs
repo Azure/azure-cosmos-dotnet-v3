@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using Newtonsoft.Json;
     using static Microsoft.Azure.Documents.RntbdConstants;
 
-    internal class PartitionRoutingHelper
+    internal sealed class PartitionRoutingHelper
     {
         public static IReadOnlyList<Range<string>> GetProvidedPartitionKeyRanges(
             Func<string, Exception> createBadRequestException,
@@ -179,7 +179,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// that collection was resolved to outdated Rid by name. Also null can be returned if <paramref name="rangeFromContinuationToken"/>
         /// is not found - this means it was split.
         /// </returns>
-        public virtual async Task<ResolvedRangeInfo> TryGetTargetRangeFromContinuationTokenRangeAsync(
+        public async Task<ResolvedRangeInfo> TryGetTargetRangeFromContinuationTokenRangeAsync(
             IReadOnlyList<Range<string>> providedPartitionKeyRanges,
             IRoutingMapProvider routingMapProvider,
             string collectionRid,
@@ -278,7 +278,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// TryAddPartitionKeyRangeToContinuationTokenAsync
         /// </summary>
         /// <returns><c>false</c> if collectionRid is likely wrong because range was not found. Cache needs to be refreshed probably.</returns>
-        public virtual async Task<bool> TryAddPartitionKeyRangeToContinuationTokenAsync(
+        public async Task<bool> TryAddPartitionKeyRangeToContinuationTokenAsync(
             INameValueCollection backendResponseHeaders,
             IReadOnlyList<Range<string>> providedPartitionKeyRanges,
             IRoutingMapProvider routingMapProvider,
@@ -361,7 +361,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             return true;
         }
 
-        public virtual Range<string> ExtractPartitionKeyRangeFromContinuationToken(INameValueCollection headers, out List<CompositeContinuationToken> compositeContinuationTokens)
+        public Range<string> ExtractPartitionKeyRangeFromContinuationToken(INameValueCollection headers, out List<CompositeContinuationToken> compositeContinuationTokens)
         {
             if (headers == null)
             {

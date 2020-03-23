@@ -132,12 +132,12 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal virtual CosmosDiagnosticsContext DiagnosticsContext { get; }
+        internal CosmosDiagnosticsContext DiagnosticsContext { get; }
 
         /// <summary>
         /// Gets the internal error object.
         /// </summary>
-        internal virtual Documents.Error Error { get; set; }
+        internal Documents.Error Error { get; set; }
 
         /// <summary>
         /// Try to get a header from the cosmos response message

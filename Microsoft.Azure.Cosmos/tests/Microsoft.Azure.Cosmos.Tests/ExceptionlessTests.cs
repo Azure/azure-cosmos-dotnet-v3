@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     [TestClass]
     public class ExceptionlessTests
     {
-        private static Uri resourceUri = new Uri("https://foo.com/dbs/db1/colls/coll1", UriKind.Absolute);
+        private static readonly Uri resourceUri = new Uri("https://foo.com/dbs/db1/colls/coll1", UriKind.Absolute);
 
         [TestMethod]        
         [ExpectedException(typeof(NotFoundException))]
@@ -260,7 +260,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     .ReturnsAsync(sendDirectFunc);
 
             AddressInformation[] addressInformation = GetMockAddressInformation();
-            var mockAddressCache = GetMockAddressCache(addressInformation);
+            Mock<IAddressResolver> mockAddressCache = GetMockAddressCache(addressInformation);
 
             ReplicationPolicy replicationPolicy = new ReplicationPolicy();
             replicationPolicy.MaxReplicaSetSize = 1;
@@ -370,7 +370,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         /// <summary>
         /// This TransportHandler sends the request and watches for DocumentClientExceptions and set a readable flag.
         /// </summary>
-        private class MockTransportHandler: TransportHandler
+        private sealed class MockTransportHandler: TransportHandler
         {
             public bool ProcessMessagesAsyncThrew { get; private set; }
             public int SendAsyncCalls { get; private set; }

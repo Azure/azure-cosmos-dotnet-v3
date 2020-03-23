@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos
     /// on certain types of exceptions. This class provides options for applications to control the
     /// retry behavior.
     /// </remarks>
-    internal class RetryOptions
+    internal sealed class RetryOptions
     {
         internal const int DefaultMaxRetryWaitTimeInSeconds = 30;
         internal const int DefaultMaxRetryAttemptsOnThrottledRequests = 9;

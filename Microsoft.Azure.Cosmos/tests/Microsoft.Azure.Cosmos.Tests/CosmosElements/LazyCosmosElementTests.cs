@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
             }
         }
 
-        private class LazilyDeserializedPerson
+        private sealed class LazilyDeserializedPerson
         {
             private readonly CosmosObject cosmosObject;
 

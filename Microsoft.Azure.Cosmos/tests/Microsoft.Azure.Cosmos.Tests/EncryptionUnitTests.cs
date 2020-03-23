@@ -29,10 +29,10 @@ namespace Microsoft.Azure.Cosmos
         private const CosmosEncryptionAlgorithm Algo = CosmosEncryptionAlgorithm.AE_AES_256_CBC_HMAC_SHA_256_RANDOMIZED;
 
         private TimeSpan cacheTTL = TimeSpan.FromDays(1);
-        private byte[] dek = new byte[] { 1, 2, 3, 4 };
-        private EncryptionKeyWrapMetadata metadata1 = new EncryptionKeyWrapMetadata("metadata1");
-        private EncryptionKeyWrapMetadata metadata2 = new EncryptionKeyWrapMetadata("metadata2");
-        private string metadataUpdateSuffix = "updated";
+        private readonly byte[] dek = new byte[] { 1, 2, 3, 4 };
+        private readonly EncryptionKeyWrapMetadata metadata1 = new EncryptionKeyWrapMetadata("metadata1");
+        private readonly EncryptionKeyWrapMetadata metadata2 = new EncryptionKeyWrapMetadata("metadata2");
+        private readonly string metadataUpdateSuffix = "updated";
 
         private EncryptionTestHandler testHandler;
         private Mock<EncryptionKeyWrapProvider> mockKeyWrapProvider;
@@ -402,7 +402,7 @@ namespace Microsoft.Azure.Cosmos
             return JObject.Load(new JsonTextReader(new StreamReader(stream)));
         }
 
-        private class MyItem
+        private sealed class MyItem
         {
             public static List<string> PathsToEncrypt { get; } = new List<string>() { "/EncStr1", "/EncInt" };
 
@@ -438,7 +438,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private class EncryptionPropertiesComparer : IEqualityComparer<EncryptionProperties>
+        private sealed class EncryptionPropertiesComparer : IEqualityComparer<EncryptionProperties>
         {
             public bool Equals(EncryptionProperties x, EncryptionProperties y)
             {
@@ -456,7 +456,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private class EncryptionTestHandler : TestHandler
+        private sealed class EncryptionTestHandler : TestHandler
         {
             private readonly Func<RequestMessage, Task<ResponseMessage>> func;
 

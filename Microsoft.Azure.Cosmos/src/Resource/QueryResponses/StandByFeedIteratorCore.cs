@@ -21,15 +21,15 @@ namespace Microsoft.Azure.Cosmos
     /// Legacy, see <see cref="ChangeFeedIteratorCore"/>.
     /// </remarks>
     /// <seealso cref="ChangeFeedIteratorCore"/>
-    internal class StandByFeedIteratorCore : FeedIteratorInternal
+    internal sealed class StandByFeedIteratorCore : FeedIteratorInternal
     {
         internal StandByFeedContinuationToken compositeContinuationToken;
 
         private readonly CosmosClientContext clientContext;
         private readonly ContainerCore container;
+        private readonly int? maxItemCount;
         private string containerRid;
         private string continuationToken;
-        private int? maxItemCount;
 
         internal StandByFeedIteratorCore(
             CosmosClientContext clientContext,
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// The query options for the result set
         /// </summary>
-        protected readonly ChangeFeedRequestOptions changeFeedOptions;
+        private readonly ChangeFeedRequestOptions changeFeedOptions;
 
         public override bool HasMoreResults => true;
 
@@ -152,7 +152,7 @@ namespace Microsoft.Azure.Cosmos
             return false;
         }
 
-        internal virtual Task<ResponseMessage> NextResultSetDelegateAsync(
+        internal Task<ResponseMessage> NextResultSetDelegateAsync(
             string continuationToken,
             string partitionKeyRangeId,
             int? maxItemCount,

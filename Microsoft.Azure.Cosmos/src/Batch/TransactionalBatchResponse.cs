@@ -141,7 +141,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal virtual CosmosSerializerCore SerializerCore { get; }
 
-        internal IReadOnlyList<ItemBatchOperation> Operations { get; set; }
+        internal virtual IReadOnlyList<ItemBatchOperation> Operations { get; set; }
 
         /// <summary>
         /// Gets the result of the operation at the provided index in the batch.

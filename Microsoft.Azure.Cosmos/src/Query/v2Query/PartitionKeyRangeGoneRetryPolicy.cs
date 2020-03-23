@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
 
-    internal class PartitionKeyRangeGoneRetryPolicy : IDocumentClientRetryPolicy
+    internal sealed class PartitionKeyRangeGoneRetryPolicy : IDocumentClientRetryPolicy
     {
         private readonly CollectionCache collectionCache;
         private readonly IDocumentClientRetryPolicy nextRetryPolicy;

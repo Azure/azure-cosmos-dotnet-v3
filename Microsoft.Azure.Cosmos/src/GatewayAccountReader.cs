@@ -19,8 +19,8 @@ namespace Microsoft.Azure.Cosmos
         private readonly bool hasAuthKeyResourceToken = false;
         private readonly string authKeyResourceToken = string.Empty;
         private readonly HttpMessageHandler messageHandler;
-        private Uri serviceEndpoint;
-        private ApiType apiType;
+        private readonly Uri serviceEndpoint;
+        private readonly ApiType apiType;
 
         public GatewayAccountReader(Uri serviceEndpoint,
                                                  IComputeHash stringHMACSHA256Helper,

@@ -1598,7 +1598,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// - Negative Value: The length is encoded as an integer of size equals to abs(value) following the TypeMarker byte
             /// - Zero Value: The length is unknown (for instance an unassigned type marker)
             /// </summary>
-            private static int[] lengths =
+            private static readonly int[] lengths =
             {
                 // Encoded literal integer value (32 values)
                 1, 1, 1, 1, 1, 1, 1, 1,
@@ -1782,7 +1782,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// - Non-Negative Value: The TypeMarker encodes the string length
             /// - Negative Value: System or user dictionary encoded string, or encoded string length that follows the TypeMarker
             /// </summary>
-            private static int[] lengths =
+            private static readonly int[] lengths =
             {
                 // Encoded literal integer value (32 values)
                 NotStr, NotStr, NotStr, NotStr, NotStr, NotStr, NotStr, NotStr,
@@ -1912,7 +1912,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <summary>
             /// Defines the offset of the first item in an array or object
             /// </summary>
-            private static int[] offsets =
+            private static readonly int[] offsets =
             {
                 // Encoded literal integer value (32 values)
                 0, 0, 0, 0, 0, 0, 0, 0,

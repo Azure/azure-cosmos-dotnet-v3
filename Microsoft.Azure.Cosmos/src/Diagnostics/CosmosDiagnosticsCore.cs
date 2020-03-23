@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     ///  Contains the cosmos diagnostic information for the current request to Azure Cosmos DB service.
     /// </summary>
-    internal class CosmosDiagnosticsCore : CosmosDiagnostics
+    internal sealed class CosmosDiagnosticsCore : CosmosDiagnostics
     {
         internal CosmosDiagnosticsCore(CosmosDiagnosticsContext diagnosticsContext)
         {

@@ -7,7 +7,7 @@ using Microsoft.Azure.Documents;
 
 namespace Microsoft.Azure.Cosmos.Tests
 {
-    internal class ToDoItem
+    internal sealed class ToDoItem
     {
         public string id { get; set; }
         public string pk { get; set; }

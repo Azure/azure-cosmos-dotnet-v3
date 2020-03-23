@@ -26,10 +26,10 @@ namespace Microsoft.Azure.Cosmos.Handlers
     /// It doesn't participates in split logic directly but on split retry, will select the new 
     /// appropriate partition-key-range id after a forced refresh of the CollectionRoutingMap.
     /// </summary>
-    internal class PartitionKeyRangeHandler : RequestHandler
+    internal sealed class PartitionKeyRangeHandler : RequestHandler
     {
         private readonly CosmosClient client;
-        private PartitionRoutingHelper partitionRoutingHelper;
+        private readonly PartitionRoutingHelper partitionRoutingHelper;
         public PartitionKeyRangeHandler(CosmosClient client, PartitionRoutingHelper partitionRoutingHelper = null)
         {
             if (client == null)

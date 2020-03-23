@@ -648,7 +648,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(10, testHandlerHitCount, "A stream operation did not make it to the handler");
         }
 
-        private class ExecutorContainerCore : ContainerCore
+        private sealed class ExecutorContainerCore : ContainerCore
         {
             public readonly Mock<BatchAsyncContainerExecutor> MockedExecutor = new Mock<BatchAsyncContainerExecutor>();
             public ExecutorContainerCore(
@@ -667,7 +667,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             internal override BatchAsyncContainerExecutor InitializeBatchExecutorForContainer() => this.MockedExecutor.Object;
         }
 
-        private class ExecutorWithThrottlingContainerCore : ContainerCore
+        private sealed class ExecutorWithThrottlingContainerCore : ContainerCore
         {
             public readonly Mock<BatchAsyncContainerExecutor> MockedExecutor = new Mock<BatchAsyncContainerExecutor>();
             public ExecutorWithThrottlingContainerCore(

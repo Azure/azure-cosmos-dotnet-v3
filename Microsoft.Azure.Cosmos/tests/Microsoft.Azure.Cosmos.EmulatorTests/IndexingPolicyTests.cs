@@ -437,7 +437,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private static Type GetTypeFromAssembly(Assembly assembly, string typeName)
         {
             string qualifiedName = $"{assembly.GetName().Name}.{typeName}";
-            Type type = assembly.GetTypes().Where((candidateType) => candidateType.Name == (typeName)).FirstOrDefault();
+            Type type = assembly.GetTypes().Where((candidateType) => candidateType.Name == typeName).FirstOrDefault();
             if (type == null)
             {
                 Assert.Fail($"Failed to get the type:{typeName} from assembly:{assembly.GetName().Name}");
@@ -482,7 +482,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
 
         # region EqualityComparers
-        private class CompositePathEqualityComparer : IEqualityComparer<CompositePath>
+        private sealed class CompositePathEqualityComparer : IEqualityComparer<CompositePath>
         {
             public bool Equals(CompositePath compositePath1, CompositePath compositePath2)
             {
@@ -515,7 +515,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        private class CompositePathsEqualityComparer : IEqualityComparer<HashSet<CompositePath>>
+        private sealed class CompositePathsEqualityComparer : IEqualityComparer<HashSet<CompositePath>>
         {
             private static readonly CompositePathEqualityComparer compositePathEqualityComparer = new CompositePathEqualityComparer();
             public bool Equals(HashSet<CompositePath> compositePaths1, HashSet<CompositePath> compositePaths2)
@@ -550,7 +550,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        private class IndexEqualityComparer : IEqualityComparer<Index>
+        private sealed class IndexEqualityComparer : IEqualityComparer<Index>
         {
             public bool Equals(Index index1, Index index2)
             {
@@ -638,7 +638,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        private class IncludedPathEqualityComparer : IEqualityComparer<IncludedPath>
+        private sealed class IncludedPathEqualityComparer : IEqualityComparer<IncludedPath>
         {
             private static readonly IndexEqualityComparer indexEqualityComparer = new IndexEqualityComparer();
             public bool Equals(IncludedPath includedPath1, IncludedPath includedPath2)
@@ -677,7 +677,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        private class ExcludedPathEqualityComparer : IEqualityComparer<ExcludedPath>
+        private sealed class ExcludedPathEqualityComparer : IEqualityComparer<ExcludedPath>
         {
             public bool Equals(ExcludedPath excludedPath1, ExcludedPath excludedPath2)
             {
@@ -691,7 +691,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     return false;
                 }
 
-                return (excludedPath1.Path == excludedPath2.Path);
+                return excludedPath1.Path == excludedPath2.Path;
             }
 
             public int GetHashCode(ExcludedPath excludedPath1)

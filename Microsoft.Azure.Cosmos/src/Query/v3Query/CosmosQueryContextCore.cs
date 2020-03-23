@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Documents;
 
-    internal class CosmosQueryContextCore : CosmosQueryContext
+    internal sealed class CosmosQueryContextCore : CosmosQueryContext
     {
         private readonly QueryRequestOptions queryRequestOptions;
         private readonly object diagnosticLock = new object();

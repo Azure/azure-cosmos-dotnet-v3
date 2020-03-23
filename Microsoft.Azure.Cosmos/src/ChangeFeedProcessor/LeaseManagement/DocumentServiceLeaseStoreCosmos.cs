@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             return this.containerNamePrefix + ".lock";
         }
 
-        private class LockDocument
+        private sealed class LockDocument
         {
             [JsonProperty("id")]
             public string Id { get; set; }

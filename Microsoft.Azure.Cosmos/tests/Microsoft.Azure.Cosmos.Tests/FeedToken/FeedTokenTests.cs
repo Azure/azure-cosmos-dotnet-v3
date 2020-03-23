@@ -370,7 +370,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
         }
 
-        private class MultiRangeMockDocumentClient : MockDocumentClient
+        private sealed class MultiRangeMockDocumentClient : MockDocumentClient
         {
             public List<Documents.PartitionKeyRange> AvailablePartitionKeyRanges = new List<Documents.PartitionKeyRange>() {
                 new Documents.PartitionKeyRange() { MinInclusive = "A", MaxExclusive ="B", Id = "0" },
@@ -384,7 +384,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
-        private class PKRangeSplitMockDocumentClient : MockDocumentClient
+        private sealed class PKRangeSplitMockDocumentClient : MockDocumentClient
         {
             public List<Documents.PartitionKeyRange> AvailablePartitionKeyRanges = new List<Documents.PartitionKeyRange>() {
                 new Documents.PartitionKeyRange() { MinInclusive = "A", MaxExclusive ="B", Id = "1", Parents = new System.Collections.ObjectModel.Collection<string>(){ "0" } },

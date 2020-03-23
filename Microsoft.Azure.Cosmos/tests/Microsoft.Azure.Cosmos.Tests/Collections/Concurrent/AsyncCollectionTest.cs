@@ -144,7 +144,7 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
             await new AsyncCollection<int>(new TestProducerConsumerCollection<int>()).PeekAsync();
         }
 
-        private class TestProducerConsumerCollection<T> : IProducerConsumerCollection<T>
+        private sealed class TestProducerConsumerCollection<T> : IProducerConsumerCollection<T>
         {
             public void CopyTo(T[] array, int index)
             {

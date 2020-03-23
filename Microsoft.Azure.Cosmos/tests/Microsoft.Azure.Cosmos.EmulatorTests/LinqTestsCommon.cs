@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
-    internal class LinqTestsCommon
+    internal sealed class LinqTestsCommon
     {
         /// <summary>
         /// Compare two list of anonymous objects

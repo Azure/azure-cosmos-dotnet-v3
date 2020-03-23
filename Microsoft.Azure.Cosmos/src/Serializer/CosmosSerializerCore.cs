@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// This is an interface to allow a custom serializer to be used by the CosmosClient
     /// </summary>
-    internal class CosmosSerializerCore
+    internal sealed class CosmosSerializerCore
     {
         private static readonly CosmosSerializer propertiesSerializer = new CosmosJsonSerializerWrapper(new CosmosJsonDotNetSerializer());
         private readonly CosmosSerializer customSerializer;

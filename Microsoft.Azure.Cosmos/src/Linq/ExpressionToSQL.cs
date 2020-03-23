@@ -75,10 +75,10 @@ namespace Microsoft.Azure.Cosmos.Linq
             public const string Where = "Where";
         }
 
-        private static string SqlRoot = "root";
-        private static string DefaultParameterName = "v";
-        private static bool usePropertyRef = false;
-        private static SqlIdentifier RootIdentifier = SqlIdentifier.Create(SqlRoot);
+        private static readonly string SqlRoot = "root";
+        private static readonly string DefaultParameterName = "v";
+        private static readonly bool usePropertyRef = false;
+        private static readonly SqlIdentifier RootIdentifier = SqlIdentifier.Create(SqlRoot);
 
         /// <summary>
         /// Toplevel entry point.

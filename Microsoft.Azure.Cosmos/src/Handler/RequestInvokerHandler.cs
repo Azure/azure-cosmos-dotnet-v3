@@ -15,14 +15,14 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using Microsoft.Azure.Documents.Routing;
 
     /// <summary>
-    /// HttpMessageHandler can only be invoked by derived classed or internal classes inside http assembly
+    /// HttpMessageHandler can only be invoked by derived classed or internal sealed classes inside http assembly
     /// </summary>
-    internal class RequestInvokerHandler : RequestHandler
+    internal sealed class RequestInvokerHandler : RequestHandler
     {
         private static (bool, ResponseMessage) clientIsValid = (false, null);
         private readonly CosmosClient client;
+        private readonly Cosmos.ConsistencyLevel? RequestedClientConsistencyLevel;
         private Cosmos.ConsistencyLevel? AccountConsistencyLevel = null;
-        private Cosmos.ConsistencyLevel? RequestedClientConsistencyLevel;
 
         public RequestInvokerHandler(
             CosmosClient client,
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             return await base.SendAsync(request, cancellationToken);
         }
 
-        public virtual async Task<T> SendAsync<T>(
+        public async Task<T> SendAsync<T>(
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             return responseCreator(responseMessage);
         }
 
-        public virtual async Task<ResponseMessage> SendAsync(
+        public async Task<ResponseMessage> SendAsync(
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,

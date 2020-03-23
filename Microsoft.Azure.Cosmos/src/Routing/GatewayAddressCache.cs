@@ -21,14 +21,12 @@ namespace Microsoft.Azure.Cosmos.Routing
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Routing;
 
-    internal class GatewayAddressCache : IAddressCache, IDisposable
+    internal sealed class GatewayAddressCache : IAddressCache, IDisposable
     {
         private const string protocolFilterFormat = "{0} eq {1}";
 
         private const string AddressResolutionBatchSize = "AddressResolutionBatchSize";
         private const int DefaultBatchSize = 50;
-
-        private readonly Uri serviceEndpoint;
         private readonly Uri addressEndpoint;
 
         private readonly AsyncCache<PartitionKeyRangeIdentity, PartitionAddressInformation> serverPartitionAddressCache;
@@ -59,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.addressEndpoint = new Uri(serviceEndpoint + "/" + Paths.AddressPathSegment);
             this.protocol = protocol;
             this.tokenProvider = tokenProvider;
-            this.serviceEndpoint = serviceEndpoint;
+            this.ServiceEndpoint = serviceEndpoint;
             this.serviceConfigReader = serviceConfigReader;
             this.serverPartitionAddressCache = new AsyncCache<PartitionKeyRangeIdentity, PartitionAddressInformation>();
             this.suboptimalServerPartitionTimestamps = new ConcurrentDictionary<PartitionKeyRangeIdentity, DateTime>();
@@ -86,13 +84,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.httpClient.AddApiTypeHeader(apiType);
         }
 
-        public Uri ServiceEndpoint
-        {
-            get
-            {
-                return this.serviceEndpoint;
-            }
-        }
+        public Uri ServiceEndpoint { get; }
 
         [SuppressMessage("", "AsyncFixer02", Justification = "Multi task completed with await")]
         [SuppressMessage("", "AsyncFixer04", Justification = "Multi task completed outside of await")]

@@ -12,8 +12,8 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class MediaStream : Stream
     {
-        private HttpResponseMessage responseMessage;
-        private Stream contentStream;
+        private readonly HttpResponseMessage responseMessage;
+        private readonly Stream contentStream;
         private bool isDisposed;
 
         public MediaStream(HttpResponseMessage responseMessage, Stream contentStream)

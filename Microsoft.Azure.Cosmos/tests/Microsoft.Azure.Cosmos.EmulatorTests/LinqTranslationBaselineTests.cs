@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             return objA.Equals(objB);
         }
 
-        internal class DataObject : LinqTestObject
+        internal sealed class DataObject : LinqTestObject
         {
             public double NumericField;
             public decimal DecimalField;

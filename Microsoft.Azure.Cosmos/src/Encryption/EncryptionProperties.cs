@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
-    internal class EncryptionProperties
+    internal sealed class EncryptionProperties
     {
         [JsonProperty(PropertyName = Constants.Properties.EncryptionFormatVersion)]
         public int EncryptionFormatVersion { get; }

@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     [TestClass]
     public class BatchExecUtilsUnitTests
     {
-        private Random random = new Random();
+        private readonly Random random = new Random();
 
         [TestMethod]
         [Owner("abpai")]
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         /// Caller controls max count actually set into the buffer during Read() 
         /// to simulate Socket like read.
         /// </summary>
-        private class TestSeekableStream : Stream
+        private sealed class TestSeekableStream : Stream
         {
             private readonly int maxLengthToReturnPerRead;
 
@@ -132,9 +132,9 @@ namespace Microsoft.Azure.Cosmos.Tests
         /// <summary>
         /// Non-seekable stream to test Read() where count actually set into the buffer can be controlled to simulate Socket like read.
         /// </summary>
-        private class TestNonSeekableStream : Stream
+        private sealed class TestNonSeekableStream : Stream
         {
-            private byte[] data;
+            private readonly byte[] data;
 
             private int currentIndex;
 

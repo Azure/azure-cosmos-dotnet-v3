@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// This class acts as a wrapper over <see cref="DataEncryptionKeyCore"/> for environments that use SynchronizationContext.
     /// </summary>
-    internal class DataEncryptionKeyInlineCore : DataEncryptionKey
+    internal sealed class DataEncryptionKeyInlineCore : DataEncryptionKey
     {
         private readonly DataEncryptionKeyCore dataEncryptionKey;
 

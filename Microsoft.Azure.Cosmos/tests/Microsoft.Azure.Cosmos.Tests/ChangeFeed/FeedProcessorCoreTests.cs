@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     [TestCategory("ChangeFeed")]
     public class FeedProcessorCoreTests
     {
-        private static ProcessorOptions DefaultSettings = new ProcessorOptions() {
+        private static readonly ProcessorOptions DefaultSettings = new ProcessorOptions() {
             FeedPollDelay = TimeSpan.FromSeconds(0)
         };
 
@@ -140,9 +140,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             public string id { get; set; }
         }
 
-        private class CustomSerializer : CosmosSerializer
+        private sealed class CustomSerializer : CosmosSerializer
         {
-            private CosmosSerializer cosmosSerializer = new CosmosJsonDotNetSerializer();
+            private readonly CosmosSerializer cosmosSerializer = new CosmosJsonDotNetSerializer();
             public int FromStreamCalled = 0;
             public int ToStreamCalled = 0;
 
@@ -159,9 +159,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             }
         }
 
-        private class CustomSerializerFails: CosmosSerializer
+        private sealed class CustomSerializerFails: CosmosSerializer
         {
-            private CosmosSerializer cosmosSerializer = new CosmosJsonDotNetSerializer();
+            private readonly CosmosSerializer cosmosSerializer = new CosmosJsonDotNetSerializer();
             public override T FromStream<T>(Stream stream)
             {
                 throw new CustomException();
@@ -174,7 +174,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         }
 
 
-        private class CustomException : Exception
+        private sealed class CustomException : Exception
         {
 
         }

@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Monitoring
     /// <summary>
     /// A record used in the health monitoring.
     /// </summary>
-    internal class HealthMonitoringRecord
+    internal sealed class HealthMonitoringRecord
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="HealthMonitoringRecord"/> class.

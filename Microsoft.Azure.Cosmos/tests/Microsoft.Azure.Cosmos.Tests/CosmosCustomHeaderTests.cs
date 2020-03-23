@@ -11,8 +11,8 @@ namespace Microsoft.Azure.Cosmos.Tests
     public class CosmosCustomHeaderTests
     {
         private string property;
-        private Action<string> setter;
-        private Func<string> getter;
+        private readonly Action<string> setter;
+        private readonly Func<string> getter;
         public CosmosCustomHeaderTests()
         {
             this.setter = (string value) => { this.property = value; };
@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void GetterAndSetterGetCalled()
         {
             string value = Guid.NewGuid().ToString();
-            var header = new CosmosCustomHeader(this.getter, this.setter);
+            CosmosCustomHeader header = new CosmosCustomHeader(this.getter, this.setter);
             Assert.IsNull(this.getter());
             this.setter(value);
             Assert.AreEqual(value, this.getter());

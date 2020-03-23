@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Exceptions
     /// Exception occurred when lease is lost, that would typically happen when it is taken by another host. Other cases: communication failure, number of retries reached, lease not found.
     /// </summary>
     [Serializable]
-    internal class LeaseLostException : Exception
+    internal sealed class LeaseLostException : Exception
     {
         private static readonly string DefaultMessage = "The lease was lost.";
 
@@ -75,18 +75,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Exceptions
         {
             this.Lease = lease;
             this.IsGone = isGone;
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="LeaseLostException" /> class using default values.
-        /// </summary>
-        /// <param name="info">The SerializationInfo object that holds serialized object data for the exception being thrown.</param>
-        /// <param name="context">The StreamingContext that contains contextual information about the source or destination.</param>
-        protected LeaseLostException(SerializationInfo info, StreamingContext context)
-            : base(info, context)
-        {
-            this.Lease = (DocumentServiceLease)info.GetValue("Lease", typeof(DocumentServiceLease));
-            this.IsGone = (bool)info.GetValue("IsGone", typeof(bool));
         }
 
         /// <summary>

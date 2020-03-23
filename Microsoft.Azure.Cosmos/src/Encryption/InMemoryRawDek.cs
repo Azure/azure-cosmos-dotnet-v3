@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
 
-    internal class InMemoryRawDek
+    internal sealed class InMemoryRawDek
     {
         public byte[] RawDek { get; }
 

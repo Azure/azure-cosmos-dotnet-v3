@@ -19,11 +19,11 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents.Collections;
     using Newtonsoft.Json;
 
-    internal class GatewayStoreClient : TransportClient
+    internal sealed class GatewayStoreClient : TransportClient
     {
         private readonly ICommunicationEventSource eventSource;
-        private HttpClient httpClient;
-        private JsonSerializerSettings SerializerSettings;
+        private readonly HttpClient httpClient;
+        private readonly JsonSerializerSettings SerializerSettings;
 
         public GatewayStoreClient(
             HttpClient httpClient,

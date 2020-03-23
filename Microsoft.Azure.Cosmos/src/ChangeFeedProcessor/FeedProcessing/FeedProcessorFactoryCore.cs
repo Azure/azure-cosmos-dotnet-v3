@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
     using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
 
-    internal class FeedProcessorFactoryCore<T> : FeedProcessorFactory<T>
+    internal sealed class FeedProcessorFactoryCore<T> : FeedProcessorFactory<T>
     {
         private readonly ContainerCore container;
         private readonly ChangeFeedProcessorOptions changeFeedProcessorOptions;

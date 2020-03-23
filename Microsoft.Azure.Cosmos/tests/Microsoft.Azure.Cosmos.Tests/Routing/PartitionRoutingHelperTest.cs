@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     [TestClass]
     public class PartitionRoutingHelperTest
     {
-        PartitionRoutingHelper partitionRoutingHelper;
+        readonly PartitionRoutingHelper partitionRoutingHelper;
         public PartitionRoutingHelperTest()
         {
             this.partitionRoutingHelper = new PartitionRoutingHelper();
@@ -251,7 +251,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
         }
 
-        private class RoutingMapProvider : IRoutingMapProvider
+        private sealed class RoutingMapProvider : IRoutingMapProvider
         {
             private readonly CollectionRoutingMap collectionRoutingMap;
 
@@ -276,7 +276,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
         }
 
-        private class TestSet<T>
+        private sealed class TestSet<T>
         {
             [JsonProperty(PropertyName = "positive")]
             public T[] Postive { get; set; }
@@ -285,7 +285,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             public T[] Negative { get; set; }
         }
 
-        private class ExtractPartitionKeyRangeFromHeadersTestData
+        private sealed class ExtractPartitionKeyRangeFromHeadersTestData
         {
             [JsonProperty(PropertyName = "compositeContinuationToken")]
             public string CompositeContinuationToken { get; set; }
@@ -297,7 +297,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             public Range<string> PartitionKeyRange { get; set; }
         }
 
-        private class AddFormattedContinuationToHeaderTestUnit
+        private sealed class AddFormattedContinuationToHeaderTestUnit
         {
             [JsonProperty(PropertyName = "inputCompositeContinuationToken")]
             public string InputCompositeContinuationToken { get; set; }
@@ -312,7 +312,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             public List<Range<string>> ProvidedRanges { get; set; }
         }
 
-        private class AddFormattedContinuationToHeaderTestData
+        private sealed class AddFormattedContinuationToHeaderTestData
         {
             [JsonProperty(PropertyName = "testSet")]
             public TestSet<AddFormattedContinuationToHeaderTestUnit> TestSet { get; set; }
@@ -321,7 +321,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             public PartitionKeyRange[] RoutingMap { get; set; }
         }
 
-        private class GetPartitionRoutingInfoTestCase
+        private sealed class GetPartitionRoutingInfoTestCase
         {
             [JsonProperty(PropertyName = "providedRanges")]
             public List<Range<string>> ProvidedRanges { get; set; }
@@ -330,7 +330,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             public List<string> RoutingRangeIds { get; set; }
         }
 
-        private class GetPartitionRoutingInfoTestData
+        private sealed class GetPartitionRoutingInfoTestData
         {
             [JsonProperty(PropertyName = "testCases")]
             public GetPartitionRoutingInfoTestCase[] TestCases { get; set; }

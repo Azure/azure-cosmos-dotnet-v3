@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Documents;
 
-    internal class NonRetriableInvalidPartitionExceptionRetryPolicy : IDocumentClientRetryPolicy
+    internal sealed class NonRetriableInvalidPartitionExceptionRetryPolicy : IDocumentClientRetryPolicy
     {
         private readonly CollectionCache clientCollectionCache;
 

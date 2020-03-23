@@ -56,11 +56,11 @@ namespace Microsoft.Azure.Cosmos
 
         public Database Database { get; }
 
-        internal virtual Uri LinkUri { get; }
+        internal Uri LinkUri { get; }
 
-        internal virtual CosmosClientContext ClientContext { get; }
+        internal CosmosClientContext ClientContext { get; }
 
-        internal virtual BatchAsyncContainerExecutor BatchExecutor { get; }
+        internal BatchAsyncContainerExecutor BatchExecutor { get; }
 
         public override Conflicts Conflicts { get; }
 
@@ -381,13 +381,13 @@ namespace Microsoft.Azure.Cosmos
         }
 
         // Name based look-up, needs re-computation and can't be cached
-        internal virtual async Task<string> GetRIDAsync(CancellationToken cancellationToken)
+        internal async Task<string> GetRIDAsync(CancellationToken cancellationToken)
         {
             ContainerProperties containerProperties = await this.GetCachedContainerPropertiesAsync(cancellationToken);
             return containerProperties?.ResourceId;
         }
 
-        internal virtual Task<PartitionKeyDefinition> GetPartitionKeyDefinitionAsync(CancellationToken cancellationToken = default(CancellationToken))
+        internal Task<PartitionKeyDefinition> GetPartitionKeyDefinitionAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.GetCachedContainerPropertiesAsync(cancellationToken)
                             .ContinueWith(containerPropertiesTask => containerPropertiesTask.Result?.PartitionKey, cancellationToken);
@@ -398,7 +398,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellationToken"></param>
         /// <returns>Returns the partition key path</returns>
-        internal virtual async Task<string[]> GetPartitionKeyPathTokensAsync(CancellationToken cancellationToken = default(CancellationToken))
+        internal async Task<string[]> GetPartitionKeyPathTokensAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             ContainerProperties containerProperties = await this.GetCachedContainerPropertiesAsync(cancellationToken);
             if (containerProperties == null)
@@ -430,7 +430,7 @@ namespace Microsoft.Azure.Cosmos
             return containerProperties.GetNoneValue();
         }
 
-        internal virtual Task<CollectionRoutingMap> GetRoutingMapAsync(CancellationToken cancellationToken)
+        internal Task<CollectionRoutingMap> GetRoutingMapAsync(CancellationToken cancellationToken)
         {
             string collectionRID = null;
             return this.GetRIDAsync(cancellationToken)

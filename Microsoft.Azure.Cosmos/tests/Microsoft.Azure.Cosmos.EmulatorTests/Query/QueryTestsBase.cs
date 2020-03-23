@@ -834,7 +834,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             return items;
         }
 
-        private class LocalCounter
+        private sealed class LocalCounter
         {
             private long value;
 

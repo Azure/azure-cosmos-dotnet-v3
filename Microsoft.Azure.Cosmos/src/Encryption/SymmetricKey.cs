@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos
         /// Returns a copy of the plain text key
         /// This is needed for actual encryption/decryption.
         /// </summary>
-        internal virtual byte[] RootKey
+        internal byte[] RootKey
         {
             get
             {
@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos
         /// Computes SHA256 value of the plain text key bytes
         /// </summary>
         /// <returns>A string containing SHA256 hash of the root key</returns>
-        internal virtual string GetKeyHash()
+        internal string GetKeyHash()
         {
             return SecurityUtility.GetSHA256Hash(this.RootKey);
         }
@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>
         /// Returns the length of the root key
         /// </returns>
-        internal virtual int Length()
+        internal int Length()
         {
             return this.rootKey.Length;
         }

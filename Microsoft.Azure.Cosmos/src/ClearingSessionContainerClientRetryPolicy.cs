@@ -77,9 +77,9 @@ namespace Microsoft.Azure.Cosmos
                     subStatusCode.Value == SubStatusCodes.ReadSessionNotAvailable)
                 {
                     // Clear the session token, because the collection name might be reused.
-                    DefaultTrace.TraceWarning("Clear the the token for named base request {0}", request.ResourceAddress);
+                    DefaultTrace.TraceWarning("Clear the the token for named base request {0}", this.request.ResourceAddress);
 
-                    this.sessionContainer.ClearTokenByCollectionFullname(request.ResourceAddress);
+                    this.sessionContainer.ClearTokenByCollectionFullname(this.request.ResourceAddress);
 
                     this.hasTriggered = true;
                 }

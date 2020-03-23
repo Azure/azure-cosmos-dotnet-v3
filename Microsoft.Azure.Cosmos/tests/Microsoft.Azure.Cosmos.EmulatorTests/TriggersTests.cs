@@ -289,7 +289,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             SelflinkValidator.ValidateTriggerSelfLink(cosmosResponse.Resource.SelfLink);
         }
 
-        private class Job
+        private sealed class Job
         {
             [JsonProperty(PropertyName = "id")]
             public Guid Id { get; set; }
@@ -322,7 +322,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return createResponse;
         }
 
-        private class FaultySerializer : CosmosSerializer
+        private sealed class FaultySerializer : CosmosSerializer
         {
             public override T FromStream<T>(Stream stream)
             {

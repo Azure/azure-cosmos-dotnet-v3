@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     public sealed class OfferTests
     {
 
-        private PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/id" }), Kind = PartitionKind.Hash };
+        private readonly PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/id" }), Kind = PartitionKind.Hash };
 
         private struct TestCase
         {
@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             public override string ToString()
             {
                 return string.Format(CultureInfo.CurrentCulture, "Test case: Version {7} OfferThroughput {0}, errorExpected {1}, disjointRangeExpected {2}, low1 {3}, high1 {4}, low2 {5}, high2 {6}, OfferType {7}",
-                    offerThroughput, errorExpected, disjointRangeExpected, lowerRange1, higherRange1, lowerRange2, higherRange2, this.clientVersion, offerType ?? "null");
+                    this.offerThroughput, this.errorExpected, this.disjointRangeExpected, this.lowerRange1, this.higherRange1, this.lowerRange2, this.higherRange2, this.clientVersion, this.offerType ?? "null");
             }
         }
 
@@ -89,11 +89,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             public override string ToString()
             {
-                provisionedStoragePerPartition = 0;
-                expectedDefaultOfferThroughput = 0;
-                offerThroughput = 0;
+                this.provisionedStoragePerPartition = 0;
+                this.expectedDefaultOfferThroughput = 0;
+                this.offerThroughput = 0;
                 return string.Format(CultureInfo.CurrentCulture, "Test case: OfferThroughput = {0}, provisionedStorage = {1} GB, expectedDefaultThroughput = {2}",
-                    offerThroughput, provisionedStoragePerPartition, expectedDefaultOfferThroughput);
+                    this.offerThroughput, this.provisionedStoragePerPartition, this.expectedDefaultOfferThroughput);
             }
         }
 
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestInitialize]
         public void TestInitialize()
         {
-            using (var client = TestCommon.CreateClient(true))
+            using (DocumentClient client = TestCommon.CreateClient(true))
             {
                 TestCommon.DeleteAllDatabasesAsync().Wait();
             }
@@ -151,7 +151,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             int numRetries = 3;
             for (int retry = 0;
-                ((retry < numRetries) && !(offer is Offer));
+                (retry < numRetries) && !(offer is Offer);
                 retry++)
             {
                 DefaultTrace.TraceInformation("Retry attempt {0}..", retry);
@@ -165,7 +165,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             // let it fail despite retries if config override has not taken effect
-            OfferV2 offerV2 = ((OfferV2)offer);
+            OfferV2 offerV2 = (OfferV2)offer;
             Assert.AreEqual("Invalid", offerV2.OfferType);
             Assert.AreEqual(offerV2.OfferVersion, Constants.Offers.OfferVersion_V2);
             Assert.AreEqual(400, offerV2.Content.OfferThroughput);
@@ -191,7 +191,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 string databaseLink = dbResponse.Resource.SelfLink;
 
-                for (var i = 0; i < numCollections; ++i)
+                for (int i = 0; i < numCollections; ++i)
                 {
                     // Create collections.
                     ResourceResponse<DocumentCollection> collResponse =
@@ -202,7 +202,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         },
                         new RequestOptions
                         {
-                            OfferThroughput = ((i + 1) * 1000)
+                            OfferThroughput = (i + 1) * 1000
                         });
                     Assert.AreEqual(HttpStatusCode.Created, collResponse.StatusCode);
                     collectionsLink.Add(collResponse.Resource.SelfLink);
@@ -214,7 +214,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 OfferTests.ValidateOfferCount(offerResponse, collectionsLink);
 
                 string collectionLink = null;
-                for (var i = 0; i < numCollections; ++i)
+                for (int i = 0; i < numCollections; ++i)
                 {
                     collectionLink = collectionsLink.SingleOrDefault(collLink => collLink == offerResponse.ElementAt(i).ResourceLink);
                     Offer offerForCollection = offerList.Single(offerTuple => offerTuple.Item1 == collectionLink).Item2;
@@ -262,7 +262,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                                         }, headers)).ToArray();
 
                 List<Offer> queryResults = new List<Offer>();
-                foreach (var collection in collections)
+                foreach (DocumentCollection collection in collections)
                 {
                     queryResults.Clear();
                     IQueryable<Offer> offerQuery = from offer in client.CreateOfferQuery()
@@ -319,7 +319,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 headers.Add("x-ms-offer-throughput", "8000");
 
                 List<DocumentCollection> collections = new List<DocumentCollection>();
-                foreach (var db in databases)
+                foreach (Database db in databases)
                 {
                     collections.AddRange((from index in Enumerable.Range(1, numCollections)
                                           select client.Create<DocumentCollection>(db.ResourceId,
@@ -373,7 +373,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         "Expect queried offer resourceId to match the offer resourceId in the offer");
                 }
 
-                foreach (var db in databases)
+                foreach (Database db in databases)
                 {
                     await client.DeleteDatabaseAsync(db.SelfLink);
                 }
@@ -399,7 +399,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 string databaseLink = dbResponse.Resource.SelfLink;
 
-                for (var i = 0; i < numCollections; ++i)
+                for (int i = 0; i < numCollections; ++i)
                 {
                     // Create collections.
                     ResourceResponse<DocumentCollection> collResponse =
@@ -416,7 +416,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 OfferTests.ValidateOfferCount(offerResponse, collectionsLink);
 
                 string collectionLink = null;
-                for (var i = 0; i < numCollections; ++i)
+                for (int i = 0; i < numCollections; ++i)
                 {
                     collectionLink = collectionsLink.SingleOrDefault(collLink => collLink == offerResponse.ElementAt(i).ResourceLink);
                     Assert.IsNotNull(collectionLink);
@@ -515,7 +515,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public void ValidateOfferReplace()
         {
-            ValidateOfferReplaceInternal(false);
+            this.ValidateOfferReplaceInternal(false);
         }
 
         private void ValidateOfferReplaceInternal(bool bSharedThroughput)
@@ -548,7 +548,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ISet<string> linksSet = new HashSet<string>();
                 const int numCollections = 1;
 
-                for (var i = 0; i < numCollections; ++i)
+                for (int i = 0; i < numCollections; ++i)
                 {
                     ResourceResponse<DocumentCollection> collResponse;
 
@@ -583,7 +583,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 OfferTests.ValidateOfferCount(offerResponse, linksSet);
 
                 string offerLink = null;
-                for (var i = 0; i < linksSet.Count; ++i)
+                for (int i = 0; i < linksSet.Count; ++i)
                 {
                     offerLink = linksSet.Single(link => link == offerResponse.ElementAt(i).ResourceLink);
                     OfferTests.ValidateOfferResponseBody(offerResponse.ElementAt(i), offerLink);
@@ -681,7 +681,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public void QueryOfferFailure()
         {
-            using (var client = TestCommon.CreateClient(true))
+            using (DocumentClient client = TestCommon.CreateClient(true))
             {
                 // Invalid continuation for query
                 try
@@ -696,7 +696,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
                 catch (Exception ex)
                 {
-                    var innerExcption = ex.InnerException as DocumentClientException;
+                    DocumentClientException innerExcption = ex.InnerException as DocumentClientException;
                     Assert.IsTrue(innerExcption.StatusCode == HttpStatusCode.BadRequest, "Invalid status code");
                     Logger.LogLine(ex.StackTrace);
                 }
@@ -721,7 +721,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 dbprefix = Guid.NewGuid().ToString("N");
 
                 List<DocumentCollection> collections = new List<DocumentCollection>();
-                foreach (var db in databases)
+                foreach (Database db in databases)
                 {
                     collections.AddRange((from index in Enumerable.Range(1, numCollections)
                                           select client.Create<DocumentCollection>(db.ResourceId,
@@ -860,7 +860,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         "Expect queried offer resourceId to match the offer resourceId in the offer");
                 }
 
-                foreach (var db in databases)
+                foreach (Database db in databases)
                 {
                     await client.DeleteDatabaseAsync(db.SelfLink);
                 }
@@ -892,7 +892,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 List<Offer> queryResults = new List<Offer>();
 
                 //Simple Equality
-                foreach (var collection in collections)
+                foreach (DocumentCollection collection in collections)
                 {
                     queryResults.Clear();
                     IQueryable<Offer> offerQuery = from offer in client.CreateOfferQuery()
@@ -915,7 +915,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 string offerRidToQuery = null;
 
                 //Logical Or 
-                foreach (var collection in collections)
+                foreach (DocumentCollection collection in collections)
                 {
                     queryResults.Clear();
                     IQueryable<Offer> offerQuery = from offer in client.CreateOfferQuery()
@@ -1013,7 +1013,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 string databaseLink = dbResponse.Resource.SelfLink;
 
                 // Create collections with no offer param.
-                for (var i = 0; i < numCollections; ++i)
+                for (int i = 0; i < numCollections; ++i)
                 {
                     // Create collections.
                     ResourceResponse<DocumentCollection> collResponse =
@@ -1046,7 +1046,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     collectionsLink.Clear();
                     HashSet<string> offerTypes = new HashSet<string>();
 
-                    for (var i = 0; i < numCollections; ++i)
+                    for (int i = 0; i < numCollections; ++i)
                     {
                         // Create collections.
                         ResourceResponse<DocumentCollection> collResponse =
@@ -1062,7 +1062,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Assert.AreEqual(HttpStatusCode.Created, collResponse.StatusCode);
                         collectionsLink.Add(collResponse.Resource.SelfLink);
 
-                        var offerType = TestCommon.GetCollectionOfferDetails(client, collResponse.Resource.ResourceId);
+                        string offerType = TestCommon.GetCollectionOfferDetails(client, collResponse.Resource.ResourceId);
 
                         offerTypes.Add(offerType);
                     }

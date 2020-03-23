@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json.Bson;
 
-    internal class ClientContextCore : CosmosClientContext
+    internal sealed class ClientContextCore : CosmosClientContext
     {
         private readonly BatchAsyncContainerExecutorCache batchExecutorCache;
         private readonly CosmosClient client;
@@ -332,7 +332,7 @@ namespace Microsoft.Azure.Cosmos
         /// Dispose of cosmos client
         /// </summary>
         /// <param name="disposing">True if disposing</param>
-        protected virtual void Dispose(bool disposing)
+        public void Dispose(bool disposing)
         {
             if (!this.isDisposed)
             {

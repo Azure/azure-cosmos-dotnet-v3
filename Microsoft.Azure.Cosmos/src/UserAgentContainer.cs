@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Contains information about the user environment and helps identify requests.
     /// </summary>
-    internal class UserAgentContainer : Documents.UserAgentContainer
+    internal sealed class UserAgentContainer : Documents.UserAgentContainer
     {
         private const int MaxOperatingSystemString = 30;
         private string cosmosBaseUserAgent;

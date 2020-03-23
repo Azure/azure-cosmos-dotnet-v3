@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// This class is used to assert that a region of code can only be called concurrently by a limited amount of threads.
     /// </summary>
-    internal class InterlockIncrementCheck
+    internal sealed class InterlockIncrementCheck
     {
         private readonly int maxConcurrentOperations;
         private int counter = 0;

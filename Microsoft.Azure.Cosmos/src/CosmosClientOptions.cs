@@ -719,7 +719,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// The complex object passed in by the user can contain objects that can not be serialized. Instead just log the types.
         /// </summary>
-        private class ClientOptionJsonConverter : JsonConverter
+        private sealed class ClientOptionJsonConverter : JsonConverter
         {
             public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
             {

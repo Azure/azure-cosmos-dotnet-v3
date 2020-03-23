@@ -135,11 +135,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         public class TestSynchronizationContext : SynchronizationContext
         {
-            private object locker = new object();
+            private readonly object locker = new object();
 
             public override void Post(SendOrPostCallback d, object state)
             {
-                lock (locker)
+                lock (this.locker)
                 {
                     d(state);
                 }

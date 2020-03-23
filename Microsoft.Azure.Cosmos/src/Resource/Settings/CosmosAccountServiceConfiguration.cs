@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
 
-    internal class CosmosAccountServiceConfiguration : IServiceConfigurationReader
+    internal sealed class CosmosAccountServiceConfiguration : IServiceConfigurationReader
     {
         private Func<Task<AccountProperties>> accountPropertiesTaskFunc { get; }
 

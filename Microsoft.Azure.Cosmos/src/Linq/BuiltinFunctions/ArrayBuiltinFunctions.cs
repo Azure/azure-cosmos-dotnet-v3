@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     {
         private static Dictionary<string, BuiltinFunctionVisitor> ArrayBuiltinFunctionDefinitions { get; set; }
 
-        private class ArrayConcatVisitor : SqlBuiltinFunctionVisitor
+        private sealed class ArrayConcatVisitor : SqlBuiltinFunctionVisitor
         {
             public ArrayConcatVisitor()
                 : base("ARRAY_CONCAT", true, null)
@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
         }
 
-        private class ArrayContainsVisitor : SqlBuiltinFunctionVisitor
+        private sealed class ArrayContainsVisitor : SqlBuiltinFunctionVisitor
         {
             public ArrayContainsVisitor()
                 : base("ARRAY_CONTAINS", true, null)
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
         }
 
-        private class ArrayCountVisitor : SqlBuiltinFunctionVisitor
+        private sealed class ArrayCountVisitor : SqlBuiltinFunctionVisitor
         {
             public ArrayCountVisitor()
                 : base("ARRAY_LENGTH", true, null)
@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
         }
 
-        private class ArrayGetItemVisitor : BuiltinFunctionVisitor
+        private sealed class ArrayGetItemVisitor : BuiltinFunctionVisitor
         {
             protected override SqlScalarExpression VisitImplicit(MethodCallExpression methodCallExpression, TranslationContext context)
             {
@@ -135,7 +135,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
         }
 
-        private class ArrayToArrayVisitor : BuiltinFunctionVisitor
+        private sealed class ArrayToArrayVisitor : BuiltinFunctionVisitor
         {
             protected override SqlScalarExpression VisitImplicit(MethodCallExpression methodCallExpression, TranslationContext context)
             {

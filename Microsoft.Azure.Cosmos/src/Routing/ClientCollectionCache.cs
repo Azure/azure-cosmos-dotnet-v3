@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     /// <summary>
     /// Caches collection information.
     /// </summary>
-    internal class ClientCollectionCache : CollectionCache
+    internal sealed class ClientCollectionCache : CollectionCache
     {
         private readonly IStoreModel storeModel;
         private readonly IAuthorizationTokenProvider tokenProvider;

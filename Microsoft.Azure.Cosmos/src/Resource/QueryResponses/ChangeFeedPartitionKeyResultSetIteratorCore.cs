@@ -20,8 +20,8 @@ namespace Microsoft.Azure.Cosmos
         private readonly ContainerCore container;
         private readonly ChangeFeedRequestOptions changeFeedOptions;
         private readonly FeedTokenInternal feedToken;
+        private readonly string partitionKeyRangeId;
         private string continuationToken;
-        private string partitionKeyRangeId;
         private bool hasMoreResultsInternal;
 
         internal ChangeFeedPartitionKeyResultSetIteratorCore(

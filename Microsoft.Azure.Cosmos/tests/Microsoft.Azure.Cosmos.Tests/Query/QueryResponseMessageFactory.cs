@@ -214,14 +214,14 @@ namespace Microsoft.Azure.Cosmos.Tests
             return (MemoryStream)MockCosmosUtil.Serializer.ToStream<OrderByReturnStructure[]>(payload);
         }
 
-        private class OrderByReturnStructure
+        private sealed class OrderByReturnStructure
         {
             public string _rid { get; set; }
             public ToDoItem payload { get; set; }
             public OrderbyItems[] orderByItems { get; set; }
         }
 
-        private class OrderbyItems
+        private sealed class OrderbyItems
         {
             public OrderbyItems(string item)
             {

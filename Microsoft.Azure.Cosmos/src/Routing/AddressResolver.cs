@@ -572,8 +572,8 @@ namespace Microsoft.Azure.Cosmos
         {
             // Optimization to not refresh routing map unnecessary. As we keep track of parent child relationships,
             // we can determine that a range is gone just by looking up in the routing map.
-            if (collectionCacheIsUpToDate && routingMapCacheIsUpToDate ||
-                collectionCacheIsUpToDate && routingMap.IsGone(request.PartitionKeyRangeIdentity.PartitionKeyRangeId))
+            if ((collectionCacheIsUpToDate && routingMapCacheIsUpToDate) ||
+                (collectionCacheIsUpToDate && routingMap.IsGone(request.PartitionKeyRangeIdentity.PartitionKeyRangeId)))
             {
                 string errorMessage = string.Format(
                     CultureInfo.InvariantCulture,
@@ -709,7 +709,7 @@ namespace Microsoft.Azure.Cosmos
             return null;
         }
 
-        private class ResolutionResult
+        private sealed class ResolutionResult
         {
             public PartitionKeyRange TargetPartitionKeyRange { get; private set; }
 

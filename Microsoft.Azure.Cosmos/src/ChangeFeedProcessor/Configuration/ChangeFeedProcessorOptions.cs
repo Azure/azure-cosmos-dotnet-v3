@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Configuration
     /// <summary>
     /// Options to control various aspects of partition distribution happening within <see cref="ChangeFeedProcessorCore{T}"/> instance.
     /// </summary>
-    internal class ChangeFeedProcessorOptions
+    internal sealed class ChangeFeedProcessorOptions
     {
         private const int DefaultQueryPartitionsMaxBatchSize = 100;
         private static readonly TimeSpan DefaultFeedPollDelay = TimeSpan.FromSeconds(5);

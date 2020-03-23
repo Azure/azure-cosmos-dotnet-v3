@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// ConsistencyLevel compatibility will validated and set by RequestInvokeHandler
         /// </remarks>
-        internal virtual ConsistencyLevel? BaseConsistencyLevel { get; set; }
+        internal ConsistencyLevel? BaseConsistencyLevel { get; set; }
 
         /// <summary>
         /// This allows user to pass in a custom factory for the diagnostic context.

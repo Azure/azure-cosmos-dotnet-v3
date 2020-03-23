@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 {
     using System;
 
-    internal class ProcessorOptions
+    internal sealed class ProcessorOptions
     {
         public string LeaseToken { get; set; }
 

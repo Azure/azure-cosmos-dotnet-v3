@@ -336,13 +336,13 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(response.ErrorMessage.Contains(errorMessage));
         }
 
-        private class SomePayload
+        private sealed class SomePayload
         {
             public string V1 { get; set; }
             public string V2 { get; set; }
         }
 
-        private class EnumComparer : IComparer
+        private sealed class EnumComparer : IComparer
         {
             public int Compare(object x, object y)
             {

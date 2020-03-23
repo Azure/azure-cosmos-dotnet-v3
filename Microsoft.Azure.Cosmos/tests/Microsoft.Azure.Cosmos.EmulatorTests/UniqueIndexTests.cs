@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     {
         private DocumentClient client;  // This is only used for housekeeping this.database.
         private Database database;
-        private PartitionKeyDefinition defaultPartitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
+        private readonly PartitionKeyDefinition defaultPartitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
 
         [TestInitialize]
         public void TestInitialize()
@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public void InsertWithUniqueIndex()
         {
-            var collectionSpec = new DocumentCollection
+            DocumentCollection collectionSpec = new DocumentCollection
             {
                 Id = "InsertWithUniqueIndexConstraint_" + Guid.NewGuid(),
                 PartitionKey = defaultPartitionKeyDefinition,
@@ -65,9 +65,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Func<DocumentClient, DocumentCollection, Task> testFunction = async (DocumentClient client, DocumentCollection collection) =>
             {
-                var doc1 = JObject.Parse("{\"name\":\"Alexander Pushkin\",\"address\":\"Russia 630090\"}");
-                var doc2 = JObject.Parse("{\"name\":\"Alexander Pushkin\",\"address\":\"Russia 640000\"}");
-                var doc3 = JObject.Parse("{\"name\":\"Mihkail Lermontov\",\"address\":\"Russia 630090\"}");
+                JObject doc1 = JObject.Parse("{\"name\":\"Alexander Pushkin\",\"address\":\"Russia 630090\"}");
+                JObject doc2 = JObject.Parse("{\"name\":\"Alexander Pushkin\",\"address\":\"Russia 640000\"}");
+                JObject doc3 = JObject.Parse("{\"name\":\"Mihkail Lermontov\",\"address\":\"Russia 630090\"}");
 
                 await client.CreateDocumentAsync(collection, doc1);
 
@@ -96,13 +96,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await client.CreateDocumentAsync(collection, doc3);
             };
 
-            TestForEachClient(collectionSpec, testFunction, "InsertWithUniqueIndex");
+            this.TestForEachClient(collectionSpec, testFunction, "InsertWithUniqueIndex");
         }
 
         [TestMethod]
         public void ReplaceAndDeleteWithUniqueIndex()
         {
-            var collectionSpec = new DocumentCollection
+            DocumentCollection collectionSpec = new DocumentCollection
             {
                 Id = "InsertWithUniqueIndexConstraint_" + Guid.NewGuid(),
                 PartitionKey = defaultPartitionKeyDefinition,
@@ -115,16 +115,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             requestOptions.PartitionKey = new PartitionKey("test");
             Func<DocumentClient, DocumentCollection, Task> testFunction = async (DocumentClient client, DocumentCollection collection) =>
             {
-                var doc1 = JObject.Parse("{\"name\":\"Alexander Pushkin\",\"pk\":\"test\",\"address\":\"Russia 630090\"}");
-                var doc2 = JObject.Parse("{\"name\":\"Mihkail Lermontov\",\"pk\":\"test\",\"address\":\"Russia 630090\"}");
-                var doc3 = JObject.Parse("{\"name\":\"Alexander Pushkin\",\"pk\":\"test\",\"address\":\"Russia 640000\"}");
+                JObject doc1 = JObject.Parse("{\"name\":\"Alexander Pushkin\",\"pk\":\"test\",\"address\":\"Russia 630090\"}");
+                JObject doc2 = JObject.Parse("{\"name\":\"Mihkail Lermontov\",\"pk\":\"test\",\"address\":\"Russia 630090\"}");
+                JObject doc3 = JObject.Parse("{\"name\":\"Alexander Pushkin\",\"pk\":\"test\",\"address\":\"Russia 640000\"}");
 
                 Document doc1Inserted = await client.CreateDocumentAsync(collection, doc1);
 
                 await client.ReplaceDocumentAsync(doc1Inserted.SelfLink, doc1Inserted, requestOptions);     // Replace with same values -- OK.
 
                 Document doc2Inserted = await client.CreateDocumentAsync(collection, doc2);
-                var doc2Replacement = JObject.Parse(JsonConvert.SerializeObject(doc1Inserted));
+                JObject doc2Replacement = JObject.Parse(JsonConvert.SerializeObject(doc1Inserted));
                 doc2Replacement["id"] = doc2Inserted.Id;
 
                 try
@@ -144,7 +144,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await client.CreateDocumentAsync(collection, doc1);
             };
 
-            TestForEachClient(collectionSpec, testFunction, "ReplaceAndDeleteWithUniqueIndex");
+            this.TestForEachClient(collectionSpec, testFunction, "ReplaceAndDeleteWithUniqueIndex");
         }
 
         [TestMethod]
@@ -153,13 +153,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             using (DocumentClient client = TestCommon.CreateClient(true, tokenType: AuthorizationTokenType.PrimaryMasterKey))
             {
-                TestGloballyUniqueFieldForPartitionedCollectionHelperAsync(client).Wait();
+                this.TestGloballyUniqueFieldForPartitionedCollectionHelperAsync(client).Wait();
             }
         }
 
         private async Task TestGloballyUniqueFieldForPartitionedCollectionHelperAsync(DocumentClient client)
         {
-            var collectionSpec = new DocumentCollection
+            DocumentCollection collectionSpec = new DocumentCollection
             {
                 Id = "TestGloballyUniqueFieldForPartitionedCollection_" + Guid.NewGuid(),
                 PartitionKey = new PartitionKeyDefinition
@@ -185,13 +185,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             };
 
-            var collection = await client.CreateDocumentCollectionAsync(
+            ResourceResponse<DocumentCollection> collection = await client.CreateDocumentCollectionAsync(
                 this.database,
                 collectionSpec,
                 new RequestOptions { OfferThroughput = 20000 });
 
             const int partitionCount = 50;
-            var partitionKeyValues = new List<string>();
+            List<string> partitionKeyValues = new List<string>();
             for (int i = 0; i < partitionCount * 3; ++i)
             {
                 partitionKeyValues.Add(Guid.NewGuid().ToString());
@@ -220,7 +220,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             Func<DocumentClient, DocumentClientType, Task<int>> wrapperFunction = async (DocumentClient client, DocumentClientType clientType) =>
             {
-                var collection = await client.CreateDocumentCollectionAsync(this.database, collectionSpec);
+                ResourceResponse<DocumentCollection> collection = await client.CreateDocumentCollectionAsync(this.database, collectionSpec);
 
                 // Normally we would delete collection in in finally block, but can't await there.
                 // Delete collection is needed so that next client from Util.TestForEachClient starts fresh.

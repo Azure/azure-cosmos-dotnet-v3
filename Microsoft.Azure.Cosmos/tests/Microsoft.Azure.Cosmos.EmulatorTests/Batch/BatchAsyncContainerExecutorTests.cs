@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public class BatchAsyncContainerExecutorTests
     {
-        private static CosmosSerializer cosmosDefaultJsonSerializer = new CosmosJsonDotNetSerializer();
+        private static readonly CosmosSerializer cosmosDefaultJsonSerializer = new CosmosJsonDotNetSerializer();
         private CosmosClient cosmosClient;
         private ContainerCore cosmosContainer;
 
@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return new ItemBatchOperation(OperationType.Create, 0, new Cosmos.PartitionKey(id), id, cosmosDefaultJsonSerializer.ToStream(myDocument));
         }
 
-        private class MyDocument
+        private sealed class MyDocument
         {
             public string id { get; set; }
 

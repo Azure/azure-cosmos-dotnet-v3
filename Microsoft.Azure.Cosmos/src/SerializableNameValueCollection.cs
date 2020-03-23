@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class SerializableNameValueCollection : JsonSerializable
     {
-        private Lazy<NameValueCollection> lazyCollection;
+        private readonly Lazy<NameValueCollection> lazyCollection;
 
         public SerializableNameValueCollection()
         {
@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos
 
         public bool Equals(SerializableNameValueCollection collection)
         {
-            if (Object.ReferenceEquals(null, collection))
+            if (collection is null)
             {
                 return false;
             }

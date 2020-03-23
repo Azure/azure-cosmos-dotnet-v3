@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                    ""extra"":1,
                    ""crs"":{""type"":""name"", ""properties"":{""name"":""hello""}}
                   }";
-            var multiLineString = JsonConvert.DeserializeObject<MultiLineString>(json);
+            MultiLineString multiLineString = JsonConvert.DeserializeObject<MultiLineString>(json);
 
             Assert.AreEqual(2, multiLineString.LineStrings.Count);
             Assert.AreEqual(new Position(20, 30), multiLineString.LineStrings[0].Positions[0]);
@@ -45,13 +45,13 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
             Assert.AreEqual(1, multiLineString.AdditionalProperties.Count);
             Assert.AreEqual(1L, multiLineString.AdditionalProperties["extra"]);
 
-            var geom = JsonConvert.DeserializeObject<Geometry>(json);
+            Geometry geom = JsonConvert.DeserializeObject<Geometry>(json);
             Assert.AreEqual(GeometryType.MultiLineString, geom.Type);
 
             Assert.AreEqual(geom, multiLineString);
 
             string json1 = JsonConvert.SerializeObject(multiLineString);
-            var geom1 = JsonConvert.DeserializeObject<Geometry>(json1);
+            Geometry geom1 = JsonConvert.DeserializeObject<Geometry>(json1);
             Assert.AreEqual(geom1, geom);
         }
 
@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
         [TestMethod]
         public void TestMultiLineStringEqualsHashCode()
         {
-            var multiLineString1 = new MultiLineString(
+            MultiLineString multiLineString1 = new MultiLineString(
                 new[]
                     {
                         new LineStringCoordinates(new[] { new Position(20, 30), new Position(30, 40) }),
@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                     Crs = Crs.Named("SomeCrs")
                 });
 
-            var multiLineString2 = new MultiLineString(
+            MultiLineString multiLineString2 = new MultiLineString(
                 new[]
                     {
                         new LineStringCoordinates(new[] { new Position(20, 30), new Position(30, 40) }),
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                     Crs = Crs.Named("SomeCrs")
                 });
 
-            var multiLineString3 = new MultiLineString(
+            MultiLineString multiLineString3 = new MultiLineString(
                 new[]
                     {
                         new LineStringCoordinates(new[] { new Position(20, 30), new Position(30, 41) }),
@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                     Crs = Crs.Named("SomeCrs")
                 });
 
-            var multiLineString4 = new MultiLineString(
+            MultiLineString multiLineString4 = new MultiLineString(
                 new[]
                     {
                         new LineStringCoordinates(new[] { new Position(20, 30), new Position(30, 40) }),
@@ -113,7 +113,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                     Crs = Crs.Named("SomeCrs")
                 });
 
-            var multiLineString5 = new MultiLineString(
+            MultiLineString multiLineString5 = new MultiLineString(
                 new[]
                     {
                         new LineStringCoordinates(new[] { new Position(20, 30), new Position(30, 40) }),
@@ -126,7 +126,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                     Crs = Crs.Named("SomeCrs")
                 });
 
-            var multiLineString6 = new MultiLineString(
+            MultiLineString multiLineString6 = new MultiLineString(
                 new[]
                     {
                         new LineStringCoordinates(new[] { new Position(20, 30), new Position(30, 40) }),
@@ -171,7 +171,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
         [TestMethod]
         public void TestMultiLineStringConstructors()
         {
-            var multiLineString = new MultiLineString(
+            MultiLineString multiLineString = new MultiLineString(
                 new[]
                     {
                         new LineStringCoordinates(new[] { new Position(20, 30), new Position(30, 40) }),

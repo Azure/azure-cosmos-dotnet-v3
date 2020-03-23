@@ -460,7 +460,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await client.DeleteDatabaseAsync(database.SelfLink);
         }
 
-        private class QueryResult : Resource
+        private sealed class QueryResult : Resource
         {
         }
     }

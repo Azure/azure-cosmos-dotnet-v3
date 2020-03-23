@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         where T : ContainerDefinition<T>
     {
         private readonly string containerName;
-        private string partitionKeyPath;
+        private readonly string partitionKeyPath;
         private int? defaultTimeToLive;
         private IndexingPolicy indexingPolicy;
         private string timeToLivePropertyPath;

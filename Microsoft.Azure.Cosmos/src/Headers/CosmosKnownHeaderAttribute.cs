@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
 
     [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
-    internal class CosmosKnownHeaderAttribute : Attribute
+    internal sealed class CosmosKnownHeaderAttribute : Attribute
     {
         public string HeaderName { get; set; }
     }

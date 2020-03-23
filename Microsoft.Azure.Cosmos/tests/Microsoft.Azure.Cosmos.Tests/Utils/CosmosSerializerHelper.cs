@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     /// <summary>
     /// Placeholder for VST Logger.
     /// </summary>
-    internal class CosmosSerializerHelper : CosmosSerializer
+    internal sealed class CosmosSerializerHelper : CosmosSerializer
     {
         private readonly CosmosSerializer cosmosSerializer;
         private readonly Action<dynamic> fromStreamCallback;

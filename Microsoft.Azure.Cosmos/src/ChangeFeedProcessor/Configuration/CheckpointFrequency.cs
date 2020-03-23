@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Configuration
     /// <summary>
     /// Specifies the frequency of lease event. The event will trigger when either of conditions is satisfied.
     /// </summary>
-    internal class CheckpointFrequency
+    internal sealed class CheckpointFrequency
     {
         /// <summary>
         /// Gets or sets a value indicating whether explicit check pointing is enabled. By default false. 

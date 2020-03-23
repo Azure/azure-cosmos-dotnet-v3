@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(comparer.Equals(results[1], batchResponse[1]));
         }
 
-        private class ItemBatchOperationEqualityComparer : IEqualityComparer<ItemBatchOperation>
+        private sealed class ItemBatchOperationEqualityComparer : IEqualityComparer<ItemBatchOperation>
         {
             public bool Equals(ItemBatchOperation x, ItemBatchOperation y)
             {
@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
-        private class CosmosBatchOperationResultEqualityComparer : IEqualityComparer<TransactionalBatchOperationResult>
+        private sealed class CosmosBatchOperationResultEqualityComparer : IEqualityComparer<TransactionalBatchOperationResult>
         {
             public bool Equals(TransactionalBatchOperationResult x, TransactionalBatchOperationResult y)
             {

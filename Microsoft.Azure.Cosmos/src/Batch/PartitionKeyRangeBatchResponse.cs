@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Response of a cross partition key batch request.
     /// </summary>
-    internal class PartitionKeyRangeBatchResponse : TransactionalBatchResponse
+    internal sealed class PartitionKeyRangeBatchResponse : TransactionalBatchResponse
     {
         // Results sorted in the order operations had been added.
         private readonly TransactionalBatchOperationResult[] resultsByOperationIndex;

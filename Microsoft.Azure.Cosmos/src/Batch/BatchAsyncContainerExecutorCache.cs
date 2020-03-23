@@ -12,9 +12,9 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Cache to create and share Executor instances across the client's lifetime.
     /// </summary>
-    internal class BatchAsyncContainerExecutorCache : IDisposable
+    internal sealed class BatchAsyncContainerExecutorCache : IDisposable
     {
-        private ConcurrentDictionary<string, BatchAsyncContainerExecutor> executorsPerContainer = new ConcurrentDictionary<string, BatchAsyncContainerExecutor>();
+        private readonly ConcurrentDictionary<string, BatchAsyncContainerExecutor> executorsPerContainer = new ConcurrentDictionary<string, BatchAsyncContainerExecutor>();
 
         public BatchAsyncContainerExecutor GetExecutorForContainer(
             ContainerCore container,

@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 
     internal sealed class ObserverExceptionWrappingChangeFeedObserverDecorator<T> : ChangeFeedObserver<T>
     {
-        private ChangeFeedObserver<T> changeFeedObserver;
+        private readonly ChangeFeedObserver<T> changeFeedObserver;
 
         public ObserverExceptionWrappingChangeFeedObserverDecorator(ChangeFeedObserver<T> changeFeedObserver)
         {

@@ -20,8 +20,8 @@ namespace Microsoft.Azure.Cosmos.Tests
     [TestClass]
     public class BatchAsyncBatcherTests
     {
-        private static Exception expectedException = new Exception();
-        private static BatchPartitionMetric metric = new BatchPartitionMetric();
+        private static readonly Exception expectedException = new Exception();
+        private static readonly BatchPartitionMetric metric = new BatchPartitionMetric();
 
         private ItemBatchOperation CreateItemBatchOperation(bool withContext = false)
         {
@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             return operation;
         }
 
-        private BatchAsyncBatcherExecuteDelegate Executor
+        private readonly BatchAsyncBatcherExecuteDelegate Executor
             = async (PartitionKeyRangeServerBatchRequest request, CancellationToken cancellationToken) =>
             {
                 List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return new PartitionKeyRangeBatchExecutionResult(request.PartitionKeyRangeId, request.Operations, batchresponse);
             };
 
-        private BatchAsyncBatcherExecuteDelegate ExecutorWithSplit
+        private readonly BatchAsyncBatcherExecuteDelegate ExecutorWithSplit
             = async (PartitionKeyRangeServerBatchRequest request, CancellationToken cancellationToken) =>
             {
                 List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
@@ -116,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
 
         // The response will include all but 2 operation responses
-        private BatchAsyncBatcherExecuteDelegate ExecutorWithLessResponses
+        private readonly BatchAsyncBatcherExecuteDelegate ExecutorWithLessResponses
             = async (PartitionKeyRangeServerBatchRequest request, CancellationToken cancellationToken) =>
             {
                 int operationCount = request.Operations.Count - 2;
@@ -151,13 +151,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return new PartitionKeyRangeBatchExecutionResult(request.PartitionKeyRangeId, request.Operations, batchresponse);
             };
 
-        private BatchAsyncBatcherExecuteDelegate ExecutorWithFailure
+        private readonly BatchAsyncBatcherExecuteDelegate ExecutorWithFailure
             = (PartitionKeyRangeServerBatchRequest request, CancellationToken cancellationToken) =>
             {
                 throw expectedException;
             };
 
-        private BatchAsyncBatcherRetryDelegate Retrier = (ItemBatchOperation operation, CancellationToken cancellation) =>
+        private readonly BatchAsyncBatcherRetryDelegate Retrier = (ItemBatchOperation operation, CancellationToken cancellation) =>
         {
             return Task.CompletedTask;
         };
@@ -402,7 +402,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             retryDelegate.Verify(a => a(It.IsAny<ItemBatchOperation>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
-        private class BatchAsyncBatcherThatOverflows : BatchAsyncBatcher
+        private sealed class BatchAsyncBatcherThatOverflows : BatchAsyncBatcher
         {
             public BatchAsyncBatcherThatOverflows(
                 int maxBatchOperationCount,

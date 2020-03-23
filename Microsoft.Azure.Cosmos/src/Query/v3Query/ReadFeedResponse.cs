@@ -4,14 +4,12 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System.Collections.Generic;
-    using System.IO;
     using System.Net;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Json;
 
-    internal class ReadFeedResponse<T> : FeedResponse<T>
+    internal sealed class ReadFeedResponse<T> : FeedResponse<T>
     {
-        protected ReadFeedResponse(
+        public ReadFeedResponse(
             HttpStatusCode httpStatusCode,
             CosmosArray cosmosArray,
             CosmosSerializerCore serializerCore,

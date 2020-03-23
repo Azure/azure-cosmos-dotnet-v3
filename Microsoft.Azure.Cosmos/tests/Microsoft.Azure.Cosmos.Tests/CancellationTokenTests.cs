@@ -161,7 +161,7 @@ namespace Microsoft.Azure.Cosmos
             await clientRetryPolicy.ShouldRetryAsync(ex, cancelledToken);
         }
 
-        private class MockMessageHandler : HttpMessageHandler
+        private sealed class MockMessageHandler : HttpMessageHandler
         {
             private readonly Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc;
 

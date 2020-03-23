@@ -709,7 +709,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         }
 
-        private class NumberLinqItem
+        private sealed class NumberLinqItem
         {
             public string id;
             public string status;

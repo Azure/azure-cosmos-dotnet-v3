@@ -19,8 +19,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
     {
         private readonly CosmosClient clientForTests;
         private readonly Container container;
-        private JObject baseItem;
-        private byte[] payloadBytes;
+        private readonly JObject baseItem;
+        private readonly byte[] payloadBytes;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ItemBenchmark"/> class.

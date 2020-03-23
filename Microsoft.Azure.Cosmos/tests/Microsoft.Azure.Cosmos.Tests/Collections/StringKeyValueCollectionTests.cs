@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Collections
             DictionaryNameValueCollection
         }
 
-        private static Array NameValueCollectionTypes = Enum.GetValues(typeof(NameValueCollectionType));
+        private static readonly Array NameValueCollectionTypes = Enum.GetValues(typeof(NameValueCollectionType));
 
         private static INameValueCollection CreateNameValueCollection(NameValueCollectionType type = NameValueCollectionType.NameValueCollectionWrapper)
         {
@@ -127,10 +127,10 @@ namespace Microsoft.Azure.Cosmos.Collections
         {
             foreach (NameValueCollectionType type in NameValueCollectionTypes)
             {
-                TestAdd(0, 0, type);
-                TestAdd(0, 5, type);
-                TestAdd(5, 0, type);
-                TestAdd(5, 5, type);
+                this.TestAdd(0, 0, type);
+                this.TestAdd(0, 5, type);
+                this.TestAdd(5, 0, type);
+                this.TestAdd(5, 5, type);
             }
         }
 
@@ -144,8 +144,8 @@ namespace Microsoft.Azure.Cosmos.Collections
             Assert.AreEqual(count1 + count2, nameValueCollection2.AllKeys().Length);
             Assert.AreEqual(count1 + count2, nameValueCollection2.Keys().Count());
 
-            var keys1 = nameValueCollection1.Keys().ToArray();
-            var keys2 = nameValueCollection2.Keys().ToArray();
+            string[] keys1 = nameValueCollection1.Keys().ToArray();
+            string[] keys2 = nameValueCollection2.Keys().ToArray();
 
             for (int i = 0; i < count1; i++)
             {
@@ -176,7 +176,7 @@ namespace Microsoft.Azure.Cosmos.Collections
         {
             foreach (NameValueCollectionType type in NameValueCollectionTypes)
             {
-                TestAddExistingKeys(type);
+                this.TestAddExistingKeys(type);
             }
         }
 
@@ -206,7 +206,7 @@ namespace Microsoft.Azure.Cosmos.Collections
         {
             foreach (NameValueCollectionType type in NameValueCollectionTypes)
             {
-                TestAddMultipleValues(type);
+                this.TestAddMultipleValues(type);
             }
         }
 
@@ -236,7 +236,7 @@ namespace Microsoft.Azure.Cosmos.Collections
         {
             foreach (NameValueCollectionType type in NameValueCollectionTypes)
             {
-                TestAddNameValueCollectionWithNullKeys(type);
+                this.TestAddNameValueCollectionWithNullKeys(type);
             }
         }
 
@@ -271,7 +271,7 @@ namespace Microsoft.Azure.Cosmos.Collections
         {
             foreach (NameValueCollectionType type in NameValueCollectionTypes)
             {
-                TestAddNameValueCollectionWithNullValues(type);
+                this.TestAddNameValueCollectionWithNullValues(type);
             }
         }
 
@@ -313,7 +313,7 @@ namespace Microsoft.Azure.Cosmos.Collections
         {
             foreach (NameValueCollectionType type in NameValueCollectionTypes)
             {
-                TestAddStringString(type);
+                this.TestAddStringString(type);
             }
         }
 
@@ -365,7 +365,7 @@ namespace Microsoft.Azure.Cosmos.Collections
         {
             foreach (NameValueCollectionType type in NameValueCollectionTypes)
             {
-                TestAddStringStringNullName(type);
+                this.TestAddStringStringNullName(type);
             }
         }
 
@@ -421,7 +421,7 @@ namespace Microsoft.Azure.Cosmos.Collections
         {
             foreach (NameValueCollectionType type in NameValueCollectionTypes)
             {
-                TestAddStringStringNullValue(type);
+                this.TestAddStringStringNullValue(type);
             }
         }
 
@@ -452,13 +452,13 @@ namespace Microsoft.Azure.Cosmos.Collections
         {
             foreach (NameValueCollectionType type in NameValueCollectionTypes)
             {
-                TestAddStringStringAddingValueToExistingNameAppendsValueToOriginalValue(type);
+                this.TestAddStringStringAddingValueToExistingNameAppendsValueToOriginalValue(type);
             }
         }
 
         private void TestAddStringStringAddingValueToExistingNameAppendsValueToOriginalValue(NameValueCollectionType type)
         {
-            var nameValueCollection = CreateNameValueCollection(type);
+            INameValueCollection nameValueCollection = CreateNameValueCollection(type);
             string name = "name";
             nameValueCollection.Add(name, "value1");
             nameValueCollection.Add(name, "value2");
@@ -493,8 +493,8 @@ namespace Microsoft.Azure.Cosmos.Collections
         {
             foreach (NameValueCollectionType type in NameValueCollectionTypes)
             {
-                TestClear(0, type);
-                TestClear(5, type);
+                this.TestClear(0, type);
+                this.TestClear(5, type);
             }
         }
 
@@ -525,7 +525,7 @@ namespace Microsoft.Azure.Cosmos.Collections
         {
             foreach (NameValueCollectionType type in NameValueCollectionTypes)
             {
-                TestCtorEmpty(type);
+                this.TestCtorEmpty(type);
             }
         }
 
@@ -546,8 +546,8 @@ namespace Microsoft.Azure.Cosmos.Collections
         {
             foreach (NameValueCollectionType type in NameValueCollectionTypes)
             {
-                TestCtorInt(0, type);
-                TestCtorInt(5, type);
+                this.TestCtorInt(0, type);
+                this.TestCtorInt(5, type);
             }
         }
 
@@ -582,7 +582,7 @@ namespace Microsoft.Azure.Cosmos.Collections
         {
             foreach (NameValueCollectionType type in NameValueCollectionTypes)
             {
-                TestCtorNegativeCapacityThrowsArgumentOutOfRangeException(type);
+                this.TestCtorNegativeCapacityThrowsArgumentOutOfRangeException(type);
             }
         }
 
@@ -610,7 +610,7 @@ namespace Microsoft.Azure.Cosmos.Collections
             {
                 foreach (INameValueCollection collection in CtorNameValueCollectionTestData(type))
                 {
-                    TestCtorNameValueCollection(collection);
+                    this.TestCtorNameValueCollection(collection);
                 }
             }
         }
@@ -641,7 +641,7 @@ namespace Microsoft.Azure.Cosmos.Collections
         {
             foreach (NameValueCollectionType type in NameValueCollectionTypes)
             {
-                TestCtorNullNameValueCollectionThrowsArgumentNullException(type);
+                this.TestCtorNullNameValueCollectionThrowsArgumentNullException(type);
             }
         }
 
@@ -667,7 +667,7 @@ namespace Microsoft.Azure.Cosmos.Collections
             {
                 foreach (StringComparer comparer in CtorStringComparerTestData())
                 {
-                    TestCtorStringComparer(comparer, type);
+                    this.TestCtorStringComparer(comparer, type);
                 }
             }
         }
@@ -675,7 +675,7 @@ namespace Microsoft.Azure.Cosmos.Collections
         private void TestCtorStringComparer(StringComparer comparer, NameValueCollectionType type)
         {
             INameValueCollection nameValueCollection = CreateNameValueCollection(comparer, type);
-            VerifyCtorStringComparer(nameValueCollection, comparer, 10);
+            this.VerifyCtorStringComparer(nameValueCollection, comparer, 10);
         }
 
         private void VerifyCtorStringComparer(INameValueCollection nameValueCollection, StringComparer equalityComparer, int newCount)
@@ -709,7 +709,7 @@ namespace Microsoft.Azure.Cosmos.Collections
             }
         }
 
-        private class IdiotComparer : StringComparer
+        private sealed class IdiotComparer : StringComparer
         {
             public override int Compare(string x, string y)
             {
@@ -740,8 +740,8 @@ namespace Microsoft.Azure.Cosmos.Collections
         {
             foreach (NameValueCollectionType type in NameValueCollectionTypes)
             {
-                TestGetNoSuchNameReturnsNull(0, type);
-                TestGetNoSuchNameReturnsNull(5, type);
+                this.TestGetNoSuchNameReturnsNull(0, type);
+                this.TestGetNoSuchNameReturnsNull(5, type);
             }
         }
 
@@ -765,8 +765,8 @@ namespace Microsoft.Azure.Cosmos.Collections
         {
             foreach (NameValueCollectionType type in NameValueCollectionTypes)
             {
-                TestGetValuesNoSuchNameReturnsNull(0, type);
-                TestGetValuesNoSuchNameReturnsNull(5, type);
+                this.TestGetValuesNoSuchNameReturnsNull(0, type);
+                this.TestGetValuesNoSuchNameReturnsNull(5, type);
             }
         }
 
@@ -790,8 +790,8 @@ namespace Microsoft.Azure.Cosmos.Collections
         {
             foreach (NameValueCollectionType type in NameValueCollectionTypes)
             {
-                TestRemove(0, type);
-                TestRemove(5, type);
+                this.TestRemove(0, type);
+                this.TestRemove(5, type);
             }
         }
 
@@ -839,7 +839,7 @@ namespace Microsoft.Azure.Cosmos.Collections
         {
             foreach (NameValueCollectionType type in NameValueCollectionTypes)
             {
-                TestRemoveMultipleValuesSameName(type);
+                this.TestRemoveMultipleValuesSameName(type);
             }
         }
 
@@ -864,7 +864,7 @@ namespace Microsoft.Azure.Cosmos.Collections
         {
             foreach (NameValueCollectionType type in NameValueCollectionTypes)
             {
-                TestRemoveNullName(type);
+                this.TestRemoveNullName(type);
             }
         }
 
@@ -890,7 +890,7 @@ namespace Microsoft.Azure.Cosmos.Collections
         {
             foreach (NameValueCollectionType type in NameValueCollectionTypes)
             {
-                TestItemSet(type);
+                this.TestItemSet(type);
             }
         }
 
@@ -917,7 +917,7 @@ namespace Microsoft.Azure.Cosmos.Collections
         {
             foreach (NameValueCollectionType type in NameValueCollectionTypes)
             {
-                TestItemSetOvewriteExistingValue(type);
+                this.TestItemSetOvewriteExistingValue(type);
             }
         }
 
@@ -942,8 +942,8 @@ namespace Microsoft.Azure.Cosmos.Collections
         {
             foreach (NameValueCollectionType type in NameValueCollectionTypes)
             {
-                TestItemSetNullName(0, type);
-                TestItemSetNullName(5, type);
+                this.TestItemSetNullName(0, type);
+                this.TestItemSetNullName(5, type);
             }
         }
 
@@ -971,8 +971,8 @@ namespace Microsoft.Azure.Cosmos.Collections
         {
             foreach (NameValueCollectionType type in NameValueCollectionTypes)
             {
-                TestItemSetNullValue(0, type);
-                TestItemSetNullValue(5, type);
+                this.TestItemSetNullValue(0, type);
+                this.TestItemSetNullValue(5, type);
             }
         }
 
@@ -1003,7 +1003,7 @@ namespace Microsoft.Azure.Cosmos.Collections
         {
             foreach (NameValueCollectionType type in NameValueCollectionTypes)
             {
-                TestItemSetIsCaseSensitive(type);
+                this.TestItemSetIsCaseSensitive(type);
             }
         }
 
@@ -1030,7 +1030,7 @@ namespace Microsoft.Azure.Cosmos.Collections
         {
             foreach (NameValueCollectionType type in NameValueCollectionTypes)
             {
-                TestSet(type);
+                this.TestSet(type);
             }
         }
 
@@ -1058,7 +1058,7 @@ namespace Microsoft.Azure.Cosmos.Collections
         {
             foreach (NameValueCollectionType type in NameValueCollectionTypes)
             {
-                TestSetOvewriteExistingValue(type);
+                this.TestSetOvewriteExistingValue(type);
             }
         }
 
@@ -1083,8 +1083,8 @@ namespace Microsoft.Azure.Cosmos.Collections
         {
             foreach (NameValueCollectionType type in NameValueCollectionTypes)
             {
-                TestSetNullName(0, type);
-                TestSetNullName(5, type);
+                this.TestSetNullName(0, type);
+                this.TestSetNullName(5, type);
             }
         }
 
@@ -1112,8 +1112,8 @@ namespace Microsoft.Azure.Cosmos.Collections
         {
             foreach (NameValueCollectionType type in NameValueCollectionTypes)
             {
-                TestSetNullValue(0, type);
-                TestSetNullValue(5, type);
+                this.TestSetNullValue(0, type);
+                this.TestSetNullValue(5, type);
             }
         }
 
@@ -1144,7 +1144,7 @@ namespace Microsoft.Azure.Cosmos.Collections
         {
             foreach (NameValueCollectionType type in NameValueCollectionTypes)
             {
-                TestSetIsCaseSensitive(type);
+                this.TestSetIsCaseSensitive(type);
             }
         }
 
@@ -1171,8 +1171,8 @@ namespace Microsoft.Azure.Cosmos.Collections
         {
             foreach (NameValueCollectionType type in NameValueCollectionTypes)
             {
-                TestGetEnumerator(0, type);
-                TestGetEnumerator(10, type);
+                this.TestGetEnumerator(0, type);
+                this.TestGetEnumerator(10, type);
             }
         }
 
@@ -1203,8 +1203,8 @@ namespace Microsoft.Azure.Cosmos.Collections
         {
             foreach (NameValueCollectionType type in NameValueCollectionTypes)
             {
-                TestGetEnumeratorInvalid(0, type);
-                TestGetEnumeratorInvalid(10, type);
+                this.TestGetEnumeratorInvalid(0, type);
+                this.TestGetEnumeratorInvalid(10, type);
             }
         }
 
@@ -1214,15 +1214,15 @@ namespace Microsoft.Azure.Cosmos.Collections
             IEnumerator enumerator = nameValueCollection.GetEnumerator();
 
             // Has not started enumerating
-            AssertThrow(typeof(InvalidOperationException), () => { var tmp = enumerator.Current; });
+            AssertThrow(typeof(InvalidOperationException), () => { object tmp = enumerator.Current; });
 
             // Has finished enumerating
             while (enumerator.MoveNext()) ;
-            AssertThrow(typeof(InvalidOperationException), () => { var tmp = enumerator.Current; });
+            AssertThrow(typeof(InvalidOperationException), () => { object tmp = enumerator.Current; });
 
             // Has reset enumerating
             enumerator.Reset();
-            AssertThrow(typeof(InvalidOperationException), () => { var tmp = enumerator.Current; });
+            AssertThrow(typeof(InvalidOperationException), () => { object tmp = enumerator.Current; });
 
             // Modify collection
             enumerator.MoveNext();
@@ -1238,7 +1238,7 @@ namespace Microsoft.Azure.Cosmos.Collections
             enumerator = nameValueCollection.GetEnumerator();
             enumerator.MoveNext();
             nameValueCollection.Clear();
-            AssertThrow(typeof(InvalidOperationException), () => { var tmp = enumerator.Current; });
+            AssertThrow(typeof(InvalidOperationException), () => { object tmp = enumerator.Current; });
             AssertThrow(typeof(InvalidOperationException), () => enumerator.MoveNext());
             AssertThrow(typeof(InvalidOperationException), () => enumerator.Reset());
         }
@@ -1256,8 +1256,8 @@ namespace Microsoft.Azure.Cosmos.Collections
         {
             foreach (NameValueCollectionType type in NameValueCollectionTypes)
             {
-                TestKeysPreservesInstance(0, type);
-                TestKeysPreservesInstance(10, type);
+                this.TestKeysPreservesInstance(0, type);
+                this.TestKeysPreservesInstance(10, type);
             }
         }
 
@@ -1276,8 +1276,8 @@ namespace Microsoft.Azure.Cosmos.Collections
         {
             foreach (NameValueCollectionType type in NameValueCollectionTypes)
             {
-                TestKeysGetEnumerator(0, type);
-                TestKeysGetEnumerator(10, type);
+                this.TestKeysGetEnumerator(0, type);
+                this.TestKeysGetEnumerator(10, type);
             }
         }
 
@@ -1285,9 +1285,9 @@ namespace Microsoft.Azure.Cosmos.Collections
         {
             INameValueCollection nameValueCollection = CreateNameValueCollection(count, 0, type);
 
-            var keys = nameValueCollection.Keys();
+            IEnumerable<string> keys = nameValueCollection.Keys();
             Assert.AreNotEqual(keys.GetEnumerator(), keys.GetEnumerator());
-            var keysArray = keys.ToArray();
+            string[] keysArray = keys.ToArray();
 
             IEnumerator enumerator = keys.GetEnumerator();
             for (int i = 0; i < 2; i++)
@@ -1312,32 +1312,32 @@ namespace Microsoft.Azure.Cosmos.Collections
         {
             foreach (NameValueCollectionType type in NameValueCollectionTypes)
             {
-                TestKeysGetEnumeratorInvalid(0, type);
-                TestKeysGetEnumeratorInvalid(10, type);
+                this.TestKeysGetEnumeratorInvalid(0, type);
+                this.TestKeysGetEnumeratorInvalid(10, type);
             }
         }
 
         private void TestKeysGetEnumeratorInvalid(int count, NameValueCollectionType type)
         {
             INameValueCollection nameValueCollection = CreateNameValueCollection(count, 0, type);
-            var keys = nameValueCollection.Keys();
+            IEnumerable<string> keys = nameValueCollection.Keys();
             IEnumerator enumerator = keys.GetEnumerator();
 
             // Has not started enumerating
-            AssertThrow(typeof(InvalidOperationException), () => { var tmp = enumerator.Current; });
+            AssertThrow(typeof(InvalidOperationException), () => { object tmp = enumerator.Current; });
 
             // Has finished enumerating
             while (enumerator.MoveNext()) ;
-            AssertThrow(typeof(InvalidOperationException), () => { var tmp = enumerator.Current; });
+            AssertThrow(typeof(InvalidOperationException), () => { object tmp = enumerator.Current; });
 
             // Has reset enumerating
             enumerator = keys.GetEnumerator();
-            AssertThrow(typeof(InvalidOperationException), () => { var tmp = enumerator.Current; });
+            AssertThrow(typeof(InvalidOperationException), () => { object tmp = enumerator.Current; });
 
             // Modify collection
             enumerator.MoveNext();
             nameValueCollection.Add("new-name", "new-value");
-            AssertThrow(typeof(InvalidOperationException), () => { var tmp = enumerator.MoveNext(); });
+            AssertThrow(typeof(InvalidOperationException), () => { bool tmp = enumerator.MoveNext(); });
             AssertThrow(typeof(InvalidOperationException), () => enumerator.Reset());
             if (count > 0)
             {
@@ -1348,7 +1348,7 @@ namespace Microsoft.Azure.Cosmos.Collections
             enumerator = keys.GetEnumerator();
             enumerator.MoveNext();
             nameValueCollection.Clear();
-            AssertThrow(typeof(InvalidOperationException), () => { var tmp = enumerator.Current; });
+            AssertThrow(typeof(InvalidOperationException), () => { object tmp = enumerator.Current; });
             AssertThrow(typeof(InvalidOperationException), () => enumerator.MoveNext());
             AssertThrow(typeof(InvalidOperationException), () => enumerator.Reset());
         }
@@ -1366,14 +1366,14 @@ namespace Microsoft.Azure.Cosmos.Collections
         {
             foreach (NameValueCollectionType type in NameValueCollectionTypes)
             {
-                TestClone(type);
+                this.TestClone(type);
             }
         }
 
         private void TestCloneCheckType(INameValueCollection c1, INameValueCollection c2)
         {
-            var type1 = c1.GetType();
-            var type2 = c2.GetType();
+            Type type1 = c1.GetType();
+            Type type2 = c2.GetType();
             Assert.AreEqual(type1, type2);
         }
 
@@ -1381,12 +1381,12 @@ namespace Microsoft.Azure.Cosmos.Collections
         {
             INameValueCollection c = CreateNameValueCollection(10, 0, type);
             INameValueCollection cloneC = c.Clone();
-            TestCloneCheckType(c, cloneC);
+            this.TestCloneCheckType(c, cloneC);
 
             foreach (string key in c)
             {
-                var cValues = c.GetValues(key);
-                var cloneValues = cloneC.GetValues(key);
+                string[] cValues = c.GetValues(key);
+                string[] cloneValues = cloneC.GetValues(key);
                 Assert.IsTrue(cValues.SequenceEqual(cloneValues));
             }
         }

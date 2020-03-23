@@ -24,14 +24,14 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
     [TestClass]
     public sealed class LocationCacheTests
     {
-        private static Uri DefaultEndpoint = new Uri("https://default.documents.azure.com");
-        private static Uri Location1Endpoint = new Uri("https://location1.documents.azure.com");
-        private static Uri Location2Endpoint = new Uri("https://location2.documents.azure.com");
-        private static Uri Location3Endpoint = new Uri("https://location3.documents.azure.com");
-        private static Uri Location4Endpoint = new Uri("https://location4.documents.azure.com");
-        private static Uri[] WriteEndpoints = new Uri[] { LocationCacheTests.Location1Endpoint, LocationCacheTests.Location2Endpoint, LocationCacheTests.Location3Endpoint };
-        private static Uri[] ReadEndpoints = new Uri[] { LocationCacheTests.Location1Endpoint, LocationCacheTests.Location2Endpoint, LocationCacheTests.Location4Endpoint };
-        private static Dictionary<string, Uri> EndpointByLocation = new Dictionary<string, Uri>()
+        private static readonly Uri DefaultEndpoint = new Uri("https://default.documents.azure.com");
+        private static readonly Uri Location1Endpoint = new Uri("https://location1.documents.azure.com");
+        private static readonly Uri Location2Endpoint = new Uri("https://location2.documents.azure.com");
+        private static readonly Uri Location3Endpoint = new Uri("https://location3.documents.azure.com");
+        private static readonly Uri Location4Endpoint = new Uri("https://location4.documents.azure.com");
+        private static readonly Uri[] WriteEndpoints = new Uri[] { LocationCacheTests.Location1Endpoint, LocationCacheTests.Location2Endpoint, LocationCacheTests.Location3Endpoint };
+        private static readonly Uri[] ReadEndpoints = new Uri[] { LocationCacheTests.Location1Endpoint, LocationCacheTests.Location2Endpoint, LocationCacheTests.Location4Endpoint };
+        private static readonly Dictionary<string, Uri> EndpointByLocation = new Dictionary<string, Uri>()
         {
             { "location1", LocationCacheTests.Location1Endpoint },
             { "location2", LocationCacheTests.Location2Endpoint },
@@ -569,8 +569,8 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             this.cache.OnDatabaseAccountRead(this.databaseAccount);
 
             this.mockedClient = new Mock<IDocumentClientInternal>();
-            mockedClient.Setup(owner => owner.ServiceEndpoint).Returns(LocationCacheTests.DefaultEndpoint);
-            mockedClient.Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>())).ReturnsAsync(this.databaseAccount);
+            this.mockedClient.Setup(owner => owner.ServiceEndpoint).Returns(LocationCacheTests.DefaultEndpoint);
+            this.mockedClient.Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>())).ReturnsAsync(this.databaseAccount);
 
             ConnectionPolicy connectionPolicy = new ConnectionPolicy()
             {
@@ -583,7 +583,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 connectionPolicy.PreferredLocations.Add(preferredLocation);
             }
 
-            this.endpointManager = new GlobalEndpointManager(mockedClient.Object, connectionPolicy);
+            this.endpointManager = new GlobalEndpointManager(this.mockedClient.Object, connectionPolicy);
         }
 
         private async Task ValidateLocationCacheAsync(
@@ -699,11 +699,11 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             bool isMostPreferredLocationUnavailableForWrite = useMultipleWriteLocations ? false : isFirstWriteEndpointUnavailable;
             if (this.preferredLocations.Count > 0)
             {
-                string mostPreferredReadLocationName = this.preferredLocations.First(location => databaseAccount.ReadableRegions.Any(readLocation => readLocation.Name == location));
+                string mostPreferredReadLocationName = this.preferredLocations.First(location => this.databaseAccount.ReadableRegions.Any(readLocation => readLocation.Name == location));
                 Uri mostPreferredReadEndpoint = LocationCacheTests.EndpointByLocation[mostPreferredReadLocationName];
                 isMostPreferredLocationUnavailableForRead = preferredAvailableReadEndpoints.Length == 0 ? true : (preferredAvailableReadEndpoints[0] != mostPreferredReadEndpoint);
 
-                string mostPreferredWriteLocationName = this.preferredLocations.First(location => databaseAccount.WritableRegions.Any(writeLocation => writeLocation.Name == location));
+                string mostPreferredWriteLocationName = this.preferredLocations.First(location => this.databaseAccount.WritableRegions.Any(writeLocation => writeLocation.Name == location));
                 Uri mostPreferredWriteEndpoint = LocationCacheTests.EndpointByLocation[mostPreferredWriteLocationName];
 
                 if (useMultipleWriteLocations)

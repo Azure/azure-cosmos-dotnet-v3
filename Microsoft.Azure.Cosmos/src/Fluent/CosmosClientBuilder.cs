@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <remarks>
         /// Setting this property after sending any request won't have any effect.
         /// </remarks>
-        internal virtual CosmosClient Build(DocumentClient documentClient)
+        internal CosmosClient Build(DocumentClient documentClient)
         {
             DefaultTrace.TraceInformation($"CosmosClientBuilder.Build(DocumentClient) with configuration: {this.clientOptions.GetSerializedConfiguration()}");
             return new CosmosClient(this.accountEndpoint, this.accountKey, this.clientOptions, documentClient);

@@ -850,7 +850,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(cosmosResponse.Headers.GetHeaderValue<string>(Documents.HttpConstants.HttpHeaders.CurrentResourceQuotaUsage));
         }
 
-        private class FaultySerializer : CosmosSerializer
+        private sealed class FaultySerializer : CosmosSerializer
         {
             public override T FromStream<T>(Stream stream)
             {

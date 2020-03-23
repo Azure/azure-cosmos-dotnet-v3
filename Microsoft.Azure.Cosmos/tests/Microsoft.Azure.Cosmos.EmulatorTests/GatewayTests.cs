@@ -203,7 +203,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 IList<Task<IList<DocumentCollection>>> createTasks = new List<Task<IList<DocumentCollection>>>();
                 foreach (Documents.Database database in databases)
                 {
-                    createTasks.Add(CreateCollectionsAsync(client, database, numberOfCollectionsPerDatabase, false));
+                    createTasks.Add(this.CreateCollectionsAsync(client, database, numberOfCollectionsPerDatabase, false));
                 }
                 IList<DocumentCollection>[] arrayOfCollections = await Task.WhenAll(createTasks);
 
@@ -274,21 +274,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ValidateStoredProcedureCrud_SessionGW()
         {
-            await ValidateStoredProcedureCrudAsync(ConsistencyLevel.Session,
+            await this.ValidateStoredProcedureCrudAsync(ConsistencyLevel.Session,
                 new ConnectionPolicy { ConnectionMode = ConnectionMode.Gateway });
         }
 
         [TestMethod]
         public async Task ValidateStoredProcedureCrud_SessionDirectTcp()
         {
-            await ValidateStoredProcedureCrudAsync(ConsistencyLevel.Session,
+            await this.ValidateStoredProcedureCrudAsync(ConsistencyLevel.Session,
                 new ConnectionPolicy { ConnectionMode = ConnectionMode.Direct, ConnectionProtocol = Protocol.Tcp });
         }
 
         [TestMethod]
         public async Task ValidateStoredProcedureCrud_SessionDirectHttps()
         {
-            await ValidateStoredProcedureCrudAsync(ConsistencyLevel.Session,
+            await this.ValidateStoredProcedureCrudAsync(ConsistencyLevel.Session,
                 new ConnectionPolicy { ConnectionMode = ConnectionMode.Direct, ConnectionProtocol = Protocol.Https });
         }
 
@@ -332,7 +332,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(storedProcedureCollection1.Count + 1, count, "StoredProcedure Collections count dont match for feedReader");
 
             Logger.LogLine("Querying StoredProcedure");
-            Retry(() =>
+            this.Retry(() =>
             {
                 IDocumentQuery<dynamic> queryService = client.CreateStoredProcedureQuery(collection1.StoredProceduresLink,
                     @"select * from root r where r.id=""" + storedProcedureName + @"""").AsDocumentQuery();
@@ -356,7 +356,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(retrievedStoredProcedure2.Body.Equals("function() {var x = 20;}", StringComparison.OrdinalIgnoreCase), "Mismatch in storedProcedure content");
 
             Logger.LogLine("Querying StoredProcedure");
-            Retry(() =>
+            this.Retry(() =>
             {
                 IDocumentQuery<dynamic> queryService = client.CreateStoredProcedureQuery(collection1.StoredProceduresLink,
                     @"select * from root r where r.id=""" + storedProcedureName + @"""").AsDocumentQuery();
@@ -421,21 +421,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public void ValidateTriggerCrud_SessionGW()
         {
-            ValidateTriggerCrud(ConsistencyLevel.Session,
+            this.ValidateTriggerCrud(ConsistencyLevel.Session,
                 new ConnectionPolicy { ConnectionMode = ConnectionMode.Gateway });
         }
 
         [TestMethod]
         public void ValidateTriggerCrud_SessionDirectTcp()
         {
-            ValidateTriggerCrud(ConsistencyLevel.Session,
+            this.ValidateTriggerCrud(ConsistencyLevel.Session,
                 new ConnectionPolicy { ConnectionMode = ConnectionMode.Direct, ConnectionProtocol = Protocol.Tcp });
         }
 
         [TestMethod]
         public void ValidateTriggerCrud_SessionDirectHttps()
         {
-            ValidateTriggerCrud(ConsistencyLevel.Session,
+            this.ValidateTriggerCrud(ConsistencyLevel.Session,
                 new ConnectionPolicy { ConnectionMode = ConnectionMode.Direct, ConnectionProtocol = Protocol.Https });
         }
 
@@ -484,7 +484,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
 
             Logger.LogLine("Querying Trigger");
-            Retry(() =>
+            this.Retry(() =>
             {
                 IDocumentQuery<dynamic> queryService = client.CreateTriggerQuery(collection1.TriggersLink,
                     @"select * from root r where r.id=""" + triggerName + @"""").AsDocumentQuery();
@@ -518,7 +518,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             Logger.LogLine("Querying Trigger");
-            Retry(() =>
+            this.Retry(() =>
             {
                 IDocumentQuery<dynamic> queryService = client.CreateTriggerQuery(collection1.TriggersLink,
                     @"select * from root r where r.id=""" + triggerName + @"""").AsDocumentQuery();
@@ -555,14 +555,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public void ValidateUserDefinedFunctionCrud_SessionGW()
         {
-            ValidateUserDefinedFunctionCrud(ConsistencyLevel.Session,
+            this.ValidateUserDefinedFunctionCrud(ConsistencyLevel.Session,
                 new ConnectionPolicy { ConnectionMode = ConnectionMode.Gateway });
         }
 
         [TestMethod]
         public void ValidateUserDefinedFunctionCrud_SessionDirectTcp()
         {
-            ValidateUserDefinedFunctionCrud(ConsistencyLevel.Session,
+            this.ValidateUserDefinedFunctionCrud(ConsistencyLevel.Session,
                 new ConnectionPolicy { ConnectionMode = ConnectionMode.Direct, ConnectionProtocol = Protocol.Tcp });
         }
 
@@ -570,7 +570,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         public void ValidateUserDefinedFunctionCrud_SessionDirectHttps()
         {
-            ValidateUserDefinedFunctionCrud(ConsistencyLevel.Session,
+            this.ValidateUserDefinedFunctionCrud(ConsistencyLevel.Session,
                 new ConnectionPolicy { ConnectionMode = ConnectionMode.Direct, ConnectionProtocol = Protocol.Https });
         }
 
@@ -654,7 +654,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(userDefinedFunctionCollection1.Count + 1, count, "UserDefinedFunctions Collections count dont match for feedReader");
 
             Logger.LogLine("Querying UserDefinedFunction");
-            Retry(() =>
+            this.Retry(() =>
             {
                 IDocumentQuery<dynamic> queryService = client.CreateUserDefinedFunctionQuery(collection1,
                     @"select * from root r where r.id=""" + userDefinedFunctionName + @"""").AsDocumentQuery();
@@ -678,7 +678,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(retrievedUserDefinedFunction2.Body.Equals("function userDefinedFunction() {var x = 20;}", StringComparison.OrdinalIgnoreCase), "Mismatch in userDefinedFunction content");
 
             Logger.LogLine("Querying UserDefinedFunction");
-            Retry(() =>
+            this.Retry(() =>
             {
                 IDocumentQuery<dynamic> queryService = client.CreateUserDefinedFunctionQuery(collection1,
                     @"select * from root r where r.id=""" + userDefinedFunctionName + @"""").AsDocumentQuery();
@@ -720,7 +720,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Documents.Database database = TestCommon.CreateOrGetDatabase(client);
 
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
-            DocumentCollection collection1 = TestCommon.CreateCollectionAsync(client, database.SelfLink, (new DocumentCollection { Id = "TestTriggers" + Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition })).Result;
+            DocumentCollection collection1 = TestCommon.CreateCollectionAsync(client, database.SelfLink, new DocumentCollection { Id = "TestTriggers" + Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition }).Result;
 
             // uppercase name
             Trigger t1 = new Trigger
@@ -734,7 +734,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 TriggerType = Documents.TriggerType.Pre,
                 TriggerOperation = Documents.TriggerOperation.All
             };
-            Trigger retrievedTrigger = CreateTriggerAndValidateAsync(client, collection1, t1).Result;
+            Trigger retrievedTrigger = this.CreateTriggerAndValidateAsync(client, collection1, t1).Result;
 
             string docId = Guid.NewGuid().ToString();
             dynamic document = new Document
@@ -763,8 +763,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public void ValidateTriggers()
         {
-            ValidateTriggersInternal(Protocol.Https, ConsistencyLevel.Session);
-            ValidateTriggersInternal(Protocol.Tcp, ConsistencyLevel.Session);
+            this.ValidateTriggersInternal(Protocol.Https, ConsistencyLevel.Session);
+            this.ValidateTriggersInternal(Protocol.Tcp, ConsistencyLevel.Session);
         }
 
         internal void ValidateTriggersInternal(Protocol protocol = Protocol.Https, ConsistencyLevel? consistencyLevel = null)
@@ -779,7 +779,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             TestCommon.DeleteAllDatabasesAsync().Wait();
             Documents.Database database = TestCommon.CreateOrGetDatabase(client);
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
-            DocumentCollection collection1 = TestCommon.CreateCollectionAsync(client, database, (new DocumentCollection { Id = "TestTriggers" + Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition })).Result;
+            DocumentCollection collection1 = TestCommon.CreateCollectionAsync(client, database, new DocumentCollection { Id = "TestTriggers" + Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition }).Result;
 
             // 1. Basic tests
 
@@ -795,7 +795,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 TriggerType = Documents.TriggerType.Pre,
                 TriggerOperation = Documents.TriggerOperation.All
             };
-            Trigger retrievedTrigger = CreateTriggerAndValidateAsync(client, collection1, t1).Result;
+            Trigger retrievedTrigger = this.CreateTriggerAndValidateAsync(client, collection1, t1).Result;
 
             dynamic doct1 = GatewayTests.CreateDocument(client, this.baseUri, collection1, "Doc1", "empty", 0, pretrigger: "t1");
             Assert.AreEqual("DOC1t1", doct1.Id);
@@ -813,7 +813,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 TriggerType = Documents.TriggerType.Post,
                 TriggerOperation = Documents.TriggerOperation.All
             };
-            retrievedTrigger = CreateTriggerAndValidateAsync(client, collection1, response1).Result;
+            retrievedTrigger = this.CreateTriggerAndValidateAsync(client, collection1, response1).Result;
 
             dynamic docresponse1 = GatewayTests.CreateDocument(client, this.baseUri, collection1, "testing post trigger", "empty", 0, pretrigger: "t1", posttrigger: "response1");
             Assert.AreEqual("TESTING POST TRIGGERt1", docresponse1.Id);
@@ -831,7 +831,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 TriggerType = Documents.TriggerType.Post,
                 TriggerOperation = Documents.TriggerOperation.All
             };
-            retrievedTrigger = CreateTriggerAndValidateAsync(client, collection1, response2).Result;
+            retrievedTrigger = this.CreateTriggerAndValidateAsync(client, collection1, response2).Result;
 
             dynamic docresponse2 = GatewayTests.CreateDocument(client, this.baseUri, collection1, "post trigger output", "empty", 0, pretrigger: "t1", posttrigger: "response2");
             Assert.AreEqual("POST TRIGGER OUTPUTt1POST TRIGGER OUTPUTt1response2", docresponse2.Id);
@@ -864,12 +864,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 TriggerType = Documents.TriggerType.Post,
                 TriggerOperation = Documents.TriggerOperation.All
             };
-            retrievedTrigger = CreateTriggerAndValidateAsync(client, collection1, response3).Result;
+            retrievedTrigger = this.CreateTriggerAndValidateAsync(client, collection1, response3).Result;
 
             dynamic docresponse3 = GatewayTests.CreateDocument(client, this.baseUri, collection1, "testing post trigger2", "empty", 0, pretrigger: "t1", posttrigger: "response3");
             Assert.AreEqual("TESTING POST TRIGGER2t1", docresponse3.Id);
 
-            DocumentCollection collection2 = TestCommon.CreateCollectionAsync(client, database, (new DocumentCollection { Id = "TestTriggers" + Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition })).Result;
+            DocumentCollection collection2 = TestCommon.CreateCollectionAsync(client, database, new DocumentCollection { Id = "TestTriggers" + Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition }).Result;
 
             // empty trigger
             Trigger t2 = new Trigger
@@ -879,7 +879,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 TriggerType = Documents.TriggerType.Pre,
                 TriggerOperation = Documents.TriggerOperation.All
             };
-            retrievedTrigger = CreateTriggerAndValidateAsync(client, collection2, t2).Result;
+            retrievedTrigger = this.CreateTriggerAndValidateAsync(client, collection2, t2).Result;
 
             dynamic doct2 = GatewayTests.CreateDocument(client, this.baseUri, collection2, "Doc2", "Prop1Value", 101, pretrigger: "t2");
             Assert.AreEqual("Doc2", doct2.Id);
@@ -896,7 +896,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 TriggerType = Documents.TriggerType.Pre,
                 TriggerOperation = Documents.TriggerOperation.All
             };
-            retrievedTrigger = CreateTriggerAndValidateAsync(client, collection2, t3).Result;
+            retrievedTrigger = this.CreateTriggerAndValidateAsync(client, collection2, t3).Result;
 
             dynamic doct3 = GatewayTests.CreateDocument(client, this.baseUri, collection2, "Doc3", "empty", 0, pretrigger: "t3");
             Assert.AreEqual("doc3t3", doct3.Id);
@@ -909,7 +909,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 TriggerType = Documents.TriggerType.Post,
                 TriggerOperation = Documents.TriggerOperation.All
             };
-            retrievedTrigger = CreateTriggerAndValidateAsync(client, collection2, triggerTypeMismatch).Result;
+            retrievedTrigger = this.CreateTriggerAndValidateAsync(client, collection2, triggerTypeMismatch).Result;
 
             bool exceptionThrown = false;
             try
@@ -931,7 +931,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 TriggerType = Documents.TriggerType.Pre,
                 TriggerOperation = Documents.TriggerOperation.All
             };
-            retrievedTrigger = CreateTriggerAndValidateAsync(client, collection2, preTriggerThatThrows).Result;
+            retrievedTrigger = this.CreateTriggerAndValidateAsync(client, collection2, preTriggerThatThrows).Result;
 
             try
             {
@@ -953,7 +953,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 TriggerType = Documents.TriggerType.Post,
                 TriggerOperation = Documents.TriggerOperation.All
             };
-            retrievedTrigger = CreateTriggerAndValidateAsync(client, collection2, postTriggerThatThrows).Result;
+            retrievedTrigger = this.CreateTriggerAndValidateAsync(client, collection2, postTriggerThatThrows).Result;
 
             try
             {
@@ -1120,12 +1120,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 TriggerType = Documents.TriggerType.Pre,
                 TriggerOperation = Documents.TriggerOperation.All
             };
-            retrievedTrigger = CreateTriggerAndValidateAsync(client, collection2, request1).Result;
+            retrievedTrigger = this.CreateTriggerAndValidateAsync(client, collection2, request1).Result;
 
             dynamic docrequest1 = GatewayTests.CreateDocument(client, this.baseUri, collection2, "abc", "empty", 0, pretrigger: "request1");
             Assert.AreEqual("def", docrequest1.Id);
 
-            DocumentCollection collection3 = TestCommon.CreateCollectionAsync(client, database, (new DocumentCollection { Id = "TestTriggers" + Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition })).Result;
+            DocumentCollection collection3 = TestCommon.CreateCollectionAsync(client, database, new DocumentCollection { Id = "TestTriggers" + Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition }).Result;
 
             // set request body multiple times
             Trigger request2 = new Trigger
@@ -1142,7 +1142,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 TriggerType = Documents.TriggerType.Pre,
                 TriggerOperation = Documents.TriggerOperation.All
             };
-            retrievedTrigger = CreateTriggerAndValidateAsync(client, collection3, request2).Result;
+            retrievedTrigger = this.CreateTriggerAndValidateAsync(client, collection3, request2).Result;
 
             dynamic docrequest2 = GatewayTests.CreateDocument(client, this.baseUri, collection3, "doc", "empty", 0, pretrigger: "request2");
             Assert.AreEqual(203, docrequest2.Id.Length);
@@ -1164,7 +1164,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 TriggerType = Documents.TriggerType.Pre,
                 TriggerOperation = Documents.TriggerOperation.All
             };
-            retrievedTrigger = CreateTriggerAndValidateAsync(client, collection3, request3).Result;
+            retrievedTrigger = this.CreateTriggerAndValidateAsync(client, collection3, request3).Result;
 
             dynamic docrequest3 = GatewayTests.CreateDocument(client, this.baseUri, collection3, "noname", "empty", 0, pretrigger: "request3");
             Assert.AreEqual("noresponse", docrequest3.Id);
@@ -1186,7 +1186,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 TriggerType = Documents.TriggerType.Pre,
                 TriggerOperation = Documents.TriggerOperation.All
             };
-            retrievedTrigger = CreateTriggerAndValidateAsync(client, collection3, request4).Result;
+            retrievedTrigger = this.CreateTriggerAndValidateAsync(client, collection3, request4).Result;
 
             ResourceResponse<Document> docrequest4 = client.CreateDocumentAsync(collection3, new Document { Id = "noname" }, new Documents.Client.RequestOptions { PreTriggerInclude = new List<string> { "request4" } }).Result;
             Assert.IsTrue(docrequest4.Resource.Id == "noheaders");
@@ -1208,7 +1208,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 TriggerType = Documents.TriggerType.Post,
                 TriggerOperation = Documents.TriggerOperation.All
             };
-            retrievedTrigger = CreateTriggerAndValidateAsync(client, collection3, responseQuotaHeader).Result;
+            retrievedTrigger = this.CreateTriggerAndValidateAsync(client, collection3, responseQuotaHeader).Result;
 
             Book docresponseQuotaHeader = (dynamic)client.CreateDocumentAsync(collection3, new Book { Id = "quotaDocument" }, new Documents.Client.RequestOptions { PostTriggerInclude = new List<string> { "responseQuotaHeader" } }).Result.Resource;
             Assert.IsTrue(docresponseQuotaHeader.Author.Contains("collectionSize"));
@@ -1224,7 +1224,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 TriggerType = Documents.TriggerType.Post,
                 TriggerOperation = Documents.TriggerOperation.Delete
             };
-            retrievedTrigger = CreateTriggerAndValidateAsync(client, collection3, triggerOpType).Result;
+            retrievedTrigger = this.CreateTriggerAndValidateAsync(client, collection3, triggerOpType).Result;
 
             exceptionThrown = false;
             try
@@ -1246,7 +1246,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 TriggerType = Documents.TriggerType.Post,
                 TriggerOperation = Documents.TriggerOperation.All
             };
-            retrievedTrigger = CreateTriggerAndValidateAsync(client, collection3, triggerAbortTransaction).Result;
+            retrievedTrigger = this.CreateTriggerAndValidateAsync(client, collection3, triggerAbortTransaction).Result;
 
             exceptionThrown = false;
             try
@@ -1266,7 +1266,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreNotEqual(doc.Id, "Docabort"); // make sure the doc isnt present
             }
 
-            DocumentCollection collection4 = TestCommon.CreateCollectionAsync(client, database, (new DocumentCollection { Id = "TestTriggers" + Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition })).Result;
+            DocumentCollection collection4 = TestCommon.CreateCollectionAsync(client, database, new DocumentCollection { Id = "TestTriggers" + Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition }).Result;
 
             // delete post trigger
             Trigger deletePostTrigger = new Trigger
@@ -1302,7 +1302,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 TriggerType = Documents.TriggerType.Post,
                 TriggerOperation = Documents.TriggerOperation.All
             };
-            retrievedTrigger = CreateTriggerAndValidateAsync(client, collection4, deletePostTrigger).Result;
+            retrievedTrigger = this.CreateTriggerAndValidateAsync(client, collection4, deletePostTrigger).Result;
 
             dynamic docDeletePostTrigger = null;
             try
@@ -1498,7 +1498,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ValidateSystemSproc()
         {
-            await ValidateSystemSprocInternal(true);
+            await this.ValidateSystemSprocInternal(true);
 #if DIRECT_MODE
             // DIRECT MODE has ReadFeed issues in the Public emulator
             ValidateSystemSprocInternal(false, Protocol.Https);
@@ -2179,7 +2179,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ValidateReadOnlyStoredProcedureExecution()
         {
-            await ValidateReadOnlyStoredProcedureExecutionInternal(true);
+            await this.ValidateReadOnlyStoredProcedureExecutionInternal(true);
 #if DIRECT_MODE
             // DIRECT MODE has ReadFeed issues in the Public emulator
             await ValidateReadOnlyStoredProcedureExecutionInternal(false, Protocol.Tcp);
@@ -2268,7 +2268,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 TestCommon.SetDoubleConfigurationProperty("StoredProcedureMaximumChargeInSeconds", 0.0);
                 TestCommon.WaitForConfigRefresh();
-                ValidateStoredProceduresBlacklistingInternal();
+                this.ValidateStoredProceduresBlacklistingInternal();
             }
             finally
             {
@@ -2359,7 +2359,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
             UserDefinedFunction retrievedUdf = client.CreateUserDefinedFunctionAsync(collection.UserDefinedFunctionsLink, udf1).Result;
 
-            Retry(() =>
+            this.Retry(() =>
             {
                 IDocumentQuery<dynamic> docServiceQuery = secondary1Client.CreateDocumentQuery(collection.DocumentsLink,
                     @"select * from root r where udf.udf1(r.id, ""Romulan"") = true", new FeedOptions { EnableCrossPartitionQuery = true }).AsDocumentQuery();
@@ -2451,7 +2451,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 TestCommon.SetDoubleConfigurationProperty("UdfMaximumChargeInSeconds", 0.0);
                 TestCommon.WaitForConfigRefresh();
-                ValidateUserDefinedFunctionsBlacklistingInternal();
+                this.ValidateUserDefinedFunctionsBlacklistingInternal();
             }
             finally
             {
@@ -2556,7 +2556,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ValidateChangeFeedIfNoneMatch()
         {
-            await ValidateChangeFeedIfNoneMatchHelper(true);
+            await this.ValidateChangeFeedIfNoneMatchHelper(true);
 #if DIRECT_MODE
             // DIRECT MODE has ReadFeed issues in the Public emulator
             await ValidateChangeFeedIfNoneMatchHelper(false, Protocol.Https);
@@ -2567,7 +2567,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private async Task ValidateChangeFeedIfNoneMatchHelper(bool useGateway, Protocol protocol = Protocol.Tcp)
         {
             DocumentClient client = TestCommon.CreateClient(useGateway, protocol);
-            var db = await client.CreateDatabaseAsync(new Documents.Database() { Id = Guid.NewGuid().ToString() });
+            ResourceResponse<Documents.Database> db = await client.CreateDatabaseAsync(new Documents.Database() { Id = Guid.NewGuid().ToString() });
             try
             {
                 PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
@@ -2706,7 +2706,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ValidateChangeFeedIfModifiedSince()
         {
-            await ValidateChangeFeedIfModifiedSinceHelper(true);
+            await this.ValidateChangeFeedIfModifiedSinceHelper(true);
 #if DIRECT_MODE
             // DIRECT MODE has ReadFeed issues in the Public emulator
             await ValidateChangeFeedIfModifiedSinceHelper(false, Protocol.Https);
@@ -2717,7 +2717,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private async Task ValidateChangeFeedIfModifiedSinceHelper(bool useGateway, Protocol protocol = Protocol.Tcp)
         {
             DocumentClient client = TestCommon.CreateClient(useGateway, protocol);
-            var db = await client.CreateDatabaseAsync(new Documents.Database() { Id = Guid.NewGuid().ToString() });
+            ResourceResponse<Documents.Database> db = await client.CreateDatabaseAsync(new Documents.Database() { Id = Guid.NewGuid().ToString() });
             try
             {
                 PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
@@ -2728,12 +2728,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 // 1. Read empty feed -- TS in the past.
                 options.StartTime = DateTime.Now - TimeSpan.FromDays(100);
-                string accumulator = await ReadChangeFeedToEnd(client, coll.SelfLink, options);
+                string accumulator = await this.ReadChangeFeedToEnd(client, coll.SelfLink, options);
                 Assert.AreEqual(string.Empty, accumulator);
 
                 // 2. Read emty feed -- TS in the future.
                 options.StartTime = DateTime.Now + TimeSpan.FromDays(100);
-                accumulator = await ReadChangeFeedToEnd(client, coll.SelfLink, options);
+                accumulator = await this.ReadChangeFeedToEnd(client, coll.SelfLink, options);
                 Assert.AreEqual(string.Empty, accumulator);
 
                 // Create documents.
@@ -2773,12 +2773,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 // 3. Read with TS before doc1.
                 options.StartTime = timestamps[0] - TimeSpan.FromMinutes(1);
-                accumulator = await ReadChangeFeedToEnd(client, coll.SelfLink, options);
+                accumulator = await this.ReadChangeFeedToEnd(client, coll.SelfLink, options);
                 Assert.AreEqual("doc1.doc2.", accumulator);
 
                 // 4. Read with TS = doc1.
                 options.StartTime = timestamps[0];
-                accumulator = await ReadChangeFeedToEnd(client, coll.SelfLink, options);
+                accumulator = await this.ReadChangeFeedToEnd(client, coll.SelfLink, options);
                 Assert.AreEqual("doc2.", accumulator);
 
                 // 5. Read with TS in between doc1 and doc2. Also validate StartFromBeginning = true/false is ignored.
@@ -2787,7 +2787,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 foreach (bool startFromBeginning in startFromBeginningValues)
                 {
                     options.StartFromBeginning = startFromBeginning;
-                    accumulator = await ReadChangeFeedToEnd(client, coll.SelfLink, options);
+                    accumulator = await this.ReadChangeFeedToEnd(client, coll.SelfLink, options);
                     Assert.AreEqual("doc2.", accumulator);
                 }
 
@@ -2803,13 +2803,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 // 7. Read with TS later than doc2.
                 options.StartTime = timestamps[1] + TimeSpan.FromSeconds(1);
-                accumulator = await ReadChangeFeedToEnd(client, coll.SelfLink, options);
+                accumulator = await this.ReadChangeFeedToEnd(client, coll.SelfLink, options);
                 Assert.AreEqual(string.Empty, accumulator);
 
                 // 8. If-None-Match wins.
                 options.StartTime = timestamps[1];
                 options.RequestContinuation = lsns[0].ToString();
-                accumulator = await ReadChangeFeedToEnd(client, coll.SelfLink, options);
+                accumulator = await this.ReadChangeFeedToEnd(client, coll.SelfLink, options);
                 Assert.AreEqual("doc2.", accumulator);
             }
             finally
@@ -2821,9 +2821,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ValidateChangeFeedWithPartitionKey()
         {
-            await ValidateChangeFeedWithPartitionKeyHelper(true);
-            await ValidateChangeFeedWithPartitionKeyHelper(false, Protocol.Https);
-            await ValidateChangeFeedWithPartitionKeyHelper(false, Protocol.Tcp);
+            await this.ValidateChangeFeedWithPartitionKeyHelper(true);
+            await this.ValidateChangeFeedWithPartitionKeyHelper(false, Protocol.Https);
+            await this.ValidateChangeFeedWithPartitionKeyHelper(false, Protocol.Tcp);
         }
 
         private class DocumentWithPK : Document
@@ -2882,14 +2882,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     },
                     new Documents.Client.RequestOptions { OfferThroughput = 15000 });
 
-                int pkRangeId = await GetPKRangeIdForPartitionKey(client, db.Id, coll.Id, coll.PartitionKey, pk1);
-                Assert.AreEqual(pkRangeId, await GetPKRangeIdForPartitionKey(client, db.Id, coll.Id, coll.PartitionKey, pk2));
+                int pkRangeId = await this.GetPKRangeIdForPartitionKey(client, db.Id, coll.Id, coll.PartitionKey, pk1);
+                Assert.AreEqual(pkRangeId, await this.GetPKRangeIdForPartitionKey(client, db.Id, coll.Id, coll.PartitionKey, pk2));
 
                 ChangeFeedOptions options = new ChangeFeedOptions { StartFromBeginning = true, PartitionKeyRangeId = pkRangeId.ToString() };
                 ChangeFeedOptions options1 = new ChangeFeedOptions { PartitionKey = new Documents.PartitionKey(pk1), StartFromBeginning = true };
 
                 // 1. Read empty feed, PK = PK1.
-                string accumulator = await ReadChangeFeedToEnd(client, coll.SelfLink, options);
+                string accumulator = await this.ReadChangeFeedToEnd(client, coll.SelfLink, options);
                 Assert.AreEqual(string.Empty, accumulator);
 
                 // Create documents.
@@ -2909,7 +2909,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 for (int i = 0; i < docs.Count / 2; ++i)
                 {
                     await client.CreateDocumentAsync(coll, docs[i]);
-                    docBatch.Add(docs[docs.Count / 2 + i]);
+                    docBatch.Add(docs[(docs.Count / 2) + i]);
                 }
 
                 Uri bulkInsertSprocUri = UriFactory.CreateStoredProcedureUri(db.Id, coll.Id, "__.sys.commonBulkInsert");
@@ -2924,21 +2924,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(4, sprocResponse.Response.Count);
 
                 // 2. Read without PK filter.
-                accumulator = await ReadChangeFeedToEnd(client, coll.SelfLink, options);
+                accumulator = await this.ReadChangeFeedToEnd(client, coll.SelfLink, options);
                 Assert.AreEqual("doc1_1.doc1_2.doc1_3.doc1_4.doc2_1.doc2_2.doc2_3.doc2_4.", accumulator);
 
                 // 3. Read with PK = pk1.
-                accumulator = await ReadChangeFeedToEnd(client, coll.SelfLink, options1);
+                accumulator = await this.ReadChangeFeedToEnd(client, coll.SelfLink, options1);
                 Assert.AreEqual("doc1_1.doc1_3.doc1_4.doc2_2.", accumulator);
 
                 // 4. Read with PK = pk2.
                 options1.PartitionKey = new Documents.PartitionKey(pk2);
-                accumulator = await ReadChangeFeedToEnd(client, coll.SelfLink, options1);
+                accumulator = await this.ReadChangeFeedToEnd(client, coll.SelfLink, options1);
                 Assert.AreEqual("doc1_2.doc2_1.doc2_3.doc2_4.", accumulator);
 
                 // 5. Read with PK = neither PK1, nor PK2 but falls into same range.
                 options1.PartitionKey = new Documents.PartitionKey(pk3);
-                accumulator = await ReadChangeFeedToEnd(client, coll.SelfLink, options1);
+                accumulator = await this.ReadChangeFeedToEnd(client, coll.SelfLink, options1);
                 Assert.AreEqual(string.Empty, accumulator);
 
                 // 6. Both PK and PKRange are provided.
@@ -2996,7 +2996,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ValidateReadPartitionKeyRange()
         {
-            await ValidateReadPartitionKeyRangeHelper(true);
+            await this.ValidateReadPartitionKeyRangeHelper(true);
 #if DIRECT_MODE
             // DIRECT MODE has ReadFeed issues in the Public emulator
             await ValidateReadPartitionKeyRangeHelper(false, Protocol.Https);
@@ -3098,22 +3098,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public void ValidateGenericReadDocumentGateway()
         {
-            ValidateGenericReadDocument(true, Protocol.Https).Wait();
-            ValidateGenericReadDocumentFromResource(true, Protocol.Https).Wait();
+            this.ValidateGenericReadDocument(true, Protocol.Https).Wait();
+            this.ValidateGenericReadDocumentFromResource(true, Protocol.Https).Wait();
         }
 
         [TestMethod]
         public void ValidateGenericReadDocumentDirectTcp()
         {
-            ValidateGenericReadDocument(false, Protocol.Tcp).Wait();
-            ValidateGenericReadDocumentFromResource(false, Protocol.Tcp).Wait();
+            this.ValidateGenericReadDocument(false, Protocol.Tcp).Wait();
+            this.ValidateGenericReadDocumentFromResource(false, Protocol.Tcp).Wait();
         }
 
         [TestMethod]
         public void ValidateGenericReadDocumentDirectHttps()
         {
-            ValidateGenericReadDocument(false, Protocol.Https).Wait();
-            ValidateGenericReadDocumentFromResource(false, Protocol.Tcp).Wait();
+            this.ValidateGenericReadDocument(false, Protocol.Https).Wait();
+            this.ValidateGenericReadDocumentFromResource(false, Protocol.Tcp).Wait();
         }
 
         private async Task ValidateGenericReadDocument(bool useGateway, Protocol protocol)
@@ -3200,7 +3200,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             DocumentClient client = TestCommon.CreateClient(true);
             Documents.Database database = TestCommon.CreateOrGetDatabase(client);
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
-            DocumentCollection collection1 = TestCommon.CreateCollectionAsync(client, database, (new DocumentCollection { Id = "TestTriggers" + Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition })).Result;
+            DocumentCollection collection1 = TestCommon.CreateCollectionAsync(client, database, new DocumentCollection { Id = "TestTriggers" + Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition }).Result;
 
             CustomerPOCO poco = new CustomerPOCO()
             {
@@ -3371,7 +3371,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 queryText: @"select * from root r where r.StringField=""222""",
                 requestOptions: new QueryRequestOptions { MaxConcurrency = 1 });
 
-            Assert.AreEqual(0, await GetCountFromIterator(queriedDocuments));
+            Assert.AreEqual(0, await this.GetCountFromIterator(queriedDocuments));
 
             Logger.LogLine("Replace document to include in index");
             retrievedDocument = await collection.ReplaceItemAsync(id: documentName, item: (Document)retrievedDocument, requestOptions: new ItemRequestOptions { IndexingDirective = Cosmos.IndexingDirective.Include });
@@ -3381,28 +3381,28 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 queryText: @"select * from root r where r.StringField=""222""",
                 requestOptions: new QueryRequestOptions { MaxConcurrency = 1 });
 
-            Assert.AreEqual(1, await GetCountFromIterator(queriedDocuments));
+            Assert.AreEqual(1, await this.GetCountFromIterator(queriedDocuments));
 
             Logger.LogLine("Replace document to not include in index");
             retrievedDocument = await collection.ReplaceItemAsync(id: documentName, item: (Document)retrievedDocument, requestOptions: new ItemRequestOptions { IndexingDirective = Cosmos.IndexingDirective.Exclude });
 
             Logger.LogLine("Querying Document to ensure if document is not indexed");
             queriedDocuments = collection.GetItemQueryIterator<Document>(queryText: @"select * from root r where r.StringField=""222""", requestOptions: new QueryRequestOptions { MaxConcurrency = 1 });
-            Assert.AreEqual(0, await GetCountFromIterator(queriedDocuments));
+            Assert.AreEqual(0, await this.GetCountFromIterator(queriedDocuments));
 
             Logger.LogLine("Replace document to not include in index");
             retrievedDocument = await collection.ReplaceItemAsync(id: documentName, item: (Document)retrievedDocument, requestOptions: new ItemRequestOptions { IndexingDirective = Cosmos.IndexingDirective.Exclude });
 
             Logger.LogLine("Querying Document to ensure if document is not indexed");
             queriedDocuments = collection.GetItemQueryIterator<Document>(queryText: @"select * from root r where r.StringField=""222""", requestOptions: new QueryRequestOptions { MaxConcurrency = 1 });
-            Assert.AreEqual(0, await GetCountFromIterator(queriedDocuments));
+            Assert.AreEqual(0, await this.GetCountFromIterator(queriedDocuments));
 
             Logger.LogLine("Delete document");
             await collection.DeleteItemAsync<Document>(partitionKey: new Cosmos.PartitionKey(documentName), id: documentName);
 
             Logger.LogLine("Querying Document to ensure if document is not indexed");
             queriedDocuments = collection.GetItemQueryIterator<Document>(queryText: @"select * from root r where r.StringField=""222""", requestOptions: new QueryRequestOptions { MaxConcurrency = 1 });
-            Assert.AreEqual(0, await GetCountFromIterator(queriedDocuments));
+            Assert.AreEqual(0, await this.GetCountFromIterator(queriedDocuments));
 
             await database.DeleteAsync();
         }
@@ -3511,7 +3511,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        internal class Book : MediaDocument
+        internal sealed class Book : MediaDocument
         {
             public Book()
                 : base("Book")
@@ -3610,7 +3610,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [JsonConverter(typeof(JsonPocoClassSerializer))]
-        internal class CustomerObjectFromDocumentEx : Document
+        internal sealed class CustomerObjectFromDocumentEx : Document
         {
             public string TestProperty { get; set; }
         }

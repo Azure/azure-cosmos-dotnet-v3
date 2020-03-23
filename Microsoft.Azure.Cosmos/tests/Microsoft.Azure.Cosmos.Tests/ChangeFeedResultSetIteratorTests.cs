@@ -285,9 +285,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
-        private class MultiRangeMockDocumentClient : MockDocumentClient
+        private sealed class MultiRangeMockDocumentClient : MockDocumentClient
         {
-            private List<Documents.PartitionKeyRange> availablePartitionKeyRanges = new List<Documents.PartitionKeyRange>() {
+            private readonly List<Documents.PartitionKeyRange> availablePartitionKeyRanges = new List<Documents.PartitionKeyRange>() {
                 new Documents.PartitionKeyRange() { MinInclusive = "", MaxExclusive = "AA", Id = "0" },
                 new Documents.PartitionKeyRange() { MinInclusive = "AA", MaxExclusive = "BB", Id = "1" },
                 new Documents.PartitionKeyRange() { MinInclusive = "BB", MaxExclusive = "FF", Id = "2" }

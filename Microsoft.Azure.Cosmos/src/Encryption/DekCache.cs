@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
 
-    internal class DekCache
+    internal sealed class DekCache
     {
         private readonly TimeSpan dekPropertiesTimeToLive;
 

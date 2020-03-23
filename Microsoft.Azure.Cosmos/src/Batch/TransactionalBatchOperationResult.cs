@@ -83,17 +83,17 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Request charge in request units for the operation.
         /// </summary>
-        internal virtual double RequestCharge { get; set; }
+        internal double RequestCharge { get; set; }
 
         /// <summary>
         /// Gets detail on the completion status of the operation.
         /// </summary>
-        internal virtual SubStatusCodes SubStatusCode { get; set; }
+        internal SubStatusCodes SubStatusCode { get; set; }
 
         /// <summary>
         /// Gets the cosmos diagnostic information for the current request to Azure Cosmos DB service
         /// </summary>
-        internal virtual CosmosDiagnosticsContext DiagnosticsContext { get; set; }
+        internal CosmosDiagnosticsContext DiagnosticsContext { get; set; }
 
         internal static Result ReadOperationResult(Memory<byte> input, out TransactionalBatchOperationResult batchOperationResult)
         {
@@ -208,7 +208,7 @@ namespace Microsoft.Azure.Cosmos
                 RetryAfter = this.RetryAfter,
                 RequestCharge = this.RequestCharge,
             };
-             
+
             ResponseMessage responseMessage = new ResponseMessage(
                 statusCode: this.StatusCode,
                 requestMessage: null,

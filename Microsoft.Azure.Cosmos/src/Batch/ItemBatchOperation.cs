@@ -312,7 +312,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="serializerCore">Serializer to serialize user provided objects to JSON.</param>
         /// <param name="cancellationToken"><see cref="CancellationToken"/> for cancellation.</param>
-        internal virtual async Task MaterializeResourceAsync(CosmosSerializerCore serializerCore, CancellationToken cancellationToken)
+        internal async Task MaterializeResourceAsync(CosmosSerializerCore serializerCore, CancellationToken cancellationToken)
         {
             if (this.body.IsEmpty && this.ResourceStream != null)
             {
@@ -353,7 +353,7 @@ namespace Microsoft.Azure.Cosmos
     }
 
 #pragma warning disable SA1402 // File may only contain a single type
-    internal class ItemBatchOperation<T> : ItemBatchOperation
+    internal sealed class ItemBatchOperation<T> : ItemBatchOperation
 #pragma warning restore SA1402 // File may only contain a single type
     {
         public ItemBatchOperation(
@@ -380,21 +380,5 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public T Resource { get; private set; }
-
-        /// <summary>
-        /// Materializes the operation's resource into a Memory{byte} wrapping a byte array.
-        /// </summary>
-        /// <param name="serializerCore">Serializer to serialize user provided objects to JSON.</param>
-        /// <param name="cancellationToken"><see cref="CancellationToken"/> for cancellation.</param>
-        internal override Task MaterializeResourceAsync(CosmosSerializerCore serializerCore, CancellationToken cancellationToken)
-        {
-            if (this.body.IsEmpty && this.Resource != null)
-            {
-                this.ResourceStream = serializerCore.ToStream(this.Resource);
-                return base.MaterializeResourceAsync(serializerCore, cancellationToken);
-            }
-
-            return Task.FromResult(true);
-        }
     }
 }

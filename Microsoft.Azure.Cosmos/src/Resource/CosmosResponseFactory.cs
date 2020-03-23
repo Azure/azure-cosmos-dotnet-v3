@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Scripts;
 
-    internal class CosmosResponseFactory
+    internal sealed class CosmosResponseFactory
     {
         /// <summary>
         /// This is used for all meta data types

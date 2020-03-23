@@ -636,13 +636,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        private class BatchContainerProperties : ContainerProperties
+        private sealed class BatchContainerProperties : ContainerProperties
         {
             [JsonProperty("schemaPolicy")]
             public SchemaPolicy SchemaPolicy { get; set; }
         }
 
-        private class SchemaPolicy
+        private sealed class SchemaPolicy
         {
             public Namespace TableSchema { get; set; }
 

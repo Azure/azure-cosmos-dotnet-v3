@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
 
-    internal class InvalidPartitionExceptionRetryPolicy : IDocumentClientRetryPolicy
+    internal sealed class InvalidPartitionExceptionRetryPolicy : IDocumentClientRetryPolicy
     {
         private readonly IDocumentClientRetryPolicy nextPolicy;
         private DocumentServiceRequest documentServiceRequest;

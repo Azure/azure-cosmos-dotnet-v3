@@ -12,9 +12,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     /// Provides flexible way to build lease manager constructor parameters.
     /// For the actual creation of lease manager instance, delegates to lease manager factory.
     /// </summary>
-    internal class DocumentServiceLeaseStoreManagerBuilder
+    internal sealed class DocumentServiceLeaseStoreManagerBuilder
     {
-        private DocumentServiceLeaseStoreManagerOptions options = new DocumentServiceLeaseStoreManagerOptions();
+        private readonly DocumentServiceLeaseStoreManagerOptions options = new DocumentServiceLeaseStoreManagerOptions();
         private Container container;
         private RequestOptionsFactory requestOptionsFactory;
 
@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             if (this.requestOptionsFactory == null)
                 throw new InvalidOperationException(nameof(this.requestOptionsFactory) + " was not specified");
 
-            var leaseStoreManager = new DocumentServiceLeaseStoreManagerCosmos(this.options, this.container, this.requestOptionsFactory);
+            DocumentServiceLeaseStoreManagerCosmos leaseStoreManager = new DocumentServiceLeaseStoreManagerCosmos(this.options, this.container, this.requestOptionsFactory);
             return Task.FromResult<DocumentServiceLeaseStoreManager>(leaseStoreManager);
         }
     }

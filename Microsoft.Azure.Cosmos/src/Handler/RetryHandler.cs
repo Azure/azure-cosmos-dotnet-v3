@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     /// <summary>
     /// Handler to wrap the pipeline into a retry mechanism defined by a <see cref="IDocumentClientRetryPolicy"/>
     /// </summary>
-    internal class RetryHandler : AbstractRetryHandler
+    internal sealed class RetryHandler : AbstractRetryHandler
     {
         private readonly CosmosClient client;
 

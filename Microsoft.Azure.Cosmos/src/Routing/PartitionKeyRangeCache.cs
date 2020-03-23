@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Routing;
 
-    internal class PartitionKeyRangeCache : IRoutingMapProvider, ICollectionRoutingMapCache
+    internal sealed class PartitionKeyRangeCache : IRoutingMapProvider, ICollectionRoutingMapCache
     {
         private const string PageSizeString = "-1";
 
@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.collectionCache = collectionCache;
         }
 
-        public virtual async Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(
+        public async Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(
             string collectionRid,
             Range<string> range,
             bool forceRefresh = false)
@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             return routingMap.TryGetRangeByPartitionKeyRangeId(partitionKeyRangeId);
         }
 
-        public virtual async Task<CollectionRoutingMap> TryLookupAsync(
+        public async Task<CollectionRoutingMap> TryLookupAsync(
             string collectionRid,
             CollectionRoutingMap previousValue,
             DocumentServiceRequest request,
@@ -170,7 +170,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 RetryOptions retryOptions = new RetryOptions();
                 using (DocumentServiceResponse response = await BackoffRetryUtility<DocumentServiceResponse>.ExecuteAsync(
-                    () => ExecutePartitionKeyRangeReadChangeFeedAsync(collectionRid, headers),
+                    () => this.ExecutePartitionKeyRangeReadChangeFeedAsync(collectionRid, headers),
                     new ResourceThrottleRetryPolicy(retryOptions.MaxRetryAttemptsOnThrottledRequests, retryOptions.MaxRetryWaitTimeInSeconds),
                     cancellationToken))
                 {

@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
-    internal class EncryptionProcessor
+    internal sealed class EncryptionProcessor
     {
         private static readonly CosmosSerializer baseSerializer = new CosmosJsonSerializerWrapper(new CosmosJsonDotNetSerializer());
 

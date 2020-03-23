@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         Mock<ClientCollectionCache> collectionCache;
         Mock<PartitionKeyRangeCache> partitionKeyRangeCache;
         Mock<GlobalEndpointManager> globalEndpointManager;
-        private Cosmos.ConsistencyLevel accountConsistencyLevel;
+        private readonly Cosmos.ConsistencyLevel accountConsistencyLevel;
 
         public MockDocumentClient()
             : base(new Uri("http://localhost"), null)

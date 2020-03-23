@@ -68,9 +68,9 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal virtual IReadOnlyList<CosmosElement> CosmosElements { get; }
+        internal IReadOnlyList<CosmosElement> CosmosElements { get; }
 
-        internal virtual CosmosQueryResponseMessageHeaders QueryHeaders => (CosmosQueryResponseMessageHeaders)this.Headers;
+        internal CosmosQueryResponseMessageHeaders QueryHeaders => (CosmosQueryResponseMessageHeaders)this.Headers;
 
         /// <summary>
         /// Gets the response length in bytes
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         internal long ResponseLengthBytes { get; }
 
-        internal virtual CosmosSerializationFormatOptions CosmosSerializationOptions { get; }
+        internal CosmosSerializationFormatOptions CosmosSerializationOptions { get; }
 
         internal bool GetHasMoreResults()
         {

@@ -6,10 +6,10 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
 
-    internal class CosmosCustomHeader
+    internal sealed class CosmosCustomHeader
     {
-        private Func<string> valueGetter;
-        private Action<string> valueSetter;
+        private readonly Func<string> valueGetter;
+        private readonly Action<string> valueSetter;
         public CosmosCustomHeader(Func<string> getter, Action<string> setter)
         {
             this.valueGetter = getter ?? throw new ArgumentNullException(nameof(getter));

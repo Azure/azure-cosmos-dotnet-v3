@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Configuration
     /// <summary>
     /// Options to control various aspects of partition distribution happening within <see cref="ChangeFeedProcessorCore{T}"/> instance.
     /// </summary>
-    internal class ChangeFeedLeaseOptions
+    internal sealed class ChangeFeedLeaseOptions
     {
         internal static readonly TimeSpan DefaultRenewInterval = TimeSpan.FromSeconds(17);
         internal static readonly TimeSpan DefaultAcquireInterval = TimeSpan.FromSeconds(13);

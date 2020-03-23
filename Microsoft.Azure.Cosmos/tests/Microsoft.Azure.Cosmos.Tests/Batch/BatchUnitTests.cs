@@ -529,7 +529,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             return serializer.FromStream<TestItem>(new MemoryStream(body.Span.ToArray()));
         }
 
-        private class BatchTestHandler : TestHandler
+        private sealed class BatchTestHandler : TestHandler
         {
             private readonly Func<RequestMessage, List<ItemBatchOperation>, Task<ResponseMessage>> func;
 
@@ -566,7 +566,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
        }
 
-        private class TestItem
+        private sealed class TestItem
         {
             [JsonProperty("id")]
             public string Id { get; set; }

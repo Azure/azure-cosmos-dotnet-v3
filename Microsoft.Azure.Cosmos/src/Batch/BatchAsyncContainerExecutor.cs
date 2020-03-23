@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Cosmos
             this.timerPool.Dispose();
         }
 
-        internal virtual async Task ValidateOperationAsync(
+        internal async Task ValidateOperationAsync(
             ItemBatchOperation operation,
             ItemRequestOptions itemRequestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))

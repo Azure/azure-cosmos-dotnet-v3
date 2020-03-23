@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos
     ///
     /// <see cref="CosmosClient"/> for or creating new databases, and reading/querying all databases; use `client.Databases`.
     /// </summary>
-    internal class DatabaseCore : Database
+    internal sealed class DatabaseCore : Database
     {
         /// <summary>
         /// Only used for unit testing
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override string Id { get; }
 
-        internal virtual Uri LinkUri { get; }
+        internal Uri LinkUri { get; }
 
         internal CosmosClientContext ClientContext { get; }
 
@@ -529,9 +529,9 @@ namespace Microsoft.Azure.Cosmos
         }
 
 #if PREVIEW
-        public override
+        public 
 #else
-        internal virtual
+        internal
 #endif
         DataEncryptionKey GetDataEncryptionKey(string id)
         {
@@ -548,9 +548,9 @@ namespace Microsoft.Azure.Cosmos
         }
 
 #if PREVIEW
-        public override
+        public
 #else
-        internal virtual
+        internal
 #endif
             FeedIterator<DataEncryptionKeyProperties> GetDataEncryptionKeyIterator(
                 string startId = null,
@@ -613,9 +613,9 @@ namespace Microsoft.Azure.Cosmos
         }
 
 #if PREVIEW
-        public override
+        public
 #else
-        internal virtual
+        internal
 #endif
             async Task<DataEncryptionKeyResponse> CreateDataEncryptionKeyAsync(
                 string id,
@@ -730,7 +730,7 @@ namespace Microsoft.Azure.Cosmos
                cancellationToken: cancellationToken);
         }
 
-        internal virtual async Task<string> GetRIDAsync(CancellationToken cancellationToken = default(CancellationToken))
+        internal async Task<string> GetRIDAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             DatabaseResponse databaseResponse = await this.ReadAsync(cancellationToken: cancellationToken);
             return databaseResponse?.Resource?.ResourceId;

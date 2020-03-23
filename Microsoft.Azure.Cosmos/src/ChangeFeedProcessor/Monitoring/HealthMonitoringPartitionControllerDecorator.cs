@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using Microsoft.Azure.Cosmos.ChangeFeed.Monitoring;
     using Microsoft.Azure.Documents;
 
-    internal class HealthMonitoringPartitionControllerDecorator : PartitionController
+    internal sealed class HealthMonitoringPartitionControllerDecorator : PartitionController
     {
         private readonly PartitionController inner;
         private readonly HealthMonitor monitor;

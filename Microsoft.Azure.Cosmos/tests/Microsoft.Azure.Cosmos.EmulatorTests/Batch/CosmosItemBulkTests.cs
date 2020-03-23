@@ -453,7 +453,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return document;
         }
 
-        private class MyDocument
+        private sealed class MyDocument
         {
             public string id { get; set; }
 

@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
             Offline
         }
 
-        private class SampleSerializable : JsonSerializable
+        private sealed class SampleSerializable : JsonSerializable
         {
             public SampleEnum Field1
             {
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos
 
                 ms.Position = 0;
 
-                string json = (new StreamReader(ms)).ReadToEnd();
+                string json = new StreamReader(ms).ReadToEnd();
 
                 Assert.AreEqual("{\"field1\":\"splitting\",\"field2\":\"Splitting\",\"field3\":2}", json);
                 serializable = new SampleSerializable();

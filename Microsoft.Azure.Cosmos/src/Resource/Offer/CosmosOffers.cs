@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Documents;
 
-    internal class CosmosOffers
+    internal sealed class CosmosOffers
     {
         private readonly CosmosClientContext ClientContext;
         private readonly Uri OfferRootUri;
@@ -153,7 +153,7 @@ namespace Microsoft.Azure.Cosmos
             return offerV2;
         }
 
-        internal virtual FeedIterator<T> GetOfferQueryIterator<T>(
+        internal FeedIterator<T> GetOfferQueryIterator<T>(
             QueryDefinition queryDefinition,
             string continuationToken,
             QueryRequestOptions requestOptions,
@@ -175,7 +175,7 @@ namespace Microsoft.Azure.Cosmos
                     resourceType: ResourceType.Offer));
         }
 
-        internal virtual FeedIterator GetOfferQueryStreamIterator(
+        internal FeedIterator GetOfferQueryStreamIterator(
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,

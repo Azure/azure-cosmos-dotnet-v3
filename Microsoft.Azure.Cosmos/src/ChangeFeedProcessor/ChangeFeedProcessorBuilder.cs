@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos
         /// (3) StartTime is not specified.
         /// </remarks>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
-        internal virtual ChangeFeedProcessorBuilder WithStartFromBeginning()
+        internal ChangeFeedProcessorBuilder WithStartFromBeginning()
         {
             this.changeFeedProcessorOptions = this.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
             this.changeFeedProcessorOptions.StartFromBeginning = true;
@@ -173,7 +173,7 @@ namespace Microsoft.Azure.Cosmos
         /// Using an in-memory container restricts the scaling capability to just the instance running the current processor.
         /// </remarks>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
-        internal virtual ChangeFeedProcessorBuilder WithInMemoryLeaseContainer()
+        internal ChangeFeedProcessorBuilder WithInMemoryLeaseContainer()
         {
             if (this.leaseContainer != null) throw new InvalidOperationException("The builder already defined a lease container.");
             if (this.LeaseStoreManager != null) throw new InvalidOperationException("The builder already defined an in-memory lease container instance.");
@@ -195,14 +195,14 @@ namespace Microsoft.Azure.Cosmos
         /// If this is specified, both StartTime and StartFromBeginning are ignored.
         /// </remarks>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
-        internal virtual ChangeFeedProcessorBuilder WithSessionContinuationToken(string startContinuation)
+        internal ChangeFeedProcessorBuilder WithSessionContinuationToken(string startContinuation)
         {
             this.changeFeedProcessorOptions = this.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
             this.changeFeedProcessorOptions.StartContinuation = startContinuation;
             return this;
         }
 
-        internal virtual ChangeFeedProcessorBuilder WithMonitoredContainerRid(string monitoredContainerRid)
+        internal ChangeFeedProcessorBuilder WithMonitoredContainerRid(string monitoredContainerRid)
         {
             if (monitoredContainerRid != null) throw new ArgumentNullException(nameof(monitoredContainerRid));
 

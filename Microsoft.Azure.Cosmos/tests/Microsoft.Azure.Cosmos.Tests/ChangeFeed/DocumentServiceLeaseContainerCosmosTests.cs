@@ -20,13 +20,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     [TestCategory("ChangeFeed")]
     public class DocumentServiceLeaseContainerCosmosTests
     {
-        private static DocumentServiceLeaseStoreManagerOptions leaseStoreManagerSettings = new DocumentServiceLeaseStoreManagerOptions()
+        private static readonly DocumentServiceLeaseStoreManagerOptions leaseStoreManagerSettings = new DocumentServiceLeaseStoreManagerOptions()
         {
             ContainerNamePrefix = "prefix",
             HostName = "host"
         };
 
-        private static List<DocumentServiceLeaseCore> allLeases = new List<DocumentServiceLeaseCore>()
+        private static readonly List<DocumentServiceLeaseCore> allLeases = new List<DocumentServiceLeaseCore>()
         {
             new DocumentServiceLeaseCore()
             {
@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             return mockedItems.Object;
         }
 
-        private class MockFeedResponse<T>
+        private sealed class MockFeedResponse<T>
         {
             public List<T> Documents { get; set; }
         }

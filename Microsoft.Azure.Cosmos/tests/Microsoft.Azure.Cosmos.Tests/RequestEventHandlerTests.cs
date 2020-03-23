@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos
             EventHandler<ReceivedResponseEventArgs> receivedResponse;
             sendingRequest = this.SendingRequestEventHandler;
             receivedResponse = this.ReceivedRequestEventHandler;
-            ServerStoreModel storeModel = new ServerStoreModel(GetMockStoreClient(), sendingRequest, receivedResponse);
+            ServerStoreModel storeModel = new ServerStoreModel(this.GetMockStoreClient(), sendingRequest, receivedResponse);
 
             using (new ActivityScope(Guid.NewGuid()))
             {
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos
         {
             EventHandler<SendingRequestEventArgs> sendingRequest = null;
             EventHandler<ReceivedResponseEventArgs> receivedResponse = null;
-            ServerStoreModel storeModel = new ServerStoreModel(GetMockStoreClient(), sendingRequest, receivedResponse);
+            ServerStoreModel storeModel = new ServerStoreModel(this.GetMockStoreClient(), sendingRequest, receivedResponse);
 
             using (new ActivityScope(Guid.NewGuid()))
             {
@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos
             AddressSelector addressSelector = new AddressSelector(mockAddressCache.Object, Protocol.Tcp);
             TransportClient mockTransportClient = this.GetMockTransportClient();
             ISessionContainer sessionContainer = new SessionContainer(string.Empty);
-            var connectionStateListener = new ConnectionStateListener(null);
+            ConnectionStateListener connectionStateListener = new ConnectionStateListener(null);
 
             StoreReader storeReader = new StoreReader(mockTransportClient, addressSelector, sessionContainer, connectionStateListener);
 

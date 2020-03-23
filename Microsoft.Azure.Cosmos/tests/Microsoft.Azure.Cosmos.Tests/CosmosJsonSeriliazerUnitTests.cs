@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
     [TestClass]
     public class CosmosJsonSeriliazerUnitTests
     {
-        private ToDoActivity toDoActivity = new ToDoActivity()
+        private readonly ToDoActivity toDoActivity = new ToDoActivity()
         {
             id = "c1d433c1-369d-430e-91e5-14e3ce588f71",
             taskNum = 42,
@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             status = "TBD"
         };
 
-        private string toDoActivityJson = @"{""id"":""c1d433c1-369d-430e-91e5-14e3ce588f71"",""taskNum"":42,""cost"":1.7976931348623157E+308,""description"":""cosmos json serializer"",""status"":""TBD""}";
+        private readonly string toDoActivityJson = @"{""id"":""c1d433c1-369d-430e-91e5-14e3ce588f71"",""taskNum"":42,""cost"":1.7976931348623157E+308,""description"":""cosmos json serializer"",""status"":""TBD""}";
 
         [TestMethod]
         public void ValidateSerializer()

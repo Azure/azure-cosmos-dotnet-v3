@@ -5,7 +5,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System.Net;
 
-    internal class CosmosOfferResult
+    internal sealed class CosmosOfferResult
     {
         public CosmosOfferResult(int? throughput)
         {
