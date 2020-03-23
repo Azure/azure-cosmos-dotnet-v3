@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
     /// This struct is used to strongly bind the results of that rewritten query.
     /// </para>
     /// </summary>
-    internal struct OrderByQueryResult
+    internal readonly struct OrderByQueryResult
     {
         private readonly CosmosObject cosmosObject;
 
