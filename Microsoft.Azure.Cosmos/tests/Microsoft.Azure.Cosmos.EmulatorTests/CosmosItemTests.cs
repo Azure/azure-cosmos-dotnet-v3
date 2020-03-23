@@ -1232,8 +1232,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             try
             {
-                ItemResponse<ToDoActivity> response = await this.Container.ReplaceItemAsync<ToDoActivity>(
-                    id: testItem.id,
+                ItemResponse<ToDoActivity> response = await this.Container.UpsertItemAsync<ToDoActivity>(
                     item: testItem,
                     requestOptions: itemRequestOptions);
                 Assert.Fail("Access condition should have failed");
@@ -1241,6 +1240,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             catch (CosmosException e)
             {
                 Assert.IsNotNull(e);
+                Assert.AreEqual(e.Message, $"Response status code does not indicate success: PreconditionFailed; Substatus: 0; Reason: ({{\r\n  \"Errors\": [\r\n    \"One of the specified pre-condition is not met\"\r\n  ]\r\n}}); ActivityId = {e.ActivityId}; RequestCharge = {e.RequestCharge};");
                 Assert.AreEqual(HttpStatusCode.PreconditionFailed, e.StatusCode, e.Message);
                 Assert.IsNotNull(e.ActivityId);
                 Assert.IsTrue(e.RequestCharge > 0);
