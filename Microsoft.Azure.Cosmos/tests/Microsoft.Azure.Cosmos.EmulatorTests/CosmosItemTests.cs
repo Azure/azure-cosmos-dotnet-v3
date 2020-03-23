@@ -1230,6 +1230,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 IfMatchEtag = Guid.NewGuid().ToString(),
             };
 
+            using (ResponseMessage responseMessage = await this.Container.UpsertItemStreamAsync(
+                    streamPayload: TestCommon.SerializerCore.ToStream<ToDoActivity>(testItem),
+                    partitionKey: new Cosmos.PartitionKey(testItem.status),
+                    requestOptions: itemRequestOptions))
+            {
+                Assert.IsNotNull(responseMessage);
+                Assert.IsNull(responseMessage.Content);
+                Assert.AreEqual(HttpStatusCode.PreconditionFailed, responseMessage.StatusCode, responseMessage.ErrorMessage);
+                Assert.AreNotEqual(responseMessage.Headers.ActivityId, Guid.Empty);
+                Assert.IsTrue(responseMessage.Headers.RequestCharge > 0);
+                Assert.IsFalse(string.IsNullOrEmpty(responseMessage.ErrorMessage));
+                Assert.IsTrue(responseMessage.ErrorMessage.Contains("One of the specified pre-condition is not met"));
+            }
+
             try
             {
                 ItemResponse<ToDoActivity> response = await this.Container.UpsertItemAsync<ToDoActivity>(
@@ -1240,10 +1254,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             catch (CosmosException e)
             {
                 Assert.IsNotNull(e);
-                Assert.AreEqual(e.Message, $"Response status code does not indicate success: PreconditionFailed; Substatus: 0; Reason: ({{\r\n  \"Errors\": [\r\n    \"One of the specified pre-condition is not met\"\r\n  ]\r\n}}); ActivityId = {e.ActivityId}; RequestCharge = {e.RequestCharge};");
                 Assert.AreEqual(HttpStatusCode.PreconditionFailed, e.StatusCode, e.Message);
-                Assert.IsNotNull(e.ActivityId);
+                Assert.AreNotEqual(e.ActivityId, Guid.Empty);
                 Assert.IsTrue(e.RequestCharge > 0);
+                Assert.AreEqual("{\r\n  \"Errors\": [\r\n    \"One of the specified pre-condition is not met\"\r\n  ]\r\n}", e.ResponseBody);
+                Assert.AreEqual($"Response status code does not indicate success: PreconditionFailed; Substatus: 0; Reason: ({{\r\n  \"Errors\": [\r\n    \"One of the specified pre-condition is not met\"\r\n  ]\r\n}}); ActivityId = {e.ActivityId}; RequestCharge = {e.RequestCharge};", e.Message);
             }
             finally
             {
