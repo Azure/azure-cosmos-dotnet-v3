@@ -158,12 +158,43 @@ namespace Microsoft.Azure.Cosmos
 
             schedulingStopwatch.Stop();
 
-            return this.GetCosmosElementResponse(
+            QueryResponseCore queryResponseCore = this.GetCosmosElementResponse(
                 queryRequestOptions,
                 resourceType,
                 message,
                 partitionKeyRange,
                 schedulingStopwatch);
+
+            if (this.clientContext.ClientOptions.EncryptionKeyWrapProvider != null)
+            {
+                List<CosmosElement> documents = new List<CosmosElement>();
+
+                foreach (CosmosElement document in queryResponseCore.CosmosElements)
+                {
+                    using (message.DiagnosticsContext.CreateScope("Decrypt"))
+                    {
+                        Stream decryptedContent = await this.clientContext.EncryptionProcessor.DecryptAsync(
+                            this.clientContext.SerializerCore.ToStream(document),
+                            (DatabaseCore)this.cosmosContainerCore.Database,
+                            this.clientContext.ClientOptions.EncryptionKeyWrapProvider,
+                            message.DiagnosticsContext,
+                            cancellationToken);
+
+                        documents.Add(this.clientContext.SerializerCore.FromStream<CosmosElement>(decryptedContent));
+                    }
+                }
+
+                return QueryResponseCore.CreateSuccess(
+                    result: documents,
+                    requestCharge: queryResponseCore.RequestCharge,
+                    activityId: queryResponseCore.ActivityId,
+                    diagnostics: queryResponseCore.Diagnostics,
+                    responseLengthBytes: queryResponseCore.ResponseLengthBytes,
+                    disallowContinuationTokenMessage: queryResponseCore.DisallowContinuationTokenMessage,
+                    continuationToken: queryResponseCore.ContinuationToken);
+            }
+
+            return queryResponseCore;
         }
 
         internal override async Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
