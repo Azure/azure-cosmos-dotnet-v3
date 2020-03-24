@@ -7,7 +7,7 @@
     <Output>
       <SqlQuery><![CDATA[
 SELECT TOP 0 VALUE root 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -18,7 +18,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT TOP 1 VALUE root["NumericField"] 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -30,7 +30,7 @@ FROM root ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT TOP 2 VALUE root 
 FROM root 
-WHERE (root["NumericField"] > 100) ]]></SqlQuery>
+WHERE (root["NumericField"] > 100)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -42,7 +42,7 @@ WHERE (root["NumericField"] > 100) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT TOP 7 VALUE root["NumericField"] 
 FROM root 
-WHERE (root["NumericField"] > 100) ]]></SqlQuery>
+WHERE (root["NumericField"] > 100)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -54,7 +54,7 @@ WHERE (root["NumericField"] > 100) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT TOP 8 VALUE root["NumericField"] 
 FROM root 
-WHERE (root["NumericField"] > 100) ]]></SqlQuery>
+WHERE (root["NumericField"] > 100)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -67,7 +67,7 @@ WHERE (root["NumericField"] > 100) ]]></SqlQuery>
 SELECT TOP 9 VALUE root["NumericField"] 
 FROM root 
 WHERE (root["NumericField"] > 100) 
-ORDER BY root["NumericField"] ASC ]]></SqlQuery>
+ORDER BY root["NumericField"] ASC]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -80,11 +80,10 @@ ORDER BY root["NumericField"] ASC ]]></SqlQuery>
 SELECT VALUE r0 
 FROM (
     SELECT TOP 3 VALUE root 
-    FROM root
-) AS r0 
-WHERE (r0["NumericField"] > 100) 
+    FROM root) AS r0 
+    WHERE (r0["NumericField"] > 100)
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -97,11 +96,10 @@ WHERE (r0["NumericField"] > 100)
 SELECT VALUE r0["NumericField"] 
 FROM (
     SELECT TOP 4 VALUE root 
-    FROM root
-) AS r0 
-WHERE (r0["NumericField"] > 100) 
+    FROM root) AS r0 
+    WHERE (r0["NumericField"] > 100)
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -114,11 +112,10 @@ WHERE (r0["NumericField"] > 100)
 SELECT VALUE r0 
 FROM (
     SELECT TOP 5 VALUE root["NumericField"] 
-    FROM root
-) AS r0 
-WHERE (r0 > 100) 
+    FROM root) AS r0 
+    WHERE (r0 > 100)
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -131,11 +128,10 @@ WHERE (r0 > 100)
 SELECT VALUE r0 
 FROM (
     SELECT TOP 6 VALUE root["NumericField"] 
-    FROM root
-) AS r0 
-WHERE (r0 > 100) 
+    FROM root) AS r0 
+    WHERE (r0 > 100)
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -148,12 +144,11 @@ WHERE (r0 > 100)
 SELECT VALUE r0["NumericField"] 
 FROM (
     SELECT TOP 10 VALUE root 
-    FROM root
-) AS r0 
-WHERE (r0["NumericField"] > 100) 
-ORDER BY r0["NumericField"] DESC 
+    FROM root) AS r0 
+    WHERE (r0["NumericField"] > 100) 
+    ORDER BY r0["NumericField"] DESC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -164,7 +159,7 @@ ORDER BY r0["NumericField"] DESC
     <Output>
       <SqlQuery><![CDATA[
 SELECT TOP 5 VALUE root 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -175,7 +170,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT TOP 5 VALUE root 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -186,7 +181,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT TOP 1 VALUE root["NumericField"] 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -199,11 +194,10 @@ FROM root ]]></SqlQuery>
 SELECT TOP 2 VALUE r0 
 FROM (
     SELECT TOP 10 VALUE root 
-    FROM root
-) AS r0 
-WHERE (r0["NumericField"] > 100) 
+    FROM root) AS r0 
+    WHERE (r0["NumericField"] > 100)
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>

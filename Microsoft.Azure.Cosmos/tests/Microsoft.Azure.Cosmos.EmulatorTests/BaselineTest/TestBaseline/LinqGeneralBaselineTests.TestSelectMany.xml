@@ -234,7 +234,7 @@ JOIN (
         JOIN v0 IN root["Children"]) AS r0 
         WHERE (LENGTH(r0["FamilyName"]) > 10)) AS v2
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Could not load the specified file.]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>

@@ -7,7 +7,7 @@
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE 5 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -18,7 +18,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -29,7 +29,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE (((root["x"] % 10) + 2) + (root["x"] % 5)) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -40,7 +40,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE (root["x"] + 2) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -51,7 +51,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE [root["x"], (root["x"] + 1)] 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -62,7 +62,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE {"first": root["x"], "second": root["x"]} 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -73,7 +73,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE {"first": root["x"], "second": {"third": root["x"]}} 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -85,7 +85,7 @@ FROM root ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["x"] > 2) ]]></SqlQuery>
+WHERE (root["x"] > 2)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -97,7 +97,7 @@ WHERE (root["x"] > 2) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["x"] > 3) ]]></SqlQuery>
+WHERE (root["x"] > 3)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -109,7 +109,7 @@ WHERE (root["x"] > 3) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE (root["x"] + 2) 
 FROM root 
-WHERE (root["x"] > 2) ]]></SqlQuery>
+WHERE (root["x"] > 2)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -121,7 +121,7 @@ WHERE (root["x"] > 2) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE (root["x"] + 2) 
 FROM root 
-WHERE ((root["x"] + 2) > 2) ]]></SqlQuery>
+WHERE ((root["x"] + 2) > 2)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -133,7 +133,7 @@ WHERE ((root["x"] + 2) > 2) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE ((root["x"] > 2) AND (root["x"] < 4)) ]]></SqlQuery>
+WHERE ((root["x"] > 2) AND (root["x"] < 4))]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -145,7 +145,7 @@ WHERE ((root["x"] > 2) AND (root["x"] < 4)) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE (root["x"] + root["x"]) 
 FROM root 
-WHERE ((root["x"] > 2) AND (root["x"] < 4)) ]]></SqlQuery>
+WHERE ((root["x"] > 2) AND (root["x"] < 4))]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -156,7 +156,7 @@ WHERE ((root["x"] > 2) AND (root["x"] < 4)) ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE (root["x"] + 3) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -168,8 +168,8 @@ FROM root ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE [1, 2, 3][root["x"]] 
 FROM root 
-WHERE ((root["x"] >= 0) AND (root["x"] < 3)) ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+WHERE ((root["x"] >= 0) AND (root["x"] < 3))]]></SqlQuery>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -180,7 +180,7 @@ WHERE ((root["x"] >= 0) AND (root["x"] < 3)) ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE {"x": root["x"], "y": root["x"]} 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -191,7 +191,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE {"s": {"x": root["x"], "y": root["x"]}, "x": 2} 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -202,7 +202,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE {"dbl": 1, "str": "", "b": false, "dblArray": [1, 2], "inside": {"x": root["x"], "y": root["x"]}} 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -213,7 +213,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE root["x"] 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -225,8 +225,8 @@ FROM root ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE [1, 2, 3][root["x"]] 
 FROM root 
-WHERE ((root["x"] >= 0) AND (root["x"] < 3)) ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+WHERE ((root["x"] >= 0) AND (root["x"] < 3))]]></SqlQuery>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -257,7 +257,7 @@ WHERE ((root["x"] >= 0) AND (root["x"] < 3)) ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -268,7 +268,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE root["x"] 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
 </Results>

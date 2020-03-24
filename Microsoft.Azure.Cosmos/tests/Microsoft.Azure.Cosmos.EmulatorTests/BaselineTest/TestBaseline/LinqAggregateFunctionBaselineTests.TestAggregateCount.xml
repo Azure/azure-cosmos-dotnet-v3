@@ -107,7 +107,7 @@ FROM (
     FROM root 
     OFFSET 90 LIMIT 2147483647) AS r0
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Could not load the specified file.]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>

@@ -9,7 +9,7 @@
 SELECT VALUE number0 
 FROM root 
 JOIN number0 IN root["EnumerableField"] 
-WHERE (root["NumericField"] > 0) ]]></SqlQuery>
+WHERE (root["NumericField"] > 0)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -22,7 +22,7 @@ WHERE (root["NumericField"] > 0) ]]></SqlQuery>
 SELECT VALUE number0 
 FROM root 
 JOIN number0 IN root["EnumerableField"] 
-WHERE (root["NumericField"] > 0) ]]></SqlQuery>
+WHERE (root["NumericField"] > 0)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -35,7 +35,7 @@ WHERE (root["NumericField"] > 0) ]]></SqlQuery>
 SELECT VALUE number0 
 FROM root 
 JOIN number0 IN root["EnumerableField"] 
-WHERE (number0 > 0) ]]></SqlQuery>
+WHERE (number0 > 0)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -48,7 +48,7 @@ WHERE (number0 > 0) ]]></SqlQuery>
 SELECT VALUE number0 
 FROM root 
 JOIN number0 IN root["EnumerableField"] 
-WHERE (number0 > 0) ]]></SqlQuery>
+WHERE (number0 > 0)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -61,7 +61,7 @@ WHERE (number0 > 0) ]]></SqlQuery>
 SELECT VALUE number0 
 FROM root 
 JOIN number0 IN root["EnumerableField"] 
-WHERE ((root["NumericField"] > 0) AND (number0 > 10)) ]]></SqlQuery>
+WHERE ((root["NumericField"] > 0) AND (number0 > 10))]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -74,7 +74,7 @@ WHERE ((root["NumericField"] > 0) AND (number0 > 10)) ]]></SqlQuery>
 SELECT VALUE number0 
 FROM root 
 JOIN number0 IN root["EnumerableField"] 
-WHERE ((number0 > 10) AND (root["NumericField"] > 0)) ]]></SqlQuery>
+WHERE ((number0 > 10) AND (root["NumericField"] > 0))]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -87,7 +87,7 @@ WHERE ((number0 > 10) AND (root["NumericField"] > 0)) ]]></SqlQuery>
 SELECT VALUE number0 
 FROM root 
 JOIN number0 IN root["EnumerableField"] 
-WHERE ((root["NumericField"] > 0) AND (number0 > 10)) ]]></SqlQuery>
+WHERE ((root["NumericField"] > 0) AND (number0 > 10))]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -102,12 +102,11 @@ FROM (
     SELECT TOP 10 VALUE root 
     FROM root 
     WHERE (root["NumericField"] > 0) 
-    ORDER BY root["StringField"] ASC
-) AS r0 
-JOIN number0 IN r0["EnumerableField"] 
-WHERE (number0 > 10) 
+    ORDER BY root["StringField"] ASC) AS r0 
+    JOIN number0 IN r0["EnumerableField"] 
+    WHERE (number0 > 10)
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
 </Results>
