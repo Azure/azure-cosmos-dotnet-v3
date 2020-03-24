@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos
 
         public bool IsDone { get; private set; } = false;
 
-        public Task<List<Documents.Routing.Range<string>>> GetAffectedRangesAsync(
+        public Task<List<Documents.Routing.Range<string>>> GetEffectiveRangesAsync(
             IRoutingMapProvider routingMapProvider,
             string containerRid,
             Documents.PartitionKeyDefinition partitionKeyDefinition)

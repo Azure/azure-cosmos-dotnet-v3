@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public async Task<List<Documents.Routing.Range<string>>> GetAffectedRangesAsync(
+        public async Task<List<Documents.Routing.Range<string>>> GetEffectiveRangesAsync(
             IRoutingMapProvider routingMapProvider,
             string containerRid,
             Documents.PartitionKeyDefinition partitionKeyDefinition)
@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos
             }
             else
             {
-                ranges = await this.FeedTokenEPKRange.GetAffectedRangesAsync(routingMapProvider, containerRid, partitionKeyDefinition);
+                ranges = await this.FeedTokenEPKRange.GetEffectiveRangesAsync(routingMapProvider, containerRid, partitionKeyDefinition);
             }
 
             return ranges;
