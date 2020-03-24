@@ -11,7 +11,14 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// This represents the diagnostics interface used in the SDK.
     /// </summary>
-    internal abstract class CosmosDiagnosticsContext : CosmosDiagnosticsInternal, IEnumerable<CosmosDiagnosticsInternal>
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+    public
+#else
+    internal
+#endif
+    abstract class CosmosDiagnosticsContext : CosmosDiagnosticsInternal, IEnumerable<CosmosDiagnosticsInternal>
     {
         public abstract DateTime StartUtc { get; }
 
@@ -27,9 +34,9 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract CosmosDiagnosticScope CreateScope(string name);
 
-        internal abstract TimeSpan GetClientElapsedTime();
+        public abstract TimeSpan GetClientElapsedTime();
 
-        internal abstract bool IsComplete();
+        public abstract bool IsComplete();
 
         internal abstract void AddDiagnosticsInternal(PointOperationStatistics pointOperationStatistics);
 
@@ -43,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract void AddDiagnosticsInternal(CosmosDiagnosticsContext newContext);
 
-        internal abstract void SetSdkUserAgent(string userAgent);
+        public abstract void SetSdkUserAgent(string userAgent);
 
         public abstract IEnumerator<CosmosDiagnosticsInternal> GetEnumerator();
 
@@ -52,7 +59,7 @@ namespace Microsoft.Azure.Cosmos
             return this.GetEnumerator();
         }
 
-        internal static CosmosDiagnosticsContext Create(RequestOptions requestOptions)
+        public static CosmosDiagnosticsContext Create(RequestOptions requestOptions)
         {
             return requestOptions?.DiagnosticContextFactory?.Invoke() ?? new CosmosDiagnosticsContextCore();
         }

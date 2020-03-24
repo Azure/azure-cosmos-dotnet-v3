@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos
             return !string.IsNullOrEmpty(this.Headers.ContinuationToken);
         }
 
-        public static QueryResponse CreateSuccess(
+        internal static QueryResponse CreateSuccess(
             IReadOnlyList<CosmosElement> result,
             int count,
             long responseLengthBytes,
@@ -106,10 +106,10 @@ namespace Microsoft.Azure.Cosmos
             }
 
             Lazy<MemoryStream> memoryStream = new Lazy<MemoryStream>(() => CosmosElementSerializer.ToStream(
-                       responseHeaders.ContainerRid,
-                       result,
-                       responseHeaders.ResourceType,
-                       serializationOptions));
+                responseHeaders.ContainerRid,
+                result,
+                responseHeaders.ResourceType,
+                serializationOptions));
 
             QueryResponse cosmosQueryResponse = new QueryResponse(
                result: result,
@@ -126,7 +126,7 @@ namespace Microsoft.Azure.Cosmos
             return cosmosQueryResponse;
         }
 
-        public static QueryResponse CreateFailure(
+        internal static QueryResponse CreateFailure(
             CosmosQueryResponseMessageHeaders responseHeaders,
             HttpStatusCode statusCode,
             RequestMessage requestMessage,
