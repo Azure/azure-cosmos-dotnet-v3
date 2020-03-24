@@ -144,7 +144,6 @@ namespace Microsoft.Azure.Cosmos
             Assert.AreEqual(HttpStatusCode.ServiceUnavailable, responseMessage.StatusCode);
             Assert.IsTrue(responseMessage.ErrorMessage.Contains(errorMessage));
             Assert.IsTrue(responseMessage.ErrorMessage.Contains(transportException.ToString()));
-            Assert.IsTrue(responseMessage.ErrorMessage.Contains("VerifyTransportExceptionToResponseMessage"), $"Message should have method name for the stack trace {responseMessage.ErrorMessage}");
         }
 
         [TestMethod]
@@ -239,10 +238,13 @@ namespace Microsoft.Azure.Cosmos
             HttpStatusCode httpStatusCode,
             string message)
         {
+            exception.DiagnosticsContext.GetOverallScope().Dispose();
             Assert.AreEqual(message, exception.ResponseBody);
             Assert.AreEqual(httpStatusCode, exception.StatusCode);
             Assert.IsTrue(exception.ToString().Contains(message));
-            Assert.AreEqual(exception.Message, $"Response status code does not indicate success: {httpStatusCode}; Substatus: 0; Reason: ({message}); ActivityId = {Guid.Empty.ToString()}; RequestCharge = 0;");
+            string expectedMessage = $"Microsoft.Azure.Cosmos.CosmosException : Response status code does not indicate success: {httpStatusCode} ({(int)httpStatusCode}); Substatus: 0; Reason: ({message});{Environment.NewLine}{exception.Diagnostics.ToString()}";
+
+            Assert.AreEqual(expectedMessage, exception.Message);
         }
     }
 }

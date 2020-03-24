@@ -1257,8 +1257,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(HttpStatusCode.PreconditionFailed, e.StatusCode, e.Message);
                 Assert.AreNotEqual(e.ActivityId, Guid.Empty);
                 Assert.IsTrue(e.RequestCharge > 0);
-                Assert.AreEqual("{\r\n  \"Errors\": [\r\n    \"One of the specified pre-condition is not met\"\r\n  ]\r\n}", e.ResponseBody);
-                Assert.AreEqual($"Response status code does not indicate success: PreconditionFailed; Substatus: 0; Reason: ({{\r\n  \"Errors\": [\r\n    \"One of the specified pre-condition is not met\"\r\n  ]\r\n}}); ActivityId = {e.ActivityId}; RequestCharge = {e.RequestCharge};", e.Message);
+                Assert.AreEqual($"{{{Environment.NewLine}  \"Errors\": [{Environment.NewLine}    \"One of the specified pre-condition is not met\"{Environment.NewLine}  ]{Environment.NewLine}}}", e.ResponseBody);
+                string expectedMessage = $"Microsoft.Azure.Cosmos.CosmosException : Response status code does not indicate success: PreconditionFailed (412); Substatus: 0; Reason: ({{{Environment.NewLine}  \"Errors\": [{Environment.NewLine}    \"One of the specified pre-condition is not met\"{Environment.NewLine}  ]{Environment.NewLine}}});{Environment.NewLine}{e.StackTrace}{Environment.NewLine}{e.Diagnostics.ToString()}";
+                Assert.AreEqual(expectedMessage, e.Message);
             }
             finally
             {

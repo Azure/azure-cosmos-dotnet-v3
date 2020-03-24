@@ -28,12 +28,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContext diagnosticsContext,
             Error error,
             Exception innerException)
-            : base(CosmosException.MessageHelper(
-                message,
-                statusCodes,
-                headers?.SubStatusCodeLiteral,
-                headers?.ActivityId,
-                headers?.RequestCharge), innerException)
+            : base(message, innerException)
         {
             this.ResponseBody = message;
             this.stackTrace = stackTrace;
@@ -73,6 +68,9 @@ namespace Microsoft.Azure.Cosmos
             this.Headers = new Headers();
             this.DiagnosticsContext = new CosmosDiagnosticsContextCore();
         }
+
+        /// <inheritdoc/>
+        public override string Message => this.ToString();
 
         /// <summary>
         /// The body of the cosmos response message as a string
@@ -170,39 +168,9 @@ namespace Microsoft.Azure.Cosmos
         {
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.Append(this.GetType().FullName);
+            stringBuilder.Append(" : ");
+
             this.ToStringHelper(stringBuilder);
-
-            if (this.Diagnostics != null)
-            {
-                stringBuilder.Append(this.Diagnostics);
-                stringBuilder.AppendLine();
-            }
-
-            return stringBuilder.ToString();
-        }
-
-        /// <summary>
-        /// The ToString() without the exception type and diagnostics.
-        /// </summary>
-        internal string ToStringNoDiagnostics()
-        {
-            if (this.Message == null)
-            {
-                return null;
-            }
-
-            StringBuilder stringBuilder = new StringBuilder(this.Message);
-            if (this.StackTrace != null)
-            {
-                stringBuilder.Append(" StackTrace: ");
-                stringBuilder.Append(this.stackTrace);
-            }
-
-            if (this.InnerException != null)
-            {
-                stringBuilder.Append(" InnerException: ");
-                stringBuilder.Append(this.InnerException);
-            }
 
             return stringBuilder.ToString();
         }
@@ -217,19 +185,22 @@ namespace Microsoft.Azure.Cosmos
                  diagnostics: this.DiagnosticsContext);
         }
 
-        private void ToStringHelper(StringBuilder stringBuilder)
+        private string ToStringHelper(
+            StringBuilder stringBuilder)
         {
             if (stringBuilder == null)
             {
                 throw new ArgumentNullException(nameof(stringBuilder));
             }
 
-            if (this.Message != null)
-            {
-                stringBuilder.Append(" : ");
-                stringBuilder.Append(this.Message);
-                stringBuilder.AppendLine();
-            }
+            stringBuilder.Append($"Response status code does not indicate success: ");
+            stringBuilder.Append($"{this.StatusCode} ({(int)this.StatusCode})");
+            stringBuilder.Append("; Substatus: ");
+            stringBuilder.Append(this.SubStatusCode);
+            stringBuilder.Append("; Reason: (");
+            stringBuilder.Append(this.ResponseBody);
+            stringBuilder.Append(");");
+            stringBuilder.AppendLine();
 
             if (this.InnerException != null)
             {
@@ -241,17 +212,18 @@ namespace Microsoft.Azure.Cosmos
                 stringBuilder.AppendLine();
             }
 
-            stringBuilder.Append(this.StackTrace);
-        }
+            if (this.StackTrace != null)
+            {
+                stringBuilder.Append(this.StackTrace);
+                stringBuilder.AppendLine();
+            }
 
-        private static string MessageHelper(
-            string message,
-            HttpStatusCode statusCode,
-            string subStatusCode,
-            string activityId,
-            double? requestCharge)
-        {
-            return $"Response status code does not indicate success: {statusCode}; Substatus: {subStatusCode ?? 0.ToString()}; Reason: ({message}); ActivityId = {activityId ?? Guid.Empty.ToString()}; RequestCharge = {requestCharge ?? 0};";
+            if (this.Diagnostics != null)
+            {
+                stringBuilder.Append(this.Diagnostics);
+            }
+
+            return stringBuilder.ToString();
         }
     }
 }
