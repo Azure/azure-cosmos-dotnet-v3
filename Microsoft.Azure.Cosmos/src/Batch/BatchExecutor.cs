@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.container = container;
             this.clientContext = this.container.ClientContext;
-            this.inputOperations = operations;
+            this.inputOperations = new List<ItemBatchOperation>(operations);
             this.partitionKey = partitionKey;
             this.batchOptions = batchOptions;
             this.diagnosticsContext = diagnosticsContext;

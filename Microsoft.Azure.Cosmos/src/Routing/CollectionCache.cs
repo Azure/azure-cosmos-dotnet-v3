@@ -235,7 +235,7 @@ namespace Microsoft.Azure.Cosmos.Common
                 cancellationToken);
         }
 
-        internal async Task<ContainerProperties> ResolveByNameAsync(
+        internal virtual async Task<ContainerProperties> ResolveByNameAsync(
             string apiVersion,
             string resourceAddress,
             CancellationToken cancellationToken)

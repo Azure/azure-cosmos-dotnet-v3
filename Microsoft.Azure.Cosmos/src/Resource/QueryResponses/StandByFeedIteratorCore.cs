@@ -21,9 +21,9 @@ namespace Microsoft.Azure.Cosmos
     /// Legacy, see <see cref="ChangeFeedIteratorCore"/>.
     /// </remarks>
     /// <seealso cref="ChangeFeedIteratorCore"/>
-    internal sealed class StandByFeedIteratorCore : FeedIteratorInternal
+    internal class StandByFeedIteratorCore : FeedIteratorInternal
     {
-        internal StandByFeedContinuationToken compositeContinuationToken;
+        public StandByFeedContinuationToken compositeContinuationToken;
 
         private readonly CosmosClientContext clientContext;
         private readonly ContainerCore container;
@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos
         private string containerRid;
         private string continuationToken;
 
-        internal StandByFeedIteratorCore(
+        public StandByFeedIteratorCore(
             CosmosClientContext clientContext,
             ContainerCore container,
             string continuationToken,
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos
             return response;
         }
 
-        internal async Task<Tuple<string, ResponseMessage>> ReadNextInternalAsync(CancellationToken cancellationToken)
+        public async Task<Tuple<string, ResponseMessage>> ReadNextInternalAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// During Feed read, split can happen or Max Item count can go beyond the max response size
         /// </summary>
-        internal async Task<bool> ShouldRetryFailureAsync(
+        public async Task<bool> ShouldRetryFailureAsync(
             ResponseMessage response,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -152,7 +152,7 @@ namespace Microsoft.Azure.Cosmos
             return false;
         }
 
-        internal Task<ResponseMessage> NextResultSetDelegateAsync(
+        public virtual Task<ResponseMessage> NextResultSetDelegateAsync(
             string continuationToken,
             string partitionKeyRangeId,
             int? maxItemCount,

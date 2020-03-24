@@ -83,7 +83,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock<ContainerCore> containerMock = new Mock<ContainerCore>();
             ContainerCore container = containerMock.Object;
 
-            containerMock.Setup(e => e.GetPartitionKeyPathTokensAsync(It.IsAny<CancellationToken>()))
+            containerMock
+                .Setup(e => e.GetPartitionKeyPathTokensAsync(It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(new string[] { "pk" }));
 
             DateTime dateTime = new DateTime(2019, 05, 15, 12, 1, 2, 3, DateTimeKind.Utc);
