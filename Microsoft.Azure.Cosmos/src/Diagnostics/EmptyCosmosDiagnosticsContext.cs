@@ -5,7 +5,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using Microsoft.Azure.Cosmos.Diagnostics;
 
     /// <summary>
@@ -70,7 +69,7 @@ namespace Microsoft.Azure.Cosmos
         {
         }
 
-        internal override void SetSdkUserAgent(string userAgent)
+        public override void SetSdkUserAgent(string userAgent)
         {
         }
 
@@ -88,12 +87,12 @@ namespace Microsoft.Azure.Cosmos
             return EmptyCosmosDiagnosticsContext.EmptyList.GetEnumerator();
         }
 
-        internal override TimeSpan GetClientElapsedTime()
+        public override TimeSpan GetClientElapsedTime()
         {
             return TimeSpan.Zero;
         }
 
-        internal override bool IsComplete()
+        public override bool IsComplete()
         {
             return true;
         }
