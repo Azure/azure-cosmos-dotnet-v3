@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos
                 feedToken = JsonConvert.DeserializeObject<FeedTokenPartitionKey>(toStringValue);
                 return true;
             }
-            catch (JsonSerializationException)
+            catch (JsonReaderException)
             {
                 feedToken = null;
                 return false;

@@ -263,7 +263,7 @@ namespace Microsoft.Azure.Cosmos
                 feedToken = JsonConvert.DeserializeObject<FeedTokenEPKRange>(toStringValue);
                 return true;
             }
-            catch (JsonSerializationException)
+            catch (JsonReaderException)
             {
                 feedToken = null;
                 return false;
