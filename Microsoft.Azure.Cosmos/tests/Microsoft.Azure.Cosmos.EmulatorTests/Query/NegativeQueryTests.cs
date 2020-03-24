@@ -27,7 +27,7 @@
                 }
                 catch (CosmosException exception) when (exception.StatusCode == HttpStatusCode.BadRequest)
                 {
-                    Assert.IsTrue(exception.Message.Contains(@"Identifier 'a' could not be resolved."),
+                    Assert.IsTrue(exception.ToString().Contains(@"Identifier 'a' could not be resolved."),
                         exception.Message);
                 }
             }

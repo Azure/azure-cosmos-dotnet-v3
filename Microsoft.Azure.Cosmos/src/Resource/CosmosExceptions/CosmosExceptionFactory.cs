@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
 {
     using System;
     using System.IO;
-    using System.Linq;
     using System.Net;
     using Microsoft.Azure.Documents;
 
@@ -39,6 +38,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 httpStatusCode = HttpStatusCode.InternalServerError;
             }
 
+            //TODO: These won't be converted to pure HTTP exceptions if we don't push down headers.
 #pragma warning disable CS0612 // Type or member is obsolete
             return CosmosExceptionFactory.Create(
                 httpStatusCode,

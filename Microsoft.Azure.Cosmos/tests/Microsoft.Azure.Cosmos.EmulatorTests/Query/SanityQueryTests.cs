@@ -318,7 +318,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     }
                     catch (Exception e)
                     {
-                        Assert.IsTrue(e.Message.Contains("Compositions of aggregates and other expressions are not allowed."),
+                        Assert.IsTrue(e.ToString().Contains("Compositions of aggregates and other expressions are not allowed."),
                             e.Message);
                     }
                 }

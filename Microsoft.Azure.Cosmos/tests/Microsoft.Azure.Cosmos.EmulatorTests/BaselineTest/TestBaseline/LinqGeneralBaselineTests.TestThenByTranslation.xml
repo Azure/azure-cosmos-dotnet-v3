@@ -8,7 +8,7 @@
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-ORDER BY root["FamilyId"] ASC, root["Int"] ASC ]]></SqlQuery>
+ORDER BY root["FamilyId"] ASC, root["Int"] ASC]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -20,7 +20,7 @@ ORDER BY root["FamilyId"] ASC, root["Int"] ASC ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-ORDER BY root["FamilyId"] ASC, root["Int"] DESC ]]></SqlQuery>
+ORDER BY root["FamilyId"] ASC, root["Int"] DESC]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -32,7 +32,7 @@ ORDER BY root["FamilyId"] ASC, root["Int"] DESC ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-ORDER BY root["FamilyId"] DESC, root["Int"] ASC ]]></SqlQuery>
+ORDER BY root["FamilyId"] DESC, root["Int"] ASC]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -44,7 +44,7 @@ ORDER BY root["FamilyId"] DESC, root["Int"] ASC ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-ORDER BY root["FamilyId"] DESC, root["Int"] DESC ]]></SqlQuery>
+ORDER BY root["FamilyId"] DESC, root["Int"] DESC]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -60,11 +60,10 @@ JOIN (
     SELECT VALUE COUNT(1) 
     FROM root 
     JOIN c0 IN root["Children"] 
-    WHERE (c0["Grade"] > 100)
-) AS v0 
-ORDER BY v0 ASC, root["Int"] DESC 
+    WHERE (c0["Grade"] > 100)) AS v0 
+    ORDER BY v0 ASC, root["Int"] DESC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -80,11 +79,10 @@ JOIN (
     SELECT VALUE COUNT(1) 
     FROM root 
     JOIN p0 IN root["Parents"] 
-    WHERE (p0["GivenName"]["Length"] > 10)
-) AS v0 
-ORDER BY root["FamilyId"] ASC, v0 DESC 
+    WHERE (p0["GivenName"]["Length"] > 10)) AS v0 
+    ORDER BY root["FamilyId"] ASC, v0 DESC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -100,17 +98,15 @@ JOIN (
     SELECT VALUE COUNT(1) 
     FROM root 
     JOIN c0 IN root["Children"] 
-    WHERE (c0["Grade"] > 100)
-) AS v0 
-JOIN (
-    SELECT VALUE COUNT(1) 
-    FROM root 
-    JOIN p0 IN root["Parents"] 
-    WHERE (p0["GivenName"]["Length"] > 10)
-) AS v1 
-ORDER BY v0 DESC, v1 ASC 
+    WHERE (c0["Grade"] > 100)) AS v0 
+    JOIN (
+        SELECT VALUE COUNT(1) 
+        FROM root 
+        JOIN p0 IN root["Parents"] 
+        WHERE (p0["GivenName"]["Length"] > 10)) AS v1 
+        ORDER BY v0 DESC, v1 ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -122,7 +118,7 @@ ORDER BY v0 DESC, v1 ASC
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-ORDER BY root["FamilyId"] ASC, root["FamilyId"] ASC ]]></SqlQuery>
+ORDER BY root["FamilyId"] ASC, root["FamilyId"] ASC]]></SqlQuery>
       <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
@@ -135,7 +131,7 @@ ORDER BY root["FamilyId"] ASC, root["FamilyId"] ASC ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-ORDER BY root["FamilyId"] ASC, root["FamilyId"] DESC ]]></SqlQuery>
+ORDER BY root["FamilyId"] ASC, root["FamilyId"] DESC]]></SqlQuery>
       <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
@@ -152,17 +148,15 @@ JOIN (
     SELECT VALUE COUNT(1) 
     FROM root 
     JOIN c0 IN root["Children"] 
-    WHERE (c0["Grade"] > 100)
-) AS v0 
-JOIN (
-    SELECT VALUE COUNT(1) 
-    FROM root 
-    JOIN c1 IN root["Children"] 
-    WHERE (c1["Grade"] > 100)
-) AS v1 
-ORDER BY v0 DESC, v1 ASC 
+    WHERE (c0["Grade"] > 100)) AS v0 
+    JOIN (
+        SELECT VALUE COUNT(1) 
+        FROM root 
+        JOIN c1 IN root["Children"] 
+        WHERE (c1["Grade"] > 100)) AS v1 
+        ORDER BY v0 DESC, v1 ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -174,8 +168,8 @@ ORDER BY v0 DESC, v1 ASC
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-ORDER BY (root["Int"] * 2) ASC, SUBSTRING(root["FamilyId"], 2, 3) ASC ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+ORDER BY (root["Int"] * 2) ASC, SUBSTRING(root["FamilyId"], 2, 3) ASC]]></SqlQuery>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -187,8 +181,8 @@ ORDER BY (root["Int"] * 2) ASC, SUBSTRING(root["FamilyId"], 2, 3) ASC ]]></SqlQu
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-ORDER BY (NOT IS_DEFINED(root["NullableInt"])) ASC, (ARRAY_LENGTH(root["Tags"]) % 2) DESC ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+ORDER BY (NOT IS_DEFINED(root["NullableInt"])) ASC, (ARRAY_LENGTH(root["Tags"]) % 2) DESC]]></SqlQuery>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -204,12 +198,10 @@ JOIN (
     SELECT VALUE ARRAY(
         SELECT VALUE MAX(t0["Amount"]) 
         FROM root 
-        JOIN t0 IN root["Records"]["Transactions"]
-    )
-) AS v0 
-ORDER BY (root["IsRegistered"] ? root["FamilyId"] : root["Int"]) DESC, (v0[0] % 1000) ASC 
+        JOIN t0 IN root["Records"]["Transactions"])) AS v0 
+        ORDER BY (root["IsRegistered"] ? root["FamilyId"] : root["Int"]) DESC, (v0[0] % 1000) ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -221,7 +213,7 @@ ORDER BY (root["IsRegistered"] ? root["FamilyId"] : root["Int"]) DESC, (v0[0] % 
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-ORDER BY root["Int"] ASC, root["IsRegistered"] DESC ]]></SqlQuery>
+ORDER BY root["Int"] ASC, root["IsRegistered"] DESC]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -233,7 +225,7 @@ ORDER BY root["Int"] ASC, root["IsRegistered"] DESC ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-ORDER BY root["FamilyId"] ASC, root["Int"] ASC, root["IsRegistered"] DESC ]]></SqlQuery>
+ORDER BY root["FamilyId"] ASC, root["Int"] ASC, root["IsRegistered"] DESC]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -249,17 +241,15 @@ JOIN (
     SELECT VALUE COUNT(1) 
     FROM root 
     JOIN c0 IN root["Children"] 
-    WHERE (c0["Grade"] > 100)
-) AS v0 
-JOIN (
-    SELECT VALUE COUNT(1) 
-    FROM root 
-    JOIN p0 IN root["Parents"] 
-    WHERE (p0["GivenName"]["Length"] > 10)
-) AS v1 
-ORDER BY v0 ASC, v1 ASC 
+    WHERE (c0["Grade"] > 100)) AS v0 
+    JOIN (
+        SELECT VALUE COUNT(1) 
+        FROM root 
+        JOIN p0 IN root["Parents"] 
+        WHERE (p0["GivenName"]["Length"] > 10)) AS v1 
+        ORDER BY v0 ASC, v1 ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -275,17 +265,15 @@ JOIN (
     SELECT VALUE COUNT(1) 
     FROM root 
     JOIN p0 IN root["Parents"] 
-    WHERE (p0["GivenName"]["Length"] > 10)
-) AS v0 
-JOIN (
-    SELECT VALUE COUNT(1) 
-    FROM root 
-    JOIN c0 IN root["Children"] 
-    WHERE (c0["Grade"] > 100)
-) AS v1 
-ORDER BY root["FamilyId"] ASC, v0 DESC, v1 ASC 
+    WHERE (p0["GivenName"]["Length"] > 10)) AS v0 
+    JOIN (
+        SELECT VALUE COUNT(1) 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        WHERE (c0["Grade"] > 100)) AS v1 
+        ORDER BY root["FamilyId"] ASC, v0 DESC, v1 ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -302,12 +290,10 @@ JOIN (
         SELECT VALUE (p0["FamilyName"] || p0["GivenName"]) 
         FROM root 
         JOIN p0 IN root["Parents"] 
-        ORDER BY p0["FamilyName"] ASC, p0["GivenName"] DESC
-    )
-) AS v0 
-ORDER BY root["FamilyId"] ASC, v0 DESC 
+        ORDER BY p0["FamilyName"] ASC, p0["GivenName"] DESC)) AS v0 
+        ORDER BY root["FamilyId"] ASC, v0 DESC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -324,20 +310,16 @@ JOIN (
         SELECT VALUE c0 
         FROM root 
         JOIN c0 IN root["Children"] 
-        ORDER BY c0["Grade"] ASC, c0["Pets"]["Count"] ASC
-    )
-) AS v0 
-JOIN (
-    SELECT VALUE ARRAY(
-        SELECT VALUE (p0["FamilyName"] || p0["GivenName"]) 
-        FROM root 
-        JOIN p0 IN root["Parents"] 
-        ORDER BY p0["FamilyName"] ASC, p0["GivenName"] DESC
-    )
-) AS v1 
-ORDER BY v0 ASC, v1 DESC 
+        ORDER BY c0["Grade"] ASC, c0["Pets"]["Count"] ASC)) AS v0 
+        JOIN (
+            SELECT VALUE ARRAY(
+                SELECT VALUE (p0["FamilyName"] || p0["GivenName"]) 
+                FROM root 
+                JOIN p0 IN root["Parents"] 
+                ORDER BY p0["FamilyName"] ASC, p0["GivenName"] DESC)) AS v1 
+                ORDER BY v0 ASC, v1 DESC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -354,12 +336,10 @@ JOIN (
         SELECT TOP 1 VALUE (p0["FamilyName"] || p0["GivenName"]) 
         FROM root 
         JOIN p0 IN root["Parents"] 
-        ORDER BY p0["FamilyName"] ASC, p0["GivenName"] DESC
-    )
-) AS v1 
-ORDER BY root["FamilyId"] ASC, v1 DESC 
+        ORDER BY p0["FamilyName"] ASC, p0["GivenName"] DESC)) AS v1 
+        ORDER BY root["FamilyId"] ASC, v1 DESC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -378,22 +358,17 @@ JOIN (
             SELECT TOP 10 VALUE c0 
             FROM root 
             JOIN c0 IN root["Children"] 
-            ORDER BY c0["Grade"] ASC, c0["Pets"]["Count"] DESC
-        ) AS r0 
-        ORDER BY r0["GivenName"] DESC, r0["Gender"] ASC
-    )
-) AS v1 
-JOIN (
-    SELECT VALUE ARRAY(
-        SELECT VALUE (p0["FamilyName"] || p0["GivenName"]) 
-        FROM root 
-        JOIN p0 IN root["Parents"] 
-        ORDER BY p0["FamilyName"] ASC, p0["GivenName"] DESC
-    )
-) AS v2 
-ORDER BY v1 ASC, v2 DESC 
+            ORDER BY c0["Grade"] ASC, c0["Pets"]["Count"] DESC) AS r0 
+            ORDER BY r0["GivenName"] DESC, r0["Gender"] ASC)) AS v1 
+            JOIN (
+                SELECT VALUE ARRAY(
+                    SELECT VALUE (p0["FamilyName"] || p0["GivenName"]) 
+                    FROM root 
+                    JOIN p0 IN root["Parents"] 
+                    ORDER BY p0["FamilyName"] ASC, p0["GivenName"] DESC)) AS v2 
+                    ORDER BY v1 ASC, v2 DESC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -410,10 +385,8 @@ FROM (
     JOIN (
         SELECT VALUE SUM(ARRAY_LENGTH(c0["Pets"])) 
         FROM root 
-        JOIN c0 IN root["Children"]
-    ) AS v1
-) AS r1 
-ORDER BY r1["FamilyId"] ASC, r1["FamilyNumber"] ASC 
+        JOIN c0 IN root["Children"]) AS v1) AS r1 
+        ORDER BY r1["FamilyId"] ASC, r1["FamilyNumber"] ASC
 ]]></SqlQuery>
       <ErrorMessage><![CDATA[Underlying object does not have an '_rid' field.]]></ErrorMessage>
     </Output>
@@ -437,13 +410,10 @@ JOIN (
             SELECT VALUE COUNT(1) 
             FROM c0 
             JOIN p0 IN c0["Pets"] 
-            WHERE (p0["GivenName"]["Length"] > 5)
-        ) AS v0
-    ) AS r0 
-    ORDER BY r0["FamilyId"] ASC, r0["FamilyNumber"] ASC
-) AS v1 
+            WHERE (p0["GivenName"]["Length"] > 5)) AS v0) AS r0 
+            ORDER BY r0["FamilyId"] ASC, r0["FamilyNumber"] ASC) AS v1
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -462,10 +432,8 @@ FROM (
         SELECT VALUE COUNT(1) 
         FROM c0 
         JOIN p0 IN c0["Pets"] 
-        WHERE (p0["GivenName"]["Length"] > 5)
-    ) AS v0
-) AS r0 
-ORDER BY r0["FamilyId"] ASC, r0["FamilyNumber"] ASC 
+        WHERE (p0["GivenName"]["Length"] > 5)) AS v0) AS r0 
+        ORDER BY r0["FamilyId"] ASC, r0["FamilyNumber"] ASC
 ]]></SqlQuery>
       <ErrorMessage><![CDATA[Underlying object does not have an '_rid' field.]]></ErrorMessage>
     </Output>
@@ -486,18 +454,14 @@ FROM (
             SELECT VALUE c0 
             FROM root 
             JOIN c0 IN root["Children"] 
-            WHERE (ARRAY_LENGTH(c0["Pets"]) > 0)
-        )
-    ) AS v0 
-    JOIN (
-        SELECT VALUE SUM(t0["Amount"]) 
-        FROM root 
-        JOIN t0 IN root["Records"]["Transactions"]
-    ) AS v1
-) AS r0 
-ORDER BY ARRAY_LENGTH(r0["ChildrenWithPets"]) DESC, r0["TotalExpenses"] DESC 
+            WHERE (ARRAY_LENGTH(c0["Pets"]) > 0))) AS v0 
+            JOIN (
+                SELECT VALUE SUM(t0["Amount"]) 
+                FROM root 
+                JOIN t0 IN root["Records"]["Transactions"]) AS v1) AS r0 
+                ORDER BY ARRAY_LENGTH(r0["ChildrenWithPets"]) DESC, r0["TotalExpenses"] DESC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -515,28 +479,22 @@ FROM (
         SELECT VALUE ARRAY(
             SELECT VALUE MIN(p0["GivenName"]) 
             FROM root 
-            JOIN p0 IN root["Parents"]
-        )
-    ) AS v0 
-    JOIN (
-        SELECT VALUE COUNT(1) 
-        FROM root 
-        JOIN c0 IN root["Children"] 
-        WHERE (c0["Grade"] > 95)
-    ) AS v1 
-    JOIN (
-        SELECT VALUE COUNT(1) 
-        FROM (
-            SELECT DISTINCT VALUE c2["GivenName"] 
-            FROM root 
-            JOIN c1 IN root["Children"] 
-            JOIN c2 IN c1["Pets"]
-        ) AS r1
-    ) AS v3
-) AS r2 
-ORDER BY r2["GoodChildrenCount"] DESC, r2["UniquePetsNameCount"] ASC 
+            JOIN p0 IN root["Parents"])) AS v0 
+            JOIN (
+                SELECT VALUE COUNT(1) 
+                FROM root 
+                JOIN c0 IN root["Children"] 
+                WHERE (c0["Grade"] > 95)) AS v1 
+                JOIN (
+                    SELECT VALUE COUNT(1) 
+                    FROM (
+                        SELECT DISTINCT VALUE c2["GivenName"] 
+                        FROM root 
+                        JOIN c1 IN root["Children"] 
+                        JOIN c2 IN c1["Pets"]) AS r1) AS v3) AS r2 
+                        ORDER BY r2["GoodChildrenCount"] DESC, r2["UniquePetsNameCount"] ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -549,7 +507,7 @@ ORDER BY r2["GoodChildrenCount"] DESC, r2["UniquePetsNameCount"] ASC
 SELECT VALUE root 
 FROM root 
 WHERE (ARRAY_LENGTH(root["Children"]) > 0) 
-ORDER BY root["IsRegistered"] ASC, root["Int"] DESC ]]></SqlQuery>
+ORDER BY root["IsRegistered"] ASC, root["Int"] DESC]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -563,8 +521,8 @@ SELECT TOP 3 VALUE f0
 FROM root 
 JOIN f0 IN root["Children"] 
 WHERE (ARRAY_LENGTH(root["Children"]) > 0) 
-ORDER BY f0["Grade"] ASC, ARRAY_LENGTH(f0["Pets"]) DESC ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+ORDER BY f0["Grade"] ASC, ARRAY_LENGTH(f0["Pets"]) DESC]]></SqlQuery>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -583,18 +541,15 @@ FROM (
         JOIN f0 IN root["Children"] 
         WHERE (ARRAY_LENGTH(root["Children"]) > 0) 
         ORDER BY f0["Grade"] DESC, f0["GivenName"] ASC 
-        OFFSET 2 LIMIT 20
-    ) AS r0 
-    JOIN (
-        SELECT VALUE COUNT(1) 
-        FROM r0 
-        JOIN p0 IN r0["Pets"] 
-        WHERE (p0["GivenName"]["Length"] > 10)
-    ) AS v2 
-    WHERE (v2 > 0)
-) AS r1 
+        OFFSET 2 LIMIT 20) AS r0 
+        JOIN (
+            SELECT VALUE COUNT(1) 
+            FROM r0 
+            JOIN p0 IN r0["Pets"] 
+            WHERE (p0["GivenName"]["Length"] > 10)) AS v2 
+            WHERE (v2 > 0)) AS r1
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -612,13 +567,11 @@ FROM (
         FROM root 
         JOIN f0 IN root["Children"] 
         WHERE (ARRAY_LENGTH(root["Children"]) > 0) 
-        ORDER BY f0["Grade"] ASC, ARRAY_LENGTH(f0["Pets"]) DESC
-    ) AS r1 
-    OFFSET 5 LIMIT 2147483647
-) AS r2 
-ORDER BY r2["Length"] ASC 
+        ORDER BY f0["Grade"] ASC, ARRAY_LENGTH(f0["Pets"]) DESC) AS r1 
+        OFFSET 5 LIMIT 2147483647) AS r2 
+        ORDER BY r2["Length"] ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -632,7 +585,7 @@ SELECT TOP 100 VALUE f0
 FROM root 
 JOIN f0 IN root["Records"]["Transactions"] 
 WHERE (ARRAY_LENGTH(root["Children"]) > 0) 
-ORDER BY f0["Type"] ASC, f0["Amount"] ASC ]]></SqlQuery>
+ORDER BY f0["Type"] ASC, f0["Amount"] ASC]]></SqlQuery>
       <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
@@ -646,11 +599,10 @@ ORDER BY f0["Type"] ASC, f0["Amount"] ASC ]]></SqlQuery>
 SELECT VALUE r0 
 FROM (
     SELECT TOP 100 VALUE root 
-    FROM root
-) AS r0 
-ORDER BY r0["IsRegistered"] ASC, r0["Int"] DESC 
+    FROM root) AS r0 
+    ORDER BY r0["IsRegistered"] ASC, r0["Int"] DESC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -663,12 +615,11 @@ ORDER BY r0["IsRegistered"] ASC, r0["Int"] DESC
 SELECT VALUE r0 
 FROM (
     SELECT TOP 100 VALUE root 
-    FROM root
-) AS r0 
-ORDER BY r0["IsRegistered"] ASC, r0["Int"] DESC 
-OFFSET 5 LIMIT 2147483647 
+    FROM root) AS r0 
+    ORDER BY r0["IsRegistered"] ASC, r0["Int"] DESC 
+    OFFSET 5 LIMIT 2147483647
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -680,7 +631,7 @@ OFFSET 5 LIMIT 2147483647
       <SqlQuery><![CDATA[
 SELECT DISTINCT VALUE root 
 FROM root 
-ORDER BY root["IsRegistered"] ASC, root["Int"] DESC ]]></SqlQuery>
+ORDER BY root["IsRegistered"] ASC, root["Int"] DESC]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -699,13 +650,11 @@ FROM (
         SELECT VALUE COUNT(1) 
         FROM c0 
         JOIN p0 IN c0["Pets"] 
-        WHERE (p0["GivenName"]["Length"] > 8)
-    ) AS v0 
-    WHERE (ARRAY_LENGTH(root["Children"]) > 0)
-) AS r0 
-ORDER BY r0["Name"] DESC, r0["PetWithLongNames"] ASC 
+        WHERE (p0["GivenName"]["Length"] > 8)) AS v0 
+        WHERE (ARRAY_LENGTH(root["Children"]) > 0)) AS r0 
+        ORDER BY r0["Name"] DESC, r0["PetWithLongNames"] ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -722,20 +671,16 @@ JOIN (
         SELECT VALUE c0 
         FROM root 
         JOIN c0 IN root["Children"] 
-        WHERE (c0["Grade"] > 90)
-    )
-) AS v0 
-JOIN (
-    SELECT VALUE EXISTS(
-        SELECT VALUE p0 
-        FROM root 
-        JOIN p0 IN root["Parents"] 
-        WHERE (p0["GivenName"]["Length"] > 10)
-    )
-) AS v1 
-ORDER BY v0 ASC, v1 DESC 
+        WHERE (c0["Grade"] > 90))) AS v0 
+        JOIN (
+            SELECT VALUE EXISTS(
+                SELECT VALUE p0 
+                FROM root 
+                JOIN p0 IN root["Parents"] 
+                WHERE (p0["GivenName"]["Length"] > 10))) AS v1 
+                ORDER BY v0 ASC, v1 DESC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -751,31 +696,24 @@ JOIN (
     SELECT VALUE ARRAY(
         SELECT VALUE MIN(c0["GivenName"]) 
         FROM root 
-        JOIN c0 IN root["Children"]
-    )
-) AS v0 
-JOIN (
-    SELECT VALUE ARRAY(
-        SELECT VALUE MAX(p0["GivenName"]) 
-        FROM root 
-        JOIN p0 IN root["Parents"]
-    )
-) AS v1 
-JOIN (
-    SELECT VALUE SUM(t0["Amount"]) 
-    FROM root 
-    JOIN t0 IN root["Records"]["Transactions"]
-) AS v2 
-JOIN (
-    SELECT VALUE ARRAY(
-        SELECT VALUE AVG(t1["Amount"]) 
-        FROM root 
-        JOIN t1 IN root["Records"]["Transactions"]
-    )
-) AS v3 
-ORDER BY v0[0] ASC, v1[0] DESC, v2 ASC, v3[0] DESC 
+        JOIN c0 IN root["Children"])) AS v0 
+        JOIN (
+            SELECT VALUE ARRAY(
+                SELECT VALUE MAX(p0["GivenName"]) 
+                FROM root 
+                JOIN p0 IN root["Parents"])) AS v1 
+                JOIN (
+                    SELECT VALUE SUM(t0["Amount"]) 
+                    FROM root 
+                    JOIN t0 IN root["Records"]["Transactions"]) AS v2 
+                    JOIN (
+                        SELECT VALUE ARRAY(
+                            SELECT VALUE AVG(t1["Amount"]) 
+                            FROM root 
+                            JOIN t1 IN root["Records"]["Transactions"])) AS v3 
+                            ORDER BY v0[0] ASC, v1[0] DESC, v2 ASC, v3[0] DESC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
 </Results>

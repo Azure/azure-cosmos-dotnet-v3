@@ -8,7 +8,7 @@
       <SqlQuery><![CDATA[
 SELECT VALUE root["FamilyId"] 
 FROM root 
-ORDER BY root["FamilyId"] ASC ]]></SqlQuery>
+ORDER BY root["FamilyId"] ASC]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -20,7 +20,7 @@ ORDER BY root["FamilyId"] ASC ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE LENGTH(root["FamilyId"]) 
 FROM root 
-ORDER BY root["FamilyId"] ASC ]]></SqlQuery>
+ORDER BY root["FamilyId"] ASC]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -33,7 +33,7 @@ ORDER BY root["FamilyId"] ASC ]]></SqlQuery>
 SELECT VALUE root["FamilyId"] 
 FROM root 
 WHERE ((root["Int"] = 5) AND (root["NullableInt"] != null)) 
-ORDER BY root["IsRegistered"] ASC ]]></SqlQuery>
+ORDER BY root["IsRegistered"] ASC]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -46,7 +46,7 @@ ORDER BY root["IsRegistered"] ASC ]]></SqlQuery>
 SELECT VALUE root["FamilyId"] 
 FROM root 
 WHERE ((root["Int"] = 5) AND (root["NullableInt"] != null)) 
-ORDER BY root["IsRegistered"] ASC ]]></SqlQuery>
+ORDER BY root["IsRegistered"] ASC]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -58,7 +58,7 @@ ORDER BY root["IsRegistered"] ASC ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-ORDER BY root["FamilyId"] ASC ]]></SqlQuery>
+ORDER BY root["FamilyId"] ASC]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -70,7 +70,7 @@ ORDER BY root["FamilyId"] ASC ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-ORDER BY root["FamilyId"] ASC ]]></SqlQuery>
+ORDER BY root["FamilyId"] ASC]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -82,7 +82,7 @@ ORDER BY root["FamilyId"] ASC ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root["FamilyId"] 
 FROM root 
-ORDER BY root["FamilyId"] ASC ]]></SqlQuery>
+ORDER BY root["FamilyId"] ASC]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -94,7 +94,7 @@ ORDER BY root["FamilyId"] ASC ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root["FamilyId"] 
 FROM root 
-ORDER BY root["FamilyId"] ASC ]]></SqlQuery>
+ORDER BY root["FamilyId"] ASC]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -106,7 +106,7 @@ ORDER BY root["FamilyId"] ASC ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT TOP 10 VALUE root["FamilyId"] 
 FROM root 
-ORDER BY root["FamilyId"] ASC ]]></SqlQuery>
+ORDER BY root["FamilyId"] ASC]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -118,7 +118,7 @@ ORDER BY root["FamilyId"] ASC ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root["FamilyId"] 
 FROM root 
-ORDER BY root["FamilyId"] ASC ]]></SqlQuery>
+ORDER BY root["FamilyId"] ASC]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -130,7 +130,7 @@ ORDER BY root["FamilyId"] ASC ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root["FamilyId"] 
 FROM root 
-ORDER BY root["FamilyId"] DESC ]]></SqlQuery>
+ORDER BY root["FamilyId"] DESC]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -142,7 +142,7 @@ ORDER BY root["FamilyId"] DESC ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE LENGTH(root["FamilyId"]) 
 FROM root 
-ORDER BY root["FamilyId"] DESC ]]></SqlQuery>
+ORDER BY root["FamilyId"] DESC]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -155,7 +155,7 @@ ORDER BY root["FamilyId"] DESC ]]></SqlQuery>
 SELECT VALUE root["FamilyId"] 
 FROM root 
 WHERE ((root["Int"] = 5) AND (root["NullableInt"] != null)) 
-ORDER BY root["IsRegistered"] DESC ]]></SqlQuery>
+ORDER BY root["IsRegistered"] DESC]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -168,7 +168,7 @@ ORDER BY root["IsRegistered"] DESC ]]></SqlQuery>
 SELECT VALUE root["FamilyId"] 
 FROM root 
 WHERE ((root["Int"] = 5) AND (root["NullableInt"] != null)) 
-ORDER BY root["IsRegistered"] DESC ]]></SqlQuery>
+ORDER BY root["IsRegistered"] DESC]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -180,7 +180,7 @@ ORDER BY root["IsRegistered"] DESC ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-ORDER BY root["FamilyId"] DESC ]]></SqlQuery>
+ORDER BY root["FamilyId"] DESC]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -192,7 +192,7 @@ ORDER BY root["FamilyId"] DESC ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-ORDER BY root["FamilyId"] DESC ]]></SqlQuery>
+ORDER BY root["FamilyId"] DESC]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -204,7 +204,7 @@ ORDER BY root["FamilyId"] DESC ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root["FamilyId"] 
 FROM root 
-ORDER BY root["FamilyId"] DESC ]]></SqlQuery>
+ORDER BY root["FamilyId"] DESC]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -216,7 +216,7 @@ ORDER BY root["FamilyId"] DESC ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root["FamilyId"] 
 FROM root 
-ORDER BY root["FamilyId"] DESC ]]></SqlQuery>
+ORDER BY root["FamilyId"] DESC]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -228,7 +228,7 @@ ORDER BY root["FamilyId"] DESC ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT TOP 10 VALUE root["FamilyId"] 
 FROM root 
-ORDER BY root["FamilyId"] DESC ]]></SqlQuery>
+ORDER BY root["FamilyId"] DESC]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -240,7 +240,7 @@ ORDER BY root["FamilyId"] DESC ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root["FamilyId"] 
 FROM root 
-ORDER BY root["FamilyId"] DESC ]]></SqlQuery>
+ORDER BY root["FamilyId"] DESC]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -252,7 +252,7 @@ ORDER BY root["FamilyId"] DESC ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root["FamilyId"] 
 FROM root 
-ORDER BY root["FamilyId"] ASC, root["Int"] ASC ]]></SqlQuery>
+ORDER BY root["FamilyId"] ASC, root["Int"] ASC]]></SqlQuery>
     </Output>
   </Result>
 </Results>

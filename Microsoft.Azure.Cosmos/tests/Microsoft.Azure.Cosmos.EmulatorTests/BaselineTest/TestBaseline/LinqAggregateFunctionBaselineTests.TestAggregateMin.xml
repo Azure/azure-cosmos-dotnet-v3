@@ -7,7 +7,7 @@
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE MIN(root) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -18,7 +18,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE MIN(root) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -29,7 +29,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE MIN(root["Number"]) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -41,7 +41,7 @@ FROM root ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE MIN(root["Number"]) 
 FROM root 
-WHERE root["Flag"] ]]></SqlQuery>
+WHERE root["Flag"]]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -53,7 +53,7 @@ WHERE root["Flag"] ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE MIN(root["Number"]) 
 FROM root 
-WHERE (NOT root["Flag"]) ]]></SqlQuery>
+WHERE (NOT root["Flag"])]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -64,7 +64,7 @@ WHERE (NOT root["Flag"]) ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE MIN(root["Number"]) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -75,7 +75,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE MIN(root["Number"]) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -88,7 +88,7 @@ FROM root ]]></SqlQuery>
 SELECT VALUE MIN(m0) 
 FROM root 
 JOIN m0 IN root["Multiples"] 
-WHERE ((m0 % 3) = 0) ]]></SqlQuery>
+WHERE ((m0 % 3) = 0)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -102,10 +102,9 @@ SELECT VALUE MIN(r0)
 FROM (
     SELECT VALUE root["Int"] 
     FROM root 
-    OFFSET 90 LIMIT 2147483647
-) AS r0 
+    OFFSET 90 LIMIT 2147483647) AS r0
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -119,10 +118,9 @@ SELECT VALUE MIN(r0)
 FROM (
     SELECT VALUE root["Int"] 
     FROM root 
-    OFFSET 90 LIMIT 5
-) AS r0 
+    OFFSET 90 LIMIT 5) AS r0
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -136,10 +134,9 @@ SELECT VALUE MIN(r0)
 FROM (
     SELECT VALUE root["Int"] 
     FROM root 
-    OFFSET 5 LIMIT 5
-) AS r0 
+    OFFSET 5 LIMIT 5) AS r0
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -155,13 +152,11 @@ FROM (
     FROM (
         SELECT VALUE root 
         FROM root 
-        OFFSET 5 LIMIT 5
-    ) AS r0 
-    JOIN c0 IN r0["Children"] 
-    OFFSET 10 LIMIT 20
-) AS r1 
+        OFFSET 5 LIMIT 5) AS r0 
+        JOIN c0 IN r0["Children"] 
+        OFFSET 10 LIMIT 20) AS r1
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -184,66 +179,48 @@ FROM (
                     SELECT VALUE v2["Grade"] 
                     FROM root 
                     JOIN v2 IN root["Children"] 
-                    OFFSET 1 LIMIT 2147483647
-                ) AS r0
-            )
-        ) AS v5 
-        JOIN (
-            SELECT VALUE ARRAY(
-                SELECT VALUE MIN(r1) 
-                FROM (
-                    SELECT VALUE v6["Grade"] 
-                    FROM root 
-                    JOIN v6 IN root["Children"] 
-                    OFFSET 1 LIMIT 3
-                ) AS r1
-            )
-        ) AS v10 
-        JOIN (
-            SELECT VALUE ARRAY(
-                SELECT VALUE MIN(r3) 
-                FROM (
-                    SELECT VALUE r2["Grade"] 
-                    FROM (
-                        SELECT TOP 3 VALUE v11 
-                        FROM root 
-                        JOIN v11 IN root["Children"]
-                    ) AS r2 
-                    OFFSET 1 LIMIT 2147483647
-                ) AS r3
-            )
-        ) AS v15 
-        JOIN (
-            SELECT VALUE ARRAY(
-                SELECT VALUE MIN(r5) 
-                FROM (
-                    SELECT VALUE t0["Amount"] 
-                    FROM root 
-                    JOIN t0 IN root["Records"]["Transactions"] 
-                    ORDER BY t0["Amount"] ASC 
-                    OFFSET 10 LIMIT 20
-                ) AS r5
-            )
-        ) AS v19 
-        JOIN (
-            SELECT VALUE ARRAY(
-                SELECT VALUE MIN(r6) 
-                FROM (
-                    SELECT VALUE c0["Grade"] 
-                    FROM root 
-                    JOIN c0 IN root["Children"] 
-                    WHERE (c0["Grade"] > 20) 
-                    ORDER BY c0["Grade"] ASC 
-                    OFFSET 1 LIMIT 2147483647
-                ) AS r6
-            )
-        ) AS v22 
-        OFFSET 1 LIMIT 20
-    ) AS r7 
-    OFFSET 1 LIMIT 10
-) AS r8 
+                    OFFSET 1 LIMIT 2147483647) AS r0)) AS v5 
+                    JOIN (
+                        SELECT VALUE ARRAY(
+                            SELECT VALUE MIN(r1) 
+                            FROM (
+                                SELECT VALUE v6["Grade"] 
+                                FROM root 
+                                JOIN v6 IN root["Children"] 
+                                OFFSET 1 LIMIT 3) AS r1)) AS v10 
+                                JOIN (
+                                    SELECT VALUE ARRAY(
+                                        SELECT VALUE MIN(r3) 
+                                        FROM (
+                                            SELECT VALUE r2["Grade"] 
+                                            FROM (
+                                                SELECT TOP 3 VALUE v11 
+                                                FROM root 
+                                                JOIN v11 IN root["Children"]) AS r2 
+                                                OFFSET 1 LIMIT 2147483647) AS r3)) AS v15 
+                                                JOIN (
+                                                    SELECT VALUE ARRAY(
+                                                        SELECT VALUE MIN(r5) 
+                                                        FROM (
+                                                            SELECT VALUE t0["Amount"] 
+                                                            FROM root 
+                                                            JOIN t0 IN root["Records"]["Transactions"] 
+                                                            ORDER BY t0["Amount"] ASC 
+                                                            OFFSET 10 LIMIT 20) AS r5)) AS v19 
+                                                            JOIN (
+                                                                SELECT VALUE ARRAY(
+                                                                    SELECT VALUE MIN(r6) 
+                                                                    FROM (
+                                                                        SELECT VALUE c0["Grade"] 
+                                                                        FROM root 
+                                                                        JOIN c0 IN root["Children"] 
+                                                                        WHERE (c0["Grade"] > 20) 
+                                                                        ORDER BY c0["Grade"] ASC 
+                                                                        OFFSET 1 LIMIT 2147483647) AS r6)) AS v22 
+                                                                        OFFSET 1 LIMIT 20) AS r7 
+                                                                        OFFSET 1 LIMIT 10) AS r8
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
 </Results>

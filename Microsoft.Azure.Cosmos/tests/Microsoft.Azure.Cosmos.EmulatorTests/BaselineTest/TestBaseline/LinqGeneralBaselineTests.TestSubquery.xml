@@ -12,9 +12,7 @@ JOIN (
     SELECT VALUE ARRAY(
         SELECT VALUE ARRAY_LENGTH(c0["Pets"]) 
         FROM root 
-        JOIN c0 IN root["Children"]
-    )
-) AS v0 
+        JOIN c0 IN root["Children"])) AS v0
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -32,11 +30,9 @@ JOIN (
         SELECT VALUE c0 
         FROM root 
         JOIN c0 IN root["Children"] 
-        ORDER BY ARRAY_LENGTH(c0["Pets"]) ASC
-    )
-) AS v0 
+        ORDER BY ARRAY_LENGTH(c0["Pets"]) ASC)) AS v0
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Could not load the specified file.]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -52,11 +48,9 @@ JOIN (
     SELECT VALUE ARRAY(
         SELECT TOP 2 VALUE v0 
         FROM root 
-        JOIN v0 IN root["Children"]
-    )
-) AS v2 
+        JOIN v0 IN root["Children"])) AS v2
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -73,9 +67,7 @@ JOIN (
         SELECT VALUE c0 
         FROM root 
         JOIN c0 IN root["Children"] 
-        WHERE (ARRAY_LENGTH(c0["Pets"]) > 0)
-    )
-) AS v0 
+        WHERE (ARRAY_LENGTH(c0["Pets"]) > 0))) AS v0
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -92,9 +84,7 @@ JOIN (
     SELECT VALUE ARRAY(
         SELECT DISTINCT VALUE v0 
         FROM root 
-        JOIN v0 IN root["Children"]
-    )
-) AS v2 
+        JOIN v0 IN root["Children"])) AS v2
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -111,8 +101,7 @@ JOIN (
     SELECT VALUE COUNT(1) 
     FROM root 
     JOIN c0 IN root["Children"] 
-    WHERE (c0["Grade"] > 80)
-) AS v0 
+    WHERE (c0["Grade"] > 80)) AS v0
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -128,8 +117,7 @@ FROM root
 JOIN (
     SELECT VALUE SUM(c0["Grade"]) 
     FROM root 
-    JOIN c0 IN root["Children"]
-) AS v0 
+    JOIN c0 IN root["Children"]) AS v0
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -146,9 +134,8 @@ JOIN (
     SELECT VALUE COUNT(1) 
     FROM root 
     JOIN c0 IN root["Children"] 
-    WHERE (ARRAY_LENGTH(c0["Pets"]) > 0)
-) AS v0 
-WHERE (v0 > 0) 
+    WHERE (ARRAY_LENGTH(c0["Pets"]) > 0)) AS v0 
+    WHERE (v0 > 0)
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -164,9 +151,8 @@ FROM root
 JOIN (
     SELECT VALUE SUM(c0["Grade"]) 
     FROM root 
-    JOIN c0 IN root["Children"]
-) AS v0 
-WHERE (v0 > 100) 
+    JOIN c0 IN root["Children"]) AS v0 
+    WHERE (v0 > 100)
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -183,12 +169,10 @@ JOIN (
     SELECT VALUE ARRAY(
         SELECT VALUE ARRAY_LENGTH(c0["Pets"]) 
         FROM root 
-        JOIN c0 IN root["Children"]
-    )
-) AS v0 
-ORDER BY v0 ASC 
+        JOIN c0 IN root["Children"])) AS v0 
+        ORDER BY v0 ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -203,11 +187,10 @@ FROM root
 JOIN (
     SELECT VALUE SUM(c0["Grade"]) 
     FROM root 
-    JOIN c0 IN root["Children"]
-) AS v0 
-ORDER BY v0 ASC 
+    JOIN c0 IN root["Children"]) AS v0 
+    ORDER BY v0 ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -223,11 +206,10 @@ JOIN (
     SELECT VALUE COUNT(1) 
     FROM root 
     JOIN c0 IN root["Children"] 
-    WHERE (c0["Grade"] > 90)
-) AS v0 
-ORDER BY v0 ASC 
+    WHERE (c0["Grade"] > 90)) AS v0 
+    ORDER BY v0 ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -244,9 +226,7 @@ JOIN (
     FROM (
         SELECT DISTINCT VALUE c0["Gender"] 
         FROM root 
-        JOIN c0 IN root["Children"]
-    ) AS r1
-) AS v1 
+        JOIN c0 IN root["Children"]) AS r1) AS v1
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -262,8 +242,7 @@ FROM root
 JOIN (
     SELECT VALUE SUM(c0["Grade"]) 
     FROM root 
-    JOIN c0 IN root["Children"]
-) AS v1 
+    JOIN c0 IN root["Children"]) AS v1
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -281,11 +260,9 @@ JOIN (
         SELECT TOP 1 VALUE c0["GivenName"] 
         FROM root 
         JOIN c0 IN root["Children"] 
-        ORDER BY c0["GivenName"]["Length"] ASC
-    )
-) AS v1 
+        ORDER BY c0["GivenName"]["Length"] ASC)) AS v1
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -302,9 +279,7 @@ JOIN (
         SELECT VALUE LENGTH(c1["GivenName"]) 
         FROM root 
         JOIN c0 IN root["Children"] 
-        JOIN c1 IN c0["Pets"]
-    )
-) AS v0 
+        JOIN c1 IN c0["Pets"])) AS v0
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -321,8 +296,7 @@ JOIN (
     SELECT VALUE COUNT(1) 
     FROM root 
     JOIN c0 IN root["Children"] 
-    WHERE (c0["Grade"] > 50)
-) AS v0 
+    WHERE (c0["Grade"] > 50)) AS v0
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -341,11 +315,9 @@ JOIN (
         FROM root 
         JOIN c0 IN root["Children"] 
         WHERE (c0["Grade"] > 50) 
-        ORDER BY ARRAY_LENGTH(c0["Pets"]) ASC
-    )
-) AS v1 
+        ORDER BY ARRAY_LENGTH(c0["Pets"]) ASC)) AS v1
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -362,11 +334,9 @@ JOIN (
         SELECT TOP 3 VALUE ARRAY_LENGTH(c0["Pets"]) 
         FROM root 
         JOIN c0 IN root["Children"] 
-        WHERE (c0["Grade"] > 50)
-    )
-) AS v1 
+        WHERE (c0["Grade"] > 50))) AS v1
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -383,11 +353,9 @@ JOIN (
         SELECT TOP 3 VALUE c0["Pets"] 
         FROM root 
         JOIN c0 IN root["Children"] 
-        WHERE (c0["Grade"] > 50)
-    )
-) AS v1 
+        WHERE (c0["Grade"] > 50))) AS v1
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -404,9 +372,7 @@ JOIN (
         SELECT DISTINCT VALUE c0["Gender"] 
         FROM root 
         JOIN c0 IN root["Children"] 
-        WHERE ((c0["Grade"] > 50) AND (ARRAY_LENGTH(c0["Pets"]) > 0))
-    )
-) AS v1 
+        WHERE ((c0["Grade"] > 50) AND (ARRAY_LENGTH(c0["Pets"]) > 0)))) AS v1
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -424,11 +390,9 @@ JOIN (
         SELECT TOP 1 VALUE c0["Gender"] 
         FROM root 
         JOIN c0 IN root["Children"] 
-        ORDER BY c0["Grade"] ASC
-    )
-) AS v1 
+        ORDER BY c0["Grade"] ASC)) AS v1
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -447,12 +411,9 @@ JOIN (
             SELECT TOP 2 VALUE c0["Grade"] 
             FROM root 
             JOIN c0 IN root["Children"] 
-            ORDER BY ARRAY_LENGTH(c0["Pets"]) ASC
-        ) AS r0
-    )
-) AS v2 
+            ORDER BY ARRAY_LENGTH(c0["Pets"]) ASC) AS r0)) AS v2
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -467,9 +428,8 @@ FROM root
 JOIN (
     SELECT VALUE COUNT(1) 
     FROM root 
-    JOIN c0 IN root["Children"]
-) AS v0 
-WHERE (v0 > 0) 
+    JOIN c0 IN root["Children"]) AS v0 
+    WHERE (v0 > 0)
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -486,9 +446,8 @@ JOIN (
     SELECT VALUE COUNT(1) 
     FROM root 
     JOIN c0 IN root["Children"] 
-    WHERE (ARRAY_LENGTH(c0["Pets"]) > 0)
-) AS v0 
-WHERE (v0 > 0) 
+    WHERE (ARRAY_LENGTH(c0["Pets"]) > 0)) AS v0 
+    WHERE (v0 > 0)
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -505,9 +464,8 @@ JOIN (
     SELECT VALUE SUM(c0["Grade"]) 
     FROM root 
     JOIN c0 IN root["Children"] 
-    WHERE (ARRAY_LENGTH(c0["Pets"]) > 0)
-) AS v0 
-WHERE (v0 < 200) 
+    WHERE (ARRAY_LENGTH(c0["Pets"]) > 0)) AS v0 
+    WHERE (v0 < 200)
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -527,13 +485,11 @@ JOIN (
         FROM root 
         JOIN c0 IN root["Children"] 
         WHERE (ARRAY_LENGTH(c0["Pets"]) > 0) 
-        ORDER BY c0["Grade"] ASC
-    ) AS r0 
-    WHERE (r0["Grade"] > 80)
-) AS v1 
-WHERE (v1 > 0) 
+        ORDER BY c0["Grade"] ASC) AS r0 
+        WHERE (r0["Grade"] > 80)) AS v1 
+        WHERE (v1 > 0)
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -550,12 +506,10 @@ JOIN (
         SELECT VALUE ARRAY_LENGTH(c0["Pets"]) 
         FROM root 
         JOIN c0 IN root["Children"] 
-        WHERE (ARRAY_LENGTH(c0["Pets"]) > 1)
-    )
-) AS v0 
-ORDER BY v0 ASC 
+        WHERE (ARRAY_LENGTH(c0["Pets"]) > 1))) AS v0 
+        ORDER BY v0 ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -571,11 +525,10 @@ JOIN (
     SELECT VALUE COUNT(1) 
     FROM root 
     JOIN c0 IN root["Children"] 
-    WHERE (ARRAY_LENGTH(c0["Pets"]) > 3)
-) AS v0 
-ORDER BY v0 ASC 
+    WHERE (ARRAY_LENGTH(c0["Pets"]) > 3)) AS v0 
+    ORDER BY v0 ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -590,11 +543,10 @@ FROM root
 JOIN (
     SELECT VALUE SUM(c0["Grade"]) 
     FROM root 
-    JOIN c0 IN root["Children"]
-) AS v1 
-ORDER BY v1 ASC 
+    JOIN c0 IN root["Children"]) AS v1 
+    ORDER BY v1 ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -612,12 +564,10 @@ JOIN (
         SELECT TOP 2 VALUE c0 
         FROM root 
         JOIN c0 IN root["Children"] 
-        ORDER BY ARRAY_LENGTH(c0["Pets"]) ASC
-    ) AS r0
-) AS v1 
-ORDER BY v1 ASC 
+        ORDER BY ARRAY_LENGTH(c0["Pets"]) ASC) AS r0) AS v1 
+        ORDER BY v1 ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -633,9 +583,8 @@ JOIN (
     SELECT VALUE COUNT(1) 
     FROM root 
     JOIN c0 IN root["Children"] 
-    WHERE (c0["Grade"] < 20)
-) AS v0 
-WHERE ((- v0) = 0) 
+    WHERE (c0["Grade"] < 20)) AS v0 
+    WHERE ((- v0) = 0)
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -652,8 +601,7 @@ JOIN (
     SELECT VALUE COUNT(1) 
     FROM root 
     JOIN c0 IN root["Children"] 
-    WHERE (ARRAY_LENGTH(c0["Pets"]) > 0)
-) AS v0 
+    WHERE (ARRAY_LENGTH(c0["Pets"]) > 0)) AS v0
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -670,8 +618,7 @@ JOIN (
     SELECT VALUE COUNT(1) 
     FROM root 
     JOIN c0 IN root["Children"] 
-    WHERE (ARRAY_LENGTH(c0["Pets"]) > 0)
-) AS v0 
+    WHERE (ARRAY_LENGTH(c0["Pets"]) > 0)) AS v0
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -688,9 +635,8 @@ JOIN (
     SELECT VALUE COUNT(1) 
     FROM root 
     JOIN c0 IN root["Children"] 
-    WHERE (ARRAY_LENGTH(c0["Pets"]) > 0)
-) AS v0 
-WHERE ((v0 % 2) = 1) 
+    WHERE (ARRAY_LENGTH(c0["Pets"]) > 0)) AS v0 
+    WHERE ((v0 % 2) = 1)
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -707,23 +653,17 @@ JOIN (
     SELECT VALUE EXISTS(
         SELECT VALUE v0 
         FROM root 
-        JOIN v0 IN root["Children"]
-    )
-) AS v1 
-JOIN (
-    SELECT VALUE ARRAY(
-        SELECT VALUE c0["GivenName"] 
-        FROM root 
-        JOIN c0 IN root["Children"]
-    )
-) AS v2 
-JOIN (
-    SELECT VALUE ARRAY(
-        SELECT VALUE p0["GivenName"] 
-        FROM root 
-        JOIN p0 IN root["Parents"]
-    )
-) AS v3 
+        JOIN v0 IN root["Children"])) AS v1 
+        JOIN (
+            SELECT VALUE ARRAY(
+                SELECT VALUE c0["GivenName"] 
+                FROM root 
+                JOIN c0 IN root["Children"])) AS v2 
+                JOIN (
+                    SELECT VALUE ARRAY(
+                        SELECT VALUE p0["GivenName"] 
+                        FROM root 
+                        JOIN p0 IN root["Parents"])) AS v3
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -741,21 +681,16 @@ JOIN (
         SELECT VALUE c0 
         FROM root 
         JOIN c0 IN root["Children"] 
-        WHERE (c0["Grade"] > 97)
-    )
-) AS v0 
-JOIN (
-    SELECT VALUE ARRAY(
-        SELECT VALUE MAX(c1["Grade"]) 
-        FROM root 
-        JOIN c1 IN root["Children"]
-    )
-) AS v1 
-JOIN (
-    SELECT VALUE SUM(c2["Grade"]) 
-    FROM root 
-    JOIN c2 IN root["Children"]
-) AS v2 
+        WHERE (c0["Grade"] > 97))) AS v0 
+        JOIN (
+            SELECT VALUE ARRAY(
+                SELECT VALUE MAX(c1["Grade"]) 
+                FROM root 
+                JOIN c1 IN root["Children"])) AS v1 
+                JOIN (
+                    SELECT VALUE SUM(c2["Grade"]) 
+                    FROM root 
+                    JOIN c2 IN root["Children"]) AS v2
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -771,8 +706,7 @@ FROM root
 JOIN (
     SELECT VALUE SUM(c0["Grade"]) 
     FROM root 
-    JOIN c0 IN root["Children"]
-) AS v0 
+    JOIN c0 IN root["Children"]) AS v0
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -788,8 +722,7 @@ FROM root
 JOIN (
     SELECT VALUE SUM(c0["Grade"]) 
     FROM root 
-    JOIN c0 IN root["Children"]
-) AS v0 
+    JOIN c0 IN root["Children"]) AS v0
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -806,9 +739,7 @@ JOIN (
     SELECT VALUE ARRAY(
         SELECT VALUE ARRAY_LENGTH(c0["Pets"]) 
         FROM root 
-        JOIN c0 IN root["Children"]
-    )
-) AS v0 
+        JOIN c0 IN root["Children"])) AS v0
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -826,9 +757,7 @@ JOIN (
         SELECT VALUE c0 
         FROM root 
         JOIN c0 IN root["Children"] 
-        WHERE (ARRAY_LENGTH(c0["Pets"]) > 3)
-    )
-) AS v0 
+        WHERE (ARRAY_LENGTH(c0["Pets"]) > 3))) AS v0
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -846,9 +775,7 @@ JOIN (
         SELECT VALUE c0 
         FROM root 
         JOIN c0 IN root["Children"] 
-        WHERE (c0["Grade"] > 90)
-    )
-) AS v0 
+        WHERE (c0["Grade"] > 90))) AS v0
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -866,9 +793,7 @@ JOIN (
         SELECT VALUE c0["GivenName"] 
         FROM root 
         JOIN c0 IN root["Children"] 
-        WHERE (ARRAY_LENGTH(c0["Pets"]) > 3)
-    )
-) AS v0 
+        WHERE (ARRAY_LENGTH(c0["Pets"]) > 3))) AS v0
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -887,10 +812,8 @@ FROM (
         SELECT VALUE COUNT(1) 
         FROM root 
         JOIN c0 IN root["Children"] 
-        WHERE (c0["Grade"] > 0)
-    ) AS v0
-) AS r0 
-WHERE (r0["ChildrenCount"] > 0) 
+        WHERE (c0["Grade"] > 0)) AS v0) AS r0 
+        WHERE (r0["ChildrenCount"] > 0)
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -908,17 +831,13 @@ JOIN (
         SELECT VALUE c0 
         FROM root 
         JOIN c0 IN root["Children"] 
-        WHERE (c0["Grade"] > 90)
-    )
-) AS v0 
-JOIN (
-    SELECT VALUE ARRAY(
-        SELECT VALUE c1 
-        FROM root 
-        JOIN c1 IN root["Children"] 
-        WHERE (c1["Grade"] < 10)
-    )
-) AS v1 
+        WHERE (c0["Grade"] > 90))) AS v0 
+        JOIN (
+            SELECT VALUE ARRAY(
+                SELECT VALUE c1 
+                FROM root 
+                JOIN c1 IN root["Children"] 
+                WHERE (c1["Grade"] < 10))) AS v1
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -935,14 +854,11 @@ JOIN (
     SELECT VALUE ARRAY(
         SELECT VALUE c0["Grade"] 
         FROM root 
-        JOIN c0 IN root["Children"]
-    )
-) AS v0 
-JOIN (
-    SELECT VALUE SUM(ARRAY_LENGTH(c1["Pets"])) 
-    FROM root 
-    JOIN c1 IN root["Children"]
-) AS v1 
+        JOIN c0 IN root["Children"])) AS v0 
+        JOIN (
+            SELECT VALUE SUM(ARRAY_LENGTH(c1["Pets"])) 
+            FROM root 
+            JOIN c1 IN root["Children"]) AS v1
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -959,15 +875,12 @@ JOIN (
     SELECT VALUE ARRAY(
         SELECT VALUE c0["Grade"] 
         FROM root 
-        JOIN c0 IN root["Children"]
-    )
-) AS v0 
-JOIN (
-    SELECT VALUE COUNT(1) 
-    FROM root 
-    JOIN c1 IN root["Children"] 
-    WHERE (c1["Grade"] > 50)
-) AS v1 
+        JOIN c0 IN root["Children"])) AS v0 
+        JOIN (
+            SELECT VALUE COUNT(1) 
+            FROM root 
+            JOIN c1 IN root["Children"] 
+            WHERE (c1["Grade"] > 50)) AS v1
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -984,17 +897,14 @@ JOIN (
     SELECT VALUE COUNT(1) 
     FROM root 
     JOIN c0 IN root["Children"] 
-    WHERE (c0["Grade"] > 20)
-) AS v0 
-JOIN (
-    SELECT VALUE ARRAY(
-        SELECT VALUE c1 
-        FROM root 
-        JOIN c1 IN root["Children"] 
-        WHERE (c1["Grade"] > 20)
-    )
-) AS v1 
-WHERE (v0 >= 2) 
+    WHERE (c0["Grade"] > 20)) AS v0 
+    JOIN (
+        SELECT VALUE ARRAY(
+            SELECT VALUE c1 
+            FROM root 
+            JOIN c1 IN root["Children"] 
+            WHERE (c1["Grade"] > 20))) AS v1 
+            WHERE (v0 >= 2)
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -1011,19 +921,16 @@ JOIN (
     SELECT VALUE COUNT(1) 
     FROM root 
     JOIN c0 IN root["Children"] 
-    WHERE (c0["Grade"] > 20)
-) AS v0 
-JOIN (
-    SELECT VALUE ARRAY(
-        SELECT VALUE c1 
-        FROM root 
-        JOIN c1 IN root["Children"] 
-        WHERE (c1["Grade"] > 20)
-    )
-) AS v1 
-WHERE (v0 >= 2) 
+    WHERE (c0["Grade"] > 20)) AS v0 
+    JOIN (
+        SELECT VALUE ARRAY(
+            SELECT VALUE c1 
+            FROM root 
+            JOIN c1 IN root["Children"] 
+            WHERE (c1["Grade"] > 20))) AS v1 
+            WHERE (v0 >= 2)
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -1038,13 +945,11 @@ FROM root
 JOIN (
     SELECT VALUE SUM(c0["Grade"]) 
     FROM root 
-    JOIN c0 IN root["Children"]
-) AS v0 
-JOIN (
-    SELECT VALUE SUM(ARRAY_LENGTH(c1["Pets"])) 
-    FROM root 
-    JOIN c1 IN root["Children"]
-) AS v1 
+    JOIN c0 IN root["Children"]) AS v0 
+    JOIN (
+        SELECT VALUE SUM(ARRAY_LENGTH(c1["Pets"])) 
+        FROM root 
+        JOIN c1 IN root["Children"]) AS v1
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -1060,22 +965,18 @@ FROM root
 JOIN (
     SELECT VALUE SUM(ARRAY_LENGTH(c0["Pets"])) 
     FROM root 
-    JOIN c0 IN root["Children"]
-) AS v0 
-JOIN (
-    SELECT VALUE COUNT(1) 
-    FROM root 
-    JOIN c1 IN root["Children"] 
+    JOIN c0 IN root["Children"]) AS v0 
     JOIN (
-        SELECT VALUE EXISTS(
-            SELECT VALUE p0 
-            FROM c1 
-            JOIN p0 IN c1["Pets"] 
-            WHERE ((LENGTH(p0["GivenName"]) = 0) OR (SUBSTRING(p0["GivenName"], 0, 1) = "A"))
-        )
-    ) AS v1 
-    WHERE v1
-) AS v2 
+        SELECT VALUE COUNT(1) 
+        FROM root 
+        JOIN c1 IN root["Children"] 
+        JOIN (
+            SELECT VALUE EXISTS(
+                SELECT VALUE p0 
+                FROM c1 
+                JOIN p0 IN c1["Pets"] 
+                WHERE ((LENGTH(p0["GivenName"]) = 0) OR (SUBSTRING(p0["GivenName"], 0, 1) = "A")))) AS v1 
+                WHERE v1) AS v2
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -1092,11 +993,10 @@ JOIN (
     SELECT VALUE COUNT(1) 
     FROM root 
     JOIN c0 IN root["Children"] 
-    WHERE (ARRAY_LENGTH(c0["Pets"]) > 0)
-) AS v0 
-ORDER BY LOG(v0) ASC 
+    WHERE (ARRAY_LENGTH(c0["Pets"]) > 0)) AS v0 
+    ORDER BY LOG(v0) ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -1114,11 +1014,8 @@ FROM (
         SELECT VALUE ARRAY(
             SELECT VALUE ARRAY_LENGTH(c0["Pets"]) 
             FROM root 
-            JOIN c0 IN root["Children"]
-        )
-    ) AS v0
-) AS r0 
-WHERE (ARRAY_LENGTH(r0) > 0) 
+            JOIN c0 IN root["Children"])) AS v0) AS r0 
+            WHERE (ARRAY_LENGTH(r0) > 0)
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -1138,14 +1035,11 @@ FROM (
             SELECT VALUE c0 
             FROM root 
             JOIN c0 IN root["Children"] 
-            WHERE (c0["Grade"] > 90)
-        )
-    ) AS v0
-) AS r0 
-WHERE ((r0["FamilyId"] > "ABC") AND (ARRAY_LENGTH(r0["SmartChildren"]) > 0)) 
-ORDER BY r0["ChildrenCount"] ASC 
+            WHERE (c0["Grade"] > 90))) AS v0) AS r0 
+            WHERE ((r0["FamilyId"] > "ABC") AND (ARRAY_LENGTH(r0["SmartChildren"]) > 0)) 
+            ORDER BY r0["ChildrenCount"] ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -1168,37 +1062,26 @@ FROM (
                 SELECT VALUE ARRAY(
                     SELECT VALUE SUBSTRING(p0["GivenName"], 0, 1) 
                     FROM c0 
-                    JOIN p0 IN c0["Pets"]
-                )
-            ) AS v0
-        )
-    ) AS v1 
-    JOIN (
-        SELECT VALUE ARRAY(
-            SELECT TOP 1 VALUE v2 
-            FROM root 
-            JOIN v2 IN root["Children"]
-        )
-    ) AS v4
-) AS r0 
-JOIN (
-    SELECT VALUE ARRAY(
-        SELECT VALUE v5 
-        FROM r0 
-        JOIN chArray0 IN r0["ChildrenPetFirstChars"] 
-        JOIN (
-            SELECT VALUE EXISTS(
-                SELECT VALUE a 
-                FROM chArray0 
-                JOIN a IN chArray0 
-                WHERE STARTSWITH(r0["FamilyId"], a)
-            )
-        ) AS v5
-    )
-) AS v6 
-WHERE (r0["FirstChild"] != null) 
+                    JOIN p0 IN c0["Pets"])) AS v0)) AS v1 
+                    JOIN (
+                        SELECT VALUE ARRAY(
+                            SELECT TOP 1 VALUE v2 
+                            FROM root 
+                            JOIN v2 IN root["Children"])) AS v4) AS r0 
+                            JOIN (
+                                SELECT VALUE ARRAY(
+                                    SELECT VALUE v5 
+                                    FROM r0 
+                                    JOIN chArray0 IN r0["ChildrenPetFirstChars"] 
+                                    JOIN (
+                                        SELECT VALUE EXISTS(
+                                            SELECT VALUE a 
+                                            FROM chArray0 
+                                            JOIN a IN chArray0 
+                                            WHERE STARTSWITH(r0["FamilyId"], a))) AS v5)) AS v6 
+                                            WHERE (r0["FirstChild"] != null)
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -1219,18 +1102,12 @@ JOIN (
             SELECT VALUE ARRAY(
                 SELECT VALUE p0["GivenName"] 
                 FROM c0 
-                JOIN p0 IN c0["Pets"]
-            )
-        ) AS v0 
-        JOIN (
-            SELECT VALUE ARRAY(
-                SELECT VALUE p1["GivenName"] 
-                FROM c0 
-                JOIN p1 IN root["Parents"]
-            )
-        ) AS v1
-    )
-) AS v2 
+                JOIN p0 IN c0["Pets"])) AS v0 
+                JOIN (
+                    SELECT VALUE ARRAY(
+                        SELECT VALUE p1["GivenName"] 
+                        FROM c0 
+                        JOIN p1 IN root["Parents"])) AS v1)) AS v2
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -1244,14 +1121,12 @@ JOIN (
 SELECT VALUE r0 
 FROM (
     SELECT VALUE root["Children"] 
-    FROM root
-) AS r0 
-JOIN (
-    SELECT VALUE SUM(c["Grade"]) 
-    FROM r0 
-    JOIN c IN r0
-) AS v0 
-WHERE (v0 > 100) 
+    FROM root) AS r0 
+    JOIN (
+        SELECT VALUE SUM(c["Grade"]) 
+        FROM r0 
+        JOIN c IN r0) AS v0 
+        WHERE (v0 > 100)
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -1270,15 +1145,11 @@ FROM (
         SELECT VALUE ARRAY(
             SELECT VALUE c0["Grade"] 
             FROM root 
-            JOIN c0 IN root["Children"]
-        )
-    ) AS v0
-) AS r0 
-JOIN (
-    SELECT VALUE SUM(v1) 
-    FROM r0 
-    JOIN v1 IN r0
-) AS v2 
+            JOIN c0 IN root["Children"])) AS v0) AS r0 
+            JOIN (
+                SELECT VALUE SUM(v1) 
+                FROM r0 
+                JOIN v1 IN r0) AS v2
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -1292,13 +1163,11 @@ JOIN (
 SELECT VALUE v0 
 FROM (
     SELECT VALUE root["Children"] 
-    FROM root
-) AS r0 
-JOIN (
-    SELECT VALUE SUM(c["Grade"]) 
-    FROM r0 
-    JOIN c IN r0
-) AS v0 
+    FROM root) AS r0 
+    JOIN (
+        SELECT VALUE SUM(c["Grade"]) 
+        FROM r0 
+        JOIN c IN r0) AS v0
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -1316,15 +1185,12 @@ JOIN (
         SELECT VALUE c0 
         FROM root 
         JOIN c0 IN root["Children"] 
-        WHERE (c0["Grade"] > 90)
-    )
-) AS v0 
-JOIN (
-    SELECT VALUE SUM(ARRAY_LENGTH(c1["Pets"])) 
-    FROM root 
-    JOIN c1 IN root["Children"]
-) AS v1 
-WHERE (v0 AND root["IsRegistered"]) 
+        WHERE (c0["Grade"] > 90))) AS v0 
+        JOIN (
+            SELECT VALUE SUM(ARRAY_LENGTH(c1["Pets"])) 
+            FROM root 
+            JOIN c1 IN root["Children"]) AS v1 
+            WHERE (v0 AND root["IsRegistered"])
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -1342,24 +1208,20 @@ JOIN (
         SELECT VALUE c0 
         FROM root 
         JOIN c0 IN root["Children"] 
-        WHERE (c0["Grade"] > 90)
-    )
-) AS v0 
-JOIN (
-    SELECT VALUE COUNT(1) 
-    FROM root 
-    JOIN c1 IN root["Children"] 
-    WHERE (ARRAY_LENGTH(c1["Things"]) > 3)
-) AS v1 
-JOIN (
-    SELECT VALUE SUM(ARRAY_LENGTH(c2["Pets"])) 
-    FROM root 
-    JOIN c2 IN root["Children"]
-) AS v2 
-WHERE (v0 AND root["IsRegistered"]) 
-ORDER BY v1 ASC 
+        WHERE (c0["Grade"] > 90))) AS v0 
+        JOIN (
+            SELECT VALUE COUNT(1) 
+            FROM root 
+            JOIN c1 IN root["Children"] 
+            WHERE (ARRAY_LENGTH(c1["Things"]) > 3)) AS v1 
+            JOIN (
+                SELECT VALUE SUM(ARRAY_LENGTH(c2["Pets"])) 
+                FROM root 
+                JOIN c2 IN root["Children"]) AS v2 
+                WHERE (v0 AND root["IsRegistered"]) 
+                ORDER BY v1 ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -1380,11 +1242,7 @@ JOIN (
             SELECT VALUE ARRAY(
                 SELECT VALUE LENGTH(p0["GivenName"]) 
                 FROM c0 
-                JOIN p0 IN c0["Pets"]
-            )
-        ) AS v0
-    )
-) AS v1 
+                JOIN p0 IN c0["Pets"])) AS v0)) AS v1
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -1406,11 +1264,7 @@ JOIN (
             SELECT VALUE ARRAY(
                 SELECT VALUE p0 
                 FROM c0 
-                JOIN p0 IN c0["Pets"]
-            )
-        ) AS v0
-    )
-) AS v1 
+                JOIN p0 IN c0["Pets"])) AS v0)) AS v1
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -1432,10 +1286,7 @@ JOIN (
             SELECT VALUE COUNT(1) 
             FROM c0 
             JOIN child0 IN root["Children"] 
-            WHERE (SUBSTRING((child0["GivenName"] || " "), 0, 1) = SUBSTRING((c0["GivenName"] || " "), 0, 1))
-        ) AS v0
-    )
-) AS v1 
+            WHERE (SUBSTRING((child0["GivenName"] || " "), 0, 1) = SUBSTRING((c0["GivenName"] || " "), 0, 1))) AS v0)) AS v1
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -1452,20 +1303,16 @@ JOIN (
     SELECT VALUE ARRAY(
         SELECT TOP 1 VALUE v0 
         FROM root 
-        JOIN v0 IN root["Children"]
-    )
-) AS v2 
-JOIN (
-    SELECT VALUE ARRAY(
-        SELECT VALUE c0 
-        FROM root 
-        JOIN c0 IN root["Children"] 
-        ORDER BY c0["Grade"] ASC
-    )
-) AS v3 
-WHERE (ARRAY_LENGTH(root["Children"]) > 0) 
+        JOIN v0 IN root["Children"])) AS v2 
+        JOIN (
+            SELECT VALUE ARRAY(
+                SELECT VALUE c0 
+                FROM root 
+                JOIN c0 IN root["Children"] 
+                ORDER BY c0["Grade"] ASC)) AS v3 
+                WHERE (ARRAY_LENGTH(root["Children"]) > 0)
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -1486,17 +1333,13 @@ JOIN (
             SELECT VALUE COUNT(1) 
             FROM c0 
             JOIN p0 IN c0["Pets"] 
-            WHERE ((LENGTH(p0["GivenName"]) > 10) AND (SUBSTRING(p0["GivenName"], 0, 1) = "A"))
-        ) AS v0 
-        JOIN (
-            SELECT VALUE COUNT(1) 
-            FROM c0 
-            JOIN child0 IN root["Children"] 
-            WHERE (SUBSTRING((child0["GivenName"] || " "), 0, 1) = SUBSTRING((c0["GivenName"] || " "), 0, 1))
-        ) AS v1 
-        WHERE (v0 > 0)
-    )
-) AS v2 
+            WHERE ((LENGTH(p0["GivenName"]) > 10) AND (SUBSTRING(p0["GivenName"], 0, 1) = "A"))) AS v0 
+            JOIN (
+                SELECT VALUE COUNT(1) 
+                FROM c0 
+                JOIN child0 IN root["Children"] 
+                WHERE (SUBSTRING((child0["GivenName"] || " "), 0, 1) = SUBSTRING((c0["GivenName"] || " "), 0, 1))) AS v1 
+                WHERE (v0 > 0))) AS v2
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -1514,9 +1357,7 @@ JOIN (
     SELECT VALUE ARRAY(
         SELECT VALUE LENGTH(p0["GivenName"]) 
         FROM c0 
-        JOIN p0 IN c0["Pets"]
-    )
-) AS v0 
+        JOIN p0 IN c0["Pets"])) AS v0
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -1535,10 +1376,8 @@ JOIN (
         SELECT VALUE p0 
         FROM c0 
         JOIN p0 IN c0["Pets"] 
-        WHERE (LENGTH(p0["GivenName"]) > 10)
-    )
-) AS v0 
-WHERE v0 
+        WHERE (LENGTH(p0["GivenName"]) > 10))) AS v0 
+        WHERE v0
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -1555,9 +1394,8 @@ JOIN (
     SELECT VALUE COUNT(1) 
     FROM root 
     JOIN p0 IN root["Parents"] 
-    WHERE (LENGTH(p0["FamilyName"]) > 10)
-) AS v0 
-WHERE (v0 > 1) 
+    WHERE (LENGTH(p0["FamilyName"]) > 10)) AS v0 
+    WHERE (v0 > 1)
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -1578,11 +1416,9 @@ JOIN (
         SELECT VALUE COUNT(1) 
         FROM c0 
         JOIN p0 IN c0["Pets"] 
-        WHERE (LENGTH(p0["GivenName"]) > 15)
-    ) AS v0 
-    WHERE (v0 > 0)
-) AS v1 
-WHERE (v1 > 0) 
+        WHERE (LENGTH(p0["GivenName"]) > 15)) AS v0 
+        WHERE (v0 > 0)) AS v1 
+        WHERE (v1 > 0)
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -1606,14 +1442,9 @@ JOIN (
                 SELECT VALUE ARRAY(
                     SELECT VALUE p0["GivenName"] 
                     FROM c0 
-                    JOIN p0 IN c0["Pets"]
-                )
-            ) AS v0
-        ) AS r0 
-        WHERE (ARRAY_LENGTH(r0) > 3)
-    )
-) AS v1 
-WHERE v1 
+                    JOIN p0 IN c0["Pets"])) AS v0) AS r0 
+                    WHERE (ARRAY_LENGTH(r0) > 3))) AS v1 
+                    WHERE v1
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -1627,15 +1458,12 @@ WHERE v1
 SELECT VALUE v0 
 FROM (
     SELECT VALUE {"FamilyId": root["FamilyId"], "Family": root} 
-    FROM root
-) AS r0 
-JOIN (
-    SELECT VALUE ARRAY(
-        SELECT VALUE ARRAY_LENGTH(c0["Pets"]) 
-        FROM r0 
-        JOIN c0 IN r0["Family"]["Children"]
-    )
-) AS v0 
+    FROM root) AS r0 
+    JOIN (
+        SELECT VALUE ARRAY(
+            SELECT VALUE ARRAY_LENGTH(c0["Pets"]) 
+            FROM r0 
+            JOIN c0 IN r0["Family"]["Children"])) AS v0
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -1653,9 +1481,7 @@ JOIN (
     SELECT VALUE ARRAY(
         SELECT VALUE LENGTH(p0["GivenName"]) 
         FROM f0 
-        JOIN p0 IN f0["Pets"]
-    )
-) AS v0 
+        JOIN p0 IN f0["Pets"])) AS v0
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -1674,17 +1500,13 @@ JOIN (
         SELECT VALUE p0 
         FROM c0 
         JOIN p0 IN c0["Pets"] 
-        WHERE (LENGTH(p0["GivenName"]) > 20)
-    )
-) AS v0 
-JOIN (
-    SELECT VALUE ARRAY(
-        SELECT VALUE LENGTH(p1["GivenName"]) 
-        FROM c0 
-        JOIN p1 IN c0["Pets"]
-    )
-) AS v1 
-WHERE ((c0["Grade"] > 80) AND v0) 
+        WHERE (LENGTH(p0["GivenName"]) > 20))) AS v0 
+        JOIN (
+            SELECT VALUE ARRAY(
+                SELECT VALUE LENGTH(p1["GivenName"]) 
+                FROM c0 
+                JOIN p1 IN c0["Pets"])) AS v1 
+                WHERE ((c0["Grade"] > 80) AND v0)
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -1700,28 +1522,21 @@ FROM (
     SELECT VALUE {"FamilyId": r0["FamilyId"], "ChildrenCount": ARRAY_LENGTH(r0["Children"]), "Family": r0} 
     FROM (
         SELECT DISTINCT VALUE root 
-        FROM root
-    ) AS r0
-) AS r1 
-JOIN (
-    SELECT VALUE EXISTS(
-        SELECT VALUE r2 
-        FROM (
-            SELECT VALUE v1 
-            FROM r1 
-            JOIN c0 IN r1["Family"]["Children"] 
-            JOIN (
-                SELECT VALUE ARRAY(
-                    SELECT VALUE p0["GivenName"] 
-                    FROM c0 
-                    JOIN p0 IN c0["Pets"]
-                )
-            ) AS v1
-        ) AS r2 
-        WHERE (ARRAY_LENGTH(r2) > 3)
-    )
-) AS v2 
-WHERE v2 
+        FROM root) AS r0) AS r1 
+        JOIN (
+            SELECT VALUE EXISTS(
+                SELECT VALUE r2 
+                FROM (
+                    SELECT VALUE v1 
+                    FROM r1 
+                    JOIN c0 IN r1["Family"]["Children"] 
+                    JOIN (
+                        SELECT VALUE ARRAY(
+                            SELECT VALUE p0["GivenName"] 
+                            FROM c0 
+                            JOIN p0 IN c0["Pets"])) AS v1) AS r2 
+                            WHERE (ARRAY_LENGTH(r2) > 3))) AS v2 
+                            WHERE v2
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -1738,10 +1553,8 @@ JOIN (
     SELECT VALUE ARRAY(
         SELECT VALUE ARRAY_LENGTH(c0["Pets"]) 
         FROM root 
-        JOIN c0 IN root["Children"]
-    )
-) AS v0 
-WHERE (ARRAY_LENGTH(root["Children"]) > 0) 
+        JOIN c0 IN root["Children"])) AS v0 
+        WHERE (ARRAY_LENGTH(root["Children"]) > 0)
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -1755,15 +1568,12 @@ WHERE (ARRAY_LENGTH(root["Children"]) > 0)
 SELECT VALUE v1 
 FROM (
     SELECT DISTINCT VALUE root 
-    FROM root
-) AS r0 
-JOIN (
-    SELECT VALUE ARRAY(
-        SELECT VALUE ARRAY_LENGTH(c0["Pets"]) 
-        FROM r0 
-        JOIN c0 IN r0["Children"]
-    )
-) AS v1 
+    FROM root) AS r0 
+    JOIN (
+        SELECT VALUE ARRAY(
+            SELECT VALUE ARRAY_LENGTH(c0["Pets"]) 
+            FROM r0 
+            JOIN c0 IN r0["Children"])) AS v1
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -1780,9 +1590,7 @@ JOIN (
     SELECT VALUE ARRAY(
         SELECT VALUE ARRAY_LENGTH(c0["Pets"]) 
         FROM root 
-        JOIN c0 IN root["Children"]
-    )
-) AS v1 
+        JOIN c0 IN root["Children"])) AS v1
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -1809,9 +1617,7 @@ JOIN (
     SELECT VALUE EXISTS(
         SELECT VALUE v0 
         FROM root 
-        JOIN v0 IN root["Children"]
-    )
-) AS v1 
+        JOIN v0 IN root["Children"])) AS v1
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -1829,9 +1635,7 @@ JOIN (
         SELECT VALUE c0 
         FROM root 
         JOIN c0 IN root["Children"] 
-        WHERE (c0["Grade"] > 80)
-    )
-) AS v0 
+        WHERE (c0["Grade"] > 80))) AS v0
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -1849,9 +1653,7 @@ JOIN (
         SELECT VALUE c0 
         FROM root 
         JOIN c0 IN root["Children"] 
-        WHERE (c0["Grade"] > 80)
-    )
-) AS v0 
+        WHERE (c0["Grade"] > 80))) AS v0
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -1869,17 +1671,13 @@ JOIN (
         SELECT VALUE c0 
         FROM root 
         JOIN c0 IN root["Children"] 
-        WHERE (ARRAY_LENGTH(c0["Pets"]) > 0)
-    )
-) AS v0 
-JOIN (
-    SELECT VALUE EXISTS(
-        SELECT VALUE c1 
-        FROM root 
-        JOIN c1 IN root["Children"] 
-        WHERE (c1["Grade"] > 80)
-    )
-) AS v1 
+        WHERE (ARRAY_LENGTH(c0["Pets"]) > 0))) AS v0 
+        JOIN (
+            SELECT VALUE EXISTS(
+                SELECT VALUE c1 
+                FROM root 
+                JOIN c1 IN root["Children"] 
+                WHERE (c1["Grade"] > 80))) AS v1
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -1902,12 +1700,8 @@ JOIN (
                 SELECT VALUE p0 
                 FROM c0 
                 JOIN p0 IN c0["Pets"] 
-                WHERE (LENGTH(p0["GivenName"]) > 10)
-            )
-        ) AS v0 
-        WHERE v0
-    )
-) AS v1 
+                WHERE (LENGTH(p0["GivenName"]) > 10))) AS v0 
+                WHERE v0)) AS v1
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -1925,10 +1719,8 @@ JOIN (
         SELECT VALUE c0 
         FROM root 
         JOIN c0 IN root["Children"] 
-        WHERE (ARRAY_LENGTH(c0["Pets"]) > 0)
-    )
-) AS v0 
-WHERE v0 
+        WHERE (ARRAY_LENGTH(c0["Pets"]) > 0))) AS v0 
+        WHERE v0
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -1946,10 +1738,8 @@ JOIN (
         SELECT VALUE c0 
         FROM root 
         JOIN c0 IN root["Children"] 
-        WHERE (ARRAY_LENGTH(c0["Pets"]) > 0)
-    )
-) AS v0 
-WHERE (CONTAINS(root["FamilyId"], "a") AND v0) 
+        WHERE (ARRAY_LENGTH(c0["Pets"]) > 0))) AS v0 
+        WHERE (CONTAINS(root["FamilyId"], "a") AND v0)
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -1967,12 +1757,10 @@ JOIN (
         SELECT VALUE c0 
         FROM root 
         JOIN c0 IN root["Children"] 
-        WHERE (ARRAY_LENGTH(c0["Pets"]) > 3)
-    )
-) AS v0 
-ORDER BY v0 ASC 
+        WHERE (ARRAY_LENGTH(c0["Pets"]) > 3))) AS v0 
+        ORDER BY v0 ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -1987,10 +1775,9 @@ FROM root
 JOIN (
     SELECT TOP 2 VALUE v0 
     FROM root 
-    JOIN v0 IN root["Children"]
-) AS v2 
+    JOIN v0 IN root["Children"]) AS v2
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -2006,10 +1793,9 @@ JOIN (
     SELECT VALUE c0 
     FROM root 
     JOIN c0 IN root["Children"] 
-    ORDER BY c0["Grade"] ASC
-) AS v0 
+    ORDER BY c0["Grade"] ASC) AS v0
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -2025,10 +1811,9 @@ JOIN (
     SELECT TOP 2 VALUE c0 
     FROM root 
     JOIN c0 IN root["Children"] 
-    WHERE (LENGTH(c0["FamilyName"]) > 10)
-) AS v1 
+    WHERE (LENGTH(c0["FamilyName"]) > 10)) AS v1
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -2044,10 +1829,9 @@ JOIN (
     SELECT TOP 2 VALUE c0["Grade"] 
     FROM root 
     JOIN c0 IN root["Children"] 
-    WHERE (LENGTH(c0["FamilyName"]) > 10)
-) AS v1 
+    WHERE (LENGTH(c0["FamilyName"]) > 10)) AS v1
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
 </Results>

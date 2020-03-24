@@ -36,7 +36,14 @@ namespace Microsoft.Azure.Cosmos
         public void EnsureSuccessStatusCode_ThrowsOnFailure()
         {
             ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.NotFound);
-            Assert.ThrowsException<CosmosException>(() => responseMessage.EnsureSuccessStatusCode());
+            try
+            {
+                responseMessage.EnsureSuccessStatusCode();
+                Assert.Fail("Expected Exception.");
+            }
+            catch (CosmosException)
+            {
+            }
         }
 
         [TestMethod]

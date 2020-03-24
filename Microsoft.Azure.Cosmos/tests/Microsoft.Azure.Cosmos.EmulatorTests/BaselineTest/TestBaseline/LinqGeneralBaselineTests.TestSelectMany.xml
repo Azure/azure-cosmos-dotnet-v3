@@ -10,7 +10,7 @@ SELECT VALUE pet0
 FROM root 
 JOIN child0 IN root["Children"] 
 JOIN pet0 IN child0["Pets"] 
-WHERE (pet0["GivenName"] = "Fluffy") ]]></SqlQuery>
+WHERE (pet0["GivenName"] = "Fluffy")]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -24,7 +24,7 @@ SELECT VALUE pet0
 FROM root 
 JOIN c0 IN root["Children"] 
 JOIN pet0 IN c0["Pets"] 
-WHERE ((c0["Grade"] > 10) AND (pet0["GivenName"] = "Fluffy")) ]]></SqlQuery>
+WHERE ((c0["Grade"] > 10) AND (pet0["GivenName"] = "Fluffy"))]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -38,7 +38,7 @@ SELECT VALUE {"family": root["FamilyId"], "child": child0["GivenName"], "pet": p
 FROM root 
 JOIN child0 IN root["Children"] 
 JOIN pet0 IN child0["Pets"] 
-WHERE (pet0["GivenName"] = "Fluffy") ]]></SqlQuery>
+WHERE (pet0["GivenName"] = "Fluffy")]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -50,7 +50,7 @@ WHERE (pet0["GivenName"] = "Fluffy") ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE p0["FamilyName"] 
 FROM root 
-JOIN p0 IN root["Parents"] ]]></SqlQuery>
+JOIN p0 IN root["Parents"]]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -62,7 +62,7 @@ JOIN p0 IN root["Parents"] ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE LENGTH(p0["FamilyName"]) 
 FROM root 
-JOIN p0 IN root["Parents"] ]]></SqlQuery>
+JOIN p0 IN root["Parents"]]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -75,7 +75,7 @@ JOIN p0 IN root["Parents"] ]]></SqlQuery>
 SELECT VALUE p0["FamilyName"] 
 FROM root 
 JOIN p0 IN root["Parents"] 
-WHERE (LENGTH(p0["FamilyName"]) > 10) ]]></SqlQuery>
+WHERE (LENGTH(p0["FamilyName"]) > 10)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -87,7 +87,7 @@ WHERE (LENGTH(p0["FamilyName"]) > 10) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE LENGTH(p0["FamilyName"]) 
 FROM root 
-JOIN p0 IN root["Parents"] ]]></SqlQuery>
+JOIN p0 IN root["Parents"]]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -99,7 +99,7 @@ JOIN p0 IN root["Parents"] ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root0 
 FROM root 
-JOIN root0 IN root["Children"] ]]></SqlQuery>
+JOIN root0 IN root["Children"]]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -112,7 +112,7 @@ JOIN root0 IN root["Children"] ]]></SqlQuery>
 SELECT VALUE c0 
 FROM root 
 JOIN f0 IN root["Children"] 
-JOIN c0 IN f0["Pets"] ]]></SqlQuery>
+JOIN c0 IN f0["Pets"]]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -126,7 +126,7 @@ SELECT VALUE p0["GivenName"]
 FROM root 
 JOIN f0 IN root["Children"] 
 JOIN p0 IN f0["Pets"] 
-WHERE (ARRAY_LENGTH(f0["Pets"]) > 0) ]]></SqlQuery>
+WHERE (ARRAY_LENGTH(f0["Pets"]) > 0)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -140,7 +140,7 @@ SELECT VALUE {"PetName": p0["GivenName"], "OwnerName": f0["GivenName"]}
 FROM root 
 JOIN f0 IN root["Children"] 
 JOIN p0 IN f0["Pets"] 
-WHERE (ARRAY_LENGTH(f0["Pets"]) > 0) ]]></SqlQuery>
+WHERE (ARRAY_LENGTH(f0["Pets"]) > 0)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -153,7 +153,7 @@ WHERE (ARRAY_LENGTH(f0["Pets"]) > 0) ]]></SqlQuery>
 SELECT VALUE f0 
 FROM root 
 JOIN f0 IN root["Children"] 
-WHERE (ARRAY_LENGTH(root["Children"]) > 0) ]]></SqlQuery>
+WHERE (ARRAY_LENGTH(root["Children"]) > 0)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -165,7 +165,7 @@ WHERE (ARRAY_LENGTH(root["Children"]) > 0) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE f0["FamilyName"] 
 FROM root 
-JOIN f0 IN root["Children"] ]]></SqlQuery>
+JOIN f0 IN root["Children"]]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -177,7 +177,7 @@ JOIN f0 IN root["Children"] ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE ARRAY_LENGTH(c0["Pets"]) 
 FROM root 
-JOIN c0 IN root["Children"] ]]></SqlQuery>
+JOIN c0 IN root["Children"]]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -189,7 +189,7 @@ JOIN c0 IN root["Children"] ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE p0["FamilyName"] 
 FROM root 
-JOIN p0 IN root["Parents"] ]]></SqlQuery>
+JOIN p0 IN root["Parents"]]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -201,7 +201,7 @@ JOIN p0 IN root["Parents"] ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE LENGTH(p0["FamilyName"]) 
 FROM root 
-JOIN p0 IN root["Parents"] ]]></SqlQuery>
+JOIN p0 IN root["Parents"]]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -214,7 +214,7 @@ JOIN p0 IN root["Parents"] ]]></SqlQuery>
 SELECT VALUE p0["FamilyName"] 
 FROM root 
 JOIN p0 IN root["Parents"] 
-WHERE (LENGTH(p0["FamilyName"]) > 10) ]]></SqlQuery>
+WHERE (LENGTH(p0["FamilyName"]) > 10)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -231,12 +231,10 @@ JOIN (
     FROM (
         SELECT TOP 2 VALUE v0 
         FROM root 
-        JOIN v0 IN root["Children"]
-    ) AS r0 
-    WHERE (LENGTH(r0["FamilyName"]) > 10)
-) AS v2 
+        JOIN v0 IN root["Children"]) AS r0 
+        WHERE (LENGTH(r0["FamilyName"]) > 10)) AS v2
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Could not load the specified file.]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -254,12 +252,10 @@ JOIN (
         SELECT TOP 2 VALUE c0 
         FROM root 
         JOIN c0 IN root["Children"] 
-        ORDER BY c0["Grade"] ASC
-    ) AS r0 
-    WHERE (LENGTH(r0["FamilyName"]) > 10)
-) AS v1 
+        ORDER BY c0["Grade"] ASC) AS r0 
+        WHERE (LENGTH(r0["FamilyName"]) > 10)) AS v1
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -275,8 +271,7 @@ JOIN (
     SELECT DISTINCT VALUE v0 
     FROM root 
     JOIN v0 IN root["Children"] 
-    WHERE (LENGTH(v0["FamilyName"]) > 10)
-) AS v2 
+    WHERE (LENGTH(v0["FamilyName"]) > 10)) AS v2
 ]]></SqlQuery>
     </Output>
   </Result>

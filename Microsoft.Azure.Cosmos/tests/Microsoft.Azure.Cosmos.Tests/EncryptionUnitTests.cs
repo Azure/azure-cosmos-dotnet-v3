@@ -208,7 +208,7 @@ namespace Microsoft.Azure.Cosmos
             }
             catch(CosmosException ex)
             {
-                Assert.IsTrue(ex.Message.Contains(ClientResources.DataEncryptionKeyNotFound));
+                Assert.IsTrue(ex.ToString().Contains(ClientResources.DataEncryptionKeyNotFound));
             }
         }
 

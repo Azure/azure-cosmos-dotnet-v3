@@ -7,7 +7,7 @@
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE COUNT(1) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -19,7 +19,7 @@ FROM root ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE COUNT(1) 
 FROM root 
-WHERE root["Flag"] ]]></SqlQuery>
+WHERE root["Flag"]]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -31,7 +31,7 @@ WHERE root["Flag"] ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE COUNT(1) 
 FROM root 
-WHERE (NOT root["Flag"]) ]]></SqlQuery>
+WHERE (NOT root["Flag"])]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -42,7 +42,7 @@ WHERE (NOT root["Flag"]) ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE COUNT(1) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -55,7 +55,7 @@ FROM root ]]></SqlQuery>
 SELECT VALUE COUNT(1) 
 FROM root 
 JOIN m0 IN root["Multiples"] 
-WHERE ((m0 % 3) = 0) ]]></SqlQuery>
+WHERE ((m0 % 3) = 0)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -67,7 +67,7 @@ WHERE ((m0 % 3) = 0) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE COUNT(1) 
 FROM root 
-WHERE root["Flag"] ]]></SqlQuery>
+WHERE root["Flag"]]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -79,7 +79,7 @@ WHERE root["Flag"] ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE COUNT(1) 
 FROM root 
-WHERE (root["Number"] < -7) ]]></SqlQuery>
+WHERE (root["Number"] < -7)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -91,7 +91,7 @@ WHERE (root["Number"] < -7) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE COUNT(1) 
 FROM root 
-WHERE (root["Number"] < -13) ]]></SqlQuery>
+WHERE (root["Number"] < -13)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -105,10 +105,9 @@ SELECT VALUE COUNT(1)
 FROM (
     SELECT VALUE root["Int"] 
     FROM root 
-    OFFSET 90 LIMIT 2147483647
-) AS r0 
+    OFFSET 90 LIMIT 2147483647) AS r0
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Could not load the specified file.]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -122,10 +121,9 @@ SELECT VALUE COUNT(1)
 FROM (
     SELECT VALUE root["Int"] 
     FROM root 
-    OFFSET 90 LIMIT 5
-) AS r0 
+    OFFSET 90 LIMIT 5) AS r0
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -139,10 +137,9 @@ SELECT VALUE COUNT(1)
 FROM (
     SELECT VALUE root["Int"] 
     FROM root 
-    OFFSET 5 LIMIT 5
-) AS r0 
+    OFFSET 5 LIMIT 5) AS r0
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -158,13 +155,11 @@ FROM (
     FROM (
         SELECT VALUE root 
         FROM root 
-        OFFSET 5 LIMIT 5
-    ) AS r0 
-    JOIN c0 IN r0["Children"] 
-    OFFSET 10 LIMIT 20
-) AS r1 
+        OFFSET 5 LIMIT 5) AS r0 
+        JOIN c0 IN r0["Children"] 
+        OFFSET 10 LIMIT 20) AS r1
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -186,36 +181,27 @@ FROM (
                 SELECT VALUE v2["Grade"] 
                 FROM root 
                 JOIN v2 IN root["Children"] 
-                OFFSET 1 LIMIT 2147483647
-            ) AS r0
-        ) AS v4 
-        JOIN (
-            SELECT VALUE COUNT(1) 
-            FROM (
-                SELECT VALUE v5["Grade"] 
-                FROM root 
-                JOIN v5 IN root["Children"] 
-                OFFSET 1 LIMIT 3
-            ) AS r1
-        ) AS v8 
-        JOIN (
-            SELECT VALUE COUNT(1) 
-            FROM (
-                SELECT VALUE r2["Grade"] 
-                FROM (
-                    SELECT TOP 3 VALUE v9 
-                    FROM root 
-                    JOIN v9 IN root["Children"]
-                ) AS r2 
-                OFFSET 1 LIMIT 2147483647
-            ) AS r3
-        ) AS v12 
-        OFFSET 1 LIMIT 20
-    ) AS r4 
-    OFFSET 1 LIMIT 10
-) AS r5 
+                OFFSET 1 LIMIT 2147483647) AS r0) AS v4 
+                JOIN (
+                    SELECT VALUE COUNT(1) 
+                    FROM (
+                        SELECT VALUE v5["Grade"] 
+                        FROM root 
+                        JOIN v5 IN root["Children"] 
+                        OFFSET 1 LIMIT 3) AS r1) AS v8 
+                        JOIN (
+                            SELECT VALUE COUNT(1) 
+                            FROM (
+                                SELECT VALUE r2["Grade"] 
+                                FROM (
+                                    SELECT TOP 3 VALUE v9 
+                                    FROM root 
+                                    JOIN v9 IN root["Children"]) AS r2 
+                                    OFFSET 1 LIMIT 2147483647) AS r3) AS v12 
+                                    OFFSET 1 LIMIT 20) AS r4 
+                                    OFFSET 1 LIMIT 10) AS r5
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -237,61 +223,48 @@ FROM (
                 SELECT VALUE v2 
                 FROM root 
                 JOIN v2 IN root["Children"] 
-                OFFSET 1 LIMIT 2147483647
-            ) AS r0 
-            WHERE (r0["Grade"] > 50)
-        ) AS v4 
-        JOIN (
-            SELECT VALUE COUNT(1) 
-            FROM (
-                SELECT VALUE v5 
-                FROM root 
-                JOIN v5 IN root["Children"] 
-                OFFSET 1 LIMIT 3
-            ) AS r1 
-            WHERE (r1["Grade"] > 50)
-        ) AS v8 
-        JOIN (
-            SELECT VALUE COUNT(1) 
-            FROM (
-                SELECT VALUE r2 
-                FROM (
-                    SELECT TOP 3 VALUE v9 
-                    FROM root 
-                    JOIN v9 IN root["Children"]
-                ) AS r2 
-                OFFSET 1 LIMIT 2147483647
-            ) AS r3 
-            WHERE (r3["Grade"] > 50)
-        ) AS v12 
-        JOIN (
-            SELECT VALUE COUNT(1) 
-            FROM (
-                SELECT VALUE t0["Amount"] 
-                FROM root 
-                JOIN t0 IN root["Records"]["Transactions"] 
-                ORDER BY t0["Amount"] ASC 
-                OFFSET 10 LIMIT 20
-            ) AS r5
-        ) AS v15 
-        JOIN (
-            SELECT VALUE COUNT(1) 
-            FROM (
-                SELECT VALUE c0["Grade"] 
-                FROM root 
-                JOIN c0 IN root["Children"] 
-                WHERE (c0["Grade"] > 20) 
-                ORDER BY c0["Grade"] ASC 
-                OFFSET 1 LIMIT 2147483647
-            ) AS r6
-        ) AS v17 
-        OFFSET 1 LIMIT 20
-    ) AS r7 
-    OFFSET 1 LIMIT 10
-) AS r8 
-WHERE ((r8["v0"] + r8["v1"]) > (r8["v2"] + r8["v3"])) 
+                OFFSET 1 LIMIT 2147483647) AS r0 
+                WHERE (r0["Grade"] > 50)) AS v4 
+                JOIN (
+                    SELECT VALUE COUNT(1) 
+                    FROM (
+                        SELECT VALUE v5 
+                        FROM root 
+                        JOIN v5 IN root["Children"] 
+                        OFFSET 1 LIMIT 3) AS r1 
+                        WHERE (r1["Grade"] > 50)) AS v8 
+                        JOIN (
+                            SELECT VALUE COUNT(1) 
+                            FROM (
+                                SELECT VALUE r2 
+                                FROM (
+                                    SELECT TOP 3 VALUE v9 
+                                    FROM root 
+                                    JOIN v9 IN root["Children"]) AS r2 
+                                    OFFSET 1 LIMIT 2147483647) AS r3 
+                                    WHERE (r3["Grade"] > 50)) AS v12 
+                                    JOIN (
+                                        SELECT VALUE COUNT(1) 
+                                        FROM (
+                                            SELECT VALUE t0["Amount"] 
+                                            FROM root 
+                                            JOIN t0 IN root["Records"]["Transactions"] 
+                                            ORDER BY t0["Amount"] ASC 
+                                            OFFSET 10 LIMIT 20) AS r5) AS v15 
+                                            JOIN (
+                                                SELECT VALUE COUNT(1) 
+                                                FROM (
+                                                    SELECT VALUE c0["Grade"] 
+                                                    FROM root 
+                                                    JOIN c0 IN root["Children"] 
+                                                    WHERE (c0["Grade"] > 20) 
+                                                    ORDER BY c0["Grade"] ASC 
+                                                    OFFSET 1 LIMIT 2147483647) AS r6) AS v17 
+                                                    OFFSET 1 LIMIT 20) AS r7 
+                                                    OFFSET 1 LIMIT 10) AS r8 
+                                                    WHERE ((r8["v0"] + r8["v1"]) > (r8["v2"] + r8["v3"]))
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
 </Results>

@@ -7,7 +7,7 @@
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE AVG(root["Number"]) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -19,7 +19,7 @@ FROM root ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE AVG(root["Number"]) 
 FROM root 
-WHERE root["Flag"] ]]></SqlQuery>
+WHERE root["Flag"]]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -31,7 +31,7 @@ WHERE root["Flag"] ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE AVG(root["Number"]) 
 FROM root 
-WHERE (NOT root["Flag"]) ]]></SqlQuery>
+WHERE (NOT root["Flag"])]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -42,7 +42,7 @@ WHERE (NOT root["Flag"]) ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE AVG(root["Number"]) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -53,7 +53,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE AVG(root["Number"]) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -66,7 +66,7 @@ FROM root ]]></SqlQuery>
 SELECT VALUE AVG(m0) 
 FROM root 
 JOIN m0 IN root["Multiples"] 
-WHERE ((m0 % 3) = 0) ]]></SqlQuery>
+WHERE ((m0 % 3) = 0)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -85,15 +85,11 @@ FROM (
             SELECT VALUE c0 
             FROM root 
             JOIN c0 IN root["Children"] 
-            WHERE (c0["Grade"] > 80)
-        )
-    ) AS v0
-) AS r0 
-JOIN (
-    SELECT VALUE SUM(c["Grade"]) 
-    FROM r0 
-    JOIN c IN r0
-) AS v1 
+            WHERE (c0["Grade"] > 80))) AS v0) AS r0 
+            JOIN (
+                SELECT VALUE SUM(c["Grade"]) 
+                FROM r0 
+                JOIN c IN r0) AS v1
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -108,10 +104,9 @@ SELECT VALUE AVG(r0)
 FROM (
     SELECT VALUE root["Int"] 
     FROM root 
-    OFFSET 90 LIMIT 2147483647
-) AS r0 
+    OFFSET 90 LIMIT 2147483647) AS r0
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -125,10 +120,9 @@ SELECT VALUE AVG(r0)
 FROM (
     SELECT VALUE root["Int"] 
     FROM root 
-    OFFSET 90 LIMIT 5
-) AS r0 
+    OFFSET 90 LIMIT 5) AS r0
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -142,10 +136,9 @@ SELECT VALUE AVG(r0)
 FROM (
     SELECT VALUE root["Int"] 
     FROM root 
-    OFFSET 5 LIMIT 5
-) AS r0 
+    OFFSET 5 LIMIT 5) AS r0
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -161,13 +154,11 @@ FROM (
     FROM (
         SELECT VALUE root 
         FROM root 
-        OFFSET 5 LIMIT 5
-    ) AS r0 
-    JOIN c0 IN r0["Children"] 
-    OFFSET 10 LIMIT 20
-) AS r1 
+        OFFSET 5 LIMIT 5) AS r0 
+        JOIN c0 IN r0["Children"] 
+        OFFSET 10 LIMIT 20) AS r1
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -185,75 +176,56 @@ FROM (
         FROM (
             SELECT VALUE root 
             FROM root 
-            OFFSET 1 LIMIT 20
-        ) AS r0 
-        JOIN (
-            SELECT VALUE ARRAY(
-                SELECT VALUE AVG(r1) 
-                FROM (
-                    SELECT VALUE v2["Grade"] 
-                    FROM r0 
-                    JOIN v2 IN r0["Children"] 
-                    OFFSET 1 LIMIT 2147483647
-                ) AS r1
-            )
-        ) AS v5 
-        JOIN (
-            SELECT VALUE ARRAY(
-                SELECT VALUE AVG(r2) 
-                FROM (
-                    SELECT VALUE v6["Grade"] 
-                    FROM r0 
-                    JOIN v6 IN r0["Children"] 
-                    OFFSET 1 LIMIT 3
-                ) AS r2
-            )
-        ) AS v10 
-        JOIN (
-            SELECT VALUE ARRAY(
-                SELECT VALUE AVG(r4) 
-                FROM (
-                    SELECT VALUE r3["Grade"] 
+            OFFSET 1 LIMIT 20) AS r0 
+            JOIN (
+                SELECT VALUE ARRAY(
+                    SELECT VALUE AVG(r1) 
                     FROM (
-                        SELECT TOP 3 VALUE v11 
+                        SELECT VALUE v2["Grade"] 
                         FROM r0 
-                        JOIN v11 IN r0["Children"]
-                    ) AS r3 
-                    OFFSET 1 LIMIT 2147483647
-                ) AS r4
-            )
-        ) AS v15 
-        JOIN (
-            SELECT VALUE ARRAY(
-                SELECT VALUE AVG(r6) 
-                FROM (
-                    SELECT VALUE t0["Amount"] 
-                    FROM r0 
-                    JOIN t0 IN r0["Records"]["Transactions"] 
-                    ORDER BY t0["Amount"] ASC 
-                    OFFSET 10 LIMIT 20
-                ) AS r6
-            )
-        ) AS v19 
-        JOIN (
-            SELECT VALUE ARRAY(
-                SELECT VALUE AVG(r7) 
-                FROM (
-                    SELECT VALUE c0["Grade"] 
-                    FROM r0 
-                    JOIN c0 IN r0["Children"] 
-                    WHERE (c0["Grade"] > 20) 
-                    ORDER BY c0["Grade"] ASC 
-                    OFFSET 1 LIMIT 2147483647
-                ) AS r7
-            )
-        ) AS v22 
-        WHERE (ARRAY_LENGTH(r0["Children"]) > 2) 
-        OFFSET 1 LIMIT 10
-    ) AS r8
-) AS r9 
+                        JOIN v2 IN r0["Children"] 
+                        OFFSET 1 LIMIT 2147483647) AS r1)) AS v5 
+                        JOIN (
+                            SELECT VALUE ARRAY(
+                                SELECT VALUE AVG(r2) 
+                                FROM (
+                                    SELECT VALUE v6["Grade"] 
+                                    FROM r0 
+                                    JOIN v6 IN r0["Children"] 
+                                    OFFSET 1 LIMIT 3) AS r2)) AS v10 
+                                    JOIN (
+                                        SELECT VALUE ARRAY(
+                                            SELECT VALUE AVG(r4) 
+                                            FROM (
+                                                SELECT VALUE r3["Grade"] 
+                                                FROM (
+                                                    SELECT TOP 3 VALUE v11 
+                                                    FROM r0 
+                                                    JOIN v11 IN r0["Children"]) AS r3 
+                                                    OFFSET 1 LIMIT 2147483647) AS r4)) AS v15 
+                                                    JOIN (
+                                                        SELECT VALUE ARRAY(
+                                                            SELECT VALUE AVG(r6) 
+                                                            FROM (
+                                                                SELECT VALUE t0["Amount"] 
+                                                                FROM r0 
+                                                                JOIN t0 IN r0["Records"]["Transactions"] 
+                                                                ORDER BY t0["Amount"] ASC 
+                                                                OFFSET 10 LIMIT 20) AS r6)) AS v19 
+                                                                JOIN (
+                                                                    SELECT VALUE ARRAY(
+                                                                        SELECT VALUE AVG(r7) 
+                                                                        FROM (
+                                                                            SELECT VALUE c0["Grade"] 
+                                                                            FROM r0 
+                                                                            JOIN c0 IN r0["Children"] 
+                                                                            WHERE (c0["Grade"] > 20) 
+                                                                            ORDER BY c0["Grade"] ASC 
+                                                                            OFFSET 1 LIMIT 2147483647) AS r7)) AS v22 
+                                                                            WHERE (ARRAY_LENGTH(r0["Children"]) > 2) 
+                                                                            OFFSET 1 LIMIT 10) AS r8) AS r9
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
 </Results>

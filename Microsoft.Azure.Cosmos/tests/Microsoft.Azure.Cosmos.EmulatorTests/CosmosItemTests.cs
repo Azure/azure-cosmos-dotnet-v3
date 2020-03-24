@@ -1201,7 +1201,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (CosmosException exception) when (exception.StatusCode == HttpStatusCode.BadRequest)
             {
-                Assert.IsTrue(exception.Message.Contains("continuation token limit specified is not large enough"), exception.Message);
+                Assert.IsTrue(exception.ToString().Contains("continuation token limit specified is not large enough"), exception.Message);
             }
 
             try
@@ -1215,7 +1215,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (CosmosException exception) when (exception.StatusCode == HttpStatusCode.BadRequest)
             {
-                Assert.IsTrue(exception.Message.Contains("Syntax error, incorrect syntax near"), exception.Message);
+                Assert.IsTrue(exception.ToString().Contains("Syntax error, incorrect syntax near"), exception.Message);
             }
         }
 

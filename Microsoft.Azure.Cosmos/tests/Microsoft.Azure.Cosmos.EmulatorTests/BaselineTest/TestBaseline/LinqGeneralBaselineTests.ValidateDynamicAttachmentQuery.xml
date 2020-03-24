@@ -8,7 +8,7 @@
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["Title"] = "My Book Title2") ]]></SqlQuery>
+WHERE (root["Title"] = "My Book Title2")]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -20,7 +20,7 @@ WHERE (root["Title"] = "My Book Title2") ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["Title"] = "My Book Title") ]]></SqlQuery>
+WHERE (root["Title"] = "My Book Title")]]></SqlQuery>
     </Output>
   </Result>
 </Results>

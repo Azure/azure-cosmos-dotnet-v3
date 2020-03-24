@@ -7,7 +7,7 @@
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE LENGTH(root["FamilyId"]) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -19,7 +19,7 @@ FROM root ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root["FamilyId"] 
 FROM root 
-WHERE (LENGTH(root["FamilyId"]) > 10) ]]></SqlQuery>
+WHERE (LENGTH(root["FamilyId"]) > 10)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -33,11 +33,10 @@ SELECT TOP 5 VALUE r1
 FROM (
     SELECT TOP 10 VALUE root["FamilyId"] 
     FROM root 
-    ORDER BY root ASC
-) AS r1 
-ORDER BY LENGTH(r1) ASC 
+    ORDER BY root ASC) AS r1 
+    ORDER BY LENGTH(r1) ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -51,11 +50,10 @@ SELECT TOP 2 VALUE r1
 FROM (
     SELECT TOP 3 VALUE root 
     FROM root 
-    ORDER BY ARRAY_LENGTH(root["Children"]) ASC
-) AS r1 
-ORDER BY ARRAY_LENGTH(r1["Parents"]) ASC 
+    ORDER BY ARRAY_LENGTH(root["Children"]) ASC) AS r1 
+    ORDER BY ARRAY_LENGTH(r1["Parents"]) ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -69,11 +67,10 @@ SELECT TOP 2 VALUE r0
 FROM (
     SELECT TOP 3 VALUE root 
     FROM root 
-    ORDER BY ARRAY_LENGTH(root["Children"]) ASC
-) AS r0 
-ORDER BY ARRAY_LENGTH(r0["Parents"]) ASC 
+    ORDER BY ARRAY_LENGTH(root["Children"]) ASC) AS r0 
+    ORDER BY ARRAY_LENGTH(r0["Parents"]) ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -86,11 +83,10 @@ ORDER BY ARRAY_LENGTH(r0["Parents"]) ASC
 SELECT TOP 1 VALUE r0 
 FROM (
     SELECT TOP 10 VALUE root 
-    FROM root
-) AS r0 
-ORDER BY r0["FamilyId"] ASC 
+    FROM root) AS r0 
+    ORDER BY r0["FamilyId"] ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -107,15 +103,12 @@ FROM (
         SELECT TOP 9 VALUE r0 
         FROM (
             SELECT TOP 10 VALUE root 
-            FROM root
-        ) AS r0 
-        WHERE (ARRAY_LENGTH(r0["Children"]) > 0)
-    ) AS r1 
-    WHERE (ARRAY_LENGTH(r1["Parents"]) > 0)
-) AS r2 
-WHERE (LENGTH(r2["FamilyId"]) > 10) 
+            FROM root) AS r0 
+            WHERE (ARRAY_LENGTH(r0["Children"]) > 0)) AS r1 
+            WHERE (ARRAY_LENGTH(r1["Parents"]) > 0)) AS r2 
+            WHERE (LENGTH(r2["FamilyId"]) > 10)
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -132,14 +125,11 @@ FROM (
         SELECT DISTINCT VALUE r0 
         FROM (
             SELECT TOP 10 VALUE root 
-            FROM root
-        ) AS r0 
-        WHERE (ARRAY_LENGTH(r0["Children"]) > 0)
-    ) AS r1
-) AS r2 
-WHERE (LENGTH(r2["f"]["FamilyId"]) > 10) 
+            FROM root) AS r0 
+            WHERE (ARRAY_LENGTH(r0["Children"]) > 0)) AS r1) AS r2 
+            WHERE (LENGTH(r2["f"]["FamilyId"]) > 10)
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -156,14 +146,11 @@ FROM (
         SELECT TOP 10 VALUE {"f": r0} 
         FROM (
             SELECT DISTINCT VALUE root 
-            FROM root
-        ) AS r0
-    ) AS r1 
-    WHERE (ARRAY_LENGTH(r1["f"]["Children"]) > 0)
-) AS r2 
-WHERE (ARRAY_LENGTH(r2["f"]["Parents"]) > 0) 
+            FROM root) AS r0) AS r1 
+            WHERE (ARRAY_LENGTH(r1["f"]["Children"]) > 0)) AS r2 
+            WHERE (ARRAY_LENGTH(r2["f"]["Parents"]) > 0)
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
 </Results>

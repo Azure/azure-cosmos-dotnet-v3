@@ -8,7 +8,7 @@
       <SqlQuery><![CDATA[
 SELECT VALUE root["Parents"][0]["FamilyName"] 
 FROM root 
-WHERE (ARRAY_LENGTH(root["Parents"]) > 0) ]]></SqlQuery>
+WHERE (ARRAY_LENGTH(root["Parents"]) > 0)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -20,7 +20,7 @@ WHERE (ARRAY_LENGTH(root["Parents"]) > 0) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE (root["Children"][0]["Grade"] + 13) 
 FROM root 
-WHERE (ARRAY_LENGTH(root["Children"]) > 0) ]]></SqlQuery>
+WHERE (ARRAY_LENGTH(root["Children"]) > 0)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -32,7 +32,7 @@ WHERE (ARRAY_LENGTH(root["Children"]) > 0) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (((ARRAY_LENGTH(root["Children"]) > 0) AND (ARRAY_LENGTH(root["Children"][0]["Pets"]) > 0)) AND (root["Children"][0]["Pets"][0]["GivenName"] = "Fluffy")) ]]></SqlQuery>
+WHERE (((ARRAY_LENGTH(root["Children"]) > 0) AND (ARRAY_LENGTH(root["Children"][0]["Pets"]) > 0)) AND (root["Children"][0]["Pets"][0]["GivenName"] = "Fluffy"))]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -44,7 +44,7 @@ WHERE (((ARRAY_LENGTH(root["Children"]) > 0) AND (ARRAY_LENGTH(root["Children"][
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE ((ARRAY_LENGTH(root["Children"]) > 0) AND (root["Children"][0]["Things"]["A"] = "B")) ]]></SqlQuery>
+WHERE ((ARRAY_LENGTH(root["Children"]) > 0) AND (root["Children"][0]["Things"]["A"] = "B"))]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -56,7 +56,7 @@ WHERE ((ARRAY_LENGTH(root["Children"]) > 0) AND (root["Children"][0]["Things"]["
       <SqlQuery><![CDATA[
 SELECT VALUE root["Children"][0]["Pets"][0] 
 FROM root 
-WHERE (((ARRAY_LENGTH(root["Children"]) > 0) AND (ARRAY_LENGTH(root["Children"][0]["Pets"]) > 0)) AND (root["Children"][0]["Gender"] = "female")) ]]></SqlQuery>
+WHERE (((ARRAY_LENGTH(root["Children"]) > 0) AND (ARRAY_LENGTH(root["Children"][0]["Pets"]) > 0)) AND (root["Children"][0]["Gender"] = "female"))]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -68,7 +68,7 @@ WHERE (((ARRAY_LENGTH(root["Children"]) > 0) AND (ARRAY_LENGTH(root["Children"][
       <SqlQuery><![CDATA[
 SELECT VALUE root["Children"][0]["Pets"][1] 
 FROM root 
-WHERE (((ARRAY_LENGTH(root["Children"]) > 0) AND (ARRAY_LENGTH(root["Children"][0]["Pets"]) > 1)) AND (root["Children"][0]["Gender"] = "female")) ]]></SqlQuery>
+WHERE (((ARRAY_LENGTH(root["Children"]) > 0) AND (ARRAY_LENGTH(root["Children"][0]["Pets"]) > 1)) AND (root["Children"][0]["Gender"] = "female"))]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -80,7 +80,7 @@ WHERE (((ARRAY_LENGTH(root["Children"]) > 0) AND (ARRAY_LENGTH(root["Children"][
       <SqlQuery><![CDATA[
 SELECT VALUE {"Id": root["FamilyId"]} 
 FROM root 
-JOIN c0 IN root["Children"] ]]></SqlQuery>
+JOIN c0 IN root["Children"]]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -92,7 +92,7 @@ JOIN c0 IN root["Children"] ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (null = root["FamilyId"]) ]]></SqlQuery>
+WHERE (null = root["FamilyId"])]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -104,7 +104,7 @@ WHERE (null = root["FamilyId"]) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["FamilyId"] = null) ]]></SqlQuery>
+WHERE (root["FamilyId"] = null)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -116,7 +116,7 @@ WHERE (root["FamilyId"] = null) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["NullObject"] = null) ]]></SqlQuery>
+WHERE (root["NullObject"] = null)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -128,7 +128,7 @@ WHERE (root["NullObject"] = null) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (null = root["FamilyId"]) ]]></SqlQuery>
+WHERE (null = root["FamilyId"])]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -140,7 +140,7 @@ WHERE (null = root["FamilyId"]) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["IsRegistered"] = false) ]]></SqlQuery>
+WHERE (root["IsRegistered"] = false)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -152,7 +152,7 @@ WHERE (root["IsRegistered"] = false) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["FamilyId"] = "WakefieldFamily") ]]></SqlQuery>
+WHERE (root["FamilyId"] = "WakefieldFamily")]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -164,7 +164,7 @@ WHERE (root["FamilyId"] = "WakefieldFamily") ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["NullableInt"] = null) ]]></SqlQuery>
+WHERE (root["NullableInt"] = null)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -176,7 +176,7 @@ WHERE (root["NullableInt"] = null) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["NullableInt"] = null) ]]></SqlQuery>
+WHERE (root["NullableInt"] = null)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -188,7 +188,7 @@ WHERE (root["NullableInt"] = null) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["NullableInt"] = 5) ]]></SqlQuery>
+WHERE (root["NullableInt"] = 5)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -200,7 +200,7 @@ WHERE (root["NullableInt"] = 5) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["NullableInt"] = 5) ]]></SqlQuery>
+WHERE (root["NullableInt"] = 5)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -212,7 +212,7 @@ WHERE (root["NullableInt"] = 5) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["NullableInt"] = 5) ]]></SqlQuery>
+WHERE (root["NullableInt"] = 5)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -224,7 +224,7 @@ WHERE (root["NullableInt"] = 5) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["Int"] = 5) ]]></SqlQuery>
+WHERE (root["Int"] = 5)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -236,7 +236,7 @@ WHERE (root["Int"] = 5) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["Int"] = 5) ]]></SqlQuery>
+WHERE (root["Int"] = 5)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -248,7 +248,7 @@ WHERE (root["Int"] = 5) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["Int"] = null) ]]></SqlQuery>
+WHERE (root["Int"] = null)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -260,7 +260,7 @@ WHERE (root["Int"] = null) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["Int"] < null) ]]></SqlQuery>
+WHERE (root["Int"] < null)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -272,7 +272,7 @@ WHERE (root["Int"] < null) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["id"] = "098aa945-7ed8-4c50-b7b8-bd99eddb54bc") ]]></SqlQuery>
+WHERE (root["id"] = "098aa945-7ed8-4c50-b7b8-bd99eddb54bc")]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -284,7 +284,7 @@ WHERE (root["id"] = "098aa945-7ed8-4c50-b7b8-bd99eddb54bc") ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["id"] = "098aa945-7ed8-4c50-b7b8-bd99eddb54bc") ]]></SqlQuery>
+WHERE (root["id"] = "098aa945-7ed8-4c50-b7b8-bd99eddb54bc")]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -296,7 +296,7 @@ WHERE (root["id"] = "098aa945-7ed8-4c50-b7b8-bd99eddb54bc") ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["ArrayField"] = [1, 2, 3]) ]]></SqlQuery>
+WHERE (root["ArrayField"] = [1, 2, 3])]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -308,7 +308,7 @@ WHERE (root["ArrayField"] = [1, 2, 3]) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["ArrayField"] = null) ]]></SqlQuery>
+WHERE (root["ArrayField"] = null)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -320,7 +320,7 @@ WHERE (root["ArrayField"] = null) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["ListField"] = [1, 2, 3]) ]]></SqlQuery>
+WHERE (root["ListField"] = [1, 2, 3])]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -333,7 +333,7 @@ WHERE (root["ListField"] = [1, 2, 3]) ]]></SqlQuery>
 SELECT VALUE root 
 FROM root 
 JOIN c0 IN root["GreatFamily"]["Family"]["Children"] 
-WHERE (c0["GivenName"] = "Jesse") ]]></SqlQuery>
+WHERE (c0["GivenName"] = "Jesse")]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -345,7 +345,7 @@ WHERE (c0["GivenName"] = "Jesse") ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["id"] = "Tennis") ]]></SqlQuery>
+WHERE (root["id"] = "Tennis")]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -357,7 +357,7 @@ WHERE (root["id"] = "Tennis") ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["json"] = "Racquet") ]]></SqlQuery>
+WHERE (root["json"] = "Racquet")]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -369,7 +369,7 @@ WHERE (root["json"] = "Racquet") ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["id"] = "json") ]]></SqlQuery>
+WHERE (root["id"] = "json")]]></SqlQuery>
     </Output>
   </Result>
 </Results>

@@ -7,7 +7,7 @@
     <Output>
       <SqlQuery><![CDATA[
 SELECT DISTINCT VALUE root["FamilyId"] 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -18,7 +18,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT DISTINCT VALUE root["Int"] 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -29,7 +29,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT DISTINCT VALUE root["IsRegistered"] 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -41,7 +41,7 @@ FROM root ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT DISTINCT VALUE root["NullableInt"] 
 FROM root 
-WHERE (root["NullableInt"] != null) ]]></SqlQuery>
+WHERE (root["NullableInt"] != null)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -53,7 +53,7 @@ WHERE (root["NullableInt"] != null) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT DISTINCT VALUE root["NullObject"] 
 FROM root 
-WHERE (root["NullObject"] != null) ]]></SqlQuery>
+WHERE (root["NullObject"] != null)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -65,7 +65,7 @@ WHERE (root["NullObject"] != null) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT DISTINCT VALUE f0 
 FROM root 
-JOIN f0 IN root["Children"] ]]></SqlQuery>
+JOIN f0 IN root["Children"]]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -77,7 +77,7 @@ JOIN f0 IN root["Children"] ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT DISTINCT VALUE f0 
 FROM root 
-JOIN f0 IN root["Parents"] ]]></SqlQuery>
+JOIN f0 IN root["Parents"]]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -88,7 +88,7 @@ JOIN f0 IN root["Parents"] ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT DISTINCT VALUE root 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -99,7 +99,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT DISTINCT VALUE root 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -110,7 +110,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT DISTINCT VALUE {"Parents": ARRAY_LENGTH(root["Parents"]), "Children": ARRAY_LENGTH(root["Children"])} 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -121,7 +121,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT DISTINCT VALUE {"Parents": ARRAY_LENGTH(root["Parents"]), "Children": ARRAY_LENGTH(root["Children"])}["Parents"] 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -132,7 +132,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT DISTINCT TOP 10 VALUE root["Int"] 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -145,10 +145,9 @@ FROM root ]]></SqlQuery>
 SELECT DISTINCT VALUE r0 
 FROM (
     SELECT TOP 10 VALUE root["Int"] 
-    FROM root
-) AS r0 
+    FROM root) AS r0
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -160,7 +159,7 @@ FROM (
       <SqlQuery><![CDATA[
 SELECT DISTINCT VALUE root["Int"] 
 FROM root 
-ORDER BY root["Int"] ASC ]]></SqlQuery>
+ORDER BY root["Int"] ASC]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -172,7 +171,7 @@ ORDER BY root["Int"] ASC ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT DISTINCT VALUE root 
 FROM root 
-ORDER BY root["Int"] ASC ]]></SqlQuery>
+ORDER BY root["Int"] ASC]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -185,11 +184,10 @@ ORDER BY root["Int"] ASC ]]></SqlQuery>
 SELECT VALUE r1 
 FROM (
     SELECT DISTINCT TOP 10 VALUE root["Int"] 
-    FROM root
-) AS r1 
-ORDER BY r1 ASC 
+    FROM root) AS r1 
+    ORDER BY r1 ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -203,10 +201,9 @@ SELECT DISTINCT VALUE r1
 FROM (
     SELECT TOP 10 VALUE root["Int"] 
     FROM root 
-    ORDER BY root["Int"] ASC
-) AS r1 
+    ORDER BY root["Int"] ASC) AS r1
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -218,7 +215,7 @@ FROM (
       <SqlQuery><![CDATA[
 SELECT DISTINCT VALUE root["Int"] 
 FROM root 
-WHERE (root["Int"] > 10) ]]></SqlQuery>
+WHERE (root["Int"] > 10)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -230,7 +227,7 @@ WHERE (root["Int"] > 10) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT DISTINCT VALUE root["Int"] 
 FROM root 
-WHERE (root["Int"] > 10) ]]></SqlQuery>
+WHERE (root["Int"] > 10)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -242,7 +239,7 @@ WHERE (root["Int"] > 10) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT DISTINCT VALUE f0 
 FROM root 
-JOIN f0 IN root["Parents"] ]]></SqlQuery>
+JOIN f0 IN root["Parents"]]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -256,7 +253,7 @@ SELECT DISTINCT VALUE pet0
 FROM root 
 JOIN child0 IN root["Children"] 
 JOIN pet0 IN child0["Pets"] 
-WHERE (pet0["GivenName"] = "Fluffy") ]]></SqlQuery>
+WHERE (pet0["GivenName"] = "Fluffy")]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -273,8 +270,7 @@ JOIN (
     SELECT DISTINCT VALUE pet0 
     FROM child0 
     JOIN pet0 IN child0["Pets"] 
-    WHERE (pet0["GivenName"] = "Fluffy")
-) AS v1 
+    WHERE (pet0["GivenName"] = "Fluffy")) AS v1
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -289,7 +285,7 @@ SELECT DISTINCT VALUE LENGTH(pet0["GivenName"])
 FROM root 
 JOIN child0 IN root["Children"] 
 JOIN pet0 IN child0["Pets"] 
-WHERE (pet0["GivenName"] = "Fluffy") ]]></SqlQuery>
+WHERE (pet0["GivenName"] = "Fluffy")]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -306,8 +302,7 @@ JOIN (
     FROM root 
     JOIN child0 IN root["Children"] 
     JOIN pet0 IN child0["Pets"] 
-    WHERE (pet0["GivenName"] = "Fluffy")
-) AS v1 
+    WHERE (pet0["GivenName"] = "Fluffy")) AS v1
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -322,7 +317,7 @@ SELECT DISTINCT VALUE {"family": root["FamilyId"], "child": child0["GivenName"],
 FROM root 
 JOIN child0 IN root["Children"] 
 JOIN pet0 IN child0["Pets"] 
-WHERE (pet0["GivenName"] = "Fluffy") ]]></SqlQuery>
+WHERE (pet0["GivenName"] = "Fluffy")]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -339,8 +334,7 @@ JOIN (
     SELECT DISTINCT VALUE {"family": root["FamilyId"], "child": child0["GivenName"], "pet": pet0["GivenName"]} 
     FROM child0 
     JOIN pet0 IN child0["Pets"] 
-    WHERE (pet0["GivenName"] = "Fluffy")
-) AS v1 
+    WHERE (pet0["GivenName"] = "Fluffy")) AS v1
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -356,8 +350,7 @@ FROM root
 JOIN (
     SELECT DISTINCT VALUE v0 
     FROM root 
-    JOIN v0 IN root["Parents"]
-) AS v2 
+    JOIN v0 IN root["Parents"]) AS v2
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -373,9 +366,8 @@ FROM root
 JOIN (
     SELECT DISTINCT VALUE v0 
     FROM root 
-    JOIN v0 IN root["Parents"]
-) AS v2 
-WHERE (LENGTH(v2["FamilyName"]) > 10) 
+    JOIN v0 IN root["Parents"]) AS v2 
+    WHERE (LENGTH(v2["FamilyName"]) > 10)
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -391,9 +383,8 @@ FROM root
 JOIN (
     SELECT DISTINCT VALUE v0 
     FROM root 
-    JOIN v0 IN root["Parents"]
-) AS v2 
-WHERE (LENGTH(v2["FamilyName"]) > 10) 
+    JOIN v0 IN root["Parents"]) AS v2 
+    WHERE (LENGTH(v2["FamilyName"]) > 10)
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -409,10 +400,9 @@ FROM root
 JOIN (
     SELECT DISTINCT VALUE v0 
     FROM root 
-    JOIN v0 IN root["Parents"]
-) AS v2 
-WHERE (LENGTH(v2["FamilyName"]) > 10) 
-ORDER BY v2 ASC 
+    JOIN v0 IN root["Parents"]) AS v2 
+    WHERE (LENGTH(v2["FamilyName"]) > 10) 
+    ORDER BY v2 ASC
 ]]></SqlQuery>
       <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
@@ -429,10 +419,9 @@ FROM root
 JOIN (
     SELECT DISTINCT VALUE v0 
     FROM root 
-    JOIN v0 IN root["Parents"]
-) AS v2 
-WHERE ((LENGTH(v2["FamilyName"]) > 10) AND (LENGTH(v2["FamilyName"]) < 20)) 
-ORDER BY v2 ASC 
+    JOIN v0 IN root["Parents"]) AS v2 
+    WHERE ((LENGTH(v2["FamilyName"]) > 10) AND (LENGTH(v2["FamilyName"]) < 20)) 
+    ORDER BY v2 ASC
 ]]></SqlQuery>
       <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
@@ -449,10 +438,9 @@ FROM root
 JOIN (
     SELECT DISTINCT VALUE v0 
     FROM root 
-    JOIN v0 IN root["Parents"]
-) AS v2 
-WHERE ((LENGTH(v2["FamilyName"]) > 10) AND (LENGTH(v2["FamilyName"]) < 20)) 
-ORDER BY v2 ASC 
+    JOIN v0 IN root["Parents"]) AS v2 
+    WHERE ((LENGTH(v2["FamilyName"]) > 10) AND (LENGTH(v2["FamilyName"]) < 20)) 
+    ORDER BY v2 ASC
 ]]></SqlQuery>
       <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
@@ -471,13 +459,11 @@ FROM (
     JOIN (
         SELECT DISTINCT VALUE v0 
         FROM root 
-        JOIN v0 IN root["Parents"]
-    ) AS v2 
-    WHERE ((LENGTH(v2["FamilyName"]) > 10) AND (LENGTH(v2["FamilyName"]) < 20)) 
-    ORDER BY v2 ASC
-) AS r0 
+        JOIN v0 IN root["Parents"]) AS v2 
+        WHERE ((LENGTH(v2["FamilyName"]) > 10) AND (LENGTH(v2["FamilyName"]) < 20)) 
+        ORDER BY v2 ASC) AS r0
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -492,10 +478,9 @@ FROM root
 JOIN (
     SELECT DISTINCT VALUE v0 
     FROM root 
-    JOIN v0 IN root["Parents"]
-) AS v2 
-WHERE (LENGTH(v2["FamilyName"]) > 10) 
-ORDER BY v2 ASC 
+    JOIN v0 IN root["Parents"]) AS v2 
+    WHERE (LENGTH(v2["FamilyName"]) > 10) 
+    ORDER BY v2 ASC
 ]]></SqlQuery>
       <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
@@ -514,13 +499,11 @@ FROM (
     JOIN (
         SELECT DISTINCT VALUE v0 
         FROM root 
-        JOIN v0 IN root["Parents"]
-    ) AS v2 
-    WHERE (LENGTH(v2["FamilyName"]) > 10) 
-    ORDER BY v2 ASC
-) AS r0 
+        JOIN v0 IN root["Parents"]) AS v2 
+        WHERE (LENGTH(v2["FamilyName"]) > 10) 
+        ORDER BY v2 ASC) AS r0
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -535,9 +518,8 @@ FROM root
 JOIN (
     SELECT DISTINCT VALUE v0 
     FROM root 
-    JOIN v0 IN root["Parents"]
-) AS v2 
-WHERE (LENGTH(v2["FamilyName"]) > 10) 
+    JOIN v0 IN root["Parents"]) AS v2 
+    WHERE (LENGTH(v2["FamilyName"]) > 10)
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -555,12 +537,10 @@ FROM (
     JOIN (
         SELECT DISTINCT VALUE v0 
         FROM root 
-        JOIN v0 IN root["Parents"]
-    ) AS v2 
-    WHERE (LENGTH(v2["FamilyName"]) > 10)
-) AS r0 
+        JOIN v0 IN root["Parents"]) AS v2 
+        WHERE (LENGTH(v2["FamilyName"]) > 10)) AS r0
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Exception from HRESULT: 0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -575,10 +555,9 @@ FROM root
 JOIN (
     SELECT DISTINCT VALUE v0 
     FROM root 
-    JOIN v0 IN root["Parents"]
-) AS v2 
-WHERE (LENGTH(v2["FamilyName"]) > 10) 
-ORDER BY v2 ASC 
+    JOIN v0 IN root["Parents"]) AS v2 
+    WHERE (LENGTH(v2["FamilyName"]) > 10) 
+    ORDER BY v2 ASC
 ]]></SqlQuery>
       <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
@@ -595,10 +574,9 @@ FROM root
 JOIN (
     SELECT DISTINCT VALUE v0 
     FROM root 
-    JOIN v0 IN root["Parents"]
-) AS v2 
-WHERE (LENGTH(v2["FamilyName"]) > 10) 
-ORDER BY v2 ASC 
+    JOIN v0 IN root["Parents"]) AS v2 
+    WHERE (LENGTH(v2["FamilyName"]) > 10) 
+    ORDER BY v2 ASC
 ]]></SqlQuery>
       <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
@@ -615,10 +593,9 @@ FROM root
 JOIN (
     SELECT DISTINCT VALUE v0 
     FROM root 
-    JOIN v0 IN root["Parents"]
-) AS v2 
-WHERE (LENGTH(v2["FamilyName"]) > 10) 
-ORDER BY v2["GivenName"]["Length"] ASC 
+    JOIN v0 IN root["Parents"]) AS v2 
+    WHERE (LENGTH(v2["FamilyName"]) > 10) 
+    ORDER BY v2["GivenName"]["Length"] ASC
 ]]></SqlQuery>
       <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
@@ -635,10 +612,9 @@ FROM root
 JOIN (
     SELECT DISTINCT VALUE v0 
     FROM root 
-    JOIN v0 IN root["Parents"]
-) AS v2 
-WHERE (LENGTH(v2["FamilyName"]) > 10) 
-ORDER BY v2["GivenName"]["Length"] ASC 
+    JOIN v0 IN root["Parents"]) AS v2 
+    WHERE (LENGTH(v2["FamilyName"]) > 10) 
+    ORDER BY v2["GivenName"]["Length"] ASC
 ]]></SqlQuery>
       <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
@@ -655,10 +631,9 @@ FROM root
 JOIN (
     SELECT DISTINCT VALUE v0 
     FROM root 
-    JOIN v0 IN root["Parents"]
-) AS v2 
-WHERE (LENGTH(v2["FamilyName"]) > 10) 
-ORDER BY v2 ASC 
+    JOIN v0 IN root["Parents"]) AS v2 
+    WHERE (LENGTH(v2["FamilyName"]) > 10) 
+    ORDER BY v2 ASC
 ]]></SqlQuery>
       <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
@@ -675,10 +650,9 @@ FROM root
 JOIN (
     SELECT DISTINCT VALUE v0 
     FROM root 
-    JOIN v0 IN root["Parents"]
-) AS v2 
-WHERE (LENGTH(v2["FamilyName"]) > 10) 
-ORDER BY v2 ASC 
+    JOIN v0 IN root["Parents"]) AS v2 
+    WHERE (LENGTH(v2["FamilyName"]) > 10) 
+    ORDER BY v2 ASC
 ]]></SqlQuery>
       <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
@@ -695,9 +669,8 @@ FROM root
 JOIN (
     SELECT DISTINCT VALUE v0 
     FROM root 
-    JOIN v0 IN root["Parents"]
-) AS v2 
-WHERE ((LENGTH(v2["FamilyName"]) > 10) AND (LENGTH(v2["FamilyName"]) < 20)) 
+    JOIN v0 IN root["Parents"]) AS v2 
+    WHERE ((LENGTH(v2["FamilyName"]) > 10) AND (LENGTH(v2["FamilyName"]) < 20))
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -713,9 +686,8 @@ FROM root
 JOIN (
     SELECT DISTINCT VALUE v0 
     FROM root 
-    JOIN v0 IN root["Parents"]
-) AS v2 
-ORDER BY v2["FamilyName"] ASC 
+    JOIN v0 IN root["Parents"]) AS v2 
+    ORDER BY v2["FamilyName"] ASC
 ]]></SqlQuery>
       <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
@@ -732,9 +704,8 @@ FROM root
 JOIN (
     SELECT DISTINCT VALUE v0 
     FROM root 
-    JOIN v0 IN root["Parents"]
-) AS v2 
-ORDER BY v2["FamilyName"] ASC 
+    JOIN v0 IN root["Parents"]) AS v2 
+    ORDER BY v2["FamilyName"] ASC
 ]]></SqlQuery>
       <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
@@ -751,8 +722,7 @@ FROM root
 JOIN (
     SELECT DISTINCT VALUE v0 
     FROM root 
-    JOIN v0 IN root["Parents"]
-) AS v2 
+    JOIN v0 IN root["Parents"]) AS v2
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -768,8 +738,7 @@ FROM root
 JOIN (
     SELECT DISTINCT VALUE v0 
     FROM root 
-    JOIN v0 IN root["Parents"]
-) AS v2 
+    JOIN v0 IN root["Parents"]) AS v2
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -785,8 +754,7 @@ FROM root
 JOIN (
     SELECT DISTINCT VALUE v0 
     FROM root 
-    JOIN v0 IN root["Parents"]
-) AS v2 
+    JOIN v0 IN root["Parents"]) AS v2
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -802,9 +770,8 @@ FROM root
 JOIN (
     SELECT DISTINCT VALUE p0["GivenName"] 
     FROM root 
-    JOIN p0 IN root["Parents"]
-) AS v1 
-ORDER BY v1 ASC 
+    JOIN p0 IN root["Parents"]) AS v1 
+    ORDER BY v1 ASC
 ]]></SqlQuery>
       <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
@@ -821,10 +788,9 @@ FROM root
 JOIN (
     SELECT DISTINCT VALUE p0["GivenName"] 
     FROM root 
-    JOIN p0 IN root["Parents"]
-) AS v1 
-WHERE (LENGTH(v1) > 10) 
-ORDER BY v1 ASC 
+    JOIN p0 IN root["Parents"]) AS v1 
+    WHERE (LENGTH(v1) > 10) 
+    ORDER BY v1 ASC
 ]]></SqlQuery>
       <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
@@ -838,7 +804,7 @@ ORDER BY v1 ASC
       <SqlQuery><![CDATA[
 SELECT DISTINCT VALUE p0["FamilyName"] 
 FROM root 
-JOIN p0 IN root["Parents"] ]]></SqlQuery>
+JOIN p0 IN root["Parents"]]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -853,8 +819,7 @@ FROM root
 JOIN (
     SELECT DISTINCT VALUE p0["FamilyName"] 
     FROM root 
-    JOIN p0 IN root["Parents"]
-) AS v1 
+    JOIN p0 IN root["Parents"]) AS v1
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -870,8 +835,7 @@ FROM root
 JOIN (
     SELECT DISTINCT VALUE p0["GivenName"] 
     FROM root 
-    JOIN p0 IN root["Parents"]
-) AS v1 
+    JOIN p0 IN root["Parents"]) AS v1
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -887,9 +851,8 @@ FROM root
 JOIN (
     SELECT DISTINCT VALUE p0["GivenName"] 
     FROM root 
-    JOIN p0 IN root["Parents"]
-) AS v1 
-WHERE (LENGTH(v1) > 10) 
+    JOIN p0 IN root["Parents"]) AS v1 
+    WHERE (LENGTH(v1) > 10)
 ]]></SqlQuery>
     </Output>
   </Result>
