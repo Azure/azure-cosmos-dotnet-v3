@@ -35,11 +35,11 @@
                 // Intialize container or create a new container.
                 Container container = await Program.Initialize();
 
-                List<MyDocument> documentsToWorkWith = new List<MyDocument>(100);
+                List<MyItem> documentsToWorkWith = new List<MyItem>(100);
                 for (int i = 0; i < DocumentsToInsert; i++)
                 {
                     documentsToWorkWith.Add(
-                        new MyDocument()
+                        new MyItem()
                         {
                             id = Guid.NewGuid().ToString(),
                             pk = Guid.NewGuid().ToString()
@@ -66,7 +66,7 @@
         }
 
         // <Model>
-        public class MyDocument
+        public class MyItem
         {
             public string id { get; set; }
 
@@ -85,17 +85,17 @@
 
         public static async Task CreateItemsConcurrentlyAsync(
             Container container,
-            IReadOnlyList<MyDocument> documentsToWorkWith)
+            IReadOnlyList<MyItem> documentsToWorkWith)
         {
             // <BulkImport>
-            List<Task<OperationResponse<MyDocument>>> operations = new List<Task<OperationResponse<MyDocument>>>(documentsToWorkWith.Count);
-            foreach (MyDocument document in documentsToWorkWith)
+            List<Task<OperationResponse<MyItem>>> operations = new List<Task<OperationResponse<MyItem>>>(documentsToWorkWith.Count);
+            foreach (MyItem document in documentsToWorkWith)
             {
                 operations.Add(container.CreateItemAsync(document, new PartitionKey(document.pk)).CaptureOperationResponse(document));
             }
             // </BulkImport>
 
-            BulkOperationResponse<MyDocument> bulkOperationResponse = await ExecuteTasksAsync(operations);
+            BulkOperationResponse<MyItem> bulkOperationResponse = await ExecuteTasksAsync(operations);
             Console.WriteLine($"Bulk create operation finished in {bulkOperationResponse.TotalTimeTaken}");
             Console.WriteLine($"Consumed {bulkOperationResponse.TotalRequestUnitsConsumed} RUs in total");
             Console.WriteLine($"Created {bulkOperationResponse.SuccessfulDocuments} documents");
@@ -108,18 +108,18 @@
 
         public static async Task UpdateItemsConcurrentlyAsync(
             Container container,
-            IReadOnlyList<MyDocument> documentsToWorkWith)
+            IReadOnlyList<MyItem> documentsToWorkWith)
         {
             // <BulkUpdate>
-            List<Task<OperationResponse<MyDocument>>> operations = new List<Task<OperationResponse<MyDocument>>>(documentsToWorkWith.Count);
-            foreach (MyDocument document in documentsToWorkWith)
+            List<Task<OperationResponse<MyItem>>> operations = new List<Task<OperationResponse<MyItem>>>(documentsToWorkWith.Count);
+            foreach (MyItem document in documentsToWorkWith)
             {
                 document.operationCounter++;
                 operations.Add(container.ReplaceItemAsync(document, document.id, new PartitionKey(document.pk)).CaptureOperationResponse(document));
             }
             // </BulkUpdate>
 
-            BulkOperationResponse<MyDocument> bulkOperationResponse = await ExecuteTasksAsync(operations);
+            BulkOperationResponse<MyItem> bulkOperationResponse = await ExecuteTasksAsync(operations);
             Console.WriteLine($"Bulk update operation finished in {bulkOperationResponse.TotalTimeTaken}");
             Console.WriteLine($"Consumed {bulkOperationResponse.TotalRequestUnitsConsumed} RUs in total");
             Console.WriteLine($"Created {bulkOperationResponse.SuccessfulDocuments} documents");
@@ -132,18 +132,18 @@
 
         public static async Task DeleteItemsConcurrentlyAsync(
             Container container,
-            IReadOnlyList<MyDocument> documentsToWorkWith)
+            IReadOnlyList<MyItem> documentsToWorkWith)
         {
             // <BulkDelete>
-            List<Task<OperationResponse<MyDocument>>> operations = new List<Task<OperationResponse<MyDocument>>>(documentsToWorkWith.Count);
-            foreach (MyDocument document in documentsToWorkWith)
+            List<Task<OperationResponse<MyItem>>> operations = new List<Task<OperationResponse<MyItem>>>(documentsToWorkWith.Count);
+            foreach (MyItem document in documentsToWorkWith)
             {
                 document.operationCounter++;
-                operations.Add(container.DeleteItemAsync<MyDocument>(document.id, new PartitionKey(document.pk)).CaptureOperationResponse(document));
+                operations.Add(container.DeleteItemAsync<MyItem>(document.id, new PartitionKey(document.pk)).CaptureOperationResponse(document));
             }
             // </BulkDelete>
 
-            BulkOperationResponse<MyDocument> bulkOperationResponse = await ExecuteTasksAsync(operations);
+            BulkOperationResponse<MyItem> bulkOperationResponse = await ExecuteTasksAsync(operations);
             Console.WriteLine($"Bulk update operation finished in {bulkOperationResponse.TotalTimeTaken}");
             Console.WriteLine($"Consumed {bulkOperationResponse.TotalRequestUnitsConsumed} RUs in total");
             Console.WriteLine($"Created {bulkOperationResponse.SuccessfulDocuments} documents");
@@ -202,11 +202,11 @@
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error in reading collection: {0}", ex.Message);
+                Console.WriteLine("Error in reading container: {0}", ex.Message);
                 throw ex;
             }
 
-            Console.WriteLine("Running migration demo for container {0} with a Bulk enabled CosmosClient.", ContainerName);
+            Console.WriteLine("Running bulk operations demo for container {0} with a Bulk enabled CosmosClient.", ContainerName);
 
             return container;
         }
