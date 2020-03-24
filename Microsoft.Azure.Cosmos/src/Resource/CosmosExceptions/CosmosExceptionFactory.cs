@@ -185,8 +185,8 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
             {
                 cosmosException = CosmosHttpExceptionFactory.Create(
                     statusCode,
-                    diagnosticsContext,
                     subStatusCode,
+                    diagnosticsContext,
                     message,
                     innerException);
             }

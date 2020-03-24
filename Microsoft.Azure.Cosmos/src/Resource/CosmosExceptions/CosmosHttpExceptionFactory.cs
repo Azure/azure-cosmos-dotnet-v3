@@ -20,15 +20,12 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
     {
         public static CosmosHttpException Create(
             HttpStatusCode httpStatusCode,
-            CosmosDiagnosticsContext cosmosDiagnosticsContext,
             int? subStatusCode = null,
+            CosmosDiagnosticsContext cosmosDiagnosticsContext = null,
             string message = null,
             Exception innerException = null)
         {
-            if (cosmosDiagnosticsContext == null)
-            {
-                throw new ArgumentNullException(nameof(cosmosDiagnosticsContext));
-            }
+            cosmosDiagnosticsContext = cosmosDiagnosticsContext ?? new CosmosDiagnosticsContextCore();
 
             CosmosHttpException exception;
             switch (httpStatusCode)

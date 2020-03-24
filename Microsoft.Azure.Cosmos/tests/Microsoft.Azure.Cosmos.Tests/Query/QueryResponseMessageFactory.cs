@@ -174,8 +174,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                subStatusCodes: subStatusCodes,
                cosmosException: CosmosHttpExceptionFactory.Create(
                    httpStatusCode,
-                   null,
                    (int)subStatusCodes,
+                   null,
                    errorMessage),
                requestCharge: 10.4,
                activityId: acitivityId,
