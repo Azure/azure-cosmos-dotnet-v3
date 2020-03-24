@@ -1812,6 +1812,11 @@
           ],
           "MethodInfo": "System.String get_ActivityId()"
         },
+        "System.String get_Message()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.String get_Message()"
+        },
         "System.String get_ResponseBody()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -1823,6 +1828,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "System.String get_StackTrace()"
+        },
+        "System.String Message": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
         },
         "System.String ResponseBody": {
           "Type": "Property",
