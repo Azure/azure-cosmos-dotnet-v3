@@ -155,10 +155,10 @@ namespace Microsoft.Azure.Cosmos
             List<(HttpStatusCode statusCode, CosmosException exception)> exceptionsToStatusCodes = new List<(HttpStatusCode, CosmosException)>()
             {
                 (HttpStatusCode.NotFound, CosmosExceptionFactory.CreateNotFoundException(testMessage)),
-                //(HttpStatusCode.InternalServerError, CosmosExceptionFactory.CreateInternalServerErrorException(testMessage)),
-                //(HttpStatusCode.BadRequest, CosmosExceptionFactory.CreateBadRequestException(testMessage)),
-                //(HttpStatusCode.RequestTimeout,CosmosExceptionFactory.CreateRequestTimeoutException(testMessage)),
-                //((HttpStatusCode)429, CosmosExceptionFactory.CreateThrottledException(testMessage)),
+                (HttpStatusCode.InternalServerError, CosmosExceptionFactory.CreateInternalServerErrorException(testMessage)),
+                (HttpStatusCode.BadRequest, CosmosExceptionFactory.CreateBadRequestException(testMessage)),
+                (HttpStatusCode.RequestTimeout,CosmosExceptionFactory.CreateRequestTimeoutException(testMessage)),
+                ((HttpStatusCode)429, CosmosExceptionFactory.CreateThrottledException(testMessage)),
             };
 
             foreach((HttpStatusCode statusCode, CosmosException exception) item in exceptionsToStatusCodes)
