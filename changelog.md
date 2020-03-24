@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [#1213](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1213) CosmosException now returns the original stack trace.
 - [#1213](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1213) ResponseMessage.ErrorMessage is now always correctly populated. There was bug in some scenarios where the error message was left in the content stream.
-- [#1298](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1298) CosmosException.Message contains activity id and request charge.
+- [#1298](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1298) CosmosException.Message contains the same information as CosmosException.ToString() to ensure all the information is being tracked
 - [#1242](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1242) Client encryption - Fix bug in read path without encrypted properties
 - [#1189](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1189) Query diagnostics shows correct overall time.
 - [#1189](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1189) Fixed a bug that caused duplicate information in diagnostic context.
