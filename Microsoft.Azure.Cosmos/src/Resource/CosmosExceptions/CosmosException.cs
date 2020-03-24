@@ -45,6 +45,41 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Create a <see cref="CosmosException"/>
+        /// </summary>
+        /// <param name="message">The message associated with the exception.</param>
+        /// <param name="statusCode">The <see cref="HttpStatusCode"/> associated with the exception.</param>
+        /// <param name="subStatusCode">A sub status code associated with the exception.</param>
+        /// <param name="activityId">An ActivityId associated with the operation that generated the exception.</param>
+        /// <param name="requestCharge">A request charge associated with the operation that generated the exception.</param>
+#if INTERNAL
+    [Obsolete("Go through a factory method or derived class instead.")]
+#endif
+        public CosmosException(
+            string message,
+            HttpStatusCode statusCode,
+            int subStatusCode,
+            string activityId,
+            double requestCharge)
+#pragma warning disable CS0618 // Type or member is obsolete
+            : this(
+                  statusCode: statusCode,
+                  message: message,
+                  subStatusCode: subStatusCode,
+                  stackTrace: null,
+                  activityId: activityId,
+                  requestCharge: requestCharge,
+                  retryAfter: null,
+                  headers: new Headers(),
+                  diagnosticsContext: new CosmosDiagnosticsContextCore(),
+                  error: null,
+                  innerException: null)
+#pragma warning restore CS0618 // Type or member is obsolete
+        {
+            // All the work is done through the instance constructor.
+        }
+
+        /// <summary>
         /// The body of the cosmos response message as a string
         /// </summary>
         public virtual string ResponseBody { get; }
