@@ -150,20 +150,36 @@ namespace Microsoft.Azure.Cosmos
                 diagnosticsContext: null,
                 cancellationToken: cancellationToken);
 
-            schedulingStopwatch.Stop();
-
             QueryResponseCore queryResponseCore = this.GetCosmosElementResponse(
-                queryRequestOptions,
+                requestOptions,
                 resourceType,
                 message,
                 partitionKeyRange,
-                schedulingStopwatch);
+                queryPageDiagnostics);
 
             if (this.clientContext.ClientOptions.EncryptionKeyWrapProvider != null)
             {
-                List<CosmosElement> documents = new List<CosmosElement>();
+                return await this.GetDecryptedElementResponseAsync(queryResponseCore, message, cancellationToken);
+            }
 
-                foreach (CosmosElement document in queryResponseCore.CosmosElements)
+            return queryResponseCore;
+        }
+
+        private async Task<QueryResponseCore> GetDecryptedElementResponseAsync(
+            QueryResponseCore queryResponseCore,
+            ResponseMessage message,
+            CancellationToken cancellationToken)
+        {
+            List<CosmosElement> documents = new List<CosmosElement>();
+
+            foreach (CosmosElement document in queryResponseCore.CosmosElements)
+            {
+                string documentText = document.ToString();
+                if (!documentText.Contains(Constants.Properties.EncryptedInfo))
+                {
+                    documents.Add(document);
+                }
+                else
                 {
                     using (message.DiagnosticsContext.CreateScope("Decrypt"))
                     {
@@ -177,18 +193,15 @@ namespace Microsoft.Azure.Cosmos
                         documents.Add(this.clientContext.SerializerCore.FromStream<CosmosElement>(decryptedContent));
                     }
                 }
-
-                return QueryResponseCore.CreateSuccess(
-                    result: documents,
-                    requestCharge: queryResponseCore.RequestCharge,
-                    activityId: queryResponseCore.ActivityId,
-                    diagnostics: queryResponseCore.Diagnostics,
-                    responseLengthBytes: queryResponseCore.ResponseLengthBytes,
-                    disallowContinuationTokenMessage: queryResponseCore.DisallowContinuationTokenMessage,
-                    continuationToken: queryResponseCore.ContinuationToken);
             }
 
-            return queryResponseCore;
+            return QueryResponseCore.CreateSuccess(
+                result: documents,
+                requestCharge: queryResponseCore.RequestCharge,
+                activityId: queryResponseCore.ActivityId,
+                responseLengthBytes: queryResponseCore.ResponseLengthBytes,
+                disallowContinuationTokenMessage: queryResponseCore.DisallowContinuationTokenMessage,
+                continuationToken: queryResponseCore.ContinuationToken);
         }
 
         internal override async Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
