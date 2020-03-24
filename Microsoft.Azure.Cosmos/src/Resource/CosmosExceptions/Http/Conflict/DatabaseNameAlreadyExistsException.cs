@@ -2,26 +2,30 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-// This is generated code:
+// This is auto-generated code. Modify: HttpExceptionCodeGenerator.tt: 98
 
 namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.Conflict
 {
     using System;
 
-    internal sealed class DatabaseNameAlreadyExistsException : ConflictException
+    internal sealed class DatabaseNameAlreadyExistsException : ConflictBaseException
     {
-        public DatabaseNameAlreadyExistsException()
-            : this(message: null)
+        public DatabaseNameAlreadyExistsException(CosmosDiagnosticsContext cosmosDiagnosticsContext)
+            : this(cosmosDiagnosticsContext, message: null)
         {
         }
 
-        public DatabaseNameAlreadyExistsException(string message)
-            : this(message: message, innerException: null)
+        public DatabaseNameAlreadyExistsException(CosmosDiagnosticsContext cosmosDiagnosticsContext, string message)
+            : this(cosmosDiagnosticsContext, message, innerException: null)
         {
         }
 
-        public DatabaseNameAlreadyExistsException(string message, Exception innerException)
-            : base(subStatusCode: (int)ConflictSubStatusCode.DatabaseNameAlreadyExists, message: message, innerException: innerException)
+        public DatabaseNameAlreadyExistsException(CosmosDiagnosticsContext cosmosDiagnosticsContext, string message, Exception innerException)
+            : base(
+                subStatusCode: (int)ConflictSubStatusCode.DatabaseNameAlreadyExists,
+                cosmosDiagnosticsContext: cosmosDiagnosticsContext,
+                message: message, 
+                innerException: innerException)
         {
         }
     }

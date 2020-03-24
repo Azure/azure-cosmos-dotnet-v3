@@ -9,19 +9,30 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
 
     internal abstract class CosmosHttpException : CosmosException
     {
-        protected CosmosHttpException(HttpStatusCode statusCode, int subStatusCode)
-            : this(statusCode, subStatusCode, message: null, innerException: null)
+        protected CosmosHttpException(HttpStatusCode statusCode, int subStatusCode, CosmosDiagnosticsContext cosmosDiagnosticsContext)
+            : this(statusCode, subStatusCode, cosmosDiagnosticsContext, message: null)
         {
         }
 
-        protected CosmosHttpException(HttpStatusCode statusCode, int subStatusCode, string message)
-            : this(statusCode, subStatusCode, message: message, innerException: null)
+        protected CosmosHttpException(HttpStatusCode statusCode, int subStatusCode, CosmosDiagnosticsContext cosmosDiagnosticsContext, string message)
+            : this(statusCode, subStatusCode, cosmosDiagnosticsContext, message, innerException: null)
         {
         }
 
-        protected CosmosHttpException(HttpStatusCode statusCode, int subStatusCode, string message, Exception innerException)
+        protected CosmosHttpException(HttpStatusCode statusCode, int subStatusCode, CosmosDiagnosticsContext cosmosDiagnosticsContext, string message, Exception innerException)
 #pragma warning disable CS0618 // Type or member is obsolete
-            : base(statusCode: statusCode, subStatusCode: subStatusCode, message: message, activityId: null, requestCharge: 0, innerException: innerException)
+            : base(
+                  statusCode: statusCode,
+                  message: message,
+                  subStatusCode: subStatusCode,
+                  stackTrace: null,
+                  activityId: null,
+                  requestCharge: 0,
+                  retryAfter: null,
+                  headers: null,
+                  diagnosticsContext: cosmosDiagnosticsContext,
+                  error: null,
+                  innerException: innerException)
 #pragma warning restore CS0618 // Type or member is obsolete
         {
         }

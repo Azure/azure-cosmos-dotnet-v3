@@ -2,26 +2,30 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-// This is generated code:
+// This is auto-generated code. Modify: HttpExceptionCodeGenerator.tt: 98
 
 namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.Forbidden
 {
     using System;
 
-    internal sealed class NWriteForbiddenException : ForbiddenException
+    internal sealed class NWriteForbiddenException : ForbiddenBaseException
     {
-        public NWriteForbiddenException()
-            : this(message: null)
+        public NWriteForbiddenException(CosmosDiagnosticsContext cosmosDiagnosticsContext)
+            : this(cosmosDiagnosticsContext, message: null)
         {
         }
 
-        public NWriteForbiddenException(string message)
-            : this(message: message, innerException: null)
+        public NWriteForbiddenException(CosmosDiagnosticsContext cosmosDiagnosticsContext, string message)
+            : this(cosmosDiagnosticsContext, message, innerException: null)
         {
         }
 
-        public NWriteForbiddenException(string message, Exception innerException)
-            : base(subStatusCode: (int)ForbiddenSubStatusCode.NWriteForbidden, message: message, innerException: innerException)
+        public NWriteForbiddenException(CosmosDiagnosticsContext cosmosDiagnosticsContext, string message, Exception innerException)
+            : base(
+                subStatusCode: (int)ForbiddenSubStatusCode.NWriteForbidden,
+                cosmosDiagnosticsContext: cosmosDiagnosticsContext,
+                message: message, 
+                innerException: innerException)
         {
         }
     }

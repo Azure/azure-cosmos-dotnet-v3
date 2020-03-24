@@ -2,26 +2,30 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-// This is generated code:
+// This is auto-generated code. Modify: HttpExceptionCodeGenerator.tt: 98
 
 namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.Forbidden
 {
     using System;
 
-    internal sealed class RedundantCollectionPutException : ForbiddenException
+    internal sealed class RedundantCollectionPutException : ForbiddenBaseException
     {
-        public RedundantCollectionPutException()
-            : this(message: null)
+        public RedundantCollectionPutException(CosmosDiagnosticsContext cosmosDiagnosticsContext)
+            : this(cosmosDiagnosticsContext, message: null)
         {
         }
 
-        public RedundantCollectionPutException(string message)
-            : this(message: message, innerException: null)
+        public RedundantCollectionPutException(CosmosDiagnosticsContext cosmosDiagnosticsContext, string message)
+            : this(cosmosDiagnosticsContext, message, innerException: null)
         {
         }
 
-        public RedundantCollectionPutException(string message, Exception innerException)
-            : base(subStatusCode: (int)ForbiddenSubStatusCode.RedundantCollectionPut, message: message, innerException: innerException)
+        public RedundantCollectionPutException(CosmosDiagnosticsContext cosmosDiagnosticsContext, string message, Exception innerException)
+            : base(
+                subStatusCode: (int)ForbiddenSubStatusCode.RedundantCollectionPut,
+                cosmosDiagnosticsContext: cosmosDiagnosticsContext,
+                message: message, 
+                innerException: innerException)
         {
         }
     }

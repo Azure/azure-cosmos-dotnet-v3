@@ -172,6 +172,13 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return documents;
         }
 
+        private static string ModificationInstructions(
+                        [CallerFilePath] string file = "",
+                        [CallerLineNumber] int line = 0)
+        {
+            return $"{Path.GetFileName(file)}: {line}";
+        }
+
         /// <summary>
         /// Converts a list of CosmosElements into a memory stream.
         /// </summary>

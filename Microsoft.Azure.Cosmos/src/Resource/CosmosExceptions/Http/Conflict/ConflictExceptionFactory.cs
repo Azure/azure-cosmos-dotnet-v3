@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-// This is generated code:
+// This is auto-generated code. Modify: HttpExceptionCodeGenerator.tt: 198
 
 namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.Conflict
 {
@@ -10,28 +10,34 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.Conflict
 
     internal static class ConflictExceptionFactory
     {
-        public static ConflictException Create(
+        public static ConflictBaseException Create(
             int? subStatusCode = null,
+            CosmosDiagnosticsContext cosmosDiagnosticsContext = null,
             string message = null,
             Exception innerException = null)
         {
+            cosmosDiagnosticsContext = cosmosDiagnosticsContext ?? new CosmosDiagnosticsContextCore();
             if (!subStatusCode.HasValue)
             {
-                return new DefaultConflictException(message, innerException);
+                return new ConflictException(cosmosDiagnosticsContext, message, innerException);
             }
 
             switch (subStatusCode.Value)
             {
-                case 1006:
-                    return new ConflictWithControlPlaneException(message, innerException);
-                case 3206:
-                    return new DatabaseNameAlreadyExistsException(message, innerException);
-                case 3207:
-                    return new ConfigurationNameAlreadyExistsException(message, innerException);
-                case 3302:
-                    return new PartitionkeyHashCollisionForIdException(message, innerException);
+                case (int)ConflictSubStatusCode.ConflictWithControlPlane:
+                    return new ConflictWithControlPlaneException(cosmosDiagnosticsContext, message, innerException);
+
+                case (int)ConflictSubStatusCode.DatabaseNameAlreadyExists:
+                    return new DatabaseNameAlreadyExistsException(cosmosDiagnosticsContext, message, innerException);
+
+                case (int)ConflictSubStatusCode.ConfigurationNameAlreadyExists:
+                    return new ConfigurationNameAlreadyExistsException(cosmosDiagnosticsContext, message, innerException);
+
+                case (int)ConflictSubStatusCode.PartitionkeyHashCollisionForId:
+                    return new PartitionkeyHashCollisionForIdException(cosmosDiagnosticsContext, message, innerException);
+
                 default:
-                    return new UnknownConflictException(subStatusCode.Value, message, innerException);
+                    return new UnknownConflictException(subStatusCode.Value, cosmosDiagnosticsContext, message, innerException);
             }
         }
     }

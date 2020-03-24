@@ -2,27 +2,26 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-// This is generated code:
+// This is auto-generated code. Modify: HttpExceptionCodeGenerator.tt: 133
 
 namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.RequestTimeout
 {
     using System;
-    using System.Net;
 
-    internal abstract class RequestTimeoutException : CosmosHttpException
+    internal sealed class RequestTimeoutException : RequestTimeoutBaseException
     {
-        protected RequestTimeoutException(int subStatusCode)
-            : this(subStatusCode, message: null)
+        public RequestTimeoutException(CosmosDiagnosticsContext cosmosDiagnosticsContext)
+            : this(cosmosDiagnosticsContext, message: null)
         {
         }
 
-        protected RequestTimeoutException(int subStatusCode, string message)
-            : this(subStatusCode, message: message, innerException: null)
+        public RequestTimeoutException(CosmosDiagnosticsContext cosmosDiagnosticsContext, string message)
+            : this(cosmosDiagnosticsContext, message, innerException: null)
         {
         }
 
-        protected RequestTimeoutException(int subStatusCode, string message, Exception innerException)
-            : base(statusCode: HttpStatusCode.RequestTimeout, subStatusCode: subStatusCode, message: message, innerException: innerException)
+        public RequestTimeoutException(CosmosDiagnosticsContext cosmosDiagnosticsContext, string message, Exception innerException)
+            : base(subStatusCode: 0, cosmosDiagnosticsContext: cosmosDiagnosticsContext, message: message, innerException: innerException)
         {
         }
     }

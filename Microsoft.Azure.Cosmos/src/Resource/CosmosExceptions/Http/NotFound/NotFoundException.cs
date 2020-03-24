@@ -2,27 +2,26 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-// This is generated code:
+// This is auto-generated code. Modify: HttpExceptionCodeGenerator.tt: 133
 
 namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.NotFound
 {
     using System;
-    using System.Net;
 
-    internal abstract class NotFoundException : CosmosHttpException
+    internal sealed class NotFoundException : NotFoundBaseException
     {
-        protected NotFoundException(int subStatusCode)
-            : this(subStatusCode, message: null)
+        public NotFoundException(CosmosDiagnosticsContext cosmosDiagnosticsContext)
+            : this(cosmosDiagnosticsContext, message: null)
         {
         }
 
-        protected NotFoundException(int subStatusCode, string message)
-            : this(subStatusCode, message: message, innerException: null)
+        public NotFoundException(CosmosDiagnosticsContext cosmosDiagnosticsContext, string message)
+            : this(cosmosDiagnosticsContext, message, innerException: null)
         {
         }
 
-        protected NotFoundException(int subStatusCode, string message, Exception innerException)
-            : base(statusCode: HttpStatusCode.NotFound, subStatusCode: subStatusCode, message: message, innerException: innerException)
+        public NotFoundException(CosmosDiagnosticsContext cosmosDiagnosticsContext, string message, Exception innerException)
+            : base(subStatusCode: 0, cosmosDiagnosticsContext: cosmosDiagnosticsContext, message: message, innerException: innerException)
         {
         }
     }

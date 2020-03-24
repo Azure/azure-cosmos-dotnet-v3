@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-// This is generated code:
+// This is auto-generated code. Modify: HttpExceptionCodeGenerator.tt: 198
 
 namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.Gone
 {
@@ -10,28 +10,34 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.Gone
 
     internal static class GoneExceptionFactory
     {
-        public static GoneException Create(
+        public static GoneBaseException Create(
             int? subStatusCode = null,
+            CosmosDiagnosticsContext cosmosDiagnosticsContext = null,
             string message = null,
             Exception innerException = null)
         {
+            cosmosDiagnosticsContext = cosmosDiagnosticsContext ?? new CosmosDiagnosticsContextCore();
             if (!subStatusCode.HasValue)
             {
-                return new DefaultGoneException(message, innerException);
+                return new GoneException(cosmosDiagnosticsContext, message, innerException);
             }
 
             switch (subStatusCode.Value)
             {
-                case 1000:
-                    return new NameCacheIsStaleException(message, innerException);
-                case 1002:
-                    return new PartitionKeyRangeGoneException(message, innerException);
-                case 1007:
-                    return new CompletingSplitException(message, innerException);
-                case 1008:
-                    return new CompletingPartitionMigrationException(message, innerException);
+                case (int)GoneSubStatusCode.NameCacheIsStale:
+                    return new NameCacheIsStaleException(cosmosDiagnosticsContext, message, innerException);
+
+                case (int)GoneSubStatusCode.PartitionKeyRangeGone:
+                    return new PartitionKeyRangeGoneException(cosmosDiagnosticsContext, message, innerException);
+
+                case (int)GoneSubStatusCode.CompletingSplit:
+                    return new CompletingSplitException(cosmosDiagnosticsContext, message, innerException);
+
+                case (int)GoneSubStatusCode.CompletingPartitionMigration:
+                    return new CompletingPartitionMigrationException(cosmosDiagnosticsContext, message, innerException);
+
                 default:
-                    return new UnknownGoneException(subStatusCode.Value, message, innerException);
+                    return new UnknownGoneException(subStatusCode.Value, cosmosDiagnosticsContext, message, innerException);
             }
         }
     }

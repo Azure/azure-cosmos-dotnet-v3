@@ -20,16 +20,23 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
     {
         public static CosmosHttpException Create(
             HttpStatusCode httpStatusCode,
+            CosmosDiagnosticsContext cosmosDiagnosticsContext,
             int? subStatusCode = null,
             string message = null,
             Exception innerException = null)
         {
+            if (cosmosDiagnosticsContext == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosDiagnosticsContext));
+            }
+
             CosmosHttpException exception;
             switch (httpStatusCode)
             {
                 case HttpStatusCode.BadRequest:
                     exception = BadRequestExceptionFactory.Create(
                         subStatusCode,
+                        cosmosDiagnosticsContext,
                         message,
                         innerException);
                     break;
@@ -37,6 +44,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 case HttpStatusCode.Conflict:
                     exception = ConflictExceptionFactory.Create(
                         subStatusCode,
+                        cosmosDiagnosticsContext,
                         message,
                         innerException);
                     break;
@@ -44,6 +52,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 case HttpStatusCode.Forbidden:
                     exception = ForbiddenExceptionFactory.Create(
                         subStatusCode,
+                        cosmosDiagnosticsContext,
                         message,
                         innerException);
                     break;
@@ -51,6 +60,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 case HttpStatusCode.Gone:
                     exception = GoneExceptionFactory.Create(
                         subStatusCode,
+                        cosmosDiagnosticsContext,
                         message,
                         innerException);
                     break;
@@ -58,6 +68,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 case HttpStatusCode.InternalServerError:
                     exception = InternalServerErrorExceptionFactory.Create(
                         subStatusCode,
+                        cosmosDiagnosticsContext,
                         message,
                         innerException);
                     break;
@@ -65,6 +76,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 case HttpStatusCode.NotFound:
                     exception = NotFoundExceptionFactory.Create(
                         subStatusCode,
+                        cosmosDiagnosticsContext,
                         message,
                         innerException);
                     break;
@@ -72,6 +84,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 case HttpStatusCode.RequestEntityTooLarge:
                     exception = RequestEntityTooLargeExceptionFactory.Create(
                         subStatusCode,
+                        cosmosDiagnosticsContext,
                         message,
                         innerException);
                     break;
@@ -79,6 +92,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 case HttpStatusCode.RequestTimeout:
                     exception = RequestTimeoutExceptionFactory.Create(
                         subStatusCode,
+                        cosmosDiagnosticsContext,
                         message,
                         innerException);
                     break;
@@ -86,6 +100,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 case HttpStatusCode.ServiceUnavailable:
                     exception = ServiceUnavailableExceptionFactory.Create(
                         subStatusCode,
+                        cosmosDiagnosticsContext,
                         message,
                         innerException);
                     break;
@@ -94,8 +109,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                     exception = new UnknownCosmosHttpException(
                         httpStatusCode,
                         subStatusCode.GetValueOrDefault(0),
-                        message,
-                        innerException);
+                        cosmosDiagnosticsContext);
                     break;
             }
 

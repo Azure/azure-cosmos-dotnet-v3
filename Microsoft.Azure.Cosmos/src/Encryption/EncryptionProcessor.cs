@@ -143,7 +143,9 @@ namespace Microsoft.Azure.Cosmos
             EncryptionProperties encryptionProperties = encryptionPropertiesJObj.ToObject<EncryptionProperties>();
             if (encryptionProperties.EncryptionFormatVersion != 1)
             {
-                throw InternalServerErrorExceptionFactory.Create(message: $"Unknown encryption format version: {encryptionProperties.EncryptionFormatVersion}. Please upgrade your SDK to the latest version.");
+                throw InternalServerErrorExceptionFactory.Create(
+                    cosmosDiagnosticsContext: new CosmosDiagnosticsContextCore(),
+                    message: $"Unknown encryption format version: {encryptionProperties.EncryptionFormatVersion}. Please upgrade your SDK to the latest version.");
             }
 
             DataEncryptionKeyCore tempDek = (DataEncryptionKeyInlineCore)database.GetDataEncryptionKey(id: "unknown");

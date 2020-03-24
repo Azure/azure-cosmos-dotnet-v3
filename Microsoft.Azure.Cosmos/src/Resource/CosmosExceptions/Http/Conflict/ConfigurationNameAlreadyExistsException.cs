@@ -2,26 +2,30 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-// This is generated code:
+// This is auto-generated code. Modify: HttpExceptionCodeGenerator.tt: 98
 
 namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.Conflict
 {
     using System;
 
-    internal sealed class ConfigurationNameAlreadyExistsException : ConflictException
+    internal sealed class ConfigurationNameAlreadyExistsException : ConflictBaseException
     {
-        public ConfigurationNameAlreadyExistsException()
-            : this(message: null)
+        public ConfigurationNameAlreadyExistsException(CosmosDiagnosticsContext cosmosDiagnosticsContext)
+            : this(cosmosDiagnosticsContext, message: null)
         {
         }
 
-        public ConfigurationNameAlreadyExistsException(string message)
-            : this(message: message, innerException: null)
+        public ConfigurationNameAlreadyExistsException(CosmosDiagnosticsContext cosmosDiagnosticsContext, string message)
+            : this(cosmosDiagnosticsContext, message, innerException: null)
         {
         }
 
-        public ConfigurationNameAlreadyExistsException(string message, Exception innerException)
-            : base(subStatusCode: (int)ConflictSubStatusCode.ConfigurationNameAlreadyExists, message: message, innerException: innerException)
+        public ConfigurationNameAlreadyExistsException(CosmosDiagnosticsContext cosmosDiagnosticsContext, string message, Exception innerException)
+            : base(
+                subStatusCode: (int)ConflictSubStatusCode.ConfigurationNameAlreadyExists,
+                cosmosDiagnosticsContext: cosmosDiagnosticsContext,
+                message: message, 
+                innerException: innerException)
         {
         }
     }

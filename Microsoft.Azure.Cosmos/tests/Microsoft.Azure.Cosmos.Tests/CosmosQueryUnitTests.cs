@@ -26,6 +26,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.BadRequest;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -40,9 +41,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             string errorMessage = "TestErrorMessage";
             string activityId = "TestActivityId";
             double requestCharge = 42.42;
-            Mock<CosmosException> mockCosmosException = new Mock<CosmosException>();
-            mockCosmosException.Setup(mock => mock.ToString(false)).Returns(errorMessage);
-            CosmosException cosmosException = mockCosmosException.Object;
+            CosmosException cosmosException = BadRequestExceptionFactory.Create(message: errorMessage);
             CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContextCore();
             QueryResponse queryResponse = QueryResponse.CreateFailure(
                 statusCode: HttpStatusCode.NotFound,
@@ -60,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 diagnostics: diagnostics);
 
             Assert.AreEqual(HttpStatusCode.NotFound, queryResponse.StatusCode);
-            Assert.AreEqual(cosmosException.ToString(includeDiagnostics: false), queryResponse.ErrorMessage);
+            Assert.IsTrue(cosmosException.ToString().Contains(queryResponse.ErrorMessage));
             Assert.AreEqual(requestCharge, queryResponse.Headers.RequestCharge);
             Assert.AreEqual(activityId, queryResponse.Headers.ActivityId);
             Assert.AreEqual(diagnostics, queryResponse.DiagnosticsContext);
@@ -369,8 +368,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             QueryResponseCore failure = QueryResponseCore.CreateFailure(
                 System.Net.HttpStatusCode.Unauthorized,
                 SubStatusCodes.PartitionKeyMismatch,
+#pragma warning disable CS0618 // Type or member is obsolete
                 new CosmosException(
-                    statusCodes: HttpStatusCode.Unauthorized,
+                    statusCode: HttpStatusCode.Unauthorized,
                     message: "Random error message",
                     subStatusCode: default,
                     stackTrace: default,
@@ -381,6 +381,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     diagnosticsContext: default,
                     error: default,
                     innerException: default),
+#pragma warning restore CS0618 // Type or member is obsolete
                 42.89,
                 "TestActivityId",
                 diagnostics);

@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-// This is generated code:
+// This is auto-generated code. Modify: HttpExceptionCodeGenerator.tt: 198
 
 namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.ServiceUnavailable
 {
@@ -10,26 +10,31 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.ServiceUnavailab
 
     internal static class ServiceUnavailableExceptionFactory
     {
-        public static ServiceUnavailableException Create(
+        public static ServiceUnavailableBaseException Create(
             int? subStatusCode = null,
+            CosmosDiagnosticsContext cosmosDiagnosticsContext = null,
             string message = null,
             Exception innerException = null)
         {
+            cosmosDiagnosticsContext = cosmosDiagnosticsContext ?? new CosmosDiagnosticsContextCore();
             if (!subStatusCode.HasValue)
             {
-                return new DefaultServiceUnavailableException(message, innerException);
+                return new ServiceUnavailableException(cosmosDiagnosticsContext, message, innerException);
             }
 
             switch (subStatusCode.Value)
             {
-                case 1007:
-                    return new InsufficientBindablePartitionsException(message, innerException);
-                case 1012:
-                    return new ComputeFederationNotFoundException(message, innerException);
-                case 9001:
-                    return new OperationPausedException(message, innerException);
+                case (int)ServiceUnavailableSubStatusCode.InsufficientBindablePartitions:
+                    return new InsufficientBindablePartitionsException(cosmosDiagnosticsContext, message, innerException);
+
+                case (int)ServiceUnavailableSubStatusCode.ComputeFederationNotFound:
+                    return new ComputeFederationNotFoundException(cosmosDiagnosticsContext, message, innerException);
+
+                case (int)ServiceUnavailableSubStatusCode.OperationPaused:
+                    return new OperationPausedException(cosmosDiagnosticsContext, message, innerException);
+
                 default:
-                    return new UnknownServiceUnavailableException(subStatusCode.Value, message, innerException);
+                    return new UnknownServiceUnavailableException(subStatusCode.Value, cosmosDiagnosticsContext, message, innerException);
             }
         }
     }

@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-// This is generated code:
+// This is auto-generated code. Modify: HttpExceptionCodeGenerator.tt: 198
 
 namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.RequestEntityTooLarge
 {
@@ -10,20 +10,22 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.RequestEntityToo
 
     internal static class RequestEntityTooLargeExceptionFactory
     {
-        public static RequestEntityTooLargeException Create(
+        public static RequestEntityTooLargeBaseException Create(
             int? subStatusCode = null,
+            CosmosDiagnosticsContext cosmosDiagnosticsContext = null,
             string message = null,
             Exception innerException = null)
         {
+            cosmosDiagnosticsContext = cosmosDiagnosticsContext ?? new CosmosDiagnosticsContextCore();
             if (!subStatusCode.HasValue)
             {
-                return new DefaultRequestEntityTooLargeException(message, innerException);
+                return new RequestEntityTooLargeException(cosmosDiagnosticsContext, message, innerException);
             }
 
             switch (subStatusCode.Value)
             {
                 default:
-                    return new UnknownRequestEntityTooLargeException(subStatusCode.Value, message, innerException);
+                    return new UnknownRequestEntityTooLargeException(subStatusCode.Value, cosmosDiagnosticsContext, message, innerException);
             }
         }
     }

@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos
 
         [Obsolete("Go through a factory method or derived class instead.")]
         internal CosmosException(
-            HttpStatusCode statusCodes,
+            HttpStatusCode statusCode,
             string message,
             int subStatusCode,
             string stackTrace,
@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.stackTrace = stackTrace;
             this.ActivityId = activityId;
-            this.StatusCode = statusCodes;
+            this.StatusCode = statusCode;
             this.SubStatusCode = subStatusCode;
             this.RetryAfter = retryAfter;
             this.RequestCharge = requestCharge;
@@ -42,38 +42,6 @@ namespace Microsoft.Azure.Cosmos
 
             // Always have a diagnostic context. A new diagnostic will have useful info like user agent
             this.DiagnosticsContext = diagnosticsContext ?? new CosmosDiagnosticsContextCore();
-        }
-
-        /// <summary>
-        /// Create a <see cref="CosmosException"/>
-        /// </summary>
-        /// <param name="message">The message associated with the exception.</param>
-        /// <param name="statusCode">The <see cref="HttpStatusCode"/> associated with the exception.</param>
-        /// <param name="subStatusCode">A sub status code associated with the exception.</param>
-        /// <param name="activityId">An ActivityId associated with the operation that generated the exception.</param>
-        /// <param name="requestCharge">A request charge associated with the operation that generated the exception.</param>
-        /// <param name="innerException">The inner exception.</param>
-        [Obsolete("Go through a factory method or derived class instead.")]
-        public CosmosException(
-            string message,
-            HttpStatusCode statusCode,
-            int subStatusCode,
-            string activityId,
-            double requestCharge,
-            Exception innerException = null)
-            : this(
-                  statusCode,
-                  message,
-                  subStatusCode,
-                  stackTrace: null,
-                  activityId,
-                  requestCharge,
-                  retryAfter: null,
-                  headers: new Headers(),
-                  diagnosticsContext: new CosmosDiagnosticsContextCore(),
-                  error: null,
-                  innerException: null)
-        {
         }
 
         /// <summary>

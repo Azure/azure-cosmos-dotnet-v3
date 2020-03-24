@@ -6,6 +6,7 @@
 <#@ import namespace="System" #>
 <#@ import namespace="System.IO" #>
 <#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="System.Runtime.CompilerServices" #>
 <#@ output extension=".cs" #>
 <# // Generate base exceptions: #>
 <# HttpStatusCode[] httpStatusCodes = new HttpStatusCode[] 
@@ -20,44 +21,6 @@
     HttpStatusCode.InternalServerError,
     HttpStatusCode.ServiceUnavailable,
 }; #>
-<#  foreach (HttpStatusCode httpStatusCode in httpStatusCodes) { #>
-// ------------------------------------------------------------
-// Copyright (c) Microsoft Corporation.  All rights reserved.
-// ------------------------------------------------------------
-
-// This is generated code:
-
-namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.<#= httpStatusCode #>
-{
-    using System;
-    using System.Net;
-
-    internal abstract class <#= httpStatusCode #>Exception : CosmosHttpException
-    {
-        protected <#= httpStatusCode #>Exception(int subStatusCode)
-            : this(subStatusCode, message: null)
-        {
-        }
-
-        protected <#= httpStatusCode #>Exception(int subStatusCode, string message)
-            : this(subStatusCode, message: message, innerException: null)
-        {
-        }
-
-        protected <#= httpStatusCode #>Exception(int subStatusCode, string message, Exception innerException)
-            : base(statusCode: HttpStatusCode.<#= httpStatusCode #>, subStatusCode: subStatusCode, message: message, innerException: innerException)
-        {
-        }
-    }
-}
-<#
-
-  //SaveOutput(httpStatusCode.ToString() + ".cs");
-  //Uncomment following to write to separate folder 1,2,3
-  SaveOutputToSubFolder(httpStatusCode.ToString(), httpStatusCode.ToString() + "Exception.cs");
-}
-#>
-<# // Generate SubExceptions: #>
 <# Dictionary<HttpStatusCode, Type> statusCodeToEnumType = new Dictionary<HttpStatusCode, Type>()
 {
     { HttpStatusCode.BadRequest, typeof(BadRequestSubStatusCode) },
@@ -71,31 +34,92 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.<#= httpStatusCo
     { HttpStatusCode.ServiceUnavailable, typeof(ServiceUnavailableSubStatusCode) },
 }; #>
 <#  foreach (KeyValuePair<HttpStatusCode, Type> statusCodeToEnum in statusCodeToEnumType) { #>
-<#  foreach (Enum subStatusCode in Enum.GetValues(statusCodeToEnum.Value)) { #>
+<# HttpStatusCode statusCode = statusCodeToEnum.Key; #>
+<# string baseExceptionClassName = $"{statusCode}BaseException"; #>
 // ------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-// This is generated code:
+// <#= ModificationInstructions() #>
 
-namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.<#= statusCodeToEnum.Key #>
+namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.<#= statusCode #>
+{
+    using System;
+    using System.Net;
+
+    internal abstract class <#= baseExceptionClassName #> : CosmosHttpException
+    {
+        protected <#= baseExceptionClassName #>(
+            int subStatusCode, 
+            CosmosDiagnosticsContext cosmosDiagnosticsContext)
+            : this(
+                subStatusCode, 
+                cosmosDiagnosticsContext, 
+                message: null)
+        {
+        }
+
+        protected <#= baseExceptionClassName #>(
+            int subStatusCode, 
+            CosmosDiagnosticsContext cosmosDiagnosticsContext, 
+            string message)
+            : this(
+                subStatusCode, 
+                cosmosDiagnosticsContext, 
+                message: message, 
+                innerException: null)
+        {
+        }
+
+        protected <#= baseExceptionClassName #>(
+            int subStatusCode, 
+            CosmosDiagnosticsContext cosmosDiagnosticsContext, 
+            string message, 
+            Exception innerException)
+            : base(
+                statusCode: HttpStatusCode.<#= statusCode #>, 
+                subStatusCode: subStatusCode, 
+                cosmosDiagnosticsContext: cosmosDiagnosticsContext, 
+                message: message, 
+                innerException: innerException)
+        {
+        }
+    }
+}
+<#
+  SaveOutputToSubFolder(statusCode.ToString(), baseExceptionClassName + ".cs");
+#>
+<#  foreach (Enum subStatusCode in Enum.GetValues(statusCodeToEnum.Value)) { #>
+<# // Generate SubExceptions: #>
+// ------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+// ------------------------------------------------------------
+
+// <#= ModificationInstructions() #>
+
+<# string subStatusExceptionClassName = $"{subStatusCode}Exception"; #>
+namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.<#= statusCode #>
 {
     using System;
 
-    internal sealed class <#= subStatusCode #>Exception : <#= statusCodeToEnum.Key #>Exception
+    internal sealed class <#= subStatusExceptionClassName #> : <#= baseExceptionClassName #>
     {
-        public <#= subStatusCode #>Exception()
-            : this(message: null)
+        public <#= subStatusExceptionClassName #>(CosmosDiagnosticsContext cosmosDiagnosticsContext)
+            : this(cosmosDiagnosticsContext, message: null)
         {
         }
 
-        public <#= subStatusCode #>Exception(string message)
-            : this(message: message, innerException: null)
+        public <#= subStatusExceptionClassName #>(CosmosDiagnosticsContext cosmosDiagnosticsContext, string message)
+            : this(cosmosDiagnosticsContext, message, innerException: null)
         {
         }
 
-        public <#= subStatusCode #>Exception(string message, Exception innerException)
-            : base(subStatusCode: (int)<#= statusCodeToEnum.Key #>SubStatusCode.<#= subStatusCode #>, message: message, innerException: innerException)
+        public <#= subStatusExceptionClassName #>(CosmosDiagnosticsContext cosmosDiagnosticsContext, string message, Exception innerException)
+            : base(
+                subStatusCode: (int)<#= statusCodeToEnum.Key #>SubStatusCode.<#= subStatusCode #>,
+                cosmosDiagnosticsContext: cosmosDiagnosticsContext,
+                message: message, 
+                innerException: innerException)
         {
         }
     }
@@ -106,60 +130,62 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.<#= statusCodeTo
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-// This is generated code:
+// <#= ModificationInstructions() #>
 
-namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.<#= statusCodeToEnum.Key #>
+<# string defaultSubStatusExceptionClassName = $"{statusCodeToEnum.Key}Exception"; #>
+namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.<#= statusCode #>
 {
     using System;
 
-    internal sealed class Default<#= statusCodeToEnum.Key #>Exception : <#= statusCodeToEnum.Key #>Exception
+    internal sealed class <#= defaultSubStatusExceptionClassName #> : <#= baseExceptionClassName #>
     {
-        public Default<#= statusCodeToEnum.Key #>Exception()
-            : this(message: null)
+        public <#= defaultSubStatusExceptionClassName #>(CosmosDiagnosticsContext cosmosDiagnosticsContext)
+            : this(cosmosDiagnosticsContext, message: null)
         {
         }
 
-        public Default<#= statusCodeToEnum.Key #>Exception(string message)
-            : this(message: message, innerException: null)
+        public <#= defaultSubStatusExceptionClassName #>(CosmosDiagnosticsContext cosmosDiagnosticsContext, string message)
+            : this(cosmosDiagnosticsContext, message, innerException: null)
         {
         }
 
-        public Default<#= statusCodeToEnum.Key #>Exception(string message, Exception innerException)
-            : base(subStatusCode: 0, message: message, innerException: innerException)
+        public <#= defaultSubStatusExceptionClassName #>(CosmosDiagnosticsContext cosmosDiagnosticsContext, string message, Exception innerException)
+            : base(subStatusCode: 0, cosmosDiagnosticsContext: cosmosDiagnosticsContext, message: message, innerException: innerException)
         {
         }
     }
 }
-<# SaveOutputToSubFolder(statusCodeToEnum.Key.ToString(), $"Default{statusCodeToEnum.Key}Exception.cs"); #>
+<# SaveOutputToSubFolder(statusCodeToEnum.Key.ToString(), defaultSubStatusExceptionClassName + ".cs"); #>
 // ------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-// This is generated code:
+// <#= ModificationInstructions() #>
+<# string unknownSubStatusExceptionClassName = $"Unknown{statusCodeToEnum.Key}Exception"; #>
 
 namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.<#= statusCodeToEnum.Key #>
 {
     using System;
 
-    internal sealed class Unknown<#= statusCodeToEnum.Key #>Exception : <#= statusCodeToEnum.Key #>Exception
+    internal sealed class <#= unknownSubStatusExceptionClassName #> : <#= baseExceptionClassName #>
     {
-        public Unknown<#= statusCodeToEnum.Key #>Exception(int subStatusCode)
-            : this(subStatusCode: subStatusCode, message: null)
+        public <#= unknownSubStatusExceptionClassName #>(int subStatusCode, CosmosDiagnosticsContext cosmosDiagnosticsContext)
+            : this(subStatusCode, cosmosDiagnosticsContext, message: null)
         {
         }
 
-        public Unknown<#= statusCodeToEnum.Key #>Exception(int subStatusCode, string message)
-            : this(subStatusCode: subStatusCode, message: message, innerException: null)
+        public <#= unknownSubStatusExceptionClassName #>(int subStatusCode, CosmosDiagnosticsContext cosmosDiagnosticsContext, string message)
+            : this(subStatusCode, cosmosDiagnosticsContext, message, innerException: null)
         {
         }
 
-        public Unknown<#= statusCodeToEnum.Key #>Exception(int subStatusCode, string message, Exception innerException)
-            : base(subStatusCode: subStatusCode, message: message, innerException: innerException)
+        public <#= unknownSubStatusExceptionClassName #>(int subStatusCode, CosmosDiagnosticsContext cosmosDiagnosticsContext, string message, Exception innerException)
+            : base(subStatusCode: subStatusCode, cosmosDiagnosticsContext: cosmosDiagnosticsContext, message: message, innerException: innerException)
         {
         }
     }
 }
-<# SaveOutputToSubFolder(statusCodeToEnum.Key.ToString(), $"Unknown{statusCodeToEnum.Key}Exception.cs"); #>
+<# SaveOutputToSubFolder(statusCodeToEnum.Key.ToString(), $"{unknownSubStatusExceptionClassName}.cs"); #>
 <# } #>
 <# // Generate Factories: #>
 <#  foreach (KeyValuePair<HttpStatusCode, Type> statusCodeToEnum in statusCodeToEnumType) { #>
@@ -169,7 +195,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.<#= statusCodeTo
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-// This is generated code:
+// <#= ModificationInstructions() #>
 
 namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.<#= statusCode #>
 {
@@ -177,24 +203,27 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.<#= statusCode #
 
     internal static class <#= statusCode #>ExceptionFactory
     {
-        public static <#= statusCode #>Exception Create(
+        public static <#= statusCode #>BaseException Create(
             int? subStatusCode = null,
+            CosmosDiagnosticsContext cosmosDiagnosticsContext = null,
             string message = null,
             Exception innerException = null)
         {
+            cosmosDiagnosticsContext = cosmosDiagnosticsContext ?? new CosmosDiagnosticsContextCore();
             if (!subStatusCode.HasValue)
             {
-                return new Default<#= statusCode #>Exception(message, innerException);
+                return new <#= statusCode #>Exception(cosmosDiagnosticsContext, message, innerException);
             }
 
             switch (subStatusCode.Value)
             {
 <#  foreach (var subStatusCode in Enum.GetValues(statusCodeToEnum.Value)) { #>
-                case <#= (int)subStatusCode #>:
-                    return new <#= subStatusCode #>Exception(message, innerException);
+                case (int)<#= statusCode #>SubStatusCode.<#= subStatusCode #>:
+                    return new <#= subStatusCode #>Exception(cosmosDiagnosticsContext, message, innerException);
+
 <# } #>
                 default:
-                    return new Unknown<#= statusCode #>Exception(subStatusCode.Value, message, innerException);
+                    return new Unknown<#= statusCode #>Exception(subStatusCode.Value, cosmosDiagnosticsContext, message, innerException);
             }
         }
     }
@@ -207,7 +236,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.<#= statusCode #
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-// This is generated code:
+// <#= ModificationInstructions() #>
 
 namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.<#= statusCodeToEnum.Key #>
 {
@@ -310,5 +339,11 @@ private void SaveOutputToSubFolder(string folderName, string outputFileName) {
   string outputFilePath = Path.Combine(newDirectoryName, outputFileName);
   File.WriteAllText(outputFilePath, this.GenerationEnvironment.ToString()); 
   this.GenerationEnvironment.Remove(0, this.GenerationEnvironment.Length);
+}
+private static string ModificationInstructions(
+                        [CallerFilePath] string file = "",
+                        [CallerLineNumber] int line = 0)
+{
+    return $"This is auto-generated code. Modify: {Path.GetFileName(file)}: {line}";
 }
 #>

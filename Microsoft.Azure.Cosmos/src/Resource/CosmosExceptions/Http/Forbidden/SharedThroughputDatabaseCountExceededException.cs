@@ -2,26 +2,30 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-// This is generated code:
+// This is auto-generated code. Modify: HttpExceptionCodeGenerator.tt: 98
 
 namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.Forbidden
 {
     using System;
 
-    internal sealed class SharedThroughputDatabaseCountExceededException : ForbiddenException
+    internal sealed class SharedThroughputDatabaseCountExceededException : ForbiddenBaseException
     {
-        public SharedThroughputDatabaseCountExceededException()
-            : this(message: null)
+        public SharedThroughputDatabaseCountExceededException(CosmosDiagnosticsContext cosmosDiagnosticsContext)
+            : this(cosmosDiagnosticsContext, message: null)
         {
         }
 
-        public SharedThroughputDatabaseCountExceededException(string message)
-            : this(message: message, innerException: null)
+        public SharedThroughputDatabaseCountExceededException(CosmosDiagnosticsContext cosmosDiagnosticsContext, string message)
+            : this(cosmosDiagnosticsContext, message, innerException: null)
         {
         }
 
-        public SharedThroughputDatabaseCountExceededException(string message, Exception innerException)
-            : base(subStatusCode: (int)ForbiddenSubStatusCode.SharedThroughputDatabaseCountExceeded, message: message, innerException: innerException)
+        public SharedThroughputDatabaseCountExceededException(CosmosDiagnosticsContext cosmosDiagnosticsContext, string message, Exception innerException)
+            : base(
+                subStatusCode: (int)ForbiddenSubStatusCode.SharedThroughputDatabaseCountExceeded,
+                cosmosDiagnosticsContext: cosmosDiagnosticsContext,
+                message: message, 
+                innerException: innerException)
         {
         }
     }

@@ -2,27 +2,26 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-// This is generated code:
+// This is auto-generated code. Modify: HttpExceptionCodeGenerator.tt: 133
 
 namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.InternalServerError
 {
     using System;
-    using System.Net;
 
-    internal abstract class InternalServerErrorException : CosmosHttpException
+    internal sealed class InternalServerErrorException : InternalServerErrorBaseException
     {
-        protected InternalServerErrorException(int subStatusCode)
-            : this(subStatusCode, message: null)
+        public InternalServerErrorException(CosmosDiagnosticsContext cosmosDiagnosticsContext)
+            : this(cosmosDiagnosticsContext, message: null)
         {
         }
 
-        protected InternalServerErrorException(int subStatusCode, string message)
-            : this(subStatusCode, message: message, innerException: null)
+        public InternalServerErrorException(CosmosDiagnosticsContext cosmosDiagnosticsContext, string message)
+            : this(cosmosDiagnosticsContext, message, innerException: null)
         {
         }
 
-        protected InternalServerErrorException(int subStatusCode, string message, Exception innerException)
-            : base(statusCode: HttpStatusCode.InternalServerError, subStatusCode: subStatusCode, message: message, innerException: innerException)
+        public InternalServerErrorException(CosmosDiagnosticsContext cosmosDiagnosticsContext, string message, Exception innerException)
+            : base(subStatusCode: 0, cosmosDiagnosticsContext: cosmosDiagnosticsContext, message: message, innerException: innerException)
         {
         }
     }

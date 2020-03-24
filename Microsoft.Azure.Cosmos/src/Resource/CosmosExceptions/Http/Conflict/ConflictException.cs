@@ -2,27 +2,26 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-// This is generated code:
+// This is auto-generated code. Modify: HttpExceptionCodeGenerator.tt: 133
 
 namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.Conflict
 {
     using System;
-    using System.Net;
 
-    internal abstract class ConflictException : CosmosHttpException
+    internal sealed class ConflictException : ConflictBaseException
     {
-        protected ConflictException(int subStatusCode)
-            : this(subStatusCode, message: null)
+        public ConflictException(CosmosDiagnosticsContext cosmosDiagnosticsContext)
+            : this(cosmosDiagnosticsContext, message: null)
         {
         }
 
-        protected ConflictException(int subStatusCode, string message)
-            : this(subStatusCode, message: message, innerException: null)
+        public ConflictException(CosmosDiagnosticsContext cosmosDiagnosticsContext, string message)
+            : this(cosmosDiagnosticsContext, message, innerException: null)
         {
         }
 
-        protected ConflictException(int subStatusCode, string message, Exception innerException)
-            : base(statusCode: HttpStatusCode.Conflict, subStatusCode: subStatusCode, message: message, innerException: innerException)
+        public ConflictException(CosmosDiagnosticsContext cosmosDiagnosticsContext, string message, Exception innerException)
+            : base(subStatusCode: 0, cosmosDiagnosticsContext: cosmosDiagnosticsContext, message: message, innerException: innerException)
         {
         }
     }

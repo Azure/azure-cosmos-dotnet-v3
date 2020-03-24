@@ -152,7 +152,7 @@ namespace Microsoft.Azure.Cosmos
         [TestMethod]
         public void ValidateExceptionStackTraceHandling()
         {
-            CosmosException cosmosException = NotFoundExceptionFactory.Create(message: "TestMessage");
+            CosmosException cosmosException = NotFoundExceptionFactory.Create(cosmosDiagnosticsContext: new CosmosDiagnosticsContextCore(), message: "TestMessage");
             Assert.AreEqual(null, cosmosException.StackTrace);
             Assert.IsFalse(cosmosException.ToString().Contains(nameof(ValidateExceptionStackTraceHandling)));
             try
@@ -186,13 +186,27 @@ namespace Microsoft.Azure.Cosmos
 
             };
 
-            CosmosException cosmosException = BadRequestExceptionFactory.Create(message: error.ToString());
+#pragma warning disable CS0612 // Type or member is obsolete
+            CosmosException cosmosException = CosmosExceptionFactory.Create(
+                statusCode: HttpStatusCode.BadRequest,
+                subStatusCode: 0,
+                message: error.ToString(),
+                stackTrace: null,
+                activityId: null,
+                requestCharge: 0,
+                retryAfter: null,
+                headers: null,
+                diagnosticsContext: new CosmosDiagnosticsContextCore(),
+                error: error,
+                innerException: null);
+#pragma warning restore CS0612 // Type or member is obsolete
+
             ResponseMessage responseMessage = QueryResponse.CreateFailure(
                 statusCode: System.Net.HttpStatusCode.BadRequest,
                 cosmosException: cosmosException,
                 requestMessage: default,
-                diagnostics: default,
-                responseHeaders: default);
+                diagnostics: new CosmosDiagnosticsContextCore(),
+                responseHeaders: default) ;
 
             Assert.AreEqual(error, responseMessage.CosmosException.Error);
             Assert.IsTrue(responseMessage.ErrorMessage.Contains(error.Message));

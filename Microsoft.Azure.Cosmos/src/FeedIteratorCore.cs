@@ -161,6 +161,7 @@ namespace Microsoft.Azure.Cosmos
                     CosmosException internalServerErrorException = InternalServerErrorExceptionFactory.Create(
                         message: $"{nameof(FeedIteratorCore)}.{nameof(this.ReadNextInternalAsync)}(diagnostics:{diagnostics}, cancellationToken: {cancellationToken}) encountered an unknown exception.",
                         innerException: cosmosExceptionWithDiagnostics);
+
                     return internalServerErrorException.ToCosmosResponseMessage(
                         new RequestMessage(
                             method: null,

@@ -140,6 +140,7 @@ namespace Microsoft.Azure.Cosmos
             catch (Resource.CosmosExceptions.Http.NotFound.NotFoundException notFoundException)
             {
                 throw NotFoundExceptionFactory.Create(
+                    cosmosDiagnosticsContext: new CosmosDiagnosticsContextCore(),
                     message: ClientResources.DataEncryptionKeyNotFound,
                     innerException: notFoundException);
             }
@@ -179,6 +180,7 @@ namespace Microsoft.Azure.Cosmos
             catch (Resource.CosmosExceptions.Http.NotFound.NotFoundException notFoundException)
             {
                 throw NotFoundExceptionFactory.Create(
+                    cosmosDiagnosticsContext: new CosmosDiagnosticsContextCore(),
                     message: ClientResources.DataEncryptionKeyNotFound,
                     innerException: notFoundException);
             }

@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-// This is generated code:
+// This is auto-generated code. Modify: HttpExceptionCodeGenerator.tt: 198
 
 namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.InternalServerError
 {
@@ -10,22 +10,25 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.InternalServerEr
 
     internal static class InternalServerErrorExceptionFactory
     {
-        public static InternalServerErrorException Create(
+        public static InternalServerErrorBaseException Create(
             int? subStatusCode = null,
+            CosmosDiagnosticsContext cosmosDiagnosticsContext = null,
             string message = null,
             Exception innerException = null)
         {
+            cosmosDiagnosticsContext = cosmosDiagnosticsContext ?? new CosmosDiagnosticsContextCore();
             if (!subStatusCode.HasValue)
             {
-                return new DefaultInternalServerErrorException(message, innerException);
+                return new InternalServerErrorException(cosmosDiagnosticsContext, message, innerException);
             }
 
             switch (subStatusCode.Value)
             {
-                case 3001:
-                    return new ConfigurationNameNotEmptyException(message, innerException);
+                case (int)InternalServerErrorSubStatusCode.ConfigurationNameNotEmpty:
+                    return new ConfigurationNameNotEmptyException(cosmosDiagnosticsContext, message, innerException);
+
                 default:
-                    return new UnknownInternalServerErrorException(subStatusCode.Value, message, innerException);
+                    return new UnknownInternalServerErrorException(subStatusCode.Value, cosmosDiagnosticsContext, message, innerException);
             }
         }
     }

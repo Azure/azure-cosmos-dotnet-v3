@@ -2,27 +2,26 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-// This is generated code:
+// This is auto-generated code. Modify: HttpExceptionCodeGenerator.tt: 133
 
 namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions.Http.ServiceUnavailable
 {
     using System;
-    using System.Net;
 
-    internal abstract class ServiceUnavailableException : CosmosHttpException
+    internal sealed class ServiceUnavailableException : ServiceUnavailableBaseException
     {
-        protected ServiceUnavailableException(int subStatusCode)
-            : this(subStatusCode, message: null)
+        public ServiceUnavailableException(CosmosDiagnosticsContext cosmosDiagnosticsContext)
+            : this(cosmosDiagnosticsContext, message: null)
         {
         }
 
-        protected ServiceUnavailableException(int subStatusCode, string message)
-            : this(subStatusCode, message: message, innerException: null)
+        public ServiceUnavailableException(CosmosDiagnosticsContext cosmosDiagnosticsContext, string message)
+            : this(cosmosDiagnosticsContext, message, innerException: null)
         {
         }
 
-        protected ServiceUnavailableException(int subStatusCode, string message, Exception innerException)
-            : base(statusCode: HttpStatusCode.ServiceUnavailable, subStatusCode: subStatusCode, message: message, innerException: innerException)
+        public ServiceUnavailableException(CosmosDiagnosticsContext cosmosDiagnosticsContext, string message, Exception innerException)
+            : base(subStatusCode: 0, cosmosDiagnosticsContext: cosmosDiagnosticsContext, message: message, innerException: innerException)
         {
         }
     }

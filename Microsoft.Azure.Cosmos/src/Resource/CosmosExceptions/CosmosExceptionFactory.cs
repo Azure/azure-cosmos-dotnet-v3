@@ -177,7 +177,6 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 (requestCharge == 0) &&
                 (retryAfter == default) &&
                 ((headers == default) || (headers.AllKeys().Length == 0)) &&
-                ((diagnosticsContext == default) || !diagnosticsContext.Any()) &&
                 (error == default) &&
                 (innerException == default);
 
@@ -186,6 +185,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
             {
                 cosmosException = CosmosHttpExceptionFactory.Create(
                     statusCode,
+                    diagnosticsContext,
                     subStatusCode,
                     message,
                     innerException);

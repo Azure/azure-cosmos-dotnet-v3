@@ -9,18 +9,18 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
 
     internal sealed class UnknownCosmosHttpException : CosmosHttpException
     {
-        public UnknownCosmosHttpException(HttpStatusCode statusCode, int subStatusCode)
-            : this(statusCode, subStatusCode, message: null, innerException: null)
+        public UnknownCosmosHttpException(HttpStatusCode statusCode, int subStatusCode, CosmosDiagnosticsContext cosmosDiagnosticsContext)
+            : this(statusCode, subStatusCode, cosmosDiagnosticsContext, message: null)
         {
         }
 
-        public UnknownCosmosHttpException(HttpStatusCode statusCode, int subStatusCode, string message)
-            : this(statusCode, subStatusCode, message: message, innerException: null)
+        public UnknownCosmosHttpException(HttpStatusCode statusCode, int subStatusCode, CosmosDiagnosticsContext cosmosDiagnosticsContext, string message)
+            : this(statusCode, subStatusCode, cosmosDiagnosticsContext, message, innerException: null)
         {
         }
 
-        public UnknownCosmosHttpException(HttpStatusCode statusCode, int subStatusCode, string message, Exception innerException)
-            : base(statusCode: statusCode, subStatusCode: subStatusCode, message: message, innerException: innerException)
+        public UnknownCosmosHttpException(HttpStatusCode statusCode, int subStatusCode, CosmosDiagnosticsContext cosmosDiagnosticsContext, string message, Exception innerException)
+            : base(statusCode: statusCode, subStatusCode: subStatusCode, cosmosDiagnosticsContext: cosmosDiagnosticsContext, message: message, innerException: innerException)
         {
         }
     }
