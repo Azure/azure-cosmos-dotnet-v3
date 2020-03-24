@@ -55,8 +55,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 await QueryFeedTokenTests.GetQueryFeedTokens(container, new QueryDefinition("SELECT VALUE AVG(c.age) FROM c"), null, 1);
                 await QueryFeedTokenTests.GetQueryFeedTokens(container, new QueryDefinition("SELECT DISTINCT VALUE c.age FROM c ORDER BY c.age"), null, 1);
                 await QueryFeedTokenTests.GetQueryFeedTokens(container, new QueryDefinition("SELECT c.age, c.name FROM c GROUP BY c.age, c.name"), null, 1);
-                await QueryFeedTokenTests.GetQueryFeedTokens(container, new QueryDefinition("select TOP 10 * FROM C"), null, pkRangesCount);
-                await QueryFeedTokenTests.GetQueryFeedTokens(container, new QueryDefinition("select * FROM C OFFSET 10 LIMIT 5"), null, pkRangesCount);
+                await QueryFeedTokenTests.GetQueryFeedTokens(container, new QueryDefinition("select TOP 10 * FROM C"), null, 1);
+                await QueryFeedTokenTests.GetQueryFeedTokens(container, new QueryDefinition("select * FROM C OFFSET 10 LIMIT 5"), null, 1);
             }
             finally
             {
