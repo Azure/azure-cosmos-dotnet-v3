@@ -55,10 +55,15 @@
                 // Bulk delete
                 await Program.DeleteItemsConcurrentlyAsync(container, documentsToWorkWith);
             }
+
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
             finally
             {
                 await Program.CleanupAsync();
-                client.Dispose();
+                client?.Dispose();
 
                 Console.WriteLine("End of demo, press any key to exit.");
                 Console.ReadKey();
