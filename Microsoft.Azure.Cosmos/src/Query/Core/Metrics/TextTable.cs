@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 #else
         internal
 #endif
-       struct Column
+            readonly struct Column
         {
             public readonly string ColumnName;
             public readonly int ColumnWidth;
