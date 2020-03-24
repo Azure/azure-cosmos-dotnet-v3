@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Json
             private static readonly HashSet<char> EscapeCharacters = new HashSet<char> { 'b', 'f', 'n', 'r', 't', '\\', '"', '/', 'u' };
 
             private readonly JsonTextMemoryReader jsonTextBuffer;
-            private Token token;
+            private TokenState token;
             private bool hasSeperator;
 
             /// <summary>
@@ -964,7 +964,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
             }
 
-            private struct Token
+            private struct TokenState
             {
                 public JsonTextTokenType JsonTextTokenType { get; set; }
 

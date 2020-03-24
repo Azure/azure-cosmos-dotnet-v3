@@ -155,7 +155,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
         /// <summary>
         /// Utility struct that just holds together an input and output together to make a result.
         /// </summary>
-        private struct BaselineTestResult
+        private readonly struct BaselineTestResult
         {
             /// <summary>
             /// Initializes a new instance of the BaselineTestResult struct.

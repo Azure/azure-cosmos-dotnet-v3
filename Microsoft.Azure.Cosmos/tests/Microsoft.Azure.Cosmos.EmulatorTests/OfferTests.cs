@@ -26,18 +26,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private readonly PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/id" }), Kind = PartitionKind.Hash };
 
-        private struct TestCase
+        private readonly struct TestCase
         {
-            public int? offerThroughput;
-            public string offerType;
-            public bool errorExpected;
-            public bool disjointRangeExpected;
-            public int lowerRange1;
-            public int higherRange1;
-            public int lowerRange2;
-            public int higherRange2;
-            public string clientVersion;
-            public int expectedPartitions;
+            public readonly int? offerThroughput;
+            public readonly string offerType;
+            public readonly bool errorExpected;
+            public readonly bool disjointRangeExpected;
+            public readonly int lowerRange1;
+            public readonly int higherRange1;
+            public readonly int lowerRange2;
+            public readonly int higherRange2;
+            public readonly string clientVersion;
+            public readonly int expectedPartitions;
 
             public TestCase(
                 int? offerThroughput,
@@ -78,22 +78,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 return string.Format(CultureInfo.CurrentCulture, "Test case: Version {7} OfferThroughput {0}, errorExpected {1}, disjointRangeExpected {2}, low1 {3}, high1 {4}, low2 {5}, high2 {6}, OfferType {7}",
                     this.offerThroughput, this.errorExpected, this.disjointRangeExpected, this.lowerRange1, this.higherRange1, this.lowerRange2, this.higherRange2, this.clientVersion, this.offerType ?? "null");
-            }
-        }
-
-        private struct DefaultOfferThroughputTestCase
-        {
-            public int offerThroughput;
-            public double provisionedStoragePerPartition;
-            public int expectedDefaultOfferThroughput;
-
-            public override string ToString()
-            {
-                this.provisionedStoragePerPartition = 0;
-                this.expectedDefaultOfferThroughput = 0;
-                this.offerThroughput = 0;
-                return string.Format(CultureInfo.CurrentCulture, "Test case: OfferThroughput = {0}, provisionedStorage = {1} GB, expectedDefaultThroughput = {2}",
-                    this.offerThroughput, this.provisionedStoragePerPartition, this.expectedDefaultOfferThroughput);
             }
         }
 

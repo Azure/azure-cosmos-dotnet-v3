@@ -530,7 +530,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             return min;
         }
 
-        public struct ResolvedRangeInfo
+        public readonly struct ResolvedRangeInfo
         {
             public readonly PartitionKeyRange ResolvedRange;
             public readonly List<CompositeContinuationToken> ContinuationTokens;

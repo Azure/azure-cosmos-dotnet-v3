@@ -814,11 +814,11 @@ function bulkImport(docs) {
             }
         }
 
-        struct KerberosTicketHashKey : IEquatable<KerberosTicketHashKey>
+        readonly struct KerberosTicketHashKey : IEquatable<KerberosTicketHashKey>
         {
             private readonly int _hashCode;
 
-            public byte[] KerberosTicketHash;
+            public readonly byte[] KerberosTicketHash;
 
             public KerberosTicketHashKey(byte[] kerberosTicketHash)
             {
