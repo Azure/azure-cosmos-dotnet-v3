@@ -6,9 +6,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
 {
     using Microsoft.Azure.Documents;
 
-    internal struct ContainerQueryProperties
+    internal readonly struct ContainerQueryProperties
     {
-        internal ContainerQueryProperties(
+        public ContainerQueryProperties(
             string resourceId,
             string effectivePartitionKeyString,
             PartitionKeyDefinition partitionKeyDefinition)
@@ -20,6 +20,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
 
         public string ResourceId { get; }
         public string EffectivePartitionKeyString { get; }
-        internal PartitionKeyDefinition PartitionKeyDefinition { get; }
+        public PartitionKeyDefinition PartitionKeyDefinition { get; }
     }
 }
