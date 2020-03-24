@@ -26,13 +26,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
         private const char PKRangeIdSeparator = ':';
         private const char SegmentSeparator = '#';
         private const string LSNPropertyName = "_lsn";
-        private readonly Func<string, string, bool, ChangeFeedIterator> feedCreator;
+        private readonly ChangeFeedEstimatorCore.FeedIteratorCreator feedCreator;
         private readonly DocumentServiceLeaseContainer leaseContainer;
         private readonly int degreeOfParallelism;
 
         public RemainingWorkEstimatorCore(
             DocumentServiceLeaseContainer leaseContainer,
-            Func<string, string, bool, ChangeFeedIterator> feedCreator,
+            ChangeFeedEstimatorCore.FeedIteratorCreator feedCreator,
             int degreeOfParallelism)
         {
             if (leaseContainer == null)

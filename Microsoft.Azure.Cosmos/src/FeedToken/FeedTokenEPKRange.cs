@@ -18,8 +18,8 @@ namespace Microsoft.Azure.Cosmos
     [JsonConverter(typeof(FeedTokenInternalConverter))]
     internal sealed class FeedTokenEPKRange : FeedToken, IChangeFeedToken, IQueryFeedToken
     {
-        internal readonly Queue<CompositeContinuationToken> CompositeContinuationTokens;
-        internal readonly Documents.Routing.Range<string> CompleteRange;
+        public readonly Queue<CompositeContinuationToken> CompositeContinuationTokens;
+        public readonly Documents.Routing.Range<string> CompleteRange;
         private readonly HashSet<string> doneRanges;
         private CompositeContinuationToken currentToken;
         private string initialNoResultsRange;
@@ -263,14 +263,14 @@ namespace Microsoft.Azure.Cosmos
                 feedToken = JsonConvert.DeserializeObject<FeedTokenEPKRange>(toStringValue);
                 return true;
             }
-            catch
+            catch (JsonSerializationException)
             {
                 feedToken = null;
                 return false;
             }
         }
 
-        internal static CompositeContinuationToken CreateCompositeContinuationTokenForRange(
+        private static CompositeContinuationToken CreateCompositeContinuationTokenForRange(
             string minInclusive,
             string maxExclusive,
             string token)
@@ -311,7 +311,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private async Task<IReadOnlyList<Documents.PartitionKeyRange>> TryGetOverlappingRangesAsync(
-            Routing.PartitionKeyRangeCache partitionKeyRangeCache,
+            PartitionKeyRangeCache partitionKeyRangeCache,
             string min,
             string max,
             bool forceRefresh = false)

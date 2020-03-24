@@ -25,7 +25,12 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A <see cref="ChangeFeedToken"/> instance.</returns>
         public static ChangeFeedToken FromString(string toStringValue)
         {
-            if (ChangeFeedTokenInternal.TryParse(toStringValue, out ChangeFeedToken feedToken))
+            if (string.IsNullOrEmpty(toStringValue))
+            {
+                throw new ArgumentNullException(nameof(toStringValue));
+            }
+
+            if (ChangeFeedTokenInternal.TryCreateFromString(toStringValue, out ChangeFeedToken feedToken))
             {
                 return feedToken;
             }

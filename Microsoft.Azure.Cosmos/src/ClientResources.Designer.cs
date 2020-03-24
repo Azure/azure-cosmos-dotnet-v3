@@ -322,6 +322,15 @@ namespace Microsoft.Azure.Cosmos {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Internal error when trying to get the container resource id..
+        /// </summary>
+        internal static string FeedToken_CannotGetContainerRid {
+            get {
+                return ResourceManager.GetString("FeedToken_CannotGetContainerRid", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Cannot parse &apos;{0}&apos; as a valid FeedToken..
         /// </summary>
         internal static string FeedToken_CannotParse {
@@ -340,6 +349,15 @@ namespace Microsoft.Azure.Cosmos {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to The FeedToken was generated for container {0} but current container is {1}..
+        /// </summary>
+        internal static string FeedToken_InvalidFeedTokenForContainer {
+            get {
+                return ResourceManager.GetString("FeedToken_InvalidFeedTokenForContainer", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Expected FeedTokenInternal instance..
         /// </summary>
         internal static string FeedToken_InvalidImplementation {
@@ -347,18 +365,7 @@ namespace Microsoft.Azure.Cosmos {
                 return ResourceManager.GetString("FeedToken_InvalidImplementation", resourceCulture);
             }
         }
-
-        /// <summary>
-        ///   Looks up a localized string similar to The FeedToken was generated for container {0} but current container is {1}..
-        /// </summary>
-        internal static string FeedToken_InvalidFeedTokenForContainer
-        {
-            get
-            {
-                return ResourceManager.GetString("FeedToken_InvalidFeedTokenForContainer", resourceCulture);
-            }
-        }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Provide a value greater than zero..
         /// </summary>

@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos
             this.ChangeFeedToken = token;
         }
 
-        public static bool TryParse(
+        public static bool TryCreateFromString(
             string toStringValue,
             out ChangeFeedToken parsedToken)
         {

@@ -35,6 +35,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
 
         CosmosElement GetCosmosElementContinuationToken();
 
-        bool TryGetFeedToken(string containerResourceId, SqlQuerySpec sqlQuerySpec, out QueryFeedToken state);
+        bool TryGetFeedToken(string containerResourceId, SqlQuerySpec sqlQuerySpec, out QueryFeedTokenInternal state);
     }
 }

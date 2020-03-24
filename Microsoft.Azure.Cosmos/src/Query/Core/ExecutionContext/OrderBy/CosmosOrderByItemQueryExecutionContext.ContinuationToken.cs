@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
         public override bool TryGetFeedToken(
             string containerResourceId,
             SqlQuerySpec sqlQuerySpec,
-            out QueryFeedToken feedToken)
+            out QueryFeedTokenInternal feedToken)
         {
             // FeedToken will represent the range of the active and pending Producers
             IEnumerable<ItemProducer> allProducers = this.GetAllItemProducers();

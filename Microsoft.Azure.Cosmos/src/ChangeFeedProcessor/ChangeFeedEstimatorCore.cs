@@ -17,6 +17,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
     internal sealed class ChangeFeedEstimatorCore : ChangeFeedProcessor
     {
+        internal delegate ChangeFeedIterator FeedIteratorCreator(string partitionKeyRangeId, string continuation, bool startFromBeginning);
+
         private const string EstimatorDefaultHostName = "Estimator";
 
         private readonly ChangesEstimationHandler initialEstimateDelegate;
@@ -111,7 +113,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         {
             if (this.remainingWorkEstimator == null)
             {
-                Func<string, string, bool, ChangeFeedIterator> feedCreator = (string partitionKeyRangeId, string continuationToken, bool startFromBeginning) =>
+                FeedIteratorCreator feedCreator = (string partitionKeyRangeId, string continuationToken, bool startFromBeginning) =>
                 {
                     return ResultSetIteratorUtils.BuildResultSetIterator(
                         partitionKeyRangeId: partitionKeyRangeId,
@@ -119,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                         maxItemCount: 1,
                         container: this.monitoredContainer,
                         startTime: null,
-                        startFromBeginning: string.IsNullOrEmpty(continuationToken));
+                        startFromBeginning: startFromBeginning);
                 };
 
                 this.remainingWorkEstimator = new RemainingWorkEstimatorCore(

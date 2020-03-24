@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos
             this.QueryDefinition = queryDefinition;
         }
 
-        public static bool TryParse(
+        public static bool TryCreateFromString(
             string toStringValue,
             out QueryFeedToken parsedToken)
         {

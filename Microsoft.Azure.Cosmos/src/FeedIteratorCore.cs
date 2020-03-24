@@ -27,9 +27,9 @@ namespace Microsoft.Azure.Cosmos
         private readonly Uri resourceLink;
         private readonly ResourceType resourceType;
         private readonly SqlQuerySpec querySpec;
+        private readonly AsyncLazy<TryCatch<string>> lazyContainerRid;
         private IQueryFeedToken queryFeedToken;
         private bool hasMoreResultsInternal;
-        private string containerRId = null;
 
         internal static FeedIteratorCore CreateForNonPartitionedResource( 
             CosmosClientContext clientContext,
@@ -94,6 +94,10 @@ namespace Microsoft.Azure.Cosmos
             this.ContinuationToken = continuationToken ?? this.queryFeedToken?.GetContinuation();
             this.requestOptions = options;
             this.hasMoreResultsInternal = true;
+            this.lazyContainerRid = new AsyncLazy<TryCatch<string>>(valueFactory: (innerCancellationToken) =>
+            {
+                return this.TryInitializeContainerRIdAsync(innerCancellationToken);
+            });
         }
 
         public override bool HasMoreResults => this.hasMoreResultsInternal;
@@ -125,9 +129,9 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContext diagnostics = CosmosDiagnosticsContext.Create(this.requestOptions);
             using (diagnostics.GetOverallScope())
             {
-                if (this.containerRId == null)
+                if (!this.lazyContainerRid.ValueInitialized)
                 {
-                    TryCatch<string> tryInitializeContainerRId = await this.TryInitializeContainerRIdAsync(cancellationToken);
+                    TryCatch<string> tryInitializeContainerRId = await this.lazyContainerRid.GetValueAsync(cancellationToken);
                     if (!tryInitializeContainerRId.Succeeded)
                     {
                         if (tryInitializeContainerRId.Exception.InnerException is CosmosException cosmosException)
@@ -136,16 +140,15 @@ namespace Microsoft.Azure.Cosmos
                         }
 
                         return CosmosExceptionFactory.CreateInternalServerErrorException(
-                            message: tryInitializeContainerRId.Exception.InnerException.Message,
+                            message: ClientResources.FeedToken_CannotGetContainerRid,
                             innerException: tryInitializeContainerRId.Exception.InnerException,
                             diagnosticsContext: diagnostics).ToCosmosResponseMessage(new RequestMessage(method: null, requestUri: null, diagnosticsContext: diagnostics));
                     }
 
-                    this.containerRId = tryInitializeContainerRId.Result;
                     // If there is an initial FeedToken, validate Container
                     if (this.queryFeedToken != null)
                     {
-                        TryCatch validateContainer = this.queryFeedToken.ValidateContainer(this.containerRId);
+                        TryCatch validateContainer = this.queryFeedToken.ValidateContainer(this.lazyContainerRid.Result.Result);
                         if (!validateContainer.Succeeded)
                         {
                             return CosmosExceptionFactory.CreateInternalServerErrorException(
@@ -244,7 +247,7 @@ namespace Microsoft.Azure.Cosmos
         {
             // Create FeedToken for the full Range
             FeedTokenEPKRange feedTokenInternal = new FeedTokenEPKRange(
-                        this.containerRId,
+                        this.lazyContainerRid.Result.Result,
                         new Documents.Routing.Range<string>(Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey, Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey, true, false),
                         continuationToken: this.ContinuationToken);
 

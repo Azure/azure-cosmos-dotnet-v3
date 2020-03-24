@@ -24,8 +24,8 @@ namespace Microsoft.Azure.Cosmos
     [JsonConverter(typeof(FeedTokenInternalConverter))]
     internal sealed class FeedTokenPartitionKeyRange : FeedToken, IChangeFeedToken, IQueryFeedToken
     {
-        internal readonly string PartitionKeyRangeId;
-        internal FeedTokenEPKRange FeedTokenEPKRange; // If the initial token splits, it will use this token;
+        public readonly string PartitionKeyRangeId;
+        public FeedTokenEPKRange FeedTokenEPKRange; // If the initial token splits, it will use this token;
         private string continuationToken;
         private bool isDone;
 
@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos
             string partitionKeyRangeId,
             string continuationToken)
         {
-            this.PartitionKeyRangeId = partitionKeyRangeId;
+            this.PartitionKeyRangeId = partitionKeyRangeId ?? throw new ArgumentNullException(nameof(partitionKeyRangeId));
             this.continuationToken = continuationToken;
         }
 
@@ -105,6 +105,7 @@ namespace Microsoft.Azure.Cosmos
             string containerRid,
             Documents.PartitionKeyDefinition partitionKeyDefinition)
         {
+            List<Documents.Routing.Range<string>> ranges;
             if (this.FeedTokenEPKRange == null)
             {
                 Documents.PartitionKeyRange pkRange = await routingMapProvider.TryGetPartitionKeyRangeByIdAsync(containerRid, this.PartitionKeyRangeId);
@@ -113,15 +114,17 @@ namespace Microsoft.Azure.Cosmos
                     throw new InvalidOperationException();
                 }
 
-                return new List<Documents.Routing.Range<string>>
+                ranges = new List<Documents.Routing.Range<string>>
                 {
                     pkRange.ToRange()
                 };
             }
             else
             {
-                return await this.FeedTokenEPKRange.GetAffectedRangesAsync(routingMapProvider, containerRid, partitionKeyDefinition);
+                ranges = await this.FeedTokenEPKRange.GetAffectedRangesAsync(routingMapProvider, containerRid, partitionKeyDefinition);
             }
+
+            return ranges;
         }
 
         public Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
@@ -169,7 +172,7 @@ namespace Microsoft.Azure.Cosmos
                 feedToken = JsonConvert.DeserializeObject<FeedTokenPartitionKeyRange>(toStringValue);
                 return true;
             }
-            catch
+            catch (JsonSerializationException)
             {
                 // Special case, for backward compatibility, if the string represents a PKRangeId
                 if (int.TryParse(toStringValue, out int pkRangeId))

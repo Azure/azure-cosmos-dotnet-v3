@@ -167,7 +167,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 if (this.cosmosQueryExecutionContext.TryGetFeedToken(
                     this.cosmosQueryContext.ContainerResourceId,
                     this.initialSqlQuerySpec,
-                    out QueryFeedToken feedToken))
+                    out QueryFeedTokenInternal feedToken))
                 {
                     return feedToken;
                 }

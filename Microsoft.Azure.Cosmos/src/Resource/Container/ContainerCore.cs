@@ -284,6 +284,10 @@ namespace Microsoft.Azure.Cosmos
 
                 if (partitionedQueryExecutionInfo.QueryInfo.HasAggregates
                     || partitionedQueryExecutionInfo.QueryInfo.HasDistinct
+                    || partitionedQueryExecutionInfo.QueryInfo.HasTop
+                    || partitionedQueryExecutionInfo.QueryInfo.HasOrderBy
+                    || partitionedQueryExecutionInfo.QueryInfo.HasLimit
+                    || partitionedQueryExecutionInfo.QueryInfo.HasOffset
                     || partitionedQueryExecutionInfo.QueryInfo.HasGroupBy)
                 {
                     return new List<QueryFeedToken>()

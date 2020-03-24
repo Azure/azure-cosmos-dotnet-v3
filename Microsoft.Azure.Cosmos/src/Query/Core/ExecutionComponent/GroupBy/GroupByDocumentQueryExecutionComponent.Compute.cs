@@ -163,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
             public override bool TryGetFeedToken(
                 string containerResourceId,
                 SqlQuerySpec sqlQuerySpec,
-                out QueryFeedToken feedToken)
+                out QueryFeedTokenInternal feedToken)
             {
                 if (this.IsDone)
                 {
@@ -191,13 +191,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                     groupingTableContinuationToken: this.groupingTable.GetCosmosElementContinuationToken(),
                     sourceContinuationToken: sourceContinuationToken);
 
-                if (feedToken is QueryFeedTokenInternal feedTokenInternal
-                    && feedTokenInternal.QueryFeedToken is FeedTokenEPKRange tokenEPKRange)
+                if (feedToken?.QueryFeedToken is FeedTokenEPKRange tokenEPKRange)
                 {
                     feedToken = new QueryFeedTokenInternal(FeedTokenEPKRange.Copy(
                             tokenEPKRange,
                             GroupByContinuationToken.ToCosmosElement(groupByContinuationToken).ToString()),
-                            feedTokenInternal.QueryDefinition);
+                            feedToken.QueryDefinition);
                 }
                 else if (this.Source.IsDone)
                 {
@@ -322,7 +321,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                 public bool TryGetFeedToken(
                     string containerResourceId,
                     SqlQuerySpec sqlQuerySpec,
-                    out QueryFeedToken feedToken)
+                    out QueryFeedTokenInternal feedToken)
                 {
                     feedToken = null;
                     return true;

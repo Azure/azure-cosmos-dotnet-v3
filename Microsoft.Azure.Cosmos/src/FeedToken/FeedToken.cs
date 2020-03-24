@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos
 
         public readonly string ContainerRid;
 
-        public FeedToken()
+        protected FeedToken()
         {
         }
 

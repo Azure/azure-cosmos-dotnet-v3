@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             List<string> requestedPKRanges = new List<string>();
 
-            Func<string, string, bool, ChangeFeedIterator> feedCreator = (string partitionKeyRangeId, string continuationToken, bool startFromBeginning) =>
+            ChangeFeedEstimatorCore.FeedIteratorCreator feedCreator = (string partitionKeyRangeId, string continuationToken, bool startFromBeginning) =>
             {
                 requestedPKRanges.Add(partitionKeyRangeId);
                 return mockIterator.Object;
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<DocumentServiceLeaseContainer> mockContainer = new Mock<DocumentServiceLeaseContainer>();
             mockContainer.Setup(c => c.GetAllLeasesAsync()).ReturnsAsync(leases);
 
-            Func<string, string, bool, ChangeFeedIterator> feedCreator = (string partitionKeyRangeId, string continuationToken, bool startFromBeginning) =>
+            ChangeFeedEstimatorCore.FeedIteratorCreator feedCreator = (string partitionKeyRangeId, string continuationToken, bool startFromBeginning) =>
             {
                 return mockIterator.Object;
             };
@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<DocumentServiceLeaseContainer> mockContainer = new Mock<DocumentServiceLeaseContainer>();
             mockContainer.Setup(c => c.GetAllLeasesAsync()).ReturnsAsync(leases);
 
-            Func<string, string, bool, ChangeFeedIterator> feedCreator = (string partitionKeyRangeId, string continuationToken, bool startFromBeginning) =>
+            ChangeFeedEstimatorCore.FeedIteratorCreator feedCreator = (string partitionKeyRangeId, string continuationToken, bool startFromBeginning) =>
             {
                 if (partitionKeyRangeId == "0")
                 {
@@ -160,7 +160,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<DocumentServiceLeaseContainer> mockContainer = new Mock<DocumentServiceLeaseContainer>();
             mockContainer.Setup(c => c.GetAllLeasesAsync()).ReturnsAsync(leases);
 
-            Func<string, string, bool, ChangeFeedIterator> feedCreator = (string partitionKeyRangeId, string continuationToken, bool startFromBeginning) =>
+            ChangeFeedEstimatorCore.FeedIteratorCreator feedCreator = (string partitionKeyRangeId, string continuationToken, bool startFromBeginning) =>
             {
                 if (partitionKeyRangeId == "0")
                 {

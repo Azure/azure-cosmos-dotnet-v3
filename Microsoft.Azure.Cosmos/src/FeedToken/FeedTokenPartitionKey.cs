@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
     [JsonConverter(typeof(FeedTokenInternalConverter))]
     internal sealed class FeedTokenPartitionKey : FeedToken, IChangeFeedToken
     {
-        internal readonly PartitionKey PartitionKey;
+        public readonly PartitionKey PartitionKey;
         private string continuationToken;
 
         public FeedTokenPartitionKey(PartitionKey partitionKey)
@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos
                 feedToken = JsonConvert.DeserializeObject<FeedTokenPartitionKey>(toStringValue);
                 return true;
             }
-            catch
+            catch (JsonSerializationException)
             {
                 feedToken = null;
                 return false;

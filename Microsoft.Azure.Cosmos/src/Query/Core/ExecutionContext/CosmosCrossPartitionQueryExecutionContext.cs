@@ -633,7 +633,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         public abstract bool TryGetFeedToken(
             string containerResourceId,
             SqlQuerySpec sqlQuerySpec,
-            out QueryFeedToken feedToken);
+            out QueryFeedTokenInternal feedToken);
 
         public readonly struct InitInfo<TContinuationToken>
         {

@@ -25,7 +25,12 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A <see cref="QueryFeedToken"/> instance.</returns>
         public static QueryFeedToken FromString(string toStringValue)
         {
-            if (QueryFeedTokenInternal.TryParse(toStringValue, out QueryFeedToken feedToken))
+            if (string.IsNullOrEmpty(toStringValue))
+            {
+                throw new ArgumentNullException(nameof(toStringValue));
+            }
+
+            if (QueryFeedTokenInternal.TryCreateFromString(toStringValue, out QueryFeedToken feedToken))
             {
                 return feedToken;
             }

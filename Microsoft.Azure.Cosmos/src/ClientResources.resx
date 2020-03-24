@@ -327,4 +327,7 @@
   <data name="FeedToken_InvalidFeedTokenForContainer" xml:space="preserve">
     <value>The FeedToken was generated for container {0} but current container is {1}.</value>
   </data>
+  <data name="FeedToken_CannotGetContainerRid" xml:space="preserve">
+    <value>Internal error when trying to get the container resource id.</value>
+  </data>
 </root>
