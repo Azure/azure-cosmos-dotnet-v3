@@ -23,6 +23,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
 
     internal sealed partial class CosmosOrderByItemQueryExecutionContext : CosmosCrossPartitionQueryExecutionContext
     {
+        private const string TrueFilter = "true";
+
         private static class Expressions
         {
             public const string LessThan = "<";
@@ -599,7 +601,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
                 }
             }
 
-            return (left.ToString(), target.ToString(), right.ToString());
+            // For the target filter we can make an optimization to just return "true",
+            // since we already have the backend continuation token to resume with.
+            return (left.ToString(), TrueFilter, right.ToString());
         }
 
         private readonly struct OrderByInitInfo

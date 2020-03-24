@@ -925,7 +925,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <summary>
         /// Defines the set of type-marker values that are used to encode JSON value
         /// </summary>
-        public struct TypeMarker
+        public readonly struct TypeMarker
         {
             #region [0x00, 0x20): Encoded literal integer value (32 values)
             /// <summary>
@@ -1506,7 +1506,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <summary>
         /// Struct to hold the a multibyte type marker.
         /// </summary>
-        public struct MultiByteTypeMarker
+        public readonly struct MultiByteTypeMarker
         {
             /// <summary>
             /// Initializes a new instance of the MultiByteTypeMarker struct.
