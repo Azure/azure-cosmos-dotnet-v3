@@ -65,8 +65,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
                     activityId: null,
                     responseLengthBytes: this.GetAndResetResponseLengthBytes(),
                     disallowContinuationTokenMessage: null,
-                    continuationToken: this.ContinuationToken,
-                    diagnostics: this.GetAndResetDiagnostics());
+                    continuationToken: this.ContinuationToken);
         }
     }
 }

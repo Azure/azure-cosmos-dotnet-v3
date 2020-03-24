@@ -61,8 +61,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new QueryPageDiagnostics("0",
                 "SomeQueryMetricText",
                 "SomeIndexUtilText",
-                diagnosticsContext,
-                new SchedulingStopwatch())
+                diagnosticsContext)
             };
 
             QueryResponseCore message = QueryResponseCore.CreateSuccess(
@@ -71,7 +70,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                     disallowContinuationTokenMessage: null,
                     activityId: activityId,
                     requestCharge: requestCharge,
-                    diagnostics: diagnostics,
                     responseLengthBytes: responseLengthBytes);
 
             return (message, items);
@@ -120,15 +118,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new QueryPageDiagnostics("0",
                 "SomeQueryMetricText",
                 "SomeIndexUtilText",
-                diagnosticsContext,
-                new SchedulingStopwatch())
+                diagnosticsContext)
             };
 
             QueryResponseCore message = QueryResponseCore.CreateSuccess(
                     result: cosmosArray,
                     requestCharge: 4,
                     activityId: Guid.NewGuid().ToString(),
-                    diagnostics: diagnostics,
                     responseLengthBytes: responseLengthBytes,
                     disallowContinuationTokenMessage: null,
                     continuationToken: continuationToken);
@@ -165,8 +161,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new QueryPageDiagnostics("0",
                 "SomeQueryMetricText",
                 "SomeIndexUtilText",
-                diagnosticsContext,
-                new SchedulingStopwatch())
+                diagnosticsContext)
             };
 
             QueryResponseCore splitResponse = QueryResponseCore.CreateFailure(
@@ -185,8 +180,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                    error: default,
                    innerException: default),
                requestCharge: 10.4,
-               activityId: acitivityId,
-               diagnostics: diagnostics);
+               activityId: acitivityId);
 
             return splitResponse;
         }

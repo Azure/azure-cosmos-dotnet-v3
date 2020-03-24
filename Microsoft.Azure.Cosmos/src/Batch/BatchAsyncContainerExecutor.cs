@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Cosmos
                     throw new InvalidOperationException(ClientResources.UnsupportedBulkRequestOptions);
                 }
 
-                if (itemRequestOptions.DiagnosticContext != null)
+                if (itemRequestOptions.DiagnosticContextFactory != null)
                 {
                     throw new ArgumentException("DiagnosticContext is not allowed when AllowBulkExecution is set to true");
                 }
