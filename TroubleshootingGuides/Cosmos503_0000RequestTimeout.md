@@ -37,7 +37,7 @@ These are the known causes for this issue.
   <td>Follow the Cosmos1001 guide.</td>
 </tr>
 <tr>
-  <td>Creating multiple DocumentClient instances might lead to connection contention and timeout issues.</td>
+  <td>Creating multiple Client instances might lead to connection contention and timeout issues.</td>
   <td>Follow the [performance tips](https://docs.microsoft.com/azure/cosmos-db/performance-tips), and use a single CosmosClient instance across an entire process.</td>
 </tr>
 <tr>
