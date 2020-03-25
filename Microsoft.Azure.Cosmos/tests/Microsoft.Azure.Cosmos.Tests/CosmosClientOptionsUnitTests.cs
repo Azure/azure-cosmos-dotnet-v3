@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
     using System.Linq;
     using System.Net;
@@ -59,6 +60,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             //Verify the default values are different from the new values
             Assert.AreNotEqual(region, clientOptions.ApplicationRegion);
+            Assert.IsNull(clientOptions.PreferredRegions);
             Assert.AreNotEqual(connectionMode, clientOptions.ConnectionMode);
             Assert.AreNotEqual(maxConnections, clientOptions.GatewayModeMaxConnectionLimit);
             Assert.AreNotEqual(requestTimeout, clientOptions.RequestTimeout);
@@ -98,6 +100,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             //Verify all the values are updated
             Assert.AreEqual(region, clientOptions.ApplicationRegion);
+            Assert.IsNull(clientOptions.PreferredRegions);
             Assert.AreEqual(connectionMode, clientOptions.ConnectionMode);
             Assert.AreEqual(maxConnections, clientOptions.GatewayModeMaxConnectionLimit);
             Assert.AreEqual(requestTimeout, clientOptions.RequestTimeout);
@@ -124,6 +127,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(maxRetryAttemptsOnThrottledRequests, policy.RetryOptions.MaxRetryAttemptsOnThrottledRequests);
             Assert.AreEqual((int)maxRetryWaitTime.TotalSeconds, policy.RetryOptions.MaxRetryWaitTimeInSeconds);
 
+            IReadOnlyList<string> preferredLocations = new List<string>() { Regions.AustraliaCentral, Regions.AustraliaCentral2 };
             //Verify Direct Mode settings
             cosmosClientBuilder = new CosmosClientBuilder(
                 accountEndpoint: endpoint,
@@ -133,8 +137,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 openTcpConnectionTimeout,
                 maxRequestsPerTcpConnection,
                 maxTcpConnectionsPerEndpoint,
-                portReuseMode
-            );
+                portReuseMode)
+                .WithPreferredRegions(preferredLocations);
 
             cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
             clientOptions = cosmosClient.ClientOptions;
@@ -145,6 +149,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(maxRequestsPerTcpConnection, clientOptions.MaxRequestsPerTcpConnection);
             Assert.AreEqual(maxTcpConnectionsPerEndpoint, clientOptions.MaxTcpConnectionsPerEndpoint);
             Assert.AreEqual(portReuseMode, clientOptions.PortReuseMode);
+            CollectionAssert.AreEqual(preferredLocations.ToArray(), clientOptions.PreferredRegions.ToArray());
 
             //Verify GetConnectionPolicy returns the correct values
             policy = clientOptions.GetConnectionPolicy();
@@ -153,6 +158,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(maxRequestsPerTcpConnection, policy.MaxRequestsPerTcpConnection);
             Assert.AreEqual(maxTcpConnectionsPerEndpoint, policy.MaxTcpConnectionsPerEndpoint);
             Assert.AreEqual(portReuseMode, policy.PortReuseMode);
+            CollectionAssert.AreEqual(preferredLocations.ToArray(), policy.PreferredLocations.ToArray());
         }
 
         [TestMethod]
@@ -322,7 +328,31 @@ namespace Microsoft.Azure.Cosmos.Tests
         [ExpectedException(typeof(ArgumentException))]
         public void VerifyLimitToEndpointSettings()
         {
-            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions { ApplicationRegion = LocationNames.EastUS, LimitToEndpoint = true };
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions { ApplicationRegion = Regions.EastUS, LimitToEndpoint = true };
+            cosmosClientOptions.GetConnectionPolicy();
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void VerifyLimitToEndpointSettingsWithPreferredRegions()
+        {
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions { PreferredRegions = new List<string>() { Regions.EastUS }, LimitToEndpoint = true };
+            cosmosClientOptions.GetConnectionPolicy();
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void ValidatePreferredRegionsValues()
+        {
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions { PreferredRegions = new List<string>() { "NotARegion" }};
+            cosmosClientOptions.GetConnectionPolicy();
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void VerifyApplicationRegionSettingsWithPreferredRegions()
+        {
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions { PreferredRegions = new List<string>() { Regions.EastUS }, ApplicationRegion = Regions.EastUS };
             cosmosClientOptions.GetConnectionPolicy();
         }
 
