@@ -180,13 +180,31 @@ namespace Microsoft.Azure.Cosmos
                  diagnostics: this.DiagnosticsContext);
         }
 
+        private bool TryGetTroubleshootingLink(out string tsgLink)
+        {
+            if (CosmosTroubleshootingLinks.TryGetTroubleshootingLinks(this, out CosmosTroubleshootingLinks link))
+            {
+                tsgLink = link.Link;
+                return true;
+            }
+
+            tsgLink = null;
+            return false;
+        }
+
         private string ToStringHelper(bool includeDiagnostics)
         {
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.Append(this.GetType().FullName);
+            stringBuilder.Append(" : ");
+
+            if (this.TryGetTroubleshootingLink(out string tsgLink))
+            {
+                stringBuilder.Append($" Troubleshooting Guide: \"{tsgLink}\"; ");
+            }
+
             if (this.Message != null)
             {
-                stringBuilder.Append(" : ");
                 stringBuilder.Append(this.Message);
                 stringBuilder.AppendLine();
             }

@@ -3,11 +3,11 @@
 <table>
 <tr>
   <td>TypeName</td>
-  <td>Cosmos503_0000TransportException</td>
+  <td>Cosmos408_0000TransportException</td>
 </tr>
 <tr>
   <td>CheckId</td>
-  <td>Cosmos503_0000</td>
+  <td>Cosmos408_0000</td>
 </tr>
 <tr>
   <td>Category</td>
