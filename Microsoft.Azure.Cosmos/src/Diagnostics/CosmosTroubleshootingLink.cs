@@ -8,16 +8,16 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using Microsoft.Azure.Documents;
 
-    internal sealed class CosmosTroubleshootingLinks
+    internal sealed class CosmosTroubleshootingLink
     {
-        private static readonly IReadOnlyDictionary<(int, int), CosmosTroubleshootingLinks> StatusCodeToLink;
+        private static readonly IReadOnlyDictionary<(int, int), CosmosTroubleshootingLink> StatusCodeToLink;
 
         internal string Link { get; }
         internal int StatusCode { get; }
         internal int SubStatusCode { get; }
         internal bool IsServiceException { get; }
 
-        private CosmosTroubleshootingLinks(
+        private CosmosTroubleshootingLink(
             int statusCode,
             int subStatusCode,
             bool isServiceException,
@@ -29,14 +29,14 @@ namespace Microsoft.Azure.Cosmos
             this.Link = link ?? throw new ArgumentNullException(nameof(link));
         }
 
-        private void AddToDictionary(Dictionary<(int, int), CosmosTroubleshootingLinks> dictionary)
+        private void AddToDictionary(Dictionary<(int, int), CosmosTroubleshootingLink> dictionary)
         {
             dictionary.Add((this.StatusCode, this.SubStatusCode), this);
         }
 
-        static CosmosTroubleshootingLinks()
+        static CosmosTroubleshootingLink()
         {
-            Dictionary<(int, int), CosmosTroubleshootingLinks> linkMap = new Dictionary<(int, int), CosmosTroubleshootingLinks>();
+            Dictionary<(int, int), CosmosTroubleshootingLink> linkMap = new Dictionary<(int, int), CosmosTroubleshootingLink>();
             NotFound.AddToDictionary(linkMap);
             RequestRateTooLarge.AddToDictionary(linkMap);
             NotModified.AddToDictionary(linkMap);
@@ -44,24 +44,24 @@ namespace Microsoft.Azure.Cosmos
             ServiceTransportRequestTimeout.AddToDictionary(linkMap);
             TransportExceptionHighCpu.AddToDictionary(linkMap);
 
-            CosmosTroubleshootingLinks.StatusCodeToLink = linkMap;
+            CosmosTroubleshootingLink.StatusCodeToLink = linkMap;
         }
 
         internal static bool TryGetTroubleshootingLinks(
             CosmosException cosmosException,
-            out CosmosTroubleshootingLinks troubleshootingLink)
+            out CosmosTroubleshootingLink troubleshootingLink)
         {
             if (TryGetTransportException(cosmosException, out troubleshootingLink))
             {
                 return true;
             }
 
-            return CosmosTroubleshootingLinks.StatusCodeToLink.TryGetValue(
+            return CosmosTroubleshootingLink.StatusCodeToLink.TryGetValue(
                 ((int)cosmosException.StatusCode, cosmosException.SubStatusCode),
                 out troubleshootingLink);
         }
 
-        private static bool TryGetTransportException(CosmosException exception, out CosmosTroubleshootingLinks troubleshootingLink)
+        private static bool TryGetTransportException(CosmosException exception, out CosmosTroubleshootingLink troubleshootingLink)
         {
             Exception innerException = exception.InnerException;
             while (innerException != null)
@@ -99,37 +99,37 @@ namespace Microsoft.Azure.Cosmos
             return false;
         }
 
-        private static readonly CosmosTroubleshootingLinks NotFound = new CosmosTroubleshootingLinks(
+        private static readonly CosmosTroubleshootingLink NotFound = new CosmosTroubleshootingLink(
             statusCode: (int)HttpStatusCode.NotFound,
             subStatusCode: default,
             isServiceException: true,
             link: "https://aka.ms/CosmosTsgNotFound");
 
-        private static readonly CosmosTroubleshootingLinks RequestRateTooLarge = new CosmosTroubleshootingLinks(
+        private static readonly CosmosTroubleshootingLink RequestRateTooLarge = new CosmosTroubleshootingLink(
             statusCode: 429,
             subStatusCode: 3200,
             isServiceException: true,
             link: "https://aka.ms/CosmosTsgRequestRateTooLarge");
 
-        private static readonly CosmosTroubleshootingLinks NotModified = new CosmosTroubleshootingLinks(
+        private static readonly CosmosTroubleshootingLink NotModified = new CosmosTroubleshootingLink(
             statusCode: (int)HttpStatusCode.NotModified,
             subStatusCode: default,
             isServiceException: true,
             link: "https://aka.ms/CosmosTsgNotModified");
 
-        private static readonly CosmosTroubleshootingLinks ClientTransportRequestTimeout = new CosmosTroubleshootingLinks(
+        private static readonly CosmosTroubleshootingLink ClientTransportRequestTimeout = new CosmosTroubleshootingLink(
             statusCode: (int)HttpStatusCode.RequestTimeout,
             subStatusCode: 8000,
             isServiceException: false,
             link: "https://aka.ms/CosmosTsgClientTransportRequestTimeout");
 
-        private static readonly CosmosTroubleshootingLinks ServiceTransportRequestTimeout = new CosmosTroubleshootingLinks(
+        private static readonly CosmosTroubleshootingLink ServiceTransportRequestTimeout = new CosmosTroubleshootingLink(
             statusCode: (int)HttpStatusCode.RequestTimeout,
             subStatusCode: 9000,
             isServiceException: true,
             link: "https://aka.ms/CosmosTsgServiceTransportRequestTimeout");
 
-        private static readonly CosmosTroubleshootingLinks TransportExceptionHighCpu = new CosmosTroubleshootingLinks(
+        private static readonly CosmosTroubleshootingLink TransportExceptionHighCpu = new CosmosTroubleshootingLink(
             statusCode: (int)HttpStatusCode.ServiceUnavailable,
             subStatusCode: 9001,
             isServiceException: false,

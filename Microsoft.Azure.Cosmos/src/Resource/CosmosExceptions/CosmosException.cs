@@ -182,7 +182,7 @@ namespace Microsoft.Azure.Cosmos
 
         private bool TryGetTroubleshootingLink(out string tsgLink)
         {
-            if (CosmosTroubleshootingLinks.TryGetTroubleshootingLinks(this, out CosmosTroubleshootingLinks link))
+            if (CosmosTroubleshootingLink.TryGetTroubleshootingLinks(this, out CosmosTroubleshootingLink link))
             {
                 tsgLink = link.Link;
                 return true;
