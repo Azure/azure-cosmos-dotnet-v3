@@ -395,6 +395,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Assert.IsFalse(response.IsSuccessStatusCode);
                     Assert.IsNotNull(response);
                     Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode, response.ErrorMessage);
+                    Assert.IsTrue(response.ErrorMessage.Contains("https://aka.ms/CosmosTsgNotFound"));
                 }
             }
 
@@ -1543,6 +1544,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ResponseMessage failedResponseMessage = failedToManyRequests.First();
                 Assert.AreEqual(failedResponseMessage.StatusCode, (HttpStatusCode)429);
                 Assert.IsNotNull(failedResponseMessage.ErrorMessage);
+                Assert.IsNotNull(failedResponseMessage.ErrorMessage.Contains("https://aka.ms/CosmosTsgRequestRateTooLarge"));
                 string diagnostics = failedResponseMessage.Diagnostics.ToString();
                 Assert.IsNotNull(diagnostics);
             }
