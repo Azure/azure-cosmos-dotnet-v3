@@ -28,7 +28,11 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContext diagnosticsContext,
             Error error,
             Exception innerException)
-            : base(message, innerException)
+            : base(CosmosException.GetMessageHelper(
+                statusCodes,
+                subStatusCode,
+                message,
+                activityId), innerException)
         {
             this.ResponseBody = message;
             this.stackTrace = stackTrace;
@@ -68,9 +72,6 @@ namespace Microsoft.Azure.Cosmos
             this.Headers = new Headers();
             this.DiagnosticsContext = new CosmosDiagnosticsContextCore();
         }
-
-        /// <inheritdoc/>
-        public override string Message => this.ToString();
 
         /// <summary>
         /// The body of the cosmos response message as a string
@@ -185,21 +186,36 @@ namespace Microsoft.Azure.Cosmos
                  diagnostics: this.DiagnosticsContext);
         }
 
+        private static string GetMessageHelper(
+            HttpStatusCode statusCode,
+            int subStatusCode,
+            string responseBody,
+            string activityId)
+        {
+            StringBuilder stringBuilder = new StringBuilder();
+
+            stringBuilder.Append($"Response status code does not indicate success: ");
+            stringBuilder.Append($"{statusCode} ({(int)statusCode})");
+            stringBuilder.Append("; Substatus: ");
+            stringBuilder.Append(subStatusCode);
+            stringBuilder.Append("; ActivityId: ");
+            stringBuilder.Append(activityId ?? string.Empty);
+            stringBuilder.Append("; Reason: (");
+            stringBuilder.Append(responseBody ?? string.Empty);
+            stringBuilder.Append(");");
+
+            return stringBuilder.ToString();
+        }
+
         private string ToStringHelper(
-            StringBuilder stringBuilder)
+        StringBuilder stringBuilder)
         {
             if (stringBuilder == null)
             {
                 throw new ArgumentNullException(nameof(stringBuilder));
             }
 
-            stringBuilder.Append($"Response status code does not indicate success: ");
-            stringBuilder.Append($"{this.StatusCode} ({(int)this.StatusCode})");
-            stringBuilder.Append("; Substatus: ");
-            stringBuilder.Append(this.SubStatusCode);
-            stringBuilder.Append("; Reason: (");
-            stringBuilder.Append(this.ResponseBody);
-            stringBuilder.Append(");");
+            stringBuilder.Append(this.Message);
             stringBuilder.AppendLine();
 
             if (this.InnerException != null)

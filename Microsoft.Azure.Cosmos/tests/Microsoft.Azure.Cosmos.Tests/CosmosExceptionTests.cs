@@ -111,7 +111,7 @@ namespace Microsoft.Azure.Cosmos
             Assert.AreEqual(HttpStatusCode.BadRequest, responseMessage.StatusCode);
             Assert.AreEqual(SubStatusCodes.WriteForbidden, responseMessage.Headers.SubStatusCode);
             Assert.IsTrue(responseMessage.ErrorMessage.Contains(errorMessage));
-            Assert.IsTrue(responseMessage.ErrorMessage.Contains("VerifyDocumentClientExceptionToResponseMessage"), $"Message should have method name for the stack trace {responseMessage.ErrorMessage}");
+            Assert.IsFalse(responseMessage.ErrorMessage.Contains("VerifyDocumentClientExceptionToResponseMessage"), $"Message should not have the stack trace {responseMessage.ErrorMessage}. StackTrace should be in Diagnostics.");
         }
 
         [TestMethod]
@@ -143,21 +143,21 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsFalse(responseMessage.IsSuccessStatusCode);
             Assert.AreEqual(HttpStatusCode.ServiceUnavailable, responseMessage.StatusCode);
             Assert.IsTrue(responseMessage.ErrorMessage.Contains(errorMessage));
-            Assert.IsTrue(responseMessage.ErrorMessage.Contains(transportException.ToString()));
+            Assert.IsFalse(responseMessage.ErrorMessage.Contains(transportException.ToString()), "InnerException tracked in Diagnostics");
         }
 
         [TestMethod]
         public void EnsureCorrectStatusCode()
         {
             string testMessage = "Test" + Guid.NewGuid().ToString();
-
+            
             List<(HttpStatusCode statusCode, CosmosException exception)> exceptionsToStatusCodes = new List<(HttpStatusCode, CosmosException)>()
             {
-                (HttpStatusCode.NotFound, CosmosExceptionFactory.CreateNotFoundException(testMessage)),
-                (HttpStatusCode.InternalServerError, CosmosExceptionFactory.CreateInternalServerErrorException(testMessage)),
-                (HttpStatusCode.BadRequest, CosmosExceptionFactory.CreateBadRequestException(testMessage)),
-                (HttpStatusCode.RequestTimeout,CosmosExceptionFactory.CreateRequestTimeoutException(testMessage)),
-                ((HttpStatusCode)429, CosmosExceptionFactory.CreateThrottledException(testMessage)),
+                (HttpStatusCode.NotFound, CosmosExceptionFactory.CreateNotFoundException(testMessage, activityId: Guid.NewGuid().ToString())),
+                (HttpStatusCode.InternalServerError, CosmosExceptionFactory.CreateInternalServerErrorException(testMessage, activityId: Guid.NewGuid().ToString())),
+                (HttpStatusCode.BadRequest, CosmosExceptionFactory.CreateBadRequestException(testMessage, activityId: Guid.NewGuid().ToString())),
+                (HttpStatusCode.RequestTimeout,CosmosExceptionFactory.CreateRequestTimeoutException(testMessage, activityId: Guid.NewGuid().ToString())),
+                ((HttpStatusCode)429, CosmosExceptionFactory.CreateThrottledException(testMessage, activityId: Guid.NewGuid().ToString())),
             };
 
             foreach((HttpStatusCode statusCode, CosmosException exception) item in exceptionsToStatusCodes)
@@ -242,7 +242,7 @@ namespace Microsoft.Azure.Cosmos
             Assert.AreEqual(message, exception.ResponseBody);
             Assert.AreEqual(httpStatusCode, exception.StatusCode);
             Assert.IsTrue(exception.ToString().Contains(message));
-            string expectedMessage = $"Microsoft.Azure.Cosmos.CosmosException : Response status code does not indicate success: {httpStatusCode} ({(int)httpStatusCode}); Substatus: 0; Reason: ({message});{Environment.NewLine}{exception.Diagnostics.ToString()}";
+            string expectedMessage = $"Response status code does not indicate success: {httpStatusCode} ({(int)httpStatusCode}); Substatus: 0; ActivityId: {exception.ActivityId}; Reason: ({message});";
 
             Assert.AreEqual(expectedMessage, exception.Message);
         }
