@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Fluent
 {
     using System;
+    using System.Collections.Generic;
     using System.Net;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
@@ -142,6 +143,35 @@ namespace Microsoft.Azure.Cosmos.Fluent
         public CosmosClientBuilder WithApplicationRegion(string applicationRegion)
         {
             this.clientOptions.ApplicationRegion = applicationRegion;
+            return this;
+        }
+
+        /// <summary>
+        /// Set the preferred geo-replicated regions to be used in the Azure Cosmos DB service. 
+        /// </summary>
+        /// <param name="preferredLocations">List of preferred regions. <see cref="Regions"/> lists valid Cosmos DB regions.</param>
+        /// <example>
+        /// The example below creates a new <see cref="CosmosClientBuilder"/> with a list of preferred regions.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// List<string> preferredRegions = new List<string>(
+        ///     "East US 2",
+        ///     "East US",
+        ///     "Central US"
+        /// );
+        /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
+        ///     accountEndpoint: "https://testcosmos.documents.azure.com:443/",
+        ///     authKeyOrResourceToken: "SuperSecretKey")
+        /// .WithPreferredRegions(preferredRegions);
+        /// CosmosClient client = cosmosClientBuilder.Build();
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
+        /// <seealso cref="CosmosClientOptions.ApplicationRegion"/>
+        public CosmosClientBuilder WithPreferredRegions(IReadOnlyList<string> preferredLocations)
+        {
+            this.clientOptions.PreferredRegions = preferredLocations ?? throw new ArgumentNullException(nameof(preferredLocations));
             return this;
         }
 

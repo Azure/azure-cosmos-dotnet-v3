@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Data.Common;
     using System.Linq;
@@ -97,12 +98,23 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <remarks>
         /// When this property is specified, the SDK prefers the region to perform operations. Also SDK auto-selects 
-        /// fallback geo-replicated regions for high availability. 
+        /// fallback geo-replicated regions for high availability based on distance with the application region. 
         /// When this property is not specified, the SDK uses the write region as the preferred region for all operations.
         /// </remarks>
         /// <seealso cref="CosmosClientBuilder.WithApplicationRegion(string)"/>
-        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/how-to-multi-master">Configure multi-master</seealso>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/high-availability#high-availability-with-cosmos-db-in-the-event-of-regional-outages">High availability on regional outages</seealso>
         public string ApplicationRegion { get; set; }
+
+        /// <summary>
+        /// Gets and sets the preferred regions for geo-replicated database accounts in the Azure Cosmos DB service. 
+        /// </summary>
+        /// <remarks>
+        /// When this property is specified, the SDK will use the region list in the provided order to define the endpoint failover order.
+        /// This configuration is an alternative to <see cref="ApplicationRegion"/>, either one can be set but not both.
+        /// </remarks>
+        /// <seealso cref="CosmosClientBuilder.WithPreferredRegions(IReadOnlyList{string})"/>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/high-availability#high-availability-with-cosmos-db-in-the-event-of-regional-outages">High availability on regional outages</seealso>
+        public IReadOnlyList<string> PreferredRegions { get; set; }
 
         /// <summary>
         /// Get or set the maximum number of concurrent connections allowed for the target
@@ -394,7 +406,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// When the value of this property is false, the SDK will automatically discover write and read regions, and use them when the configured application region is not available.
         /// When set to true, availability is limited to the endpoint specified on the CosmosClient constructor.
-        /// Defining the <see cref="ApplicationRegion"/> is not allowed when setting the value to true.
+        /// Defining the <see cref="ApplicationRegion"/> or<see cref="PreferredRegions"/>  is not allowed when setting the value to true.
         /// </remarks>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/high-availability">High availability</seealso>
         public bool LimitToEndpoint { get; set; } = false;
@@ -541,6 +553,11 @@ namespace Microsoft.Azure.Cosmos
                 connectionPolicy.SetCurrentLocation(this.ApplicationRegion);
             }
 
+            if (this.PreferredRegions != null)
+            {
+                connectionPolicy.SetPreferredLocations(this.PreferredRegions);
+            }
+
             if (this.MaxRetryAttemptsOnRateLimitedRequests != null)
             {
                 connectionPolicy.RetryOptions.MaxRetryAttemptsOnThrottledRequests = this.MaxRetryAttemptsOnRateLimitedRequests.Value;
@@ -637,6 +654,16 @@ namespace Microsoft.Azure.Cosmos
             if (!string.IsNullOrEmpty(this.ApplicationRegion) && this.LimitToEndpoint)
             {
                 throw new ArgumentException($"Cannot specify {nameof(this.ApplicationRegion)} and enable {nameof(this.LimitToEndpoint)}. Only one can be set.");
+            }
+
+            if (this.PreferredRegions?.Count > 0 && this.LimitToEndpoint)
+            {
+                throw new ArgumentException($"Cannot specify {nameof(this.PreferredRegions)} and enable {nameof(this.LimitToEndpoint)}. Only one can be set.");
+            }
+
+            if (!string.IsNullOrEmpty(this.ApplicationRegion) && this.PreferredRegions?.Count > 0)
+            {
+                throw new ArgumentException($"Cannot specify {nameof(this.PreferredRegions)} and {nameof(this.ApplicationRegion)}. Only one can be set.");
             }
         }
 
