@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Routing;
     using Newtonsoft.Json;
 
-    [JsonConverter(typeof(FeedTokenInternalConverter))]
+    [JsonConverter(typeof(FeedTokenEPKRangeConverter))]
     internal sealed class FeedTokenEPKRange : FeedToken, IChangeFeedToken, IQueryFeedToken
     {
         public readonly Queue<CompositeContinuationToken> CompositeContinuationTokens;

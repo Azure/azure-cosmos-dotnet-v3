@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos
                 queryDefinition = new QueryDefinition(serializer.Deserialize<SqlQuerySpec>(queryToken.CreateReader()));
             }
 
-            IQueryFeedToken queryFeedToken = (IQueryFeedToken)FeedTokenInternalConverter.ReadJObject(feedToken.Value<JObject>(), serializer);
+            IQueryFeedToken queryFeedToken = (IQueryFeedToken)FeedTokenEPKRangeConverter.ReadJObject(feedToken.Value<JObject>(), serializer);
 
             return new QueryFeedTokenInternal(queryFeedToken, queryDefinition);
         }

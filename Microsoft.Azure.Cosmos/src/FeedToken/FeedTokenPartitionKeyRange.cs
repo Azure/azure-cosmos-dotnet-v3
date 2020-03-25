@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos
     /// <remarks>
     /// Not split proof. 
     /// </remarks>
-    [JsonConverter(typeof(FeedTokenInternalConverter))]
+    [JsonConverter(typeof(FeedTokenPartitionKeyRangeConverter))]
     internal sealed class FeedTokenPartitionKeyRange : FeedToken, IChangeFeedToken, IQueryFeedToken
     {
         public readonly string PartitionKeyRangeId;
@@ -172,7 +172,7 @@ namespace Microsoft.Azure.Cosmos
                 feedToken = JsonConvert.DeserializeObject<FeedTokenPartitionKeyRange>(toStringValue);
                 return true;
             }
-            catch (JsonSerializationException)
+            catch (JsonReaderException)
             {
                 // Special case, for backward compatibility, if the string represents a PKRangeId
                 if (int.TryParse(toStringValue, out int pkRangeId))

@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Routing;
     using Newtonsoft.Json;
 
-    [JsonConverter(typeof(FeedTokenInternalConverter))]
+    [JsonConverter(typeof(FeedTokenPartitionKeyConverter))]
     internal sealed class FeedTokenPartitionKey : FeedToken, IChangeFeedToken
     {
         public readonly PartitionKey PartitionKey;
