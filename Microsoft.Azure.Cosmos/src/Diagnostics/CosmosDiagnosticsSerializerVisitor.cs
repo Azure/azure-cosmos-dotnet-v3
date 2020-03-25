@@ -5,9 +5,9 @@
 namespace Microsoft.Azure.Cosmos.Diagnostics
 {
     using System;
+    using System.Collections.Generic;
     using System.Globalization;
     using System.IO;
-    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Newtonsoft.Json;
 
     internal sealed class CosmosDiagnosticsSerializerVisitor : CosmosDiagnosticsInternalVisitor
@@ -27,6 +27,9 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
             this.jsonWriter.WritePropertyName("ActivityId");
             this.jsonWriter.WriteValue(pointOperationStatistics.ActivityId);
+
+            this.jsonWriter.WritePropertyName("ResponseTimeUtc");
+            this.jsonWriter.WriteValue(pointOperationStatistics.ResponseTimeUtc.ToString("o", CultureInfo.InvariantCulture));
 
             this.jsonWriter.WritePropertyName("StatusCode");
             this.jsonWriter.WriteValue((int)pointOperationStatistics.StatusCode);
@@ -52,12 +55,6 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             this.jsonWriter.WritePropertyName("ResponseSessionToken");
             this.jsonWriter.WriteValue(pointOperationStatistics.ResponseSessionToken);
 
-            if (pointOperationStatistics.ClientSideRequestStatistics != null)
-            {
-                this.jsonWriter.WritePropertyName("ClientRequestStats");
-                pointOperationStatistics.ClientSideRequestStatistics.WriteJsonObject(this.jsonWriter);
-            }
-
             this.jsonWriter.WriteEndObject();
         }
 
@@ -70,20 +67,20 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             this.jsonWriter.WritePropertyName("StartUtc");
             this.jsonWriter.WriteValue(cosmosDiagnosticsContext.StartUtc.ToString("o", CultureInfo.InvariantCulture));
 
-            this.jsonWriter.WritePropertyName("ElapsedTime");
-            
-            if (cosmosDiagnosticsContext.TotalElapsedTime.HasValue)
+            if (cosmosDiagnosticsContext.IsComplete())
             {
-                this.jsonWriter.WriteValue(cosmosDiagnosticsContext.TotalElapsedTime.Value);
+                this.jsonWriter.WritePropertyName("RunningElapsedTime");
             }
             else
             {
-                this.jsonWriter.WriteValue("Timer Never Stopped.");
+                this.jsonWriter.WritePropertyName("TotalElapsedTime");
             }
+            
+            this.jsonWriter.WriteValue(cosmosDiagnosticsContext.GetClientElapsedTime());
 
             this.jsonWriter.WritePropertyName("UserAgent");
             this.jsonWriter.WriteValue(cosmosDiagnosticsContext.UserAgent);
-            
+
             this.jsonWriter.WritePropertyName("TotalRequestCount");
             this.jsonWriter.WriteValue(cosmosDiagnosticsContext.TotalRequestCount);
 
@@ -112,15 +109,16 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             this.jsonWriter.WritePropertyName("Id");
             this.jsonWriter.WriteValue(cosmosDiagnosticScope.Id);
 
-            this.jsonWriter.WritePropertyName("ElapsedTime");
-            if (cosmosDiagnosticScope.TryGetElapsedTime(out TimeSpan elapsedTime))
+            if (cosmosDiagnosticScope.IsComplete())
             {
-                this.jsonWriter.WriteValue(elapsedTime);
+                this.jsonWriter.WritePropertyName("RunningElapsedTime");
             }
             else
             {
-                this.jsonWriter.WriteValue("Timer Never Stopped.");
+                this.jsonWriter.WritePropertyName("ElapsedTime");
             }
+
+            this.jsonWriter.WriteValue(cosmosDiagnosticScope.GetElapsedTime());
 
             this.jsonWriter.WriteEndObject();
         }
@@ -132,14 +130,14 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             this.jsonWriter.WritePropertyName("PKRangeId");
             this.jsonWriter.WriteValue(queryPageDiagnostics.PartitionKeyRangeId);
 
+            this.jsonWriter.WritePropertyName("StartUtc");
+            this.jsonWriter.WriteValue(queryPageDiagnostics.DiagnosticsContext.StartUtc.ToString("o", CultureInfo.InvariantCulture));
+
             this.jsonWriter.WritePropertyName("QueryMetric");
             this.jsonWriter.WriteValue(queryPageDiagnostics.QueryMetricText);
 
             this.jsonWriter.WritePropertyName("IndexUtilization");
             this.jsonWriter.WriteValue(queryPageDiagnostics.IndexUtilizationText);
-
-            this.jsonWriter.WritePropertyName("SchedulingTimeSpan");
-            queryPageDiagnostics.SchedulingTimeSpan.WriteJsonObject(this.jsonWriter);
 
             this.jsonWriter.WritePropertyName("Context");
             this.jsonWriter.WriteStartArray();
@@ -152,6 +150,139 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             this.jsonWriter.WriteEndArray();
 
             this.jsonWriter.WriteEndObject();
+        }
+
+        public override void Visit(AddressResolutionStatistics addressResolutionStatistics)
+        {
+            this.jsonWriter.WriteStartObject();
+
+            this.jsonWriter.WritePropertyName("Id");
+            this.jsonWriter.WriteValue("AddressResolutionStatistics");
+
+            this.jsonWriter.WritePropertyName("StartTimeUtc");
+            this.jsonWriter.WriteValue(addressResolutionStatistics.StartTime.ToString("o", CultureInfo.InvariantCulture));
+
+            this.jsonWriter.WritePropertyName("EndTimeUtc");
+            if (addressResolutionStatistics.EndTime.HasValue)
+            {
+                this.jsonWriter.WriteValue(addressResolutionStatistics.EndTime.Value.ToString("o", CultureInfo.InvariantCulture));
+            }
+            else
+            {
+                this.jsonWriter.WriteValue("EndTime Never Set.");
+            }
+
+            this.jsonWriter.WritePropertyName("TargetEndpoint");
+            this.jsonWriter.WriteValue(addressResolutionStatistics.TargetEndpoint);
+
+            this.jsonWriter.WriteEndObject();
+        }
+
+        public override void Visit(StoreResponseStatistics storeResponseStatistics)
+        {
+            this.jsonWriter.WriteStartObject();
+
+            this.jsonWriter.WritePropertyName("Id");
+            this.jsonWriter.WriteValue("StoreResponseStatistics");
+
+            this.jsonWriter.WritePropertyName("ResponseTimeUtc");
+            this.jsonWriter.WriteValue(storeResponseStatistics.RequestResponseTime.ToString("o", CultureInfo.InvariantCulture));
+
+            this.jsonWriter.WritePropertyName("ResourceType");
+            this.jsonWriter.WriteValue(storeResponseStatistics.RequestResourceType.ToString());
+
+            this.jsonWriter.WritePropertyName("OperationType");
+            this.jsonWriter.WriteValue(storeResponseStatistics.RequestOperationType.ToString());
+
+            this.jsonWriter.WritePropertyName("LocationEndpoint");
+            this.jsonWriter.WriteValue(storeResponseStatistics.LocationEndpoint);
+
+            if (storeResponseStatistics.StoreResult != null)
+            {
+                this.jsonWriter.WritePropertyName("StoreResult");
+                this.jsonWriter.WriteValue(storeResponseStatistics.StoreResult.ToString());
+            }
+
+            this.jsonWriter.WriteEndObject();
+        }
+
+        public override void Visit(CosmosClientSideRequestStatistics clientSideRequestStatistics)
+        {
+            this.jsonWriter.WriteStartObject();
+            this.jsonWriter.WritePropertyName("Id");
+            this.jsonWriter.WriteValue("AggregatedClientSideRequestStatistics");
+
+            this.WriteJsonUriArrayWithDuplicatesCounted("ContactedReplicas", clientSideRequestStatistics.ContactedReplicas);
+
+            this.WriteJsonUriArray("RegionsContacted", clientSideRequestStatistics.RegionsContacted);
+            this.WriteJsonUriArray("FailedReplicas", clientSideRequestStatistics.FailedReplicas);
+
+            this.jsonWriter.WriteEndObject();
+        }
+
+        private void WriteJsonUriArray(string propertyName, IEnumerable<Uri> uris)
+        {
+            this.jsonWriter.WritePropertyName(propertyName);
+            this.jsonWriter.WriteStartArray();
+
+            if (uris != null)
+            {
+                foreach (Uri contactedReplica in uris)
+                {
+                    this.jsonWriter.WriteValue(contactedReplica);
+                }
+            }
+
+            this.jsonWriter.WriteEndArray();
+        }
+
+        /// <summary>
+        /// Writes the list of URIs to JSON.
+        /// Sequential duplicates are counted and written as a single object to prevent
+        /// writing the same URI multiple times.
+        /// </summary>
+        private void WriteJsonUriArrayWithDuplicatesCounted(string propertyName, List<Uri> uris)
+        {
+            this.jsonWriter.WritePropertyName(propertyName);
+            this.jsonWriter.WriteStartArray();
+
+            if (uris != null)
+            {
+                Uri previous = null;
+                int duplicateCount = 1;
+                int totalCount = uris.Count;
+                for (int i = 0; i < totalCount; i++)
+                {
+                    Uri contactedReplica = uris[i];
+                    if (contactedReplica.Equals(previous))
+                    {
+                        duplicateCount++;
+                        // Don't continue for last link so it get's printed
+                        if (i < totalCount - 1)
+                        {
+                            continue;
+                        }
+                    }
+
+                    // The URI is not a duplicate.
+                    // Write previous URI and count.
+                    // Then update them to the new URI and count
+                    if (previous != null)
+                    {
+                        this.jsonWriter.WriteStartObject();
+                        this.jsonWriter.WritePropertyName("Count");
+                        this.jsonWriter.WriteValue(duplicateCount);
+                        this.jsonWriter.WritePropertyName("Uri");
+                        this.jsonWriter.WriteValue(contactedReplica);
+                        this.jsonWriter.WriteEndObject();
+                    }
+
+                    previous = contactedReplica;
+                    duplicateCount = 1;
+                }
+            }
+
+            this.jsonWriter.WriteEndArray();
         }
     }
 }

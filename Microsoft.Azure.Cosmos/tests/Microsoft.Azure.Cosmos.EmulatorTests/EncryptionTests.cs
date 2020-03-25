@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             if (EncryptionTests.databaseCore != null)
             {
-                await EncryptionTests.databaseCore.DeleteAsync();
+                using (await EncryptionTests.databaseCore.DeleteStreamAsync()) { }
             }
 
             if (EncryptionTests.client != null)
@@ -175,6 +175,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     await databaseCore.DeleteStreamAsync();
                 }
             }
+        }
+
+        [TestMethod]
+        public async Task EncryptionCreateItemWithoutEncryptionOptions()
+        {
+            TestDoc testDoc = TestDoc.Create();
+            ItemResponse<TestDoc> createResponse = await EncryptionTests.containerCore.CreateItemAsync(
+                testDoc,
+                new PartitionKey(testDoc.PK));
+            Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
+            Assert.AreEqual(testDoc, createResponse.Resource);
         }
 
         [TestMethod]

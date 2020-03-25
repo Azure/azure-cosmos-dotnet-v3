@@ -13,22 +13,21 @@ namespace Microsoft.Azure.Cosmos
     internal class ClientPipelineBuilder
     {
         private readonly CosmosClient client;
+        private readonly ConsistencyLevel? requestedClientConsistencyLevel;
         private readonly RequestHandler invalidPartitionExceptionRetryHandler;
         private readonly RequestHandler transportHandler;
-        private readonly RequestHandler partitionKeyRangeGoneRetryHandler;
         private IReadOnlyCollection<RequestHandler> customHandlers;
         private RequestHandler retryHandler;
 
         public ClientPipelineBuilder(
             CosmosClient client,
+            ConsistencyLevel? requestedClientConsistencyLevel,
             IReadOnlyCollection<RequestHandler> customHandlers)
         {
-            this.client = client;
+            this.client = client ?? throw new ArgumentNullException(nameof(client));
+            this.requestedClientConsistencyLevel = requestedClientConsistencyLevel;
             this.transportHandler = new TransportHandler(client);
             Debug.Assert(this.transportHandler.InnerHandler == null, nameof(this.transportHandler));
-
-            this.partitionKeyRangeGoneRetryHandler = new PartitionKeyRangeGoneRetryHandler(this.client);
-            Debug.Assert(this.partitionKeyRangeGoneRetryHandler.InnerHandler == null, "The partitionKeyRangeGoneRetryHandler.InnerHandler must be null to allow other handlers to be linked.");
 
             this.invalidPartitionExceptionRetryHandler = new NamedCacheRetryHandler();
             Debug.Assert(this.invalidPartitionExceptionRetryHandler.InnerHandler == null, "The invalidPartitionExceptionRetryHandler.InnerHandler must be null to allow other handlers to be linked.");
@@ -101,14 +100,6 @@ namespace Microsoft.Azure.Cosmos
         ///                                                                          |
         ///                                                          +---------------------------------------+
         ///                                                          |                                       |
-        ///                                                          |   partitionKeyRangeGoneRetryHandler   |
-        ///                                                          |                                       |
-        ///                                                          +---------------------------------------+
-        ///                                                                          |
-        ///                                                                          |
-        ///                                                                          |
-        ///                                                          +---------------------------------------+
-        ///                                                          |                                       |
         ///                                                          |     PartitionKeyRangeHandler          |
         ///                                                          |                                       |
         ///                                                          +---------------------------------------+
@@ -124,7 +115,9 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>The request invoker handler used to do calls to Cosmos DB</returns>
         public RequestInvokerHandler Build()
         {
-            RequestInvokerHandler root = new RequestInvokerHandler(this.client);
+            RequestInvokerHandler root = new RequestInvokerHandler(
+                this.client,
+                this.requestedClientConsistencyLevel);
 
             RequestHandler current = root;
             if (this.CustomHandlers != null && this.CustomHandlers.Any())
@@ -155,7 +148,7 @@ namespace Microsoft.Azure.Cosmos
             return root;
         }
 
-        private static RequestHandler CreatePipeline(params RequestHandler[] requestHandlers)
+        internal static RequestHandler CreatePipeline(params RequestHandler[] requestHandlers)
         {
             RequestHandler head = null;
             int handlerCount = requestHandlers.Length;
@@ -195,7 +188,6 @@ namespace Microsoft.Azure.Cosmos
             RequestHandler[] feedPipeline = new RequestHandler[]
                 {
                     this.invalidPartitionExceptionRetryHandler,
-                    this.partitionKeyRangeGoneRetryHandler,
                     this.PartitionKeyRangeHandler,
                     this.transportHandler,
                 };

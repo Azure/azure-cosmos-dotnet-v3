@@ -5,6 +5,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
 {
     using System;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Newtonsoft.Json;
@@ -37,8 +40,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
 
         public static async Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
             ExecutionEnvironment executionEnvironment,
-            string requestContinuation,
-            Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync,
+            CosmosElement requestContinuation,
+            Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync,
             DistinctQueryType distinctQueryType)
         {
             if (tryCreateSourceAsync == null)
@@ -68,58 +71,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
             }
 
             return tryCreateDistinctDocumentQueryExecutionComponent;
-        }
-
-        /// <summary>
-        /// Continuation token for distinct queries.
-        /// </summary>
-        private sealed class DistinctContinuationToken
-        {
-            public DistinctContinuationToken(string sourceToken, string distinctMapToken)
-            {
-                this.SourceToken = sourceToken;
-                this.DistinctMapToken = distinctMapToken;
-            }
-
-            public string SourceToken { get; }
-
-            public string DistinctMapToken { get; }
-
-            /// <summary>
-            /// Tries to parse a DistinctContinuationToken from a string.
-            /// </summary>
-            /// <param name="value">The value to parse.</param>
-            /// <param name="distinctContinuationToken">The output DistinctContinuationToken.</param>
-            /// <returns>True if we successfully parsed the DistinctContinuationToken, else false.</returns>
-            public static bool TryParse(
-                string value,
-                out DistinctContinuationToken distinctContinuationToken)
-            {
-                distinctContinuationToken = default;
-                if (string.IsNullOrWhiteSpace(value))
-                {
-                    return false;
-                }
-
-                try
-                {
-                    distinctContinuationToken = JsonConvert.DeserializeObject<DistinctContinuationToken>(value);
-                    return true;
-                }
-                catch (JsonException)
-                {
-                    return false;
-                }
-            }
-
-            /// <summary>
-            /// Gets the serialized form of DistinctContinuationToken
-            /// </summary>
-            /// <returns>The serialized form of DistinctContinuationToken</returns>
-            public override string ToString()
-            {
-                return JsonConvert.SerializeObject(this);
-            }
         }
     }
 }

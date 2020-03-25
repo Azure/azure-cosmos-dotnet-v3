@@ -9,8 +9,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate;
-    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
 
@@ -30,8 +30,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
             }
 
             public static async Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
-                string requestContinuation,
-                Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSource,
+                CosmosElement requestContinuation,
+                Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSource,
                 IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
                 IReadOnlyList<string> orderedAliases,
                 bool hasSelectValue)
@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                     groupByAliasToAggregateType,
                     orderedAliases,
                     hasSelectValue,
-                    groupingTableContinuationToken: null);
+                    continuationToken: null);
 
                 if (!tryCreateGroupingTable.Succeeded)
                 {
@@ -65,7 +65,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
 
                 double requestCharge = 0.0;
                 long responseLengthBytes = 0;
-                List<QueryPageDiagnostics> queryPageDiagnostics = new List<QueryPageDiagnostics>();
                 while (!this.Source.IsDone)
                 {
                     // Stage 1: 
@@ -78,10 +77,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
 
                     requestCharge += sourceResponse.RequestCharge;
                     responseLengthBytes += sourceResponse.ResponseLengthBytes;
-                    if (sourceResponse.Diagnostics != null)
-                    {
-                        queryPageDiagnostics.AddRange(sourceResponse.Diagnostics);
-                    }
 
                     this.AggregateGroupings(sourceResponse.CosmosElements);
                 }
@@ -96,16 +91,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                    disallowContinuationTokenMessage: ClientGroupByDocumentQueryExecutionComponent.ContinuationTokenNotSupportedWithGroupBy,
                    activityId: null,
                    requestCharge: requestCharge,
-                   diagnostics: queryPageDiagnostics,
                    responseLengthBytes: responseLengthBytes);
 
                 return response;
             }
 
-            public override bool TryGetContinuationToken(out string state)
+            public override CosmosElement GetCosmosElementContinuationToken()
             {
-                state = default;
-                return false;
+                throw new NotImplementedException();
             }
         }
     }

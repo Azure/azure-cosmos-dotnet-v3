@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos.Linq;
-    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using System;
@@ -289,9 +288,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //Creating items for query.
             IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(container: this.Container, pkCount: 10, perPKItemCount: 1, randomPartitionKey: true);
 
-            QueryRequestOptions queryRequestOptions = new QueryRequestOptions()
+            QueryRequestOptions queryRequestOptions = new QueryRequestOptions();
+            if (disableDiagnostic)
             {
-                DiagnosticContext = disableDiagnostic ? EmptyCosmosDiagnosticsContext.Singleton : null
+                queryRequestOptions.DiagnosticContextFactory = () => EmptyCosmosDiagnosticsContext.Singleton;
             };
 
             IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(
@@ -301,64 +301,64 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(10, count);
 
             Response<int> intSum = await linqQueryable.Select(item => item.taskNum).SumAsync();
-            this.VerifyResponse(intSum, 420, disableDiagnostic);
+            this.VerifyResponse(intSum, 420, queryRequestOptions);
 
             Response<int?> intNullableSum = await linqQueryable.Select(item => (int?)item.taskNum).SumAsync();
-            this.VerifyResponse(intNullableSum, 420, disableDiagnostic);
+            this.VerifyResponse(intNullableSum, 420, queryRequestOptions);
 
             Response<float> floatSum = await linqQueryable.Select(item => (float)item.taskNum).SumAsync();
-            this.VerifyResponse(floatSum, 420, disableDiagnostic);
+            this.VerifyResponse(floatSum, 420, queryRequestOptions);
 
             Response<float?> floatNullableSum = await linqQueryable.Select(item => (float?)item.taskNum).SumAsync();
-            this.VerifyResponse(floatNullableSum, 420, disableDiagnostic);
+            this.VerifyResponse(floatNullableSum, 420, queryRequestOptions);
 
             Response<double> doubleSum = await linqQueryable.Select(item => (double)item.taskNum).SumAsync();
-            this.VerifyResponse(doubleSum, 420, disableDiagnostic);
+            this.VerifyResponse(doubleSum, 420, queryRequestOptions);
 
             Response<double?> doubleNullableSum = await linqQueryable.Select(item => (double?)item.taskNum).SumAsync();
-            this.VerifyResponse(doubleNullableSum, 420, disableDiagnostic);
+            this.VerifyResponse(doubleNullableSum, 420, queryRequestOptions);
 
             Response<long> longSum = await linqQueryable.Select(item => (long)item.taskNum).SumAsync();
-            this.VerifyResponse(longSum, 420, disableDiagnostic);
+            this.VerifyResponse(longSum, 420, queryRequestOptions);
 
             Response<long?> longNullableSum = await linqQueryable.Select(item => (long?)item.taskNum).SumAsync();
-            this.VerifyResponse(longNullableSum, 420, disableDiagnostic);
+            this.VerifyResponse(longNullableSum, 420, queryRequestOptions);
 
             Response<decimal> decimalSum = await linqQueryable.Select(item => (decimal)item.taskNum).SumAsync();
-            this.VerifyResponse(decimalSum, 420, disableDiagnostic);
+            this.VerifyResponse(decimalSum, 420, queryRequestOptions);
 
             Response<decimal?> decimalNullableSum = await linqQueryable.Select(item => (decimal?)item.taskNum).SumAsync();
-            this.VerifyResponse(decimalNullableSum, 420, disableDiagnostic);
+            this.VerifyResponse(decimalNullableSum, 420, queryRequestOptions);
 
             Response<double> intToDoubleAvg = await linqQueryable.Select(item => item.taskNum).AverageAsync();
-            this.VerifyResponse(intToDoubleAvg, 42, disableDiagnostic);
+            this.VerifyResponse(intToDoubleAvg, 42, queryRequestOptions);
 
             Response<double?> intToDoubleNulableAvg = await linqQueryable.Select(item => (double?)item.taskNum).AverageAsync();
-            this.VerifyResponse(intToDoubleNulableAvg, 42, disableDiagnostic);
+            this.VerifyResponse(intToDoubleNulableAvg, 42, queryRequestOptions);
 
             Response<float> floatAvg = await linqQueryable.Select(item => (float)item.taskNum).AverageAsync();
-            this.VerifyResponse(floatAvg, 42, disableDiagnostic);
+            this.VerifyResponse(floatAvg, 42, queryRequestOptions);
 
             Response<float?> floatNullableAvg = await linqQueryable.Select(item => (float?)item.taskNum).AverageAsync();
-            this.VerifyResponse(floatNullableAvg, 42, disableDiagnostic);
+            this.VerifyResponse(floatNullableAvg, 42, queryRequestOptions);
 
             Response<double> doubleAvg = await linqQueryable.Select(item => (double)item.taskNum).AverageAsync();
-            this.VerifyResponse(doubleAvg, 42, disableDiagnostic);
+            this.VerifyResponse(doubleAvg, 42, queryRequestOptions);
 
             Response<double?> doubleNullableAvg = await linqQueryable.Select(item => (double?)item.taskNum).AverageAsync();
-            this.VerifyResponse(doubleNullableAvg, 42, disableDiagnostic);
+            this.VerifyResponse(doubleNullableAvg, 42, queryRequestOptions);
 
             Response<double> longToDoubleAvg = await linqQueryable.Select(item => (long)item.taskNum).AverageAsync();
-            this.VerifyResponse(longToDoubleAvg, 42, disableDiagnostic);
+            this.VerifyResponse(longToDoubleAvg, 42, queryRequestOptions);
 
             Response<double?> longToNullableDoubleAvg = await linqQueryable.Select(item => (long?)item.taskNum).AverageAsync();
-            this.VerifyResponse(longToNullableDoubleAvg, 42, disableDiagnostic);
+            this.VerifyResponse(longToNullableDoubleAvg, 42, queryRequestOptions);
 
             Response<decimal> decimalAvg = await linqQueryable.Select(item => (decimal)item.taskNum).AverageAsync();
-            this.VerifyResponse(decimalAvg, 42, disableDiagnostic);
+            this.VerifyResponse(decimalAvg, 42, queryRequestOptions);
 
             Response<decimal?> decimalNullableAvg = await linqQueryable.Select(item => (decimal?)item.taskNum).AverageAsync();
-            this.VerifyResponse(decimalNullableAvg, 42, disableDiagnostic);
+            this.VerifyResponse(decimalNullableAvg, 42, queryRequestOptions);
 
             //Adding more items to test min and max function
             ToDoActivity toDoActivity = ToDoActivity.CreateRandomToDoActivity();
@@ -418,7 +418,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             string queryText = "SELECT VALUE item0 FROM root JOIN item0 IN root[\"children\"] WHERE (((((root[\"CamelCase\"] = @param1)" +
                 " AND (root[\"description\"] = @param2)) AND (root[\"taskNum\"] < @param3))" +
-                " AND (root[\"valid\"] = @param4)) AND (item0 = @param5)) ";
+                " AND (root[\"valid\"] = @param4)) AND (item0 = @param5))";
             ToDoActivity child1 = new ToDoActivity { id = "child1", taskNum = 30 };
             string description = "CreateRandomToDoActivity";
             string camelCase = "camelCase";
@@ -549,7 +549,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             queryDefinition.WithParameter("@param1", camelCase);
             Assert.AreEqual(10, (await this.FetchResults<ToDoActivity>(queryDefinition)).Count);
 
-            string queryText = "SELECT VALUE root FROM root WHERE (root[\"children\"] = [@param1, @param2]) ";
+            string queryText = "SELECT VALUE root FROM root WHERE (root[\"children\"] = [@param1, @param2])";
             //Test array in query, array items will be parametrized
             ToDoActivity child1 = new ToDoActivity { id = "child1", taskNum = 30 };
             ToDoActivity child2 = new ToDoActivity { id = "child2", taskNum = 40 };
@@ -574,7 +574,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             //Test orderby, skip, take, distinct, these will not get parameterized.
             queryText = "SELECT VALUE root FROM root WHERE (root[\"CamelCase\"] = @param1) ORDER BY" +
-                " root[\"taskNum\"] ASC OFFSET @param2 LIMIT @param3 ";
+                " root[\"taskNum\"] ASC OFFSET @param2 LIMIT @param3";
             queriable = linqQueryable
                 .Where(item => item.CamelCase == camelCase)
                 .OrderBy(item => item.taskNum)
@@ -593,7 +593,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(0, (await this.FetchResults<ToDoActivity>(queryDefinition)).Count);
 
 
-            queryText = "SELECT VALUE root FROM root WHERE (root[\"CamelCase\"] != @param1) ";
+            queryText = "SELECT VALUE root FROM root WHERE (root[\"CamelCase\"] != @param1)";
             camelCase = "\b\n";
             queriable = linqQueryable
                 .Where(item => item.CamelCase != camelCase);
@@ -621,7 +621,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 " AND (root[\"decimaleValue\"] = @param11))" +
                 " AND (root[\"ushortValue\"] = @param15))" +
                 " AND (root[\"booleanValue\"] = @param12))" +
-                " AND (item0 = @param13)) ";
+                " AND (item0 = @param13))";
 
             string id = "testId";
             string pk = "testPk";
@@ -730,7 +730,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         }
 
-            private async Task<List<T>> FetchResults<T>(QueryDefinition queryDefinition)
+        private async Task<List<T>> FetchResults<T>(QueryDefinition queryDefinition)
         {
             List<T> itemList = new List<T>();
             FeedIterator<T> feedIterator = this.Container.GetItemQueryIterator<T>(queryDefinition);
@@ -746,11 +746,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return itemList;
         }
 
-        private void VerifyResponse<T>(Response<T> response, T expectedValue, bool disableDiagnostics)
+        private void VerifyResponse<T>(
+            Response<T> response,
+            T expectedValue,
+            QueryRequestOptions queryRequestOptions)
         {
             Assert.AreEqual<T>(expectedValue, response.Resource);
             Assert.IsTrue(response.RequestCharge > 0);
-            CosmosDiagnosticsTests.VerifyQueryDiagnostics(response.Diagnostics, false, disableDiagnostics);
+
+            bool disableDiagnostics = queryRequestOptions.DiagnosticContextFactory != null;
+            CosmosDiagnosticsTests.VerifyQueryDiagnostics(
+                diagnostics: response.Diagnostics,
+                isFirstPage: false,
+                disableDiagnostics: disableDiagnostics);
         }
     }
 }

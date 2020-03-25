@@ -134,7 +134,11 @@ namespace Microsoft.Azure.Cosmos
                     throw new InvalidOperationException(ClientResources.UnsupportedBulkRequestOptions);
                 }
 
-                Debug.Assert(itemRequestOptions.DiagnosticContext == null, "Disable Diagnostics is not supported on Bulk operations");
+                if (itemRequestOptions.DiagnosticContextFactory != null)
+                {
+                    throw new ArgumentException("DiagnosticContext is not allowed when AllowBulkExecution is set to true");
+                }
+
                 Debug.Assert(BatchAsyncContainerExecutor.ValidateOperationEPK(operation, itemRequestOptions));
             }
 
@@ -224,7 +228,7 @@ namespace Microsoft.Azure.Cosmos
             PartitionKeyRangeServerBatchRequest serverRequest,
             CancellationToken cancellationToken)
         {
-            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create();
+            CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContextCore();
             CosmosDiagnosticScope limiterScope = diagnosticsContext.CreateScope("BatchAsyncContainerExecutor.Limiter");
             SemaphoreSlim limiter = this.GetOrAddLimiterForPartitionKeyRange(serverRequest.PartitionKeyRangeId);
             using (await limiter.UsingWaitAsync(cancellationToken))
@@ -242,7 +246,7 @@ namespace Microsoft.Azure.Cosmos
                         partitionKey: null,
                         streamPayload: serverRequestPayload,
                         requestEnricher: requestMessage => BatchAsyncContainerExecutor.AddHeadersToRequestMessage(requestMessage, serverRequest.PartitionKeyRangeId),
-                        diagnosticsScope: diagnosticsContext,
+                        diagnosticsContext: diagnosticsContext,
                         cancellationToken: cancellationToken).ConfigureAwait(false);
 
                     using (diagnosticsContext.CreateScope("BatchAsyncContainerExecutor.ToResponse"))

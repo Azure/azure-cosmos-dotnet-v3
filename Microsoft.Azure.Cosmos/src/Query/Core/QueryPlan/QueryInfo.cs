@@ -45,42 +45,42 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
         }
 
         [JsonProperty("orderBy", ItemConverterType = typeof(StringEnumConverter))]
-        public SortOrder[] OrderBy
+        public IReadOnlyList<SortOrder> OrderBy
         {
             get;
             set;
         }
 
         [JsonProperty("orderByExpressions")]
-        public string[] OrderByExpressions
+        public IReadOnlyList<string> OrderByExpressions
         {
             get;
             set;
         }
 
         [JsonProperty("groupByExpressions")]
-        public string[] GroupByExpressions
+        public IReadOnlyList<string> GroupByExpressions
         {
             get;
             set;
         }
 
         [JsonProperty("groupByAliases")]
-        public string[] GroupByAliases
+        public IReadOnlyList<string> GroupByAliases
         {
             get;
             set;
         }
 
         [JsonProperty("aggregates", ItemConverterType = typeof(StringEnumConverter))]
-        public AggregateOperator[] Aggregates
+        public IReadOnlyList<AggregateOperator> Aggregates
         {
             get;
             set;
         }
 
         [JsonProperty("groupByAliasToAggregateType", ItemConverterType = typeof(StringEnumConverter))]
-        public Dictionary<string, AggregateOperator?> GroupByAliasToAggregateType
+        public IReadOnlyDictionary<string, AggregateOperator?> GroupByAliasToAggregateType
         {
             get;
             set;
@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
         {
             get
             {
-                bool aggregatesListNonEmpty = (this.Aggregates != null) && (this.Aggregates.Length > 0);
+                bool aggregatesListNonEmpty = (this.Aggregates != null) && (this.Aggregates.Count > 0);
                 if (aggregatesListNonEmpty)
                 {
                     return true;
@@ -137,7 +137,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
         {
             get
             {
-                return this.GroupByExpressions != null && this.GroupByExpressions.Length > 0;
+                return this.GroupByExpressions != null && this.GroupByExpressions.Count > 0;
             }
         }
 
@@ -145,7 +145,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
         {
             get
             {
-                return this.OrderBy != null && this.OrderBy.Length > 0;
+                return this.OrderBy != null && this.OrderBy.Count > 0;
             }
         }
 

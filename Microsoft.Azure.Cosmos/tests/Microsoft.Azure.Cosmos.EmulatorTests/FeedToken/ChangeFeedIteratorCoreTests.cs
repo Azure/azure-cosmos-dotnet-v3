@@ -105,6 +105,37 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         /// <summary>
+        /// Test to verify that StarTime works as expected by inserting 50 items in two batches of 25 but capturing the time of just the second batch.
+        /// </summary>
+        [TestMethod]
+        public async Task ChangeFeedIteratorCore_StartTime()
+        {
+            int totalCount = 0;
+            int batchSize = 25;
+            await this.CreateRandomItems(this.Container, batchSize, randomPartitionKey: true);
+            await Task.Delay(1000);
+            DateTime now = DateTime.UtcNow;
+            await Task.Delay(1000);
+            await this.CreateRandomItems(this.Container, batchSize, randomPartitionKey: true);
+            ContainerCore itemsCore = this.Container;
+            FeedIterator feedIterator = itemsCore.GetChangeFeedStreamIterator(changeFeedRequestOptions: new ChangeFeedRequestOptions() { StartTime = now });
+            while (feedIterator.HasMoreResults)
+            {
+                using (ResponseMessage responseMessage =
+                    await feedIterator.ReadNextAsync(this.cancellationToken))
+                {
+                    if (responseMessage.IsSuccessStatusCode)
+                    {
+                        Collection<ToDoActivity> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
+                        totalCount += response.Count;
+                    }
+                }
+            }
+
+            Assert.AreEqual(totalCount, batchSize);
+        }
+
+        /// <summary>
         /// Verify that we can read the Change Feed for a Partition Key and that does not read other items.
         /// </summary>
         /// <returns></returns>
