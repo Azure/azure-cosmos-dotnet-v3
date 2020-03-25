@@ -149,7 +149,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <summary>
         /// Set the preferred geo-replicated regions to be used in the Azure Cosmos DB service. 
         /// </summary>
-        /// <param name="preferredLocations">List of preferred regions. <see cref="Regions"/> lists valid Cosmos DB regions.</param>
+        /// <param name="preferredRegions">List of preferred regions. <see cref="Regions"/> lists valid Cosmos DB regions.</param>
         /// <example>
         /// The example below creates a new <see cref="CosmosClientBuilder"/> with a list of preferred regions.
         /// <code language="c#">
@@ -168,10 +168,10 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </code>
         /// </example>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
-        /// <seealso cref="CosmosClientOptions.ApplicationRegion"/>
-        public CosmosClientBuilder WithPreferredRegions(IReadOnlyList<string> preferredLocations)
+        /// <seealso cref="CosmosClientOptions.PreferredRegions"/>
+        public CosmosClientBuilder WithPreferredRegions(IReadOnlyList<string> preferredRegions)
         {
-            this.clientOptions.PreferredRegions = preferredLocations ?? throw new ArgumentNullException(nameof(preferredLocations));
+            this.clientOptions.PreferredRegions = preferredRegions ?? throw new ArgumentNullException(nameof(preferredRegions));
             return this;
         }
 
