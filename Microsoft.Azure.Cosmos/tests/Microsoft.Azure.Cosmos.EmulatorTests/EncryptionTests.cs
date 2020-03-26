@@ -254,7 +254,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             TestDoc testDoc1 = await EncryptionTests.CreateItemAsync(EncryptionTests.containerCore, EncryptionTests.dekId, TestDoc.PathsToEncrypt);
             TestDoc testDoc2 = await EncryptionTests.CreateItemAsync(EncryptionTests.containerCore, EncryptionTests.dekId, TestDoc.PathsToEncrypt);
 
-            await ValidateQueryResultsMultipleDocumentsAsync(testDoc1, testDoc2);
+            await ValidateQueryResultsMultipleDocumentsAsync(EncryptionTests.containerCore, testDoc1, testDoc2);
         }
 
         [TestMethod]
@@ -266,7 +266,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             TestDoc testDoc1 = await EncryptionTests.CreateItemAsync(EncryptionTests.containerCore, EncryptionTests.dekId, TestDoc.PathsToEncrypt);
             TestDoc testDoc2 = await EncryptionTests.CreateItemAsync(EncryptionTests.containerCore, dekId1, TestDoc.PathsToEncrypt);
 
-            await ValidateQueryResultsMultipleDocumentsAsync(testDoc1, testDoc2);
+            await ValidateQueryResultsMultipleDocumentsAsync(EncryptionTests.containerCore, testDoc1, testDoc2);
+        }
+
+        [TestMethod]
+        public async Task DecryptQueryResultMultipleEncryptedPropertiesTest()
+        {
+            TestDoc testDoc = await EncryptionTests.CreateItemAsync(
+                EncryptionTests.containerCore,
+                EncryptionTests.dekId,
+                new List<string>(){ "/Sensitive", "/NonSensitive" });
+
+            TestDoc expectedDoc = new TestDoc(testDoc);
+
+            await EncryptionTests.ValidateQueryResultsAsync(
+                EncryptionTests.containerCore,
+                "SELECT * FROM c",
+                expectedDoc);
         }
 
         [TestMethod]
@@ -298,7 +314,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsTrue(response.IsSuccessStatusCode);
                 Assert.IsNull(response.ErrorMessage);
 
-                //Copy the stream and check that the first byte is the correct value
+                // Copy the stream and check that the first byte is the correct value
                 MemoryStream memoryStream = new MemoryStream();
                 response.Content.CopyTo(memoryStream);
                 byte[] content = memoryStream.ToArray();
@@ -503,11 +519,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         private static async Task ValidateQueryResultsMultipleDocumentsAsync(
+            ContainerCore containerCore,
             TestDoc testDoc1,
             TestDoc testDoc2)
         {
             string query = $"SELECT * FROM c WHERE c.PK in ('{testDoc1.PK}', '{testDoc2.PK}')";
-            FeedIterator<TestDoc> queryResponseIterator = EncryptionTests.containerCore.GetItemQueryIterator<TestDoc>(query);
+            FeedIterator<TestDoc> queryResponseIterator = containerCore.GetItemQueryIterator<TestDoc>(query);
             FeedResponse<TestDoc> readDocs = await queryResponseIterator.ReadNextAsync();
             Assert.AreEqual(null, readDocs.ContinuationToken);
             Assert.AreEqual(2, readDocs.Count);

@@ -65,8 +65,8 @@ namespace Microsoft.Azure.Cosmos
 
             DataEncryptionKeyCore dekCore = (DataEncryptionKeyInlineCore)dek;
             (DataEncryptionKeyProperties dekProperties, InMemoryRawDek inMemoryRawDek) = await dekCore.FetchUnwrappedAsync(
-                diagnosticsContext,
-                cancellationToken);
+                    diagnosticsContext,
+                    cancellationToken);
 
             JObject itemJObj = EncryptionProcessor.baseSerializer.FromStream<JObject>(input);
 
@@ -140,6 +140,53 @@ namespace Microsoft.Azure.Cosmos
             }
 
             EncryptionProperties encryptionProperties = encryptionPropertiesJObj.ToObject<EncryptionProperties>();
+
+            JObject plainTextJObj = await this.DecryptContentAsync(
+                encryptionProperties,
+                database,
+                diagnosticsContext,
+                cancellationToken);
+
+            foreach (JProperty property in plainTextJObj.Properties())
+            {
+                itemJObj.Add(property.Name, property.Value);
+            }
+
+            itemJObj.Remove(Constants.Properties.EncryptedInfo);
+            return EncryptionProcessor.baseSerializer.ToStream(itemJObj);
+        }
+
+        public async Task<Stream> DecryptAsync(
+            EncryptionProperties encryptionProperties,
+            DatabaseCore database,
+            EncryptionKeyWrapProvider encryptionKeyWrapProvider,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
+            Debug.Assert(encryptionProperties != null);
+            Debug.Assert(database != null);
+            Debug.Assert(diagnosticsContext != null);
+
+            if (encryptionKeyWrapProvider == null)
+            {
+                return null;
+            }
+
+            JObject plainTextJObj = await this.DecryptContentAsync(
+                encryptionProperties,
+                database,
+                diagnosticsContext,
+                cancellationToken);
+
+            return EncryptionProcessor.baseSerializer.ToStream(plainTextJObj);
+        }
+
+        private async Task<JObject> DecryptContentAsync(
+            EncryptionProperties encryptionProperties,
+            DatabaseCore database,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
             if (encryptionProperties.EncryptionFormatVersion != 1)
             {
                 throw CosmosExceptionFactory.CreateInternalServerErrorException($"Unknown encryption format version: {encryptionProperties.EncryptionFormatVersion}. Please upgrade your SDK to the latest version.");
@@ -161,13 +208,7 @@ namespace Microsoft.Azure.Cosmos
                 plainTextJObj = JObject.Load(jsonTextReader);
             }
 
-            foreach (JProperty property in plainTextJObj.Properties())
-            {
-                itemJObj.Add(property.Name, property.Value);
-            }
-
-            itemJObj.Remove(Constants.Properties.EncryptedInfo);
-            return EncryptionProcessor.baseSerializer.ToStream(itemJObj);
+            return plainTextJObj;
         }
     }
 }
