@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos
                 subStatusCode: (int)SubStatusCodes.Unknown,
                 responseTimeUtc: DateTime.UtcNow,
                 requestCharge: cosmosException.Headers.RequestCharge,
-                errorMessage: cosmosException.Message,
+                errorMessage: documentClientException.ToString(),
                 method: requestMessage?.Method,
                 requestUri: requestMessage?.RequestUri,
                 requestSessionToken: requestMessage?.Headers?.Session,
